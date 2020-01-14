@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pulsar.Api.Schema;
+using System;
 using System.IO;
 
 /// <summary>
@@ -19,14 +20,12 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.writer
+namespace Pulsar.Client.Impl.Schema.Writer
 {
-	using Schema = org.apache.avro.Schema;
-	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
-	using EncoderFactory = org.apache.avro.io.EncoderFactory;
-	using ReflectDatumWriter = org.apache.avro.reflect.ReflectDatumWriter;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
+	using Schema = Avro.Schema;
+	using BinaryEncoder = Avro.IO.BinaryEncoder;
+	using EncoderFactory = Avro.IO.EncoderFactory;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 
 	public class AvroWriter<T> : SchemaWriter<T>
 	{
@@ -41,14 +40,14 @@ namespace org.apache.pulsar.client.impl.schema.writer
 			this.writer = new ReflectDatumWriter<T>(schema);
 		}
 
-		public override sbyte[] write(T message)
+		public sbyte[] Write(T message)
 		{
 			lock (this)
 			{
 				try
 				{
 					writer.write(message, this.encoder);
-					this.encoder.flush();
+					this.encoder.Flush();
 					return this.byteArrayOutputStream.toByteArray();
 				}
 				catch (Exception e)

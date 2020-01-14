@@ -16,12 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.writer
+namespace Pulsar.Client.Impl.Schema.Writer
 {
-	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
+    using Pulsar.Api.Schema;
+    using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 
 	public class JsonWriter<T> : SchemaWriter<T>
 	{
@@ -33,7 +33,7 @@ namespace org.apache.pulsar.client.impl.schema.writer
 			this.objectMapper = objectMapper;
 		}
 
-		public override sbyte[] write(T message)
+		public sbyte[] Write(T message)
 		{
 			try
 			{

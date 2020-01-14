@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using Pulsar.Api.Schema;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,14 +17,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.writer
+namespace Pulsar.Client.Impl.Schema.Writer
 {
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
 
 	public class ProtobufWriter<T> : SchemaWriter<T> where T : com.google.protobuf.GeneratedMessageV3
 	{
 
-		public override sbyte[] write(T message)
+		public sbyte[] Write(T message)
 		{
 			return message.toByteArray();
 		}
