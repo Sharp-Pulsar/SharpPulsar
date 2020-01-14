@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pulsar.Api.Schema;
+using System;
 using System.IO;
 
 /// <summary>
@@ -19,11 +20,10 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.reader
+namespace Pulsar.Client.Impl.Schema.Reader
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ namespace org.apache.pulsar.client.impl.schema.reader
 			this.objectMapper = objectMapper;
 		}
 
-		public override T read(sbyte[] bytes, int offset, int length)
+		public T Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
@@ -51,7 +51,7 @@ namespace org.apache.pulsar.client.impl.schema.reader
 			}
 		}
 
-		public override T read(Stream inputStream)
+		public T Read(Stream inputStream)
 		{
 			try
 			{

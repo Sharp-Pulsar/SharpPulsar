@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Pulsar.Api.Schema;
+using System;
 using System.IO;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,14 +21,12 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.reader
+namespace Pulsar.Client.Impl.Schema.Reader
 {
-	using Schema = org.apache.avro.Schema;
-	using BinaryDecoder = org.apache.avro.io.BinaryDecoder;
-	using DecoderFactory = org.apache.avro.io.DecoderFactory;
-	using ReflectDatumReader = org.apache.avro.reflect.ReflectDatumReader;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using Schema = Avro.Schema;
+	using BinaryDecoder = Avro.IO.BinaryDecoder;
+	using DecoderFactory = Avro.IO.DecoderFactory;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -48,11 +48,11 @@ namespace org.apache.pulsar.client.impl.schema.reader
 			this.reader = new ReflectDatumReader<T>(writerSchema, readerSchema);
 		}
 
-		public override T read(sbyte[] bytes, int offset, int length)
+		public T Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				BinaryDecoder decoderFromCache = decoders.get();
+				BinaryDecoder decoderFromCache = decoders.Get();
 				BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(bytes, offset, length, decoderFromCache);
 				if (decoderFromCache == null)
 				{
@@ -66,7 +66,7 @@ namespace org.apache.pulsar.client.impl.schema.reader
 			}
 		}
 
-		public override T read(Stream inputStream)
+		public T Read(Stream inputStream)
 		{
 			try
 			{
