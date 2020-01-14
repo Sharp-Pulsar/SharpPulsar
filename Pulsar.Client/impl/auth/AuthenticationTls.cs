@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,15 +20,13 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.auth
+namespace Pulsar.Client.Impl.Auth
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
+	using Authentication = Api.Authentication;
+	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
+	using EncodedAuthenticationParameterSupport = Api.EncodedAuthenticationParameterSupport;
+	using PulsarClientException = Api.PulsarClientException;
 
 	/// 
 	/// <summary>
@@ -61,13 +60,13 @@ namespace org.apache.pulsar.client.impl.auth
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void close()
+//ORIGINAL LINE: @public void close() throws java.io.IOException
+		public void Close()
 		{
 			// noop
 		}
 
-		public override string AuthMethodName
+		public string AuthMethodName
 		{
 			get
 			{
@@ -76,8 +75,8 @@ namespace org.apache.pulsar.client.impl.auth
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public override AuthenticationDataProvider AuthData
+//ORIGINAL LINE: @public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
+		public AuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -92,32 +91,37 @@ namespace org.apache.pulsar.client.impl.auth
 			}
 		}
 
-		public override void configure(string encodedAuthParamString)
+		public void Configure(string encodedAuthParamString)
 		{
 			IDictionary<string, string> authParamsMap = null;
 			try
 			{
-				authParamsMap = AuthenticationUtil.configureFromJsonString(encodedAuthParamString);
+				authParamsMap = AuthenticationUtil.ConfigureFromJsonString(encodedAuthParamString);
 			}
 			catch (Exception)
 			{
 				// auth-param is not in json format
 			}
-			authParamsMap = (authParamsMap == null || authParamsMap.Count == 0) ? AuthenticationUtil.configureFromPulsar1AuthParamString(encodedAuthParamString) : authParamsMap;
+			authParamsMap = (authParamsMap == null || authParamsMap.Count == 0) ? AuthenticationUtil.ConfigureFromPulsar1AuthParamString(encodedAuthParamString) : authParamsMap;
 			AuthParams = authParamsMap;
 		}
 
 		[Obsolete]
-		public override void configure(IDictionary<string, string> authParams)
+		public void Configure(IDictionary<string, string> authParams)
 		{
 			AuthParams = authParams;
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void start()
+//ORIGINAL LINE: @public void start() throws org.apache.pulsar.client.api.PulsarClientException
+		public void Start()
 		{
 			// noop
+		}
+
+		public ValueTask DisposeAsync()
+		{
+			throw new NotImplementedException();
 		}
 
 		private IDictionary<string, string> AuthParams

@@ -20,10 +20,10 @@ using System.Collections.Generic;
 /// under the License.
 /// </summary>
 
-namespace org.apache.pulsar.client.impl.auth
+namespace Pulsar.Client.Impl.Auth
 {
 
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
+	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
 
 	public class AuthenticationDataToken : AuthenticationDataProvider
 	{
@@ -36,12 +36,12 @@ namespace org.apache.pulsar.client.impl.auth
 			this.tokenSupplier = tokenSupplier;
 		}
 
-		public override bool hasDataForHttp()
+		public bool HasDataForHttp()
 		{
 			return true;
 		}
 
-		public override ISet<KeyValuePair<string, string>> HttpHeaders
+		public ISet<KeyValuePair<string, string>> HttpHeaders
 		{
 			get
 			{
@@ -49,12 +49,12 @@ namespace org.apache.pulsar.client.impl.auth
 			}
 		}
 
-		public override bool hasDataFromCommand()
+		public bool HasDataFromCommand()
 		{
 			return true;
 		}
 
-		public override string CommandData
+		public string CommandData
 		{
 			get
 			{

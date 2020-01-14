@@ -22,7 +22,7 @@ using System.Collections.Generic;
 namespace Pulsar.Api
 {
 
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
+	using UnsupportedAuthenticationException = PulsarClientException.UnsupportedAuthenticationException;
 
 	/// <summary>
 	/// Interface of authentication providers.
@@ -67,7 +67,7 @@ namespace Pulsar.Api
 		///             encodedAuthParamString) which is in EncodedAuthenticationParameterSupport for now and will be
 		///             integrated into this interface. 
 		[Obsolete("This method will be deleted on version 2.0, instead please use configure(String")]
-		void configure(IDictionary<string, string> authParams);
+		void Configure(IDictionary<string, string> authParams);
 
 		/// <summary>
 		/// Initialize the authentication provider.

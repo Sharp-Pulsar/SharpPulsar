@@ -16,16 +16,17 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.auth
+namespace Pulsar.Client.Impl.Auth
 {
 
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
+	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
 	using FileModifiedTimeUpdater = org.apache.pulsar.common.util.FileModifiedTimeUpdater;
 	using SecurityUtility = org.apache.pulsar.common.util.SecurityUtility;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using System.Security.Cryptography.X509Certificates;
 
-	public class AuthenticationDataTls : AuthenticationDataProvider
+    public class AuthenticationDataTls : AuthenticationDataProvider
 	{
 		protected internal X509Certificate[] tlsCertificates;
 		protected internal PrivateKey tlsPrivateKey;
@@ -53,12 +54,12 @@ namespace org.apache.pulsar.client.impl.auth
 		 * TLS
 		 */
 
-		public override bool hasDataForTls()
+		public bool HasDataForTls()
 		{
 			return true;
 		}
 
-		public override Certificate[] TlsCertificates
+		public Certificate[] TlsCertificates
 		{
 			get
 			{
@@ -77,7 +78,7 @@ namespace org.apache.pulsar.client.impl.auth
 			}
 		}
 
-		public override PrivateKey TlsPrivateKey
+		public PrivateKey TlsPrivateKey
 		{
 			get
 			{

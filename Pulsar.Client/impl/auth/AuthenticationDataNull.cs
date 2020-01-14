@@ -16,9 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.auth
+namespace Pulsar.Client.Impl.Auth
 {
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
+	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
 
 	public class AuthenticationDataNull : AuthenticationDataProvider
 	{

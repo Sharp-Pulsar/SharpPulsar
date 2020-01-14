@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,9 +21,9 @@
 /// under the License.
 /// </summary>
 
-namespace org.apache.pulsar.client.impl.auth
+namespace Pulsar.Client.Impl.Auth
 {
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
+	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
 
 
 	public class AuthenticationDataBasic : AuthenticationDataProvider
@@ -32,16 +34,16 @@ namespace org.apache.pulsar.client.impl.auth
 
 		public AuthenticationDataBasic(string userId, string password)
 		{
-			httpAuthToken = "Basic " + Base64.Encoder.encodeToString((userId + ":" + password).GetBytes());
+			httpAuthToken = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(userId + ":" + password));
 			commandAuthToken = userId + ":" + password;
 		}
 
-		public override bool hasDataForHttp()
+		public bool HasDataForHttp()
 		{
 			return true;
 		}
 
-		public override ISet<KeyValuePair<string, string>> HttpHeaders
+		public ISet<KeyValuePair<string, string>> HttpHeaders
 		{
 			get
 			{
@@ -51,12 +53,12 @@ namespace org.apache.pulsar.client.impl.auth
 			}
 		}
 
-		public override bool hasDataFromCommand()
+		public bool HasDataFromCommand()
 		{
 			return true;
 		}
 
-		public override string CommandData
+		public string CommandData
 		{
 			get
 			{

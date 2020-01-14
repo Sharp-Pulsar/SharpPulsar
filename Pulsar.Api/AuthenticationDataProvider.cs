@@ -20,7 +20,7 @@ namespace Pulsar.Api
 {
 
 
-	using AuthData = org.apache.pulsar.common.api.AuthData;
+	//using AuthData = org.apache.pulsar.common.api.AuthData;
 
 	/// <summary>
 	/// Interface for accessing data which are used in variety of authentication schemes on client side.
