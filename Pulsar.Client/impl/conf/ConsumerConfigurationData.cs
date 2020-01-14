@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pulsar.Api;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.conf
+namespace Pulsar.Client.Impl.Conf
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -29,19 +30,18 @@ namespace org.apache.pulsar.client.impl.conf
 	using Sets = com.google.common.collect.Sets;
 
 
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using BatchReceivePolicy = org.apache.pulsar.client.api.BatchReceivePolicy;
-	using ConsumerCryptoFailureAction = org.apache.pulsar.client.api.ConsumerCryptoFailureAction;
-	using ConsumerEventListener = org.apache.pulsar.client.api.ConsumerEventListener;
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using DeadLetterPolicy = org.apache.pulsar.client.api.DeadLetterPolicy;
-	using KeySharedPolicy = org.apache.pulsar.client.api.KeySharedPolicy;
-	using MessageListener = org.apache.pulsar.client.api.MessageListener;
-	using RegexSubscriptionMode = org.apache.pulsar.client.api.RegexSubscriptionMode;
-	using SubscriptionInitialPosition = org.apache.pulsar.client.api.SubscriptionInitialPosition;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
+	//using AllArgsConstructor = lombok.AllArgsConstructor;
+	//using Data = lombok.Data;
+	//using NoArgsConstructor = lombok.NoArgsConstructor;
+	using BatchReceivePolicy = Api.BatchReceivePolicy;
+	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
+	using ConsumerEventListener = Api.ConsumerEventListener;
+	using CryptoKeyReader = Api.CryptoKeyReader;
+	using DeadLetterPolicy = Api.DeadLetterPolicy;
+	using KeySharedPolicy = Api.KeySharedPolicy;
+	using RegexSubscriptionMode = Api.RegexSubscriptionMode;
+	using SubscriptionInitialPosition = Api.SubscriptionInitialPosition;
+	using SubscriptionType = Api.SubscriptionType;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ConsumerConfigurationData<T> implements java.io.Serializable, Cloneable
@@ -60,7 +60,7 @@ namespace org.apache.pulsar.client.impl.conf
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.MessageListener<T> messageListener;
-		private MessageListener<T> messageListener;
+		private MessageListener<T> MessageListener;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.ConsumerEventListener consumerEventListener;
@@ -138,6 +138,11 @@ namespace org.apache.pulsar.client.impl.conf
 			{
 				throw new Exception("Failed to clone ConsumerConfigurationData");
 			}
+		}
+
+		public object Clone()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

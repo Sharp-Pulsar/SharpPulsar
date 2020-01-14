@@ -19,25 +19,25 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.conf
+namespace Pulsar.Client.Impl.Conf
 {
 
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
+	//using AllArgsConstructor = lombok.AllArgsConstructor;
+	//using NoArgsConstructor = lombok.NoArgsConstructor;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
-	using CompressionType = org.apache.pulsar.client.api.CompressionType;
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using MessageRouter = org.apache.pulsar.client.api.MessageRouter;
-	using MessageRoutingMode = org.apache.pulsar.client.api.MessageRoutingMode;
-	using ProducerCryptoFailureAction = org.apache.pulsar.client.api.ProducerCryptoFailureAction;
+	using BatcherBuilder = Api.BatcherBuilder;
+	using CompressionType = Api.CompressionType;
+	using CryptoKeyReader = Api.CryptoKeyReader;
+	using HashingScheme = Api.HashingScheme;
+	using MessageRouter = Api.MessageRouter;
+	using MessageRoutingMode = Api.MessageRoutingMode;
+	using ProducerCryptoFailureAction = Api.ProducerCryptoFailureAction;
 
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
+	//using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
 	using Maps = com.google.common.collect.Maps;
 	using Sets = com.google.common.collect.Sets;
 
-	using Data = lombok.Data;
+	//using Data = lombok.Data;
 
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -197,6 +197,10 @@ namespace org.apache.pulsar.client.impl.conf
 			return this.batchingPartitionSwitchFrequencyByPublishDelay * batchingMaxPublishDelayMicros;
 		}
 
+		public object Clone()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

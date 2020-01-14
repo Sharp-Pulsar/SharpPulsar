@@ -18,15 +18,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.conf
+namespace Pulsar.Client.Impl.Conf
 {
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using ServiceUrlProvider = org.apache.pulsar.client.api.ServiceUrlProvider;
-	using AuthenticationDisabled = org.apache.pulsar.client.impl.auth.AuthenticationDisabled;
+	//using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
+	//using AllArgsConstructor = lombok.AllArgsConstructor;
+	//using Data = lombok.Data;
+	//using NoArgsConstructor = lombok.NoArgsConstructor;
+	using Authentication = Api.Authentication;
+	using ServiceUrlProvider = Api.ServiceUrlProvider;
+	using AuthenticationDisabled = Auth.AuthenticationDisabled;
 
 
 	/// <summary>
@@ -39,7 +39,7 @@ namespace org.apache.pulsar.client.impl.conf
 	{
 		private const long serialVersionUID = 1L;
 
-		private string serviceUrl;
+		private string ServiceUrl;
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @JsonIgnore private transient org.apache.pulsar.client.api.ServiceUrlProvider serviceUrlProvider;
 		[NonSerialized]
@@ -119,7 +119,10 @@ namespace org.apache.pulsar.client.impl.conf
 			}
 		}
 
-
+		public object Clone()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pulsar.Api;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,17 +20,14 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.conf
+namespace Pulsar.Client.Impl.Conf
 {
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
+	
 
-	using ConsumerCryptoFailureAction = org.apache.pulsar.client.api.ConsumerCryptoFailureAction;
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Range = org.apache.pulsar.client.api.Range;
-	using ReaderListener = org.apache.pulsar.client.api.ReaderListener;
-
-	using Data = lombok.Data;
+	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
+	using CryptoKeyReader = Api.CryptoKeyReader;
+	using MessageId = Api.MessageId;
+	using Range = Api.Range;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data public class ReaderConfigurationData<T> implements java.io.Serializable, Cloneable
@@ -74,6 +72,11 @@ namespace org.apache.pulsar.client.impl.conf
 			{
 				throw new Exception("Failed to clone ReaderConfigurationData");
 			}
+		}
+
+		public object Clone()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

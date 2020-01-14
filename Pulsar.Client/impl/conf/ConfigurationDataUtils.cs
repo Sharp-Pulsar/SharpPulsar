@@ -19,13 +19,13 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.conf
+namespace Pulsar.Client.Impl.Conf
 {
 	using Include = com.fasterxml.jackson.annotation.JsonInclude.Include;
 	using DeserializationFeature = com.fasterxml.jackson.databind.DeserializationFeature;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using Maps = com.google.common.collect.Maps;
-	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
+	//using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
 
 	/// <summary>
 	/// Utils for loading configuration data.
@@ -67,7 +67,7 @@ namespace org.apache.pulsar.client.impl.conf
 		{
 		}
 
-		public static T loadData<T>(IDictionary<string, object> config, T existingData, Type dataCls)
+		public static T LoadData<T>(IDictionary<string, object> config, T existingData, Type dataCls)
 		{
 			ObjectMapper mapper = ThreadLocal;
 			try
