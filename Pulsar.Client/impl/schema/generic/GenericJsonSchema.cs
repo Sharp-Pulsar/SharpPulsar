@@ -16,24 +16,23 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using GenericRecordBuilder = org.apache.pulsar.client.api.schema.GenericRecordBuilder;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using Schema = Avro.Schema;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
+	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+    using Pulsar.Api.Schema;
 
-	/// <summary>
-	/// A generic json schema.
-	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j class GenericJsonSchema extends GenericSchemaImpl
-	internal class GenericJsonSchema : GenericSchemaImpl
+    /// <summary>
+    /// A generic json schema.
+    /// </summary>
+    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+    //ORIGINAL LINE: @Slf4j class GenericJsonSchema extends GenericSchemaImpl
+    internal class GenericJsonSchema : GenericSchemaImpl
 	{
 
 		public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
@@ -46,7 +45,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			Reader = new GenericJsonReader(fields);
 		}
 
-		protected internal override SchemaReader<GenericRecord> loadReader(BytesSchemaVersion schemaVersion)
+		protected internal SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
 		{
 			SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.get());
 			if (schemaInfo != null)
@@ -59,7 +58,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 				}
 				else
 				{
-					readerSchema = parseAvroSchema(schemaInfo.SchemaDefinition);
+					readerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
 				}
 				return new GenericJsonReader(schemaVersion.get(), readerSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
 			}
@@ -70,7 +69,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override GenericRecordBuilder newRecordBuilder()
+		public GenericRecordBuilder NewRecordBuilder()
 		{
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}

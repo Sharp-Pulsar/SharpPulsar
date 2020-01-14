@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Avro.Generic;
+using Pulsar.Api.Schema;
+using System;
 using System.IO;
 
 /// <summary>
@@ -19,39 +21,37 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Schema = org.apache.avro.Schema;
-	using GenericDatumWriter = org.apache.avro.generic.GenericDatumWriter;
-	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
-	using EncoderFactory = org.apache.avro.io.EncoderFactory;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
+	using Schema = Avro.Schema;
+	using BinaryEncoder = Avro.IO.BinaryEncoder;
+	using EncoderFactory = Avro.IO.EncoderFactory;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using GenericRecord = Api.Schema.GenericRecord;
 
 	public class GenericAvroWriter : SchemaWriter<GenericRecord>
 	{
 
-		private readonly GenericDatumWriter<org.apache.avro.generic.GenericRecord> writer;
+		private readonly GenericDatumWriter<Avro.Generic.GenericRecord> writer;
 		private BinaryEncoder encoder;
 		private readonly MemoryStream byteArrayOutputStream;
 
 		public GenericAvroWriter(Schema schema)
 		{
-			this.writer = new GenericDatumWriter<org.apache.avro.generic.GenericRecord>(schema);
+			this.writer = new GenericDatumWriter<Avro.Generic.GenericRecord>(schema);
 			this.byteArrayOutputStream = new MemoryStream();
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public override sbyte[] write(GenericRecord message)
+		public sbyte[]Write(GenericRecord message)
 		{
 			lock (this)
 			{
 				try
 				{
-					writer.write(((GenericAvroRecord)message).AvroRecord, this.encoder);
-					this.encoder.flush();
-					return this.byteArrayOutputStream.toByteArray();
+					writer.Write(((GenericAvroRecord)message).AvroRecord, this.encoder);
+					this.encoder.Flush();
+					return this.byteArrayOutputStream.ToByteArray();
 				}
 				catch (Exception e)
 				{
@@ -59,7 +59,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 				}
 				finally
 				{
-					this.byteArrayOutputStream.reset();
+					this.byteArrayOutputStream.Reset();
 				}
 			}
 		}

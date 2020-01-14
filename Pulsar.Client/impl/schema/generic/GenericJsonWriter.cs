@@ -16,14 +16,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using GenericRecord = Api.Schema.GenericRecord;
+    using Pulsar.Api.Schema;
+    using System.IO;
 
-	public class GenericJsonWriter : SchemaWriter<GenericRecord>
+    public class GenericJsonWriter : SchemaWriter<GenericRecord>
 	{
 
 		private readonly ObjectMapper objectMapper;
@@ -33,7 +34,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.objectMapper = new ObjectMapper();
 		}
 
-		public override sbyte[] write(GenericRecord message)
+		public sbyte[] Write(GenericRecord message)
 		{
 			try
 			{

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Avro.Generic;
+using Pulsar.Api.Schema;
+using System.Collections.Generic;
 using System.IO;
 
 /// <summary>
@@ -19,18 +21,16 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Schema = org.apache.avro.Schema;
-	using GenericDatumReader = org.apache.avro.generic.GenericDatumReader;
-	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
-	using Decoder = org.apache.avro.io.Decoder;
-	using DecoderFactory = org.apache.avro.io.DecoderFactory;
-	using EncoderFactory = org.apache.avro.io.EncoderFactory;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using Schema = Avro.Schema;
+	using BinaryEncoder = Avro.IO.BinaryEncoder;
+	using Decoder = Avro.IO.Decoder;
+	using DecoderFactory = Avro.IO.DecoderFactory;
+	using EncoderFactory = Avro.IO.EncoderFactory;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -67,12 +67,12 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public override GenericAvroRecord read(sbyte[] bytes, int offset, int length)
+		public GenericRecord  Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
 				Decoder decoder = DecoderFactory.get().binaryDecoder(bytes, offset, length, null);
-				org.apache.avro.generic.GenericRecord avroRecord = (org.apache.avro.generic.GenericRecord)reader.read(null, decoder);
+				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.read(null, decoder);
 				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
 			}
 			catch (IOException e)
@@ -81,12 +81,12 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override GenericRecord read(Stream inputStream)
+		public GenericRecord Read(Stream inputStream)
 		{
 			try
 			{
 				Decoder decoder = DecoderFactory.get().binaryDecoder(inputStream, null);
-				org.apache.avro.generic.GenericRecord avroRecord = (org.apache.avro.generic.GenericRecord)reader.read(null, decoder);
+				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.read(null, decoder);
 				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
 			}
 			catch (IOException e)
@@ -105,6 +105,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 				}
 			}
 		}
+
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(GenericAvroReader));
 	}

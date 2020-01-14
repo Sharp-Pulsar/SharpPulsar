@@ -18,10 +18,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.
@@ -38,7 +38,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.fields = fields;
 		}
 
-		public override sbyte[] SchemaVersion
+		public sbyte[] SchemaVersion
 		{
 			get
 			{
@@ -46,7 +46,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override IList<Field> Fields
+		public IList<Field> Fields
 		{
 			get
 			{
@@ -54,6 +54,10 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
+		public object GetField(string fieldName)
+		{
+			throw new System.NotImplementedException();
+		}
 	}
 
 }

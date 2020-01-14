@@ -121,6 +121,12 @@
       },
       "frameworks": {
         "netstandard2.1": {
+          "dependencies": {
+            "Apache.Avro": {
+              "target": "Package",
+              "version": "[1.9.1, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

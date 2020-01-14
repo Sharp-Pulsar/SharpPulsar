@@ -18,11 +18,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using Lists = com.google.common.collect.Lists;
-	using Field = org.apache.pulsar.client.api.schema.Field;
+	using Field = Api.Schema.Field;
 
 	/// <summary>
 	/// Generic json record.
@@ -45,7 +45,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override object getField(string fieldName)
+		public object GetField(string fieldName)
 		{
 			JsonNode fn = jn.get(fieldName);
 			if (fn.ContainerNode)

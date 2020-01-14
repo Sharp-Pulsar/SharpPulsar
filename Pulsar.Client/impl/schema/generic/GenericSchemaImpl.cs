@@ -18,19 +18,19 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using GenericSchema = org.apache.pulsar.client.api.schema.GenericSchema;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
 	using org.apache.pulsar.client.impl.schema;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+    using Pulsar.Api.Schema;
 
-	/// <summary>
-	/// A generic schema representation.
-	/// </summary>
-	public abstract class GenericSchemaImpl : StructSchema<GenericRecord>, GenericSchema<GenericRecord>
+    /// <summary>
+    /// A generic schema representation.
+    /// </summary>
+    public abstract class GenericSchemaImpl : StructSchema<GenericRecord>, GenericSchema<GenericRecord>
 	{
 
 		protected internal readonly IList<Field> fields;
@@ -46,7 +46,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.useProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
 		}
 
-		public override IList<Field> Fields
+		public IList<Field> Fields
 		{
 			get
 			{
@@ -64,11 +64,11 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			return of(schemaInfo, true);
 		}
 
-		public static GenericSchemaImpl of(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
+		public static GenericSchemaImpl Of(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
 		{
 			switch (schemaInfo.Type)
 			{
-				case AVRO:
+				case Avro:
 					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				case JSON:
 					return new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema);

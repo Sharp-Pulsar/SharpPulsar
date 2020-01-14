@@ -18,11 +18,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Utf8 = org.apache.avro.util.Utf8;
-	using Field = org.apache.pulsar.client.api.schema.Field;
+	using Utf8 = Avro.Util.Utf8;
+	using Field = Api.Schema.Field;
 
 	/// <summary>
 	/// A generic avro record.
@@ -32,26 +31,26 @@ namespace org.apache.pulsar.client.impl.schema.generic
 	public class GenericAvroRecord : VersionedGenericRecord
 	{
 
-		private readonly org.apache.avro.Schema schema;
-		private readonly org.apache.avro.generic.GenericRecord record;
+		private readonly Avro.Schema schema;
+		private readonly Avro.Generic.GenericRecord record;
 
-		public GenericAvroRecord(sbyte[] schemaVersion, org.apache.avro.Schema schema, IList<Field> fields, org.apache.avro.generic.GenericRecord record) : base(schemaVersion, fields)
+		public GenericAvroRecord(sbyte[] schemaVersion, Avro.Schema schema, IList<Field> fields, Avro.Generic.GenericRecord record) : base(schemaVersion, fields)
 		{
 			this.schema = schema;
 			this.record = record;
 		}
 
-		public override object getField(string fieldName)
+		public object GetField(string fieldName)
 		{
-			object value = record.get(fieldName);
+			object value = record.Get(fieldName);
 			if (value is Utf8)
 			{
 				return ((Utf8) value).ToString();
 			}
-			else if (value is org.apache.avro.generic.GenericRecord)
+			else if (value is Avro.Generic.GenericRecord)
 			{
-				org.apache.avro.generic.GenericRecord avroRecord = (org.apache.avro.generic.GenericRecord) value;
-				org.apache.avro.Schema recordSchema = avroRecord.Schema;
+				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord) value;
+				Avro.Schema recordSchema = avroRecord.Schema;
 				IList<Field> fields = recordSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
 				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
 			}
@@ -61,7 +60,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public virtual org.apache.avro.generic.GenericRecord AvroRecord
+		public virtual Avro.Generic.GenericRecord AvroRecord
 		{
 			get
 			{

@@ -16,11 +16,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using GenericRecordBuilder = org.apache.pulsar.client.api.schema.GenericRecordBuilder;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
+	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
 
 	/// <summary>
 	/// Builder to build <seealso cref="org.apache.pulsar.client.api.schema.GenericRecord"/>.
@@ -43,7 +43,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// <param name="fieldName"> the name of the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public override GenericRecordBuilder set(string fieldName, object value)
+		public GenericRecordBuilder Set(string fieldName, object value)
 		{
 			if (value is GenericRecord)
 			{
@@ -69,9 +69,9 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// <param name="field"> the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public override GenericRecordBuilder set(Field field, object value)
+		public GenericRecordBuilder Set(Field field, object value)
 		{
-			set(field.Index, value);
+			Set(field.Index, value);
 			return this;
 		}
 
@@ -81,7 +81,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// <param name="index"> the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		protected internal virtual GenericRecordBuilder set(int index, object value)
+		protected internal virtual GenericRecordBuilder Set(int index, object value)
 		{
 			if (value is GenericRecord)
 			{
@@ -106,7 +106,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// </summary>
 		/// <param name="fieldName"> the name of the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public override GenericRecordBuilder clear(string fieldName)
+		public GenericRecordBuilder Clear(string fieldName)
 		{
 			avroRecordBuilder.clear(fieldName);
 			return this;
@@ -117,7 +117,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// </summary>
 		/// <param name="field"> the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public override GenericRecordBuilder clear(Field field)
+		public GenericRecordBuilder Clear(Field field)
 		{
 			return clear(field.Index);
 		}
@@ -127,13 +127,13 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		/// </summary>
 		/// <param name="index"> the index of the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		protected internal virtual GenericRecordBuilder clear(int index)
+		protected internal virtual GenericRecordBuilder Clear(int index)
 		{
 			avroRecordBuilder.clear(genericSchema.AvroSchema.Fields.get(index));
 			return this;
 		}
 
-		public override GenericRecord build()
+		public GenericRecord build()
 		{
 			return new GenericAvroRecord(null, genericSchema.AvroSchema, genericSchema.Fields, avroRecordBuilder.build());
 		}

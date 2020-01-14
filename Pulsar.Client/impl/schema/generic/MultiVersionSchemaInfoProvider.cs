@@ -16,24 +16,23 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 	using CacheBuilder = com.google.common.cache.CacheBuilder;
-	using CacheLoader = com.google.common.cache.CacheLoader;
-	using LoadingCache = com.google.common.cache.LoadingCache;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
+	using SchemaInfoProvider = Api.Schema.SchemaInfoProvider;
 	using TopicName = org.apache.pulsar.common.naming.TopicName;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using System.Threading.Tasks;
 
 
-	/// <summary>
-	/// Multi version generic schema provider by guava cache.
-	/// </summary>
-	public class MultiVersionSchemaInfoProvider : SchemaInfoProvider
+    /// <summary>
+    /// Multi version generic schema provider by guava cache.
+    /// </summary>
+    public class MultiVersionSchemaInfoProvider : SchemaInfoProvider
 	{
 
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(MultiVersionSchemaInfoProvider));
@@ -41,13 +40,13 @@ namespace org.apache.pulsar.client.impl.schema.generic
 		private readonly TopicName topicName;
 		private readonly PulsarClientImpl pulsarClient;
 
-		private readonly LoadingCache<BytesSchemaVersion, CompletableFuture<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly LoadingCache<BytesSchemaVersion, ValueTask<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
-		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, CompletableFuture<SchemaInfo>>
+		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, ValueTask<SchemaInfo>>
 		{
-			public override CompletableFuture<SchemaInfo> load(BytesSchemaVersion schemaVersion)
+			public ValueTask<SchemaInfo> Load(BytesSchemaVersion schemaVersion)
 			{
-				CompletableFuture<SchemaInfo> siFuture = outerInstance.loadSchema(schemaVersion.get());
+				ValueTask<SchemaInfo> siFuture = outerInstance.loadSchema(schemaVersion.get());
 				siFuture.whenComplete((si, cause) =>
 				{
 				if (null != cause)
@@ -65,7 +64,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.pulsarClient = pulsarClient;
 		}
 
-		public override CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] schemaVersion)
+		public ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
 		{
 			try
 			{
@@ -82,7 +81,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override CompletableFuture<SchemaInfo> LatestSchema
+		public ValueTask<SchemaInfo> LatestSchema
 		{
 			get
 			{
@@ -90,7 +89,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override string TopicName
+		public string TopicName
 		{
 			get
 			{
@@ -98,7 +97,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		private CompletableFuture<SchemaInfo> loadSchema(sbyte[] schemaVersion)
+		private ValueTask<SchemaInfo> LoadSchema(sbyte[] schemaVersion)
 		{
 			 return pulsarClient.Lookup.getSchema(topicName, schemaVersion).thenApply(o => o.orElse(null));
 		}

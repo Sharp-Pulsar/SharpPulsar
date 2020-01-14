@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Pulsar.Api.Schema;
+using System.Collections.Generic;
 using System.IO;
 
 /// <summary>
@@ -19,14 +20,13 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using Field = org.apache.pulsar.client.api.schema.Field;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Field = Api.Schema.Field;
+	using GenericRecord = Api.Schema.GenericRecord;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			this.fields = fields;
 			this.schemaVersion = schemaVersion;
 		}
-		public override GenericJsonRecord read(sbyte[] bytes, int offset, int length)
+		public GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
@@ -64,7 +64,7 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			}
 		}
 
-		public override GenericRecord read(Stream inputStream)
+		public GenericRecord Read(Stream inputStream)
 		{
 			try
 			{

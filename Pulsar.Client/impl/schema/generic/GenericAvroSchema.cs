@@ -16,22 +16,21 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema.generic
+namespace Pulsar.Client.Impl.Schema.Generic
 {
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using GenericRecordBuilder = org.apache.pulsar.client.api.schema.GenericRecordBuilder;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
+	using Schema = Avro.Schema;
+	using GenericRecord = Api.Schema.GenericRecord;
+	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+    using Pulsar.Api.Schema;
 
-	/// <summary>
-	/// A generic avro schema.
-	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class GenericAvroSchema extends GenericSchemaImpl
-	public class GenericAvroSchema : GenericSchemaImpl
+    /// <summary>
+    /// A generic avro schema.
+    /// </summary>
+    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+    //ORIGINAL LINE: @Slf4j public class GenericAvroSchema extends GenericSchemaImpl
+    public class GenericAvroSchema : GenericSchemaImpl
 	{
 
 		public GenericAvroSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
@@ -44,24 +43,24 @@ namespace org.apache.pulsar.client.impl.schema.generic
 			Writer = new GenericAvroWriter(schema);
 		}
 
-		public override GenericRecordBuilder newRecordBuilder()
+		public GenericRecordBuilder NewRecordBuilder()
 		{
 			return new AvroRecordBuilderImpl(this);
 		}
 
-		public override bool supportSchemaVersioning()
+		public bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 
-		protected internal override SchemaReader<GenericRecord> loadReader(BytesSchemaVersion schemaVersion)
+		protected internal SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			 SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.get());
+			 SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.get());
 			 if (schemaInfo != null)
 			 {
 				 log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), schemaInfo);
-				 Schema writerSchema = parseAvroSchema(schemaInfo.SchemaDefinition);
-				 Schema readerSchema = useProvidedSchemaAsReaderSchema ? schema : writerSchema;
+				 Schema writerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
+				 Schema readerSchema = UseProvidedSchemaAsReaderSchema ? schema : writerSchema;
 				 return new GenericAvroReader(writerSchema, readerSchema, schemaVersion.get());
 			 }
 			 else
