@@ -43,6 +43,10 @@
       "frameworks": {
         "netstandard2.1": {
           "dependencies": {
+            "Optional": {
+              "target": "Package",
+              "version": "[4.0.0, )"
+            },
             "System.Buffers": {
               "target": "Package",
               "version": "[4.5.0, )"

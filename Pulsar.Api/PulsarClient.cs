@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Pulsar.Api.Schema;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +20,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
@@ -71,7 +73,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ProducerBuilder<sbyte[]> newProducer();
+		ProducerBuilder<sbyte[]> NewProducer();
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -94,7 +96,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ProducerBuilder<T> newProducer<T>(Schema<T> schema);
+		ProducerBuilder<T> NewProducer<T>(Schema<T> schema);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -116,7 +118,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<sbyte[]> newConsumer();
+		ConsumerBuilder<sbyte[]> NewConsumer();
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -144,7 +146,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<T> newConsumer<T>(Schema<T> schema);
+		ConsumerBuilder<T> NewConsumer<T>(Schema<T> schema);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -184,7 +186,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<sbyte[]> newReader();
+		ReaderBuilder<sbyte[]> NewReader();
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
@@ -226,7 +228,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<T> newReader<T>(Schema<T> schema);
+		ReaderBuilder<T> NewReader<T>(Schema<T> schema);
 
 		/// <summary>
 		/// Update the service URL this client is using.
@@ -242,7 +244,7 @@ namespace org.apache.pulsar.client.api
 		///             in case the serviceUrl is not valid </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws PulsarClientException;
-		void updateServiceUrl(string serviceUrl);
+		void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Get the list of partitions for a given topic.
@@ -261,7 +263,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that will yield a list of the topic partitions or <seealso cref="PulsarClientException"/> if there was any
 		///         error in the operation.
 		/// @since 2.3.0 </returns>
-		CompletableFuture<IList<string>> getPartitionsForTopic(string topic);
+		ValueTask<IList<string>> GetPartitionsForTopic(string topic);
 
 		/// <summary>
 		/// Close the PulsarClient and release all the resources.
@@ -276,7 +278,7 @@ namespace org.apache.pulsar.client.api
 		///             if the close operation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override void close() throws PulsarClientException;
-		void close();
+		void Close();
 
 		/// <summary>
 		/// Asynchronously close the PulsarClient and release all the resources.
@@ -289,7 +291,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the close operation fails </exception>
-		CompletableFuture<Void> closeAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Perform immediate shutdown of PulsarClient.
@@ -303,7 +305,7 @@ namespace org.apache.pulsar.client.api
 		///             if the forceful shutdown fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void shutdown() throws PulsarClientException;
-		void shutdown();
+		void Shutdown();
 	}
 
 }

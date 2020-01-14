@@ -16,10 +16,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
+	//using Builder = lombok.Builder;
+	//using Data = lombok.Data;
 
 	/// <summary>
 	/// Configuration for the "dead letter queue" feature in consumer.
@@ -33,12 +33,12 @@ namespace org.apache.pulsar.client.api
 		/// <summary>
 		/// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
 		/// </summary>
-		private int maxRedeliverCount;
+		private int MaxRedeliverCount;
 
 		/// <summary>
 		/// Name of the topic where the failing messages will be sent.
 		/// </summary>
-		private string deadLetterTopic;
+		private string DeadLetterTopic;
 
 	}
 

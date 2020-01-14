@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// Support for encoded authentication configuration parameters.
@@ -29,7 +29,7 @@ namespace org.apache.pulsar.client.api
 		/// This interface will be integrated into Authentication interface and be required for all plugins on version 2.0.
 		/// </summary>
 		/// <param name="encodedAuthParamString"> </param>
-		void configure(string encodedAuthParamString);
+		void Configure(string encodedAuthParamString);
 	}
 
 }

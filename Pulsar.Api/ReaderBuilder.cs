@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -43,7 +44,7 @@ namespace org.apache.pulsar.client.api
 		///             if the reader creation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Reader<T> create() throws PulsarClientException;
-		Reader<T> create();
+		Reader<T> Create();
 
 		/// <summary>
 		/// Finalize the creation of the <seealso cref="Reader"/> instance in asynchronous mode.
@@ -55,7 +56,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the reader instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the reader creation fails </exception>
-		CompletableFuture<Reader<T>> createAsync();
+		ValueTask<Reader<T>> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -78,7 +79,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="config">
 		///            configuration to load </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> loadConf(IDictionary<string, object> config);
+		ReaderBuilder<T> LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Create a copy of the current <seealso cref="ReaderBuilder"/>.
@@ -98,7 +99,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the reader builder instance </returns>
-		ReaderBuilder<T> clone();
+		ReaderBuilder<T> Clone();
 
 		/// <summary>
 		/// Specify the topic this reader will read from.
@@ -110,7 +111,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="topicName">
 		///            the name of the topic </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> topic(string topicName);
+		ReaderBuilder<T> Topic(string topicName);
 
 		/// <summary>
 		/// The initial reader positioning is done by specifying a message id. The options are:
@@ -129,7 +130,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="startMessageId"> the message id where the reader will be initially positioned on </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> startMessageId(MessageId startMessageId);
+		ReaderBuilder<T> StartMessageId(MessageId startMessageId);
 
 		/// <summary>
 		/// The initial reader positioning can be set at specific timestamp by providing total rollback duration. so, broker
@@ -140,7 +141,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="rollbackDuration">
 		///            duration which position should be rolled back.
 		/// @return </param>
-		ReaderBuilder<T> startMessageFromRollbackDuration(long rollbackDuration, TimeUnit timeunit);
+		ReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, TimeUnit timeunit);
 
 		/// <summary>
 		/// Set the reader to include the given position of <seealso cref="ReaderBuilder.startMessageId(MessageId)"/>
@@ -150,7 +151,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> startMessageIdInclusive();
+		ReaderBuilder<T> StartMessageIdInclusive();
 
 		/// <summary>
 		/// Sets a <seealso cref="ReaderListener"/> for the reader.
@@ -163,7 +164,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="readerListener">
 		///            the listener object </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> readerListener(ReaderListener<T> readerListener);
+		ReaderBuilder<T> ReaderListener(ReaderListener<T> readerListener);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/> to decrypt the message payloads.
@@ -171,7 +172,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> cryptoKeyReader(CryptoKeyReader cryptoKeyReader);
+		ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Sets the <seealso cref="ConsumerCryptoFailureAction"/> to specify.
@@ -179,7 +180,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="action">
 		///            The action to take when the decoding fails </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> cryptoFailureAction(ConsumerCryptoFailureAction action);
+		ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
 
 		/// <summary>
 		/// Sets the size of the consumer receive queue.
@@ -196,7 +197,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="receiverQueueSize">
 		///            the new receiver queue size value </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> receiverQueueSize(int receiverQueueSize);
+		ReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize);
 
 		/// <summary>
 		/// Specify a reader name.
@@ -209,14 +210,14 @@ namespace org.apache.pulsar.client.api
 		/// <param name="readerName">
 		///            the name to use for the reader </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> readerName(string readerName);
+		ReaderBuilder<T> ReaderName(string readerName);
 
 		/// <summary>
 		/// Set the subscription role prefix. The default prefix is "reader".
 		/// </summary>
 		/// <param name="subscriptionRolePrefix"> </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> subscriptionRolePrefix(string subscriptionRolePrefix);
+		ReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix);
 
 		/// <summary>
 		/// If enabled, the reader will read messages from the compacted topic rather than reading the full message backlog
@@ -232,7 +233,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="readCompacted">
 		///            whether to read from the compacted topic </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> readCompacted(bool readCompacted);
+		ReaderBuilder<T> ReadCompacted(bool readCompacted);
 
 		/// <summary>
 		/// Set key hash range of the reader, broker will only dispatch messages which hash of the message key contains by
@@ -245,7 +246,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="ranges">
 		///            key hash ranges for a reader </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> keyHashRange(params Range[] ranges);
+		ReaderBuilder<T> KeyHashRange(params Range[] ranges);
 	}
 
 }

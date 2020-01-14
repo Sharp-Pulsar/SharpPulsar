@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// The action the producer will take in case of encryption failures.

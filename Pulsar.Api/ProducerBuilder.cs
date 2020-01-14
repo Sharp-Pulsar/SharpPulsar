@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,9 +20,9 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
-	using ProducerQueueIsFullError = org.apache.pulsar.client.api.PulsarClientException.ProducerQueueIsFullError;
+	using ProducerQueueIsFullError = PulsarClientException.ProducerQueueIsFullError;
 
 	/// <summary>
 	/// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
@@ -45,12 +46,12 @@ namespace org.apache.pulsar.client.api
 		///             if the producer creation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Producer<T> create() throws PulsarClientException;
-		Producer<T> create();
+		Producer<T> Create();
 
 		/// <summary>
 		/// Finalize the creation of the <seealso cref="Producer"/> instance in asynchronous mode.
 		/// 
-		/// <para>This method will return a <seealso cref="CompletableFuture"/> that can be used to access the instance when it's ready.
+		/// <para>This method will return a <seealso cref="ValueTask"/> that can be used to access the instance when it's ready.
 		/// 
 		/// </para>
 		/// </summary>
@@ -59,7 +60,7 @@ namespace org.apache.pulsar.client.api
 		///             if a producer with the same "producer name" is already connected to the topic </exception>
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
-		CompletableFuture<Producer<T>> createAsync();
+		ValueTask<Producer<T>> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -80,7 +81,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="config"> configuration map to load </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> loadConf(IDictionary<string, object> config);
+		ProducerBuilder<T> LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Create a copy of the current <seealso cref="ProducerBuilder"/>.
@@ -99,7 +100,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the producer builder instance </returns>
-		ProducerBuilder<T> clone();
+		ProducerBuilder<T> Clone();
 
 		/// <summary>
 		/// Specify the topic this producer will be publishing on.
@@ -110,7 +111,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="topicName"> the name of the topic </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> topic(string topicName);
+		ProducerBuilder<T> Topic(string topicName);
 
 		/// <summary>
 		/// Specify a name for the producer.
@@ -128,7 +129,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="producerName">
 		///            the custom name to use for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> producerName(string producerName);
+		ProducerBuilder<T> ProducerName(string producerName);
 
 		/// <summary>
 		/// Set the send timeout <i>(default: 30 seconds)</i>.
@@ -147,7 +148,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            the time unit of the {@code sendTimeout} </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> sendTimeout(int sendTimeout, TimeUnit unit);
+		ProducerBuilder<T> SendTimeout(int sendTimeout, TimeUnit unit);
 
 		/// <summary>
 		/// Set the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
@@ -169,7 +170,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="maxPendingMessages">
 		///            the max size of the pending messages queue for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> maxPendingMessages(int maxPendingMessages);
+		ProducerBuilder<T> MaxPendingMessages(int maxPendingMessages);
 
 		/// <summary>
 		/// Set the number of max pending messages across all the partitions.
@@ -192,7 +193,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="maxPendingMessagesAcrossPartitions">
 		///            max pending messages across all the partitions </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> maxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions);
+		ProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions);
 
 		/// <summary>
 		/// Set whether the <seealso cref="Producer.send"/> and <seealso cref="Producer.sendAsync"/> operations should block when the outgoing
@@ -232,7 +233,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="blockIfQueueFull">
 		///            whether to block <seealso cref="Producer.send"/> and <seealso cref="Producer.sendAsync"/> operations on queue full </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> blockIfQueueFull(bool blockIfQueueFull);
+		ProducerBuilder<T> BlockIfQueueFull(bool blockIfQueueFull);
 
 		/// <summary>
 		/// Set the <seealso cref="MessageRoutingMode"/> for a partitioned producer.
@@ -250,7 +251,7 @@ namespace org.apache.pulsar.client.api
 		///            the message routing mode </param>
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= MessageRoutingMode </seealso>
-		ProducerBuilder<T> messageRoutingMode(MessageRoutingMode messageRoutingMode);
+		ProducerBuilder<T> MessageRoutingMode(MessageRoutingMode messageRoutingMode);
 
 		/// <summary>
 		/// Change the <seealso cref="HashingScheme"/> used to chose the partition on where to publish a particular message.
@@ -267,7 +268,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="hashingScheme">
 		///            the chosen <seealso cref="HashingScheme"/> </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> hashingScheme(HashingScheme hashingScheme);
+		ProducerBuilder<T> HashingScheme(HashingScheme hashingScheme);
 
 		/// <summary>
 		/// Set the compression type for the producer.
@@ -288,14 +289,14 @@ namespace org.apache.pulsar.client.api
 		/// <param name="compressionType">
 		///            the selected compression type </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> compressionType(CompressionType compressionType);
+		ProducerBuilder<T> CompressionType(CompressionType compressionType);
 
 		/// <summary>
 		/// Set a custom message routing policy by passing an implementation of MessageRouter.
 		/// </summary>
 		/// <param name="messageRouter"> </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> messageRouter(MessageRouter messageRouter);
+		ProducerBuilder<T> MessageRouter(MessageRouter messageRouter);
 
 		/// <summary>
 		/// Control whether automatic batching of messages is enabled for the producer. <i>default: enabled</i>
@@ -316,7 +317,7 @@ namespace org.apache.pulsar.client.api
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> enableBatching(bool enableBatching);
+		ProducerBuilder<T> EnableBatching(bool enableBatching);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/>.
@@ -328,7 +329,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> cryptoKeyReader(CryptoKeyReader cryptoKeyReader);
+		ProducerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Add public encryption key, used by producer to encrypt the data key.
@@ -344,7 +345,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="key">
 		///            the name of the encryption key in the key store </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> addEncryptionKey(string key);
+		ProducerBuilder<T> AddEncryptionKey(string key);
 
 		/// <summary>
 		/// Sets the ProducerCryptoFailureAction to the value specified.
@@ -352,7 +353,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="action">
 		///            the action the producer will take in case of encryption failures </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> cryptoFailureAction(ProducerCryptoFailureAction action);
+		ProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action);
 
 		/// <summary>
 		/// Set the time period within which the messages sent will be batched <i>default: 1 ms</i> if batch messages are
@@ -375,7 +376,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
 		/// <seealso cref= #batchingMaxBytes(int) </seealso>
-		ProducerBuilder<T> batchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit);
+		ProducerBuilder<T> BatchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Set the partition switch frequency while batching of messages is enabled and
@@ -390,7 +391,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #messageRoutingMode(MessageRoutingMode) </seealso>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
-		ProducerBuilder<T> roundRobinRouterBatchingPartitionSwitchFrequency(int frequency);
+		ProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency);
 
 		/// <summary>
 		/// Set the maximum number of messages permitted in a batch. <i>default: 1000</i> If set to a value greater than 1,
@@ -406,7 +407,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxBytes(int) </seealso>
-		ProducerBuilder<T> batchingMaxMessages(int batchMessagesMaxMessagesPerBatch);
+		ProducerBuilder<T> BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch);
 
 		/// <summary>
 		/// Set the maximum number of bytes permitted in a batch. <i>default: 128KB</i>
@@ -422,7 +423,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
-		ProducerBuilder<T> batchingMaxBytes(int batchingMaxBytes);
+		ProducerBuilder<T> BatchingMaxBytes(int batchingMaxBytes);
 
 		/// <summary>
 		/// Set the batcher builder <seealso cref="BatcherBuilder"/> of the producer. Producer will use the batcher builder to
@@ -431,7 +432,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="batcherBuilder">
 		///          batcher builder </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> batcherBuilder(BatcherBuilder batcherBuilder);
+		ProducerBuilder<T> BatcherBuilder(BatcherBuilder batcherBuilder);
 
 		/// <summary>
 		/// Set the baseline for the sequence ids for messages published by the producer.
@@ -443,7 +444,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="initialSequenceId"> the initial sequence id for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> initialSequenceId(long initialSequenceId);
+		ProducerBuilder<T> InitialSequenceId(long initialSequenceId);
 
 		/// <summary>
 		/// Set a name/value property with this producer.
@@ -459,7 +460,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="value">
 		///            the property value </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> property(string key, string value);
+		ProducerBuilder<T> Property(string key, string value);
 
 		/// <summary>
 		/// Add all the properties in the provided map to the producer.
@@ -472,7 +473,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="properties"> the map of properties </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> properties(IDictionary<string, string> properties);
+		ProducerBuilder<T> Properties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Add a set of <seealso cref="ProducerInterceptor"/> to the producer.
@@ -485,7 +486,7 @@ namespace org.apache.pulsar.client.api
 		///            the list of interceptors to intercept the producer created by this builder. </param>
 		/// <returns> the producer builder instance </returns>
 		[Obsolete]
-		ProducerBuilder<T> intercept(params ProducerInterceptor<T> [] interceptors);
+		ProducerBuilder<T> Intercept(params ProducerInterceptor<T> [] interceptors);
 
 		/// <summary>
 		/// Add a set of <seealso cref="org.apache.pulsar.client.api.interceptor.ProducerInterceptor"/> to the producer.
@@ -497,7 +498,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="interceptors">
 		///            the list of interceptors to intercept the producer created by this builder. </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> intercept(params org.apache.pulsar.client.api.interceptor.ProducerInterceptor[] interceptors);
+		ProducerBuilder<T> Intercept(params ProducerInterceptor[] interceptors);
 
 		/// <summary>
 		/// If enabled, partitioned producer will automatically discover new partitions at runtime. This is only applied on
@@ -510,7 +511,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="autoUpdate">
 		///            whether to auto discover the partition configuration changes </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> autoUpdatePartitions(bool autoUpdate);
+		ProducerBuilder<T> AutoUpdatePartitions(bool autoUpdate);
 
 		/// <summary>
 		/// Control whether enable the multiple schema mode for producer.
@@ -526,7 +527,7 @@ namespace org.apache.pulsar.client.api
 		///            indicates to enable or disable multiple schema mode </param>
 		/// <returns> the producer builder instance
 		/// @since 2.5.0 </returns>
-		ProducerBuilder<T> enableMultiSchema(bool multiSchema);
+		ProducerBuilder<T> EnableMultiSchema(bool multiSchema);
 	}
 
 }

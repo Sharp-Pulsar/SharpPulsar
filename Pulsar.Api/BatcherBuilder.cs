@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
@@ -53,7 +53,7 @@ namespace org.apache.pulsar.client.api
 		/// <summary>
 		/// Build a new batch message container. </summary>
 		/// <returns> new batch message container </returns>
-		BatchMessageContainer build();
+		BatchMessageContainer Build();
 
 	}
 

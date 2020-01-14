@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
 
@@ -37,7 +37,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the new <seealso cref="PulsarClient"/> instance </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: PulsarClient build() throws PulsarClientException;
-		PulsarClient build();
+		PulsarClient Build();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -62,7 +62,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="config">
 		///            configuration to load </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder loadConf(IDictionary<string, object> config);
+		ClientBuilder LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Create a copy of the current client builder.
@@ -84,7 +84,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the client builder instance </returns>
-		ClientBuilder clone();
+		ClientBuilder Clone();
 
 		/// <summary>
 		/// Configure the service URL for the Pulsar service.
@@ -103,7 +103,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="serviceUrl">
 		///            the URL of the Pulsar service that the client should connect to </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder serviceUrl(string serviceUrl);
+		ClientBuilder ServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Configure the service URL provider for Pulsar service.
@@ -116,7 +116,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="serviceUrlProvider">
 		///            the provider instance </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder serviceUrlProvider(ServiceUrlProvider serviceUrlProvider);
+		ClientBuilder ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider);
 
 		/// <summary>
 		/// Set the authentication provider to use in the Pulsar client instance.
@@ -142,7 +142,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="authentication">
 		///            an instance of the <seealso cref="Authentication"/> provider already constructed </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder authentication(Authentication authentication);
+		ClientBuilder Authentication(Authentication authentication);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance.
@@ -170,7 +170,7 @@ namespace org.apache.pulsar.client.api
 		///             failed to instantiate specified Authentication-Plugin </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-		ClientBuilder authentication(string authPluginClassName, string authParamsString);
+		ClientBuilder Authentication(string authPluginClassName, string authParamsString);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance
@@ -200,7 +200,7 @@ namespace org.apache.pulsar.client.api
 		///             failed to instantiate specified Authentication-Plugin </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-		ClientBuilder authentication(string authPluginClassName, IDictionary<string, string> authParams);
+		ClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams);
 
 		/// <summary>
 		/// Set the operation timeout <i>(default: 30 seconds)</i>.
@@ -215,14 +215,14 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            time unit for {@code operationTimeout} </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder operationTimeout(int operationTimeout, TimeUnit unit);
+		ClientBuilder OperationTimeout(int operationTimeout, TimeUnit unit);
 
 		/// <summary>
 		/// Set the number of threads to be used for handling connections to brokers <i>(default: 1 thread)</i>.
 		/// </summary>
 		/// <param name="numIoThreads"> the number of IO threads </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder ioThreads(int numIoThreads);
+		ClientBuilder IoThreads(int numIoThreads);
 
 		/// <summary>
 		/// Set the number of threads to be used for message listeners <i>(default: 1 thread)</i>.
@@ -235,7 +235,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="numListenerThreads"> the number of listener threads </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder listenerThreads(int numListenerThreads);
+		ClientBuilder ListenerThreads(int numListenerThreads);
 
 		/// <summary>
 		/// Sets the max number of connection that the client library will open to a single broker.
@@ -248,7 +248,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="connectionsPerBroker">
 		///            max number of connections per broker (needs to be greater than 0) </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder connectionsPerBroker(int connectionsPerBroker);
+		ClientBuilder ConnectionsPerBroker(int connectionsPerBroker);
 
 		/// <summary>
 		/// Configure whether to use TCP no-delay flag on the connection, to disable Nagle algorithm.
@@ -265,7 +265,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="enableTcpNoDelay"> whether to enable TCP no-delay feature </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder enableTcpNoDelay(bool enableTcpNoDelay);
+		ClientBuilder EnableTcpNoDelay(bool enableTcpNoDelay);
 
 		/// <summary>
 		/// Configure whether to use TLS encryption on the connection
@@ -275,21 +275,21 @@ namespace org.apache.pulsar.client.api
 		/// @deprecated use "pulsar+ssl://" in serviceUrl to enable 
 		/// <returns> the client builder instance </returns>
 		[Obsolete("use \"pulsar+ssl://\" in serviceUrl to enable")]
-		ClientBuilder enableTls(bool enableTls);
+		ClientBuilder EnableTls(bool enableTls);
 
 		/// <summary>
 		/// Set the path to the trusted TLS certificate file.
 		/// </summary>
 		/// <param name="tlsTrustCertsFilePath"> </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder tlsTrustCertsFilePath(string tlsTrustCertsFilePath);
+		ClientBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath);
 
 		/// <summary>
 		/// Configure whether the Pulsar client accept untrusted TLS certificate from broker <i>(default: false)</i>.
 		/// </summary>
 		/// <param name="allowTlsInsecureConnection"> whether to accept a untrusted TLS certificate </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder allowTlsInsecureConnection(bool allowTlsInsecureConnection);
+		ClientBuilder AllowTlsInsecureConnection(bool allowTlsInsecureConnection);
 
 		/// <summary>
 		/// It allows to validate hostname verification when client connects to broker over tls. It validates incoming x509
@@ -300,7 +300,7 @@ namespace org.apache.pulsar.client.api
 		/// </seealso>
 		/// <param name="enableTlsHostnameVerification"> whether to enable TLS hostname verification </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder enableTlsHostnameVerification(bool enableTlsHostnameVerification);
+		ClientBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification);
 
 		/// <summary>
 		/// Set the interval between each stat info <i>(default: 60 seconds)</i> Stats will be activated with positive
@@ -311,7 +311,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            time unit for {@code statsInterval} </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder statsInterval(long statsInterval, TimeUnit unit);
+		ClientBuilder StatsInterval(long statsInterval, TimeUnit unit);
 
 		/// <summary>
 		/// Number of concurrent lookup-requests allowed to send on each broker-connection to prevent overload on broker.
@@ -320,7 +320,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="maxConcurrentLookupRequests"> </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder maxConcurrentLookupRequests(int maxConcurrentLookupRequests);
+		ClientBuilder MaxConcurrentLookupRequests(int maxConcurrentLookupRequests);
 
 		/// <summary>
 		/// Number of max lookup-requests allowed on each broker-connection to prevent overload on broker.
@@ -330,7 +330,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="maxLookupRequests"> </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder maxLookupRequests(int maxLookupRequests);
+		ClientBuilder MaxLookupRequests(int maxLookupRequests);
 
 		/// <summary>
 		/// Set max number of broker-rejected requests in a certain time-frame (30 seconds) after which current connection
@@ -339,7 +339,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="maxNumberOfRejectedRequestPerConnection"> </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder maxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection);
+		ClientBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection);
 
 		/// <summary>
 		/// Set keep alive interval for each client-broker-connection. <i>(default: 30 seconds)</i>.
@@ -347,7 +347,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="keepAliveInterval"> </param>
 		/// <param name="unit"> the time unit in which the keepAliveInterval is defined </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder keepAliveInterval(int keepAliveInterval, TimeUnit unit);
+		ClientBuilder KeepAliveInterval(int keepAliveInterval, TimeUnit unit);
 
 		/// <summary>
 		/// Set the duration of time to wait for a connection to a broker to be established. If the duration passes without a
@@ -359,7 +359,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder connectionTimeout(int duration, TimeUnit unit);
+		ClientBuilder ConnectionTimeout(int duration, TimeUnit unit);
 
 		/// <summary>
 		/// Set the duration of time for a backoff interval.
@@ -367,7 +367,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder startingBackoffInterval(long duration, TimeUnit unit);
+		ClientBuilder StartingBackoffInterval(long duration, TimeUnit unit);
 
 		/// <summary>
 		/// Set the maximum duration of time for a backoff interval.
@@ -375,7 +375,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder maxBackoffInterval(long duration, TimeUnit unit);
+		ClientBuilder MaxBackoffInterval(long duration, TimeUnit unit);
 
 		/// <summary>
 		/// The clock used by the pulsar client.
@@ -393,7 +393,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="clock"> the clock used by the pulsar client to retrieve time information </param>
 		/// <returns> the client builder instance </returns>
-		ClientBuilder clock(Clock clock);
+		ClientBuilder Clock(Clock clock);
 	}
 
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -46,7 +47,7 @@ namespace org.apache.pulsar.client.api
 		///        The cause (which is saved for later retrieval by the
 		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public PulsarClientException(Exception t) : base(t)
+		public PulsarClientException(Exception t) : base(t.Message)
 		{
 		}
 
@@ -572,7 +573,7 @@ namespace org.apache.pulsar.client.api
 		}
 
 		// wrap an exception to enriching more info messages.
-		public static Exception wrap(Exception t, string msg)
+		public static Exception Wrap(Exception t, string msg)
 		{
 			msg += "\n" + t.Message;
 			// wrap an exception with new message info
@@ -700,7 +701,7 @@ namespace org.apache.pulsar.client.api
 			return t;
 		}
 
-		public static PulsarClientException unwrap(Exception t)
+		public static PulsarClientException Unwrap(Exception t)
 		{
 			if (t is PulsarClientException)
 			{

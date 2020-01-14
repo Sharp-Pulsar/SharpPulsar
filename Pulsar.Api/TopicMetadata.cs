@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// Metadata of a topic that can be used for message routing.
@@ -28,7 +28,7 @@ namespace org.apache.pulsar.client.api
 		/// Return the number of partitions per topic.
 		/// </summary>
 		/// <returns> the number of partitions per topic. </returns>
-		int numPartitions();
+		int NumPartitions();
 
 	}
 

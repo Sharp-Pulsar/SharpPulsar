@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -49,7 +50,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a cloned consumer builder object </returns>
-		ConsumerBuilder<T> clone();
+		ConsumerBuilder<T> Clone();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -71,7 +72,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="config"> configuration to load </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> loadConf(IDictionary<string, object> config);
+		ConsumerBuilder<T> LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Finalize the <seealso cref="Consumer"/> creation by subscribing to the topic.
@@ -91,7 +92,7 @@ namespace org.apache.pulsar.client.api
 		///             if the the subscribe operation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Consumer<T> subscribe() throws PulsarClientException;
-		Consumer<T> subscribe();
+		Consumer<T> Subscribe();
 
 		/// <summary>
 		/// Finalize the <seealso cref="Consumer"/> creation by subscribing to the topic in asynchronous mode.
@@ -109,21 +110,21 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that will yield a <seealso cref="Consumer"/> instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the the subscribe operation fails </exception>
-		CompletableFuture<Consumer<T>> subscribeAsync();
+		ValueTask<Consumer<T>> SubscribeAsync();
 
 		/// <summary>
 		/// Specify the topics this consumer will subscribe on.
 		/// </summary>
 		/// <param name="topicNames"> a set of topic that the consumer will subscribe on </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> topic(params string[] topicNames);
+		ConsumerBuilder<T> Topic(params string[] topicNames);
 
 		/// <summary>
 		/// Specify a list of topics that this consumer will subscribe on.
 		/// </summary>
 		/// <param name="topicNames"> a list of topic that the consumer will subscribe on </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> topics(IList<string> topicNames);
+		ConsumerBuilder<T> Topics(IList<string> topicNames);
 
 		/// <summary>
 		/// Specify a pattern for topics that this consumer will subscribe on.
@@ -139,7 +140,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="topicsPattern">
 		///            a regular expression to select a list of topics to subscribe to </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> topicsPattern(Pattern topicsPattern);
+		ConsumerBuilder<T> TopicsPattern(Pattern topicsPattern);
 
 		/// <summary>
 		/// Specify a pattern for topics that this consumer will subscribe on.
@@ -159,7 +160,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="topicsPattern">
 		///            given regular expression for topics pattern </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> topicsPattern(string topicsPattern);
+		ConsumerBuilder<T> TopicsPattern(string topicsPattern);
 
 		/// <summary>
 		/// Specify the subscription name for this consumer.
@@ -171,7 +172,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="subscriptionName"> the name of the subscription that this consumer should attach to
 		/// </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> subscriptionName(string subscriptionName);
+		ConsumerBuilder<T> SubscriptionName(string subscriptionName);
 
 		/// <summary>
 		/// Set the timeout for unacked messages, truncated to the nearest millisecond. The timeout needs to be greater than
@@ -192,7 +193,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timeUnit">
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> ackTimeout(long ackTimeout, TimeUnit timeUnit);
+		ConsumerBuilder<T> AckTimeout(long ackTimeout, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Define the granularity of the ack-timeout redelivery.
@@ -208,7 +209,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timeUnit">
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> ackTimeoutTickTime(long tickTime, TimeUnit timeUnit);
+		ConsumerBuilder<T> AckTimeoutTickTime(long tickTime, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Set the delay to wait before re-delivering messages that have failed to be process.
@@ -241,7 +242,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="subscriptionType">
 		///            the subscription type value </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> subscriptionType(SubscriptionType subscriptionType);
+		ConsumerBuilder<T> SubscriptionType(SubscriptionType subscriptionType);
 
 		/// <summary>
 		/// Sets a <seealso cref="MessageListener"/> for the consumer
@@ -254,7 +255,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="messageListener">
 		///            the listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> messageListener(MessageListener<T> messageListener);
+		ConsumerBuilder<T> MessageListener(MessageListener<T> messageListener);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/>.
@@ -266,7 +267,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> cryptoKeyReader(CryptoKeyReader cryptoKeyReader);
+		ConsumerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Sets the ConsumerCryptoFailureAction to the value specified.
@@ -274,7 +275,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="action">
 		///            the action the consumer will take in case of decryption failures </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> cryptoFailureAction(ConsumerCryptoFailureAction action);
+		ConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
 
 		/// <summary>
 		/// Sets the size of the consumer receive queue.
@@ -303,7 +304,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="receiverQueueSize">
 		///            the new receiver queue size value </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> receiverQueueSize(int receiverQueueSize);
+		ConsumerBuilder<T> ReceiverQueueSize(int receiverQueueSize);
 
 		/// <summary>
 		/// Group the consumer acknowledgments for the specified time.
@@ -321,11 +322,11 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> acknowledgmentGroupTime(long delay, TimeUnit unit);
+		ConsumerBuilder<T> AcknowledgmentGroupTime(long delay, TimeUnit unit);
 
 		/// 
 		/// <param name="replicateSubscriptionState"> </param>
-		ConsumerBuilder<T> replicateSubscriptionState(bool replicateSubscriptionState);
+		ConsumerBuilder<T> ReplicateSubscriptionState(bool replicateSubscriptionState);
 
 		/// <summary>
 		/// Set the max total receiver queue size across partitons.
@@ -341,7 +342,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="maxTotalReceiverQueueSizeAcrossPartitions">
 		///            max pending messages across all the partitions </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> maxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions);
+		ConsumerBuilder<T> MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions);
 
 		/// <summary>
 		/// Set the consumer name.
@@ -353,7 +354,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="consumerName"> </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> consumerName(string consumerName);
+		ConsumerBuilder<T> ConsumerName(string consumerName);
 
 		/// <summary>
 		/// Sets a <seealso cref="ConsumerEventListener"/> for the consumer.
@@ -366,7 +367,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="consumerEventListener">
 		///            the consumer group listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> consumerEventListener(ConsumerEventListener consumerEventListener);
+		ConsumerBuilder<T> ConsumerEventListener(ConsumerEventListener consumerEventListener);
 
 		/// <summary>
 		/// If enabled, the consumer will read messages from the compacted topic rather than reading the full message backlog
@@ -383,7 +384,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="readCompacted">
 		///            whether to read from the compacted topic </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> readCompacted(bool readCompacted);
+		ConsumerBuilder<T> ReadCompacted(bool readCompacted);
 
 		/// <summary>
 		/// Set topics auto discovery period when using a pattern for topics consumer.
@@ -393,7 +394,7 @@ namespace org.apache.pulsar.client.api
 		///            number of minutes between checks for
 		///            new topics matching pattern set with <seealso cref="topicsPattern(string)"/> </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> patternAutoDiscoveryPeriod(int periodInMinutes);
+		ConsumerBuilder<T> PatternAutoDiscoveryPeriod(int periodInMinutes);
 
 		/// <summary>
 		/// <b>Shared subscription</b>
@@ -443,7 +444,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="priorityLevel"> the priority of this consumer </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> priorityLevel(int priorityLevel);
+		ConsumerBuilder<T> PriorityLevel(int priorityLevel);
 
 		/// <summary>
 		/// Set a name/value property with this consumer.
@@ -460,7 +461,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="key"> </param>
 		/// <param name="value"> </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> property(string key, string value);
+		ConsumerBuilder<T> Property(string key, string value);
 
 		/// <summary>
 		/// Add all the properties in the provided map to the consumer.
@@ -472,7 +473,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="properties"> the map with properties </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> properties(IDictionary<string, string> properties);
+		ConsumerBuilder<T> Properties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Set the <seealso cref="SubscriptionInitialPosition"/> for the consumer.
@@ -480,7 +481,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="subscriptionInitialPosition">
 		///            the position where to initialize a newly created subscription </param>
 		/// <returns> the consumer builder instance </returns>
-		ConsumerBuilder<T> subscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition);
+		ConsumerBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition);
 
 		/// <summary>
 		/// Determines to which topics this consumer should be subscribed to - Persistent, Non-Persistent, or both. Only used
@@ -488,13 +489,13 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="regexSubscriptionMode">
 		///            Pattern subscription mode </param>
-		ConsumerBuilder<T> subscriptionTopicsMode(RegexSubscriptionMode regexSubscriptionMode);
+		ConsumerBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode regexSubscriptionMode);
 
 		/// <summary>
 		/// Intercept <seealso cref="Consumer"/>.
 		/// </summary>
 		/// <param name="interceptors"> the list of interceptors to intercept the consumer created by this builder. </param>
-		ConsumerBuilder<T> intercept(params ConsumerInterceptor<T> [] interceptors);
+		ConsumerBuilder<T> Intercept(params ConsumerInterceptor<T> [] interceptors);
 
 		/// <summary>
 		/// Set dead letter policy for consumer.
@@ -526,7 +527,7 @@ namespace org.apache.pulsar.client.api
 		/// then the ack timeout will be set to 30000 millisecond.
 		/// </para>
 		/// </summary>
-		ConsumerBuilder<T> deadLetterPolicy(DeadLetterPolicy deadLetterPolicy);
+		ConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy);
 
 		/// <summary>
 		/// If enabled, the consumer will auto subscribe for partitions increasement.
@@ -534,7 +535,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="autoUpdate">
 		///            whether to auto update partition increasement </param>
-		ConsumerBuilder<T> autoUpdatePartitions(bool autoUpdate);
+		ConsumerBuilder<T> AutoUpdatePartitions(bool autoUpdate);
 
 		/// <summary>
 		/// Set KeyShared subscription policy for consumer.
@@ -584,7 +585,7 @@ namespace org.apache.pulsar.client.api
 		/// </pre>
 		/// </para>
 		/// </summary>
-		ConsumerBuilder<T> batchReceivePolicy(BatchReceivePolicy batchReceivePolicy);
+		ConsumerBuilder<T> BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy);
 	}
 
 }

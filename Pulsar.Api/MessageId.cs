@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
@@ -44,7 +44,7 @@ namespace org.apache.pulsar.client.api
 		/// using <seealso cref="fromByteArray(sbyte[])"/>.
 		/// </para>
 		/// </summary>
-		sbyte[] toByteArray();
+		sbyte[] ToByteArray();
 
 		/// <summary>
 		/// De-serialize a message id from a byte array.

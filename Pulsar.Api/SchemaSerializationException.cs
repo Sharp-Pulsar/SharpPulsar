@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// Schema serialization exception.
@@ -43,7 +43,7 @@ namespace org.apache.pulsar.client.api
 		///        The cause (which is saved for later retrieval by the
 		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public SchemaSerializationException(Exception cause) : base(cause)
+		public SchemaSerializationException(Exception cause) : base(cause.Message)
 		{
 		}
 	}

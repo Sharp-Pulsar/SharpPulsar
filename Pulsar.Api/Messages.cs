@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>
@@ -29,7 +29,7 @@ namespace org.apache.pulsar.client.api
 		/// <summary>
 		/// Get number of messages.
 		/// </summary>
-		int size();
+		int Size();
 	}
 
 }

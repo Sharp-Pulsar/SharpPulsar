@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// The provider to provide the service url.
@@ -41,7 +41,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="client">
 		///            created pulsar client. </param>
-		void initialize(PulsarClient client);
+		void Initialize(PulsarClient client);
 
 		/// <summary>
 		/// Get the current service URL the Pulsar client should connect to.

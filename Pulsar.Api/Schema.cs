@@ -18,12 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace Pulsar.Api
 {
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using org.apache.pulsar.client.api.schema;
-	using org.apache.pulsar.client.api.schema;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
 	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 	using org.apache.pulsar.common.schema;
 	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
@@ -62,7 +58,7 @@ namespace Pulsar.Api.Schema
 		/// <returns> a byte array with the serialized content </returns>
 		/// <exception cref="SchemaSerializationException">
 		///             if the serialization fails </exception>
-		sbyte[] encode(T message);
+		sbyte[] Encode(T message);
 
 		/// <summary>
 		/// Returns whether this schema supports versioning.
@@ -310,7 +306,7 @@ namespace Pulsar.Api.Schema
 	//	}
 
 //JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-[Obsolete]
+//[Obsolete]
 //		static Schema<org.apache.pulsar.client.api.schema.GenericRecord> AUTO()
 	//	{
 	//		return AUTO_CONSUME();

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
@@ -38,7 +38,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="token">
 		///            the client auth token </param>
 		/// <returns> the Authentication object initialized with the token credentials </returns>
-		public static Authentication token(string token)
+		public static Authentication Token(string token)
 		{
 			return DefaultImplementation.newAuthenticationToken(token);
 		}
@@ -49,7 +49,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="tokenSupplier">
 		///            a supplier of the client auth token </param>
 		/// <returns> the Authentication object initialized with the token credentials </returns>
-		public static Authentication token(System.Func<string> tokenSupplier)
+		public static Authentication Token(Func<string> tokenSupplier)
 		{
 			return DefaultImplementation.newAuthenticationToken(tokenSupplier);
 		}
@@ -83,7 +83,7 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static Authentication create(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public static Authentication create(string authPluginClassName, string authParamsString)
+		public static Authentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
 			{
@@ -104,7 +104,7 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static Authentication create(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public static Authentication create(string authPluginClassName, IDictionary<string, string> authParams)
+		public static Authentication Create(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			try
 			{

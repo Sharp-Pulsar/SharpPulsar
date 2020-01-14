@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -34,7 +34,7 @@ namespace org.apache.pulsar.client.api
 		///            the id of the partition that became active </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void becameActive(Consumer<?> consumer, int partitionId);
-		void becameActive<T1>(Consumer<T1> consumer, int partitionId);
+		void BecameActive<T>(Consumer<T> consumer, int partitionId);
 
 		/// <summary>
 		/// Notified when the consumer group is changed, and the consumer is still inactive or becomes inactive.
@@ -45,7 +45,7 @@ namespace org.apache.pulsar.client.api
 		///            the id of the partition that became inactive </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void becameInactive(Consumer<?> consumer, int partitionId);
-		void becameInactive<T1>(Consumer<T1> consumer, int partitionId);
+		void BecameInactive<T>(Consumer<T> consumer, int partitionId);
 
 	}
 

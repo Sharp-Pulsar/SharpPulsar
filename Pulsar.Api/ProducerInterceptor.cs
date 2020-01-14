@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// A plugin interface that allows you to intercept (and possibly mutate) the
@@ -34,14 +34,8 @@ namespace org.apache.pulsar.client.api
 	/// </para>
 	/// </summary>
 	[Obsolete]
-	public interface ProducerInterceptor<T> : AutoCloseable
+	public interface ProducerInterceptor<T> : IAsyncDisposable
 	{
-
-		/// <summary>
-		/// Close the interceptor.
-		/// </summary>
-		void close();
-
 		/// <summary>
 		/// This is called from <seealso cref="Producer.send(object)"/> and {@link
 		/// Producer#sendAsync(Object)} methods, before
@@ -77,7 +71,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		Message<T> beforeSend(Producer<T> producer, Message<T> message);
+		Message<T> BeforeSend(Producer<T> producer, Message<T> message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been
@@ -98,7 +92,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void onSendAcknowledgement(Producer<T> producer, Message<T> message, MessageId msgId, Exception exception);
+		void OnSendAcknowledgement(Producer<T> producer, Message<T> message, MessageId msgId, Exception exception);
 
 	}
 

@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -41,14 +41,14 @@ namespace org.apache.pulsar.client.api
 		/// <param name="metadata">
 		///            Additional information needed to identify the key </param>
 		/// <returns> EncryptionKeyInfo with details about the public key </returns>
-		EncryptionKeyInfo getPublicKey(string keyName, IDictionary<string, string> metadata);
+		EncryptionKeyInfo GetPublicKey(string keyName, IDictionary<string, string> metadata);
 
 		/// <param name="keyName">
 		///            Unique name to identify the key </param>
 		/// <param name="metadata">
 		///            Additional information needed to identify the key </param>
 		/// <returns> byte array of the private key value </returns>
-		EncryptionKeyInfo getPrivateKey(string keyName, IDictionary<string, string> metadata);
+		EncryptionKeyInfo GetPrivateKey(string keyName, IDictionary<string, string> metadata);
 
 	}
 

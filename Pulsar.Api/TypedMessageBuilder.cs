@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -55,7 +56,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: MessageId send() throws PulsarClientException;
-		MessageId send();
+		MessageId Send();
 
 		/// <summary>
 		/// Send a message asynchronously
@@ -88,14 +89,14 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		CompletableFuture<MessageId> sendAsync();
+		ValueTask<MessageId> SendAsync();
 
 		/// <summary>
 		/// Sets the key of the message for routing policy.
 		/// </summary>
 		/// <param name="key"> the partitioning key for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> key(string key);
+		TypedMessageBuilder<T> Key(string key);
 
 		/// <summary>
 		/// Sets the bytes of the key of the message for routing policy.
@@ -103,7 +104,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="key"> routing key for message, in byte array form </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> keyBytes(sbyte[] key);
+		TypedMessageBuilder<T> KeyBytes(sbyte[] key);
 
 		/// <summary>
 		/// Sets the ordering key of the message for message dispatch in <seealso cref="SubscriptionType.Key_Shared"/> mode.
@@ -111,7 +112,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="orderingKey"> the ordering key for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> orderingKey(sbyte[] orderingKey);
+		TypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey);
 
 		/// <summary>
 		/// Set a domain object on the message.
@@ -119,7 +120,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="value">
 		///            the domain object </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> value(T value);
+		TypedMessageBuilder<T> Value(T value);
 
 		/// <summary>
 		/// Sets a new property on a message.
@@ -129,12 +130,12 @@ namespace org.apache.pulsar.client.api
 		/// <param name="value">
 		///            the associated value </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> property(string name, string value);
+		TypedMessageBuilder<T> Property(string name, string value);
 
 		/// <summary>
 		/// Add all the properties in the provided map. </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> properties(IDictionary<string, string> properties);
+		TypedMessageBuilder<T> Properties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Set the event time for a given message.
@@ -147,7 +148,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> eventTime(long timestamp);
+		TypedMessageBuilder<T> EventTime(long timestamp);
 
 		/// <summary>
 		/// Specify a custom sequence id for the message being published.
@@ -166,20 +167,20 @@ namespace org.apache.pulsar.client.api
 		/// <param name="sequenceId">
 		///            the sequence id to assign to the current message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> sequenceId(long sequenceId);
+		TypedMessageBuilder<T> SequenceId(long sequenceId);
 
 		/// <summary>
 		/// Override the geo-replication clusters for this message.
 		/// </summary>
 		/// <param name="clusters"> the list of clusters. </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> replicationClusters(IList<string> clusters);
+		TypedMessageBuilder<T> ReplicationClusters(IList<string> clusters);
 
 		/// <summary>
 		/// Disable geo-replication for this message.
 		/// </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> disableReplication();
+		TypedMessageBuilder<T> DisableReplication();
 
 		/// <summary>
 		/// Deliver the message only at or after the specified absolute timestamp.
@@ -196,7 +197,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timestamp">
 		///            absolute timestamp indicating when the message should be delivered to consumers </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> deliverAt(long timestamp);
+		TypedMessageBuilder<T> DeliverAt(long timestamp);
 
 		/// <summary>
 		/// Request to deliver the message only after the specified relative delay.
@@ -212,7 +213,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> deliverAfter(long delay, TimeUnit unit);
+		TypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared
@@ -297,7 +298,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="config"> a map with the configuration options for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> loadConf(IDictionary<string, object> config);
+		TypedMessageBuilder<T> LoadConf(IDictionary<string, object> config);
 	}
 
 	public static class TypedMessageBuilder_Fields

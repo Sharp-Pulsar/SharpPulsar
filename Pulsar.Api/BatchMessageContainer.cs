@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// Batch message container for individual messages being published until they are batched and sent to broker.
@@ -29,7 +29,7 @@ namespace org.apache.pulsar.client.api
 		/// <summary>
 		/// Clear the message batch container.
 		/// </summary>
-		void clear();
+		void Clear();
 
 		/// <summary>
 		/// Check the message batch container is empty.
@@ -53,7 +53,7 @@ namespace org.apache.pulsar.client.api
 		/// Release the payload and clear the container.
 		/// </summary>
 		/// <param name="ex"> cause </param>
-		void discard(Exception ex);
+		void Discard(Exception ex);
 
 		/// <summary>
 		/// Return the batch container batch message in multiple batches.

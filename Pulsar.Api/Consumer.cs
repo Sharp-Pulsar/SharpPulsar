@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -25,7 +27,7 @@ namespace org.apache.pulsar.client.api
 	/// <para>All the operations on the consumer instance are thread safe.
 	/// </para>
 	/// </summary>
-	public interface Consumer<T> : System.IDisposable
+	public interface Consumer<T> : IAsyncDisposable
 	{
 
 		/// <summary>
@@ -58,14 +60,14 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="PulsarClientException"> if the operation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void unsubscribe() throws PulsarClientException;
-		void unsubscribe();
+		void Unsubscribe();
 
 		/// <summary>
 		/// Asynchronously unsubscribe the consumer.
 		/// </summary>
 		/// <seealso cref= Consumer#unsubscribe() </seealso>
 		/// <returns> <seealso cref="CompletableFuture"/> to track the operation </returns>
-		CompletableFuture<Void> unsubscribeAsync();
+		ValueTask UnsubscribeAsync();
 
 		/// <summary>
 		/// Receives a single message.
@@ -81,7 +83,7 @@ namespace org.apache.pulsar.client.api
 		///             if a message listener was defined in the configuration </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> receive() throws PulsarClientException;
-		Message<T> receive();
+		Message<T> Receive();
 
 		/// <summary>
 		/// Receive a single message
@@ -95,7 +97,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> <seealso cref="CompletableFuture"/><<seealso cref="Message"/>> will be completed when message is available </returns>
-		CompletableFuture<Message<T>> receiveAsync();
+		ValueTask<Message<T>> ReceiveAsync();
 
 		/// <summary>
 		/// Receive a single message.
@@ -114,7 +116,7 @@ namespace org.apache.pulsar.client.api
 		///             if a message listener was defined in the configuration </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> receive(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		Message<T> receive(int timeout, TimeUnit unit);
+		Message<T> Receive(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -128,7 +130,7 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Messages<T> batchReceive() throws PulsarClientException;
-		Messages<T> batchReceive();
+		Messages<T> BatchReceive();
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -143,7 +145,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> messages
 		/// @since 2.4.1 </returns>
 		/// <exception cref="PulsarClientException"> </exception>
-		CompletableFuture<Messages<T>> batchReceiveAsync();
+		ValueTask<Messages<T>> BatchReceiveAsync();
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message.
@@ -155,7 +157,7 @@ namespace org.apache.pulsar.client.api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(Message<?> message) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledge<T1>(Message<T1> message);
+		void Acknowledge<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="MessageId"/>.
@@ -166,7 +168,7 @@ namespace org.apache.pulsar.client.api
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(MessageId messageId) throws PulsarClientException;
-		void acknowledge(MessageId messageId);
+		void Acknowledge(MessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the consumption of <seealso cref="Messages"/>.
@@ -177,7 +179,7 @@ namespace org.apache.pulsar.client.api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(Messages<?> messages) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledge<T1>(Messages<T1> messages);
+		void Acknowledge<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -212,7 +214,7 @@ namespace org.apache.pulsar.client.api
 		///            The {@code Message} to be acknowledged </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void negativeAcknowledge(Message<?> message);
-		void negativeAcknowledge<T1>(Message<T1> message);
+		void NegativeAcknowledge<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -235,7 +237,7 @@ namespace org.apache.pulsar.client.api
 		/// </seealso>
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
-		void negativeAcknowledge(MessageId messageId);
+		void NegativeAcknowledge(MessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the failure to process <seealso cref="Messages"/>.
@@ -270,7 +272,7 @@ namespace org.apache.pulsar.client.api
 		///            The {@code Message} to be acknowledged </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void negativeAcknowledge(Messages<?> messages);
-		void negativeAcknowledge<T1>(Messages<T1> messages);
+		void NegativeAcknowledge<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -293,7 +295,7 @@ namespace org.apache.pulsar.client.api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledgeCumulative(Message<?> message) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledgeCumulative<T1>(Message<T1> message);
+		void AcknowledgeCumulative<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -315,7 +317,7 @@ namespace org.apache.pulsar.client.api
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledgeCumulative(MessageId messageId) throws PulsarClientException;
-		void acknowledgeCumulative(MessageId messageId);
+		void AcknowledgeCumulative(MessageId messageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -325,7 +327,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeAsync(Message<?> message);
-		CompletableFuture<Void> acknowledgeAsync<T1>(Message<T1> message);
+		ValueTask AcknowledgeAsync<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -333,7 +335,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		CompletableFuture<Void> acknowledgeAsync(MessageId messageId);
+		ValueTask AcknowledgeAsync(MessageId messageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of <seealso cref="Messages"/>.
@@ -343,7 +345,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeAsync(Messages<?> messages);
-		CompletableFuture<Void> acknowledgeAsync<T1>(Messages<T1> messages);
+		ValueTask AcknowledgeAsync<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -358,7 +360,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeCumulativeAsync(Message<?> message);
-		CompletableFuture<Void> acknowledgeCumulativeAsync<T1>(Message<T1> message);
+		ValueTask AcknowledgeCumulativeAsync<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -371,7 +373,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		CompletableFuture<Void> acknowledgeCumulativeAsync(MessageId messageId);
+		ValueTask acknowledgeCumulativeAsync(MessageId messageId);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -396,13 +398,13 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override void close() throws PulsarClientException;
-		void close();
+		void Close();
 
 		/// <summary>
 		/// Asynchronously close the consumer and stop the broker to push more messages.
 		/// </summary>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		CompletableFuture<Void> closeAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Return true if the topic was terminated and this consumer has already consumed all the messages in the topic.
@@ -411,7 +413,7 @@ namespace org.apache.pulsar.client.api
 		/// producers, rather the topic needs to be explicitly "terminated".
 		/// </para>
 		/// </summary>
-		bool hasReachedEndOfTopic();
+		bool HasReachedEndOfTopic();
 
 		/// <summary>
 		/// Redelivers all the unacknowledged messages. In Failover mode, the request is ignored if the consumer is not
@@ -419,7 +421,7 @@ namespace org.apache.pulsar.client.api
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		void redeliverUnacknowledgedMessages();
+		void RedeliverUnacknowledgedMessages();
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message id.
@@ -440,7 +442,7 @@ namespace org.apache.pulsar.client.api
 		///            the message id where to reposition the subscription </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void seek(MessageId messageId);
+		void Seek(MessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -449,7 +451,7 @@ namespace org.apache.pulsar.client.api
 		///            the message publish time where to reposition the subscription </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
-		void seek(long timestamp);
+		void Seek(long timestamp);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message id.
@@ -469,7 +471,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="messageId">
 		///            the message id where to reposition the subscription </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		CompletableFuture<Void> seekAsync(MessageId messageId);
+		ValueTask SeekAsync(MessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -477,7 +479,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timestamp">
 		///            the message publish time where to reposition the subscription </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		CompletableFuture<Void> seekAsync(long timestamp);
+		ValueTask SeekAsync(long timestamp);
 
 		/// <summary>
 		/// Get the last message id available available for consume.
@@ -491,7 +493,7 @@ namespace org.apache.pulsar.client.api
 		/// Get the last message id available available for consume.
 		/// </summary>
 		/// <returns> a future that can be used to track the completion of the operation. </returns>
-		CompletableFuture<MessageId> LastMessageIdAsync {get;}
+		ValueTask<MessageId> LastMessageIdAsync {get;}
 
 		/// <returns> Whether the consumer is connected to the broker </returns>
 		bool Connected {get;}
@@ -505,12 +507,12 @@ namespace org.apache.pulsar.client.api
 		/// Stop requesting new messages from the broker until <seealso cref="resume()"/> is called. Note that this might cause
 		/// <seealso cref="receive()"/> to block until <seealso cref="resume()"/> is called and new messages are pushed by the broker.
 		/// </summary>
-		void pause();
+		void Pause();
 
 		/// <summary>
 		/// Resume requesting messages from the broker.
 		/// </summary>
-		void resume();
+		void Resume();
 	}
 
 }

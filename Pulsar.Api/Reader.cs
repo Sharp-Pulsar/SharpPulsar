@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -39,7 +40,7 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> readNext() throws PulsarClientException;
-		Message<T> readNext();
+		Message<T> ReadNext();
 
 		/// <summary>
 		/// Read the next message in the topic waiting for a maximum time.
@@ -52,20 +53,20 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		Message<T> readNext(int timeout, TimeUnit unit);
+		Message<T> ReadNext(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Read asynchronously the next message in the topic.
 		/// </summary>
 		/// <returns> a future that will yield a message (when it's available) or <seealso cref="PulsarClientException"/> if the reader
 		///         is already closed. </returns>
-		CompletableFuture<Message<T>> readNextAsync();
+		ValueTask<Message<T>> ReadNextAsync();
 
 		/// <summary>
 		/// Asynchronously close the reader and stop the broker to push more messages.
 		/// </summary>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		CompletableFuture<Void> closeAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Return true if the topic was terminated and this reader has reached the end of the topic.
@@ -75,7 +76,7 @@ namespace org.apache.pulsar.client.api
 		/// the publishers. Use <seealso cref="hasMessageAvailable()"/> to check for for that.
 		/// </para>
 		/// </summary>
-		bool hasReachedEndOfTopic();
+		bool HasReachedEndOfTopic();
 
 		/// <summary>
 		/// Check if there is any message available to read from the current position.
@@ -103,7 +104,7 @@ namespace org.apache.pulsar.client.api
 		/// <exception cref="PulsarClientException"> if there was any error in the operation </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: boolean hasMessageAvailable() throws PulsarClientException;
-		bool hasMessageAvailable();
+		bool HasMessageAvailable();
 
 		/// <summary>
 		/// Asynchronously check if there is any message available to read from the current position.
@@ -115,7 +116,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <returns> a future that will yield true if the are messages available to be read, false otherwise, or a
 		///         <seealso cref="PulsarClientException"/> if there was any error in the operation </returns>
-		CompletableFuture<bool> hasMessageAvailableAsync();
+		ValueTask<bool> HasMessageAvailableAsync();
 
 		/// <returns> Whether the reader is connected to the broker </returns>
 		bool Connected {get;}
@@ -138,7 +139,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="messageId"> the message id where to reposition the reader </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void seek(MessageId messageId);
+		void Seek(MessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -151,7 +152,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
-		void seek(long timestamp);
+		void Seek(long timestamp);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message id.
@@ -170,7 +171,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="messageId"> the message id where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		CompletableFuture<Void> seekAsync(MessageId messageId);
+		ValueTask SeekAsync(MessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -183,7 +184,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="timestamp">
 		///            the message publish time where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		CompletableFuture<Void> seekAsync(long timestamp);
+		ValueTask SeekAsync(long timestamp);
 	}
 
 }

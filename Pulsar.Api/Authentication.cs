@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
@@ -27,7 +27,7 @@ namespace org.apache.pulsar.client.api
 	/// <summary>
 	/// Interface of authentication providers.
 	/// </summary>
-	public interface Authentication : System.IDisposable
+	public interface Authentication : IAsyncDisposable
 	{
 
 		/// <returns> the identifier for this authentication method </returns>
@@ -74,7 +74,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void start() throws PulsarClientException;
-		void start();
+		void Start();
 
 		/// <summary>
 		/// An authentication Stage.

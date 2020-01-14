@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -36,7 +36,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> The index of the partition to use for the message </returns>
 		/// @deprecated since 1.22.0. Please use <seealso cref="choosePartition(Message, TopicMetadata)"/> instead. 
 //JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-[Obsolete("since 1.22.0. Please use <seealso cref=\"choosePartition(Message, TopicMetadata)\"/> instead.")]
+//[Obsolete("since 1.22.0. Please use <seealso cref=\"choosePartition(Message, TopicMetadata)\"/> instead.")]
 //		default int choosePartition(Message<JavaToDotNetGenericWildcard> msg)
 	//	{
 	//		throw new UnsupportedOperationException("Use #choosePartition(Message, TopicMetadata) instead");

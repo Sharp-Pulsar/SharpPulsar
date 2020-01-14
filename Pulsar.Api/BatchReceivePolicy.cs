@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -55,9 +56,9 @@ namespace org.apache.pulsar.client.api
 		/// Timeout: 100ms<p/>
 		/// </para>
 		/// </summary>
-		public static readonly BatchReceivePolicy DEFAULT_POLICY = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, TimeUnit.MILLISECONDS);
+		public static readonly BatchReceivePolicy DEFAULT_POLICY = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, new TimeSpan() );
 
-		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeUnit timeoutUnit)
+		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeSpan timeoutUnit)
 		{
 			this.maxNumMessages = maxNumMessages;
 			this.maxNumBytes = maxNumBytes;

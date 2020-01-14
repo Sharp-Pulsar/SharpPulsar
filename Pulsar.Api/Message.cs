@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Optional;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	using EncryptionContext = org.apache.pulsar.common.api.EncryptionContext;
 
@@ -43,14 +44,14 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="name"> the name of the property to check </param>
 		/// <returns> true if the message has the specified property and false if the properties is not defined </returns>
-		bool hasProperty(string name);
+		bool HasProperty(string name);
 
 		/// <summary>
 		/// Get the value of a specific property.
 		/// </summary>
 		/// <param name="name"> the name of the property </param>
 		/// <returns> the value of the property or null if the property was not defined </returns>
-		string getProperty(string name);
+		string GetProperty(string name);
 
 		/// <summary>
 		/// Get the raw payload of the message.
@@ -124,7 +125,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <returns> true if the key was set while creating the message and false if the key was not set
 		/// while creating the message </returns>
-		bool hasKey();
+		bool HasKey();
 
 		/// <summary>
 		/// Get the key of the message.
@@ -136,7 +137,7 @@ namespace org.apache.pulsar.client.api
 		/// Check whether the key has been base64 encoded.
 		/// </summary>
 		/// <returns> true if the key is base64 encoded, false otherwise </returns>
-		bool hasBase64EncodedKey();
+		bool HasBase64EncodedKey();
 
 		/// <summary>
 		/// Get bytes in key. If the key has been base64 encoded, it is decoded before being returned.
@@ -149,7 +150,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <returns> true if the ordering key was set while creating the message
 		///         false if the ordering key was not set while creating the message </returns>
-		bool hasOrderingKey();
+		bool HasOrderingKey();
 
 		/// <summary>
 		/// Get the ordering key of the message.
@@ -168,7 +169,7 @@ namespace org.apache.pulsar.client.api
 		/// decrypt consumed message with encrypted-payload.
 		/// </summary>
 		/// <returns> the optiona encryption context </returns>
-		Optional<EncryptionContext> EncryptionCtx {get;}
+		Option<EncryptionContext> EncryptionCtx {get;}
 
 		/// <summary>
 		/// Get message redelivery count, redelivery count maintain in pulsar broker. When client acknowledge message

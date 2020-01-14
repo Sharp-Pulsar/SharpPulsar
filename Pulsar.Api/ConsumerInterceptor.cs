@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -34,14 +34,10 @@ namespace org.apache.pulsar.client.api
 	/// not propagated further.
 	/// </para>
 	/// </summary>
-	public interface ConsumerInterceptor<T> : AutoCloseable
+	public interface ConsumerInterceptor<T> : IAsyncDisposable
 	{
 
-		/// <summary>
-		/// Close the interceptor.
-		/// </summary>
-		void close();
-
+		
 		/// <summary>
 		/// This is called just before the message is returned by
 		/// <seealso cref="Consumer.receive()"/>, {@link MessageListener#received(Consumer,
@@ -81,7 +77,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="message"> the message to be consumed by the client. </param>
 		/// <returns> message that is either modified by the interceptor or same message
 		///         passed into the method. </returns>
-		Message<T> beforeConsume(Consumer<T> consumer, Message<T> message);
+		Message<T> BeforeConsume(Consumer<T> consumer, Message<T> message);
 
 		/// <summary>
 		/// This is called consumer sends the acknowledgment to the broker.
@@ -93,7 +89,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void onAcknowledge(Consumer<T> consumer, MessageId messageId, Exception exception);
+		void OnAcknowledge(Consumer<T> consumer, MessageId messageId, Exception exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -105,7 +101,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void onAcknowledgeCumulative(Consumer<T> consumer, MessageId messageId, Exception exception);
+		void OnAcknowledgeCumulative(Consumer<T> consumer, MessageId messageId, Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.
@@ -116,7 +112,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void onNegativeAcksSend(Consumer<T> consumer, ISet<MessageId> messageIds);
+		void OnNegativeAcksSend(Consumer<T> consumer, ISet<MessageId> messageIds);
 
 		/// <summary>
 		/// This method will be called when a redelivery from an acknowledge timeout occurs.
@@ -127,7 +123,7 @@ namespace org.apache.pulsar.client.api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void onAckTimeoutSend(Consumer<T> consumer, ISet<MessageId> messageIds);
+		void OnAckTimeoutSend(Consumer<T> consumer, ISet<MessageId> messageIds);
 	}
 
 }

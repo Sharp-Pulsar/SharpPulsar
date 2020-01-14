@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using Pulsar.Api.Schema;
+using System;
+using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -25,7 +28,7 @@ namespace org.apache.pulsar.client.api
 	/// <para>A single producer instance can be used across multiple threads.
 	/// </para>
 	/// </summary>
-	public interface Producer<T> : System.IDisposable
+	public interface Producer<T> : IAsyncDisposable
 	{
 
 		/// <returns> the topic which producer is publishing to </returns>
@@ -53,7 +56,7 @@ namespace org.apache.pulsar.client.api
 		///             if the producer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: MessageId send(T message) throws PulsarClientException;
-		MessageId send(T message);
+		MessageId Send(T message);
 
 		/// <summary>
 		/// Send a message asynchronously.
@@ -73,7 +76,7 @@ namespace org.apache.pulsar.client.api
 		/// <param name="message">
 		///            a byte array with the payload of the message </param>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		CompletableFuture<MessageId> sendAsync(T message);
+		ValueTask<MessageId> SendAsync(T message);
 
 		/// <summary>
 		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.
@@ -91,7 +94,7 @@ namespace org.apache.pulsar.client.api
 		/// <returns> a future that can be used to track when all the messages have been safely persisted.
 		/// @since 2.1.0 </returns>
 		/// <seealso cref= #flush() </seealso>
-		CompletableFuture<Void> flushAsync();
+		ValueTask FlushAsync();
 
 		/// <summary>
 		/// Create a new message builder.
@@ -108,14 +111,14 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
-		TypedMessageBuilder<T> newMessage();
+		TypedMessageBuilder<T> NewMessage();
 
 		/// <summary>
 		/// Create a new message builder with schema, not required same parameterized type with the producer.
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
 		/// <seealso cref= #newMessage() </seealso>
-		TypedMessageBuilder<V> newMessage<V>(Schema<V> schema);
+		TypedMessageBuilder<V> NewMessage<V>(Schema<V> schema);
 
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.
@@ -161,7 +164,7 @@ namespace org.apache.pulsar.client.api
 		///             if the producer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override void close() throws PulsarClientException;
-		void close();
+		void Close();
 
 		/// <summary>
 		/// Close the producer and releases resources allocated.
@@ -172,7 +175,7 @@ namespace org.apache.pulsar.client.api
 		/// </para>
 		/// </summary>
 		/// <returns> a future that can used to track when the producer has been closed </returns>
-		CompletableFuture<Void> closeAsync();
+		ValueTask CloseAsync();
 
 		/// <returns> Whether the producer is currently connected to the broker </returns>
 		bool Connected {get;}

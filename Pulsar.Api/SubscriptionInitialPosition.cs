@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 	/// <summary>
 	/// When creating a consumer, if the subscription does not exist, a new subscription will be created. By default the
@@ -78,12 +78,12 @@ namespace org.apache.pulsar.client.api
 		}
 
 
-		public static IList<SubscriptionInitialPosition> values()
+		public static IList<SubscriptionInitialPosition> Values()
 		{
 			return valueList;
 		}
 
-		public int ordinal()
+		public int Ordinal()
 		{
 			return ordinalValue;
 		}
@@ -93,7 +93,7 @@ namespace org.apache.pulsar.client.api
 			return nameValue;
 		}
 
-		public static SubscriptionInitialPosition valueOf(string name)
+		public static SubscriptionInitialPosition ValueOf(string name)
 		{
 			foreach (SubscriptionInitialPosition enumInstance in SubscriptionInitialPosition.valueList)
 			{

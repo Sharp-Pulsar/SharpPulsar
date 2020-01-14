@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api
 {
 
 	/// <summary>
@@ -41,7 +41,7 @@ namespace org.apache.pulsar.client.api
 		///            the Reader object from where the message was received </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void received(Reader<T> reader, Message<T> msg);
+		void Received(Reader<T> reader, Message<T> msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.
