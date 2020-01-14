@@ -1,0 +1,123 @@
+﻿using System;
+using System.Collections.Generic;
+
+/// <summary>
+/// Licensed to the Apache Software Foundation (ASF) under one
+/// or more contributor license agreements.  See the NOTICE file
+/// distributed with this work for additional information
+/// regarding copyright ownership.  The ASF licenses this file
+/// to you under the Apache License, Version 2.0 (the
+/// "License"); you may not use this file except in compliance
+/// with the License.  You may obtain a copy of the License at
+/// 
+///   http://www.apache.org/licenses/LICENSE-2.0
+/// 
+/// Unless required by applicable law or agreed to in writing,
+/// software distributed under the License is distributed on an
+/// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+/// KIND, either express or implied.  See the License for the
+/// specific language governing permissions and limitations
+/// under the License.
+/// </summary>
+
+namespace org.apache.pulsar.client.impl.auth
+{
+	using Charsets = com.google.common.@base.Charsets;
+
+
+	using Authentication = org.apache.pulsar.client.api.Authentication;
+	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
+	using EncodedAuthenticationParameterSupport = org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
+	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+
+	/// <summary>
+	/// Token based authentication provider.
+	/// </summary>
+	public class AuthenticationToken : Authentication, EncodedAuthenticationParameterSupport
+	{
+
+		private System.Func<string> tokenSupplier;
+
+		public AuthenticationToken()
+		{
+		}
+
+		public AuthenticationToken(string token) : this(() -> token)
+		{
+		}
+
+		public AuthenticationToken(System.Func<string> tokenSupplier)
+		{
+			this.tokenSupplier = tokenSupplier;
+		}
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void close() throws java.io.IOException
+		public override void close()
+		{
+			// noop
+		}
+
+		public override string AuthMethodName
+		{
+			get
+			{
+				return "token";
+			}
+		}
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
+		public override AuthenticationDataProvider AuthData
+		{
+			get
+			{
+				return new AuthenticationDataToken(tokenSupplier);
+			}
+		}
+
+		public override void configure(string encodedAuthParamString)
+		{
+			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
+			// the prefix
+			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
+			{
+				this.tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
+			}
+			else if (encodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
+			{
+				// Read token from a file
+				URI filePath = URI.create(encodedAuthParamString);
+				this.tokenSupplier = () =>
+				{
+				try
+				{
+					return (new string(Files.readAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
+				}
+				catch (IOException e)
+				{
+					throw new Exception("Failed to read token from file", e);
+				}
+				};
+			}
+			else
+			{
+				this.tokenSupplier = () => encodedAuthParamString;
+			}
+		}
+
+		public override void configure(IDictionary<string, string> authParams)
+		{
+			// noop
+		}
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void start() throws org.apache.pulsar.client.api.PulsarClientException
+		public override void start()
+		{
+			// noop
+		}
+
+	}
+
+}
