@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.transaction
+namespace Pulsar.Api.Transaction
 {
 
 	/// <summary>
@@ -28,7 +29,7 @@ namespace org.apache.pulsar.client.api.transaction
 	public class TransactionCoordinatorClientException : IOException
 	{
 
-		public TransactionCoordinatorClientException(Exception t) : base(t)
+		public TransactionCoordinatorClientException(Exception t) : base(t.Message)
 		{
 		}
 

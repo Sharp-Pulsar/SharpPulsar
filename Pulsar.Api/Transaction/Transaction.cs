@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.transaction
+namespace Pulsar.Api.Transaction
 {
 
 	/// <summary>
@@ -29,13 +30,13 @@ namespace org.apache.pulsar.client.api.transaction
 		/// Commit the transaction.
 		/// </summary>
 		/// <returns> the future represents the commit result. </returns>
-		CompletableFuture<Void> commit();
+		ValueTask Commit();
 
 		/// <summary>
 		/// Abort the transaction.
 		/// </summary>
 		/// <returns> the future represents the abort result. </returns>
-		CompletableFuture<Void> abort();
+		ValueTask Abort();
 
 	}
 

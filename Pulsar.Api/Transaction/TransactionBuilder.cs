@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.transaction
+namespace Pulsar.Api.Transaction
 {
 
 	/// <summary>
@@ -38,13 +40,13 @@ namespace org.apache.pulsar.client.api.transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		TransactionBuilder withTransactionTimeout(long timeout, TimeUnit timeoutUnit);
+		TransactionBuilder WithTransactionTimeout(long timeout, TimeSpan timeoutUnit);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.
 		/// </summary>
 		/// <returns> a future represents the result of starting a new transaction </returns>
-		CompletableFuture<Transaction> build();
+		ValueTask<Transaction> Build();
 
 	}
 
