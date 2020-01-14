@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
@@ -32,21 +32,21 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="name"> name of the property </param>
 		/// <param name="val"> value of the property </param>
 		/// <returns> field schema builder </returns>
-		T property(string name, string val);
+		T Property(string name, string val);
 
 		/// <summary>
 		/// The documentation of this field.
 		/// </summary>
 		/// <param name="doc"> documentation </param>
 		/// <returns> field schema builder </returns>
-		T doc(string doc);
+		T Doc(string doc);
 
 		/// <summary>
 		/// The optional name aliases of this field.
 		/// </summary>
 		/// <param name="aliases"> the name aliases of this field </param>
 		/// <returns> field schema builder </returns>
-		T aliases(params string[] aliases);
+		T Aliases(params string[] aliases);
 
 		/// <summary>
 		/// The type of this field.
@@ -57,19 +57,19 @@ namespace org.apache.pulsar.client.api.schema
 		/// </summary>
 		/// <param name="type"> schema type of this field </param>
 		/// <returns> field schema builder </returns>
-		T type(SchemaType type);
+		T Type(SchemaType type);
 
 		/// <summary>
 		/// Make this field optional.
 		/// </summary>
 		/// <returns> field schema builder </returns>
-		T optional();
+		T Optional();
 
 		/// <summary>
 		/// Make this field required.
 		/// </summary>
 		/// <returns> field schema builder </returns>
-		T required();
+		T Required();
 
 		/// <summary>
 		/// Set the default value of this field.
@@ -79,7 +79,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// </para>
 		/// </summary>
 		/// <returns> value </returns>
-		T defaultValue(object value);
+		T DefaultValue(object value);
 
 	}
 

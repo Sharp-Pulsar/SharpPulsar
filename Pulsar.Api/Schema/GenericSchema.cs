@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 	using org.apache.pulsar.client.api;
 
@@ -38,7 +38,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// Create a builder to build <seealso cref="GenericRecord"/>.
 		/// </summary>
 		/// <returns> generic record builder </returns>
-		GenericRecordBuilder newRecordBuilder();
+		GenericRecordBuilder NewRecordBuilder();
 
 	}
 

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.@internal
+namespace Pulsar.client.@internal
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.@internal.ReflectionUtils.catchExceptions;

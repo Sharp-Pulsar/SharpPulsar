@@ -16,9 +16,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+    using System.Threading.Tasks;
+    using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 
 	/// <summary>
 	/// Schema Provider.
@@ -31,13 +32,13 @@ namespace org.apache.pulsar.client.api.schema
 		/// </summary>
 		/// <param name="schemaVersion"> schema version </param>
 		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] schemaVersion);
+		ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion);
 
 		/// <summary>
 		/// Retrieve the latest schema info.
 		/// </summary>
 		/// <returns> the latest schema </returns>
-		CompletableFuture<SchemaInfo> LatestSchema {get;}
+		ValueTask<SchemaInfo> LatestSchema {get;}
 
 		/// <summary>
 		/// Retrieve the topic name.

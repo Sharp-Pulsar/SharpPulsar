@@ -23,14 +23,14 @@
           "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "netstandard2.0"
+          "netstandard2.1"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "netstandard2.0": {
+          "netstandard2.1": {
             "projectReferences": {}
           }
         },
@@ -41,13 +41,19 @@
         }
       },
       "frameworks": {
-        "netstandard2.0": {
+        "netstandard2.1": {
           "dependencies": {
-            "NETStandard.Library": {
-              "suppressParent": "All",
+            "System.Buffers": {
               "target": "Package",
-              "version": "[2.0.3, )",
-              "autoReferenced": true
+              "version": "[4.5.0, )"
+            },
+            "System.Runtime": {
+              "target": "Package",
+              "version": "[4.3.1, )"
+            },
+            "System.Threading.Tasks": {
+              "target": "Package",
+              "version": "[4.3.0, )"
             }
           },
           "imports": [
@@ -60,6 +66,11 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "frameworkReferences": {
+            "NETStandard.Library": {
+              "privateAssets": "all"
+            }
+          },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.100\\RuntimeIdentifierGraph.json"
         }
       }

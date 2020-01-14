@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
@@ -33,14 +33,14 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="name"> property name </param>
 		/// <param name="val"> property value </param>
 		/// <returns> record schema builder </returns>
-		RecordSchemaBuilder property(string name, string val);
+		RecordSchemaBuilder Property(string name, string val);
 
 		/// <summary>
 		/// Add a field with the given name to the record.
 		/// </summary>
 		/// <param name="fieldName"> name of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		FieldSchemaBuilder field(string fieldName);
+		FieldSchemaBuilder Field(string fieldName);
 
 		/// <summary>
 		/// Add a field with the given name and genericSchema to the record.
@@ -48,20 +48,20 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="fieldName"> name of the field </param>
 		/// <param name="genericSchema"> schema of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		FieldSchemaBuilder field(string fieldName, GenericSchema genericSchema);
+		FieldSchemaBuilder Field(string fieldName, GenericSchema genericSchema);
 
 		/// <summary>
 		/// Add doc to the record schema.
 		/// </summary>
 		/// <param name="doc"> documentation </param>
 		/// <returns> field schema builder </returns>
-		RecordSchemaBuilder doc(string doc);
+		RecordSchemaBuilder Doc(string doc);
 
 		/// <summary>
 		/// Build the schema info.
 		/// </summary>
 		/// <returns> the schema info. </returns>
-		SchemaInfo build(SchemaType schemaType);
+		SchemaInfo Build(SchemaType schemaType);
 
 	}
 

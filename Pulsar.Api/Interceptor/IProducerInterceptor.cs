@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Buffers;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,12 +21,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.interceptor
+namespace Pulsar.Api.Interceptor
 {
-	using org.apache.pulsar.client.api;
-	using org.apache.pulsar.client.api;
-	using org.apache.pulsar.client.api;
-
 	/// <summary>
 	/// A plugin interface that allows you to intercept (and possibly mutate) the
 	/// messages received by the producer before they are published to the Pulsar
@@ -42,20 +41,14 @@ namespace org.apache.pulsar.client.api.interceptor
 	/// <seealso cref="ProducerBuilder.intercept(ProducerInterceptor...)"/>.
 	/// </para>
 	/// </summary>
-	public interface ProducerInterceptor : AutoCloseable
+	public interface IProducerInterceptor : IAsyncDisposable
 	{
-
-		/// <summary>
-		/// Close the interceptor.
-		/// </summary>
-		void close();
-
 		/// <summary>
 		/// Check whether the interceptor is eligible for this message.
 		/// </summary>
 		/// <param name="message"> message to send </param>
 		/// <returns> whether the interceptor can be applied to this particular message. </returns>
-		bool eligible(Message message);
+		bool Eligible(Message message);
 
 		/// <summary>
 		/// This is called from <seealso cref="Producer.send(object)"/> and {@link
@@ -82,7 +75,7 @@ namespace org.apache.pulsar.client.api.interceptor
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		Message beforeSend(Producer producer, Message message);
+		Message BeforeSend(Producer producer, Message message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been
@@ -103,7 +96,7 @@ namespace org.apache.pulsar.client.api.interceptor
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void onSendAcknowledgement(Producer producer, Message message, MessageId msgId, Exception exception);
+		void OnSendAcknowledgement(Producer producer, Message message, MessageId msgId, Exception exception);
 	}
 
 }

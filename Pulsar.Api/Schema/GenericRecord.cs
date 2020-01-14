@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 
 	/// <summary>
@@ -55,7 +55,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// </summary>
 		/// <param name="fieldName"> the field name </param>
 		/// <returns> the value object </returns>
-		object getField(string fieldName);
+		object GetField(string fieldName);
 
 	}
 

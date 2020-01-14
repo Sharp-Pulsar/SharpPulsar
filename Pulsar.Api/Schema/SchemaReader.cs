@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 
 	/// <summary>
@@ -46,14 +46,14 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="offset"> the byte[] initial position </param>
 		/// <param name="length"> the byte[] read length </param>
 		/// <returns> the serialized object </returns>
-		T read(sbyte[] bytes, int offset, int length);
+		T Read(sbyte[] bytes, int offset, int length);
 
 		/// <summary>
 		/// serialize bytes convert pojo.
 		/// </summary>
 		/// <param name="inputStream"> the stream of message </param>
 		/// <returns> the serialized object </returns>
-		T read(Stream inputStream);
+		T Read(Stream inputStream);
 	}
 
 }

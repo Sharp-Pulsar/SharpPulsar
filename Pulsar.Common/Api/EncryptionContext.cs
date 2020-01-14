@@ -18,13 +18,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.api
+namespace Pulsar.Common.Api
 {
 
-	using AllArgsConstructor = lombok.AllArgsConstructor;
+	/*using AllArgsConstructor = lombok.AllArgsConstructor;
 	using Getter = lombok.Getter;
 	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Setter = lombok.Setter;
+	using Setter = lombok.Setter;*/
 
 	using CompressionType = org.apache.pulsar.client.api.CompressionType;
 

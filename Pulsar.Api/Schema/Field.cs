@@ -16,29 +16,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
-	using Data = lombok.Data;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using ToString = lombok.ToString;
-
 	/// <summary>
 	/// A field in a record, consisting of a field name, index, and
-	/// <seealso cref="org.apache.pulsar.client.api.Schema"/> for the field value.
+	/// <seealso cref="Pulsar.Api.Schema"/> for the field value.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @EqualsAndHashCode @ToString public class Field
+	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+	//ORIGINAL LINE: @Data @EqualsAndHashCode @ToString public class Field
 	public class Field
 	{
 
 		/// <summary>
 		/// The field name.
 		/// </summary>
-		private readonly string name;
+		private readonly string Name;
 		/// <summary>
 		/// The index of the field within the record.
 		/// </summary>
-		private readonly int index;
+		private readonly int Index;
 
 	}
 

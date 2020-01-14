@@ -16,9 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
+	//using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
 	/// <summary>
 	/// Builder to build schema.

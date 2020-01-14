@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,43 +19,41 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.interceptor
+namespace Pulsar.Api.Interceptor
 {
-	using org.apache.pulsar.client.api;
-	using org.apache.pulsar.client.api;
-
 	/// <summary>
 	/// A wrapper for old style producer interceptor.
 	/// </summary>
-	public class ProducerInterceptorWrapper : ProducerInterceptor
+	public class ProducerInterceptorWrapper : IProducerInterceptor
 	{
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: private final org.apache.pulsar.client.api.ProducerInterceptor<?> innerInterceptor;
-		private readonly org.apache.pulsar.client.api.ProducerInterceptor<object> innerInterceptor;
+		private readonly IProducerInterceptor _innerInterceptor;
 
-		public ProducerInterceptorWrapper<T1>(org.apache.pulsar.client.api.ProducerInterceptor<T1> innerInterceptor)
+		public ProducerInterceptorWrapper(IProducerInterceptor innerInterceptor)
 		{
-			this.innerInterceptor = innerInterceptor;
+			_innerInterceptor = innerInterceptor;
 		}
 
-		public virtual void close()
-		{
-			innerInterceptor.close();
-		}
 
-		public override bool eligible(Message message)
+		public bool Eligible(Message message)
 		{
 			return true;
 		}
 
-		public virtual Message beforeSend(Producer producer, Message message)
+		public Message BeforeSend(Producer producer, Message message)
 		{
-			return innerInterceptor.beforeSend(producer, message);
+			return _innerInterceptor.BeforeSend(producer, message);
 		}
 
-		public virtual void onSendAcknowledgement(Producer producer, Message message, MessageId msgId, Exception exception)
+		public void OnSendAcknowledgement(Producer producer, Message message, MessageId msgId, Exception exception)
 		{
-			innerInterceptor.onSendAcknowledgement(producer, message, msgId, exception);
+			_innerInterceptor.OnSendAcknowledgement(producer, message, msgId, exception);
+		}
+
+		public ValueTask DisposeAsync()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

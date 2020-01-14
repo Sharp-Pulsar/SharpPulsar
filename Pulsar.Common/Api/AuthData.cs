@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,10 +17,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.api
+namespace Pulsar.Common.Api
 {
 
-	using Data = lombok.Data;
+	//using Data = lombok.Data;
 
 	/// <summary>
 	/// Authentication data.
@@ -29,7 +30,7 @@ namespace org.apache.pulsar.common.api
 	public sealed class AuthData
 	{
 		// CHECKSTYLE.OFF: StaticVariableName
-		public static sbyte[] INIT_AUTH_DATA = "PulsarAuthInit".getBytes(UTF_8);
+		public static sbyte[] INIT_AUTH_DATA = "PulsarAuthInit".GetBytes(new UTF8Encoding());
 		// CHECKSTYLE.ON: StaticVariableName
 
 		private readonly sbyte[] bytes;

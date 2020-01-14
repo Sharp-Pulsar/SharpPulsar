@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api
+namespace Pulsar.Api.Schema
 {
 	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
 	using org.apache.pulsar.client.api.schema;

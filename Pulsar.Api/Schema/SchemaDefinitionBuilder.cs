@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.schema
+namespace Pulsar.Api.Schema
 {
 
 
@@ -34,14 +34,14 @@ namespace org.apache.pulsar.client.api.schema
 		/// </summary>
 		/// <param name="alwaysAllowNull"> definition null or not </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> withAlwaysAllowNull(bool alwaysAllowNull);
+		SchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull);
 
 		/// <summary>
 		/// Set schema info properties.
 		/// </summary>
 		/// <param name="properties"> schema info properties </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> withProperties(IDictionary<string, string> properties);
+		SchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Set schema info properties.
@@ -50,7 +50,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="value"> property value
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> addProperty(string key, string value);
+		SchemaDefinitionBuilder<T> AddProperty(string key, string value);
 
 		/// <summary>
 		/// Set schema of pojo definition.
@@ -58,7 +58,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="pojo"> pojo schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> withPojo(Type pojo);
+		SchemaDefinitionBuilder<T> WithPojo(Type pojo);
 
 		/// <summary>
 		/// Set schema of json definition.
@@ -66,7 +66,7 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="jsonDefinition"> json schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> withJsonDef(string jsonDefinition);
+		SchemaDefinitionBuilder<T> WithJsonDef(string jsonDefinition);
 
 		/// <summary>
 		/// Set schema whether decode by schema version.
@@ -74,13 +74,13 @@ namespace org.apache.pulsar.client.api.schema
 		/// <param name="supportSchemaVersioning"> decode by version
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> withSupportSchemaVersioning(bool supportSchemaVersioning);
+		SchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning);
 
 		/// <summary>
 		/// Build the schema definition.
 		/// </summary>
 		/// <returns> the schema definition. </returns>
-		SchemaDefinition<T> build();
+		SchemaDefinition<T> Build();
 
 	}
 
