@@ -16,12 +16,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Message
 {
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
+    using SharpPulsar.Interface.Message;
+    using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
 	using MessageRouter = org.apache.pulsar.client.api.MessageRouter;
 
-	public abstract class MessageRouterBase : MessageRouter
+	public abstract class MessageRouterBase : IMessageRouter
 	{
 		private const long serialVersionUID = 1L;
 

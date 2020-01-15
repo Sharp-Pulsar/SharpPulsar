@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Message;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,10 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Message
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
 
 	using ComparisonChain = com.google.common.collect.ComparisonChain;
 
@@ -36,7 +35,7 @@ namespace org.apache.pulsar.client.impl
 	using ByteBufCodedOutputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedOutputStream;
 	using UninitializedMessageException = org.apache.pulsar.shaded.com.google.protobuf.v241.UninitializedMessageException;
 
-	public class MessageIdImpl : MessageId
+	public class MessageIdImpl : IMessageId
 	{
 		protected internal readonly long ledgerId;
 		protected internal readonly long entryId;
@@ -56,7 +55,7 @@ namespace org.apache.pulsar.client.impl
 			this.partitionIndex = partitionIndex;
 		}
 
-		public virtual long LedgerId
+		public long LedgerId
 		{
 			get
 			{
@@ -64,7 +63,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual long EntryId
+		public long EntryId
 		{
 			get
 			{
@@ -72,7 +71,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual int PartitionIndex
+		public int PartitionIndex
 		{
 			get
 			{
@@ -105,11 +104,7 @@ namespace org.apache.pulsar.client.impl
 			return string.Format("{0:D}:{1:D}:{2:D}", ledgerId, entryId, partitionIndex);
 		}
 
-		// / Serialization
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.apache.pulsar.client.api.MessageId fromByteArray(byte[] data) throws java.io.IOException
-		public static MessageId fromByteArray(sbyte[] data)
+		public static MessageId FromByteArray(sbyte[] data)
 		{
 			checkNotNull(data);
 			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(data, 0, data.Length));
@@ -141,16 +136,13 @@ namespace org.apache.pulsar.client.impl
 			return messageId;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.apache.pulsar.client.api.MessageId fromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException
-		public static MessageId fromByteArrayWithTopic(sbyte[] data, string topicName)
+
+		public static IMessageId fromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
 			return fromByteArrayWithTopic(data, TopicName.get(topicName));
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.apache.pulsar.client.api.MessageId fromByteArrayWithTopic(byte[] data, org.apache.pulsar.common.naming.TopicName topicName) throws java.io.IOException
-		public static MessageId fromByteArrayWithTopic(sbyte[] data, TopicName topicName)
+		public static IMessageId FomByteArrayWithTopic(sbyte[] data, TopicName topicName)
 		{
 			checkNotNull(data);
 			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(data, 0, data.Length));
@@ -187,7 +179,7 @@ namespace org.apache.pulsar.client.impl
 		}
 
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
-		protected internal virtual sbyte[] toByteArray(int batchIndex)
+		protected internal sbyte[] ToByteArray(int batchIndex)
 		{
 			PulsarApi.MessageIdData.Builder builder = PulsarApi.MessageIdData.newBuilder();
 			builder.LedgerId = ledgerId;
@@ -222,13 +214,13 @@ namespace org.apache.pulsar.client.impl
 			return serialized.array();
 		}
 
-		public override sbyte[] toByteArray()
+		public sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
 			return toByteArray(-1);
 		}
 
-		public override int compareTo(MessageId o)
+		public int CompareTo(IMessageId o)
 		{
 			if (o is MessageIdImpl)
 			{
@@ -237,7 +229,7 @@ namespace org.apache.pulsar.client.impl
 			}
 			else if (o is TopicMessageIdImpl)
 			{
-				return compareTo(((TopicMessageIdImpl) o).InnerMessageId);
+				return CompareTo(((TopicMessageIdImpl) o).InnerMessageId);
 			}
 			else
 			{
@@ -245,6 +237,8 @@ namespace org.apache.pulsar.client.impl
 				throw new System.ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 		}
+
+
 	}
 
 }

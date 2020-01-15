@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Message
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkNotNull;
@@ -43,17 +43,20 @@ namespace org.apache.pulsar.client.impl
 	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
 	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+    using SharpPulsar.Interface.Message;
+    using Optional;
+    using SharpPulsar.Interface.Schema;
 
-	public class MessageImpl<T> : Message<T>
+    public class MessageImpl<T> : IMessage<T>
 	{
 
 		protected internal MessageId messageId;
 		private PulsarApi.MessageMetadata.Builder msgMetadataBuilder;
 		private ClientCnx cnx;
 		private ByteBuf payload;
-		private Schema<T> schema;
+		private ISchema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
-		private Optional<EncryptionContext> encryptionCtx = null;
+		private Option<EncryptionContext> encryptionCtx = null;
 
 		private string topic; // only set for incoming messages
 		[NonSerialized]
@@ -61,10 +64,8 @@ namespace org.apache.pulsar.client.impl
 		private readonly int redeliveryCount;
 
 		// Constructor for out-going message
-		internal static MessageImpl<T> create<T>(PulsarApi.MessageMetadata.Builder msgMetadataBuilder, ByteBuffer payload, Schema<T> schema)
+		internal static MessageImpl<T> Create<T>(PulsarApi.MessageMetadata.Builder msgMetadataBuilder, ByteBuffer payload, Schema<T> schema)
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") MessageImpl<T> msg = (MessageImpl<T>) RECYCLER.get();
 			MessageImpl<T> msg = (MessageImpl<T>) RECYCLER.get();
 			msg.msgMetadataBuilder = msgMetadataBuilder;
 			msg.messageId = null;

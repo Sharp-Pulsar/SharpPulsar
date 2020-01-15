@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Interface.Message;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Message
 {
 	using Preconditions = com.google.common.@base.Preconditions;
 	using NotThreadSafe = net.jcip.annotations.NotThreadSafe;
@@ -28,10 +29,10 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @NotThreadSafe public class MessagesImpl<T> implements org.apache.pulsar.client.api.Messages<T>
-	public class MessagesImpl<T> : Messages<T>
+	public class MessagesImpl<T> : IMessages<T>
 	{
 
-		private IList<Message<T>> messageList;
+		private IList<IMessage<T>> messageList;
 
 		private readonly int maxNumberOfMessages;
 		private readonly long maxSizeOfMessages;
@@ -46,7 +47,7 @@ namespace org.apache.pulsar.client.impl
 			messageList = maxNumberOfMessages > 0 ? new List<Message<T>>(maxNumberOfMessages) : new List<Message<T>>();
 		}
 
-		protected internal virtual bool canAdd(Message<T> message)
+		protected internal bool CanAdd(IMessage<T> message)
 		{
 			if (maxNumberOfMessages <= 0 && maxSizeOfMessages <= 0)
 			{
@@ -55,13 +56,13 @@ namespace org.apache.pulsar.client.impl
 			return (maxNumberOfMessages > 0 && currentNumberOfMessages + 1 <= maxNumberOfMessages) || (maxSizeOfMessages > 0 && currentSizeOfMessages + message.Data.length <= maxSizeOfMessages);
 		}
 
-		protected internal virtual void add(Message<T> message)
+		protected internal void Add(IMessage<T> message)
 		{
 			if (message == null)
 			{
 				return;
 			}
-			Preconditions.checkArgument(canAdd(message), "No more space to add messages.");
+			Preconditions.checkArgument(CanAdd(message), "No more space to add messages.");
 			currentNumberOfMessages++;
 			currentSizeOfMessages += message.Data.length;
 			messageList.Add(message);
