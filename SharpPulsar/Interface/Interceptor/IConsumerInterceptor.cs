@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Message;
+﻿using SharpPulsar.Interface.Consumer;
+using SharpPulsar.Interface.Message;
 using System;
 using System.Collections.Generic;
 
@@ -21,7 +22,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interface.Consumer
+namespace SharpPulsar.Interface.Interceptor
 {
 
 	/// <summary>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,10 +20,8 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface
 {
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-
 	/// <summary>
 	/// Builder interface that is used to configure and construct a <seealso cref="IPulsarClient"/> instance.
 	/// 

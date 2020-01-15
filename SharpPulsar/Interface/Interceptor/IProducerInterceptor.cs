@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Message;
+using System;
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +49,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// </summary>
 		/// <param name="message"> message to send </param>
 		/// <returns> whether the interceptor can be applied to this particular message. </returns>
-		bool Eligible(Message message);
+		bool Eligible(IMessage<T> message);
 
 		/// <summary>
 		/// This is called from <seealso cref="Producer.send(object)"/> and {@link
@@ -75,7 +76,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		Message BeforeSend(Producer producer, Message message);
+		IMessage<T> BeforeSend(IProducerInterceptor producer, IMessage message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been
@@ -96,7 +97,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void OnSendAcknowledgement(Producer producer, Message message, MessageId msgId, Exception exception);
+		void OnSendAcknowledgement(IProducerInterceptor producer, IMessage message, IMessageId msgId, System.Exception exception);
 	}
 
 }

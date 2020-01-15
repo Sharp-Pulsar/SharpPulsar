@@ -1,4 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Enum;
+using SharpPulsar.Interface.Batch;
+using SharpPulsar.Interface.Interceptor;
+using SharpPulsar.Interface.Message;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,10 +24,9 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Producer
 {
-	using ProducerQueueIsFullError = PulsarClientException.ProducerQueueIsFullError;
-
+	
 	/// <summary>
 	/// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
 	/// </summary>
@@ -475,19 +478,7 @@ namespace Pulsar.Api
 		/// <returns> the producer builder instance </returns>
 		IProducerBuilder<T> Properties(IDictionary<string, string> properties);
 
-		/// <summary>
-		/// Add a set of <seealso cref="ProducerInterceptor"/> to the producer.
-		/// 
-		/// <para>Interceptors can be used to trace the publish and acknowledgments operation happening in a producer.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="interceptors">
-		///            the list of interceptors to intercept the producer created by this builder. </param>
-		/// <returns> the producer builder instance </returns>
-		[Obsolete]
-		IProducerBuilder<T> Intercept(params IProducerInterceptor<T> [] interceptors);
-
+		
 		/// <summary>
 		/// Add a set of <seealso cref="org.apache.pulsar.client.api.interceptor.ProducerInterceptor"/> to the producer.
 		/// 

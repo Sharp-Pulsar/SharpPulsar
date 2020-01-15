@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Interface.Message;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface
 {
 
 	/// <summary>

@@ -1,4 +1,6 @@
 ﻿using Pulsar.Api.Schema;
+using SharpPulsar.Interface.Message;
+using SharpPulsar.Interface.Schema;
 using System;
 using System.Threading.Tasks;
 /// <summary>
@@ -19,7 +21,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Producer
 {
 
 	/// <summary>
@@ -54,8 +56,6 @@ namespace Pulsar.Api
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: MessageId send(T message) throws PulsarClientException;
 		IMessageId Send(T message);
 
 		/// <summary>
@@ -84,9 +84,7 @@ namespace Pulsar.Api
 		/// <exception cref="PulsarClientException">
 		/// @since 2.1.0 </exception>
 		/// <seealso cref= #flushAsync() </seealso>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void flush() throws PulsarClientException;
-		void flush();
+		void Flush();
 
 		/// <summary>
 		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.
@@ -162,8 +160,6 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override void close() throws PulsarClientException;
 		void Close();
 
 		/// <summary>

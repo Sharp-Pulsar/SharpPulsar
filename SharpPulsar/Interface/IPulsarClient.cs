@@ -20,9 +20,9 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface
 {
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
+	
 
 	/// <summary>
 	/// Class that provides a client interface to Pulsar.

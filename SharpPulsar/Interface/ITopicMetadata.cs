@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface
 {
 	/// <summary>
 	/// Metadata of a topic that can be used for message routing.

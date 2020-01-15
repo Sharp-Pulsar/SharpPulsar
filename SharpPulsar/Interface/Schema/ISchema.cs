@@ -18,13 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
-{
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
-	using org.apache.pulsar.common.schema;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+namespace SharpPulsar.Interface.Schema
+{	
 
 	/// <summary>
 	/// Message schema definition.

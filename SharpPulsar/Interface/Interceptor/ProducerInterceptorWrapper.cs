@@ -28,7 +28,7 @@ namespace Pulsar.Api.Interceptor
 	{
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: private final org.apache.pulsar.client.api.ProducerInterceptor<?> innerInterceptor;
-		private readonly IProducerInterceptor _innerInterceptor;
+		private readonly IProducerInterceptor<T> _innerInterceptor;
 
 		public ProducerInterceptorWrapper(IProducerInterceptor innerInterceptor)
 		{
