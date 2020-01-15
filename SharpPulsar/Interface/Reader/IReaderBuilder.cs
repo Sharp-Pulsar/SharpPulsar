@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Enum;
+using SharpPulsar.Interface.Message;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,7 +22,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Reader
 {
 
 	/// <summary>
@@ -42,8 +44,6 @@ namespace Pulsar.Api
 		/// <returns> the reader instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the reader creation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Reader<T> create() throws PulsarClientException;
 		IReader<T> Create();
 
 		/// <summary>

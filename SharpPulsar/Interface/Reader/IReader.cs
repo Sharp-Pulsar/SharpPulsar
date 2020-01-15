@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using SharpPulsar.Interface.Message;
+using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -17,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Reader
 {
 
 	/// <summary>
@@ -137,8 +138,6 @@ namespace Pulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="messageId"> the message id where to reposition the reader </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
 		void Seek(IMessageId messageId);
 
 		/// <summary>
@@ -150,8 +149,7 @@ namespace Pulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
+		/// <exception cref="PulsarClientException">PulsarClientException</exception>
 		void Seek(long timestamp);
 
 		/// <summary>

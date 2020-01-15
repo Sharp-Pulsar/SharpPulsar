@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Entity;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,10 +19,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
-	using org.apache.pulsar.client.api;
-
+	
 	/// <summary>
 	/// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
 	/// </summary>

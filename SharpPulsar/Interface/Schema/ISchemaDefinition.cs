@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Pulsar.Api.Schema;
+using SharpPulsar.Common;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +21,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
 	//using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
@@ -33,11 +35,10 @@ namespace Pulsar.Api.Schema
 		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
 		/// </summary>
 		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> SchemaDefinitionBuilder<T> builder()
-	//	{
-	//		return DefaultImplementation.newSchemaDefinitionBuilder();
-	//	}
+		static ISchemaDefinitionBuilder<T> Builder()
+		{
+			return DefaultImplementation.NewSchemaDefinitionBuilder<T>();
+		}
 
 		/// <summary>
 		/// Get schema whether always allow null or not.
@@ -61,7 +62,7 @@ namespace Pulsar.Api.Schema
 		/// Get pojo schema definition.
 		/// </summary>
 		/// <returns> pojo schema </returns>
-		Type<T> Pojo {get;}
+		T Pojo {get;}
 
 		/// <summary>
 		/// Get supportSchemaVersioning schema definition.

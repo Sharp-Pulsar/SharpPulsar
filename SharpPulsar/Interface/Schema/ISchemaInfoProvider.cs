@@ -18,8 +18,8 @@
 /// </summary>
 namespace Pulsar.Api.Schema
 {
-    using System.Threading.Tasks;
-    using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using SharpPulsar.Common.Schema;
+	using System.Threading.Tasks;
 
 	/// <summary>
 	/// Schema Provider.

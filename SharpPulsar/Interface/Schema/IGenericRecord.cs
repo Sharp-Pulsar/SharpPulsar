@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Entity;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
 
 	/// <summary>
@@ -44,11 +45,10 @@ namespace Pulsar.Api.Schema
 		/// </summary>
 		/// <param name="field"> the field to retrieve the value </param>
 		/// <returns> the value object </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default Object getField(Field field)
-	//	{
-	//		return getField(field.getName());
-	//	}
+		object GetField(Field field)
+		{
+			return GetField(field.Name);
+		}
 
 		/// <summary>
 		/// Retrieve the value of the provided <tt>fieldName</tt>.

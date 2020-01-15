@@ -1,4 +1,5 @@
 ﻿using Pulsar.Api.Schema;
+using SharpPulsar.Interface.Schema;
 using System;
 using System.Collections.Generic;
 
@@ -179,12 +180,12 @@ namespace SharpPulsar.Common
 			return catchExceptions(() => (Schema<Timestamp>) getStaticMethod("org.apache.pulsar.client.impl.schema.TimestampSchema", "of", null).invoke(null, null));
 		}
 
-		public static Schema<T> newAvroSchema<T>(SchemaDefinition schemaDefinition)
+		public static Schema<T> NewAvroSchema<T>(SchemaDefinition schemaDefinition)
 		{
 			return catchExceptions(() => (Schema<T>) getStaticMethod("org.apache.pulsar.client.impl.schema.AvroSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
 		}
 
-		public static Schema<T> newProtobufSchema<T>(SchemaDefinition schemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
+		public static ISchema<T> NewProtobufSchema<T>(SchemaDefinition schemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
 		{
 			return catchExceptions(() => (Schema<T>) getStaticMethod("org.apache.pulsar.client.impl.schema.ProtobufSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
 		}

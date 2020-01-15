@@ -1,4 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Common;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Enum;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -39,11 +42,10 @@ namespace SharpPulsar.Interface.Schema
 		/// </summary>
 		/// <param name="message"> the messages to verify </param>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default void validate(byte[] message)
-	//	{
-	//		decode(message);
-	//	}
+		void Validate(byte[] message)
+	    {
+			Decode(message);
+		}
 
 		/// <summary>
 		/// Encode an object representing the message content into a byte array.
@@ -70,16 +72,14 @@ namespace SharpPulsar.Interface.Schema
 		/// </para>
 		/// </summary>
 		/// <returns> true if this schema implementation supports schema versioning; otherwise returns false. </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default boolean supportSchemaVersioning()
-	//	{
-	//		return false;
-	//	}
+		bool SupportSchemaVersioning()
+		{
+				return false;
+		}
 
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default void setSchemaInfoProvider(org.apache.pulsar.client.api.schema.SchemaInfoProvider schemaInfoProvider)
-	//	{
-	//	}
+		SetSchemaInfoProvider(SchemaInfoProvider schemaInfoProvider)
+		{
+		}
 
 		/// <summary>
 		/// Decode a byte array into an object using the schema definition and deserializer implementation.
@@ -87,12 +87,11 @@ namespace SharpPulsar.Interface.Schema
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default T decode(byte[] bytes)
-	//	{
-	//		// use `null` to indicate ignoring schema version
-	//		return decode(bytes, null);
-	//	}
+        T Decode(byte[] bytes)
+		{
+			// use `null` to indicate ignoring schema version
+				return Decode(bytes, null);
+		}
 
 		/// <summary>
 		/// Decode a byte array into an object using a given version.
@@ -102,12 +101,11 @@ namespace SharpPulsar.Interface.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default T decode(byte[] bytes, byte[] schemaVersion)
-	//	{
-	//		// ignore version by default (most of the primitive schema implementations ignore schema version)
-	//		return decode(bytes);
-	//	}
+		T Decode(byte[] bytes, byte[] schemaVersion)
+		{
+				// ignore version by default (most of the primitive schema implementations ignore schema version)
+			return Decode(bytes);
+		}
 
 		/// <returns> an object that represents the Schema associated metadata </returns>
 		SchemaInfo SchemaInfo {get;}
@@ -117,11 +115,10 @@ namespace SharpPulsar.Interface.Schema
 		/// </summary>
 		/// <returns> true if the schema requires fetching schema info to configure the schema,
 		///         otherwise false. </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default boolean requireFetchingSchemaInfo()
-	//	{
-	//		return false;
-	//	}
+		bool RequireFetchingSchemaInfo()
+		{
+				return false;
+		}
 
 		/// <summary>
 		/// Configure the schema to use the provided schema info.
@@ -129,11 +126,10 @@ namespace SharpPulsar.Interface.Schema
 		/// <param name="topic"> topic name </param>
 		/// <param name="componentName"> component name </param>
 		/// <param name="schemaInfo"> schema info </param>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default void configureSchemaInfo(String topic, String componentName, org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-	//	{
-	//		// no-op
-	//	}
+		void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+		{
+				// no-op
+		}
 
 		/// <summary>
 		/// Schema that doesn't perform any encoding on the message payloads. Accepts a byte array and it passes it through.
@@ -194,118 +190,100 @@ namespace SharpPulsar.Interface.Schema
 		/// </summary>
 		/// <param name="clazz"> the Protobuf generated class to be used to extract the schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> PROTOBUF(Class<T> clazz)
-	//	{
-	//		return DefaultImplementation.newProtobufSchema(SchemaDefinition.builder().withPojo(clazz).build());
-	//	}
+		static ISchema<T> Protobuf()
+	    {
+	   		return DefaultImplementation.NewProtobufSchema(ISchemaDefinition<T>.Builder().withPojo(typeof(T)).build());
+	    }
 
 		/// <summary>
 		/// Create a Protobuf schema type with schema definition.
 		/// </summary>
 		/// <param name="schemaDefinition"> schemaDefinition the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> PROTOBUF(org.apache.pulsar.client.api.schema.SchemaDefinition<T> schemaDefinition)
-	//	{
-	//		return DefaultImplementation.newProtobufSchema(schemaDefinition);
-	//	}
+		static ISchema<T> Protobuf (ISchemaDefinition<T> schemaDefinition)
+		{
+				return DefaultImplementation.NewProtobufSchema(schemaDefinition);
+		}
 
 		/// <summary>
 		/// Create a  Avro schema type by default configuration of the class.
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the Avro schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> AVRO(Class<T> pojo)
-	//	{
-	//		return DefaultImplementation.newAvroSchema(SchemaDefinition.builder().withPojo(pojo).build());
-	//	}
+		static ISchema<T> Avro()
+		{
+			return DefaultImplementation.NewAvroSchema(ISchemaDefinition<T>.Builder().withPojo(typeof(T)).build());
+		}
 
 		/// <summary>
 		/// Create a Avro schema type with schema definition.
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> AVRO(org.apache.pulsar.client.api.schema.SchemaDefinition<T> schemaDefinition)
-	//	{
-	//		return DefaultImplementation.newAvroSchema(schemaDefinition);
-	//	}
+		static ISchema<T> Avro(ISchemaDefinition<T> schemaDefinition)
+		{
+				return DefaultImplementation.NewAvroSchema(schemaDefinition);
+		}
 
 		/// <summary>
 		/// Create a JSON schema type by extracting the fields of the specified class.
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> JSON(Class<T> pojo)
-	//	{
-	//		return DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(pojo).build());
-	//	}
+		static ISchema<T> Json()
+		{
+			return DefaultImplementation.newJSONSchema(ISchemaDefinition<T>.Builder().withPojo(typeof(T)).build());
+		}
 
 		/// <summary>
 		/// Create a JSON schema type with schema definition.
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <T> Schema<T> JSON(org.apache.pulsar.client.api.schema.SchemaDefinition schemaDefinition)
-	//	{
-	//		return DefaultImplementation.newJSONSchema(schemaDefinition);
-	//	}
+		static ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
+		{
+			return DefaultImplementation.NewJSONSchema(schemaDefinition);
+		}
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <K, V> Schema<org.apache.pulsar.common.schema.KeyValue<K, V>> KeyValue(Class<K> key, Class<V> value, org.apache.pulsar.common.schema.SchemaType type)
-	//	{
-	//		return DefaultImplementation.newKeyValueSchema(key, value, type);
-	//	}
+		static ISchema<KeyValue<K, V>> KeyValue(SchemaType type)
+		{
+			return DefaultImplementation.NewKeyValueSchema(typeof(K), typeof(V), type);
+		}
 
 		/// <summary>
 		/// Schema that can be used to encode/decode KeyValue.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static Schema<org.apache.pulsar.common.schema.KeyValue<byte[], byte[]>> KV_BYTES()
-	//	{
-	//		return DefaultImplementation.newKeyValueBytesSchema();
-	//	}
+		static ISchema<KeyValue<byte[], byte[]>> KV_BYTES()
+		{
+				return DefaultImplementation.newKeyValueBytesSchema();
+		}
 
 		/// <summary>
 		/// Key Value Schema whose underneath key and value schemas are JSONSchema.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <K, V> Schema<org.apache.pulsar.common.schema.KeyValue<K, V>> KeyValue(Class<K> key, Class<V> value)
-	//	{
-	//		return DefaultImplementation.newKeyValueSchema(key, value, SchemaType.JSON);
-	//	}
+		static ISchema<KeyValue<K, V>> KeyValue(Class<K> key, Class<V> value)
+		{
+			return DefaultImplementation.NewKeyValueSchema(key, value, SchemaType.JSON);
+		}
 
 		/// <summary>
 		/// Key Value Schema using passed in key and value schemas.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <K, V> Schema<org.apache.pulsar.common.schema.KeyValue<K, V>> KeyValue(Schema<K> key, Schema<V> value)
-	//	{
-	//		return DefaultImplementation.newKeyValueSchema(key, value);
-	//	}
+		static ISchema<KeyValue<K, V>> KeyValue(Schema<K> key, Schema<V> value)
+		{
+				return DefaultImplementation.NewKeyValueSchema(key, value);
+		}
 
 		/// <summary>
 		/// Key Value Schema using passed in key, value and encoding type schemas.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static <K, V> Schema<org.apache.pulsar.common.schema.KeyValue<K, V>> KeyValue(Schema<K> key, Schema<V> value, org.apache.pulsar.common.schema.KeyValueEncodingType keyValueEncodingType)
-	//	{
-	//		return DefaultImplementation.newKeyValueSchema(key, value, keyValueEncodingType);
-	//	}
-
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//[Obsolete]
-//		static Schema<org.apache.pulsar.client.api.schema.GenericRecord> AUTO()
-	//	{
-	//		return AUTO_CONSUME();
-	//	}
+		static ISchema<KeyValue<K, V>> KeyValue(ISchema<K> key, ISchema<V> value, KeyValueEncodingType keyValueEncodingType)
+		{
+			return DefaultImplementation.NewKeyValueSchema(key, value, keyValueEncodingType);
+		}
 
 		/// <summary>
 		/// Create a schema instance that automatically deserialize messages
@@ -319,11 +297,10 @@ namespace SharpPulsar.Interface.Schema
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static Schema<org.apache.pulsar.client.api.schema.GenericRecord> AUTO_CONSUME()
-	//	{
-	//		return DefaultImplementation.newAutoConsumeSchema();
-	//	}
+		static ISchema<IGenericRecord> AUTO_CONSUME()
+		 {
+			return DefaultImplementation.NewAutoConsumeSchema();
+		}
 
 		/// <summary>
 		/// Create a schema instance that accepts a serialized payload
@@ -338,11 +315,10 @@ namespace SharpPulsar.Interface.Schema
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static Schema<byte[]> AUTO_PRODUCE_BYTES()
-	//	{
-	//		return DefaultImplementation.newAutoProduceSchema();
-	//	}
+		static ISchema<byte[]> AUTO_PRODUCE_BYTES()
+		{
+				return DefaultImplementation.NewAutoProduceSchema();
+		}
 
 		/// <summary>
 		/// Create a schema instance that accepts a serialized payload
@@ -351,19 +327,17 @@ namespace SharpPulsar.Interface.Schema
 		/// <returns> the auto schema instance
 		/// @since 2.5.0 </returns>
 		/// <seealso cref= #AUTO_PRODUCE_BYTES() </seealso>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static Schema<byte[]> AUTO_PRODUCE_BYTES(Schema<JavaToDotNetGenericWildcard> schema)
-	//	{
-	//		return DefaultImplementation.newAutoProduceSchema(schema);
-	//	}
+		static ISchema<byte[]> AUTO_PRODUCE_BYTES(ISchema<T> schema)
+		{
+			return DefaultImplementation.NewAutoProduceSchema(schema);
+		}
 
 		// CHECKSTYLE.ON: MethodName
 
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-	//	{
-	//		return DefaultImplementation.getSchema(schemaInfo);
-	//	}
+		static ISchema<T> GetSchema(SchemaInfo schemaInfo)
+		{
+			return DefaultImplementation.GetSchema(schemaInfo);
+		}
 
 		/// <summary>
 		/// Returns a generic schema of existing schema info.
@@ -374,11 +348,10 @@ namespace SharpPulsar.Interface.Schema
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static org.apache.pulsar.client.api.schema.GenericSchema<org.apache.pulsar.client.api.schema.GenericRecord> generic(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-	//	{
-	//		return DefaultImplementation.getGenericSchema(schemaInfo);
-	//	}
+		static IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+		{
+				return DefaultImplementation.GetGenericSchema(schemaInfo);
+		}
 	}
 
 	public static class Schema_Fields

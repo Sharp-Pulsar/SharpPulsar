@@ -22,19 +22,17 @@ namespace SharpPulsar.Entity
 	/// A field in a record, consisting of a field name, index, and
 	/// <seealso cref="Schema"/> for the field value.
 	/// </summary>
-	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-	//ORIGINAL LINE: @Data @EqualsAndHashCode @ToString public class Field
 	public class Field
 	{
 
 		/// <summary>
 		/// The field name.
 		/// </summary>
-		private readonly string Name;
+		public string Name { get; set; }
 		/// <summary>
 		/// The index of the field within the record.
 		/// </summary>
-		private readonly int Index;
+		public int Index { get; set; }
 
 	}
 

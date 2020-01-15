@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common;
+using SharpPulsar.Interface.Schema;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
 	//using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
@@ -31,11 +33,10 @@ namespace Pulsar.Api.Schema
 		/// </summary>
 		/// <param name="name"> name of the record. </param>
 		/// <returns> builder to build the schema for a record. </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static RecordSchemaBuilder record(String name)
-	//	{
-	//		return DefaultImplementation.newRecordSchemaBuilder(name);
-	//	}
+		static IRecordSchemaBuilder Record(string name)
+		{
+			return DefaultImplementation.newRecordSchemaBuilder(name);
+		}
 
 	}
 

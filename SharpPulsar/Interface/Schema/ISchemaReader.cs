@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
 
 	/// <summary>
@@ -33,11 +34,10 @@ namespace Pulsar.Api.Schema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <returns> the serialized object </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default T read(byte[] bytes)
-	//	{
-	//		return read(bytes, 0, bytes.length);
-	//	}
+		T Read(byte[] bytes)
+		{
+			return Read((sbyte[])(Array)bytes, 0, bytes.Length);
+		}
 
 		/// <summary>
 		/// serialize bytes convert pojo.

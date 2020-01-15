@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Interface.Schema
 {
 
 
