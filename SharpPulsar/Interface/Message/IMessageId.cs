@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Common;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,10 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Message
 {
-
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
 	/// <summary>
 	/// Opaque unique identifier of a single message
@@ -53,11 +52,10 @@ namespace Pulsar.Api
 		///            byte array containing the serialized message id </param>
 		/// <returns> the de-serialized messageId object </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static MessageId fromByteArray(byte[] data) throws java.io.IOException
-	//	{
-	//		return DefaultImplementation.newMessageIdFromByteArray(data);
-	//	}
+        public static IMessageId FromByteArray(byte[] data)
+		{
+			return DefaultImplementation.NewMessageIdFromByteArray(data);
+		}
 
 		/// <summary>
 		/// De-serialize a message id from a byte array with its topic
@@ -72,11 +70,10 @@ namespace Pulsar.Api
 		/// <param name="topicName"> the topic name </param>
 		/// <returns> a <seealso cref="MessageId instance"/> </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static MessageId fromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException
-	//	{
-	//		return DefaultImplementation.newMessageIdFromByteArrayWithTopic(data, topicName);
-	//	}
+	   public static IMessageId FromByteArrayWithTopic(byte[] data, string topicName)
+	   {
+			return DefaultImplementation.NewMessageIdFromByteArrayWithTopic(data, topicName);
+	   }
 
 		// CHECKSTYLE.OFF: ConstantName
 

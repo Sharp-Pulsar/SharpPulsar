@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Message
 {
 	/// <summary>
 	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>

@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,10 +17,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Batch
 {
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
-
+	
 	/// <summary>
 	/// Batcher builder.
 	/// </summary>
@@ -59,8 +59,8 @@ namespace Pulsar.Api
 
 	public static class BatcherBuilder_Fields
 	{
-		public static readonly IBatcherBuilder DEFAULT = DefaultImplementation.newDefaultBatcherBuilder();
-		public static readonly IBatcherBuilder KEY_BASED = DefaultImplementation.newKeyBasedBatcherBuilder();
+		public static readonly IBatcherBuilder DEFAULT = DefaultImplementation.NewDefaultBatcherBuilder();
+		public static readonly IBatcherBuilder KEY_BASED = DefaultImplementation.NewKeyBasedBatcherBuilder();
 	}
 
 }

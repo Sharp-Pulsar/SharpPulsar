@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Message;
+using System;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Consumer
 {
 
 	/// <summary>
@@ -58,15 +59,12 @@ namespace Pulsar.Api
 		/// </para>
 		/// </summary>
 		/// <exception cref="PulsarClientException"> if the operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void unsubscribe() throws PulsarClientException;
 		void Unsubscribe();
 
 		/// <summary>
 		/// Asynchronously unsubscribe the consumer.
 		/// </summary>
 		/// <seealso cref= Consumer#unsubscribe() </seealso>
-		/// <returns> <seealso cref="CompletableFuture"/> to track the operation </returns>
 		ValueTask UnsubscribeAsync();
 
 		/// <summary>
@@ -81,8 +79,6 @@ namespace Pulsar.Api
 		///             if the consumer was already closed </exception>
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> receive() throws PulsarClientException;
 		IMessage<T> Receive();
 
 		/// <summary>
@@ -114,9 +110,7 @@ namespace Pulsar.Api
 		///             if the consumer was already closed </exception>
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> receive(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		IMessage<T> Receive(int timeout, TimeUnit unit);
+		IMessage<T> Receive(int timeout, java.util.concurrent.TimeUnit unit);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -128,8 +122,6 @@ namespace Pulsar.Api
 		/// <returns> messages
 		/// @since 2.4.1 </returns>
 		/// <exception cref="PulsarClientException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Messages<T> batchReceive() throws PulsarClientException;
 		IMessages<T> BatchReceive();
 
 		/// <summary>
@@ -154,10 +146,7 @@ namespace Pulsar.Api
 		///            The {@code Message} to be acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void acknowledge(Message<?> message) throws PulsarClientException;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void Acknowledge<T1>(IMessage<T1> message);
+		void Acknowledge<T>(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -166,8 +155,6 @@ namespace Pulsar.Api
 		///            The <seealso cref="IMessageId"/> to be acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void acknowledge(MessageId messageId) throws PulsarClientException;
 		void Acknowledge(IMessageId messageId);
 
 		/// <summary>
@@ -176,9 +163,6 @@ namespace Pulsar.Api
 		/// <param name="messages"> messages </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void acknowledge(Messages<?> messages) throws PulsarClientException;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 		void Acknowledge<T1>(IMessages<T1> messages);
 
 		/// <summary>
@@ -212,8 +196,6 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="message">
 		///            The {@code Message} to be acknowledged </param>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void negativeAcknowledge(Message<?> message);
 		void NegativeAcknowledge<T1>(IMessage<T1> message);
 
 		/// <summary>
@@ -270,9 +252,7 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="messages">
 		///            The {@code Message} to be acknowledged </param>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void negativeAcknowledge(Messages<?> messages);
-		void NegativeAcknowledge<T1>(IMessages<T1> messages);
+		void NegativeAcknowledge<T>(IMessages<T> messages);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -292,10 +272,7 @@ namespace Pulsar.Api
 		///            The {@code Message} to be cumulatively acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void acknowledgeCumulative(Message<?> message) throws PulsarClientException;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void AcknowledgeCumulative<T1>(IMessage<T1> message);
+		void AcknowledgeCumulative<T>(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -315,8 +292,6 @@ namespace Pulsar.Api
 		///            The {@code MessageId} to be cumulatively acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void acknowledgeCumulative(MessageId messageId) throws PulsarClientException;
 		void AcknowledgeCumulative(IMessageId messageId);
 
 		/// <summary>
@@ -325,9 +300,7 @@ namespace Pulsar.Api
 		/// <param name="message">
 		///            The {@code Message} to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeAsync(Message<?> message);
-		ValueTask AcknowledgeAsync<T1>(IMessage<T1> message);
+		ValueTask AcknowledgeAsync<T>(IMessage<T> message);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -343,9 +316,7 @@ namespace Pulsar.Api
 		/// <param name="messages">
 		///            The <seealso cref="Messages"/> to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeAsync(Messages<?> messages);
-		ValueTask AcknowledgeAsync<T1>(IMessages<T1> messages);
+		ValueTask AcknowledgeAsync<T>(IMessages<T> messages);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -358,9 +329,7 @@ namespace Pulsar.Api
 		/// <param name="message">
 		///            The {@code Message} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.concurrent.CompletableFuture<Void> acknowledgeCumulativeAsync(Message<?> message);
-		ValueTask AcknowledgeCumulativeAsync<T1>(IMessage<T1> message);
+		ValueTask AcknowledgeCumulativeAsync<T>(IMessage<T> message);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -373,7 +342,7 @@ namespace Pulsar.Api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask acknowledgeCumulativeAsync(IMessageId messageId);
+		ValueTask AcknowledgeCumulativeAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -396,8 +365,6 @@ namespace Pulsar.Api
 		/// <summary>
 		/// Close the consumer and stop the broker to push more messages.
 		/// </summary>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override void close() throws PulsarClientException;
 		void Close();
 
 		/// <summary>
@@ -440,8 +407,6 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="messageId">
 		///            the message id where to reposition the subscription </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
 		void Seek(IMessageId messageId);
 
 		/// <summary>
@@ -449,8 +414,6 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="timestamp">
 		///            the message publish time where to reposition the subscription </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
 		void Seek(long timestamp);
 
 		/// <summary>
@@ -485,8 +448,6 @@ namespace Pulsar.Api
 		/// Get the last message id available available for consume.
 		/// </summary>
 		/// <returns> the last message id. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: MessageId getLastMessageId() throws PulsarClientException;
 		IMessageId LastMessageId {get;}
 
 		/// <summary>

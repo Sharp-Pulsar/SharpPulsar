@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Optional;
+using Pulsar.Common.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,9 +20,8 @@ using Optional;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Message
 {
-	using EncryptionContext = org.apache.pulsar.common.api.EncryptionContext;
 
 	/// <summary>
 	/// The message abstraction used in Pulsar.

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Message;
+using System;
 using System.Collections.Generic;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +21,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Consumer
 {
 
 	/// <summary>
@@ -89,7 +91,7 @@ namespace Pulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledge(IConsumer<T> consumer, IMessageId messageId, Exception exception);
+		void OnAcknowledge(IConsumer<T> consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -101,7 +103,7 @@ namespace Pulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(IConsumer<T> consumer, IMessageId messageId, Exception exception);
+		void OnAcknowledgeCumulative(IConsumer<T> consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.

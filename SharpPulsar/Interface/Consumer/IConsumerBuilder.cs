@@ -1,5 +1,9 @@
-﻿using System;
+﻿using SharpPulsar.Entity;
+using SharpPulsar.Enum;
+using SharpPulsar.Interface.Message;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -20,7 +24,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Consumer
 {
 
 	/// <summary>
@@ -90,8 +94,6 @@ namespace Pulsar.Api
 		/// <returns> the consumer builder instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the the subscribe operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Consumer<T> subscribe() throws PulsarClientException;
 		IConsumer<T> Subscribe();
 
 		/// <summary>
@@ -140,7 +142,7 @@ namespace Pulsar.Api
 		/// <param name="topicsPattern">
 		///            a regular expression to select a list of topics to subscribe to </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> TopicsPattern(Pattern topicsPattern);
+		IConsumerBuilder<T> TopicsPattern(Regex topicsPattern);
 
 		/// <summary>
 		/// Specify a pattern for topics that this consumer will subscribe on.

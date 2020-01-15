@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Entity
 {
 	/// <summary>
 	/// A field in a record, consisting of a field name, index, and
