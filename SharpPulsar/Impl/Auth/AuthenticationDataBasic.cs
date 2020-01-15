@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -21,12 +22,9 @@ using System.Text;
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-
-
-	public class AuthenticationDataBasic : AuthenticationDataProvider
+	public class AuthenticationDataBasic : IAuthenticationDataProvider
 	{
 		private const string HTTP_HEADER_NAME = "Authorization";
 		private string httpAuthToken;
@@ -47,9 +45,11 @@ namespace Pulsar.Client.Impl.Auth
 		{
 			get
 			{
-				IDictionary<string, string> headers = new Dictionary<string, string>();
-				headers[HTTP_HEADER_NAME] = httpAuthToken;
-				return headers.SetOfKeyValuePairs();
+				IDictionary<string, string> headers = new Dictionary<string, string>
+				{
+					[HTTP_HEADER_NAME] = httpAuthToken
+				};
+				return new HashSet<KeyValuePair<string, string>>(headers);
 			}
 		}
 

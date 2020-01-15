@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -26,7 +26,7 @@ namespace org.apache.pulsar.client.util
 //	import static com.google.common.@base.Preconditions.checkNotNull;
 
 
-	using Lists = com.google.common.collect.Lists;
+	
 
 	public class ExecutorProvider
 	{

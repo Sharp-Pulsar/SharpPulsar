@@ -20,28 +20,8 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using Maps = com.google.common.collect.Maps;
-	using Sets = com.google.common.collect.Sets;
-
-
-	//using AllArgsConstructor = lombok.AllArgsConstructor;
-	//using Data = lombok.Data;
-	//using NoArgsConstructor = lombok.NoArgsConstructor;
-	using BatchReceivePolicy = Api.BatchReceivePolicy;
-	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
-	using ConsumerEventListener = Api.ConsumerEventListener;
-	using CryptoKeyReader = Api.CryptoKeyReader;
-	using DeadLetterPolicy = Api.DeadLetterPolicy;
-	using KeySharedPolicy = Api.KeySharedPolicy;
-	using RegexSubscriptionMode = Api.RegexSubscriptionMode;
-	using SubscriptionInitialPosition = Api.SubscriptionInitialPosition;
-	using SubscriptionType = Api.SubscriptionType;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ConsumerConfigurationData<T> implements java.io.Serializable, Cloneable

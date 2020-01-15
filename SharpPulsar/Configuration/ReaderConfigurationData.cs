@@ -20,14 +20,8 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-	
-
-	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
-	using CryptoKeyReader = Api.CryptoKeyReader;
-	using MessageId = Api.MessageId;
-	using Range = Api.Range;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data public class ReaderConfigurationData<T> implements java.io.Serializable, Cloneable

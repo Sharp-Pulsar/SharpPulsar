@@ -18,9 +18,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
-	using UtilityClass = lombok.experimental.UtilityClass;
+	
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @UtilityClass public class TypeCheckUtil
@@ -33,7 +33,7 @@ namespace org.apache.pulsar.client.util
 			if (!clazz.IsInstanceOfType(o))
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new Exception(string.Format("Invalid object type '{0}' when exepcting '{1}'", o.GetType().FullName, clazz.FullName));
+				throw new System.Exception(string.Format("Invalid object type '{0}' when exepcting '{1}'", o.GetType().FullName, clazz.FullName));
 			}
 			return (T) o;
 		}

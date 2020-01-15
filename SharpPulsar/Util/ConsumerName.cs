@@ -16,14 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
-
-	using DigestUtils = org.apache.commons.codec.digest.DigestUtils;
 
 	public class ConsumerName
 	{
-		public static string generateRandomName()
+		public static string GenerateRandomName()
 		{
 			return DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 5);
 		}

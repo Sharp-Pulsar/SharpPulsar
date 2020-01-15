@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,14 +22,9 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
-
-	using Authentication = Api.Authentication;
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = Api.PulsarClientException;
-
+	
 	/// 
 	/// <summary>
 	/// This plugin requires these parameters
@@ -35,7 +32,7 @@ namespace Pulsar.Client.Impl.Auth
 	/// tlsCertFile: A file path for a client certificate. tlsKeyFile: A file path for a client private key.
 	/// 
 	/// </summary>
-	public class AuthenticationTls : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private const long serialVersionUID = 1L;
@@ -76,7 +73,7 @@ namespace Pulsar.Client.Impl.Auth
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public AuthenticationDataProvider AuthData
+		public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -106,14 +103,6 @@ namespace Pulsar.Client.Impl.Auth
 			AuthParams = authParamsMap;
 		}
 
-		[Obsolete]
-		public void Configure(IDictionary<string, string> authParams)
-		{
-			AuthParams = authParams;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public void start() throws org.apache.pulsar.client.api.PulsarClientException
 		public void Start()
 		{
 			// noop

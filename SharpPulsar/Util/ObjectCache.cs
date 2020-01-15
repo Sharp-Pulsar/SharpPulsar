@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,10 +17,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
 
-	public class ObjectCache<T> : System.Func<T>
+	public class ObjectCache<T> : Func<T>
 	{
 
 		private readonly System.Func<T> supplier;

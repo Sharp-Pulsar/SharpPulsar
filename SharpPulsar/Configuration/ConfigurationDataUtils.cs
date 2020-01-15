@@ -19,12 +19,9 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-	using Include = com.fasterxml.jackson.annotation.JsonInclude.Include;
-	using DeserializationFeature = com.fasterxml.jackson.databind.DeserializationFeature;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using Maps = com.google.common.collect.Maps;
+	
 	//using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
 
 	/// <summary>

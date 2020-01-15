@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -20,12 +21,10 @@ using System.Collections.Generic;
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
 
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-
-	public class AuthenticationDataToken : AuthenticationDataProvider
+	public class AuthenticationDataToken : IAuthenticationDataProvider
 	{
 		public const string HTTP_HEADER_NAME = "Authorization";
 

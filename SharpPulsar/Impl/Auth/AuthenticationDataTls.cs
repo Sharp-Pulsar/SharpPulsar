@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interface.Auth;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,20 +19,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
 
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-	using FileModifiedTimeUpdater = org.apache.pulsar.common.util.FileModifiedTimeUpdater;
-	using SecurityUtility = org.apache.pulsar.common.util.SecurityUtility;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-    using System.Security.Cryptography.X509Certificates;
 
-    public class AuthenticationDataTls : AuthenticationDataProvider
+    public class AuthenticationDataTls : IAuthenticationDataProvider
 	{
-		protected internal X509Certificate[] tlsCertificates;
-		protected internal PrivateKey tlsPrivateKey;
+		protected internal X509Certificate2[] tlsCertificates;
+		protected internal AsymmetricAlgorithm tlsPrivateKey;
 		protected internal FileModifiedTimeUpdater certFile, keyFile;
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
@@ -59,7 +56,7 @@ namespace Pulsar.Client.Impl.Auth
 			return true;
 		}
 
-		public Certificate[] TlsCertificates
+		public X509Certificate2[] TlsCertificates
 		{
 			get
 			{
@@ -78,7 +75,7 @@ namespace Pulsar.Client.Impl.Auth
 			}
 		}
 
-		public PrivateKey TlsPrivateKey
+		public AsymmetricAlgorithm TlsPrivateKey
 		{
 			get
 			{

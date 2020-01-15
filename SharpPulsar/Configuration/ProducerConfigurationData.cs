@@ -19,23 +19,9 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Configuration
 {
 
-	//using AllArgsConstructor = lombok.AllArgsConstructor;
-	//using NoArgsConstructor = lombok.NoArgsConstructor;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = Api.BatcherBuilder;
-	using CompressionType = Api.CompressionType;
-	using CryptoKeyReader = Api.CryptoKeyReader;
-	using HashingScheme = Api.HashingScheme;
-	using MessageRouter = Api.MessageRouter;
-	using MessageRoutingMode = Api.MessageRoutingMode;
-	using ProducerCryptoFailureAction = Api.ProducerCryptoFailureAction;
-
-	//using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using Maps = com.google.common.collect.Maps;
-	using Sets = com.google.common.collect.Sets;
 
 	//using Data = lombok.Data;
 

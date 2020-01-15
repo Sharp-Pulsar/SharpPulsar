@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interface.Message;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,16 +17,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using MessageIdImpl = org.apache.pulsar.client.impl.MessageIdImpl;
 
 	public class MessageIdUtils
 	{
-		public static long getOffset(MessageId messageId)
+		public static long GetOffset(IMessageId messageId)
 		{
-			MessageIdImpl msgId = (MessageIdImpl) messageId;
+			IMessageIdImpl msgId = (MessageIdImpl) messageId;
 			long ledgerId = msgId.LedgerId;
 			long entryId = msgId.EntryId;
 
@@ -36,7 +35,7 @@ namespace org.apache.pulsar.client.util
 			return offset;
 		}
 
-		public static MessageId getMessageId(long offset)
+		public static IMessageId GetMessageId(long offset)
 		{
 			// Demultiplex ledgerId and entryId from offset
 			long ledgerId = (long)((ulong)offset >> 28);

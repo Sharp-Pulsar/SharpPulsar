@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Common;
+using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
+using static SharpPulsar.Exception.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,11 +22,8 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar
 {
-
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
 	/// <summary>
 	/// Factory class that allows to create <seealso cref="IAuthentication"/> instances
@@ -89,7 +89,7 @@ namespace Pulsar.Api
 			{
 				return DefaultImplementation.createAuthentication(authPluginClassName, authParamsString);
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t);
 			}
@@ -110,7 +110,7 @@ namespace Pulsar.Api
 			{
 				return DefaultImplementation.createAuthentication(authPluginClassName, authParams);
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t);
 			}

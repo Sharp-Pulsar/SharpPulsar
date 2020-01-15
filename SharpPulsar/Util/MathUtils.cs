@@ -18,10 +18,8 @@
 /// </summary>
 namespace org.apache.pulsar.client.util
 {
-	using UtilityClass = lombok.experimental.UtilityClass;
+	
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass public class MathUtils
 	public class MathUtils
 	{
 		/// <summary>

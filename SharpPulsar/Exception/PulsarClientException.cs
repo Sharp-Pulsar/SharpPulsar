@@ -700,7 +700,7 @@ namespace SharpPulsar.Exception
 			return t;
 		}
 
-		public static PulsarClientException Unwrap(Exception t)
+		public static PulsarClientException Unwrap(System.Exception t)
 		{
 			if (t is PulsarClientException)
 			{

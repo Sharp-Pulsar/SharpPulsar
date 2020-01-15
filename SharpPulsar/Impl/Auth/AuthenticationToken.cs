@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -21,20 +24,13 @@ using System.Threading.Tasks;
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
-	using Charsets = com.google.common.@base.Charsets;
-
-
-	using Authentication = Api.Authentication;
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = Api.PulsarClientException;
 
 	/// <summary>
 	/// Token based authentication provider.
 	/// </summary>
-	public class AuthenticationToken : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private System.Func<string> tokenSupplier;
@@ -69,7 +65,7 @@ namespace Pulsar.Client.Impl.Auth
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public AuthenticationDataProvider AuthData
+		public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -93,7 +89,7 @@ namespace Pulsar.Client.Impl.Auth
 				{
 				try
 				{
-					return (new string(Files.readAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
+					return (new string(File.readAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
 				}
 				catch (IOException e)
 				{

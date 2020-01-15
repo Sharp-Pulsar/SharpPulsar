@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,35 +20,24 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-	//using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	//using AllArgsConstructor = lombok.AllArgsConstructor;
-	//using Data = lombok.Data;
-	//using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Authentication = Api.Authentication;
-	using ServiceUrlProvider = Api.ServiceUrlProvider;
-	using AuthenticationDisabled = Auth.AuthenticationDisabled;
-
 
 	/// <summary>
 	/// This is a simple holder of the client configuration values.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ClientConfigurationData implements java.io.Serializable, Cloneable
 	[Serializable]
 	public class ClientConfigurationData : ICloneable
 	{
-		private const long serialVersionUID = 1L;
+		public const long SerialVersionUID = 1L;
 
-		private string ServiceUrl;
+		public string ServiceUrl { get; set; }
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @JsonIgnore private transient org.apache.pulsar.client.api.ServiceUrlProvider serviceUrlProvider;
 		[NonSerialized]
-		private ServiceUrlProvider serviceUrlProvider;
+		private IServiceUrlProvider serviceUrlProvider;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private transient org.apache.pulsar.client.api.Authentication authentication = new org.apache.pulsar.client.impl.auth.AuthenticationDisabled();
+/
 		[NonSerialized]
 		private Authentication authentication = new AuthenticationDisabled();
 		private string authPluginClassName;
@@ -78,7 +69,7 @@ namespace Pulsar.Client.Impl.Conf
 //ORIGINAL LINE: @JsonIgnore private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 		private Clock clock = Clock.systemDefaultZone();
 
-		public virtual Authentication Authentication
+		public virtual IAuthentication Authentication
 		{
 			get
 			{

@@ -1,5 +1,10 @@
-﻿using System;
+﻿using Pulsar.Client.Impl.Auth;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -21,17 +26,9 @@ using System.Threading.Tasks;
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Impl.Auth
 {
-	using Gson = com.google.gson.Gson;
-	using JsonObject = com.google.gson.JsonObject;
-	using Authentication = Api.Authentication;
-	using AuthenticationDataProvider = Api.AuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = Api.PulsarClientException;
-
-
-	public class AuthenticationBasic : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationBasic : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 		private string userId;
 		private string password;
@@ -44,9 +41,7 @@ namespace Pulsar.Client.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public  AuthenticationDataProvider AuthData
+		public  IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -54,7 +49,7 @@ namespace Pulsar.Client.Impl.Auth
 				{
 					return new AuthenticationDataBasic(userId, password);
 				}
-				catch (Exception e)
+				catch (System.Exception e)
 				{
 					throw PulsarClientException.Unwrap(e);
 				}
@@ -63,18 +58,17 @@ namespace Pulsar.Client.Impl.Auth
 
 		public void Configure(IDictionary<string, string> authParams)
 		{
-			Configure((new Gson()).toJson(authParams));
+			var jsonString = JsonSerializer.Serialize(authParams);
+			Configure(jsonString);
 		}
 
 		public void Configure(string encodedAuthParamString)
 		{
-			JsonObject @params = (new Gson()).fromJson(encodedAuthParamString, typeof(JsonObject));
-			userId = @params.get("userId").AsString;
-			password = @params.get("password").AsString;
+			var authParams = JsonSerializer.Deserialize<IDictionary<string, string>>(encodedAuthParamString);
+			userId = authParams["userId"];
+			password = authParams["password"];
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws org.apache.pulsar.client.api.PulsarClientException
 		
 		public void Start()
 		{
