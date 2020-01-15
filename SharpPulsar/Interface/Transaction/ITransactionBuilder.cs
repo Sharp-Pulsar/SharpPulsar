@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Transaction
+namespace SharpPulsar.Interface.Transaction
 {
 
 	/// <summary>

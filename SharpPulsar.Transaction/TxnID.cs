@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,9 +18,38 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-/// <summary>
-/// Transaction client implementation.
-/// </summary>
-namespace org.apache.pulsar.client.impl.transaction
+namespace SharpPulsar.Transaction
 {
+	
+	/// <summary>
+	/// An identifier for representing a transaction.
+	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Beta @Data public class TxnID implements java.io.Serializable
+	[Serializable]
+	public class TxnID
+	{
+
+		public const long SerialVersionUID = 0L;
+
+		/*
+		 * The most significant 64 bits of this TxnID.
+		 *
+		 * @serial
+		 */
+		public readonly long MostSigBits;
+
+		/*
+		 * The least significant 64 bits of this TxnID.
+		 *
+		 * @serial
+		 */
+		public readonly long LeastSigBits;
+
+		public override string ToString()
+		{
+			return "(" + MostSigBits + "," + LeastSigBits + ")";
+		}
+	}
+
 }

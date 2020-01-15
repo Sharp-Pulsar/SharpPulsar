@@ -13,4 +13,8 @@
     <PackageReference Include="optional" Version="4.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar.Transaction\SharpPulsar.Transaction.csproj" />
+  </ItemGroup>
+
 </Project>

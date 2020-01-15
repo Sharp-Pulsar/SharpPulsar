@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -17,27 +18,19 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interface.Transaction
+namespace SharpPulsar.Transaction
 {
-
 	/// <summary>
-	/// The class represents a transaction within Pulsar.
+	/// Exception thrown when a transaction try to acknowledge message when it shouldn't.
+	/// 
 	/// </summary>
-	public interface ITransaction
+	public class TransactionConflictException : Exception
 	{
 
-		/// <summary>
-		/// Commit the transaction.
-		/// </summary>
-		/// <returns> the future represents the commit result. </returns>
-		ValueTask Commit();
+		private const long serialVersionUID = 0L;
 
-		/// <summary>
-		/// Abort the transaction.
-		/// </summary>
-		/// <returns> the future represents the abort result. </returns>
-		ValueTask Abort();
-
+		public TransactionConflictException(string message) : base(message)
+		{
+		}
 	}
-
 }
