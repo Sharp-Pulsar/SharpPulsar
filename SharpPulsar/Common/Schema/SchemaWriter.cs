@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Schema
+namespace SharpPulsar.Common.Schema
 {
 	/// <summary>
 	/// Serialize messages into bytes.

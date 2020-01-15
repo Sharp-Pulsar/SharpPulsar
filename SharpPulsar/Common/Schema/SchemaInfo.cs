@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,71 +21,59 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.schema
+namespace SharpPulsar.Common.Schema
 {
 
-
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Accessors = lombok.experimental.Accessors;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
 	/// <summary>
 	/// Information about the schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @AllArgsConstructor @NoArgsConstructor @Accessors(chain = true) @Builder public class SchemaInfo
 	public class SchemaInfo
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @EqualsAndHashCode.Exclude private String name;
-		private string name;
+		public string Name { get; set; }
 
 		/// <summary>
 		/// The schema data in AVRO JSON format.
 		/// </summary>
-		private sbyte[] schema;
+		public sbyte[] Schema { get; set; }
 
 		/// <summary>
 		/// The type of schema (AVRO, JSON, PROTOBUF, etc..).
 		/// </summary>
-		private SchemaType type;
+		public SchemaType Type { get; set; }
 
 		/// <summary>
 		/// Additional properties of the schema definition (implementation defined).
 		/// </summary>
-		private IDictionary<string, string> properties = Collections.emptyMap();
+		private IDictionary<string, string> Properties = Enumerable.Empty<IDictionary<string, string>>();
 
 		public virtual string SchemaDefinition
 		{
 			get
 			{
-				if (null == schema)
+				if (null == Schema)
 				{
 					return "";
 				}
     
-				switch (type.innerEnumValue)
+				switch (Type.InnerEnumValue)
 				{
-					case org.apache.pulsar.common.schema.SchemaType.InnerEnum.AVRO:
-					case org.apache.pulsar.common.schema.SchemaType.InnerEnum.JSON:
-					case org.apache.pulsar.common.schema.SchemaType.InnerEnum.PROTOBUF:
-						return StringHelper.NewString(schema, UTF_8);
-					case org.apache.pulsar.common.schema.SchemaType.InnerEnum.KEY_VALUE:
-						KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(this);
-						return DefaultImplementation.jsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
+					case SchemaType.InnerEnum.AVRO:
+					case SchemaType.InnerEnum.JSON:
+					case SchemaType.InnerEnum.PROTOBUF:
+						return StringHelper.NewString(Schema, "UTF8");
+					case SchemaType.InnerEnum.KEY_VALUE:
+						KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(this);
+						return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
 					default:
-						return Base64.Encoder.encodeToString(schema);
+						return Convert.ToBase64String((byte[])(object)Schema);
 				}
 			}
 		}
 
 		public override string ToString()
 		{
-			return DefaultImplementation.jsonifySchemaInfo(this);
+			return DefaultImplementation.JsonifySchemaInfo(this);
 		}
 
 	}

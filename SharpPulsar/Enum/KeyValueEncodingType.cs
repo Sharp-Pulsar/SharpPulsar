@@ -16,12 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.schema
-{
+namespace SharpPulsar.Enum
+{ 
 	/// <summary>
 	/// Encoding types of supported KeyValueSchema for Pulsar messages.
 	/// </summary>
-	public enum KeyValueEncodingType
+public enum KeyValueEncodingType
 	{
 		/// <summary>
 		/// Key is stored as message key, while value is stored as message payload.

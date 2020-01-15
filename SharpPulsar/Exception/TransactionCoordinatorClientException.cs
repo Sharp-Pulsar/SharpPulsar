@@ -20,16 +20,15 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api.Transaction
-{
-
+namespace SharpPulsar.Exception
+{ 
 	/// <summary>
 	/// Exceptions for transaction coordinator client.
 	/// </summary>
 	public class TransactionCoordinatorClientException : IOException
 	{
 
-		public TransactionCoordinatorClientException(Exception t) : base(t.Message)
+		public TransactionCoordinatorClientException(System.Exception t) : base(t.Message)
 		{
 		}
 
@@ -101,17 +100,17 @@ namespace Pulsar.Api.Transaction
 			}
 		}
 
-		public static TransactionCoordinatorClientException unwrap(Exception t)
+		public static TransactionCoordinatorClientException Unwrap(System.Exception t)
 		{
 			if (t is TransactionCoordinatorClientException)
 			{
 				return (TransactionCoordinatorClientException) t;
 			}
-			else if (t is Exception)
+			else if (t is System.Exception)
 			{
-				throw (Exception) t;
+				throw t;
 			}
-			else if (t is InterruptedException)
+			else if (t is ThreadInterruptedException)
 			{
 				Thread.CurrentThread.Interrupt();
 				return new TransactionCoordinatorClientException(t);
@@ -122,7 +121,7 @@ namespace Pulsar.Api.Transaction
 				return new TransactionCoordinatorClientException(t);
 			}
 
-			Exception cause = t.InnerException;
+			System.Exception cause = t.InnerException;
 			string msg = cause.Message;
 
 			if (cause is CoordinatorNotFoundException)

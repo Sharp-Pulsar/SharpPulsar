@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,14 +20,12 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Exception
 {
 
 	/// <summary>
 	/// Base type of exception thrown by Pulsar client.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("serial") public class PulsarClientException extends java.io.IOException
 	public class PulsarClientException : IOException
 	{
 
@@ -35,7 +34,7 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="msg">
 		///        The detail message (which is saved for later retrieval
-		///        by the <seealso cref="getMessage()"/> method) </param>
+		///        by the <seealso cref="GetMessage()"/> method) </param>
 		public PulsarClientException(string msg) : base(msg)
 		{
 		}
@@ -45,9 +44,9 @@ namespace Pulsar.Api
 		/// </summary>
 		/// <param name="t">
 		///        The cause (which is saved for later retrieval by the
-		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+		///        <seealso cref="GetCause()"/> method).  (A null value is permitted,
 		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public PulsarClientException(Exception t) : base(t.Message)
+		public PulsarClientException(IOException t) : base(t.Message)
 		{
 		}
 
@@ -63,7 +62,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public InvalidServiceURL(Exception t) : base(t)
+			public InvalidServiceURL(IOException t) : base(t)
 			{
 			}
 		}
@@ -78,7 +77,7 @@ namespace Pulsar.Api
 			/// </summary>
 			/// <param name="msg">
 			///        The detail message (which is saved for later retrieval
-			///        by the <seealso cref="getMessage()"/> method) </param>
+			///        by the <seealso cref="GetMessage()"/> method) </param>
 			public InvalidConfigurationException(string msg) : base(msg)
 			{
 			}
@@ -88,9 +87,9 @@ namespace Pulsar.Api
 			/// </summary>
 			/// <param name="t">
 			///        The cause (which is saved for later retrieval by the
-			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+			///        <seealso cref="GetCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public InvalidConfigurationException(Exception t) : base(t)
+			public InvalidConfigurationException(IOException t) : base(t)
 			{
 			}
 		}
@@ -117,7 +116,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public NotFoundException(Exception t) : base(t)
+			public NotFoundException(IOException t) : base(t)
 			{
 			}
 		}
@@ -134,7 +133,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public TimeoutException(Exception t) : base(t)
+			public TimeoutException(IOException t) : base(t)
 			{
 			}
 
@@ -161,7 +160,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public IncompatibleSchemaException(Exception t) : base(t)
+			public IncompatibleSchemaException(IOException t) : base(t)
 			{
 			}
 
@@ -236,7 +235,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public ConnectException(Exception t) : base(t)
+			public ConnectException(IOException t) : base(t)
 			{
 			}
 
@@ -327,7 +326,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public GettingAuthenticationDataException(Exception t) : base(t)
+			public GettingAuthenticationDataException(IOException t) : base(t)
 			{
 			}
 
@@ -354,7 +353,7 @@ namespace Pulsar.Api
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public UnsupportedAuthenticationException(Exception t) : base(t)
+			public UnsupportedAuthenticationException(IOException t) : base(t)
 			{
 			}
 
@@ -573,7 +572,7 @@ namespace Pulsar.Api
 		}
 
 		// wrap an exception to enriching more info messages.
-		public static Exception Wrap(Exception t, string msg)
+		public static IOException Wrap(IOException t, string msg)
 		{
 			msg += "\n" + t.Message;
 			// wrap an exception with new message info
@@ -685,11 +684,11 @@ namespace Pulsar.Api
 			{
 				return t;
 			}
-			else if (t is Exception)
+			else if (t is IOException)
 			{
-				return new Exception(msg, t.InnerException);
+				return new IOException(msg, t.InnerException);
 			}
-			else if (t is InterruptedException)
+			else if (t is ThreadInterruptedException)
 			{
 				return t;
 			}

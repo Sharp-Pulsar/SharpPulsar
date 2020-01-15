@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# CS0184: 'is' expression's given expression is never of the provided type
+dotnet_diagnostic.CS0184.severity = warning

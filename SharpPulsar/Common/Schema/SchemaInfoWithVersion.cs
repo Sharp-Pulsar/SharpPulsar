@@ -16,30 +16,22 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.schema
+namespace SharpPulsar.Common.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Accessors = lombok.experimental.Accessors;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
 
 	/// <summary>
 	/// Data structure representing a schema information including its version.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @AllArgsConstructor @NoArgsConstructor @Accessors(chain = true) @Builder public class SchemaInfoWithVersion
 	public class SchemaInfoWithVersion
 	{
 
-		private long version;
+		public long Version { get; set; }
 
-		private SchemaInfo schemaInfo;
+		public SchemaInfo SchemaInfo { get; set; }
 
 		public override string ToString()
 		{
-			return DefaultImplementation.jsonifySchemaInfoWithVersion(this);
+			return DefaultImplementation.JsonifySchemaInfoWithVersion(this);
 		}
 	}
 

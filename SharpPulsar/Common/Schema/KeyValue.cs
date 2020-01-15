@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,10 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.schema
+namespace SharpPulsar.Common.Schema
 {
-	using org.apache.pulsar.client.api;
-
 	/// <summary>
 	/// A simple KeyValue class.
 	/// </summary>
@@ -54,17 +53,17 @@ namespace org.apache.pulsar.common.schema
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(key, value);
+			return HashCode.Combine(key, value);
 		}
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is KeyValue))
+			if (!(obj is KeyValue<K, V>))
 			{
 				return false;
 			}
 			KeyValue<K, V> another = (KeyValue<K, V>) obj;
-			return Objects.equals(key, another.key) && Objects.equals(value, another.value);
+			return Equals(key, another.key) && Equals(value, another.value);
 		}
 
 		public override string ToString()
@@ -77,7 +76,7 @@ namespace org.apache.pulsar.common.schema
 		/// <summary>
 		/// Decoder to decode key/value bytes.
 		/// </summary>
-		public delegate org.apache.pulsar.common.schema.KeyValue<K, V> KeyValueDecoder<K, V>(sbyte[] keyData, sbyte[] valueData);
+		public delegate Schema.KeyValue<K, V> KeyValueDecoder<K, V>(sbyte[] keyData, sbyte[] valueData);
 
 		/// <summary>
 		/// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
@@ -87,7 +86,7 @@ namespace org.apache.pulsar.common.schema
 		/// <param name="value"> value object to encode </param>
 		/// <param name="valueWriter"> a writer to encode value object </param>
 		/// <returns> the encoded bytes array </returns>
-		public static sbyte[] encode<K, V>(K key, Schema<K> keyWriter, V value, Schema<V> valueWriter)
+		public static sbyte[] Encode<K, V>(K key, Schema<K> keyWriter, V value, Schema<V> valueWriter)
 		{
 			sbyte[] keyBytes = keyWriter.encode(key);
 			sbyte[] valueBytes = valueWriter.encode(value);
@@ -102,7 +101,7 @@ namespace org.apache.pulsar.common.schema
 		/// <param name="data"> the encoded bytes </param>
 		/// <param name="decoder"> the decoder to decode encoded key/value bytes </param>
 		/// <returns> the decoded key/value pair </returns>
-		public static KeyValue<K, V> decode<K, V>(sbyte[] data, KeyValueDecoder<K, V> decoder)
+		public static KeyValue<K, V> Decode<K, V>(sbyte[] data, KeyValueDecoder<K, V> decoder)
 		{
 			ByteBuffer byteBuffer = ByteBuffer.wrap(data);
 			int keyLength = byteBuffer.Int;

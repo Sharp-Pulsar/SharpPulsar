@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Auth;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +20,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Interface.Auth
 {
 
 
@@ -35,27 +39,26 @@ namespace Pulsar.Api
 		/// Check if data for TLS are available.
 		/// </summary>
 		/// <returns> true if this authentication data contain data for TLS </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default boolean hasDataForTls()
-	//	{
-	//		return false;
-	//	}
+		bool HasDataForTls()
+		{
+			return false;
+		}
 
 		/// 
 		/// <returns> a client certificate chain, or null if the data are not available </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default java.security.cert.Certificate[] getTlsCertificates()
-	//	{
-	//		return null;
-	//	}
+		
+			X509Certificate2[] GetTlsCertificates()
+			{
+				return null;
+			}
 
 		/// 
 		/// <returns> a private key for the client certificate, or null if the data are not available </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default java.security.PrivateKey getTlsPrivateKey()
-	//	{
-	//		return null;
-	//	}
+
+		AsymmetricAlgorithm GetTlsPrivateKey()
+		{
+			return null;
+		}
 
 		/*
 		 * HTTP
@@ -65,27 +68,24 @@ namespace Pulsar.Api
 		/// Check if data for HTTP are available.
 		/// </summary>
 		/// <returns> true if this authentication data contain data for HTTP </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default boolean hasDataForHttp()
-	//	{
-	//		return false;
-	//	}
+		bool HasDataForHttp()
+			{
+				return false;
+			}
 
 		/// 
 		/// <returns> a authentication scheme, or {@code null} if the request will not be authenticated. </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default String getHttpAuthType()
-	//	{
-	//		return null;
-	//	}
+		string GetHttpAuthType()
+		{
+				return null;
+		}
 
 		/// 
 		/// <returns> an enumeration of all the header names </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default java.util.Set<java.util.Map.Entry<String, String>> getHttpHeaders() throws Exception
-	//	{
-	//		return null;
-	//	}
+		 ISet<IDictionary<string, string>> GetHttpHeaders()
+		{
+			return null;
+		}
 
 		/*
 		 * Command
@@ -95,19 +95,17 @@ namespace Pulsar.Api
 		/// Check if data from Pulsar protocol are available.
 		/// </summary>
 		/// <returns> true if this authentication data contain data from Pulsar protocol </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default boolean hasDataFromCommand()
-	//	{
-	//		return false;
-	//	}
+		bool HasDataFromCommand()
+		{
+				return false;
+		}
 
 		/// 
 		/// <returns> authentication data which will be stored in a command </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default String getCommandData()
-	//	{
-	//		return null;
-	//	}
+		string GetCommandData()
+		{
+			return null;
+		}
 
 		/// <summary>
 		/// For mutual authentication, This method use passed in `data` to evaluate and challenge,
@@ -117,12 +115,11 @@ namespace Pulsar.Api
 		/// <para>Mainly used for mutual authentication like sasl.
 		/// </para>
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java default interface methods unless the C#8 option for this is selected:
-//		default org.apache.pulsar.common.api.AuthData authenticate(org.apache.pulsar.common.api.AuthData data) throws javax.naming.AuthenticationException
-	//	{
-	//		byte[] bytes = (hasDataFromCommand() ? this.getCommandData() : "").getBytes(UTF_8);
-	//		return AuthData.of(bytes);
-	//	}
+		AuthData Authenticate(AuthData data)
+		{
+			byte[] bytes = (HasDataFromCommand() ? this.GetCommandData() : "").getBytes(UTF_8);
+			return AuthData.of(bytes);
+		}
 	}
 
 }

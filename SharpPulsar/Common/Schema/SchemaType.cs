@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.schema
+namespace SharpPulsar.Common.Schema
 {
 	/// <summary>
 	/// Types of supported schema for Pulsar messages.
@@ -194,7 +194,7 @@ namespace org.apache.pulsar.common.schema
 			AUTO_PUBLISH
 		}
 
-		public readonly InnerEnum innerEnumValue;
+		public readonly InnerEnum InnerEnumValue;
 		private readonly string nameValue;
 		private readonly int ordinalValue;
 		private static int nextOrdinal = 0;
@@ -207,7 +207,7 @@ namespace org.apache.pulsar.common.schema
 
 			nameValue = name;
 			ordinalValue = nextOrdinal++;
-			innerEnumValue = innerEnum;
+			InnerEnumValue = innerEnum;
 		}
 
 		public int Value
@@ -218,7 +218,7 @@ namespace org.apache.pulsar.common.schema
 			}
 		}
 
-		public static SchemaType valueOf(int value)
+		public static SchemaType ValueOf(int value)
 		{
 			switch (value)
 			{
@@ -272,7 +272,7 @@ namespace org.apache.pulsar.common.schema
 		{
 			get
 			{
-				return isPrimitiveType(this);
+				return IsPrimitiveType(this);
 			}
 		}
 
@@ -280,27 +280,27 @@ namespace org.apache.pulsar.common.schema
 		{
 			get
 			{
-				return isStructType(this);
+				return IsStructType(this);
 			}
 		}
 
-		public static bool isPrimitiveType(SchemaType type)
+		public static bool IsPrimitiveType(SchemaType type)
 		{
-			switch (type.innerEnumValue)
+			switch (type.InnerEnumValue)
 			{
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.STRING:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.BOOLEAN:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.INT8:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.INT16:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.INT32:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.INT64:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.FLOAT:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.DOUBLE:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.DATE:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.TIME:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.TIMESTAMP:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.BYTES:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.NONE:
+				case InnerEnum.STRING:
+				case InnerEnum.BOOLEAN:
+				case InnerEnum.INT8:
+				case InnerEnum.INT16:
+				case InnerEnum.INT32:
+				case InnerEnum.INT64:
+				case InnerEnum.FLOAT:
+				case InnerEnum.DOUBLE:
+				case InnerEnum.DATE:
+				case InnerEnum.TIME:
+				case InnerEnum.TIMESTAMP:
+				case InnerEnum.BYTES:
+				case InnerEnum.NONE:
 					return true;
 				default:
 					return false;
@@ -308,13 +308,13 @@ namespace org.apache.pulsar.common.schema
 
 		}
 
-		public static bool isStructType(SchemaType type)
+		public static bool IsStructType(SchemaType type)
 		{
-			switch (type.innerEnumValue)
+			switch (type.InnerEnumValue)
 			{
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.AVRO:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.JSON:
-				case org.apache.pulsar.common.schema.SchemaType.InnerEnum.PROTOBUF:
+				case InnerEnum.AVRO:
+				case InnerEnum.JSON:
+				case InnerEnum.PROTOBUF:
 					return true;
 				default:
 					return false;

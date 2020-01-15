@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pulsar.Api.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -30,24 +31,7 @@ namespace SharpPulsar.Common
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.@internal.ReflectionUtils.newClassInstance;
 
-	using UtilityClass = lombok.experimental.UtilityClass;
-	using Authentication = Client.Api.Authentication;
-	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
-	using ClientBuilder = org.apache.pulsar.client.api.ClientBuilder;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-	using org.apache.pulsar.client.api;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using org.apache.pulsar.client.api.schema;
-	using RecordSchemaBuilder = org.apache.pulsar.client.api.schema.RecordSchemaBuilder;
-	using org.apache.pulsar.client.api.schema;
-	using org.apache.pulsar.client.api.schema;
-	using org.apache.pulsar.common.schema;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaInfoWithVersion = org.apache.pulsar.common.schema.SchemaInfoWithVersion;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
+	
 	/// <summary>
 	/// Helper class for class instantiations and it also contains methods to work with schemas.
 	/// </summary>
@@ -71,7 +55,7 @@ namespace SharpPulsar.Common
 
 		private static readonly System.Reflection.ConstructorInfo<SchemaDefinitionBuilder> SCHEMA_DEFINITION_BUILDER_CONSTRUCTOR = getConstructor("org.apache.pulsar.client.impl.schema.SchemaDefinitionBuilderImpl");
 
-		public static SchemaDefinitionBuilder<T> newSchemaDefinitionBuilder<T>()
+		public static ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>()
 		{
 			return catchExceptions(() => (SchemaDefinitionBuilder<T>) SCHEMA_DEFINITION_BUILDER_CONSTRUCTOR.newInstance());
 		}
