@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Api
+namespace SharpPulsar.Enum
 {
 	/// <summary>
 	/// The action the producer will take in case of encryption failures.

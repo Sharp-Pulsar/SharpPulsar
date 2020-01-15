@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Enum;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,38 +21,26 @@
 /// </summary>
 namespace Pulsar.Common.Auth
 {
-
-	/*using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Getter = lombok.Getter;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Setter = lombok.Setter;*/
-
-	using CompressionType = org.apache.pulsar.client.api.CompressionType;
-
 	/// <summary>
 	/// Class representing an encryption context.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter @Setter public class EncryptionContext
 	public class EncryptionContext
 	{
 
-		private IDictionary<string, EncryptionKey> keys;
-		private sbyte[] param;
-		private string algorithm;
-		private CompressionType compressionType;
-		private int uncompressedMessageSize;
-		private int? batchSize;
+		public IDictionary<string, EncryptionKey> Keys { get; set; }
+		public sbyte[] Param { get; set; }
+		public string Algorithm;
+		public CompressionType CompressionType { get; set; }
+		public int UncompressedMessageSize { get; set; }
+		public int? BatchSize { get; set; }
 
 		/// <summary>
 		/// Encryption key with metadata.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter @Setter @NoArgsConstructor @AllArgsConstructor public static class EncryptionKey
 		public class EncryptionKey
 		{
-			internal sbyte[] keyValue;
-			internal IDictionary<string, string> metadata;
+			public sbyte[] KeyValue { get; set; }
+			public IDictionary<string, string> Metadata { get; set; }
 		}
 
 	}

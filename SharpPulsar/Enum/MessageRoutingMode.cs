@@ -16,12 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Enum
 {
 	/// <summary>
 	/// Default routing mode for messages to partition.
 	/// 
-	/// <para>This logic is applied when the application is not setting a key <seealso cref="MessageBuilder.setKey(string)"/>
+	/// <para>This logic is applied when the application is not setting a key <seealso cref="MessageBuilder.SetKey(string)"/>
 	/// on a particular message.
 	/// </para>
 	/// </summary>

@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Enum
 {
 	/// <summary>
 	/// The compression type that can be specified on a <seealso cref="Producer"/>.

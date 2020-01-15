@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Api
+namespace SharpPulsar.Enum
 {
 	/// <summary>
 	/// When subscribing to topics using a regular expression, one can specify

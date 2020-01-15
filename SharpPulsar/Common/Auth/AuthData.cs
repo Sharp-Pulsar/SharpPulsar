@@ -19,19 +19,13 @@
 /// </summary>
 namespace SharpPulsar.Common.Auth
 {
-
-	//using Data = lombok.Data;
-
 	/// <summary>
 	/// Authentication data.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data(staticConstructor = "of") public final class AuthData
 	public sealed class AuthData
 	{
-		// CHECKSTYLE.OFF: StaticVariableName
+		
 		public static sbyte[] INIT_AUTH_DATA = "PulsarAuthInit".GetBytes(new UTF8Encoding());
-		// CHECKSTYLE.ON: StaticVariableName
 
 		private readonly sbyte[] bytes;
 

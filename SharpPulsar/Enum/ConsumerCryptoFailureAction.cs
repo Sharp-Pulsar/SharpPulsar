@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace Pulsar.Api
+namespace SharpPulsar.Enum
 {
 	/// <summary>
 	/// The action a consumer should take when a consumer receives a
