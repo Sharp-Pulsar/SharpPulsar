@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Transaction;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,8 +24,6 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interface.Transaction
 {
 
-	using TxnID = org.apache.pulsar.transaction.impl.common.TxnID;
-
 	/// <summary>
 	/// Transaction coordinator client.
 	/// </summary>
@@ -47,8 +46,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// </para>
 		/// </summary>
 		/// <exception cref="TransactionCoordinatorClientException"> exception occur while start </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void start() throws TransactionCoordinatorClientException;
 		void Start();
 
 		/// <summary>
@@ -71,8 +68,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// Create a new transaction.
 		/// </summary>
 		/// <returns> <seealso cref="TxnID"/> as the identifier for identifying the transaction. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: org.apache.pulsar.transaction.impl.common.TxnID newTransaction() throws TransactionCoordinatorClientException;
 		TxnID NewTransaction();
 
 		/// <summary>
@@ -90,8 +85,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// <param name="unit"> time unit for new transaction
 		/// </param>
 		/// <returns> <seealso cref="TxnID"/> as the identifier for identifying the transaction. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: org.apache.pulsar.transaction.impl.common.TxnID newTransaction(long timeout, java.util.concurrent.TimeUnit unit) throws TransactionCoordinatorClientException;
 		TxnID NewTransaction(long timeout, TimeSpan unit);
 
 		/// <summary>
@@ -110,8 +103,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// </summary>
 		/// <param name="txnID"> txn id which add partitions to. </param>
 		/// <param name="partitions"> partitions add to the txn. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void addPublishPartitionToTxn(org.apache.pulsar.transaction.impl.common.TxnID txnID, java.util.List<String> partitions) throws TransactionCoordinatorClientException;
 		void AddPublishPartitionToTxn(TxnID txnID, IList<string> partitions);
 
 		/// <summary>
@@ -126,8 +117,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// <summary>
 		/// Commit txn. </summary>
 		/// <param name="txnID"> txn id to commit. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void commit(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws TransactionCoordinatorClientException;
 		void Commit(TxnID txnID);
 
 		/// <summary>
@@ -139,8 +128,6 @@ namespace SharpPulsar.Interface.Transaction
 		/// <summary>
 		/// Abort txn. </summary>
 		/// <param name="txnID"> txn id to abort. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void abort(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws TransactionCoordinatorClientException;
 		void Abort(TxnID txnID);
 
 		/// <summary>
