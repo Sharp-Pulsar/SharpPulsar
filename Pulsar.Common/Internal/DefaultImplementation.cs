@@ -31,7 +31,7 @@ namespace Pulsar.client.@internal
 //	import static org.apache.pulsar.client.@internal.ReflectionUtils.newClassInstance;
 
 	using UtilityClass = lombok.experimental.UtilityClass;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
+	using Authentication = Client.Api.Authentication;
 	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
 	using ClientBuilder = org.apache.pulsar.client.api.ClientBuilder;
 	using MessageId = org.apache.pulsar.client.api.MessageId;

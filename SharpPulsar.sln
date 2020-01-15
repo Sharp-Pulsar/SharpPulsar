@@ -3,13 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pulsar.Api", "Pulsar.Api\Pulsar.Api.csproj", "{27E4B869-FD15-4BF9-BCB2-A07A9894F87A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pulsar.Test", "Pulsar.Test\Pulsar.Test.csproj", "{BE927603-02F8-4F33-9BA4-58A0F0F6460E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pulsar.Client", "Pulsar.Client\Pulsar.Client.csproj", "{B9847ED9-EB8B-4105-9488-7621925ECC2F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pulsar.Common", "Pulsar.Common\Pulsar.Common.csproj", "{FEEA4EB9-817E-46B6-AD9A-DE4C2CCAB4DC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pulsar.Test", "Pulsar.Test\Pulsar.Test.csproj", "{BE927603-02F8-4F33-9BA4-58A0F0F6460E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,22 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{27E4B869-FD15-4BF9-BCB2-A07A9894F87A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27E4B869-FD15-4BF9-BCB2-A07A9894F87A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{27E4B869-FD15-4BF9-BCB2-A07A9894F87A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27E4B869-FD15-4BF9-BCB2-A07A9894F87A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B9847ED9-EB8B-4105-9488-7621925ECC2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B9847ED9-EB8B-4105-9488-7621925ECC2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B9847ED9-EB8B-4105-9488-7621925ECC2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B9847ED9-EB8B-4105-9488-7621925ECC2F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FEEA4EB9-817E-46B6-AD9A-DE4C2CCAB4DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FEEA4EB9-817E-46B6-AD9A-DE4C2CCAB4DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FEEA4EB9-817E-46B6-AD9A-DE4C2CCAB4DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FEEA4EB9-817E-46B6-AD9A-DE4C2CCAB4DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

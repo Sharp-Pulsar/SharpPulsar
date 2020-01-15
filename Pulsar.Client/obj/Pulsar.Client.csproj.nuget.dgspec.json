@@ -4,81 +4,6 @@
     "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Client\\Pulsar.Client.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\Pulsar.Api.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\Pulsar.Api.csproj",
-        "projectName": "Pulsar.Api",
-        "projectPath": "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\Pulsar.Api.csproj",
-        "packagesPath": "C:\\Users\\Technical\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\obj\\",
-        "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Microsoft\\Xamarin\\NuGet\\",
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
-        ],
-        "configFilePaths": [
-          "C:\\Users\\Technical\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
-        ],
-        "originalTargetFrameworks": [
-          "netstandard2.1"
-        ],
-        "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
-        },
-        "frameworks": {
-          "netstandard2.1": {
-            "projectReferences": {}
-          }
-        },
-        "warningProperties": {
-          "warnAsError": [
-            "NU1605"
-          ]
-        }
-      },
-      "frameworks": {
-        "netstandard2.1": {
-          "dependencies": {
-            "Optional": {
-              "target": "Package",
-              "version": "[4.0.0, )"
-            },
-            "System.Buffers": {
-              "target": "Package",
-              "version": "[4.5.0, )"
-            },
-            "System.Runtime": {
-              "target": "Package",
-              "version": "[4.3.1, )"
-            },
-            "System.Threading.Tasks": {
-              "target": "Package",
-              "version": "[4.3.0, )"
-            }
-          },
-          "imports": [
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "NETStandard.Library": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.100\\RuntimeIdentifierGraph.json"
-        }
-      }
-    },
     "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Client\\Pulsar.Client.csproj": {
       "version": "1.0.0",
       "restore": {
@@ -106,11 +31,7 @@
         },
         "frameworks": {
           "netstandard2.1": {
-            "projectReferences": {
-              "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\Pulsar.Api.csproj": {
-                "projectPath": "C:\\Users\\Technical\\source\\repos\\SharpPulsar\\Pulsar.Api\\Pulsar.Api.csproj"
-              }
-            }
+            "projectReferences": {}
           }
         },
         "warningProperties": {

@@ -16,9 +16,36 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-/// <summary>
-/// This package contains data structures for schema definitions used in the Pulsar Client API.
-/// </summary>
-namespace org.apache.pulsar.common.schema
+namespace Pulsar.Api.Schema
 {
+    using System.Threading.Tasks;
+    using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+
+	/// <summary>
+	/// Schema Provider.
+	/// </summary>
+	public interface ISchemaInfoProvider
+	{
+
+		/// <summary>
+		/// Retrieve the schema info of a given <tt>schemaVersion</tt>.
+		/// </summary>
+		/// <param name="schemaVersion"> schema version </param>
+		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
+		ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion);
+
+		/// <summary>
+		/// Retrieve the latest schema info.
+		/// </summary>
+		/// <returns> the latest schema </returns>
+		ValueTask<SchemaInfo> LatestSchema {get;}
+
+		/// <summary>
+		/// Retrieve the topic name.
+		/// </summary>
+		/// <returns> the topic name </returns>
+		string TopicName {get;}
+
+	}
+
 }
