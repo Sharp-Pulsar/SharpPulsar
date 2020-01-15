@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,13 +17,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.transaction
+namespace SharpPulsar.Interface
 {
 
 	/// <summary>
 	/// The transaction buffer client to commit and abort transactions on topics.
 	/// </summary>
-	public interface TransactionBufferClient
+	public interface ITransactionBufferClient
 	{
 
 		/// <summary>
@@ -32,7 +33,7 @@ namespace org.apache.pulsar.client.impl.transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the commit result </returns>
-		CompletableFuture<Void> commitTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits);
+		ValueTask CommitTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits);
 
 		/// <summary>
 		/// Abort the transaction associated with the topic.
@@ -41,7 +42,7 @@ namespace org.apache.pulsar.client.impl.transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the abort result </returns>
-		CompletableFuture<Void> abortTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits);
+		ValueTask AbortTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits);
 
 		/// <summary>
 		/// Commit the transaction associated with the topic subscription.
@@ -51,7 +52,7 @@ namespace org.apache.pulsar.client.impl.transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the commit result </returns>
-		CompletableFuture<Void> commitTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits);
+		ValueTask CommitTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits);
 
 		/// <summary>
 		/// Abort the transaction associated with the topic subscription.
@@ -61,7 +62,7 @@ namespace org.apache.pulsar.client.impl.transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the abort result </returns>
-		CompletableFuture<Void> abortTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits);
+		ValueTask AbortTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits);
 
 	}
 

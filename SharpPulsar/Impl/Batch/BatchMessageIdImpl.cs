@@ -16,10 +16,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Batch
 {
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
 
 	public class BatchMessageIdImpl : MessageIdImpl
 	{

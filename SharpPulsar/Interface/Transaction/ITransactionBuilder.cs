@@ -40,7 +40,7 @@ namespace SharpPulsar.Interface.Transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		ITransactionBuilder WithTransactionTimeout(long timeout, TimeSpan timeoutUnit);
+		ITransactionBuilder WithTransactionTimeout(long timeout, TimeUnit timeoutUnit);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.

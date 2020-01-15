@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Transaction;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,25 +21,12 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.transaction
+namespace SharpPulsar.Impl.Transaction
 {
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using TransactionCoordinatorClient = org.apache.pulsar.client.api.transaction.TransactionCoordinatorClient;
-	using TransactionCoordinatorClientException = org.apache.pulsar.client.api.transaction.TransactionCoordinatorClientException;
-	using CoordinatorClientStateException = org.apache.pulsar.client.api.transaction.TransactionCoordinatorClientException.CoordinatorClientStateException;
-	using MathUtils = org.apache.pulsar.client.util.MathUtils;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using ConcurrentLongHashMap = org.apache.pulsar.common.util.collections.ConcurrentLongHashMap;
-	using TxnID = org.apache.pulsar.transaction.impl.common.TxnID;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-
 	/// <summary>
 	/// Transaction coordinator client based topic assigned.
 	/// </summary>
-	public class TransactionCoordinatorClientImpl : TransactionCoordinatorClient
+	public class TransactionCoordinatorClientImpl : ITransactionCoordinatorClient
 	{
 
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(TransactionCoordinatorClientImpl));
@@ -55,9 +44,7 @@ namespace org.apache.pulsar.client.impl.transaction
 			this.pulsarClient = (PulsarClientImpl) pulsarClient;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws org.apache.pulsar.client.api.transaction.TransactionCoordinatorClientException
-		public override void start()
+		public void Start()
 		{
 			try
 			{
@@ -69,7 +56,7 @@ namespace org.apache.pulsar.client.impl.transaction
 			}
 		}
 
-		public override CompletableFuture<Void> startAsync()
+		public ValueTask StartAsync()
 		{
 			if (STATE_UPDATER.compareAndSet(this, State.NONE, State.STARTING))
 			{

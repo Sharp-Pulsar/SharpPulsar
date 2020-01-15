@@ -18,11 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Batch
 {
-	using BatchMessageContainer = org.apache.pulsar.client.api.BatchMessageContainer;
-	using OpSendMsg = org.apache.pulsar.client.impl.ProducerImpl.OpSendMsg;
-
 
 	public interface BatchMessageContainerBase : BatchMessageContainer
 	{

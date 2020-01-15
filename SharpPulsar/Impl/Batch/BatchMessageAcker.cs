@@ -18,9 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Batch
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
 	internal class BatchMessageAcker
 	{

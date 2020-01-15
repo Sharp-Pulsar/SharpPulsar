@@ -16,14 +16,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.transaction
+namespace SharpPulsar.Impl.Transaction
 {
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using SharpPulsar.Interface;
+	using System.Threading.Tasks;
 
 	/// <summary>
 	/// The implementation of <seealso cref="TransactionBufferClient"/>.
 	/// </summary>
-	public class TransactionBufferClientImpl : TransactionBufferClient
+	public class TransactionBufferClientImpl : ITransactionBufferClient
 	{
 
 		private readonly PulsarClientImpl client;
@@ -33,22 +34,22 @@ namespace org.apache.pulsar.client.impl.transaction
 			this.client = client;
 		}
 
-		public virtual CompletableFuture<Void> commitTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
+		public virtual ValueTask CommitTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public virtual CompletableFuture<Void> abortTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
+		public virtual ValueTask AbortTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public virtual CompletableFuture<Void> commitTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
+		public virtual ValueTask CommitTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public virtual CompletableFuture<Void> abortTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
+		public virtual ValueTask AbortTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}

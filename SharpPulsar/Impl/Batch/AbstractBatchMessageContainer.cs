@@ -18,19 +18,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Batch
 {
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using CompressionCodec = org.apache.pulsar.common.compression.CompressionCodec;
-	using CompressionCodecProvider = org.apache.pulsar.common.compression.CompressionCodecProvider;
-
-
 	/// <summary>
 	/// Batch message container framework.
 	/// </summary>
 	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase
 	{
-		public abstract bool hasSameSchema<T1>(MessageImpl<T1> msg);
+		public abstract bool HasSameSchema<T1>(MessageImpl<T1> msg);
 		public abstract bool add<T1>(MessageImpl<T1> msg, SendCallback callback);
 
 		protected internal PulsarApi.CompressionType compressionType;
