@@ -27,15 +27,13 @@ namespace SharpPulsar.Interface
 	/// 
 	/// @since 2.0.0
 	/// </summary>
-	public interface IClientBuilder : ICloneable
+	public interface IClientBuilder
 	{
 
 		/// <summary>
 		/// Construct the final <seealso cref="IPulsarClient"/> instance.
 		/// </summary>
 		/// <returns> the new <seealso cref="IPulsarClient"/> instance </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: PulsarClient build() throws PulsarClientException;
 		IPulsarClient Build();
 
 		/// <summary>
@@ -83,7 +81,7 @@ namespace SharpPulsar.Interface
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the client builder instance </returns>
-		IClientBuilder Clone();
+		//IClientBuilder Clone();
 
 		/// <summary>
 		/// Configure the service URL for the Pulsar service.
@@ -167,8 +165,6 @@ namespace SharpPulsar.Interface
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
 		IClientBuilder Authentication(string authPluginClassName, string authParamsString);
 
 		/// <summary>
@@ -197,8 +193,6 @@ namespace SharpPulsar.Interface
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
 		IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams);
 
 		/// <summary>
@@ -392,7 +386,7 @@ namespace SharpPulsar.Interface
 		/// </summary>
 		/// <param name="clock"> the clock used by the pulsar client to retrieve time information </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder Clock(Clock clock);
+		IClientBuilder Clock(DateTime clock);
 	}
 
 }

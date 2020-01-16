@@ -16,18 +16,20 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Interface.Producer
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @AllArgsConstructor public class ProducerResponse
-	public class ProducerResponse
+	public interface IProducerStatsRecorder : IProducerStats
 	{
-		private string producerName;
-		private long lastSequenceId;
-		private sbyte[] schemaVersion;
+		void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize);
+
+		void IncrementSendFailed();
+
+		void IncrementSendFailed(long numMsgs);
+
+		void IncrementNumAcksReceived(long latencyNs);
+
+		void CancelStatsTimeout();
 	}
 
 }

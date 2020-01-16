@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Interceptor;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Producer
 {
 	using Message = org.apache.pulsar.client.api.Message;
 	using MessageId = org.apache.pulsar.client.api.MessageId;
@@ -33,7 +34,7 @@ namespace org.apache.pulsar.client.impl
 	/// A container that holds the list<seealso cref="ProducerInterceptor"/>
 	/// and wraps calls to the chain of custom interceptors.
 	/// </summary>
-	public class ProducerInterceptors : System.IDisposable
+	public class ProducerInterceptors : IDisposable
 	{
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(ProducerInterceptors));
@@ -59,7 +60,7 @@ namespace org.apache.pulsar.client.impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public virtual Message beforeSend(Producer producer, Message message)
+		public virtual Message BeforeSend(Producer producer, Message message)
 		{
 			Message interceptorMessage = message;
 			foreach (ProducerInterceptor interceptor in interceptors)

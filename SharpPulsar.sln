@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Sql", "SharpPul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Common", "SharpPulsar.Common\SharpPulsar.Common.csproj", "{8ED325C2-A887-4485-93D3-745E40EB74D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Util", "SharpPulsar.Util\SharpPulsar.Util.csproj", "{83C831C9-42E1-4DA8-AA84-24A608632A28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{8ED325C2-A887-4485-93D3-745E40EB74D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8ED325C2-A887-4485-93D3-745E40EB74D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8ED325C2-A887-4485-93D3-745E40EB74D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83C831C9-42E1-4DA8-AA84-24A608632A28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83C831C9-42E1-4DA8-AA84-24A608632A28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83C831C9-42E1-4DA8-AA84-24A608632A28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83C831C9-42E1-4DA8-AA84-24A608632A28}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

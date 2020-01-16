@@ -1,5 +1,16 @@
-﻿using System;
+﻿using SharpPulsar.Configuration;
+using SharpPulsar.Enum;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Batch;
+using SharpPulsar.Interface.Interceptor;
+using SharpPulsar.Interface.Message;
+using SharpPulsar.Interface.Producer;
+using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,54 +30,21 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Producer
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
-
-	using AccessLevel = lombok.AccessLevel;
-	using Getter = lombok.Getter;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
-	using CompressionType = org.apache.pulsar.client.api.CompressionType;
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using MessageRouter = org.apache.pulsar.client.api.MessageRouter;
-	using MessageRoutingMode = org.apache.pulsar.client.api.MessageRoutingMode;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using ProducerBuilder = org.apache.pulsar.client.api.ProducerBuilder;
-	using ProducerCryptoFailureAction = org.apache.pulsar.client.api.ProducerCryptoFailureAction;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using ProducerInterceptor = org.apache.pulsar.client.api.interceptor.ProducerInterceptor;
-	using ProducerInterceptorWrapper = org.apache.pulsar.client.api.interceptor.ProducerInterceptorWrapper;
-	using ConfigurationDataUtils = org.apache.pulsar.client.impl.conf.ConfigurationDataUtils;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-
-	using NonNull = lombok.NonNull;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter(AccessLevel.PUBLIC) public class ProducerBuilderImpl<T> implements org.apache.pulsar.client.api.ProducerBuilder<T>
-	public class ProducerBuilderImpl<T> : ProducerBuilder<T>
+	public class ProducerBuilderImpl<T> : IProducerBuilder<T>
 	{
 
 		private readonly PulsarClientImpl client;
 		private ProducerConfigurationData conf;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private Schema<T> schema_Conflict;
-		private IList<ProducerInterceptor> interceptorList;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public ProducerBuilderImpl(PulsarClientImpl client, org.apache.pulsar.client.api.Schema<T> schema)
-		public ProducerBuilderImpl(PulsarClientImpl client, Schema<T> schema) : this(client, new ProducerConfigurationData(), schema)
+		private ISchema<T> schema_Conflict;
+		private IList<IProducerInterceptor> interceptorList;
+		public ProducerBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ProducerConfigurationData(), schema)
 		{
 		}
 
-		private ProducerBuilderImpl(PulsarClientImpl client, ProducerConfigurationData conf, Schema<T> schema)
+		private ProducerBuilderImpl(PulsarClientImpl client, ProducerConfigurationData conf, ISchema<T> schema)
 		{
 			this.client = client;
 			this.conf = conf;
@@ -77,32 +55,29 @@ namespace org.apache.pulsar.client.impl
 		/// Allow to override schema in builder implementation
 		/// @return
 		/// </summary>
-		public virtual ProducerBuilder<T> schema(Schema<T> schema)
+		public virtual IProducerBuilder<T> Schema(ISchema<T> schema)
 		{
 			this.schema_Conflict = schema;
 			return this;
 		}
 
-		public override ProducerBuilder<T> clone()
+		public IProducerBuilder<T> Clone()
 		{
-			return new ProducerBuilderImpl<T>(client, conf.clone(), schema_Conflict);
+			return new ProducerBuilderImpl<T>(client, conf.Clone(), schema_Conflict);
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Producer<T> create() throws org.apache.pulsar.client.api.PulsarClientException
-		public override Producer<T> create()
+		public IProducer<T> Create()
 		{
 			try
 			{
-				return createAsync().get();
+				return CreateAsync().GetAwaiter().GetResult();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Producer<T>> createAsync()
+		public ValueTask<IProducer<T>> CreateAsync()
 		{
 			if (conf.TopicName == null)
 			{
@@ -111,224 +86,197 @@ namespace org.apache.pulsar.client.impl
 
 			try
 			{
-				setMessageRoutingMode();
+				SetMessageRoutingMode();
 			}
 			catch (PulsarClientException pce)
 			{
 				return FutureUtil.failedFuture(pce);
 			}
 
-			return interceptorList == null || interceptorList.Count == 0 ? client.createProducerAsync(conf, schema_Conflict, null) : client.createProducerAsync(conf, schema_Conflict, new ProducerInterceptors(interceptorList));
+			return interceptorList == null || interceptorList.Count == 0 ? client.CreateProducerAsync(conf, schema_Conflict, null) : client.createProducerAsync(conf, schema_Conflict, new ProducerInterceptors(interceptorList));
 		}
 
-		public override ProducerBuilder<T> loadConf(IDictionary<string, object> config)
+		public IProducerBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			conf = ConfigurationDataUtils.loadData(config, conf, typeof(ProducerConfigurationData));
+			conf = ConfigurationDataUtils.LoadData(config, conf, typeof(ProducerConfigurationData));
 			return this;
 		}
 
-		public override ProducerBuilder<T> topic(string topicName)
+		public IProducerBuilder<T> Topic(string topicName)
 		{
 			checkArgument(StringUtils.isNotBlank(topicName), "topicName cannot be blank");
-			conf.TopicName = StringUtils.Trim(topicName);
+			conf.TopicName = topicName.Trim();
 			return this;
 		}
 
-		public override ProducerBuilder<T> producerName(string producerName)
+		public IProducerBuilder<T> ProducerName(string producerName)
 		{
 			conf.ProducerName = producerName;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> sendTimeout(int sendTimeout, @NonNull TimeUnit unit)
-		public override ProducerBuilder<T> sendTimeout(int sendTimeout, TimeUnit unit)
+		public IProducerBuilder<T> SendTimeout(int sendTimeout, TimeUnit unit)
 		{
-			conf.setSendTimeoutMs(sendTimeout, unit);
+			conf.SetSendTimeoutMs(sendTimeout, unit);
 			return this;
 		}
 
-		public override ProducerBuilder<T> maxPendingMessages(int maxPendingMessages)
+		public IProducerBuilder<T> MaxPendingMessages(int maxPendingMessages)
 		{
 			conf.MaxPendingMessages = maxPendingMessages;
 			return this;
 		}
 
-		public override ProducerBuilder<T> maxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
+		public IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
 		{
 			conf.MaxPendingMessagesAcrossPartitions = maxPendingMessagesAcrossPartitions;
 			return this;
 		}
 
-		public override ProducerBuilder<T> blockIfQueueFull(bool blockIfQueueFull)
+		public IProducerBuilder<T> BlockIfQueueFull(bool blockIfQueueFull)
 		{
 			conf.BlockIfQueueFull = blockIfQueueFull;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> messageRoutingMode(@NonNull MessageRoutingMode messageRouteMode)
-		public override ProducerBuilder<T> messageRoutingMode(MessageRoutingMode messageRouteMode)
+
+		public IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode messageRouteMode)
 		{
 			conf.MessageRoutingMode = messageRouteMode;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> compressionType(@NonNull CompressionType compressionType)
-		public override ProducerBuilder<T> compressionType(CompressionType compressionType)
+		public IProducerBuilder<T> CompressionType(CompressionType compressionType)
 		{
 			conf.CompressionType = compressionType;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> hashingScheme(@NonNull HashingScheme hashingScheme)
-		public override ProducerBuilder<T> hashingScheme(HashingScheme hashingScheme)
+
+		public IProducerBuilder<T> HashingScheme(HashingScheme hashingScheme)
 		{
 			conf.HashingScheme = hashingScheme;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> messageRouter(@NonNull MessageRouter messageRouter)
-		public override ProducerBuilder<T> messageRouter(MessageRouter messageRouter)
+
+		public IProducerBuilder<T> MessageRouter(IMessageRouter messageRouter)
 		{
 			conf.CustomMessageRouter = messageRouter;
 			return this;
 		}
 
-		public override ProducerBuilder<T> enableBatching(bool batchMessagesEnabled)
+		public IProducerBuilder<T> EnableBatching(bool batchMessagesEnabled)
 		{
 			conf.BatchingEnabled = batchMessagesEnabled;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> cryptoKeyReader(@NonNull CryptoKeyReader cryptoKeyReader)
-		public override ProducerBuilder<T> cryptoKeyReader(CryptoKeyReader cryptoKeyReader)
+		public IProducerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public override ProducerBuilder<T> addEncryptionKey(string key)
+		public IProducerBuilder<T> AddEncryptionKey(string key)
 		{
 			checkArgument(StringUtils.isNotBlank(key), "Encryption key cannot be blank");
-			conf.EncryptionKeys.add(key);
+			conf.EncryptionKeys.Add(key);
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> cryptoFailureAction(@NonNull ProducerCryptoFailureAction action)
-		public override ProducerBuilder<T> cryptoFailureAction(ProducerCryptoFailureAction action)
+
+		public IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
 			conf.CryptoFailureAction = action;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> batchingMaxPublishDelay(long batchDelay, @NonNull TimeUnit timeUnit)
-		public override ProducerBuilder<T> batchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit)
+
+		public IProducerBuilder<T> BatchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit)
 		{
-			conf.setBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
+			conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
 			return this;
 		}
 
-		public override ProducerBuilder<T> roundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
+		public IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
 		{
 			conf.BatchingPartitionSwitchFrequencyByPublishDelay = frequency;
 			return this;
 		}
 
-		public override ProducerBuilder<T> batchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
+		public IProducerBuilder<T> BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
 		{
 			conf.BatchingMaxMessages = batchMessagesMaxMessagesPerBatch;
 			return this;
 		}
 
-		public override ProducerBuilder<T> batchingMaxBytes(int batchingMaxBytes)
+		public IProducerBuilder<T> BatchingMaxBytes(int batchingMaxBytes)
 		{
 			conf.BatchingMaxBytes = batchingMaxBytes;
 			return this;
 		}
 
-		public override ProducerBuilder<T> batcherBuilder(BatcherBuilder batcherBuilder)
+		public IProducerBuilder<T> BatcherBuilder(IBatcherBuilder batcherBuilder)
 		{
 			conf.BatcherBuilder = batcherBuilder;
 			return this;
 		}
 
 
-		public override ProducerBuilder<T> initialSequenceId(long initialSequenceId)
+		public IProducerBuilder<T> InitialSequenceId(long initialSequenceId)
 		{
 			conf.InitialSequenceId = initialSequenceId;
 			return this;
 		}
 
-		public override ProducerBuilder<T> property(string key, string value)
+		public IProducerBuilder<T> Property(string key, string value)
 		{
 			checkArgument(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value), "property key/value cannot be blank");
-			conf.Properties.put(key, value);
+			conf.Properties.Add(key, value);
 			return this;
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ProducerBuilder<T> properties(@NonNull Map<String, String> properties)
-		public override ProducerBuilder<T> properties(IDictionary<string, string> properties)
+		public IProducerBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			checkArgument(!properties.Empty, "properties cannot be empty");
+			checkArgument(!properties.Count() < 1, "properties cannot be empty");
 			properties.entrySet().forEach(entry => checkArgument(StringUtils.isNotBlank(entry.Key) && StringUtils.isNotBlank(entry.Value), "properties' key/value cannot be blank"));
 			conf.Properties.putAll(properties);
 			return this;
 		}
 
-		public override ProducerBuilder<T> intercept(params ProducerInterceptor[] interceptors)
+		public IProducerBuilder<T> Intercept(params IProducerInterceptor[] interceptors)
 		{
 			if (interceptorList == null)
 			{
-				interceptorList = new List<ProducerInterceptor>();
+				interceptorList = new List<IProducerInterceptor>();
 			}
-			((List<ProducerInterceptor>)interceptorList).AddRange(Arrays.asList(interceptors));
+			((List<IProducerInterceptor>)interceptorList).AddRange(interceptors);
 			return this;
 		}
 
-		[Obsolete]
-		public override ProducerBuilder<T> intercept(params org.apache.pulsar.client.api.ProducerInterceptor<T>[] interceptors)
-		{
-			if (interceptorList == null)
-			{
-				interceptorList = new List<ProducerInterceptor>();
-			}
-//JAVA TO C# CONVERTER TODO TASK: Method reference constructor syntax is not converted by Java to C# Converter:
-			((List<ProducerInterceptor>)interceptorList).AddRange(java.util.interceptors.Select(ProducerInterceptorWrapper::new).ToList());
-			return this;
-		}
-		public override ProducerBuilder<T> autoUpdatePartitions(bool autoUpdate)
+		public IProducerBuilder<T> AutoUpdatePartitions(bool autoUpdate)
 		{
 			conf.AutoUpdatePartitions = autoUpdate;
 			return this;
 		}
 
-		public override ProducerBuilder<T> enableMultiSchema(bool multiSchema)
+		public IProducerBuilder<T> EnableMultiSchema(bool multiSchema)
 		{
 			conf.MultiSchema = multiSchema;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void setMessageRoutingMode() throws org.apache.pulsar.client.api.PulsarClientException
-		private void setMessageRoutingMode()
+		private void SetMessageRoutingMode()
 		{
 			if (conf.MessageRoutingMode == null && conf.CustomMessageRouter == null)
 			{
-				messageRoutingMode(MessageRoutingMode.RoundRobinPartition);
+				MessageRoutingMode(Enum.MessageRoutingMode.RoundRobinPartition);
 			}
 			else if (conf.MessageRoutingMode == null && conf.CustomMessageRouter != null)
 			{
-				messageRoutingMode(MessageRoutingMode.CustomPartition);
+				MessageRoutingMode(Enum.MessageRoutingMode.CustomPartition);
 			}
-			else if ((conf.MessageRoutingMode == MessageRoutingMode.CustomPartition && conf.CustomMessageRouter == null) || (conf.MessageRoutingMode != MessageRoutingMode.CustomPartition && conf.CustomMessageRouter != null))
+			else if ((conf.MessageRoutingMode == Enum.MessageRoutingMode.CustomPartition && conf.CustomMessageRouter == null) || (conf.MessageRoutingMode != MessageRoutingMode.CustomPartition && conf.CustomMessageRouter != null))
 			{
 				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + MessageRoutingMode.CustomPartition);
 			}

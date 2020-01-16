@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common;
+using SharpPulsar.Interface.Auth;
 using System;
 using System.Collections.Generic;
 using static SharpPulsar.Exception.PulsarClientException;
@@ -21,14 +22,14 @@ using static SharpPulsar.Exception.PulsarClientException;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interface.Auth
+namespace SharpPulsar.Impl.Auth
 {
 
 	/// <summary>
 	/// Factory class that allows to create <seealso cref="Authentication"/> instances
 	/// for all the supported authentication methods.
 	/// </summary>
-	public sealed class IAuthenticationFactory
+	public sealed class AuthenticationFactory
 	{
 
 		/// <summary>

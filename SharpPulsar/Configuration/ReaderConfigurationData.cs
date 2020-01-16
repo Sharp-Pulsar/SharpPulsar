@@ -1,4 +1,8 @@
 ﻿using Pulsar.Api;
+using SharpPulsar.Enum;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Message;
+using SharpPulsar.Interface.Reader;
 using System;
 using System.Collections.Generic;
 
@@ -22,40 +26,27 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data public class ReaderConfigurationData<T> implements java.io.Serializable, Cloneable
-	[Serializable]
 	public class ReaderConfigurationData<T> : ICloneable
 	{
 
 		private string topicName;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.MessageId startMessageId;
-		private MessageId startMessageId;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private long startMessageFromRollbackDurationInSec;
+		private IMessageId startMessageId;
 		private long startMessageFromRollbackDurationInSec;
 
 		private int receiverQueueSize = 1000;
 
-		private ReaderListener<T> readerListener;
+		private IReaderListener<T> readerListener;
 
 		private string readerName = null;
 		private string subscriptionRolePrefix = null;
 
-		private CryptoKeyReader cryptoKeyReader = null;
+		private ICryptoKeyReader cryptoKeyReader = null;
 		private ConsumerCryptoFailureAction cryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
 
 		private bool readCompacted = false;
 		private bool resetIncludeHead = false;
 
 		private IList<Range> keyHashRanges;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") public ReaderConfigurationData<T> clone()
 		public virtual ReaderConfigurationData<T> clone()
 		{
 			try

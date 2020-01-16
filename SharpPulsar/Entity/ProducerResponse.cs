@@ -16,21 +16,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Entity
 {
-	using ProducerStats = org.apache.pulsar.client.api.ProducerStats;
-
-	public interface ProducerStatsRecorder : ProducerStats
+	public class ProducerResponse
 	{
-		void updateNumMsgsSent(long numMsgs, long totalMsgsSize);
-
-		void incrementSendFailed();
-
-		void incrementSendFailed(long numMsgs);
-
-		void incrementNumAcksReceived(long latencyNs);
-
-		void cancelStatsTimeout();
+		public string ProducerName { get; set; }
+		public long LastSequenceId { get; set; }
+		public sbyte[] SchemaVersion { get; set; }
 	}
 
 }

@@ -20,14 +20,6 @@
 /// </summary>
 namespace SharpPulsar.Util
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
-
-
-	
-
 	public class ExecutorProvider
 	{
 		private readonly int numThreads;

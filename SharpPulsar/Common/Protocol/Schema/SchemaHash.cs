@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interface.Schema;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,24 +18,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
-	using HashCode = com.google.common.hash.HashCode;
-	using HashFunction = com.google.common.hash.HashFunction;
-	using Hashing = com.google.common.hash.Hashing;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-
 	/// <summary>
 	/// Schema hash wrapper with a HashCode inner type.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @EqualsAndHashCode public class SchemaHash
 	public class SchemaHash
 	{
 
-		private static HashFunction hashFunction = Hashing.sha256();
+		private static HashFunction HashFunction = Hashing.sha256();
 
 		private readonly HashCode hash;
 
@@ -42,17 +35,17 @@ namespace org.apache.pulsar.common.protocol.schema
 			this.hash = hash;
 		}
 
-		public static SchemaHash of(Schema schema)
+		public static SchemaHash Of(Schema schema)
 		{
-			return of(Optional.ofNullable(schema).map(Schema.getSchemaInfo).map(SchemaInfo.getSchema).orElse(new sbyte[0]));
+			return Of(Optional.ofNullable(schema).map(Schema.getSchemaInfo).map(SchemaInfo.getSchema).orElse(new sbyte[0]));
 		}
 
-		public static SchemaHash of(SchemaData schemaData)
+		public static SchemaHash Of(SchemaData schemaData)
 		{
-			return of(schemaData.Data);
+			return Of(schemaData.Data);
 		}
 
-		private static SchemaHash of(sbyte[] schemaBytes)
+		private static SchemaHash Of(sbyte[] schemaBytes)
 		{
 			return new SchemaHash(hashFunction.hashBytes(schemaBytes));
 		}

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.Transaction\SharpPulsar.Transaction.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Util\SharpPulsar.Util.csproj" />
   </ItemGroup>
 
 </Project>

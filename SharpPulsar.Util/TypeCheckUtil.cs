@@ -20,19 +20,12 @@
 /// </summary>
 namespace SharpPulsar.Util
 {
-	
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass public class TypeCheckUtil
 	public class TypeCheckUtil
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") public static <T> T checkType(Object o, Class<T> clazz)
 		public static T checkType<T>(object o, Type clazz)
 		{
 			if (!clazz.IsInstanceOfType(o))
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
 				throw new System.Exception(string.Format("Invalid object type '{0}' when exepcting '{1}'", o.GetType().FullName, clazz.FullName));
 			}
 			return (T) o;

@@ -20,28 +20,8 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Producer
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.computeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.resumeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.MessageImpl.SchemaState.Broken;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.MessageImpl.SchemaState.None;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.ProducerBase.MultiSchemaMode.Auto;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.ProducerBase.MultiSchemaMode.Enabled;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.hasChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.readChecksum;
 
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using Queues = com.google.common.collect.Queues;
@@ -83,8 +63,9 @@ namespace org.apache.pulsar.client.impl
 	using ByteString = org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Impl.Message;
 
-	public class ProducerImpl<T> : ProducerBase<T>, TimerTask, ConnectionHandler.Connection
+    public class ProducerImpl<T> : ProducerBase<T>, TimerTask, ConnectionHandler.Connection
 	{
 
 		// Producer id, used to identify a producer within a single connection
@@ -118,9 +99,6 @@ namespace org.apache.pulsar.client.impl
 		protected internal volatile long lastSequenceIdPushed;
 
 		private MessageCrypto msgCrypto = null;
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private io.netty.util.concurrent.ScheduledFuture<?> keyGeneratorTask = null;
 		private ScheduledFuture<object> keyGeneratorTask = null;
 
 		private readonly IDictionary<string, string> metadata;
@@ -128,9 +106,6 @@ namespace org.apache.pulsar.client.impl
 		private Optional<sbyte[]> schemaVersion = null;
 
 		private readonly ConnectionHandler connectionHandler;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("rawtypes") private static final java.util.concurrent.atomic.AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater(ProducerImpl.class, "msgIdGenerator");
 		private static readonly AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerImpl), "msgIdGenerator");
 
 		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, CompletableFuture<Producer<T>> producerCreatedFuture, int partitionIndex, Schema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedFuture, schema, interceptors)

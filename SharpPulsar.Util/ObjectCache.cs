@@ -42,7 +42,7 @@ namespace SharpPulsar.Util
 			this.clock = clock;
 		}
 
-		public virtual T get()
+		public virtual T Get()
 		{
 			lock (this)
 			{

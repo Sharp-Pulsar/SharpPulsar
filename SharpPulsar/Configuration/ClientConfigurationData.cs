@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface;
+﻿using SharpPulsar.Impl.Auth;
+using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
 using System;
 
@@ -26,94 +27,77 @@ namespace SharpPulsar.Configuration
 	/// <summary>
 	/// This is a simple holder of the client configuration values.
 	/// </summary>
-	[Serializable]
-	public class ClientConfigurationData : ICloneable
+	public class ClientConfigurationData 
 	{
 		public const long SerialVersionUID = 1L;
 
 		public string ServiceUrl { get; set; }
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private transient org.apache.pulsar.client.api.ServiceUrlProvider serviceUrlProvider;
-		[NonSerialized]
-		private IServiceUrlProvider serviceUrlProvider;
+		public IServiceUrlProvider ServiceUrlProvider { get; set; }
 
-/
-		[NonSerialized]
-		private Authentication authentication = new AuthenticationDisabled();
-		private string authPluginClassName;
-		private string authParams;
+		private IAuthentication _authentication = new AuthenticationDisabled();
+		public string AuthPluginClassName { get; set; }
+		public string AuthParams { get; set; }
 
-		private long operationTimeoutMs = 30000;
-		private long statsIntervalSeconds = 60;
+		public long OperationTimeoutMs = 30000;
+		public long StatsIntervalSeconds = 60;
 
-		private int numIoThreads = 1;
-		private int numListenerThreads = 1;
-		private int connectionsPerBroker = 1;
+		public int NumIoThreads = 1;
+		public int NumListenerThreads = 1;
+		public int ConnectionsPerBroker = 1;
 
-		private bool useTcpNoDelay = true;
+		public bool UseTcpNoDelay = true;
 
-		private bool useTls = false;
-		private string tlsTrustCertsFilePath = "";
-		private bool tlsAllowInsecureConnection = false;
-		private bool tlsHostnameVerificationEnable = false;
-		private int concurrentLookupRequest = 5000;
-		private int maxLookupRequest = 50000;
-		private int maxNumberOfRejectedRequestPerConnection = 50;
-		private int keepAliveIntervalSeconds = 30;
-		private int connectionTimeoutMs = 10000;
-		private int requestTimeoutMs = 60000;
-		private long initialBackoffIntervalNanos = TimeUnit.MILLISECONDS.toNanos(100);
-		private long maxBackoffIntervalNanos = TimeUnit.SECONDS.toNanos(60);
+		private bool _useTls = false;
+		public string TlsTrustCertsFilePath = "";
+		public bool TlsAllowInsecureConnection = false;
+		public bool TlsHostnameVerificationEnable = false;
+		public int ConcurrentLookupRequest = 5000;
+		public int MaxLookupRequest = 50000;
+		public int MaxNumberOfRejectedRequestPerConnection = 50;
+		public int KeepAliveIntervalSeconds = 30;
+		public int ConnectionTimeoutMs = 10000;
+		public int RequestTimeoutMs = 60000;
+		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.toNanos(100);
+		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.toNanos(60);
+		public DateTime Clock = DateTime.Now;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private java.time.Clock clock = java.time.Clock.systemDefaultZone();
-		private Clock clock = Clock.systemDefaultZone();
-
-		public virtual IAuthentication Authentication
+		public IAuthentication Authentication
 		{
 			get
 			{
-				if (authentication == null)
+				if (_authentication == null)
 				{
-					this.authentication = new AuthenticationDisabled();
+					this._authentication = new AuthenticationDisabled();
 				}
-				return authentication;
+				return _authentication;
+			}
+			set
+			{
+				_authentication = value;
 			}
 		}
 
-		public virtual bool UseTls
+		public bool UseTls
 		{
 			get
 			{
-				if (useTls)
+				if (_useTls)
 				{
 					return true;
 				}
 				if (ServiceUrl != null && (this.ServiceUrl.StartsWith("pulsar+ssl") || this.ServiceUrl.StartsWith("https")))
 				{
-					this.useTls = true;
+					this._useTls = true;
 					return true;
 				}
 				return false;
 			}
-		}
-
-		public virtual ClientConfigurationData clone()
-		{
-			try
+			set
 			{
-				return (ClientConfigurationData) base.clone();
-			}
-			catch (CloneNotSupportedException)
-			{
-				throw new Exception("Failed to clone ClientConfigurationData");
+				_useTls = value;
 			}
 		}
 
-		public object Clone()
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 }

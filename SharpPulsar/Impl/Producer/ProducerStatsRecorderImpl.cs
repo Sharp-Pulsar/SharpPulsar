@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Producer;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,27 +22,12 @@
 namespace org.apache.pulsar.client.impl
 {
 
-	using ProducerStats = org.apache.pulsar.client.api.ProducerStats;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using ObjectWriter = com.fasterxml.jackson.databind.ObjectWriter;
-	using SerializationFeature = com.fasterxml.jackson.databind.SerializationFeature;
-	using DoublesSketch = com.yahoo.sketches.quantiles.DoublesSketch;
-
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-
-	public class ProducerStatsRecorderImpl : ProducerStatsRecorder
+	public class ProducerStatsRecorderImpl : IProducerStatsRecorder
 	{
 
 		private const long serialVersionUID = 1L;
 		private TimerTask stat;
 		private Timeout statTimeout;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ProducerImpl<?> producer;
 		private ProducerImpl<object> producer;
 		private PulsarClientImpl pulsarClient;
 		private long oldTime;

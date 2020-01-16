@@ -1,4 +1,12 @@
-﻿using System;
+﻿using SharpPulsar.Common.Protocol.Schema;
+using SharpPulsar.Configuration;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Message;
+using SharpPulsar.Interface.Schema;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,61 +26,43 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl.Producer
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using TypedMessageBuilder = org.apache.pulsar.client.api.TypedMessageBuilder;
-	using Transaction = org.apache.pulsar.client.api.transaction.Transaction;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using TransactionImpl = org.apache.pulsar.client.impl.transaction.TransactionImpl;
-	using SchemaHash = org.apache.pulsar.common.protocol.schema.SchemaHash;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using ConcurrentOpenHashMap = org.apache.pulsar.common.util.collections.ConcurrentOpenHashMap;
 
 	public abstract class ProducerBase<T> : HandlerState, Producer<T>
 	{
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+	
 		protected internal readonly CompletableFuture<Producer<T>> producerCreatedFuture_Conflict;
 		protected internal readonly ProducerConfigurationData conf;
-		protected internal readonly Schema<T> schema;
+		protected internal readonly ISchema<T> schema;
 		protected internal readonly ProducerInterceptors interceptors;
-		protected internal readonly ConcurrentOpenHashMap<SchemaHash, sbyte[]> schemaCache;
+		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> schemaCache;
 		protected internal volatile MultiSchemaMode multiSchemaMode = MultiSchemaMode.Auto;
+		private string topic;
 
-		protected internal ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, CompletableFuture<Producer<T>> producerCreatedFuture, Schema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
+		protected internal ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, CompletableFuture<Producer<T>> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
 		{
 			this.producerCreatedFuture_Conflict = producerCreatedFuture;
 			this.conf = conf;
 			this.schema = schema;
 			this.interceptors = interceptors;
-			this.schemaCache = new ConcurrentOpenHashMap<SchemaHash, sbyte[]>();
+			this.schemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
 			if (!conf.MultiSchema)
 			{
 				multiSchemaMode = MultiSchemaMode.Disabled;
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.MessageId send(T message) throws org.apache.pulsar.client.api.PulsarClientException
-		public override MessageId send(T message)
+		public IMessageId Send(T message)
 		{
-			return newMessage().value(message).send();
+			return NewMessage().Value(message).Send();
 		}
 
-		public override CompletableFuture<MessageId> sendAsync(T message)
+		public async ValueTask<IMessageId> SendAsync(T message)
 		{
 			try
 			{
-				return newMessage().value(message).sendAsync();
+				return await NewMessage().Value(message).SendAsync();
 			}
 			catch (SchemaSerializationException e)
 			{
@@ -80,25 +70,24 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual CompletableFuture<MessageId> sendAsync<T1>(Message<T1> message)
+		public virtual async ValueTask<IMessageId> SendAsync<T1>(IMessage<T1> message)
 		{
-			return internalSendAsync(message);
+			return await InternalSendAsync(message);
 		}
 
-		public override TypedMessageBuilder<T> newMessage()
+		public ITypedMessageBuilder<T> NewMessage()
 		{
 			return new TypedMessageBuilderImpl<T>(this, schema);
 		}
 
-		public virtual TypedMessageBuilder<V> newMessage<V>(Schema<V> schema)
+		public virtual ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
 		{
 			checkArgument(schema != null);
 			return new TypedMessageBuilderImpl<V>(this, schema);
 		}
 
-		// TODO: add this method to the Producer interface
-		// @Override
-		public virtual TypedMessageBuilder<T> newMessage(Transaction txn)
+		
+		public virtual ITypedMessageBuilder<T> NewMessage(Transaction txn)
 		{
 			checkArgument(txn is TransactionImpl);
 
@@ -111,64 +100,57 @@ namespace org.apache.pulsar.client.impl
 			return new TypedMessageBuilderImpl<T>(this, schema, (TransactionImpl) txn);
 		}
 
-		internal abstract CompletableFuture<MessageId> internalSendAsync<T1>(Message<T1> message);
+		internal abstract ValueTask<IMessageId> InternalSendAsync<T1>(IMessage<T1> message);
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public org.apache.pulsar.client.api.MessageId send(org.apache.pulsar.client.api.Message<?> message) throws org.apache.pulsar.client.api.PulsarClientException
-		public virtual MessageId send<T1>(Message<T1> message)
+		public virtual IMessageId Send<T1>(IMessage<T1> message)
 		{
 			try
 			{
 				// enqueue the message to the buffer
-				CompletableFuture<MessageId> sendFuture = internalSendAsync(message);
+				var sendFuture = InternalSendAsync(message);
 
-				if (!sendFuture.Done)
+				if (!sendFuture.IsCompleted)
 				{
 					// the send request wasn't completed yet (e.g. not failing at enqueuing), then attempt to triggerFlush it out
 					triggerFlush();
 				}
 
-				return sendFuture.get();
+				return sendFuture.Result;
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void flush() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void flush()
+		public  void Flush()
 		{
 			try
 			{
-				flushAsync().get();
+				FlushAsync();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		internal abstract void triggerFlush();
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void close()
+		internal abstract void TriggerFlush();
+		public void Close()
 		{
 			try
 			{
-				closeAsync().get();
+				CloseAsync().GetAwaiter();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override abstract CompletableFuture<Void> closeAsync();
+		public abstract ValueTask CloseAsync();
 
-		public override string Topic
+		public string Topic
 		{
 			get
 			{
@@ -184,14 +166,12 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual CompletableFuture<Producer<T>> producerCreatedFuture()
+		public virtual ValueTask<Producer<T>> ProducerCreatedAsync()
 		{
 			return producerCreatedFuture_Conflict;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: protected org.apache.pulsar.client.api.Message<?> beforeSend(org.apache.pulsar.client.api.Message<?> message)
-		protected internal virtual Message<object> beforeSend<T1>(Message<T1> message)
+		protected internal virtual IMessage<object> BeforeSend<T1>(IMessage<T1> message)
 		{
 			if (interceptors != null)
 			{
@@ -199,11 +179,11 @@ namespace org.apache.pulsar.client.impl
 			}
 			else
 			{
-				return message;
+				return (IMessage<object>)message;
 			}
 		}
 
-		protected internal virtual void onSendAcknowledgement<T1>(Message<T1> message, MessageId msgId, Exception exception)
+		protected internal virtual void OnSendAcknowledgement<T1>(IMessage<T1> message, IMessageId msgId,System.Exception exception)
 		{
 			if (interceptors != null)
 			{
@@ -211,7 +191,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public override string ToString()
+		public string ToString()
 		{
 			return "ProducerBase{" + "topic='" + topic + '\'' + '}';
 		}

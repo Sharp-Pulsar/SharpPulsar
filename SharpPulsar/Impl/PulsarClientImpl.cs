@@ -20,12 +20,8 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.commons.lang3.StringUtils.isBlank;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using CacheBuilder = com.google.common.cache.CacheBuilder;
 	using CacheLoader = com.google.common.cache.CacheLoader;
 	using LoadingCache = com.google.common.cache.LoadingCache;
@@ -73,8 +69,11 @@ namespace org.apache.pulsar.client.impl
 	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Interface;
+    using SharpPulsar.Util;
+    using SharpPulsar.Impl.Producer;
 
-	public class PulsarClientImpl : PulsarClient
+    public class PulsarClientImpl : IPulsarClient
 	{
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarClientImpl));
@@ -94,19 +93,14 @@ namespace org.apache.pulsar.client.impl
 			Closed
 		}
 
-		private AtomicReference<State> state = new AtomicReference<State>();
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final java.util.IdentityHashMap<ProducerBase<?>, bool> producers;
+		private readonly AtomicReference<State> state = new AtomicReference<State>();
 		private readonly IdentityHashMap<ProducerBase<object>, bool> producers;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final java.util.IdentityHashMap<ConsumerBase<?>, bool> consumers;
 		private readonly IdentityHashMap<ConsumerBase<object>, bool> consumers;
 
 		private readonly AtomicLong producerIdGenerator = new AtomicLong();
 		private readonly AtomicLong consumerIdGenerator = new AtomicLong();
 		private readonly AtomicLong requestIdGenerator = new AtomicLong();
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		private readonly EventLoopGroup eventLoopGroup_Conflict;
 
 		private readonly LoadingCache<string, SchemaInfoProvider> schemaProviderLoadingCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());

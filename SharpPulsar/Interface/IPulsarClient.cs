@@ -1,4 +1,9 @@
-﻿using Pulsar.Api.Schema;
+﻿using SharpPulsar.Common;
+using SharpPulsar.Interface.Consumer;
+using SharpPulsar.Interface.Producer;
+using SharpPulsar.Interface.Reader;
+using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -40,7 +45,7 @@ namespace SharpPulsar.Interface
 	/// }</pre>
 	/// </para>
 	/// </summary>
-	public interface IPulsarClient : System.IDisposable
+	public interface IPulsarClient : IDisposable
 	{
 
 		/// <summary>
@@ -49,11 +54,10 @@ namespace SharpPulsar.Interface
 		/// <returns> the <seealso cref="IClientBuilder"/>
 		/// 
 		/// @since 2.0.0 </returns>
-//JAVA TO C# CONVERTER TODO TASK: There is no equivalent in C# to Java static interface methods unless the C#8 option for this is selected:
-//		static ClientBuilder builder()
-	//	{
-	//		return DefaultImplementation.newClientBuilder();
-	//	}
+		static IClientBuilder Builder()
+		{
+			return DefaultImplementation.newClientBuilder();
+		}
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -242,8 +246,6 @@ namespace SharpPulsar.Interface
 		///            the new service URL this client should connect to </param>
 		/// <exception cref="PulsarClientException">
 		///             in case the serviceUrl is not valid </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws PulsarClientException;
 		void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
@@ -276,8 +278,6 @@ namespace SharpPulsar.Interface
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the close operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override void close() throws PulsarClientException;
 		void Close();
 
 		/// <summary>
@@ -303,8 +303,6 @@ namespace SharpPulsar.Interface
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the forceful shutdown fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void shutdown() throws PulsarClientException;
 		void Shutdown();
 	}
 

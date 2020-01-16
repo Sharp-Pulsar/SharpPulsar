@@ -25,17 +25,6 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
 
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using IAuthenticationFactory = org.apache.pulsar.client.api.IAuthenticationFactory;
-	using ClientBuilder = org.apache.pulsar.client.api.ClientBuilder;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-	using ServiceUrlProvider = org.apache.pulsar.client.api.ServiceUrlProvider;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using ConfigurationDataUtils = org.apache.pulsar.client.impl.conf.ConfigurationDataUtils;
-
 	public class ClientBuilderImpl : IClientBuilder
 	{
 		internal ClientConfigurationData conf;
@@ -52,39 +41,35 @@ namespace SharpPulsar.Impl
 		{
 			if (string.IsNullOrWhiteSpace(conf.ServiceUrl) && conf.ServiceUrlProvider == null)
 			{
-				throw new System.ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
+				throw new ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
 			}
 			if (string.IsNullOrWhiteSpace(conf.ServiceUrl) && conf.ServiceUrlProvider != null)
 			{
-				throw new System.ArgumentException("Can only chose one way service URL or service URL provider.");
+				throw new ArgumentException("Can only chose one way service URL or service URL provider.");
 			}
 			if (conf.ServiceUrlProvider != null)
 			{
-				if (StringUtils.isBlank(conf.ServiceUrlProvider.ServiceUrl))
+				if (string.IsNullOrWhiteSpace(conf.ServiceUrlProvider.ServiceUrl))
 				{
-					throw new System.ArgumentException("Cannot get service url from service url provider.");
+					throw new ArgumentException("Cannot get service url from service url provider.");
 				}
 				else
 				{
 					conf.ServiceUrl = conf.ServiceUrlProvider.ServiceUrl;
 				}
 			}
-			PulsarClient client = new PulsarClientImpl(conf);
+			IPulsarClient client = new PulsarClientImpl(conf);
 			if (conf.ServiceUrlProvider != null)
 			{
-				conf.ServiceUrlProvider.initialize(client);
+				conf.ServiceUrlProvider.Initialize(client);
 			}
 			return client;
 		}
 
-		public IClientBuilder Clone()
-		{
-			return new ClientBuilderImpl(conf.clone());
-		}
 
 		public IClientBuilder LoadConf(IDictionary<string, object> config)
 		{
-			conf = ConfigurationDataUtils.loadData(config, conf, typeof(ClientConfigurationData));
+			conf = ConfigurationDataUtils.LoadData(config, conf, typeof(ClientConfigurationData));
 			return this;
 		}
 
@@ -92,12 +77,12 @@ namespace SharpPulsar.Impl
 		{
 			if (string.IsNullOrWhiteSpace(serviceUrl))
 			{
-				throw new System.ArgumentException("Param serviceUrl must not be blank.");
+				throw new ArgumentException("Param serviceUrl must not be blank.");
 			}
 			conf.ServiceUrl = serviceUrl;
 			if (!conf.UseTls)
 			{
-				enableTls(serviceUrl.StartsWith("pulsar+ssl", StringComparison.Ordinal) || serviceUrl.StartsWith("https", StringComparison.Ordinal));
+				EnableTls(serviceUrl.StartsWith("pulsar+ssl", StringComparison.Ordinal) || serviceUrl.StartsWith("https", StringComparison.Ordinal));
 			}
 			return this;
 		}
@@ -106,7 +91,7 @@ namespace SharpPulsar.Impl
 		{
 			if (serviceUrlProvider == null)
 			{
-				throw new System.ArgumentException("Param serviceUrlProvider must not be null.");
+				throw new ArgumentException("Param serviceUrlProvider must not be null.");
 			}
 			conf.ServiceUrlProvider = serviceUrlProvider;
 			return this;
@@ -120,12 +105,12 @@ namespace SharpPulsar.Impl
 
 		public IClientBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
-			conf.Authentication = IAuthenticationFactory.create(authPluginClassName, authParamsString);
+			conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParamsString);
 			return this;
 			}
 		public IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
-			conf.Authentication = IAuthenticationFactory.create(authPluginClassName, authParams);
+			conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParams);
 			return this;
 		}
 
@@ -239,7 +224,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public IClientBuilder Clock(Clock clock)
+		public IClientBuilder Clock(DateTime clock)
 		{
 			conf.Clock = clock;
 			return this;
