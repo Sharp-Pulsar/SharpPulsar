@@ -20,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using Preconditions = com.google.common.@base.Preconditions;
 	using Timeout = io.netty.util.Timeout;

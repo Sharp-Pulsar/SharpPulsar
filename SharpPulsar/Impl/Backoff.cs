@@ -20,9 +20,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Data = lombok.Data;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
 
 	// All variables are in TimeUnit millis by default

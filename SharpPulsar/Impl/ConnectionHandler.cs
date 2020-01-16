@@ -30,8 +30,7 @@ namespace org.apache.pulsar.client.impl
 	public class ConnectionHandler
 	{
 		private static readonly AtomicReferenceFieldUpdater<ConnectionHandler, ClientCnx> CLIENT_CNX_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(ConnectionHandler), typeof(ClientCnx), "clientCnx");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile ClientCnx clientCnx = null;
+
 		private volatile ClientCnx clientCnx = null;
 
 		protected internal readonly HandlerState state;

@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl
 
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationFactory = org.apache.pulsar.client.api.AuthenticationFactory;
+	using IAuthenticationFactory = org.apache.pulsar.client.api.IAuthenticationFactory;
 	using ClientBuilder = org.apache.pulsar.client.api.ClientBuilder;
 	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
@@ -48,9 +48,6 @@ namespace SharpPulsar.Impl
 		{
 			this.conf = conf;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.PulsarClient build() throws org.apache.pulsar.client.api.PulsarClientException
 		public IPulsarClient Build()
 		{
 			if (string.IsNullOrWhiteSpace(conf.ServiceUrl) && conf.ServiceUrlProvider == null)
@@ -121,19 +118,14 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ClientBuilder authentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
 		public IClientBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
-			conf.Authentication = AuthenticationFactory.create(authPluginClassName, authParamsString);
+			conf.Authentication = IAuthenticationFactory.create(authPluginClassName, authParamsString);
 			return this;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
+			}
 		public IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
-			conf.Authentication = AuthenticationFactory.create(authPluginClassName, authParams);
+			conf.Authentication = IAuthenticationFactory.create(authPluginClassName, authParams);
 			return this;
 		}
 

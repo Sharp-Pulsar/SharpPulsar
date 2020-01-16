@@ -89,7 +89,7 @@ namespace SharpPulsar.Impl.Auth
 				{
 				try
 				{
-					return (new string(File.readAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
+					return (new string(File.ReadAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
 				}
 				catch (IOException e)
 				{

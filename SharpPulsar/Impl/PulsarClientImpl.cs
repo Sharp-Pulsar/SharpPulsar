@@ -51,7 +51,7 @@ namespace org.apache.pulsar.client.impl
 	using Schema = org.apache.pulsar.client.api.Schema;
 	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
 	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
-	using AuthenticationFactory = org.apache.pulsar.client.api.AuthenticationFactory;
+	using IAuthenticationFactory = org.apache.pulsar.client.api.IAuthenticationFactory;
 	using TransactionBuilder = org.apache.pulsar.client.api.transaction.TransactionBuilder;
 	using SubscriptionMode = org.apache.pulsar.client.impl.ConsumerImpl.SubscriptionMode;
 	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
@@ -174,7 +174,7 @@ namespace org.apache.pulsar.client.impl
 					return;
 				}
     
-				value.Authentication = AuthenticationFactory.create(value.AuthPluginClassName, value.AuthParams);
+				value.Authentication = IAuthenticationFactory.create(value.AuthPluginClassName, value.AuthParams);
 			}
 		}
 

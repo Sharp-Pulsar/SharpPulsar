@@ -18,10 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using ConcurrentOpenHashSet = org.apache.pulsar.common.util.collections.ConcurrentOpenHashSet;
 
 	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
 	{
@@ -34,7 +32,7 @@ namespace org.apache.pulsar.client.impl
 		{
 		}
 
-		public virtual int removeTopicMessages(string topicName)
+		public virtual int RemoveTopicMessages(string topicName)
 		{
 			writeLock.@lock();
 			try

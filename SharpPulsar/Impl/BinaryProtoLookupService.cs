@@ -52,8 +52,6 @@ namespace SharpPulsar.Impl
 		private readonly bool useTls;
 		private readonly ExecutorService executor;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public BinaryProtoLookupService(PulsarClientImpl client, String serviceUrl, boolean useTls, java.util.concurrent.ExecutorService executor) throws org.apache.pulsar.client.api.PulsarClientException
 		public BinaryProtoLookupService(PulsarClientImpl client, string serviceUrl, bool useTls, ExecutorService executor)
 		{
 			this.client = client;
@@ -63,8 +61,6 @@ namespace SharpPulsar.Impl
 			UdateServiceUrl(serviceUrl);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual void UpdateServiceUrl(string serviceUrl)
 		{
 			serviceNameResolver.updateServiceUrl(serviceUrl);
@@ -76,7 +72,7 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		public virtual ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName topicName)
+		public  ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName topicName)
 		{
 			return findBroker(serviceNameResolver.resolveHost(), false, topicName);
 		}
