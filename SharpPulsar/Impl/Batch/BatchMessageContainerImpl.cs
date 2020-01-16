@@ -75,7 +75,7 @@ namespace SharpPulsar.Impl.Batch
 				// the first message
 				lowestSequenceId = Commands.initBatchMessageMetadata(messageMetadata, msg.MessageBuilder);
 				this.firstCallback = callback;
-				batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(maxBatchSize, ClientCnx.MaxMessageSize));
+				batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(maxBatchSize, ClientConnection.MaxMessageSize));
 			}
 
 			if (previousCallback != null)
@@ -205,9 +205,9 @@ namespace SharpPulsar.Impl.Batch
 		public override OpSendMsg createOpSendMsg()
 		{
 			ByteBuf encryptedPayload = producer.encryptMessage(messageMetadata, CompressedBatchMetadataAndPayload);
-			if (encryptedPayload.readableBytes() > ClientCnx.MaxMessageSize)
+			if (encryptedPayload.readableBytes() > ClientConnection.MaxMessageSize)
 			{
-				discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
+				discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientConnection.MaxMessageSize + " bytes"));
 				return null;
 			}
 			messageMetadata.NumMessagesInBatch = numMessagesInBatch;

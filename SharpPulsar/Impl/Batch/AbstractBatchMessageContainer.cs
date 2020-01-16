@@ -48,14 +48,14 @@ namespace SharpPulsar.Impl.Batch
 		public virtual bool haveEnoughSpace<T1>(MessageImpl<T1> msg)
 		{
 			int messageSize = msg.DataBuffer.readableBytes();
-			return ((maxBytesInBatch <= 0 && (messageSize + currentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (maxBytesInBatch > 0 && (messageSize + currentBatchSizeBytes) <= maxBytesInBatch)) && (maxNumMessagesInBatch <= 0 || numMessagesInBatch < maxNumMessagesInBatch);
+			return ((maxBytesInBatch <= 0 && (messageSize + currentBatchSizeBytes) <= ClientConnection.MaxMessageSize) || (maxBytesInBatch > 0 && (messageSize + currentBatchSizeBytes) <= maxBytesInBatch)) && (maxNumMessagesInBatch <= 0 || numMessagesInBatch < maxNumMessagesInBatch);
 		}
 
 		protected internal virtual bool BatchFull
 		{
 			get
 			{
-				return (maxBytesInBatch > 0 && currentBatchSizeBytes >= maxBytesInBatch) || (maxBytesInBatch <= 0 && currentBatchSizeBytes >= ClientCnx.MaxMessageSize) || (maxNumMessagesInBatch > 0 && numMessagesInBatch >= maxNumMessagesInBatch);
+				return (maxBytesInBatch > 0 && currentBatchSizeBytes >= maxBytesInBatch) || (maxBytesInBatch <= 0 && currentBatchSizeBytes >= ClientConnection.MaxMessageSize) || (maxNumMessagesInBatch > 0 && numMessagesInBatch >= maxNumMessagesInBatch);
 			}
 		}
 

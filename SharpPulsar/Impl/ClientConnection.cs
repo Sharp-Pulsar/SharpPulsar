@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpPulsar;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,14 +21,8 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using Queues = com.google.common.collect.Queues;
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
@@ -53,35 +49,16 @@ namespace org.apache.pulsar.client.impl
 	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
 	using Commands = org.apache.pulsar.common.protocol.Commands;
 	using PulsarHandler = org.apache.pulsar.common.protocol.PulsarHandler;
-	using CommandActiveConsumerChange = org.apache.pulsar.common.api.proto.PulsarApi.CommandActiveConsumerChange;
-	using CommandAuthChallenge = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthChallenge;
-	using CommandCloseConsumer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseConsumer;
-	using CommandCloseProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseProducer;
-	using CommandConnected = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnected;
-	using CommandError = org.apache.pulsar.common.api.proto.PulsarApi.CommandError;
-	using CommandGetLastMessageIdResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetLastMessageIdResponse;
-	using CommandGetSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchemaResponse;
-	using CommandGetOrCreateSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchemaResponse;
-	using CommandGetTopicsOfNamespaceResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespaceResponse;
-	using CommandLookupTopicResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse;
-	using CommandMessage = org.apache.pulsar.common.api.proto.PulsarApi.CommandMessage;
-	using CommandPartitionedTopicMetadataResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadataResponse;
-	using CommandProducerSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducerSuccess;
-	using CommandReachedEndOfTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandReachedEndOfTopic;
-	using CommandSendError = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendError;
-	using CommandSendReceipt = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendReceipt;
-	using CommandSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandSuccess;
-	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
-	using ServerError = org.apache.pulsar.common.api.proto.PulsarApi.ServerError;
+	using ServerError = SharpPulsar.ServerError;
 	using SchemaVersion = org.apache.pulsar.common.protocol.schema.SchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using SchemaInfo = Common.Schema.SchemaInfo;
 	using SchemaInfoUtil = org.apache.pulsar.common.protocol.schema.SchemaInfoUtil;
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 	using ConcurrentLongHashMap = org.apache.pulsar.common.util.collections.ConcurrentLongHashMap;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
-	public class ClientCnx : PulsarHandler
+	public class ClientConnection : PulsarHandler
 	{
 
 		protected internal readonly Authentication authentication;
@@ -94,7 +71,7 @@ namespace org.apache.pulsar.client.impl
 		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>> pendingGetLastMessageIdRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>>(16, 1);
 		private readonly ConcurrentLongHashMap<CompletableFuture<IList<string>>> pendingGetTopicsRequests = new ConcurrentLongHashMap<CompletableFuture<IList<string>>>(16, 1);
 
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>> pendingGetSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>>(16, 1);
+		private readonly ConcurrentLongHashMap<CompletableFuture<SharpPulsar.CommandGetSchemaResponse>> pendingGetSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>>(16, 1);
 		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>> pendingGetOrCreateSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>>(16, 1);
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
@@ -112,7 +89,7 @@ namespace org.apache.pulsar.client.impl
 		private readonly Semaphore maxLookupRequestSemaphore;
 		private readonly EventLoopGroup eventLoopGroup;
 
-		private static readonly AtomicIntegerFieldUpdater<ClientCnx> NUMBER_OF_REJECTED_REQUESTS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ClientCnx), "numberOfRejectRequests");
+		private static readonly AtomicIntegerFieldUpdater<ClientConnection> NUMBER_OF_REJECTED_REQUESTS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ClientConnection), "numberOfRejectRequests");
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("unused") private volatile int numberOfRejectRequests = 0;
 		private volatile int numberOfRejectRequests = 0;
@@ -161,11 +138,11 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, Commands.CurrentProtocolVersion)
+		public ClientConnection(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, Commands.CurrentProtocolVersion)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, int protocolVersion) : base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
+		public ClientConnection(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, int protocolVersion) : base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
 		{
 			checkArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			this.pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, false);
@@ -179,10 +156,7 @@ namespace org.apache.pulsar.client.impl
 			this.isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			this.protocolVersion = protocolVersion;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelActive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
-		public override void channelActive(ChannelHandlerContext ctx)
+		public void ChannelActive(ChannelHandlerContext ctx)
 		{
 			base.channelActive(ctx);
 			this.timeoutTask = this.eventLoopGroup.scheduleAtFixedRate(() => checkRequestTimeout(), operationTimeoutMs, operationTimeoutMs, TimeUnit.MILLISECONDS);
@@ -813,7 +787,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		protected internal override void handleGetSchemaResponse(PulsarApi.CommandGetSchemaResponse commandGetSchemaResponse)
+		protected internal void HandleGetSchemaResponse(PulsarApi.CommandGetSchemaResponse commandGetSchemaResponse)
 		{
 			checkArgument(state == State.Ready);
 
@@ -828,7 +802,7 @@ namespace org.apache.pulsar.client.impl
 			future.complete(commandGetSchemaResponse);
 		}
 
-		protected internal override void handleGetOrCreateSchemaResponse(PulsarApi.CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
+		protected internal void HandleGetOrCreateSchemaResponse(PulsarApi.CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
 			checkArgument(state == State.Ready);
 			long requestId = commandGetOrCreateSchemaResponse.RequestId;
@@ -841,7 +815,7 @@ namespace org.apache.pulsar.client.impl
 			future.complete(commandGetOrCreateSchemaResponse);
 		}
 
-		internal virtual Promise<Void> newPromise()
+		internal virtual Promise<Void> NewPromise()
 		{
 			return ctx.newPromise();
 		}
@@ -851,22 +825,22 @@ namespace org.apache.pulsar.client.impl
 			return ctx;
 		}
 
-		internal virtual Channel channel()
+		internal virtual Channel Channel()
 		{
 			return ctx.channel();
 		}
 
-		internal virtual SocketAddress serverAddrees()
+		internal virtual SocketAddress ServerAddrees()
 		{
 			return remoteAddress;
 		}
 
-		internal virtual CompletableFuture<Void> connectionFuture()
+		internal virtual CompletableFuture<Void> ConnectionFuture()
 		{
 			return connectionFuture_Conflict;
 		}
 
-		internal virtual CompletableFuture<ProducerResponse> sendRequestWithId(ByteBuf cmd, long requestId)
+		internal virtual CompletableFuture<ProducerResponse> SendRequestWithId(ByteBuf cmd, long requestId)
 		{
 			CompletableFuture<ProducerResponse> future = new CompletableFuture<ProducerResponse>();
 			pendingRequests.put(requestId, future);
@@ -883,7 +857,7 @@ namespace org.apache.pulsar.client.impl
 			return future;
 		}
 
-		public virtual CompletableFuture<PulsarApi.MessageIdData> sendGetLastMessageId(ByteBuf request, long requestId)
+		public virtual CompletableFuture<PulsarApi.MessageIdData> SendGetLastMessageId(ByteBuf request, long requestId)
 		{
 			CompletableFuture<PulsarApi.MessageIdData> future = new CompletableFuture<PulsarApi.MessageIdData>();
 
@@ -902,7 +876,7 @@ namespace org.apache.pulsar.client.impl
 			return future;
 		}
 
-		public virtual CompletableFuture<Optional<SchemaInfo>> sendGetSchema(ByteBuf request, long requestId)
+		public virtual CompletableFuture<Optional<SchemaInfo>> SendGetSchema(ByteBuf request, long requestId)
 		{
 			return sendGetRawSchema(request, requestId).thenCompose(commandGetSchemaResponse =>
 			{
@@ -925,8 +899,9 @@ namespace org.apache.pulsar.client.impl
 			});
 		}
 
-		public virtual CompletableFuture<PulsarApi.CommandGetSchemaResponse> sendGetRawSchema(ByteBuf request, long requestId)
+		public virtual ValueTask<PulsarApi.CommandGetSchemaResponse> SendGetRawSchema(ByteBuf request, long requestId)
 		{
+			
 			CompletableFuture<PulsarApi.CommandGetSchemaResponse> future = new CompletableFuture<PulsarApi.CommandGetSchemaResponse>();
 
 			pendingGetSchemaRequests.put(requestId, future);
@@ -944,7 +919,7 @@ namespace org.apache.pulsar.client.impl
 			return future;
 		}
 
-		public virtual CompletableFuture<sbyte[]> sendGetOrCreateSchema(ByteBuf request, long requestId)
+		public virtual ValueTask<sbyte[]> SendGetOrCreateSchema(ByteBuf request, long requestId)
 		{
 			CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse> future = new CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>();
 			pendingGetOrCreateSchemaRequests.put(requestId, future);
@@ -978,7 +953,7 @@ namespace org.apache.pulsar.client.impl
 			});
 		}
 
-		protected internal override void handleNewTxnResponse(PulsarApi.CommandNewTxnResponse command)
+		protected internal void HandleNewTxnResponse(PulsarApi.CommandNewTxnResponse command)
 		{
 			TransactionMetaStoreHandler handler = checkAndGetTransactionMetaStoreHandler(command.TxnidMostBits);
 			if (handler != null)
@@ -987,7 +962,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		protected internal override void handleAddPartitionToTxnResponse(PulsarApi.CommandAddPartitionToTxnResponse command)
+		protected internal void HandleAddPartitionToTxnResponse(PulsarApi.CommandAddPartitionToTxnResponse command)
 		{
 			TransactionMetaStoreHandler handler = checkAndGetTransactionMetaStoreHandler(command.TxnidMostBits);
 			if (handler != null)
@@ -996,7 +971,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		protected internal override void handleEndTxnResponse(PulsarApi.CommandEndTxnResponse command)
+		protected internal void HandleEndTxnResponse(PulsarApi.CommandEndTxnResponse command)
 		{
 			TransactionMetaStoreHandler handler = checkAndGetTransactionMetaStoreHandler(command.TxnidMostBits);
 			if (handler != null)
@@ -1005,7 +980,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		private TransactionMetaStoreHandler checkAndGetTransactionMetaStoreHandler(long tcId)
+		private TransactionMetaStoreHandler CheckAndGetTransactionMetaStoreHandler(long tcId)
 		{
 			TransactionMetaStoreHandler handler = transactionMetaStoreHandlers.get(tcId);
 			if (handler == null)
@@ -1026,7 +1001,7 @@ namespace org.apache.pulsar.client.impl
 		/// </summary>
 		/// <param name="error"> </param>
 		/// <param name="errMsg"> </param>
-		private void checkServerError(PulsarApi.ServerError error, string errMsg)
+		private void CheckServerError(PulsarApi.ServerError error, string errMsg)
 		{
 			if (PulsarApi.ServerError.ServiceNotReady.Equals(error))
 			{
@@ -1039,11 +1014,11 @@ namespace org.apache.pulsar.client.impl
 				if (rejectedRequests == 0)
 				{
 					// schedule timer
-					eventLoopGroup.schedule(() => NUMBER_OF_REJECTED_REQUESTS_UPDATER.set(ClientCnx.this, 0), rejectedRequestResetTimeSec, TimeUnit.SECONDS);
+					eventLoopGroup.schedule(() => NUMBER_OF_REJECTED_REQUESTS_UPDATER.set(ClientConnection.this, 0), rejectedRequestResetTimeSec, TimeUnit.SECONDS);
 				}
 				else if (rejectedRequests >= maxNumberOfRejectedRequestPerConnection)
 				{
-					log.error("{} Close connection because received {} rejected request in {} seconds ", ctx.channel(), NUMBER_OF_REJECTED_REQUESTS_UPDATER.get(ClientCnx.this), rejectedRequestResetTimeSec);
+					log.error("{} Close connection because received {} rejected request in {} seconds ", ctx.channel(), NUMBER_OF_REJECTED_REQUESTS_UPDATER.get(ClientConnection.this), rejectedRequestResetTimeSec);
 					ctx.close();
 				}
 			}
@@ -1066,7 +1041,7 @@ namespace org.apache.pulsar.client.impl
 		/// </summary>
 		/// <param name="ctx"> </param>
 		/// <returns> true if hostname is verified else return false </returns>
-		private bool verifyTlsHostName(string hostname, ChannelHandlerContext ctx)
+		private bool VerifyTlsHostName(string hostname, ChannelHandlerContext ctx)
 		{
 			ChannelHandler sslHandler = ctx.channel().pipeline().get("tls");
 
@@ -1085,35 +1060,33 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: void registerConsumer(final long consumerId, final ConsumerImpl<?> consumer)
-		internal virtual void registerConsumer<T1>(long consumerId, ConsumerImpl<T1> consumer)
+		internal virtual void RegisterConsumer<T1>(long consumerId, ConsumerImpl<T1> consumer)
 		{
 			consumers.put(consumerId, consumer);
 		}
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: void registerProducer(final long producerId, final ProducerImpl<?> producer)
-		internal virtual void registerProducer<T1>(long producerId, ProducerImpl<T1> producer)
+		internal virtual void RegisterProducer<T1>(long producerId, ProducerImpl<T1> producer)
 		{
 			producers.put(producerId, producer);
 		}
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: void registerTransactionMetaStoreHandler(final long transactionMetaStoreId, final TransactionMetaStoreHandler handler)
-		internal virtual void registerTransactionMetaStoreHandler(long transactionMetaStoreId, TransactionMetaStoreHandler handler)
+		internal virtual void RegisterTransactionMetaStoreHandler(long transactionMetaStoreId, TransactionMetaStoreHandler handler)
 		{
 			transactionMetaStoreHandlers.put(transactionMetaStoreId, handler);
 		}
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: void removeProducer(final long producerId)
-		internal virtual void removeProducer(long producerId)
+		internal virtual void RemoveProducer(long producerId)
 		{
 			producers.remove(producerId);
 		}
 
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: void removeConsumer(final long consumerId)
-		internal virtual void removeConsumer(long consumerId)
+		internal virtual void RemoveConsumer(long consumerId)
 		{
 			consumers.remove(consumerId);
 		}
@@ -1134,7 +1107,7 @@ namespace org.apache.pulsar.client.impl
 			 }
 		 }
 
-		private PulsarClientException getPulsarClientException(PulsarApi.ServerError error, string errorMsg)
+		private PulsarClientException GetPulsarClientException(PulsarApi.ServerError error, string errorMsg)
 		{
 			switch (error)
 			{
@@ -1170,9 +1143,8 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public void close()
-		public virtual void close()
+
+		public virtual void Close()
 		{
 		   if (ctx != null)
 		   {
@@ -1180,7 +1152,7 @@ namespace org.apache.pulsar.client.impl
 		   }
 		}
 
-		private void checkRequestTimeout()
+		private void CheckRequestTimeout()
 		{
 			while (!requestTimeoutQueue.Empty)
 			{
@@ -1203,7 +1175,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ClientCnx));
+		private static readonly Logger log = LoggerFactory.getLogger(typeof(ClientConnection));
 	}
 
 }

@@ -52,7 +52,7 @@ namespace SharpPulsar.Impl.Message
 
 		protected internal MessageId messageId;
 		private PulsarApi.MessageMetadata.Builder msgMetadataBuilder;
-		private ClientCnx cnx;
+		private ClientConnection cnx;
 		private ByteBuf payload;
 		private ISchema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
@@ -78,15 +78,15 @@ namespace SharpPulsar.Impl.Message
 		}
 
 		// Constructor for incoming message
-		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
+		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, ClientConnection cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
 		{
 		}
 
-		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
+		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientConnection cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
 		}
 
-		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema, int redeliveryCount)
+		internal MessageImpl(string topic, MessageIdImpl messageId, PulsarApi.MessageMetadata msgMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientConnection cnx, Schema<T> schema, int redeliveryCount)
 		{
 			this.msgMetadataBuilder = PulsarApi.MessageMetadata.newBuilder(msgMetadata);
 			this.messageId = messageId;
@@ -111,11 +111,11 @@ namespace SharpPulsar.Impl.Message
 			this.schema = schema;
 		}
 
-		internal MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, PulsarApi.MessageMetadata msgMetadata, PulsarApi.SingleMessageMetadata singleMessageMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0)
+		internal MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, PulsarApi.MessageMetadata msgMetadata, PulsarApi.SingleMessageMetadata singleMessageMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientConnection cnx, Schema<T> schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
 		}
 
-		internal MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, PulsarApi.MessageMetadata msgMetadata, PulsarApi.SingleMessageMetadata singleMessageMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema, int redeliveryCount)
+		internal MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, PulsarApi.MessageMetadata msgMetadata, PulsarApi.SingleMessageMetadata singleMessageMetadata, ByteBuf payload, Optional<EncryptionContext> encryptionCtx, ClientConnection cnx, Schema<T> schema, int redeliveryCount)
 		{
 			this.msgMetadataBuilder = PulsarApi.MessageMetadata.newBuilder(msgMetadata);
 			this.messageId = batchMessageIdImpl;
@@ -507,7 +507,7 @@ namespace SharpPulsar.Impl.Message
 			}
 		}
 
-		public virtual ClientCnx Cnx
+		public virtual ClientConnection Cnx
 		{
 			get
 			{

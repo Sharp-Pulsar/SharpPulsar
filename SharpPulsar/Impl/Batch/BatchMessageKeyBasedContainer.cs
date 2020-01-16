@@ -121,9 +121,9 @@ namespace SharpPulsar.Impl.Batch
 		private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch)
 		{
 			ByteBuf encryptedPayload = producer.encryptMessage(keyedBatch.messageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-			if (encryptedPayload.readableBytes() > ClientCnx.MaxMessageSize)
+			if (encryptedPayload.readableBytes() > ClientConnection.MaxMessageSize)
 			{
-				keyedBatch.discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
+				keyedBatch.discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientConnection.MaxMessageSize + " bytes"));
 				return null;
 			}
 
@@ -253,7 +253,7 @@ namespace SharpPulsar.Impl.Batch
 					{
 						messageMetadata.OrderingKey = ByteString.copyFrom(msg.OrderingKey);
 					}
-					batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(maxBatchSize, ClientCnx.MaxMessageSize));
+					batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(maxBatchSize, ClientConnection.MaxMessageSize));
 					firstCallback = callback;
 				}
 				if (previousCallback != null)

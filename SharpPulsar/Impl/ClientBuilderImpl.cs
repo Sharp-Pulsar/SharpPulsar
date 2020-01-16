@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface;
+﻿using SharpPulsar.Configuration;
+using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
 using System;
 using System.Collections.Generic;
@@ -190,49 +191,49 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ClientBuilder statsInterval(long statsInterval, TimeUnit unit)
+		public IClientBuilder StatsInterval(long statsInterval, TimeUnit unit)
 		{
 			conf.StatsIntervalSeconds = unit.toSeconds(statsInterval);
 			return this;
 		}
 
-		public override ClientBuilder maxConcurrentLookupRequests(int concurrentLookupRequests)
+		public IClientBuilder MaxConcurrentLookupRequests(int concurrentLookupRequests)
 		{
 			conf.ConcurrentLookupRequest = concurrentLookupRequests;
 			return this;
 		}
 
-		public override ClientBuilder maxLookupRequests(int maxLookupRequests)
+		public IClientBuilder MaxLookupRequests(int maxLookupRequests)
 		{
 			conf.MaxLookupRequest = maxLookupRequests;
 			return this;
 		}
 
-		public override ClientBuilder maxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
+		public IClientBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
 		{
 			conf.MaxNumberOfRejectedRequestPerConnection = maxNumberOfRejectedRequestPerConnection;
 			return this;
 		}
 
-		public override ClientBuilder keepAliveInterval(int keepAliveInterval, TimeUnit unit)
+		public IClientBuilder KeepAliveInterval(int keepAliveInterval, TimeUnit unit)
 		{
 			conf.KeepAliveIntervalSeconds = (int)unit.toSeconds(keepAliveInterval);
 			return this;
 		}
 
-		public override ClientBuilder connectionTimeout(int duration, TimeUnit unit)
+		public IClientBuilder ConnectionTimeout(int duration, TimeUnit unit)
 		{
 			conf.ConnectionTimeoutMs = (int)unit.toMillis(duration);
 			return this;
 		}
 
-		public override ClientBuilder startingBackoffInterval(long duration, TimeUnit unit)
+		public IClientBuilder StartingBackoffInterval(long duration, TimeUnit unit)
 		{
 			conf.InitialBackoffIntervalNanos = unit.toNanos(duration);
 			return this;
 		}
 
-		public override ClientBuilder maxBackoffInterval(long duration, TimeUnit unit)
+		public IClientBuilder MaxBackoffInterval(long duration, TimeUnit unit)
 		{
 			conf.MaxBackoffIntervalNanos = unit.toNanos(duration);
 			return this;
@@ -246,7 +247,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ClientBuilder clock(Clock clock)
+		public IClientBuilder Clock(Clock clock)
 		{
 			conf.Clock = clock;
 			return this;

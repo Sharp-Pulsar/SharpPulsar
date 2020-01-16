@@ -227,7 +227,7 @@ namespace SharpPulsar.Interface.Consumer
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
 		/// <seealso cref= Consumer#negativeAcknowledge(Message) </seealso>
-		IConsumerBuilder<T> negativeAckRedeliveryDelay(long redeliveryDelay, TimeUnit timeUnit);
+		IConsumerBuilder<T> NegativeAckRedeliveryDelay(long redeliveryDelay, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Select the subscription type to be used when subscribing to the topic.
