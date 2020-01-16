@@ -5,16 +5,20 @@ VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pulsar.Test", "Pulsar.Test\Pulsar.Test.csproj", "{BE927603-02F8-4F33-9BA4-58A0F0F6460E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test", "SharpPulsar.Test\SharpPulsar.Test.csproj", "{82E83F82-B004-40B9-9391-1ED2B8E12AB1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test", "SharpPulsar.Test\SharpPulsar.Test.csproj", "{82E83F82-B004-40B9-9391-1ED2B8E12AB1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B9FEDDC4-BE7A-46A8-899E-B5001704ABF1}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Transaction", "SharpPulsar.Transaction\SharpPulsar.Transaction.csproj", "{EFC9F426-D8E0-4093-AE25-18AD1CE344F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Transaction", "SharpPulsar.Transaction\SharpPulsar.Transaction.csproj", "{EFC9F426-D8E0-4093-AE25-18AD1CE344F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Admin", "SharpPulsar.Admin\SharpPulsar.Admin.csproj", "{97BBA61D-951F-4372-A83E-DDFECECAED7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Sql", "SharpPulsar.Sql\SharpPulsar.Sql.csproj", "{CE131BC1-8E1C-4B86-A067-7187B8F7C5C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +42,14 @@ Global
 		{EFC9F426-D8E0-4093-AE25-18AD1CE344F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EFC9F426-D8E0-4093-AE25-18AD1CE344F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EFC9F426-D8E0-4093-AE25-18AD1CE344F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97BBA61D-951F-4372-A83E-DDFECECAED7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97BBA61D-951F-4372-A83E-DDFECECAED7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97BBA61D-951F-4372-A83E-DDFECECAED7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97BBA61D-951F-4372-A83E-DDFECECAED7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE131BC1-8E1C-4B86-A067-7187B8F7C5C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE131BC1-8E1C-4B86-A067-7187B8F7C5C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE131BC1-8E1C-4B86-A067-7187B8F7C5C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE131BC1-8E1C-4B86-A067-7187B8F7C5C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
