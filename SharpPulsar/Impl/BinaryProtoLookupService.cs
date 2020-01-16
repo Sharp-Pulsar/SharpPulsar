@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Optional;
+using SharpPulsar.Common.Schema;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +22,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using Lists = com.google.common.collect.Lists;
@@ -57,12 +60,12 @@ namespace org.apache.pulsar.client.impl
 			this.useTls = useTls;
 			this.executor = executor;
 			this.serviceNameResolver = new PulsarServiceNameResolver();
-			updateServiceUrl(serviceUrl);
+			UdateServiceUrl(serviceUrl);
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException
-		public virtual void updateServiceUrl(string serviceUrl)
+		public virtual void UpdateServiceUrl(string serviceUrl)
 		{
 			serviceNameResolver.updateServiceUrl(serviceUrl);
 		}
@@ -73,7 +76,7 @@ namespace org.apache.pulsar.client.impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> getBroker(TopicName topicName)
+		public virtual ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName topicName)
 		{
 			return findBroker(serviceNameResolver.resolveHost(), false, topicName);
 		}
@@ -82,14 +85,14 @@ namespace org.apache.pulsar.client.impl
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		public virtual CompletableFuture<PartitionedTopicMetadata> getPartitionedTopicMetadata(TopicName topicName)
+		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName)
 		{
 			return getPartitionedTopicMetadata(serviceNameResolver.resolveHost(), topicName);
 		}
 
-		private CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> findBroker(InetSocketAddress socketAddress, bool authoritative, TopicName topicName)
+		private ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> FindBroker(InetSocketAddress socketAddress, bool authoritative, TopicName topicName)
 		{
-			CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> addressFuture = new CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>>();
+			ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> addressFuture = new ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>>();
 
 			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
 			{
@@ -157,10 +160,10 @@ namespace org.apache.pulsar.client.impl
 			return addressFuture;
 		}
 
-		private CompletableFuture<PartitionedTopicMetadata> getPartitionedTopicMetadata(InetSocketAddress socketAddress, TopicName topicName)
+		private ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(InetSocketAddress socketAddress, TopicName topicName)
 		{
 
-			CompletableFuture<PartitionedTopicMetadata> partitionFuture = new CompletableFuture<PartitionedTopicMetadata>();
+			ValueTask<PartitionedTopicMetadata> partitionFuture = new ValueTask<PartitionedTopicMetadata>();
 
 			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
 			{
@@ -191,13 +194,13 @@ namespace org.apache.pulsar.client.impl
 			return partitionFuture;
 		}
 
-		public virtual CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName)
+		public virtual ValueTask<Option<SchemaInfo>> GetSchema(TopicName topicName)
 		{
-			return getSchema(topicName, null);
+			return GetSchema(topicName, null);
 		}
 
 
-		public virtual CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName, sbyte[] version)
+		public virtual ValueTask<Option<SchemaInfo>> GetSchema(TopicName topicName, sbyte[] version)
 		{
 			return client.CnxPool.getConnection(serviceNameResolver.resolveHost()).thenCompose(clientCnx =>
 			{
@@ -215,9 +218,9 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual CompletableFuture<IList<string>> getTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+		public virtual ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
 		{
-			CompletableFuture<IList<string>> topicsFuture = new CompletableFuture<IList<string>>();
+			ValueTask<IList<string>> topicsFuture = new ValueTask<IList<string>>();
 
 			AtomicLong opTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
 			Backoff backoff = (new BackoffBuilder()).setInitialTime(100, TimeUnit.MILLISECONDS).setMandatoryStop(opTimeoutMs.get() * 2, TimeUnit.MILLISECONDS).setMax(0, TimeUnit.MILLISECONDS).create();
@@ -225,7 +228,7 @@ namespace org.apache.pulsar.client.impl
 			return topicsFuture;
 		}
 
-		private void getTopicsUnderNamespace(InetSocketAddress socketAddress, NamespaceName @namespace, Backoff backoff, AtomicLong remainingTime, CompletableFuture<IList<string>> topicsFuture, Mode mode)
+		private void GetTopicsUnderNamespace(InetSocketAddress socketAddress, NamespaceName @namespace, Backoff backoff, AtomicLong remainingTime, CompletableFuture<IList<string>> topicsFuture, Mode mode)
 		{
 			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
 			{
@@ -273,7 +276,7 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void close() throws Exception
-		public override void close()
+		public void Close()
 		{
 			// no-op
 		}

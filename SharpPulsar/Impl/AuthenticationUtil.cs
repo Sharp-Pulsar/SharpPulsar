@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -34,11 +35,11 @@ namespace org.apache.pulsar.client.impl
 	using AuthenticationDisabled = org.apache.pulsar.client.impl.auth.AuthenticationDisabled;
 	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
 
-	public class AuthenticationUtil
+	public static class AuthenticationUtil
 	{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+
 //ORIGINAL LINE: public static java.util.Map<String, String> configureFromJsonString(String authParamsString) throws java.io.IOException
-		public static IDictionary<string, string> configureFromJsonString(string authParamsString)
+		public static IDictionary<string, string>ConfigureFromJsonString(string authParamsString)
 		{
 			ObjectMapper jsonMapper = ObjectMapperFactory.create();
 			return jsonMapper.readValue(authParamsString, new TypeReferenceAnonymousInnerClass());
@@ -48,11 +49,11 @@ namespace org.apache.pulsar.client.impl
 		{
 		}
 
-		public static IDictionary<string, string> configureFromPulsar1AuthParamString(string authParamsString)
+		public static IDictionary<string, string> ConfigureFromPulsar1AuthParamString(string authParamsString)
 		{
 			IDictionary<string, string> authParams = new Dictionary<string, string>();
 
-			if (isNotBlank(authParamsString))
+			if (IsNotBlank(authParamsString))
 			{
 				string[] @params = authParamsString.Split(",", true);
 				foreach (string p in @params)
@@ -76,17 +77,16 @@ namespace org.apache.pulsar.client.impl
 		///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("deprecation") public static final org.apache.pulsar.client.api.Authentication create(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public static Authentication create(string authPluginClassName, string authParamsString)
+
+		public static IAuthentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
 			{
-				if (isNotBlank(authPluginClassName))
+				if (IsNotBlank(authPluginClassName))
 				{
 					Type authClass = Type.GetType(authPluginClassName);
-					Authentication auth = (Authentication) System.Activator.CreateInstance(authClass);
+					Authentication auth = (Authentication) Activator.CreateInstance(authClass);
 					if (auth is EncodedAuthenticationParameterSupport)
 					{
 						// Parse parameters on plugin side.
@@ -95,7 +95,7 @@ namespace org.apache.pulsar.client.impl
 					else
 					{
 						// Parse parameters by default parse logic.
-						auth.configure(configureFromPulsar1AuthParamString(authParamsString));
+						auth.configure(ConfigureFromPulsar1AuthParamString(authParamsString));
 					}
 					return auth;
 				}
@@ -104,7 +104,7 @@ namespace org.apache.pulsar.client.impl
 					return new AuthenticationDisabled();
 				}
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t);
 			}
@@ -119,17 +119,16 @@ namespace org.apache.pulsar.client.impl
 		///            map which represents parameters for the Authentication-Plugin </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("deprecation") public static final org.apache.pulsar.client.api.Authentication create(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public static Authentication create(string authPluginClassName, IDictionary<string, string> authParams)
+
+		public static IAuthentication Create(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			try
 			{
-				if (isNotBlank(authPluginClassName))
+				if (IsNotBlank(authPluginClassName))
 				{
 					Type authClass = Type.GetType(authPluginClassName);
-					Authentication auth = (Authentication) System.Activator.CreateInstance(authClass);
+					Authentication auth = (Authentication) Activator.CreateInstance(authClass);
 					auth.configure(authParams);
 					return auth;
 				}
@@ -138,7 +137,7 @@ namespace org.apache.pulsar.client.impl
 					return new AuthenticationDisabled();
 				}
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t);
 			}

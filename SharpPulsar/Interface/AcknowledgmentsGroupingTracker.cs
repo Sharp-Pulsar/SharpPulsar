@@ -20,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Interface
 {
 	
 
@@ -34,11 +34,11 @@ namespace SharpPulsar
 
 		void AddAcknowledgment(MessageIdImpl msgId, AckType ackType, IDictionary<string, long> properties);
 
-		void flush();
+		void Flush();
 
-		void close();
+		void Close();
 
-		void flushAndClean();
+		void FlushAndClean();
 	}
 
 }

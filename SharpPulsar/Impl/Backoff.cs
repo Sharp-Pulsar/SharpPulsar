@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using Data = lombok.Data;
@@ -26,7 +26,6 @@ namespace org.apache.pulsar.client.impl
 
 
 	// All variables are in TimeUnit millis by default
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data public class Backoff
 	public class Backoff
 	{
@@ -35,7 +34,7 @@ namespace org.apache.pulsar.client.impl
 		private readonly long initial;
 		private readonly long max;
 		private readonly Clock clock;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+//Fields cannot have the same name as methods:
 		private long next_Conflict;
 		private long mandatoryStop;
 
@@ -44,7 +43,7 @@ namespace org.apache.pulsar.client.impl
 
 		private static readonly Random random = new Random();
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @VisibleForTesting Backoff(long initial, java.util.concurrent.TimeUnit unitInitial, long max, java.util.concurrent.TimeUnit unitMax, long mandatoryStop, java.util.concurrent.TimeUnit unitMandatoryStop, java.time.Clock clock)
 		internal Backoff(long initial, TimeUnit unitInitial, long max, TimeUnit unitMax, long mandatoryStop, TimeUnit unitMandatoryStop, Clock clock)
 		{
@@ -59,7 +58,7 @@ namespace org.apache.pulsar.client.impl
 		{
 		}
 
-		public virtual long next()
+		public virtual long Next()
 		{
 			long current = this.next_Conflict;
 			if (current < max)
@@ -97,7 +96,7 @@ namespace org.apache.pulsar.client.impl
 			return Math.Max(initial, current);
 		}
 
-		public virtual void reduceToHalf()
+		public virtual void ReduceToHalf()
 		{
 			if (next_Conflict > initial)
 			{
@@ -105,7 +104,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public virtual void reset()
+		public virtual void Reset()
 		{
 			this.next_Conflict = this.initial;
 			this.mandatoryStopMade = false;
@@ -121,7 +120,7 @@ namespace org.apache.pulsar.client.impl
 			}
 		}
 
-		public static bool shouldBackoff(long initialTimestamp, TimeUnit unitInitial, int failedAttempts, long defaultInterval, long maxBackoffInterval)
+		public static bool ShouldBackoff(long initialTimestamp, TimeUnit unitInitial, int failedAttempts, long defaultInterval, long maxBackoffInterval)
 		{
 			long initialTimestampInNano = unitInitial.toNanos(initialTimestamp);
 			long currentTime = System.nanoTime();
@@ -140,7 +139,7 @@ namespace org.apache.pulsar.client.impl
 			return currentTime < (initialTimestampInNano + interval);
 		}
 
-		public static bool shouldBackoff(long initialTimestamp, TimeUnit unitInitial, int failedAttempts)
+		public static bool ShouldBackoff(long initialTimestamp, TimeUnit unitInitial, int failedAttempts)
 		{
 			return Backoff.shouldBackoff(initialTimestamp, unitInitial, failedAttempts, DEFAULT_INTERVAL_IN_NANOSECONDS, MAX_BACKOFF_INTERVAL_NANOSECONDS);
 		}

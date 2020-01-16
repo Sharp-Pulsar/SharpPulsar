@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
@@ -45,21 +45,21 @@ namespace org.apache.pulsar.client.impl
 			this.maxBackoffIntervalNanos = 0;
 		}
 
-		public virtual BackoffBuilder setInitialTime(long initial, TimeUnit unitInitial)
+		public virtual BackoffBuilder SetInitialTime(long initial, TimeUnit unitInitial)
 		{
 			this.unitInitial = unitInitial;
 			this.initial = initial;
 			return this;
 		}
 
-		public virtual BackoffBuilder setMax(long max, TimeUnit unitMax)
+		public virtual BackoffBuilder SetMax(long max, TimeUnit unitMax)
 		{
 			this.unitMax = unitMax;
 			this.max = max;
 			return this;
 		}
 
-		public virtual BackoffBuilder setMandatoryStop(long mandatoryStop, TimeUnit unitMandatoryStop)
+		public virtual BackoffBuilder SetMandatoryStop(long mandatoryStop, TimeUnit unitMandatoryStop)
 		{
 			this.mandatoryStop = mandatoryStop;
 			this.unitMandatoryStop = unitMandatoryStop;
@@ -67,7 +67,7 @@ namespace org.apache.pulsar.client.impl
 		}
 
 
-		public virtual Backoff create()
+		public virtual Backoff Create()
 		{
 			return new Backoff(initial, unitInitial, max, unitMax, mandatoryStop, unitMandatoryStop, clock);
 		}

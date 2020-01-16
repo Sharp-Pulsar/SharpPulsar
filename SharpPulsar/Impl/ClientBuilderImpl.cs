@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,7 +21,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using StringUtils = org.apache.commons.lang3.StringUtils;
@@ -33,7 +35,7 @@ namespace org.apache.pulsar.client.impl
 	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
 	using ConfigurationDataUtils = org.apache.pulsar.client.impl.conf.ConfigurationDataUtils;
 
-	public class ClientBuilderImpl : ClientBuilder
+	public class ClientBuilderImpl : IClientBuilder
 	{
 		internal ClientConfigurationData conf;
 
@@ -48,13 +50,13 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public org.apache.pulsar.client.api.PulsarClient build() throws org.apache.pulsar.client.api.PulsarClientException
-		public override PulsarClient build()
+		public IPulsarClient Build()
 		{
-			if (StringUtils.isBlank(conf.ServiceUrl) && conf.ServiceUrlProvider == null)
+			if (string.IsNullOrWhiteSpace(conf.ServiceUrl) && conf.ServiceUrlProvider == null)
 			{
 				throw new System.ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
 			}
-			if (StringUtils.isNotBlank(conf.ServiceUrl) && conf.ServiceUrlProvider != null)
+			if (string.IsNullOrWhiteSpace(conf.ServiceUrl) && conf.ServiceUrlProvider != null)
 			{
 				throw new System.ArgumentException("Can only chose one way service URL or service URL provider.");
 			}
@@ -77,20 +79,20 @@ namespace org.apache.pulsar.client.impl
 			return client;
 		}
 
-		public override ClientBuilder clone()
+		public IClientBuilder Clone()
 		{
 			return new ClientBuilderImpl(conf.clone());
 		}
 
-		public override ClientBuilder loadConf(IDictionary<string, object> config)
+		public IClientBuilder LoadConf(IDictionary<string, object> config)
 		{
 			conf = ConfigurationDataUtils.loadData(config, conf, typeof(ClientConfigurationData));
 			return this;
 		}
 
-		public override ClientBuilder serviceUrl(string serviceUrl)
+		public IClientBuilder ServiceUrl(string serviceUrl)
 		{
-			if (StringUtils.isBlank(serviceUrl))
+			if (string.IsNullOrWhiteSpace(serviceUrl))
 			{
 				throw new System.ArgumentException("Param serviceUrl must not be blank.");
 			}
@@ -102,7 +104,7 @@ namespace org.apache.pulsar.client.impl
 			return this;
 		}
 
-		public override ClientBuilder serviceUrlProvider(ServiceUrlProvider serviceUrlProvider)
+		public IClientBuilder ServiceUrlProvider(IServiceUrlProvider serviceUrlProvider)
 		{
 			if (serviceUrlProvider == null)
 			{
@@ -112,7 +114,7 @@ namespace org.apache.pulsar.client.impl
 			return this;
 		}
 
-		public override ClientBuilder authentication(Authentication authentication)
+		public IClientBuilder Authentication(IAuthentication authentication)
 		{
 			conf.Authentication = authentication;
 			return this;
@@ -120,7 +122,7 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ClientBuilder authentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public override ClientBuilder authentication(string authPluginClassName, string authParamsString)
+		public IClientBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
 			conf.Authentication = AuthenticationFactory.create(authPluginClassName, authParamsString);
 			return this;
@@ -128,61 +130,61 @@ namespace org.apache.pulsar.client.impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public override ClientBuilder authentication(string authPluginClassName, IDictionary<string, string> authParams)
+		public IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			conf.Authentication = AuthenticationFactory.create(authPluginClassName, authParams);
 			return this;
 		}
 
-		public override ClientBuilder operationTimeout(int operationTimeout, TimeUnit unit)
+		public IClientBuilder OperationTimeout(int operationTimeout, TimeUnit unit)
 		{
 			conf.OperationTimeoutMs = unit.toMillis(operationTimeout);
 			return this;
 		}
 
-		public override ClientBuilder ioThreads(int numIoThreads)
+		public IClientBuilder IoThreads(int numIoThreads)
 		{
 			conf.NumIoThreads = numIoThreads;
 			return this;
 		}
 
-		public override ClientBuilder listenerThreads(int numListenerThreads)
+		public IClientBuilder ListenerThreads(int numListenerThreads)
 		{
 			conf.NumListenerThreads = numListenerThreads;
 			return this;
 		}
 
-		public override ClientBuilder connectionsPerBroker(int connectionsPerBroker)
+		public IClientBuilder ConnectionsPerBroker(int connectionsPerBroker)
 		{
 			conf.ConnectionsPerBroker = connectionsPerBroker;
 			return this;
 		}
 
-		public override ClientBuilder enableTcpNoDelay(bool useTcpNoDelay)
+		public IClientBuilder EnableTcpNoDelay(bool useTcpNoDelay)
 		{
 			conf.UseTcpNoDelay = useTcpNoDelay;
 			return this;
 		}
 
-		public override ClientBuilder enableTls(bool useTls)
+		public IClientBuilder EnableTls(bool useTls)
 		{
 			conf.UseTls = useTls;
 			return this;
 		}
 
-		public override ClientBuilder enableTlsHostnameVerification(bool enableTlsHostnameVerification)
+		public IClientBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
 		{
 			conf.TlsHostnameVerificationEnable = enableTlsHostnameVerification;
 			return this;
 		}
 
-		public override ClientBuilder tlsTrustCertsFilePath(string tlsTrustCertsFilePath)
+		public IClientBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath)
 		{
 			conf.TlsTrustCertsFilePath = tlsTrustCertsFilePath;
 			return this;
 		}
 
-		public override ClientBuilder allowTlsInsecureConnection(bool tlsAllowInsecureConnection)
+		public IClientBuilder AllowTlsInsecureConnection(bool tlsAllowInsecureConnection)
 		{
 			conf.TlsAllowInsecureConnection = tlsAllowInsecureConnection;
 			return this;
