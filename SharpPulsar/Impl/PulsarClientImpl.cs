@@ -35,43 +35,18 @@ namespace SharpPulsar.Impl
 
 
 	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using ConsumerBuilder = org.apache.pulsar.client.api.ConsumerBuilder;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using ProducerBuilder = org.apache.pulsar.client.api.ProducerBuilder;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Reader = org.apache.pulsar.client.api.Reader;
-	using ReaderBuilder = org.apache.pulsar.client.api.ReaderBuilder;
-	using RegexSubscriptionMode = org.apache.pulsar.client.api.RegexSubscriptionMode;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
-	using IAuthenticationFactory = org.apache.pulsar.client.api.IAuthenticationFactory;
-	using TransactionBuilder = org.apache.pulsar.client.api.transaction.TransactionBuilder;
-	using SubscriptionMode = org.apache.pulsar.client.impl.ConsumerImpl.SubscriptionMode;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using org.apache.pulsar.client.impl.conf;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using org.apache.pulsar.client.impl.conf;
-	using AutoConsumeSchema = org.apache.pulsar.client.impl.schema.AutoConsumeSchema;
-	using org.apache.pulsar.client.impl.schema;
-	using MultiVersionSchemaInfoProvider = org.apache.pulsar.client.impl.schema.generic.MultiVersionSchemaInfoProvider;
-	using TransactionBuilderImpl = org.apache.pulsar.client.impl.transaction.TransactionBuilderImpl;
-	using ExecutorProvider = org.apache.pulsar.client.util.ExecutorProvider;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicDomain = org.apache.pulsar.common.naming.TopicDomain;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
     using SharpPulsar.Interface;
     using SharpPulsar.Util;
     using SharpPulsar.Impl.Producer;
+    using SharpPulsar.Interface.Producer;
+    using SharpPulsar.Interface.Schema;
+    using SharpPulsar.Interface.Consumer;
+    using SharpPulsar.Interface.Reader;
+    using System.Threading.Tasks;
+    using SharpPulsar.Configuration;
+    using Optional;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Exception;
 
     public class PulsarClientImpl : IPulsarClient
 	{
@@ -180,8 +155,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public java.time.Clock getClientClock()
 		public virtual Clock ClientClock
 		{
 			get
@@ -190,47 +163,47 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ProducerBuilder<sbyte[]> newProducer()
+		public IProducerBuilder<sbyte[]> NewProducer()
 		{
 			return new ProducerBuilderImpl<sbyte[]>(this, Schema.BYTES);
 		}
 
-		public override ProducerBuilder<T> newProducer<T>(Schema<T> schema)
+		public IProducerBuilder<T> NewProducer<T>(ISchema<T> schema)
 		{
 			return new ProducerBuilderImpl<T>(this, schema);
 		}
 
-		public override ConsumerBuilder<sbyte[]> newConsumer()
+		public IConsumerBuilder<sbyte[]> NewConsumer()
 		{
 			return new ConsumerBuilderImpl<sbyte[]>(this, Schema.BYTES);
 		}
 
-		public override ConsumerBuilder<T> newConsumer<T>(Schema<T> schema)
+		public IConsumerBuilder<T> NewConsumer<T>(ISchema<T> schema)
 		{
 			return new ConsumerBuilderImpl<T>(this, schema);
 		}
 
-		public override ReaderBuilder<sbyte[]> newReader()
+		public IReaderBuilder<sbyte[]> NewReader()
 		{
 			return new ReaderBuilderImpl<sbyte[]>(this, Schema.BYTES);
 		}
 
-		public override ReaderBuilder<T> newReader<T>(Schema<T> schema)
+		public IReaderBuilder<T> NewReader<T>(ISchema<T> schema)
 		{
 			return new ReaderBuilderImpl<T>(this, schema);
 		}
 
-		public virtual CompletableFuture<Producer<sbyte[]>> createProducerAsync(ProducerConfigurationData conf)
+		public virtual ValueTask<IProducer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData conf)
 		{
-			return createProducerAsync(conf, Schema.BYTES, null);
+			return CreateProducerAsync(conf, Schema.BYTES, null);
 		}
 
-		public virtual CompletableFuture<Producer<T>> createProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema)
 		{
 			return createProducerAsync(conf, schema, null);
 		}
 
-		public virtual CompletableFuture<Producer<T>> createProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
 		{
 			if (conf == null)
 			{
@@ -281,9 +254,9 @@ namespace SharpPulsar.Impl
 
 		}
 
-		private CompletableFuture<Producer<T>> createProducerAsync<T>(string topic, ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
+		private ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
 		{
-			CompletableFuture<Producer<T>> producerCreatedFuture = new CompletableFuture<Producer<T>>();
+			var producerCreatedFuture = new CompletableFuture<Producer<T>>();
 
 			getPartitionedTopicMetadata(topic).thenAccept(metadata =>
 			{
@@ -314,12 +287,12 @@ namespace SharpPulsar.Impl
 			return producerCreatedFuture;
 		}
 
-		public virtual CompletableFuture<Consumer<sbyte[]>> subscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
+		public virtual ValueTask<sbyte[]> SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
 		{
-			return subscribeAsync(conf, Schema.BYTES, null);
+			return SubscribeAsync(conf, Schema.BYTES, null);
 		}
 
-		public virtual CompletableFuture<Consumer<T>> subscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		public virtual ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
 			if (state.get() != State.Open)
 			{
@@ -362,22 +335,22 @@ namespace SharpPulsar.Impl
 			}
 			else if (conf.TopicNames.size() == 1)
 			{
-				return singleTopicSubscribeAsync(conf, schema, interceptors);
+				return SingleTopicSubscribeAsync(conf, schema, interceptors);
 			}
 			else
 			{
-				return multiTopicSubscribeAsync(conf, schema, interceptors);
+				return MultiTopicSubscribeAsync(conf, schema, interceptors);
 			}
 		}
 
-		private CompletableFuture<Consumer<T>> singleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
 			return preProcessSchemaBeforeSubscribe(this, schema, conf.SingleTopic).thenCompose(ignored => doSingleTopicSubscribeAsync(conf, schema, interceptors));
 		}
 
-		private CompletableFuture<Consumer<T>> doSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
-			CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			var consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
 
 			string topic = conf.SingleTopic;
 
@@ -412,9 +385,9 @@ namespace SharpPulsar.Impl
 			return consumerSubscribedFuture;
 		}
 
-		private CompletableFuture<Consumer<T>> multiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
-			CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			var consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
 
 			ConsumerBase<T> consumer = new MultiTopicsConsumerImpl<T>(PulsarClientImpl.this, conf, externalExecutorProvider_Conflict.Executor, consumerSubscribedFuture, schema, interceptors, true);
 
@@ -426,19 +399,19 @@ namespace SharpPulsar.Impl
 			return consumerSubscribedFuture;
 		}
 
-		public virtual CompletableFuture<Consumer<sbyte[]>> patternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
+		public virtual ValueTask<IConsumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
 		{
-			return patternTopicSubscribeAsync(conf, Schema.BYTES, null);
+			return PatternTopicSubscribeAsync(conf, Schema.BYTES, null);
 		}
 
-		private CompletableFuture<Consumer<T>> patternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
 			string regex = conf.TopicsPattern.pattern();
 			Mode subscriptionMode = convertRegexSubscriptionMode(conf.RegexSubscriptionMode);
 			TopicName destination = TopicName.get(regex);
 			NamespaceName namespaceName = destination.NamespaceObject;
 
-			CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			var consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
 			lookup.getTopicsUnderNamespace(namespaceName, subscriptionMode).thenAccept(topics =>
 			{
 			if (log.DebugEnabled)
@@ -465,26 +438,24 @@ namespace SharpPulsar.Impl
 
 		// get topics that match 'topicsPattern' from original topics list
 		// return result should contain only topic names, without partition part
-		public static IList<string> topicsPatternFilter(IList<string> original, Pattern topicsPattern)
+		public static IList<string> TopicsPatternFilter(IList<string> original, Pattern topicsPattern)
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.regex.Pattern shortenedTopicsPattern = topicsPattern.toString().contains("://") ? java.util.regex.Pattern.compile(topicsPattern.toString().split("\\:\\/\\/")[1]) : topicsPattern;
 			Pattern shortenedTopicsPattern = topicsPattern.ToString().Contains("://") ? Pattern.compile(topicsPattern.ToString().Split("\\:\\/\\/", true)[1]) : topicsPattern;
 
 			return original.Select(TopicName.get).Select(TopicName.toString).Where(topic => shortenedTopicsPattern.matcher(topic.Split("\\:\\/\\/")[1]).matches()).ToList();
 		}
 
-		public virtual CompletableFuture<Reader<sbyte[]>> createReaderAsync(ReaderConfigurationData<sbyte[]> conf)
+		public virtual ValueTask<IReader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> conf)
 		{
-			return createReaderAsync(conf, Schema.BYTES);
+			return CreateReaderAsync(conf, Schema.BYTES);
 		}
 
-		public virtual CompletableFuture<Reader<T>> createReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
+		public virtual ValueTask<IReader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
 		{
-			return preProcessSchemaBeforeSubscribe(this, schema, conf.TopicName).thenCompose(ignored => doCreateReaderAsync(conf, schema));
+			return PreProcessSchemaBeforeSubscribe(this, schema, conf.TopicName).thenCompose(ignored => doCreateReaderAsync(conf, schema));
 		}
 
-		internal virtual CompletableFuture<Reader<T>> doCreateReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
+		internal virtual ValueTask<IReader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
 		{
 			if (state.get() != State.Open)
 			{
@@ -552,7 +523,7 @@ namespace SharpPulsar.Impl
 		/// 
 		/// If the topic does not exist or it has no schema associated, it will return an empty response
 		/// </summary>
-		public virtual CompletableFuture<Optional<SchemaInfo>> getSchema(string topic)
+		public virtual ValueTask<Option<SchemaInfo>> GetSchema(string topic)
 		{
 			TopicName topicName;
 			try
@@ -567,21 +538,19 @@ namespace SharpPulsar.Impl
 			return lookup.getSchema(topicName);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void close()
+		public void Close()
 		{
 			try
 			{
-				closeAsync().get();
+				CloseAsync().get();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Void> closeAsync()
+		public override ValueTask CloseAsync()
 		{
 			log.info("Client closing. URL: {}", lookup.ServiceUrl);
 			if (!state.compareAndSet(State.Open, State.Closing))
@@ -589,8 +558,7 @@ namespace SharpPulsar.Impl
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Client already closed"));
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> closeFuture = new java.util.concurrent.CompletableFuture<>();
+
 			CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
 			IList<CompletableFuture<Void>> futures = Lists.newArrayList();
 
@@ -598,8 +566,7 @@ namespace SharpPulsar.Impl
 			{
 				// Copy to a new list, because the closing will trigger a removal from the map
 				// and invalidate the iterator
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.List<ProducerBase<?>> producersToClose = com.google.common.collect.Lists.newArrayList(producers.keySet());
+/
 				IList<ProducerBase<object>> producersToClose = Lists.newArrayList(producers.keySet());
 				producersToClose.ForEach(p => futures.Add(p.closeAsync()));
 			}
@@ -637,9 +604,8 @@ namespace SharpPulsar.Impl
 			return closeFuture;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void shutdown() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void shutdown()
+
+		public void Shutdown()
 		{
 			try
 			{
@@ -656,9 +622,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public synchronized void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void updateServiceUrl(string serviceUrl)
+		public void UpdateServiceUrl(string serviceUrl)
 		{
 			lock (this)
 			{
