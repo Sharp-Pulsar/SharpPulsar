@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl.Producer
 	using CryptoException = org.apache.pulsar.client.api.PulsarClientException.CryptoException;
 	using Schema = org.apache.pulsar.client.api.Schema;
 	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using org.apache.pulsar.client.impl.schema;
+	using SharpPulsar.Impl.Schema;
 	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
 	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
 	using CompressionCodec = org.apache.pulsar.common.compression.CompressionCodec;

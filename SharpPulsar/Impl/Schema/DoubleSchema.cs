@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,13 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `Double`.
 	/// </summary>
@@ -38,12 +36,12 @@ namespace org.apache.pulsar.client.impl.schema
 			INSTANCE = new DoubleSchema();
 		}
 
-		public static DoubleSchema of()
+		public static DoubleSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public override void validate(sbyte[] message)
+		public void Validate(sbyte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -51,16 +49,16 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
+		public void Validate(IByteBuffer message)
 		{
-			if (message.readableBytes() != 8)
+			if (message.ReadableBytes != 8)
 			{
 				throw new SchemaSerializationException("Size of data received by DoubleSchema is not 8");
 			}
 		}
 
 
-		public override sbyte[] encode(double? message)
+		public sbyte[] Encode(double? message)
 		{
 			if (null == message)
 			{
@@ -73,13 +71,13 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override double? decode(sbyte[] bytes)
+		public double? Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			long value = 0;
 			foreach (sbyte b in bytes)
 			{
@@ -89,24 +87,24 @@ namespace org.apache.pulsar.client.impl.schema
 			return Double.longBitsToDouble(value);
 		}
 
-		public override double? decode(ByteBuf byteBuf)
+		public override double Decode(IByteBuffer byteBuf)
 		{
 			if (null == byteBuf)
 			{
 				return null;
 			}
-			validate(byteBuf);
+			Validate(byteBuf);
 			long value = 0;
 
 			for (int i = 0; i < 8; i++)
 			{
 				value <<= 8;
-				value |= byteBuf.getByte(i) & 0xFF;
+				value |= byteBuf.GetByte(i) & 0xFF;
 			}
 			return Double.longBitsToDouble(value);
 		}
 
-		public override SchemaInfo SchemaInfo
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

@@ -34,7 +34,7 @@ namespace org.apache.pulsar.client.impl
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using Schema = org.apache.pulsar.client.api.Schema;
 	using TypedMessageBuilder = org.apache.pulsar.client.api.TypedMessageBuilder;
-	using org.apache.pulsar.client.impl.schema;
+	using SharpPulsar.Impl.Schema;
 	using TransactionImpl = org.apache.pulsar.client.impl.transaction.TransactionImpl;
 	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
 	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;

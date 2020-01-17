@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface;
+﻿using SharpPulsar.Exception;
+using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
 using System;
 using System.Collections.Generic;
@@ -55,9 +56,6 @@ namespace SharpPulsar.Impl.Auth
 			this.certFilePath = certFilePath;
 			this.keyFilePath = keyFilePath;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public void close() throws java.io.IOException
 		public void Close()
 		{
 			// noop
@@ -71,8 +69,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
+/
 		public IAuthenticationDataProvider AuthData
 		{
 			get
@@ -81,9 +78,9 @@ namespace SharpPulsar.Impl.Auth
 				{
 					return new AuthenticationDataTls(certFilePath, keyFilePath);
 				}
-				catch (Exception e)
+				catch (System.Exception e)
 				{
-					throw new PulsarClientException(e);
+					throw new PulsarClientException(e.Message);
 				}
 			}
 		}
@@ -95,7 +92,7 @@ namespace SharpPulsar.Impl.Auth
 			{
 				authParamsMap = AuthenticationUtil.ConfigureFromJsonString(encodedAuthParamString);
 			}
-			catch (Exception)
+			catch (System.Exception)
 			{
 				// auth-param is not in json format
 			}
@@ -122,8 +119,6 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public String getCertFilePath()
 		public virtual string CertFilePath
 		{
 			get
@@ -131,9 +126,6 @@ namespace SharpPulsar.Impl.Auth
 				return certFilePath;
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public String getKeyFilePath()
 		public virtual string KeyFilePath
 		{
 			get

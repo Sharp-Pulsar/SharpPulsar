@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,17 +20,14 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
-{
-
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-
+namespace SharpPulsar.Impl.Schema
+{ 
 
 	/// <summary>
 	/// A json schema definition
-	/// <seealso cref="org.apache.pulsar.client.api.schema.SchemaDefinition"/> for the json schema definition.
+	/// <seealso cref="ISchemaDefinition"/> for the json schema definition.
 	/// </summary>
-	public class SchemaDefinitionImpl<T> : SchemaDefinition<T>
+	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
 	{
 
 		/// <summary>
@@ -87,7 +85,7 @@ namespace org.apache.pulsar.client.impl.schema
 		/// Get pojo schema definition
 		/// </summary>
 		/// <returns> pojo class </returns>
-		public override Type<T> Pojo
+		public Type Pojo
 		{
 			get
 			{
@@ -95,7 +93,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override bool SupportSchemaVersioning
+		public bool SupportSchemaVersioning
 		{
 			get
 			{

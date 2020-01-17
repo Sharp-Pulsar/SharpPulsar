@@ -28,9 +28,6 @@ namespace SharpPulsar.Impl.Auth
 		protected internal X509Certificate2[] tlsCertificates;
 		protected internal AsymmetricAlgorithm tlsPrivateKey;
 		protected internal FileModifiedTimeUpdater certFile, keyFile;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public AuthenticationDataTls(String certFilePath, String keyFilePath) throws java.security.KeyManagementException
 		public AuthenticationDataTls(string certFilePath, string keyFilePath)
 		{
 			if (string.ReferenceEquals(certFilePath, null))

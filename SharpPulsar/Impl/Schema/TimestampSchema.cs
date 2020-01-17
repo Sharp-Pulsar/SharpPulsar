@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;

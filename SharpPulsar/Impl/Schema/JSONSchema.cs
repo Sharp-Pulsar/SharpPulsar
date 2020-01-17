@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 	using JsonInclude = com.fasterxml.jackson.annotation.JsonInclude;
 	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,8 +30,8 @@ namespace org.apache.pulsar.client.impl.schema
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
 	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using org.apache.pulsar.client.impl.schema.reader;
-	using org.apache.pulsar.client.impl.schema.writer;
+	using SharpPulsar.Impl.Schema.reader;
+	using SharpPulsar.Impl.Schema.writer;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Interface.Schema;
+using System;
 using System.Threading;
 
 /// <summary>
@@ -19,7 +21,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 
 
@@ -64,15 +66,15 @@ namespace org.apache.pulsar.client.impl.schema
 
 		protected internal readonly Schema schema;
 		protected internal readonly SchemaInfo schemaInfo;
-		protected internal SchemaReader<T> reader;
+		protected internal ISchemaReader<T> reader;
 		protected internal SchemaWriter<T> writer;
-		protected internal SchemaInfoProvider schemaInfoProvider;
+		protected internal ISchemaInfoProvider schemaInfoProvider;
 
-		private readonly LoadingCache<BytesSchemaVersion, SchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly LoadingCache<BytesSchemaVersion, ISchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
 		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, SchemaReader<T>>
 		{
-			public override SchemaReader<T> load(BytesSchemaVersion schemaVersion)
+			public override ISchemaReader<T> Load(BytesSchemaVersion schemaVersion)
 			{
 				return outerInstance.loadReader(schemaVersion);
 			}
@@ -92,39 +94,39 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override sbyte[] encode(T message)
+		public sbyte[] Encode(T message)
 		{
 			return writer.write(message);
 		}
 
-		public override T decode(sbyte[] bytes)
+		public T Decode(sbyte[] bytes)
 		{
-			return reader.read(bytes);
+			return reader.Read(bytes);
 		}
 
-		public override T decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public T Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			try
 			{
 				return readerCache.get(BytesSchemaVersion.of(schemaVersion)).read(bytes);
 			}
-			catch (Exception e) when (e is ExecutionException || e is AvroTypeException)
+			catch (System.Exception e) when (e is ExecutionException || e is AvroTypeException)
 			{
 				if (e is AvroTypeException)
 				{
 					throw new SchemaSerializationException(e);
 				}
 				LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.TopicName, Hex.encodeHexString(schemaVersion), e);
-				throw new Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
+				throw new System.Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
 			}
 		}
 
-		public override T decode(ByteBuf byteBuf)
+		public override T Decode(ByteBuf byteBuf)
 		{
-			return reader.read(new ByteBufInputStream(byteBuf));
+			return reader.Read(new ByteBufInputStream(byteBuf));
 		}
 
-		public override T decode(ByteBuf byteBuf, sbyte[] schemaVersion)
+		public override T Decode(ByteBuf byteBuf, sbyte[] schemaVersion)
 		{
 			try
 			{
@@ -137,7 +139,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override SchemaInfo SchemaInfo
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

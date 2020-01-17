@@ -1,4 +1,9 @@
-﻿using System;
+﻿using Pulsar.Client.Impl.Schema.Reader;
+using Pulsar.Client.Impl.Schema.Writer;
+using SharpPulsar.Common.Protocol.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,27 +24,11 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Conversions = org.apache.avro.Conversions;
-	using TimeConversions = org.apache.avro.data.TimeConversions;
-	using ReflectData = org.apache.avro.reflect.ReflectData;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using org.apache.pulsar.client.impl.schema.reader;
-	using org.apache.pulsar.client.impl.schema.writer;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
 	/// <summary>
 	/// An AVRO schema implementation.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class AvroSchema<T> extends StructSchema<T>
 	public class AvroSchema<T> : StructSchema<T>
 	{
 		private new static readonly Logger LOG = LoggerFactory.getLogger(typeof(AvroSchema));
@@ -70,34 +59,34 @@ namespace org.apache.pulsar.client.impl.schema
 
 		private AvroSchema(SchemaInfo schemaInfo) : base(schemaInfo)
 		{
-			Reader = new AvroReader<>(schema);
-			Writer = new AvroWriter<>(schema);
+			Reader = new AvroReader<T>(schema);
+			Writer = new AvroWriter<T>(schema);
 		}
 
-		public override bool supportSchemaVersioning()
+		public bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 
-		public static AvroSchema<T> of<T>(SchemaDefinition<T> schemaDefinition)
+		public static AvroSchema<T> Of<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return new AvroSchema<T>(parseSchemaInfo(schemaDefinition, SchemaType.AVRO));
+			return new AvroSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.AVRO));
 		}
 
-		public static AvroSchema<T> of<T>(Type pojo)
+		public static AvroSchema<T> Of<T>(Type pojo)
 		{
-			return AvroSchema.of(SchemaDefinition.builder<T>().withPojo(pojo).build());
+			return AvroSchema.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
-		public static AvroSchema<T> of<T>(Type pojo, IDictionary<string, string> properties)
+		public static AvroSchema<T> Of<T>(Type pojo, IDictionary<string, string> properties)
 		{
-			SchemaDefinition<T> schemaDefinition = SchemaDefinition.builder<T>().withPojo(pojo).withProperties(properties).build();
-			return new AvroSchema<T>(parseSchemaInfo(schemaDefinition, SchemaType.AVRO));
+			ISchemaDefinition<T> schemaDefinition = ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build();
+			return new AvroSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.AVRO));
 		}
 
-		protected internal override SchemaReader<T> loadReader(BytesSchemaVersion schemaVersion)
+		protected internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.get());
+			SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.Get());
 			if (schemaInfo != null)
 			{
 				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), schemaInfo.SchemaDefinition);

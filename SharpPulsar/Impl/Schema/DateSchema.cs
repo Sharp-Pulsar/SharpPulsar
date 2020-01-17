@@ -1,4 +1,6 @@
-﻿using System;
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,11 +20,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `java.util.Date` or `java.sql.Date`.
@@ -39,12 +38,12 @@ namespace org.apache.pulsar.client.impl.schema
 		   INSTANCE = new DateSchema();
 	   }
 
-	   public static DateSchema of()
+	   public static DateSchema Of()
 	   {
 		  return INSTANCE;
 	   }
 
-	   public override sbyte[] encode(DateTime message)
+	   public sbyte[] Encode(DateTime message)
 	   {
 		  if (null == message)
 		  {
@@ -52,28 +51,23 @@ namespace org.apache.pulsar.client.impl.schema
 		  }
 
 		  long? date = message.Ticks;
-		  return LongSchema.of().encode(date);
+		  return LongSchema.Of().Encode(date);
 	   }
 
-	   public override DateTime decode(sbyte[] bytes)
+	   public DateTime? Decode(sbyte[] bytes)
 	   {
 		  if (null == bytes)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(bytes);
+		  long? decode = LongSchema.Of().Decode(bytes);
 		  return new DateTime(decode);
 	   }
 
-	   public override DateTime decode(ByteBuf byteBuf)
+	   public override DateTime Decode(IByteBuffer byteBuf)
 	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.of().decode(byteBuf);
+		  long? decode = LongSchema.Of().Decode(byteBuf);
 		  return new DateTime(decode);
 	   }
 

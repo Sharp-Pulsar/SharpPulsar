@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,16 +20,12 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using SchemaDefinitionBuilder = org.apache.pulsar.client.api.schema.SchemaDefinitionBuilder;
-
-
 	/// <summary>
-	/// Builder to build <seealso cref="org.apache.pulsar.client.api.schema.GenericRecord"/>.
+	/// Builder to build <seealso cref="IGenericRecord"/>.
 	/// </summary>
-	public class SchemaDefinitionBuilderImpl<T> : SchemaDefinitionBuilder<T>
+	public class SchemaDefinitionBuilderImpl<T> : ISchemaDefinitionBuilder<T>
 	{
 
 		public const string ALWAYS_ALLOW_NULL = "__alwaysAllowNull";
@@ -62,46 +59,46 @@ namespace org.apache.pulsar.client.impl.schema
 		/// </summary>
 		private bool supportSchemaVersioning = false;
 
-		public override SchemaDefinitionBuilder<T> withAlwaysAllowNull(bool alwaysAllowNull)
+		public ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull)
 		{
 			this.alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> addProperty(string key, string value)
+		public ISchemaDefinitionBuilder<T> AddProperty(string key, string value)
 		{
 			this.properties[key] = value;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> withPojo(Type clazz)
+		public ISchemaDefinitionBuilder<T> WithPojo(Type clazz)
 		{
 			this.clazz = clazz;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> withJsonDef(string jsonDef)
+		public ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDef)
 		{
 			this.jsonDef = jsonDef;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> withSupportSchemaVersioning(bool supportSchemaVersioning)
+		public ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning)
 		{
 			this.supportSchemaVersioning = supportSchemaVersioning;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> withProperties(IDictionary<string, string> properties)
+		public ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties)
 		{
 			this.properties = properties;
 			return this;
 		}
 
-		public override SchemaDefinition<T> build()
+		public ISchemaDefinition<T> Build()
 		{
 			properties[ALWAYS_ALLOW_NULL] = this.alwaysAllowNull ? "true" : "false";
-			return new SchemaDefinitionImpl(clazz, jsonDef, alwaysAllowNull, properties, supportSchemaVersioning);
+			return new SchemaDefinitionImpl<T>(clazz, jsonDef, alwaysAllowNull, properties, supportSchemaVersioning);
 
 		}
 	}

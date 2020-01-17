@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl.Message
 	using Message = org.apache.pulsar.client.api.Message;
 	using MessageId = org.apache.pulsar.client.api.MessageId;
 	using Schema = org.apache.pulsar.client.api.Schema;
-	using org.apache.pulsar.client.impl.schema;
+	using SharpPulsar.Impl.Schema;
 	using Commands = org.apache.pulsar.common.protocol.Commands;
 	using EncryptionContext = org.apache.pulsar.common.api.EncryptionContext;
 	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;

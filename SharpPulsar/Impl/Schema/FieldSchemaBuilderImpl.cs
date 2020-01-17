@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -31,7 +31,7 @@ namespace org.apache.pulsar.client.impl.schema
 	using SchemaBuilder = org.apache.avro.SchemaBuilder;
 	using FieldSchemaBuilder = org.apache.pulsar.client.api.schema.FieldSchemaBuilder;
 	using GenericSchema = org.apache.pulsar.client.api.schema.GenericSchema;
-	using GenericAvroSchema = org.apache.pulsar.client.impl.schema.generic.GenericAvroSchema;
+	using GenericAvroSchema = SharpPulsar.Impl.Schema.generic.GenericAvroSchema;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>

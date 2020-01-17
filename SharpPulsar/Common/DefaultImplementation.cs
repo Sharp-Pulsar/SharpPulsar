@@ -1,7 +1,15 @@
 ﻿using Pulsar.Api.Schema;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Message;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
+using SharpPulsar.Interface.Message;
 using SharpPulsar.Interface.Schema;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,25 +31,13 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Common
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.@internal.ReflectionUtils.catchExceptions;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.@internal.ReflectionUtils.getConstructor;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.@internal.ReflectionUtils.getStaticMethod;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.@internal.ReflectionUtils.newClassInstance;
-
-	
 	/// <summary>
 	/// Helper class for class instantiations and it also contains methods to work with schemas.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") @UtilityClass public class DefaultImplementation
 	public class DefaultImplementation
 	{
 
-		private static readonly Type CLIENT_BUILDER_IMPL = newClassInstance("org.apache.pulsar.client.impl.ClientBuilderImpl");
+		//private static readonly Type CLIENT_BUILDER_IMPL = new ClientBuilderImpl();
 
 		private static readonly System.Reflection.ConstructorInfo<MessageId> MESSAGE_ID_IMPL_long_long_int = getConstructor("org.apache.pulsar.client.impl.MessageIdImpl", Long.TYPE, Long.TYPE, Integer.TYPE);
 
@@ -54,180 +50,176 @@ namespace SharpPulsar.Common
 
 		private static readonly System.Reflection.ConstructorInfo<Authentication> AUTHENTICATION_TLS_String_String = getConstructor("org.apache.pulsar.client.impl.auth.AuthenticationTls", typeof(string), typeof(string));
 
-		private static readonly System.Reflection.ConstructorInfo<SchemaDefinitionBuilder> SCHEMA_DEFINITION_BUILDER_CONSTRUCTOR = getConstructor("org.apache.pulsar.client.impl.schema.SchemaDefinitionBuilderImpl");
+		
 
 		public static ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>()
 		{
-			return catchExceptions(() => (SchemaDefinitionBuilder<T>) SCHEMA_DEFINITION_BUILDER_CONSTRUCTOR.newInstance());
+			return new SchemaDefinitionBuilderImpl<T>();
 		}
 
-		public static ClientBuilder newClientBuilder()
+		public static IClientBuilder NewClientBuilder()
 		{
-			return catchExceptions(() => System.Activator.CreateInstance(CLIENT_BUILDER_IMPL));
+			return new ClientBuilderImpl();
 		}
 
-		public static MessageId newMessageId(long ledgerId, long entryId, int partitionIndex)
+		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex)
 		{
-			return catchExceptions(() => MESSAGE_ID_IMPL_long_long_int.newInstance(ledgerId, entryId, partitionIndex));
+			return new MessageIdImpl(ledgerId, entryId, partitionIndex);
 		}
 
-		public static MessageId newMessageIdFromByteArray(sbyte[] data)
+		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
-			return catchExceptions(() => (MessageId) MESSAGE_ID_IMPL_fromByteArray.invoke(null, data));
+			return MessageIdImpl.FromByteArray(data);
 		}
 
-		public static MessageId newMessageIdFromByteArrayWithTopic(sbyte[] data, string topicName)
+		public static IMessageId NewMessageIdFromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
-			return catchExceptions(() => (MessageId) MESSAGE_ID_IMPL_fromByteArrayWithTopic.invoke(null, data, topicName));
+			return MessageIdImpl.FromByteArrayWithTopic(data, topicName);
 		}
 
-		public static Authentication newAuthenticationToken(string token)
+		public static IAuthentication NwAuthenticationToken(string token)
 		{
-			return catchExceptions(() => (Authentication) AUTHENTICATION_TOKEN_String.newInstance(token));
+			return new AuthenticationToken(token);
 		}
 
-		public static Authentication newAuthenticationToken(System.Func<string> supplier)
+		public static IAuthentication NewAuthenticationToken(Func<string> supplier)
 		{
-			return catchExceptions(() => (Authentication) AUTHENTICATION_TOKEN_Supplier.newInstance(supplier));
+			return new AuthenticationToken(supplier);
 		}
 
-		public static Authentication newAuthenticationTLS(string certFilePath, string keyFilePath)
+		public static IAuthentication NewAuthenticationTLS(string certFilePath, string keyFilePath)
 		{
-			return catchExceptions(() => (Authentication) AUTHENTICATION_TLS_String_String.newInstance(certFilePath, keyFilePath));
+			return new AuthenticationTls(certFilePath, keyFilePath);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.apache.pulsar.client.api.Authentication createAuthentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public static Authentication createAuthentication(string authPluginClassName, string authParamsString)
+		public static IAuthentication CreateAuthentication(string authPluginClassName, string authParamsString)
 		{
-			return catchExceptions(() => (Authentication) getStaticMethod("org.apache.pulsar.client.impl.AuthenticationUtil", "create", typeof(string), typeof(string)).invoke(null, authPluginClassName, authParamsString));
+			return AuthenticationUtil.Create(authPluginClassName, authParamsString);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.apache.pulsar.client.api.Authentication createAuthentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
-		public static Authentication createAuthentication(string authPluginClassName, IDictionary<string, string> authParams)
+		public static IAuthentication CreateAuthentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
-			return catchExceptions(() => (Authentication) getStaticMethod("org.apache.pulsar.client.impl.AuthenticationUtil", "create", typeof(string), typeof(System.Collections.IDictionary)).invoke(null, authPluginClassName, authParams));
+			return AuthenticationUtil.Create(authPluginClassName, authParams);
 		}
 
-		public static Schema<sbyte[]> newBytesSchema()
+		public static ISchema<sbyte[]> NewBytesSchema()
 		{
-			return catchExceptions(() => (Schema<sbyte[]>) newClassInstance("org.apache.pulsar.client.impl.schema.BytesSchema").newInstance());
+			return new BytesSchema();
 		}
 
-		public static Schema<string> newStringSchema()
+		public static ISchema<string> NewStringSchema()
 		{
-			return catchExceptions(() => (Schema<string>) newClassInstance("org.apache.pulsar.client.impl.schema.StringSchema").newInstance());
+			return new StringSchema();
 		}
 
-		public static Schema<string> newStringSchema(Charset charset)
+		public static ISchema<string> NewStringSchema(CharSet charset)
 		{
-			return catchExceptions(() => (Schema<string>) getConstructor("org.apache.pulsar.client.impl.schema.StringSchema", typeof(Charset)).newInstance(charset));
+			return new StringSchema(charset);
 		}
 
-		public static Schema<sbyte> newByteSchema()
+		public static ISchema<sbyte> NewByteSchema()
 		{
-			return catchExceptions(() => (Schema<sbyte>) newClassInstance("org.apache.pulsar.client.impl.schema.ByteSchema").newInstance());
+			return new ByteSchema();
 		}
 
-		public static Schema<short> newShortSchema()
+		public static ISchema<short> NewShortSchema()
 		{
-			return catchExceptions(() => (Schema<short>) newClassInstance("org.apache.pulsar.client.impl.schema.ShortSchema").newInstance());
+			return new ShortSchema();
 		}
 
-		public static Schema<int> newIntSchema()
+		public static ISchema<int> NewIntSchema()
 		{
-			return catchExceptions(() => (Schema<int>) newClassInstance("org.apache.pulsar.client.impl.schema.IntSchema").newInstance());
+			return new IntSchema();
 		}
 
-		public static Schema<long> newLongSchema()
+		public static ISchema<long> NewLongSchema()
 		{
-			return catchExceptions(() => (Schema<long>) newClassInstance("org.apache.pulsar.client.impl.schema.LongSchema").newInstance());
+			return new LongSchema();
 		}
 
-		public static Schema<bool> newBooleanSchema()
+		public static ISchema<bool> NewBooleanSchema()
 		{
-			return catchExceptions(() => (Schema<bool>) newClassInstance("org.apache.pulsar.client.impl.schema.BooleanSchema").newInstance());
+			return new BoolSchema();
 		}
 
-		public static Schema<ByteBuffer> newByteBufferSchema()
+		public static ISchema<ByteBuffer> NewByteBufferSchema()
 		{
-			return catchExceptions(() => (Schema<ByteBuffer>) newClassInstance("org.apache.pulsar.client.impl.schema.ByteBufferSchema").newInstance());
+			return new ByteBufferSchema();
 		}
 
-		public static Schema<float> newFloatSchema()
+		public static ISchema<float> NewFloatSchema()
 		{
-			return catchExceptions(() => (Schema<float>) newClassInstance("org.apache.pulsar.client.impl.schema.FloatSchema").newInstance());
+			return new FloatSchema();
 		}
 
-		public static Schema<double> newDoubleSchema()
+		public static ISchema<double> NewDoubleSchema()
 		{
-			return catchExceptions(() => (Schema<double>) newClassInstance("org.apache.pulsar.client.impl.schema.DoubleSchema").newInstance());
+			return new DoubleSchema();
 		}
 
-		public static Schema<DateTime> newDateSchema()
+		public static ISchema<DateTime> NewDateSchema()
 		{
-			return catchExceptions(() => (Schema<DateTime>) getStaticMethod("org.apache.pulsar.client.impl.schema.DateSchema", "of", null).invoke(null, null));
+			return DateSchema.Of();
 		}
 
-		public static Schema<Time> newTimeSchema()
+		/*public static ISchema<Time> NewTimeSchema()
 		{
-			return catchExceptions(() => (Schema<Time>) getStaticMethod("org.apache.pulsar.client.impl.schema.TimeSchema", "of", null).invoke(null, null));
+			return catchExceptions(() => (Schema<Time>) getStaticMethod("SharpPulsar.Impl.Schema.TimeSchema", "of", null).invoke(null, null));
 		}
 
-		public static Schema<Timestamp> newTimestampSchema()
+		public static ISchema<Timestamp> NewTimestampSchema()
 		{
-			return catchExceptions(() => (Schema<Timestamp>) getStaticMethod("org.apache.pulsar.client.impl.schema.TimestampSchema", "of", null).invoke(null, null));
+			return catchExceptions(() => (Schema<Timestamp>) getStaticMethod("SharpPulsar.Impl.Schema.TimestampSchema", "of", null).invoke(null, null));
+		}*/
+
+		public static ISchema<T> NewAvroSchema<T>(ISchemaDefinition<T> schemaDefinition)
+		{
+			return AvroSchema<T>.Of(schemaDefinition);
 		}
 
-		public static Schema<T> NewAvroSchema<T>(SchemaDefinition schemaDefinition)
+		public static ISchema<T> NewProtobufSchema<T>(ISchemaDefinition schemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return catchExceptions(() => (Schema<T>) getStaticMethod("org.apache.pulsar.client.impl.schema.AvroSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
-		}
-
-		public static ISchema<T> NewProtobufSchema<T>(SchemaDefinition schemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
-		{
-			return catchExceptions(() => (Schema<T>) getStaticMethod("org.apache.pulsar.client.impl.schema.ProtobufSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
+			return catchExceptions(() => (Schema<T>) getStaticMethod("SharpPulsar.Impl.Schema.ProtobufSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
 		}
 
 		public static Schema<T> newJSONSchema<T>(SchemaDefinition schemaDefinition)
 		{
-			return catchExceptions(() => (Schema<T>) getStaticMethod("org.apache.pulsar.client.impl.schema.JSONSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
+			return catchExceptions(() => (Schema<T>) getStaticMethod("SharpPulsar.Impl.Schema.JSONSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
 		}
 
 		public static Schema<GenericRecord> newAutoConsumeSchema()
 		{
-			return catchExceptions(() => (Schema<GenericRecord>) newClassInstance("org.apache.pulsar.client.impl.schema.AutoConsumeSchema").newInstance());
+			return catchExceptions(() => (Schema<GenericRecord>) newClassInstance("SharpPulsar.Impl.Schema.AutoConsumeSchema").newInstance());
 		}
 
 		public static Schema<sbyte[]> newAutoProduceSchema()
 		{
-			return catchExceptions(() => (Schema<sbyte[]>) newClassInstance("org.apache.pulsar.client.impl.schema.AutoProduceBytesSchema").newInstance());
+			return catchExceptions(() => (Schema<sbyte[]>) newClassInstance("SharpPulsar.Impl.Schema.AutoProduceBytesSchema").newInstance());
 		}
 
 		public static Schema<sbyte[]> newAutoProduceSchema<T1>(Schema<T1> schema)
 		{
-			return catchExceptions(() => (Schema<sbyte[]>) getConstructor("org.apache.pulsar.client.impl.schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
+			return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
 		public static Schema<KeyValue<sbyte[], sbyte[]>> newKeyValueBytesSchema()
 		{
-			return catchExceptions(() => (Schema<KeyValue<sbyte[], sbyte[]>>) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "kvBytes").invoke(null));
+			return catchExceptions(() => (Schema<KeyValue<sbyte[], sbyte[]>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "kvBytes").invoke(null));
 		}
 
 		public static Schema<KeyValue<K, V>> newKeyValueSchema<K, V>(Schema<K> keySchema, Schema<V> valueSchema)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, keySchema, valueSchema));
+			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, keySchema, valueSchema));
 		}
 
 		public static Schema<KeyValue<K, V>> newKeyValueSchema<K, V>(Schema<K> keySchema, Schema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, keySchema, valueSchema, keyValueEncodingType));
+			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, keySchema, valueSchema, keyValueEncodingType));
 		}
 
 		public static Schema<KeyValue<K, V>> newKeyValueSchema<K, V>(Type key, Type value, SchemaType type)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, key, value, type));
+			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, key, value, type));
 		}
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
@@ -235,18 +227,18 @@ namespace SharpPulsar.Common
 		public static Schema<object> getSchema(SchemaInfo schemaInfo)
 		{
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: return catchExceptions(() -> (org.apache.pulsar.client.api.Schema<?>) getStaticMethod("org.apache.pulsar.client.impl.schema.AutoConsumeSchema", "getSchema", org.apache.pulsar.common.schema.SchemaInfo.class).invoke(null, schemaInfo));
-			return catchExceptions(() => (Schema<object>) getStaticMethod("org.apache.pulsar.client.impl.schema.AutoConsumeSchema", "getSchema", typeof(SchemaInfo)).invoke(null, schemaInfo));
+//ORIGINAL LINE: return catchExceptions(() -> (org.apache.pulsar.client.api.Schema<?>) getStaticMethod("SharpPulsar.Impl.Schema.AutoConsumeSchema", "getSchema", org.apache.pulsar.common.schema.SchemaInfo.class).invoke(null, schemaInfo));
+			return catchExceptions(() => (Schema<object>) getStaticMethod("SharpPulsar.Impl.Schema.AutoConsumeSchema", "getSchema", typeof(SchemaInfo)).invoke(null, schemaInfo));
 		}
 
 		public static GenericSchema<GenericRecord> getGenericSchema(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (GenericSchema) getStaticMethod("org.apache.pulsar.client.impl.schema.generic.GenericSchemaImpl", "of", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return catchExceptions(() => (GenericSchema) getStaticMethod("SharpPulsar.Impl.Schema.generic.GenericSchemaImpl", "of", typeof(SchemaInfo)).invoke(null, schemaInfo));
 		}
 
 		public static RecordSchemaBuilder newRecordSchemaBuilder(string name)
 		{
-			return catchExceptions(() => (RecordSchemaBuilder) getConstructor("org.apache.pulsar.client.impl.schema.RecordSchemaBuilderImpl", typeof(string)).newInstance(name));
+			return catchExceptions(() => (RecordSchemaBuilder) getConstructor("SharpPulsar.Impl.Schema.RecordSchemaBuilderImpl", typeof(string)).newInstance(name));
 		}
 
 		/// <summary>
@@ -256,7 +248,7 @@ namespace SharpPulsar.Common
 		/// <returns> the kv encoding type </returns>
 		public static KeyValueEncodingType decodeKeyValueEncodingType(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (KeyValueEncodingType) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueEncodingType", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return catchExceptions(() => (KeyValueEncodingType) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "decodeKeyValueEncodingType", typeof(SchemaInfo)).invoke(null, schemaInfo));
 		}
 
 		/// <summary>
@@ -281,7 +273,7 @@ namespace SharpPulsar.Common
 		/// <returns> the final schema info </returns>
 		public static SchemaInfo encodeKeyValueSchemaInfo<K, V>(string schemaName, Schema<K> keySchema, Schema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
-			return catchExceptions(() => (SchemaInfo) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "encodeKeyValueSchemaInfo", typeof(string), typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, schemaName, keySchema, valueSchema, keyValueEncodingType));
+			return catchExceptions(() => (SchemaInfo) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "encodeKeyValueSchemaInfo", typeof(string), typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, schemaName, keySchema, valueSchema, keyValueEncodingType));
 		}
 
 		/// <summary>
@@ -291,7 +283,7 @@ namespace SharpPulsar.Common
 		/// <returns> the pair of key schema info and value schema info </returns>
 		public static KeyValue<SchemaInfo, SchemaInfo> decodeKeyValueSchemaInfo(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (KeyValue<SchemaInfo, SchemaInfo>) getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueSchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return catchExceptions(() => (KeyValue<SchemaInfo, SchemaInfo>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "decodeKeyValueSchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
 		}
 
 		/// <summary>
@@ -301,7 +293,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info </returns>
 		public static string jsonifySchemaInfo(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("org.apache.pulsar.client.impl.schema.SchemaUtils", "jsonifySchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifySchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
 		}
 
 		/// <summary>
@@ -311,7 +303,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info with version </returns>
 		public static string jsonifySchemaInfoWithVersion(SchemaInfoWithVersion schemaInfoWithVersion)
 		{
-			return catchExceptions(() => (string) getStaticMethod("org.apache.pulsar.client.impl.schema.SchemaUtils", "jsonifySchemaInfoWithVersion", typeof(SchemaInfoWithVersion)).invoke(null, schemaInfoWithVersion));
+			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifySchemaInfoWithVersion", typeof(SchemaInfoWithVersion)).invoke(null, schemaInfoWithVersion));
 		}
 
 		/// <summary>
@@ -321,7 +313,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info </returns>
 		public static string jsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("org.apache.pulsar.client.impl.schema.SchemaUtils", "jsonifyKeyValueSchemaInfo", typeof(KeyValue)).invoke(null, kvSchemaInfo));
+			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifyKeyValueSchemaInfo", typeof(KeyValue)).invoke(null, kvSchemaInfo));
 		}
 
 		/// <summary>
@@ -331,7 +323,7 @@ namespace SharpPulsar.Common
 		/// <returns> the convert key/value schema data string </returns>
 		public static string convertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("org.apache.pulsar.client.impl.schema.SchemaUtils", "convertKeyValueSchemaInfoDataToString", typeof(KeyValue)).invoke(null, kvSchemaInfo));
+			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "convertKeyValueSchemaInfoDataToString", typeof(KeyValue)).invoke(null, kvSchemaInfo));
 		}
 
 		/// <summary>
@@ -341,7 +333,7 @@ namespace SharpPulsar.Common
 		/// <returns> the key/value schema info data bytes </returns>
 		public static sbyte[] convertKeyValueDataStringToSchemaInfoSchema(sbyte[] keyValueSchemaInfoDataJsonBytes)
 		{
-			return catchExceptions(() => (sbyte[]) getStaticMethod("org.apache.pulsar.client.impl.schema.SchemaUtils", "convertKeyValueDataStringToSchemaInfoSchema", typeof(sbyte[])).invoke(null, keyValueSchemaInfoDataJsonBytes));
+			return catchExceptions(() => (sbyte[]) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "convertKeyValueDataStringToSchemaInfoSchema", typeof(sbyte[])).invoke(null, keyValueSchemaInfoDataJsonBytes));
 		}
 
 		public static BatcherBuilder newDefaultBatcherBuilder()

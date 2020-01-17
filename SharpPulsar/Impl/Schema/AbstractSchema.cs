@@ -16,15 +16,17 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Impl.Schema
 {
-    using Pulsar.Api;
-    using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+    using DotNetty.Buffers;
+	using SharpPulsar.Common.Schema;
+	using SharpPulsar.Interface.Schema;
 
-	internal abstract class AbstractSchema<T> : Schema<T>
+	public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public org.apache.pulsar.common.schema.SchemaInfo SchemaInfo => throw new System.NotImplementedException();
+		public SchemaInfo SchemaInfo => throw new System.NotImplementedException();
+
+		SchemaInfo ISchema<T>.SchemaInfo => throw new System.NotImplementedException();
 
 		/// <summary>
 		/// Check if the message read able length length is a valid object for this schema.
@@ -39,9 +41,9 @@ namespace Pulsar.Client.Impl.Schema
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		internal virtual void Validate(ByteBuf byteBuf)
+		public virtual void Validate(IByteBuffer byteBuf)
 		{
-			throw new SchemaSerializationException("This method is not supported");
+			throw new Exception.SchemaSerializationException("This method is not supported");
 		}
 
 		/// <summary>
@@ -50,7 +52,7 @@ namespace Pulsar.Client.Impl.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		internal abstract T Decode(ByteBuf byteBuf);
+		public abstract T Decode(IByteBuffer byteBuf);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -59,10 +61,10 @@ namespace Pulsar.Client.Impl.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		internal virtual T Decode(ByteBuf byteBuf, sbyte[] schemaVersion)
+		public virtual T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return decode(byteBuf);
+			return Decode(byteBuf);
 		}
 
 		public sbyte[] Encode(T message)

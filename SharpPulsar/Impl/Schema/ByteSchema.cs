@@ -16,17 +16,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using DotNetty.Buffers;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Exception;
 
-	/// <summary>
-	/// A schema for 'Byte'.
-	/// </summary>
-	public class ByteSchema : AbstractSchema<sbyte>
+    /// <summary>
+    /// A schema for 'Byte'.
+    /// </summary>
+    internal class ByteSchema : AbstractSchema<sbyte>
 	{
 
 		private static readonly ByteSchema INSTANCE;
@@ -38,12 +37,12 @@ namespace org.apache.pulsar.client.impl.schema
 			INSTANCE = new ByteSchema();
 		}
 
-		public static ByteSchema of()
+		public static ByteSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public override void validate(sbyte[] message)
+		public void Validate(sbyte[] message)
 		{
 			if (message.Length != 1)
 			{
@@ -51,15 +50,15 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
+		public void Validate(IByteBuffer message)
 		{
-			if (message.readableBytes() != 1)
+			if (message.ReadableBytes != 1)
 			{
 				throw new SchemaSerializationException("Size of data received by ByteSchema is not 1");
 			}
 		}
 
-		public override sbyte[] encode(sbyte? message)
+		public sbyte[] Encode(sbyte message)
 		{
 			if (null == message)
 			{
@@ -71,27 +70,28 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override sbyte? decode(sbyte[] bytes)
+		public sbyte? Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			return bytes[0];
 		}
 
-		public override sbyte? decode(ByteBuf byteBuf)
+		public override sbyte? Decode(IByteBuffer byteBuf)
 		{
 			if (null == byteBuf)
 			{
 				return null;
 			}
-			validate(byteBuf);
-			return byteBuf.getByte(0);
+			Validate(byteBuf);
+			return (sbyte) byteBuf.GetByte(0);
 		}
 
-		public override SchemaInfo SchemaInfo
+		
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

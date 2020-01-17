@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,34 +19,29 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `Boolean`.
 	/// </summary>
-	public class BooleanSchema : AbstractSchema<bool>
+	public class BoolSchema : AbstractSchema<bool>
 	{
 
-		private static readonly BooleanSchema INSTANCE;
+		private static readonly BoolSchema INSTANCE;
 		private static readonly SchemaInfo SCHEMA_INFO;
 
-		static BooleanSchema()
+		static BoolSchema()
 		{
 			SCHEMA_INFO = (new SchemaInfo()).setName("Boolean").setType(SchemaType.BOOLEAN).setSchema(new sbyte[0]);
-			INSTANCE = new BooleanSchema();
+			INSTANCE = new BoolSchema();
 		}
 
-		public static BooleanSchema of()
+		public static BoolSchema of()
 		{
 			return INSTANCE;
 		}
 
-		public override void validate(sbyte[] message)
+		public void Validate(sbyte[] message)
 		{
 			if (message.Length != 1)
 			{
@@ -51,7 +49,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override sbyte[] encode(bool? message)
+		public sbyte[] Encode(bool? message)
 		{
 			if (null == message)
 			{
@@ -63,26 +61,18 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override bool? decode(sbyte[] bytes)
+		public bool Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
-			validate(bytes);
+			Validate(bytes);
 			return bytes[0] != 0;
 		}
 
-		public override bool? decode(ByteBuf byteBuf)
+		public override bool Decode(IByteBuffer byteBuf)
 		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			return byteBuf.getBoolean(0);
+			return byteBuf.GetBoolean(0);
 		}
-
-		public override SchemaInfo SchemaInfo
+		
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

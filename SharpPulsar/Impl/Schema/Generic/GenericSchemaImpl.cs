@@ -23,7 +23,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 
 	using Field = Api.Schema.Field;
 	using GenericRecord = Api.Schema.GenericRecord;
-	using org.apache.pulsar.client.impl.schema;
+	using SharpPulsar.Impl.Schema;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
     using Pulsar.Api.Schema;
 

@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,12 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `Float`.
@@ -38,12 +37,12 @@ namespace org.apache.pulsar.client.impl.schema
 			INSTANCE = new FloatSchema();
 		}
 
-		public static FloatSchema of()
+		public static FloatSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public override void validate(sbyte[] message)
+		public void Validate(sbyte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -51,15 +50,15 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
+		public void Validate(IByteBuffer message)
 		{
-			if (message.readableBytes() != 4)
+			if (message.ReadableBytes != 4)
 			{
 				throw new SchemaSerializationException("Size of data received by FloatSchema is not 4");
 			}
 		}
 
-		public override sbyte[] encode(float? message)
+		public sbyte[] Encode(float? message)
 		{
 			if (null == message)
 			{
@@ -72,13 +71,13 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override float? decode(sbyte[] bytes)
+		public float? Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			int value = 0;
 			foreach (sbyte b in bytes)
 			{
@@ -88,24 +87,24 @@ namespace org.apache.pulsar.client.impl.schema
 			return Float.intBitsToFloat(value);
 		}
 
-		public override float? decode(ByteBuf byteBuf)
+		public override float Decode(IByteBuffer byteBuf)
 		{
 			if (null == byteBuf)
 			{
 				return null;
 			}
-			validate(byteBuf);
+			Validate(byteBuf);
 			int value = 0;
 			for (int i = 0; i < 4; i++)
 			{
 				value <<= 8;
-				value |= byteBuf.getByte(i) & 0xFF;
+				value |= byteBuf.GetByte(i) & 0xFF;
 			}
 
 			return Float.intBitsToFloat(value);
 		}
 
-		public override SchemaInfo SchemaInfo
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

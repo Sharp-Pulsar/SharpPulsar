@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Schema;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,12 +19,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for bytes array.
 	/// </summary>
@@ -42,30 +41,31 @@ namespace org.apache.pulsar.client.impl.schema
 			return INSTANCE;
 		}
 
-		public override sbyte[] encode(sbyte[] message)
+		public sbyte[] Encode(sbyte[] message)
 		{
 			return message;
 		}
 
-		public override sbyte[] decode(sbyte[] bytes)
+		public sbyte[] Decode(sbyte[] bytes)
 		{
 			return bytes;
 		}
 
-		public override sbyte[] decode(ByteBuf byteBuf)
+		public override sbyte[] Decode(IByteBuffer byteBuf)
 		{
 			if (byteBuf == null)
 			{
 				return null;
 			}
-			int size = byteBuf.readableBytes();
+			int size = byteBuf.ReadableBytes;
 			sbyte[] bytes = new sbyte[size];
 
-			byteBuf.readBytes(bytes, 0, size);
+			byteBuf.ReadBytes(bytes, 0, size);
 			return bytes;
 		}
 
-		public override SchemaInfo SchemaInfo
+
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

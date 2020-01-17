@@ -62,7 +62,7 @@ namespace SharpPulsar.Interface.Schema
 		/// Get pojo schema definition.
 		/// </summary>
 		/// <returns> pojo schema </returns>
-		T Pojo {get;}
+		Type Pojo {get;}
 
 		/// <summary>
 		/// Get supportSchemaVersioning schema definition.

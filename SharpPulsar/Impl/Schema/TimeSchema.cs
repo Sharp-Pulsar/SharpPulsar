@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Schema;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,12 +17,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `java.sql.Time`.
 	/// </summary>
@@ -37,12 +34,12 @@ namespace org.apache.pulsar.client.impl.schema
 		   INSTANCE = new TimeSchema();
 	   }
 
-	   public static TimeSchema of()
+	   public static TimeSchema Of()
 	   {
 		  return INSTANCE;
 	   }
 
-	   public override sbyte[] encode(Time message)
+	   public sbyte[] Encode(Time message)
 	   {
 		  if (null == message)
 		  {

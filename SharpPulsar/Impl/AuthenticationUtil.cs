@@ -1,6 +1,12 @@
-﻿using SharpPulsar.Interface.Auth;
+﻿using SharpPulsar.Exception;
+using SharpPulsar.Interface;
+using SharpPulsar.Interface.Auth;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,38 +28,26 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
-	using TypeReference = com.fasterxml.jackson.core.type.TypeReference;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-
-
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using EncodedAuthenticationParameterSupport = org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-	using AuthenticationDisabled = org.apache.pulsar.client.impl.auth.AuthenticationDisabled;
-	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
 
 	public static class AuthenticationUtil
 	{
 
-//ORIGINAL LINE: public static java.util.Map<String, String> configureFromJsonString(String authParamsString) throws java.io.IOException
-		public static IDictionary<string, string>ConfigureFromJsonString(string authParamsString)
+		
+		public static IDictionary<string, string> ConfigureFromJsonString(string authParamsString)
 		{
-			ObjectMapper jsonMapper = ObjectMapperFactory.create();
-			return jsonMapper.readValue(authParamsString, new TypeReferenceAnonymousInnerClass());
+			var input = new StringReader(authParamsString);
+			var deserializer = new DeserializerBuilder()
+				.WithNamingConvention(CamelCaseNamingConvention.Instance)
+				.Build();
+			return deserializer.Deserialize<Dictionary<string, string>>(input);
 		}
 
-		private class TypeReferenceAnonymousInnerClass : TypeReference<Dictionary<string, string>>
-		{
-		}
 
 		public static IDictionary<string, string> ConfigureFromPulsar1AuthParamString(string authParamsString)
 		{
 			IDictionary<string, string> authParams = new Dictionary<string, string>();
 
-			if (IsNotBlank(authParamsString))
+			if (!string.IsNullOrWhiteSpace(authParamsString))
 			{
 				string[] @params = authParamsString.Split(",", true);
 				foreach (string p in @params)
@@ -76,37 +70,37 @@ namespace SharpPulsar.Impl
 		/// <param name="authParamsString">
 		///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
-		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//ORIGINAL LINE: @SuppressWarnings("deprecation") public static final org.apache.pulsar.client.api.Authentication create(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
+		/// <exception cref="PulsarClientException.UnsupportedAuthenticationException"> </exception>
 
 		public static IAuthentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
 			{
-				if (IsNotBlank(authPluginClassName))
+				if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
 					Type authClass = Type.GetType(authPluginClassName);
-					Authentication auth = (Authentication) Activator.CreateInstance(authClass);
-					if (auth is EncodedAuthenticationParameterSupport)
+					IAuthentication auth = (IAuthentication) Activator.CreateInstance(authClass);
+					if (auth is IEncodedAuthenticationParameterSupport)
 					{
 						// Parse parameters on plugin side.
-						((EncodedAuthenticationParameterSupport) auth).configure(authParamsString);
+						((IEncodedAuthenticationParameterSupport) auth).Configure(authParamsString);
 					}
 					else
 					{
 						// Parse parameters by default parse logic.
-						auth.configure(ConfigureFromPulsar1AuthParamString(authParamsString));
+						//auth.Configure(ConfigureFromPulsar1AuthParamString(authParamsString));[Deprecated]
+						auth.Configure(authParamsString);
 					}
 					return auth;
 				}
 				else
 				{
-					return new AuthenticationDisabled();
+					return new Auth.AuthenticationDisabled();
 				}
 			}
 			catch (System.Exception t)
 			{
-				throw new UnsupportedAuthenticationException(t);
+				throw new PulsarClientException.UnsupportedAuthenticationException(t.Message);
 			}
 		}
 
@@ -118,28 +112,27 @@ namespace SharpPulsar.Impl
 		/// <param name="authParams">
 		///            map which represents parameters for the Authentication-Plugin </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
-		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//ORIGINAL LINE: @SuppressWarnings("deprecation") public static final org.apache.pulsar.client.api.Authentication create(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException
+		/// <exception cref="PulsarClientException.UnsupportedAuthenticationException"> </exception>
 
 		public static IAuthentication Create(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			try
 			{
-				if (IsNotBlank(authPluginClassName))
+				if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
 					Type authClass = Type.GetType(authPluginClassName);
-					Authentication auth = (Authentication) Activator.CreateInstance(authClass);
-					auth.configure(authParams);
+					IAuthentication auth = (IAuthentication) Activator.CreateInstance(authClass);
+					auth.Configure(JsonSerializer.Serialize(authParams));
 					return auth;
 				}
 				else
 				{
-					return new AuthenticationDisabled();
+					return new Auth.AuthenticationDisabled();
 				}
 			}
 			catch (System.Exception t)
 			{
-				throw new UnsupportedAuthenticationException(t);
+				throw new PulsarClientException.UnsupportedAuthenticationException(t.Message);
 			}
 		}
 	}

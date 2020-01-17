@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Schema;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,14 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-
-
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A bytebuffer schema is effectively a `BYTES` schema.
 	/// </summary>
@@ -44,7 +40,7 @@ namespace org.apache.pulsar.client.impl.schema
 			return INSTANCE;
 		}
 
-		public override sbyte[] encode(ByteBuffer data)
+		public sbyte[] Encode(ByteBuffer data)
 		{
 			if (data == null)
 			{
@@ -55,7 +51,7 @@ namespace org.apache.pulsar.client.impl.schema
 
 			if (data.hasArray())
 			{
-				sbyte[] arr = data.array();
+				sbyte[] arr = data.Array();
 				if (data.arrayOffset() == 0 && arr.Length == data.remaining())
 				{
 					return arr;
@@ -68,7 +64,7 @@ namespace org.apache.pulsar.client.impl.schema
 			return ret;
 		}
 
-		public override ByteBuffer decode(sbyte[] data)
+		public override ByteBuffer Decode(sbyte[] data)
 		{
 			if (null == data)
 			{
@@ -76,11 +72,11 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				return ByteBuffer.wrap(data);
+				return ByteBuffer.Wrap(data);
 			}
 		}
 
-		public override ByteBuffer decode(ByteBuf byteBuf)
+		public override ByteBuffer Decode(IByteBuffer byteBuf)
 		{
 			if (null == byteBuf)
 			{
@@ -88,14 +84,14 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				int size = byteBuf.readableBytes();
+				int size = byteBuf.ReadableBytes;
 				sbyte[] bytes = new sbyte[size];
-				byteBuf.readBytes(bytes);
+				byteBuf.ReadBytes(bytes);
 				return ByteBuffer.wrap(bytes);
 			}
 		}
 
-		public override SchemaInfo SchemaInfo
+		public SchemaInfo SchemaInfo
 		{
 			get
 			{

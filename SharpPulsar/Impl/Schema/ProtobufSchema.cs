@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,17 +30,19 @@ namespace org.apache.pulsar.client.impl.schema
 	using ProtobufData = org.apache.avro.protobuf.ProtobufData;
 	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
 	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using org.apache.pulsar.client.impl.schema.reader;
-	using org.apache.pulsar.client.impl.schema.writer;
+	using SharpPulsar.Impl.Schema.reader;
+	using SharpPulsar.Impl.Schema.writer;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+    using Pulsar.Client.Impl.Schema.Reader;
+    using Pulsar.Client.Impl.Schema.Writer;
 
 
-	/// <summary>
-	/// A schema implementation to deal with protobuf generated messages.
-	/// </summary>
-	public class ProtobufSchema<T> : StructSchema<T> where T : com.google.protobuf.GeneratedMessageV3
+    /// <summary>
+    /// A schema implementation to deal with protobuf generated messages.
+    /// </summary>
+    public class ProtobufSchema<T> : StructSchema<T> where T :  com.google.protobuf.GeneratedMessageV3
 	{
 
 		public const string PARSING_INFO_PROPERTY = "__PARSING_INFO__";
@@ -57,15 +59,15 @@ namespace org.apache.pulsar.client.impl.schema
 			internal readonly IDictionary<string, object> definition;
 		}
 
-		private static org.apache.avro.Schema createProtobufAvroSchema<T>(Type pojo)
+		private static org.apache.avro.Schema CreateProtobufAvroSchema<T>(Type pojo)
 		{
 			return ProtobufData.get().getSchema(pojo);
 		}
 
 		private ProtobufSchema(SchemaInfo schemaInfo, T protoMessageInstance) : base(schemaInfo)
 		{
-			Reader = new ProtobufReader<>(protoMessageInstance);
-			Writer = new ProtobufWriter<>();
+			Reader = new ProtobufReader<T>(protoMessageInstance);
+			Writer = new ProtobufWriter<T>();
 			// update properties with protobuf related properties
 			IDictionary<string, string> allProperties = new Dictionary<string, string>();
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
@@ -93,7 +95,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		protected internal override SchemaReader<T> loadReader(BytesSchemaVersion schemaVersion)
+		protected internal override ISchemaReader<T> LooadReader(BytesSchemaVersion schemaVersion)
 		{
 			throw new Exception("ProtobufSchema don't support schema versioning");
 		}

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Message;
+﻿using SharpPulsar.Impl.Batch;
+using SharpPulsar.Interface.Message;
 using System;
 
 /// <summary>
@@ -42,8 +43,6 @@ namespace SharpPulsar.Impl.Message
 		protected internal readonly int partitionIndex;
 
 		// Private constructor used only for json deserialization
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private MessageIdImpl()
 		private MessageIdImpl() : this(-1, -1, -1)
 		{
 		}
@@ -104,7 +103,7 @@ namespace SharpPulsar.Impl.Message
 			return string.Format("{0:D}:{1:D}:{2:D}", ledgerId, entryId, partitionIndex);
 		}
 
-		public static MessageId FromByteArray(sbyte[] data)
+		public static IMessageId FromByteArray(sbyte[] data)
 		{
 			checkNotNull(data);
 			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(data, 0, data.Length));
@@ -137,9 +136,9 @@ namespace SharpPulsar.Impl.Message
 		}
 
 
-		public static IMessageId fromByteArrayWithTopic(sbyte[] data, string topicName)
+		public static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
-			return fromByteArrayWithTopic(data, TopicName.get(topicName));
+			return FromByteArrayWithTopic(data, TopicName.get(topicName));
 		}
 
 		public static IMessageId FomByteArrayWithTopic(sbyte[] data, TopicName topicName)
@@ -217,7 +216,7 @@ namespace SharpPulsar.Impl.Message
 		public sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
-			return toByteArray(-1);
+			return ToByteArray(-1);
 		}
 
 		public int CompareTo(IMessageId o)
@@ -233,8 +232,8 @@ namespace SharpPulsar.Impl.Message
 			}
 			else
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
+
+				throw new ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 		}
 

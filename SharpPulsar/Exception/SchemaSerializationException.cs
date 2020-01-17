@@ -23,7 +23,7 @@ namespace SharpPulsar.Exception
 	/// <summary>
 	/// Schema serialization exception.
 	/// </summary>
-	public class SchemaSerializationException : Exception
+	public class SchemaSerializationException : System.Exception
 	{
 
 		/// <summary>
@@ -43,7 +43,7 @@ namespace SharpPulsar.Exception
 		///        The cause (which is saved for later retrieval by the
 		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public SchemaSerializationException(Exception cause) : base(cause.Message)
+		public SchemaSerializationException(System.Exception cause) : base(cause.Message)
 		{
 		}
 	}

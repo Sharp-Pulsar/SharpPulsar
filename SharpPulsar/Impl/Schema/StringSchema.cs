@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Impl.Schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -39,17 +40,17 @@ namespace org.apache.pulsar.client.impl.schema
 		internal static readonly string CHARSET_KEY;
 
 		private static readonly SchemaInfo DEFAULT_SCHEMA_INFO;
-		private static readonly Charset DEFAULT_CHARSET;
+		private static readonly CharSet DEFAULT_CHARSET;
 		private static readonly StringSchema UTF8;
 
 		static StringSchema()
 		{
 			// Ensure the ordering of the static initialization
 			CHARSET_KEY = "__charset";
-			DEFAULT_CHARSET = StandardCharsets.UTF_8;
+			DEFAULT_CHARSET = CharSet.Ansi;
 			DEFAULT_SCHEMA_INFO = (new SchemaInfo()).setName("String").setType(SchemaType.STRING).setSchema(new sbyte[0]);
 
-			UTF8 = new StringSchema(StandardCharsets.UTF_8);
+			UTF8 = new StringSchema(CharSet.Ansi);
 		}
 
 		private static readonly FastThreadLocal<sbyte[]> tmpBuffer = new FastThreadLocalAnonymousInnerClass();
@@ -62,7 +63,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public static StringSchema fromSchemaInfo(SchemaInfo schemaInfo)
+		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
 		{
 			checkArgument(SchemaType.STRING == schemaInfo.Type, "Not a string schema");
 			string charsetName = schemaInfo.Properties.get(CHARSET_KEY);
@@ -72,7 +73,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				return new StringSchema(Charset.forName(charsetName));
+				return new StringSchema(CharSet.ForName(charsetName));
 			}
 		}
 
@@ -81,7 +82,7 @@ namespace org.apache.pulsar.client.impl.schema
 			return UTF8;
 		}
 
-		private readonly Charset charset;
+		private readonly CharSet charset;
 		private readonly SchemaInfo schemaInfo;
 
 		public StringSchema()
@@ -90,7 +91,7 @@ namespace org.apache.pulsar.client.impl.schema
 			this.schemaInfo = DEFAULT_SCHEMA_INFO;
 		}
 
-		public StringSchema(Charset charset)
+		public StringSchema(CharSet charset)
 		{
 			this.charset = charset;
 			IDictionary<string, string> properties = new Dictionary<string, string>();
@@ -98,7 +99,7 @@ namespace org.apache.pulsar.client.impl.schema
 			this.schemaInfo = (new SchemaInfo()).setName(DEFAULT_SCHEMA_INFO.Name).setType(SchemaType.STRING).setSchema(DEFAULT_SCHEMA_INFO.Schema).setProperties(properties);
 		}
 
-		public virtual sbyte[] encode(string message)
+		public virtual sbyte[] Encode(string message)
 		{
 			if (null == message)
 			{
@@ -110,7 +111,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public virtual string decode(sbyte[] bytes)
+		public virtual string Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{
@@ -122,7 +123,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override string decode(ByteBuf byteBuf)
+		public override string Decode(ByteBuf byteBuf)
 		{
 			if (null == byteBuf)
 			{
