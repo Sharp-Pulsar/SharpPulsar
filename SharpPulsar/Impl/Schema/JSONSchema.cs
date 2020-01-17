@@ -27,30 +27,28 @@ namespace SharpPulsar.Impl.Schema
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using JsonSchema = com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 	using JsonSchemaGenerator = com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using SharpPulsar.Impl.Schema.reader;
-	using SharpPulsar.Impl.Schema.writer;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+    using System.Threading;
+    using Pulsar.Client.Impl.Schema.Writer;
+    using Pulsar.Client.Impl.Schema.Reader;
+    using SharpPulsar.Interface.Schema;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Common.Protocol.Schema;
 
-	/// <summary>
-	/// A schema implementation to deal with json data.
-	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
-	public class JSONSchema<T> : StructSchema<T>
+    /// <summary>
+    /// A schema implementation to deal with json data.
+    /// </summary>
+    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+    //ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
+    public class JSONSchema<T> : StructSchema<T>
 	{
 		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
 		// return shaded version of object mapper
 		private static readonly ThreadLocal<ObjectMapper> JSON_MAPPER = ThreadLocal.withInitial(() =>
 		{
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.SerializationInclusion = JsonInclude.Include.NON_NULL;
-		return mapper;
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			mapper.SerializationInclusion = JsonInclude.Include.NON_NULL;
+			return mapper;
 		});
 
 		private readonly Type pojo = typeof(T);
@@ -58,11 +56,11 @@ namespace SharpPulsar.Impl.Schema
 		private JSONSchema(SchemaInfo schemaInfo, Type pojo) : base(schemaInfo)
 		{
 			this.pojo = pojo;
-			Writer = new JsonWriter<>(JSON_MAPPER.get());
-			Reader = new JsonReader<>(JSON_MAPPER.get(), pojo);
+			Writer = new JsonWriter<T>(JSON_MAPPER.get());
+			Reader = new JsonReader<T>(JSON_MAPPER.get(), pojo);
 		}
 
-		protected internal override SchemaReader<T> loadReader(BytesSchemaVersion schemaVersion)
+		protected internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
 		{
 			throw new Exception("JSONSchema don't support schema versioning");
 		}
@@ -98,19 +96,19 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public static JSONSchema<T> of<T>(SchemaDefinition<T> schemaDefinition)
+		public static JSONSchema<T> Of<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return new JSONSchema<T>(parseSchemaInfo(schemaDefinition, SchemaType.JSON), schemaDefinition.Pojo);
+			return new JSONSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.JSON), schemaDefinition.Pojo);
 		}
 
-		public static JSONSchema<T> of<T>(Type pojo)
+		public static JSONSchema<T> Of<T>(Type pojo)
 		{
-			return JSONSchema.of(SchemaDefinition.builder<T>().withPojo(pojo).build());
+			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
-		public static JSONSchema<T> of<T>(Type pojo, IDictionary<string, string> properties)
+		public static JSONSchema<T> Of<T>(Type pojo, IDictionary<string, string> properties)
 		{
-			return JSONSchema.of(SchemaDefinition.builder<T>().withPojo(pojo).withProperties(properties).build());
+			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
 
 	}

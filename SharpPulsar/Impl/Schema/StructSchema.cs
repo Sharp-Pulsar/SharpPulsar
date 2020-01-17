@@ -1,4 +1,6 @@
-﻿using SharpPulsar.Common.Schema;
+﻿using SharpPulsar.Common.Protocol.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
 using SharpPulsar.Interface.Schema;
 using System;
 using System.Threading;
@@ -35,18 +37,7 @@ namespace SharpPulsar.Impl.Schema
 	using Parser = org.apache.avro.Schema.Parser;
 	using ReflectData = org.apache.avro.reflect.ReflectData;
 	using Hex = org.apache.commons.codec.binary.Hex;
-	using SerializationException = org.apache.commons.lang3.SerializationException;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using SchemaWriter = org.apache.pulsar.client.api.schema.SchemaWriter;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+	using SerializationException = org.apache.commons.
 
 	/// <summary>
 	/// This is a base schema implementation for `Struct` types.
@@ -62,7 +53,7 @@ namespace SharpPulsar.Impl.Schema
 	public abstract class StructSchema<T> : AbstractSchema<T>
 	{
 
-		protected internal static readonly Logger LOG = LoggerFactory.getLogger(typeof(StructSchema));
+		//protected internal static readonly Logger LOG = LoggerFactory.getLogger(typeof(StructSchema));
 
 		protected internal readonly Schema schema;
 		protected internal readonly SchemaInfo schemaInfo;
@@ -74,7 +65,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, SchemaReader<T>>
 		{
-			public override ISchemaReader<T> Load(BytesSchemaVersion schemaVersion)
+			public ISchemaReader<T> Load(BytesSchemaVersion schemaVersion)
 			{
 				return outerInstance.loadReader(schemaVersion);
 			}
@@ -82,7 +73,7 @@ namespace SharpPulsar.Impl.Schema
 
 		protected internal StructSchema(SchemaInfo schemaInfo)
 		{
-			this.schema = parseAvroSchema(new string(schemaInfo.Schema, UTF_8));
+			this.schema = ParseAvroSchema(new string(schemaInfo.Schema, UTF_8));
 			this.schemaInfo = schemaInfo;
 		}
 
@@ -147,13 +138,13 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		protected internal static Schema createAvroSchema(SchemaDefinition schemaDefinition)
+		protected internal static Schema CreateAvroSchema(ISchemaDefinition<T> schemaDefinition)
 		{
 			Type pojo = schemaDefinition.Pojo;
 
-			if (StringUtils.isNotBlank(schemaDefinition.JsonDef))
+			if (!string.IsNullOrWhiteSpace(schemaDefinition.JsonDef))
 			{
-				return parseAvroSchema(schemaDefinition.JsonDef);
+				return ParseAvroSchema(schemaDefinition.JsonDef);
 			}
 			else if (pojo != null)
 			{
@@ -169,9 +160,6 @@ namespace SharpPulsar.Impl.Schema
 				{
 					throw new Exception("Cannot disable validation of default values", e);
 				}
-
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final boolean savedValidateDefaults = validateDefaults.get();
 				bool savedValidateDefaults = validateDefaults.get();
 
 				try
@@ -191,21 +179,19 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		protected internal static Schema parseAvroSchema(string schemaJson)
+		protected internal static Schema ParseAvroSchema(string schemaJson)
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final org.apache.avro.Schema.Parser parser = new org.apache.avro.Schema.Parser();
 			Schema.Parser parser = new Schema.Parser();
 			parser.ValidateDefaults = false;
 			return parser.parse(schemaJson);
 		}
 
-		protected internal static SchemaInfo parseSchemaInfo<T>(SchemaDefinition<T> schemaDefinition, SchemaType schemaType)
+		protected internal static SchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
 		{
-			return SchemaInfo.builder().schema(createAvroSchema(schemaDefinition).ToString().GetBytes(UTF_8)).properties(schemaDefinition.Properties).name("").type(schemaType).build();
+			return ISchemaInfo.Builder<T>().schema(CreateAvroSchema(schemaDefinition).ToString().GetBytes(UTF_8)).properties(schemaDefinition.Properties).name("").type(schemaType).build();
 		}
 
-		public virtual SchemaInfoProvider SchemaInfoProvider
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -218,16 +204,16 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		protected internal abstract SchemaReader<T> loadReader(BytesSchemaVersion schemaVersion);
+		protected internal abstract ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async
 		/// </summary>
-		protected internal virtual SchemaInfo getSchemaInfoByVersion(sbyte[] schemaVersion)
+		protected internal virtual SchemaInfo GetSchemaInfoByVersion(sbyte[] schemaVersion)
 		{
 			try
 			{
-				return schemaInfoProvider.getSchemaByVersion(schemaVersion).get();
+				return schemaInfoProvider.GetSchemaByVersion(schemaVersion).Result;
 			}
 			catch (InterruptedException e)
 			{
@@ -248,7 +234,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		protected internal virtual SchemaReader<T> Reader
+		protected internal virtual ISchemaReader<T> Reader
 		{
 			set
 			{

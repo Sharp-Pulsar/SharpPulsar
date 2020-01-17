@@ -33,22 +33,22 @@ namespace SharpPulsar.Impl.Schema
 	using SharpPulsar.Impl.Schema.reader;
 	using SharpPulsar.Impl.Schema.writer;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using ISchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
 	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
     using Pulsar.Client.Impl.Schema.Reader;
     using Pulsar.Client.Impl.Schema.Writer;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Interface.Schema;
+    using SharpPulsar.Common.Protocol.Schema;
 
 
     /// <summary>
     /// A schema implementation to deal with protobuf generated messages.
     /// </summary>
-    public class ProtobufSchema<T> : StructSchema<T> where T :  com.google.protobuf.GeneratedMessageV3
+    public class ProtobufSchema<T> : StructSchema<T> //where T :  com.google.protobuf.GeneratedMessageV3
 	{
 
 		public const string PARSING_INFO_PROPERTY = "__PARSING_INFO__";
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter @AllArgsConstructor public static class ProtoBufParsingInfo
 		public class ProtoBufParsingInfo
 		{
 			internal readonly int number;
@@ -59,7 +59,7 @@ namespace SharpPulsar.Impl.Schema
 			internal readonly IDictionary<string, object> definition;
 		}
 
-		private static org.apache.avro.Schema CreateProtobufAvroSchema<T>(Type pojo)
+		private static Avro.Schema CreateProtobufAvroSchema<T>(Type pojo)
 		{
 			return ProtobufData.get().getSchema(pojo);
 		}
@@ -73,11 +73,11 @@ namespace SharpPulsar.Impl.Schema
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
 			allProperties.putAll(schemaInfo.Properties);
 			// set protobuf parsing info
-			allProperties[PARSING_INFO_PROPERTY] = getParsingInfo(protoMessageInstance);
+			allProperties[PARSING_INFO_PROPERTY] = GetParsingInfo(protoMessageInstance);
 			schemaInfo.Properties = allProperties;
 		}
 
-		private string getParsingInfo(T protoMessageInstance)
+		private string GetParsingInfo(T protoMessageInstance)
 		{
 			IList<ProtoBufParsingInfo> protoBufParsingInfos = new LinkedList<ProtoBufParsingInfo>();
 			protoMessageInstance.DescriptorForType.Fields.forEach((Descriptors.FieldDescriptor fieldDescriptor) =>
@@ -100,15 +100,15 @@ namespace SharpPulsar.Impl.Schema
 			throw new Exception("ProtobufSchema don't support schema versioning");
 		}
 
-		public static ProtobufSchema<T> of<T>(Type pojo) where T : com.google.protobuf.GeneratedMessageV3
+		public static ProtobufSchema<T> Of<T>(Type pojo) //where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return of(pojo, new Dictionary<string, string>());
+			return Of(pojo, new Dictionary<string, string>());
 		}
 
-		public static ProtobufSchema ofGenericClass<T>(Type pojo, IDictionary<string, string> properties)
+		public static ProtobufSchema<T> OfGenericClass<T>(Type pojo, IDictionary<string, string> properties)
 		{
-			SchemaDefinition<T> schemaDefinition = SchemaDefinition.builder<T>().withPojo(pojo).withProperties(properties).build();
-			return ProtobufSchema.of(schemaDefinition);
+			ISchemaDefinition<T> schemaDefinition = SchemaDefinition.builder<T>().withPojo(pojo).withProperties(properties).build();
+			return ProtobufSchema<T>.Of<T>(schemaDefinition);
 		}
 
 		public static ProtobufSchema of<T>(SchemaDefinition<T> schemaDefinition)
@@ -121,7 +121,7 @@ namespace SharpPulsar.Impl.Schema
 				throw new System.ArgumentException(typeof(GeneratedMessageV3).FullName + " is not assignable from " + pojo.FullName);
 			}
 
-				SchemaInfo schemaInfo = SchemaInfo.builder().schema(createProtobufAvroSchema(schemaDefinition.Pojo).ToString().GetBytes(UTF_8)).type(SchemaType.PROTOBUF).name("").properties(schemaDefinition.Properties).build();
+				SchemaInfo schemaInfo = ISchemaInfo.builder().schema(createProtobufAvroSchema(schemaDefinition.Pojo).ToString().GetBytes(UTF_8)).type(SchemaType.PROTOBUF).name("").properties(schemaDefinition.Properties).build();
 
 			try
 			{

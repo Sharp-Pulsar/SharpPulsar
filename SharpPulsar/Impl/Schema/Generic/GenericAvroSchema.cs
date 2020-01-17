@@ -22,7 +22,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 	using GenericRecord = Api.Schema.GenericRecord;
 	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
 	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using ISchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
     using Pulsar.Api.Schema;
 
     /// <summary>
