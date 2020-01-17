@@ -16,21 +16,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
 
 	/// <summary>
 	/// Response with the version of a schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class PostSchemaResponse
 	public class PostSchemaResponse
 	{
-		private SchemaVersion version;
+		public SchemaVersion Version { get; set; }
 	}
 
 }

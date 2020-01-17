@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.url
+namespace SharpPulsar.Common.Client
 {
 
 	/// <summary>
@@ -35,7 +36,7 @@ namespace org.apache.pulsar.client.api.url
 			internal bool parsed = false;
 			internal string contentType;
 			internal sbyte[] data;
-			internal URI uri;
+			internal Uri uri;
 
 			internal static readonly Pattern pattern = Pattern.compile("(?<mimeType>[^;,]+)?(;(?<charset>charset=[^;,]+))?(;(?<base64>base64))?,(?<data>.+)", Pattern.DOTALL);
 
@@ -51,9 +52,7 @@ namespace org.apache.pulsar.client.api.url
 				}
 			}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void connect() throws java.io.IOException
-			public override void connect()
+			public void Connect()
 			{
 				if (this.parsed)
 				{
@@ -91,14 +90,14 @@ namespace org.apache.pulsar.client.api.url
 				parsed = true;
 			}
 
-			public override long ContentLengthLong
+			public long ContentLengthLong
 			{
 				get
 				{
 					long length;
 					try
 					{
-						this.connect();
+						this.Connect();
 						length = this.data.Length;
 					}
 					catch (IOException)
@@ -109,7 +108,7 @@ namespace org.apache.pulsar.client.api.url
 				}
 			}
 
-			public override string ContentType
+			public string ContentType
 			{
 				get
 				{
@@ -127,7 +126,7 @@ namespace org.apache.pulsar.client.api.url
 				}
 			}
 
-			public override string ContentEncoding
+			public string ContentEncoding
 			{
 				get
 				{
@@ -135,8 +134,6 @@ namespace org.apache.pulsar.client.api.url
 				}
 			}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public java.io.InputStream getInputStream() throws java.io.IOException
 			public virtual Stream InputStream
 			{
 				get
@@ -147,9 +144,7 @@ namespace org.apache.pulsar.client.api.url
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected java.net.URLConnection openConnection(java.net.URL u) throws java.io.IOException
-		protected internal override URLConnection openConnection(URL u)
+		protected internal URLConnection OpenConnection(URL u)
 		{
 			return new DataURLConnection(u);
 		}

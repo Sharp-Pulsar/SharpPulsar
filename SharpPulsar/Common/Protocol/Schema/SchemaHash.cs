@@ -35,9 +35,9 @@ namespace SharpPulsar.Common.Protocol.Schema
 			this.hash = hash;
 		}
 
-		public static SchemaHash Of(Schema schema)
+		public static SchemaHash Of(ISchema schema)
 		{
-			return Of(Optional.ofNullable(schema).map(Schema.getSchemaInfo).map(SchemaInfo.getSchema).orElse(new sbyte[0]));
+			return Of(Optional.ofNullable(schema).map(schema.getSchemaInfo).map(SchemaInfo.getSchema).orElse(new sbyte[0]));
 		}
 
 		public static SchemaHash Of(SchemaData schemaData)

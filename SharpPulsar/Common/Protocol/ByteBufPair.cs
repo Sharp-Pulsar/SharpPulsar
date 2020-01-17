@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol
+namespace SharpPulsar.Common.Protocol
 {
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
@@ -98,9 +98,6 @@ namespace org.apache.pulsar.common.protocol
 			return b1.readableBytes() + b2.readableBytes();
 		}
 
-		/// <returns> a single buffer with the content of both individual buffers </returns>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public static io.netty.buffer.ByteBuf coalesce(ByteBufPair pair)
 		public static ByteBuf coalesce(ByteBufPair pair)
 		{
 			ByteBuf b = Unpooled.buffer(pair.readableBytes());
@@ -109,7 +106,7 @@ namespace org.apache.pulsar.common.protocol
 			return b;
 		}
 
-		protected internal override void deallocate()
+		protected internal override void Deallocate()
 		{
 			b1.release();
 			b2.release();
@@ -117,7 +114,7 @@ namespace org.apache.pulsar.common.protocol
 			recyclerHandle.recycle(this);
 		}
 
-		public override ReferenceCounted touch(object hint)
+		public ReferenceCounted Touch(object hint)
 		{
 			b1.touch(hint);
 			b2.touch(hint);
@@ -127,13 +124,10 @@ namespace org.apache.pulsar.common.protocol
 		public static readonly Encoder ENCODER = new Encoder();
 		public static readonly CopyingEncoder COPYING_ENCODER = new CopyingEncoder();
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Sharable @SuppressWarnings("checkstyle:JavadocType") public static class Encoder extends io.netty.channel.ChannelOutboundHandlerAdapter
+
 		public class Encoder : ChannelOutboundHandlerAdapter
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void write(io.netty.channel.ChannelHandlerContext ctx, Object msg, io.netty.channel.ChannelPromise promise) throws Exception
-			public override void write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
+			public override void Write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
 			{
 				if (msg is ByteBufPair)
 				{
@@ -159,13 +153,10 @@ namespace org.apache.pulsar.common.protocol
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Sharable @SuppressWarnings("checkstyle:JavadocType") public static class CopyingEncoder extends io.netty.channel.ChannelOutboundHandlerAdapter
+
 		public class CopyingEncoder : ChannelOutboundHandlerAdapter
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void write(io.netty.channel.ChannelHandlerContext ctx, Object msg, io.netty.channel.ChannelPromise promise) throws Exception
-			public override void write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
+			public override void Write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
 			{
 				if (msg is ByteBufPair)
 				{

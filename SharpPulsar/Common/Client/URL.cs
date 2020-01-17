@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Common.Client;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,41 +19,34 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.url
+namespace SharpPulsar.Common.Client
 {
-
+	using System;
 	/// <summary>
 	/// Wrapper around {@code java.net.URL} to improve usability.
 	/// </summary>
 	public class URL
 	{
 		private static readonly URLStreamHandlerFactory urlStreamHandlerFactory = new PulsarURLStreamHandlerFactory();
-		private readonly java.net.URL url;
+		private readonly Uri url;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public URL(String spec) throws java.net.MalformedURLException, java.net.URISyntaxException, InstantiationException, IllegalAccessException
+		//public URL(String spec) throws java.net.MalformedURLException, java.net.URISyntaxException, InstantiationException, IllegalAccessException
 		public URL(string spec)
 		{
-			string scheme = (new URI(spec)).Scheme;
+			string scheme = (new Uri(spec)).Scheme;
 			if (string.ReferenceEquals(scheme, null))
 			{
-				this.url = new java.net.URL(null, "file:" + spec);
+				this.url = new Uri(null, "file:" + spec);
 			}
 			else
 			{
-				this.url = new java.net.URL(null, spec, urlStreamHandlerFactory.createURLStreamHandler(scheme));
+				this.url = new Uri(null, spec, urlStreamHandlerFactory.createURLStreamHandler(scheme));
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public java.net.URLConnection openConnection() throws java.io.IOException
-		public virtual URLConnection openConnection()
+		public virtual URLConnection OpenConnection()
 		{
 			return this.url.openConnection();
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public Object getContent() throws java.io.IOException
 		public virtual object Content
 		{
 			get
@@ -61,11 +55,9 @@ namespace org.apache.pulsar.client.api.url
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public Object getContent(Class[] classes) throws java.io.IOException
-		public virtual object getContent(Type[] classes)
+		public virtual object GetContent(Type[] classes)
 		{
-			return this.url.getContent(classes);
+			return this.url.GetContent(classes);
 		}
 
 	}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 /// <summary>
@@ -20,7 +21,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
 
 	/// <summary>
@@ -31,23 +32,22 @@ namespace org.apache.pulsar.common.protocol.schema
 
 		private static readonly char[] HEX_CHARS_UPPER = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private readonly sbyte[] bytes_Conflict;
+		
+		private readonly sbyte[] _bytes;
 		// cache the hash code for the string, default to 0
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private int hashCode_Conflict;
+		private int _hashCode;
 
 		private BytesSchemaVersion(sbyte[] bytes)
 		{
-			this.bytes_Conflict = bytes;
+			this._bytes = bytes;
 		}
 
-		public virtual sbyte[] bytes()
+		public virtual sbyte[] Bytes()
 		{
-			return bytes_Conflict;
+			return _bytes;
 		}
 
-		public static BytesSchemaVersion of(sbyte[] bytes)
+		public static BytesSchemaVersion Of(sbyte[] bytes)
 		{
 			return bytes != null ? new BytesSchemaVersion(bytes) : null;
 		}
@@ -55,9 +55,9 @@ namespace org.apache.pulsar.common.protocol.schema
 		/// <summary>
 		/// Get the data from the Bytes. </summary>
 		/// <returns> The underlying byte array </returns>
-		public virtual sbyte[] get()
+		public virtual sbyte[] Get()
 		{
-			return this.bytes_Conflict;
+			return this._bytes;
 		}
 
 		/// <summary>
@@ -67,11 +67,11 @@ namespace org.apache.pulsar.common.protocol.schema
 		/// <returns> the hashcode </returns>
 		public override int GetHashCode()
 		{
-			if (hashCode_Conflict == 0)
+			if (_hashCode == 0)
 			{
-				hashCode_Conflict = Arrays.hashCode(bytes_Conflict);
+				_hashCode = _bytes.GetHashCode();
 			}
-			return hashCode_Conflict;
+			return _hashCode;
 		}
 
 		public override bool Equals(object other)
@@ -93,7 +93,7 @@ namespace org.apache.pulsar.common.protocol.schema
 
 			if (other is BytesSchemaVersion)
 			{
-				return Arrays.equals(this.bytes_Conflict, ((BytesSchemaVersion) other).get());
+				return Enumerable.SequenceEqual(_bytes, ((BytesSchemaVersion)other).Get());
 			}
 
 			return false;
@@ -101,12 +101,12 @@ namespace org.apache.pulsar.common.protocol.schema
 
 		public virtual int CompareTo(BytesSchemaVersion that)
 		{
-			return BYTES_LEXICO_COMPARATOR.Compare(this.bytes_Conflict, that.bytes_Conflict);
+			return BYTES_LEXICO_COMPARATOR.Compare(this._bytes, that._bytes);
 		}
 
 		public override string ToString()
 		{
-			return BytesSchemaVersion.toString(bytes_Conflict, 0, bytes_Conflict.Length);
+			return ToString(_bytes, 0, _bytes.Length);
 		}
 
 		/// <summary>
@@ -122,9 +122,7 @@ namespace org.apache.pulsar.common.protocol.schema
 		/// <param name="off"> offset to start at </param>
 		/// <param name="len"> length to write </param>
 		/// <returns> string output </returns>
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: private static String toString(final byte[] b, int off, int len)
-		private static string toString(sbyte[] b, int off, int len)
+		private static string ToString(sbyte[] b, int off, int len)
 		{
 			StringBuilder result = new StringBuilder();
 
@@ -171,10 +169,7 @@ namespace org.apache.pulsar.common.protocol.schema
 		/// </summary>
 		public interface ByteArrayComparator : IComparer<sbyte[]>
 		{
-
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: int compare(final byte[] buffer1, int offset1, int length1, final byte[] buffer2, int offset2, int length2);
-			int compare(sbyte[] buffer1, int offset1, int length1, sbyte[] buffer2, int offset2, int length2);
+			int Compare(sbyte[] buffer1, int offset1, int length1, sbyte[] buffer2, int offset2, int length2);
 		}
 
 		[Serializable]
@@ -185,11 +180,8 @@ namespace org.apache.pulsar.common.protocol.schema
 
 			public virtual int Compare(sbyte[] buffer1, sbyte[] buffer2)
 			{
-				return compare(buffer1, 0, buffer1.Length, buffer2, 0, buffer2.Length);
+				return Compare(buffer1, 0, buffer1.Length, buffer2, 0, buffer2.Length);
 			}
-
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: public int compare(final byte[] buffer1, int offset1, int length1, final byte[] buffer2, int offset2, int length2)
 			public virtual int Compare(sbyte[] buffer1, int offset1, int length1, sbyte[] buffer2, int offset2, int length2)
 			{
 

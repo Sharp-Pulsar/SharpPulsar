@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,36 +19,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// Schema data.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Builder @Data public class SchemaData
 	public class SchemaData
 	{
-		private readonly SchemaType type;
-		private readonly bool isDeleted;
-		private readonly long timestamp;
-		private readonly string user;
-		private readonly sbyte[] data;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Builder.Default private java.util.Map<String, String> props = new java.util.HashMap<>();
-		private IDictionary<string, string> props = new Dictionary<string, string>();
+		public  SchemaType Type { get; set; }
+		public bool IsDeleted { get; set; }
+		public long Timestamp { get; set; }
+		public string User;
+		public sbyte[] Data;
+		public IDictionary<string, string> Props = new Dictionary<string, string>();
 
 		/// <summary>
 		/// Convert a schema data to a schema info.
 		/// </summary>
 		/// <returns> the converted schema info. </returns>
-		public virtual SchemaInfo toSchemaInfo()
+		public virtual SchemaInfo ToSchemaInfo()
 		{
-			return SchemaInfo.builder().name("").type(type).schema(data).properties(props).build();
+			return SchemaInfo.Builder().name("").Type(Type).schema(Data).Properties(Props).build();
 		}
 
 		/// <summary>
@@ -55,7 +48,7 @@ namespace org.apache.pulsar.common.protocol.schema
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> the converted schema schema data </returns>
-		public static SchemaData fromSchemaInfo(SchemaInfo schemaInfo)
+		public static SchemaData FromSchemaInfo(SchemaInfo schemaInfo)
 		{
 			return SchemaData.builder().type(schemaInfo.Type).data(schemaInfo.Schema).props(schemaInfo.Properties).build();
 		}

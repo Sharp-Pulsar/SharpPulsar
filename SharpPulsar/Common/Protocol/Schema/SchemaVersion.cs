@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
 	/// <summary>
 	/// Schema version.
@@ -24,7 +24,7 @@ namespace org.apache.pulsar.common.protocol.schema
 	public interface SchemaVersion
 	{
 
-		sbyte[] bytes();
+		sbyte[] Bytes();
 	}
 
 	public static class SchemaVersion_Fields

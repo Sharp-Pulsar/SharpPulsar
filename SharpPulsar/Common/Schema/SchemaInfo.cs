@@ -45,7 +45,7 @@ namespace SharpPulsar.Common.Schema
 		/// <summary>
 		/// Additional properties of the schema definition (implementation defined).
 		/// </summary>
-		private IDictionary<string, string> Properties = Enumerable.Empty<IDictionary<string, string>>();
+		public IDictionary<string, string> Properties = new Dictionary<string, string>();
 
 		public virtual string SchemaDefinition
 		{

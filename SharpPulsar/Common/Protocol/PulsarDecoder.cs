@@ -24,60 +24,11 @@ namespace org.apache.pulsar.common.protocol
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
 	using ChannelInboundHandlerAdapter = io.netty.channel.ChannelInboundHandlerAdapter;
-
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using BaseCommand = org.apache.pulsar.common.api.proto.PulsarApi.BaseCommand;
-	using CommandAck = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck;
-	using CommandActiveConsumerChange = org.apache.pulsar.common.api.proto.PulsarApi.CommandActiveConsumerChange;
-	using CommandAddPartitionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxn;
-	using CommandAddPartitionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxnResponse;
-	using CommandAddSubscriptionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxn;
-	using CommandAddSubscriptionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxnResponse;
-	using CommandAuthChallenge = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthChallenge;
-	using CommandAuthResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthResponse;
-	using CommandCloseConsumer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseConsumer;
-	using CommandCloseProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseProducer;
-	using CommandConnect = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnect;
-	using CommandConnected = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnected;
-	using CommandConsumerStats = org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStats;
-	using CommandConsumerStatsResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStatsResponse;
-	using CommandEndTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxn;
-	using CommandEndTxnOnPartition = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartition;
-	using CommandEndTxnOnPartitionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartitionResponse;
-	using CommandEndTxnOnSubscription = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscription;
-	using CommandEndTxnOnSubscriptionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscriptionResponse;
-	using CommandEndTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnResponse;
-	using CommandError = org.apache.pulsar.common.api.proto.PulsarApi.CommandError;
-	using CommandFlow = org.apache.pulsar.common.api.proto.PulsarApi.CommandFlow;
-	using CommandGetOrCreateSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchema;
-	using CommandGetOrCreateSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchemaResponse;
-	using CommandGetSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
-	using CommandGetSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchemaResponse;
-	using CommandGetTopicsOfNamespace = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace;
-	using CommandGetTopicsOfNamespaceResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespaceResponse;
-	using CommandLookupTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopic;
-	using CommandLookupTopicResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse;
-	using CommandMessage = org.apache.pulsar.common.api.proto.PulsarApi.CommandMessage;
-	using CommandNewTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
-	using CommandNewTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxnResponse;
-	using CommandPartitionedTopicMetadata = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadata;
-	using CommandPartitionedTopicMetadataResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadataResponse;
-	using CommandPing = org.apache.pulsar.common.api.proto.PulsarApi.CommandPing;
-	using CommandPong = org.apache.pulsar.common.api.proto.PulsarApi.CommandPong;
-	using CommandProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducer;
-	using CommandProducerSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducerSuccess;
-	using CommandReachedEndOfTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandReachedEndOfTopic;
-	using CommandRedeliverUnacknowledgedMessages = org.apache.pulsar.common.api.proto.PulsarApi.CommandRedeliverUnacknowledgedMessages;
-	using CommandSeek = org.apache.pulsar.common.api.proto.PulsarApi.CommandSeek;
-	using CommandSend = org.apache.pulsar.common.api.proto.PulsarApi.CommandSend;
-	using CommandSendError = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendError;
-	using CommandSendReceipt = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendReceipt;
-	using CommandSubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe;
-	using CommandSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandSuccess;
-	using CommandUnsubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandUnsubscribe;
 	using ByteBufCodedInputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedInputStream;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Common.Protocol.Schema;
+	using PulsarApi = SharpPulsar.Common.PulsarApi;
 
 	/// <summary>
 	/// Basic implementation of the channel handler to process inbound Pulsar data.
@@ -91,8 +42,8 @@ namespace org.apache.pulsar.common.protocol
 		{
 			// Get a buffer that contains the full frame
 			ByteBuf buffer = (ByteBuf) msg;
-			PulsarApi.BaseCommand cmd = null;
-			PulsarApi.BaseCommand.Builder cmdBuilder = null;
+			SharpPulsar.Common.PulsarApi.BaseCommand cmd = null;
+			SharpPulsar.Common.PulsarApi.BaseCommand.Builder cmdBuilder = null;
 
 			try
 			{
@@ -101,7 +52,7 @@ namespace org.apache.pulsar.common.protocol
 				int writerIndex = buffer.writerIndex();
 				buffer.writerIndex(buffer.readerIndex() + cmdSize);
 				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.get(buffer);
-				cmdBuilder = PulsarApi.BaseCommand.newBuilder();
+				cmdBuilder = SharpPulsar.Common.PulsarApi.BaseCommand.newBuilder();
 				cmd = cmdBuilder.mergeFrom(cmdInputStream, null).build();
 				buffer.writerIndex(writerIndex);
 
@@ -322,7 +273,7 @@ namespace org.apache.pulsar.common.protocol
 					cmd.GetSchema.recycle();
 					break;
 
-				case GET_SCHEMA_RESPONSE:
+				case GetSchemaResponse:
 					checkArgument(cmd.hasGetSchemaResponse());
 					handleGetSchemaResponse(cmd.GetSchemaResponse);
 					cmd.GetSchemaResponse.recycle();
@@ -453,7 +404,7 @@ namespace org.apache.pulsar.common.protocol
 			throw new System.NotSupportedException();
 		}
 
-		protected internal virtual void handleLookup(PulsarApi.CommandLookupTopic lookup)
+		protected internal virtual void handleLookup(SharpPulsar.Common.PulsarApi.CommandLookupTopic lookup)
 		{
 			throw new System.NotSupportedException();
 		}

@@ -19,105 +19,11 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol
+namespace SharpPulsar.Common.Protocol
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.computeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.resumeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString.copyFrom;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString.copyFromUtf8;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using Unpooled = io.netty.buffer.Unpooled;
-	using UtilityClass = lombok.experimental.UtilityClass;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using KeySharedPolicy = org.apache.pulsar.client.api.KeySharedPolicy;
-	using Range = org.apache.pulsar.client.api.Range;
-	using PulsarByteBufAllocator = org.apache.pulsar.common.allocator.PulsarByteBufAllocator;
-	using AuthData = org.apache.pulsar.common.api.AuthData;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using AuthMethod = org.apache.pulsar.common.api.proto.PulsarApi.AuthMethod;
-	using BaseCommand = org.apache.pulsar.common.api.proto.PulsarApi.BaseCommand;
-	using Type = org.apache.pulsar.common.api.proto.PulsarApi.BaseCommand.Type;
-	using CommandAck = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using ValidationError = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.ValidationError;
-	using CommandAckResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAckResponse;
-	using CommandActiveConsumerChange = org.apache.pulsar.common.api.proto.PulsarApi.CommandActiveConsumerChange;
-	using CommandAddPartitionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxn;
-	using CommandAddPartitionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxnResponse;
-	using CommandAddSubscriptionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxn;
-	using CommandAddSubscriptionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxnResponse;
-	using CommandAuthChallenge = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthChallenge;
-	using CommandAuthResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthResponse;
-	using CommandCloseConsumer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseConsumer;
-	using CommandCloseProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseProducer;
-	using CommandConnect = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnect;
-	using CommandConnected = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnected;
-	using CommandConsumerStatsResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStatsResponse;
-	using CommandEndTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxn;
-	using CommandEndTxnOnPartition = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartition;
-	using CommandEndTxnOnPartitionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartitionResponse;
-	using CommandEndTxnOnSubscription = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscription;
-	using CommandEndTxnOnSubscriptionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscriptionResponse;
-	using CommandEndTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnResponse;
-	using CommandError = org.apache.pulsar.common.api.proto.PulsarApi.CommandError;
-	using CommandFlow = org.apache.pulsar.common.api.proto.PulsarApi.CommandFlow;
-	using CommandGetLastMessageId = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetLastMessageId;
-	using CommandGetOrCreateSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchema;
-	using CommandGetOrCreateSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchemaResponse;
-	using CommandGetSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
-	using CommandGetSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchemaResponse;
-	using CommandGetTopicsOfNamespace = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using CommandGetTopicsOfNamespaceResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespaceResponse;
-	using CommandLookupTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopic;
-	using CommandLookupTopicResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse;
-	using LookupType = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse.LookupType;
-	using CommandMessage = org.apache.pulsar.common.api.proto.PulsarApi.CommandMessage;
-	using CommandNewTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
-	using CommandNewTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxnResponse;
-	using CommandPartitionedTopicMetadata = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadata;
-	using CommandPartitionedTopicMetadataResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadataResponse;
-	using CommandPing = org.apache.pulsar.common.api.proto.PulsarApi.CommandPing;
-	using CommandPong = org.apache.pulsar.common.api.proto.PulsarApi.CommandPong;
-	using CommandProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducer;
-	using CommandProducerSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducerSuccess;
-	using CommandReachedEndOfTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandReachedEndOfTopic;
-	using CommandRedeliverUnacknowledgedMessages = org.apache.pulsar.common.api.proto.PulsarApi.CommandRedeliverUnacknowledgedMessages;
-	using CommandSeek = org.apache.pulsar.common.api.proto.PulsarApi.CommandSeek;
-	using CommandSend = org.apache.pulsar.common.api.proto.PulsarApi.CommandSend;
-	using CommandSendError = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendError;
-	using CommandSendReceipt = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendReceipt;
-	using CommandSubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe;
-	using InitialPosition = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.InitialPosition;
-	using SubType = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.SubType;
-	using CommandSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandSuccess;
-	using CommandUnsubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandUnsubscribe;
-	using KeyLongValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyLongValue;
-	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
-	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
-	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
-	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
-	using Schema = org.apache.pulsar.common.api.proto.PulsarApi.Schema;
-	using ServerError = org.apache.pulsar.common.api.proto.PulsarApi.ServerError;
-	using SingleMessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.SingleMessageMetadata;
-	using Subscription = org.apache.pulsar.common.api.proto.PulsarApi.Subscription;
-	using TxnAction = org.apache.pulsar.common.api.proto.PulsarApi.TxnAction;
-	using SchemaVersion = org.apache.pulsar.common.protocol.schema.SchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using ByteBufCodedInputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedInputStream;
-	using ByteBufCodedOutputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedOutputStream;
-	using ByteString = org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass @Slf4j @SuppressWarnings("checkstyle:JavadocType") public class Commands
 	public class Commands
 	{
 
@@ -125,18 +31,15 @@ namespace org.apache.pulsar.common.protocol
 		public const int DEFAULT_MAX_MESSAGE_SIZE = 5 * 1024 * 1024;
 		public const int MESSAGE_SIZE_FRAME_PADDING = 10 * 1024;
 		public const int INVALID_MAX_MESSAGE_SIZE = -1;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("checkstyle:ConstantName") public static final short magicCrc32c = 0x0e01;
 		public const short magicCrc32c = 0x0e01;
 		private const int checksumSize = 4;
 
-		public static ByteBuf newConnect(string authMethodName, string authData, string libVersion)
+		public static ByteBuf NewConnect(string authMethodName, string authData, string libVersion)
 		{
-			return newConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);
+			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);
 		}
 
-		public static ByteBuf newConnect(string authMethodName, string authData, string libVersion, string targetBroker)
+		public static ByteBuf NewConnect(string authMethodName, string authData, string libVersion, string targetBroker)
 		{
 			return newConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, null, null, null);
 		}
@@ -706,7 +609,7 @@ namespace org.apache.pulsar.common.protocol
 			}
 		}
 
-		public static SchemaType getSchemaType(PulsarApi.Schema.Type type)
+		public static SchemaType GetSchemaType(Proto.Schema.Type type)
 		{
 			if (type.Number < 0)
 			{
@@ -741,7 +644,7 @@ namespace org.apache.pulsar.common.protocol
 			producerBuilder.UserProvidedProducerName = userProvidedProducerName;
 			producerBuilder.Encrypted = encrypted;
 
-			producerBuilder.addAllMetadata(CommandUtils.toKeyValueList(metadata));
+			producerBuilder.addAllMetadata(CommandUtils.ToKeyValueList(metadata));
 
 			if (null != schemaInfo)
 			{

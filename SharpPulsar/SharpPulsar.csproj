@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
     <PackageReference Include="optional" Version="4.0.0" />
     <PackageReference Include="protobuf-net" Version="2.4.4" />
+    <PackageReference Include="System.Collections" Version="4.3.0" />
     <PackageReference Include="system.text.json" Version="4.7.0" />
   </ItemGroup>
 

@@ -18,22 +18,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
 	/// <summary>
 	/// Payload with information about a schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @AllArgsConstructor @NoArgsConstructor public class PostSchemaPayload
 	public class PostSchemaPayload
 	{
-		private string type;
-		private string schema;
-		private IDictionary<string, string> properties;
+		public string Type { get; set; }
+		public string Schema { get; set; }
+		public IDictionary<string, string> Properties { get; set; }
 	}
 
 }

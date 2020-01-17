@@ -19,21 +19,20 @@
 namespace org.apache.pulsar.common.protocol
 {
 	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using ScheduledFuture = io.netty.util.concurrent.ScheduledFuture;
-	using CommandPing = org.apache.pulsar.common.api.proto.PulsarApi.CommandPing;
-	using CommandPong = org.apache.pulsar.common.api.proto.PulsarApi.CommandPong;
-	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+    using BAMCIS.Util.Concurrent;
+    using SharpPulsar.Common.Protocol;
+    using System.Net;
+    using SharpPulsar.Common.PulsarApi;
+    using System;
 
-	/// <summary>
-	/// Implementation of the channel handler to process inbound Pulsar data.
-	/// </summary>
-	public abstract class PulsarHandler : PulsarDecoder
+    /// <summary>
+    /// Implementation of the channel handler to process inbound Pulsar data.
+    /// </summary>
+    public abstract class PulsarHandler : PulsarDecoder
 	{
 		protected internal ChannelHandlerContext ctx;
 		protected internal SocketAddress remoteAddress;
-		protected internal int remoteEndpointProtocolVersion = ProtocolVersion.v0.Number;
+		protected internal int remoteEndpointProtocolVersion = Convert.ToInt32(ProtocolVersion.V0);
 		private readonly long keepAliveIntervalSeconds;
 		private bool waitingForPingResponse = false;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
@@ -50,7 +49,7 @@ namespace org.apache.pulsar.common.protocol
 
 		public PulsarHandler(int keepAliveInterval, TimeUnit unit)
 		{
-			this.keepAliveIntervalSeconds = unit.toSeconds(keepAliveInterval);
+			this.keepAliveIntervalSeconds = unit.ToSeconds(keepAliveInterval);
 		}
 
 		protected internal override sealed void messageReceived()
@@ -58,8 +57,6 @@ namespace org.apache.pulsar.common.protocol
 			waitingForPingResponse = false;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelActive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
 		public override void channelActive(ChannelHandlerContext ctx)
 		{
 			this.remoteAddress = ctx.channel().remoteAddress();
@@ -75,8 +72,6 @@ namespace org.apache.pulsar.common.protocol
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelInactive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
 		public override void channelInactive(ChannelHandlerContext ctx)
 		{
 			cancelKeepAliveTask();

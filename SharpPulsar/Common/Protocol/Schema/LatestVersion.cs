@@ -16,16 +16,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
 	/// <summary>
 	/// Latest schema version.
 	/// </summary>
 	public sealed class LatestVersion : SchemaVersion
 	{
-		private static readonly sbyte[] EMPTY = new sbyte[]{};
+		private static readonly sbyte[] EMPTY = System.Array.Empty<sbyte>();
 
-		public sbyte[] bytes()
+		public sbyte[] Bytes()
 		{
 			return EMPTY;
 		}

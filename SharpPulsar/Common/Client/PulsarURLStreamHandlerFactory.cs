@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.api.url
+namespace SharpPulsar.Common.Client
 {
 
 	/// <summary>
@@ -35,7 +35,7 @@ namespace org.apache.pulsar.client.api.url
 			handlers["data"] = typeof(DataURLStreamHandler);
 		}
 
-		public override URLStreamHandler createURLStreamHandler(string protocol)
+		public override URLStreamHandler CreateURLStreamHandler(string protocol)
 		{
 			URLStreamHandler urlStreamHandler;
 			try
@@ -43,7 +43,7 @@ namespace org.apache.pulsar.client.api.url
 				Type handler = handlers[protocol];
 				if (handler != null)
 				{
-					urlStreamHandler = System.Activator.CreateInstance(handler);
+					urlStreamHandler = Activator.CreateInstance(handler);
 				}
 				else
 				{

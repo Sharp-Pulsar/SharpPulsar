@@ -18,13 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol.schema
+namespace SharpPulsar.Common.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
 	/// <summary>
 	/// Response containing all schemas.
 	/// </summary>
@@ -32,7 +27,7 @@ namespace org.apache.pulsar.common.protocol.schema
 //ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class GetAllVersionsSchemaResponse
 	public class GetAllVersionsSchemaResponse
 	{
-		private IList<GetSchemaResponse> getSchemaResponses;
+		public IList<GetSchemaResponse> GetSchemaResponses { get; set; }
 	}
 
 }
