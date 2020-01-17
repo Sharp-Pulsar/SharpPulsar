@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Enum;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Enum;
 using SharpPulsar.Interface.Batch;
 using SharpPulsar.Interface.Interceptor;
 using SharpPulsar.Interface.Message;
@@ -47,8 +48,6 @@ namespace SharpPulsar.Interface.Producer
 		///             if a producer with the same "producer name" is already connected to the topic </exception>
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Producer<T> create() throws PulsarClientException;
 		IProducer<T> Create();
 
 		/// <summary>

@@ -1,6 +1,14 @@
-﻿using Pulsar.Api;
+﻿using TimeUnit = BAMCIS.Util.Concurrent.TimeUnit;
+using Pulsar.Api;
+using SharpPulsar.Enum;
+using SharpPulsar.Interface.Consumer;
+using SharpPulsar.Interface.Message;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using SharpPulsar.Util;
+using SharpPulsar.Interface;
+using SharpPulsar.Entity;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,25 +40,19 @@ namespace SharpPulsar.Configuration
 
 		private ISet<string> topicNames = Sets.newTreeSet();
 
-		private Pattern topicsPattern;
+		private Regex _topicsPattern;
 
-		private string subscriptionName;
+		private string _subscriptionName;
 
 		private SubscriptionType subscriptionType = SubscriptionType.Exclusive;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.MessageListener<T> messageListener;
-		private MessageListener<T> MessageListener;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.ConsumerEventListener consumerEventListener;
-		private ConsumerEventListener consumerEventListener;
+		private IMessageListener<T> MessageListener;
+		private IConsumerEventListener consumerEventListener;
 
 		private int receiverQueueSize = 1000;
 
-		private long acknowledgementsGroupTimeMicros = TimeUnit.MILLISECONDS.toMicros(100);
+		private long acknowledgementsGroupTimeMicros = TimeUnit.MILLISECONDS.ToMicros(100);
 
-		private long negativeAckRedeliveryDelayMicros = TimeUnit.MINUTES.toMicros(1);
+		private long negativeAckRedeliveryDelayMicros = TimeUnit.MINUTES.ToMicros(1);
 
 		private int maxTotalReceiverQueueSizeAcrossPartitions = 50000;
 
@@ -62,9 +64,7 @@ namespace SharpPulsar.Configuration
 
 		private int priorityLevel = 0;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.CryptoKeyReader cryptoKeyReader = null;
-		private CryptoKeyReader cryptoKeyReader = null;
+		private ICryptoKeyReader cryptoKeyReader = null;
 
 		private ConsumerCryptoFailureAction cryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
 
@@ -79,9 +79,6 @@ namespace SharpPulsar.Configuration
 		private RegexSubscriptionMode regexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
 
 		private DeadLetterPolicy deadLetterPolicy;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private org.apache.pulsar.client.api.BatchReceivePolicy batchReceivePolicy;
 		private BatchReceivePolicy batchReceivePolicy;
 
 		private bool autoUpdatePartitions = true;

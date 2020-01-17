@@ -51,7 +51,7 @@ namespace SharpPulsar.Configuration
 		{
 			try
 			{
-				return (ReaderConfigurationData<T>) base.clone();
+				return (ReaderConfigurationData<T>) base.Clone();
 			}
 			catch (CloneNotSupportedException)
 			{

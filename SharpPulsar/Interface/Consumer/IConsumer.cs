@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Message;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Interface.Message;
 using System;
 using System.Threading.Tasks;
 /// <summary>
@@ -110,7 +111,7 @@ namespace SharpPulsar.Interface.Consumer
 		///             if the consumer was already closed </exception>
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
-		IMessage<T> Receive(int timeout, java.util.concurrent.TimeUnit unit);
+		IMessage<T> Receive(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Batch receiving messages.

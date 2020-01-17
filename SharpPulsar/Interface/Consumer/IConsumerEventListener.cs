@@ -32,8 +32,6 @@ namespace SharpPulsar.Interface.Consumer
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became active </param>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void becameActive(Consumer<?> consumer, int partitionId);
 		void BecameActive<T>(IConsumer<T> consumer, int partitionId);
 
 		/// <summary>
@@ -43,8 +41,6 @@ namespace SharpPulsar.Interface.Consumer
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became inactive </param>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void becameInactive(Consumer<?> consumer, int partitionId);
 		void BecameInactive<T>(IConsumer<T> consumer, int partitionId);
 
 	}

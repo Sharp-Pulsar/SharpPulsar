@@ -76,7 +76,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		IMessage<T> BeforeSend(IProducerInterceptor producer, IMessage message);
+		IMessage<T> BeforeSend(IProducerInterceptor producer, IMessage<T> message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Enum;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Enum;
 using SharpPulsar.Interface.Message;
 using System;
 using System.Collections.Generic;

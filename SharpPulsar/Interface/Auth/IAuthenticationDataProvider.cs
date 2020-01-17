@@ -118,7 +118,7 @@ namespace SharpPulsar.Interface.Auth
 		AuthData Authenticate(AuthData data)
 		{
 			byte[] bytes = (HasDataFromCommand() ? this.GetCommandData() : "").getBytes(UTF_8);
-			return AuthData.of(bytes);
+			return AuthData.Of(bytes);
 		}
 	}
 

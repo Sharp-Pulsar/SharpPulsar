@@ -91,7 +91,7 @@ namespace SharpPulsar
 			}
 			catch (System.Exception t)
 			{
-				throw new UnsupportedAuthenticationException(t);
+				throw new UnsupportedAuthenticationException(t.Message);
 			}
 		}
 
@@ -112,7 +112,7 @@ namespace SharpPulsar
 			}
 			catch (System.Exception t)
 			{
-				throw new UnsupportedAuthenticationException(t);
+				throw new UnsupportedAuthenticationException(t.Message);
 			}
 		}
 	}

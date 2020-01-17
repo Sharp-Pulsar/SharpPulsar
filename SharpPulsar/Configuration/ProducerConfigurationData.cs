@@ -1,9 +1,11 @@
-﻿using SharpPulsar.Enum;
+﻿using TimeUnit = BAMCIS.Util.Concurrent.TimeUnit;
+using SharpPulsar.Enum;
 using SharpPulsar.Interface;
 using SharpPulsar.Interface.Batch;
 using SharpPulsar.Interface.Message;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,7 +48,7 @@ namespace SharpPulsar.Configuration
 		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.FAIL;
 		public IMessageRouter CustomMessageRouter { get; set; }
 
-		private long _batchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.toMicros(1);
+		private long _batchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
 		private int _batchingMaxMessages = DEFAULT_BATCHING_MAX_MESSAGES;
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
@@ -141,14 +143,14 @@ namespace SharpPulsar.Configuration
 		public virtual void SetSendTimeoutMs(int sendTimeout, TimeUnit timeUnit)
 		{
 			checkArgument(sendTimeout >= 0, "sendTimeout needs to be >= 0");
-			this.SendTimeoutMs = timeUnit.toMillis(sendTimeout);
+			this.SendTimeoutMs = timeUnit.ToMillis(sendTimeout);
 		}
 
 		public virtual void SetBatchingMaxPublishDelayMicros(long batchDelay, TimeUnit timeUnit)
 		{
-			long delayInMs = timeUnit.toMillis(batchDelay);
+			long delayInMs = timeUnit.ToMillis(batchDelay);
 			checkArgument(delayInMs >= 1, "configured value for batch delay must be at least 1ms");
-			this._batchingMaxPublishDelayMicros = timeUnit.toMicros(batchDelay);
+			this._batchingMaxPublishDelayMicros = timeUnit.ToMicros(batchDelay);
 		}
 
 		public virtual int BatchingPartitionSwitchFrequencyByPublishDelay

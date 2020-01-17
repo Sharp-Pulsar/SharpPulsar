@@ -1,4 +1,6 @@
-﻿using System;
+﻿using TimeUnit = BAMCIS.Util.Concurrent.TimeUnit;
+using SharpPulsar.Util;
+using System;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -56,9 +58,9 @@ namespace SharpPulsar
 		/// Timeout: 100ms<p/>
 		/// </para>
 		/// </summary>
-		public static readonly BatchReceivePolicy DEFAULT_POLICY = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, new TimeSpan() );
+		public static readonly BatchReceivePolicy DEFAULT_POLICY = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, TimeUnit.SECONDS );
 
-		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeSpan timeoutUnit)
+		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeUnit timeoutUnit)
 		{
 			this.maxNumMessages = maxNumMessages;
 			this.maxNumBytes = maxNumBytes;
@@ -82,7 +84,7 @@ namespace SharpPulsar
 		private readonly int timeout;
 		private readonly TimeUnit timeoutUnit;
 
-		public virtual void verify()
+		public virtual void Verify()
 		{
 			if (maxNumMessages <= 0 && maxNumBytes <= 0 && timeout <= 0)
 			{
@@ -98,7 +100,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return (timeout > 0 && timeoutUnit != null) ? timeoutUnit.toMillis(timeout) : 0L;
+				return (timeout > 0 && timeoutUnit != null) ? timeoutUnit.ToMillis(timeout) : 0L;
 			}
 		}
 
@@ -123,41 +125,37 @@ namespace SharpPulsar
 		/// </summary>
 		public class Builder
 		{
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal int maxNumMessages_Conflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal int maxNumBytes_Conflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+			internal int maxNumMessages;
+			internal int maxNumBytes;
 			internal int timeout_Conflict;
 			internal TimeUnit timeoutUnit;
 
-			public virtual Builder maxNumMessages(int maxNumMessages)
+			public virtual Builder MaxNumMessages(int maxNumMessages)
 			{
-				this.maxNumMessages_Conflict = maxNumMessages;
+				this.maxNumMessages = maxNumMessages;
 				return this;
 			}
 
-			public virtual Builder maxNumBytes(int maxNumBytes)
+			public virtual Builder MaxNumBytes(int maxNumBytes)
 			{
-				this.maxNumBytes_Conflict = maxNumBytes;
+				this.maxNumBytes = maxNumBytes;
 				return this;
 			}
 
-			public virtual Builder timeout(int timeout, TimeUnit timeoutUnit)
+			public virtual Builder Timeout(int timeout, TimeUnit timeoutUnit)
 			{
 				this.timeout_Conflict = timeout;
 				this.timeoutUnit = timeoutUnit;
 				return this;
 			}
 
-			public virtual BatchReceivePolicy build()
+			public virtual BatchReceivePolicy Build()
 			{
-				return new BatchReceivePolicy(maxNumMessages_Conflict, maxNumBytes_Conflict, timeout_Conflict, timeoutUnit);
+				return new BatchReceivePolicy(maxNumMessages, maxNumBytes, timeout_Conflict, timeoutUnit);
 			}
 		}
 
-		public static Builder builder()
+		public static Builder Build()
 		{
 			return new Builder();
 		}

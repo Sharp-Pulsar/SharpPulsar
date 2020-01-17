@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Message;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Interface.Message;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -39,8 +40,6 @@ namespace SharpPulsar.Interface.Reader
 		/// </summary>
 		/// <returns> the next message </returns>
 		/// <exception cref="PulsarClientException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> readNext() throws PulsarClientException;
 		IMessage<T> ReadNext();
 
 		/// <summary>
@@ -52,8 +51,6 @@ namespace SharpPulsar.Interface.Reader
 		/// </summary>
 		/// <returns> the next message(Could be null if none received in time) </returns>
 		/// <exception cref="PulsarClientException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
 		IMessage<T> ReadNext(int timeout, TimeUnit unit);
 
 		/// <summary>
@@ -103,8 +100,6 @@ namespace SharpPulsar.Interface.Reader
 		/// </summary>
 		/// <returns> true if the are messages available to be read, false otherwise </returns>
 		/// <exception cref="PulsarClientException"> if there was any error in the operation </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: boolean hasMessageAvailable() throws PulsarClientException;
 		bool HasMessageAvailable();
 
 		/// <summary>
