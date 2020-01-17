@@ -7,7 +7,7 @@
 
 using System.Threading;
 
-namespace SharpPulsar.Util
+namespace SharpPulsar.Util.Atomic
 {
     /// <summary>
     /// Implementation of the java.concurrent.util AtomicReference type.
@@ -17,8 +17,7 @@ namespace SharpPulsar.Util
     /// this ordering, but the addition of the Volatile guarantees it.
     /// </summary>
     /// <typeparam name="T">TBD</typeparam>
-    public class AtomicReference<T>
-        where T : class
+    public class AtomicReference<T> where T : class
     {
         /// <summary>
         /// Sets the initial value of this <see cref="AtomicReference{T}"/> to <paramref name="originalValue"/>.
