@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol
+namespace SharpPulsar.Common.Protocol
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using PooledByteBufAllocator = io.netty.buffer.PooledByteBufAllocator;

@@ -1,6 +1,8 @@
-﻿using SharpPulsar.Impl.Auth;
+﻿using TimeUnit = BAMCIS.Util.Concurrent.TimeUnit;
+using SharpPulsar.Impl.Auth;
 using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
+using SharpPulsar.Util;
 using System;
 
 /// <summary>
@@ -57,8 +59,8 @@ namespace SharpPulsar.Configuration
 		public int KeepAliveIntervalSeconds = 30;
 		public int ConnectionTimeoutMs = 10000;
 		public int RequestTimeoutMs = 60000;
-		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.toNanos(100);
-		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.toNanos(60);
+		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.ToNanos(100);
+		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.ToNanos(60);
 		public DateTime Clock = DateTime.Now;
 
 		public IAuthentication Authentication

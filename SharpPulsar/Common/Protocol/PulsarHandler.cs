@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.protocol
+namespace SharpPulsar.Common.Protocol
 {
 	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
     using BAMCIS.Util.Concurrent;
@@ -24,6 +24,8 @@ namespace org.apache.pulsar.common.protocol
     using System.Net;
     using SharpPulsar.Common.PulsarApi;
     using System;
+    using SharpPulsar.Util;
+	using TimeUnit = BAMCIS.Util.Concurrent.TimeUnit;
 
     /// <summary>
     /// Implementation of the channel handler to process inbound Pulsar data.
@@ -49,7 +51,7 @@ namespace org.apache.pulsar.common.protocol
 
 		public PulsarHandler(int keepAliveInterval, TimeUnit unit)
 		{
-			this.keepAliveIntervalSeconds = unit.ToSeconds(keepAliveInterval);
+			this.keepAliveIntervalSeconds = unit.ToSecs(keepAliveInterval);
 		}
 
 		protected internal override sealed void messageReceived()
