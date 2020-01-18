@@ -1,6 +1,11 @@
-﻿using SharpPulsar.Impl.Batch;
+﻿using DotNetty.Buffers;
+using Google.ProtocolBuffers;
+using SharpPulsar.Common.PulsarApi;
+using SharpPulsar.Impl.Batch;
 using SharpPulsar.Interface.Message;
+using SharpPulsar.Util.Protobuf;
 using System;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,19 +27,6 @@ using System;
 /// </summary>
 namespace SharpPulsar.Impl.Message
 {
-
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Unpooled = io.netty.buffer.Unpooled;
-
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using ByteBufCodedInputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedInputStream;
-	using ByteBufCodedOutputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedOutputStream;
-	using UninitializedMessageException = org.apache.pulsar.shaded.com.google.protobuf.v241.UninitializedMessageException;
 
 	public class MessageIdImpl : IMessageId
 	{
@@ -105,32 +97,34 @@ namespace SharpPulsar.Impl.Message
 
 		public static IMessageId FromByteArray(sbyte[] data)
 		{
-			checkNotNull(data);
-			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(data, 0, data.Length));
-			PulsarApi.MessageIdData.Builder builder = PulsarApi.MessageIdData.newBuilder();
+			if (data != null)
+				throw new NullReferenceException("Data is null");
+			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(Array)data, 0, data.Length));
+			MessageIdData builder = new MessageIdData();
 
-			PulsarApi.MessageIdData idData;
+			MessageIdData idData;
 			try
 			{
-				idData = builder.mergeFrom(inputStream, null).build();
+				idData = builder.MergeFrom(inputStream, null).build();
 			}
 			catch (UninitializedMessageException e)
 			{
-				throw new IOException(e);
+				throw new IOException(e.Message);
 			}
 
 			MessageIdImpl messageId;
-			if (idData.hasBatchIndex())
-			{
-				messageId = new BatchMessageIdImpl(idData.LedgerId, idData.EntryId, idData.Partition, idData.BatchIndex);
+			//if (idData.hasBatchIndex())
+			if (idData.BatchIndex > 0)
+				{
+				messageId = new BatchMessageIdImpl((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageIdImpl(idData.LedgerId, idData.EntryId, idData.Partition);
+				messageId = new MessageIdImpl((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
 			}
 
-			inputStream.recycle();
-			builder.recycle();
+			inputStream.Recycle();
+			builder.Recycle();
 			idData.recycle();
 			return messageId;
 		}
@@ -143,7 +137,8 @@ namespace SharpPulsar.Impl.Message
 
 		public static IMessageId FomByteArrayWithTopic(sbyte[] data, TopicName topicName)
 		{
-			checkNotNull(data);
+			if (data != null)
+				throw new NullReferenceException("Data is null");
 			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(data, 0, data.Length));
 			PulsarApi.MessageIdData.Builder builder = PulsarApi.MessageIdData.newBuilder();
 

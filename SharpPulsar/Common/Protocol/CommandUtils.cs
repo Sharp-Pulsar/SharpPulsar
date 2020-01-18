@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.PulsarApi;
+using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
@@ -32,32 +33,32 @@ namespace SharpPulsar.Common.Protocol
 		{
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(Proto.CommandProducer commandProducer)
+		public static IDictionary<string, string> MetadataFromCommand(CommandProducer commandProducer)
 		{
-			return ToMap(commandProducer.MetadataList);
+			return ToMap(commandProducer.Metadatas);
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(Proto.CommandSubscribe commandSubscribe)
+		public static IDictionary<string, string> MetadataFromCommand(CommandSubscribe commandSubscribe)
 		{
 			
-			return ToMap(commandSubscribe.MetadataList);
+			return ToMap(commandSubscribe.Metadatas);
 		}
 
-		internal static IList<Proto.KeyValue> ToKeyValueList(IDictionary<string, string> metadata)
+		internal static IList<KeyValue> ToKeyValueList(IDictionary<string, string> metadata)
 		{
 			if (metadata == null || metadata.Count == 0)
 			{
-				return Collections.emptyList();
+				return new List<KeyValue>();
 			}
 
-			return metadata.SetOfKeyValuePairs().Select(e => PulsarApi.KeyValue.NewBuilder().setKey(e.Key).setValue(e.Value).build()).ToList();
+			return metadata.SetOfKeyValuePairs().Select(e => new KeyValue { Key = (e.Key), Value = (e.Value) }).ToList();
 		}
 
-		private static IDictionary<string, string> ToMap(IList<Proto.KeyValue> keyValues)
+		private static IDictionary<string, string> ToMap(IList<KeyValue> keyValues)
 		{
 			if (keyValues == null || keyValues.Count == 0)
 			{
-				return Collections.emptyMap();
+				return new Dictionary<string, string>();
 			}
 			return keyValues.ToDictionary(k => k.Key, k => k.Value);
 		}

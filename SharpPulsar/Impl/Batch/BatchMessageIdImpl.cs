@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Impl.Message;
+using SharpPulsar.Interface.Message;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -38,9 +40,8 @@ namespace SharpPulsar.Impl.Batch
 
 		public BatchMessageIdImpl(MessageIdImpl other) : base(other.ledgerId, other.entryId, other.partitionIndex)
 		{
-			if (other is BatchMessageIdImpl)
+			if (other is BatchMessageIdImpl otherId)
 			{
-				BatchMessageIdImpl otherId = (BatchMessageIdImpl) other;
 				this.batchIndex = otherId.batchIndex;
 				this.acker = otherId.acker;
 			}
@@ -59,7 +60,7 @@ namespace SharpPulsar.Impl.Batch
 			}
 		}
 
-		public override int compareTo(MessageId o)
+		public int CompareTo(IMessageId o)
 		{
 			if (o is BatchMessageIdImpl)
 			{
@@ -68,7 +69,7 @@ namespace SharpPulsar.Impl.Batch
 			}
 			else if (o is MessageIdImpl)
 			{
-				int res = base.compareTo(o);
+				int res = base.CompareTo(o);
 				if (res == 0 && batchIndex > NO_BATCH)
 				{
 					return 1;
@@ -84,8 +85,7 @@ namespace SharpPulsar.Impl.Batch
 			}
 			else
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected BatchMessageIdImpl object. Got instance of " + o.GetType().FullName);
+					throw new System.ArgumentException("expected BatchMessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 		}
 
@@ -115,17 +115,17 @@ namespace SharpPulsar.Impl.Batch
 		}
 
 		// Serialization
-		public override sbyte[] toByteArray()
+		public sbyte[] ToByteArray()
 		{
-			return toByteArray(batchIndex);
+			return ToByteArray(batchIndex);
 		}
 
-		public virtual bool ackIndividual()
+		public virtual bool AckIndividual()
 		{
-			return acker.ackIndividual(batchIndex);
+			return acker.AckIndividual(batchIndex);
 		}
 
-		public virtual bool ackCumulative()
+		public virtual bool AckCumulative()
 		{
 			return acker.ackCumulative(batchIndex);
 		}
@@ -146,7 +146,7 @@ namespace SharpPulsar.Impl.Batch
 			}
 		}
 
-		public virtual MessageIdImpl prevBatchMessageId()
+		public virtual MessageIdImpl PrevBatchMessageId()
 		{
 			return new MessageIdImpl(ledgerId, entryId - 1, partitionIndex);
 		}

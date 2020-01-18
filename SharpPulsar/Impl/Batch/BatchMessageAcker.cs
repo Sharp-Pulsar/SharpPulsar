@@ -21,10 +21,10 @@
 namespace SharpPulsar.Impl.Batch
 {
 
-	internal class BatchMessageAcker
+	public class BatchMessageAcker
 	{
 
-		internal static BatchMessageAcker newAcker(int batchSize)
+		internal static BatchMessageAcker NewAcker(int batchSize)
 		{
 			BitArray bitSet = new BitArray(batchSize);
 			bitSet.Set(0, batchSize);
@@ -42,8 +42,6 @@ namespace SharpPulsar.Impl.Batch
 			this.batchSize = batchSize;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting BitSet getBitSet()
 		internal virtual BitArray BitSet
 		{
 			get
@@ -63,12 +61,12 @@ namespace SharpPulsar.Impl.Batch
 			}
 		}
 
-		public virtual bool ackIndividual(int batchIndex)
+		public virtual bool AckIndividual(int batchIndex)
 		{
 			lock (this)
 			{
 				bitSet.Set(batchIndex, false);
-				return bitSet.Empty;
+				return bitSet.Count > 1;
 			}
 		}
 
@@ -77,8 +75,8 @@ namespace SharpPulsar.Impl.Batch
 			lock (this)
 			{
 				// +1 since to argument is exclusive
-				bitSet.clear(0, batchIndex + 1);
-				return bitSet.Empty;
+				bitSet.Clear(0, batchIndex + 1);
+				return bitSet.Count > 1;
 			}
 		}
 

@@ -32,17 +32,17 @@ namespace SharpPulsar.Entity
 
 		public static readonly int DEFAULT_HASH_RANGE_SIZE = 2 << 15;
 
-		public static KeySharedPolicyAutoSplit autoSplitHashRange()
+		public static KeySharedPolicyAutoSplit AutoSplitHashRange()
 		{
 			return new KeySharedPolicyAutoSplit();
 		}
 
-		public static KeySharedPolicySticky stickyHashRange()
+		public static KeySharedPolicySticky StickyHashRange()
 		{
 			return new KeySharedPolicySticky();
 		}
 
-		public abstract void validate();
+		public abstract void Validate();
 
 		public virtual KeySharedMode KeySharedMode
 		{
@@ -70,44 +70,42 @@ namespace SharpPulsar.Entity
 		/// </summary>
 		public class KeySharedPolicySticky : KeySharedPolicy
 		{
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			protected internal IList<Range> ranges_Conflict;
+			protected internal IList<Range> _ranges;
 
 			internal KeySharedPolicySticky()
 			{
 				this.keySharedMode = KeySharedMode.STICKY;
-				this.ranges_Conflict = new List<Range>();
+				this._ranges = new List<Range>();
 			}
 
-			public virtual KeySharedPolicySticky ranges(IList<Range> ranges)
+			public virtual KeySharedPolicySticky Ranges(IList<Range> ranges)
 			{
-				((List<Range>)this.ranges_Conflict).AddRange(ranges);
+				((List<Range>)this._ranges).AddRange(ranges);
 				return this;
 			}
 
-			public virtual KeySharedPolicySticky ranges(params Range[] ranges)
+			public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
 			{
-				((List<Range>)this.ranges_Conflict).AddRange(Arrays.asList(ranges));
+				((List<Range>)this._ranges).AddRange(ranges);
 				return this;
 			}
 
-			public override void validate()
+			public override void Validate()
 			{
-				if (ranges_Conflict.Count == 0)
+				if (_ranges.Count == 0)
 				{
 					throw new System.ArgumentException("Ranges for KeyShared policy must not be empty.");
 				}
-				for (int i = 0; i < ranges_Conflict.Count; i++)
+				for (int i = 0; i < _ranges.Count; i++)
 				{
-					Range range1 = ranges_Conflict[i];
+					Range range1 = _ranges[i];
 					if (range1.Start < 0 || range1.End > DEFAULT_HASH_RANGE_SIZE)
 					{
 						throw new System.ArgumentException("Ranges must be [0, 65535] but provided range is " + range1);
 					}
-					for (int j = 0; j < ranges_Conflict.Count; j++)
+					for (int j = 0; j < _ranges.Count; j++)
 					{
-						Range range2 = ranges_Conflict[j];
+						Range range2 = _ranges[j];
 						if (i != j && range1.intersect(range2) != null)
 						{
 							throw new System.ArgumentException("Ranges for KeyShared policy with overlap between " + range1 + " and " + range2);
@@ -116,11 +114,11 @@ namespace SharpPulsar.Entity
 				}
 			}
 
-			public virtual IList<Range> Ranges
+			public virtual IList<Range> GetRanges
 			{
 				get
 				{
-					return ranges_Conflict;
+					return _ranges;
 				}
 			}
 		}
@@ -136,7 +134,7 @@ namespace SharpPulsar.Entity
 				this.keySharedMode = KeySharedMode.AUTO_SPLIT;
 			}
 
-			public override void validate()
+			public override void Validate()
 			{
 				// do nothing here
 			}
