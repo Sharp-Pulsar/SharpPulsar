@@ -25,8 +25,8 @@ public class ByteBuffer
 	private Mode mode;
 
 	private System.IO.MemoryStream stream;
-	private System.IO.BinaryReader reader;
-	private System.IO.BinaryWriter writer;
+	private readonly System.IO.BinaryReader reader;
+	private readonly System.IO.BinaryWriter writer;
 
 	private ByteBuffer()
 	{
@@ -43,7 +43,7 @@ public class ByteBuffer
 		stream.Dispose();
 	}
 
-	public static ByteBuffer allocate(int capacity)
+	public static ByteBuffer Allocate(int capacity)
 	{
 		ByteBuffer buffer = new ByteBuffer();
 		buffer.stream.Capacity = capacity;
@@ -51,18 +51,18 @@ public class ByteBuffer
 		return buffer;
 	}
 
-	public static ByteBuffer allocateDirect(int capacity)
+	public static ByteBuffer AllocateDirect(int capacity)
 	{
 		//this wrapper class makes no distinction between 'allocate' & 'allocateDirect'
-		return allocate(capacity);
+		return Allocate(capacity);
 	}
 
-	public int capacity()
+	public int Capacity()
 	{
 		return stream.Capacity;
 	}
 
-	public ByteBuffer flip()
+	public ByteBuffer Flip()
 	{
 		mode = Mode.Read;
 		stream.SetLength(stream.Position);
@@ -70,14 +70,14 @@ public class ByteBuffer
 		return this;
 	}
 
-	public ByteBuffer clear()
+	public ByteBuffer Clear()
 	{
 		mode = Mode.Write;
 		stream.Position = 0;
 		return this;
 	}
 
-	public ByteBuffer compact()
+	public ByteBuffer Compact()
 	{
 		mode = Mode.Write;
 		System.IO.MemoryStream newStream = new System.IO.MemoryStream(stream.Capacity);
@@ -86,13 +86,13 @@ public class ByteBuffer
 		return this;
 	}
 
-	public ByteBuffer rewind()
+	public ByteBuffer Rewind()
 	{
 		stream.Position = 0;
 		return this;
 	}
 
-	public long limit()
+	public long Limit()
 	{
 		if (mode == Mode.Write)
 			return stream.Capacity;
@@ -100,45 +100,45 @@ public class ByteBuffer
 			return stream.Length;
 	}
 
-	public long position()
+	public long Position()
 	{
 		return stream.Position;
 	}
 
-	public ByteBuffer position(long newPosition)
+	public ByteBuffer Position(long newPosition)
 	{
 		stream.Position = newPosition;
 		return this;
 	}
 
-	public long remaining()
+	public long Remaining()
 	{
-		return this.limit() - this.position();
+		return this.Limit() - this.Position();
 	}
 
-	public bool hasRemaining()
+	public bool HasRemaining()
 	{
-		return this.remaining() > 0;
+		return this.Remaining() > 0;
 	}
 
-	public int get()
+	public int Get()
 	{
 		return stream.ReadByte();
 	}
 
-	public ByteBuffer get(byte[] dst, int offset, int length)
+	public ByteBuffer Get(byte[] dst, int offset, int length)
 	{
 		stream.Read(dst, offset, length);
 		return this;
 	}
 
-	public ByteBuffer put(byte b)
+	public ByteBuffer Put(byte b)
 	{
 		stream.WriteByte(b);
 		return this;
 	}
 
-	public ByteBuffer put(byte[] src, int offset, int length)
+	public ByteBuffer Put(byte[] src, int offset, int length)
 	{
 		stream.Write(src, offset, length);
 		return this;
@@ -146,23 +146,23 @@ public class ByteBuffer
 
 	public bool Equals(ByteBuffer other)
 	{
-		if (other != null && this.remaining() == other.remaining())
+		if (other != null && this.Remaining() == other.Remaining())
 		{
-			long thisOriginalPosition = this.position();
-			long otherOriginalPosition = other.position();
+			long thisOriginalPosition = this.Position();
+			long otherOriginalPosition = other.Position();
 
 			bool differenceFound = false;
 			while (stream.Position < stream.Length)
 			{
-				if (this.get() != other.get())
+				if (this.Get() != other.Get())
 				{
 					differenceFound = true;
 					break;
 				}
 			}
 
-			this.position(thisOriginalPosition);
-			other.position(otherOriginalPosition);
+			this.Position(thisOriginalPosition);
+			other.Position(otherOriginalPosition);
 
 			return ! differenceFound;
 		}
@@ -171,11 +171,11 @@ public class ByteBuffer
 	}
 
 	//methods using the internal BinaryReader:
-	public char getChar()
+	public char GetChar()
 	{
 		return reader.ReadChar();
 	}
-	public char getChar(int index)
+	public char GetChar(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -183,11 +183,11 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return value;
 	}
-	public double getDouble()
+	public double GetDouble()
 	{
 		return reader.ReadDouble();
 	}
-	public double getDouble(int index)
+	public double GetDouble(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -195,11 +195,11 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return value;
 	}
-	public float getFloat()
+	public float GetFloat()
 	{
 		return reader.ReadSingle();
 	}
-	public float getFloat(int index)
+	public float GetFloat(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -207,11 +207,11 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return value;
 	}
-	public int getInt()
+	public int GetInt()
 	{
 		return reader.ReadInt32();
 	}
-	public int getInt(int index)
+	public int GetInt(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -219,11 +219,11 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return value;
 	}
-	public long getLong()
+	public long GetLong()
 	{
 		return reader.ReadInt64();
 	}
-	public long getLong(int index)
+	public long GetLong(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -231,11 +231,11 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return value;
 	}
-	public short getShort()
+	public short GetShort()
 	{
 		return reader.ReadInt16();
 	}
-	public short getShort(int index)
+	public short GetShort(int index)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -245,25 +245,12 @@ public class ByteBuffer
 	}
 
 	//methods using the internal BinaryWriter:
-	public ByteBuffer putChar(char value)
+	public ByteBuffer PutChar(char value)
 	{
 		writer.Write(value);
 		return this;
 	}
-	public ByteBuffer putChar(int index, char value)
-	{
-		long originalPosition = stream.Position;
-		stream.Position = index;
-		writer.Write(value);
-		stream.Position = originalPosition;
-		return this;
-	}
-	public ByteBuffer putDouble(double value)
-	{
-		writer.Write(value);
-		return this;
-	}
-	public ByteBuffer putDouble(int index, double value)
+	public ByteBuffer PutChar(int index, char value)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -271,25 +258,12 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return this;
 	}
-	public ByteBuffer putFloat(float value)
+	public ByteBuffer PutDouble(double value)
 	{
 		writer.Write(value);
 		return this;
 	}
-	public ByteBuffer putFloat(int index, float value)
-	{
-		long originalPosition = stream.Position;
-		stream.Position = index;
-		writer.Write(value);
-		stream.Position = originalPosition;
-		return this;
-	}
-	public ByteBuffer putInt(int value)
-	{
-		writer.Write(value);
-		return this;
-	}
-	public ByteBuffer putInt(int index, int value)
+	public ByteBuffer PutDouble(int index, double value)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -297,12 +271,12 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return this;
 	}
-	public ByteBuffer putLong(long value)
+	public ByteBuffer PutFloat(float value)
 	{
 		writer.Write(value);
 		return this;
 	}
-	public ByteBuffer putLong(int index, long value)
+	public ByteBuffer PutFloat(int index, float value)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;
@@ -310,12 +284,38 @@ public class ByteBuffer
 		stream.Position = originalPosition;
 		return this;
 	}
-	public ByteBuffer putShort(short value)
+	public ByteBuffer PutInt(int value)
 	{
 		writer.Write(value);
 		return this;
 	}
-	public ByteBuffer putShort(int index, short value)
+	public ByteBuffer PutInt(int index, int value)
+	{
+		long originalPosition = stream.Position;
+		stream.Position = index;
+		writer.Write(value);
+		stream.Position = originalPosition;
+		return this;
+	}
+	public ByteBuffer PutLong(long value)
+	{
+		writer.Write(value);
+		return this;
+	}
+	public ByteBuffer PutLong(int index, long value)
+	{
+		long originalPosition = stream.Position;
+		stream.Position = index;
+		writer.Write(value);
+		stream.Position = originalPosition;
+		return this;
+	}
+	public ByteBuffer PutShort(short value)
+	{
+		writer.Write(value);
+		return this;
+	}
+	public ByteBuffer PutShort(int index, short value)
 	{
 		long originalPosition = stream.Position;
 		stream.Position = index;

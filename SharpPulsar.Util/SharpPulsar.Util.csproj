@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.11.2" />
     <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="TimeUnit" Version="1.0.1" />
     <PackageReference Include="YamlDotNet" Version="8.0.0" />

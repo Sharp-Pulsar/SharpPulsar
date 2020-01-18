@@ -21,32 +21,38 @@ namespace SharpPulsar.Common.Protocol
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Unpooled = io.netty.buffer.Unpooled;
+	//using Unpooled = io.netty.buffer.Unpooled;
 	using Sharable = io.netty.channel.ChannelHandler.Sharable;
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using ChannelOutboundHandlerAdapter = io.netty.channel.ChannelOutboundHandlerAdapter;
-	using ChannelPromise = io.netty.channel.ChannelPromise;
-	using AbstractReferenceCounted = io.netty.util.AbstractReferenceCounted;
-	using Recycler = io.netty.util.Recycler;
+	//using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
+	//using ChannelOutboundHandlerAdapter = io.netty.channel.ChannelOutboundHandlerAdapter;
+	//using ChannelPromise = io.netty.channel.ChannelPromise;
+	//using AbstractReferenceCounted = io.netty.util.AbstractReferenceCounted;
+	//using Recycler = io.netty.util.Recycler;
 	using Handle = io.netty.util.Recycler.Handle;
-	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using ReferenceCounted = io.netty.util.ReferenceCounted;
+    using DotNetty.Common.Utilities;
+    using DotNetty.Buffers;
+    using DotNetty.Common;
+    using DotNetty.Transport.Channels;
+    using DotNetty.Common.Concurrency;
 
-	/// <summary>
-	/// ByteBuf holder that contains 2 buffers.
-	/// </summary>
-	public sealed class ByteBufPair : AbstractReferenceCounted
+    //using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
+    //using ReferenceCounted = io.netty.util.ReferenceCounted;
+
+    /// <summary>
+    /// ByteBuf holder that contains 2 buffers.
+    /// </summary>
+    public sealed class ByteBufPair : AbstractReferenceCounted
 	{
 
 		private ByteBuf b1;
 		private ByteBuf b2;
-		private readonly Recycler.Handle<ByteBufPair> recyclerHandle;
+		private readonly ThreadLocalPool<ByteBufPair> recyclerHandle;
 
-		private static readonly Recycler<ByteBufPair> RECYCLER = new RecyclerAnonymousInnerClass();
+		private static readonly ThreadLocalPool<ByteBufPair> RECYCLER = new RecyclerAnonymousInnerClass();
 
-		private class RecyclerAnonymousInnerClass : Recycler<ByteBufPair>
+		private class RecyclerAnonymousInnerClass : ThreadLocalPool<ByteBufPair>
 		{
-			protected internal override ByteBufPair newObject(Recycler.Handle<ByteBufPair> handle)
+			protected internal override ByteBufPair NewObject(ThreadLocalPool<ByteBufPair> handle)
 			{
 				return new ByteBufPair(handle);
 			}
@@ -68,7 +74,7 @@ namespace SharpPulsar.Common.Protocol
 		/// <param name="b1"> </param>
 		/// <param name="b2">
 		/// @return </param>
-		public static ByteBufPair get(ByteBuf b1, ByteBuf b2)
+		public static ByteBufPair Get(IByteBuffer b1, IByteBuffer b2)
 		{
 			ByteBufPair buf = RECYCLER.get();
 			buf.RefCnt = 1;
@@ -77,7 +83,7 @@ namespace SharpPulsar.Common.Protocol
 			return buf;
 		}
 
-		public ByteBuf First
+		public IByteBuffer First
 		{
 			get
 			{
@@ -85,7 +91,7 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}
 
-		public ByteBuf Second
+		public IByteBuffer Second
 		{
 			get
 			{
@@ -93,14 +99,14 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}
 
-		public int readableBytes()
+		public int ReadableBytes()
 		{
 			return b1.readableBytes() + b2.readableBytes();
 		}
 
-		public static ByteBuf coalesce(ByteBufPair pair)
+		public static IByteBuffer Coalesce(ByteBufPair pair)
 		{
-			ByteBuf b = Unpooled.buffer(pair.readableBytes());
+			ByteBuf b = Unpooled.Buffer(pair.ReadableBytes());
 			b.writeBytes(pair.b1, pair.b1.readerIndex(), pair.b1.readableBytes());
 			b.writeBytes(pair.b2, pair.b2.readerIndex(), pair.b2.readableBytes());
 			return b;
@@ -114,12 +120,14 @@ namespace SharpPulsar.Common.Protocol
 			recyclerHandle.recycle(this);
 		}
 
-		public ReferenceCounted Touch(object hint)
+		public override IReferenceCounted Touch(object hint)
 		{
 			b1.touch(hint);
 			b2.touch(hint);
 			return this;
 		}
+
+		
 
 		public static readonly Encoder ENCODER = new Encoder();
 		public static readonly CopyingEncoder COPYING_ENCODER = new CopyingEncoder();
@@ -127,7 +135,7 @@ namespace SharpPulsar.Common.Protocol
 
 		public class Encoder : ChannelOutboundHandlerAdapter
 		{
-			public override void Write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
+			public override void Write(IChannelHandlerContext ctx, object msg, TaskCompletionSource promise)
 			{
 				if (msg is ByteBufPair)
 				{
@@ -138,12 +146,12 @@ namespace SharpPulsar.Common.Protocol
 					// gets written multiple times, the individual buffers refcount should be reflected as well.
 					try
 					{
-						ctx.write(b.First.retainedDuplicate(), ctx.voidPromise());
+						ctx.Write(b.First.retainedDuplicate(), ctx.voidPromise());
 						ctx.write(b.Second.retainedDuplicate(), promise);
 					}
 					finally
 					{
-						ReferenceCountUtil.safeRelease(b);
+						ReferenceCountUtil.SafeRelease(b);
 					}
 				}
 				else
@@ -156,7 +164,7 @@ namespace SharpPulsar.Common.Protocol
 
 		public class CopyingEncoder : ChannelOutboundHandlerAdapter
 		{
-			public override void Write(ChannelHandlerContext ctx, object msg, ChannelPromise promise)
+			public override void Write(IChannelHandlerContext ctx, object msg, ChannelPromise promise)
 			{
 				if (msg is ByteBufPair)
 				{
@@ -172,7 +180,7 @@ namespace SharpPulsar.Common.Protocol
 					}
 					finally
 					{
-						ReferenceCountUtil.safeRelease(b);
+						ReferenceCountUtil.SafeRelease(b);
 					}
 				}
 				else

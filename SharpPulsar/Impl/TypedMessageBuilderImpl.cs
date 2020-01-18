@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl
 
 		private const long serialVersionUID = 0L;
 
-		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.allocate(0);
+		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: private final ProducerBase<?> producer;
