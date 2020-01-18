@@ -32,9 +32,6 @@ namespace SharpPulsar.Impl
 		private Clock clock;
 		private long mandatoryStop;
 		private TimeUnit unitMandatoryStop;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting BackoffBuilder()
 		internal BackoffBuilder()
 		{
 			this.initial = 0;

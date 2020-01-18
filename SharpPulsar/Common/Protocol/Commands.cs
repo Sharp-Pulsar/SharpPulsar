@@ -1,5 +1,6 @@
 ﻿using DotNetty.Buffers;
 using Google.Protobuf;
+using Optional;
 using SharpPulsar.Common.Allocator;
 using SharpPulsar.Common.Protocol.Schema;
 using SharpPulsar.Common.PulsarApi;
@@ -32,94 +33,7 @@ using System.Text;
 /// </summary>
 namespace SharpPulsar.Common.Protocol
 {
-	/*
-	
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Unpooled = io.netty.buffer.Unpooled;
-	using UtilityClass = lombok.experimental.UtilityClass;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using KeySharedPolicy = org.apache.pulsar.client.api.KeySharedPolicy;
-	using Range = org.apache.pulsar.client.api.Range;
-	using PulsarByteBufAllocator = org.apache.pulsar.common.allocator.PulsarByteBufAllocator;
-	using AuthData = org.apache.pulsar.common.api.AuthData;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using AuthMethod = org.apache.pulsar.common.api.proto.PulsarApi.AuthMethod;
-	using BaseCommand = org.apache.pulsar.common.api.proto.PulsarApi.BaseCommand;
-	using Type = org.apache.pulsar.common.api.proto.PulsarApi.BaseCommand.Type;
-	using CommandAck = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using ValidationError = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.ValidationError;
-	using CommandAckResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAckResponse;
-	using CommandActiveConsumerChange = org.apache.pulsar.common.api.proto.PulsarApi.CommandActiveConsumerChange;
-	using CommandAddPartitionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxn;
-	using CommandAddPartitionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddPartitionToTxnResponse;
-	using CommandAddSubscriptionToTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxn;
-	using CommandAddSubscriptionToTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAddSubscriptionToTxnResponse;
-	using CommandAuthChallenge = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthChallenge;
-	using CommandAuthResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthResponse;
-	using CommandCloseConsumer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseConsumer;
-	using CommandCloseProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandCloseProducer;
-	using CommandConnect = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnect;
-	using CommandConnected = org.apache.pulsar.common.api.proto.PulsarApi.CommandConnected;
-	using CommandConsumerStatsResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStatsResponse;
-	using CommandEndTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxn;
-	using CommandEndTxnOnPartition = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartition;
-	using CommandEndTxnOnPartitionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnPartitionResponse;
-	using CommandEndTxnOnSubscription = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscription;
-	using CommandEndTxnOnSubscriptionResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnOnSubscriptionResponse;
-	using CommandEndTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandEndTxnResponse;
-	using CommandError = org.apache.pulsar.common.api.proto.PulsarApi.CommandError;
-	using CommandFlow = org.apache.pulsar.common.api.proto.PulsarApi.CommandFlow;
-	using CommandGetLastMessageId = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetLastMessageId;
-	using CommandGetOrCreateSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchema;
-	using CommandGetOrCreateSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchemaResponse;
-	using CommandGetSchema = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
-	using CommandGetSchemaResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchemaResponse;
-	using CommandGetTopicsOfNamespace = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using CommandGetTopicsOfNamespaceResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespaceResponse;
-	using CommandLookupTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopic;
-	using CommandLookupTopicResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse;
-	using LookupType = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse.LookupType;
-	using CommandMessage = org.apache.pulsar.common.api.proto.PulsarApi.CommandMessage;
-	using CommandNewTxn = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
-	using CommandNewTxnResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxnResponse;
-	using CommandPartitionedTopicMetadata = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadata;
-	using CommandPartitionedTopicMetadataResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadataResponse;
-	using CommandPing = org.apache.pulsar.common.api.proto.PulsarApi.CommandPing;
-	using CommandPong = org.apache.pulsar.common.api.proto.PulsarApi.CommandPong;
-	using CommandProducer = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducer;
-	using CommandProducerSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandProducerSuccess;
-	using CommandReachedEndOfTopic = org.apache.pulsar.common.api.proto.PulsarApi.CommandReachedEndOfTopic;
-	using CommandRedeliverUnacknowledgedMessages = org.apache.pulsar.common.api.proto.PulsarApi.CommandRedeliverUnacknowledgedMessages;
-	using CommandSeek = org.apache.pulsar.common.api.proto.PulsarApi.CommandSeek;
-	using CommandSend = org.apache.pulsar.common.api.proto.PulsarApi.CommandSend;
-	using CommandSendError = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendError;
-	using CommandSendReceipt = org.apache.pulsar.common.api.proto.PulsarApi.CommandSendReceipt;
-	using CommandSubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe;
-	using InitialPosition = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.InitialPosition;
-	using SubType = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.SubType;
-	using CommandSuccess = org.apache.pulsar.common.api.proto.PulsarApi.CommandSuccess;
-	using CommandUnsubscribe = org.apache.pulsar.common.api.proto.PulsarApi.CommandUnsubscribe;
-	using KeyLongValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyLongValue;
-	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
-	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
-	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
-	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
-	using Schema = org.apache.pulsar.common.api.proto.PulsarApi.Schema;
-	using ServerError = org.apache.pulsar.common.api.proto.PulsarApi.ServerError;
-	using SingleMessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.SingleMessageMetadata;
-	using Subscription = org.apache.pulsar.common.api.proto.PulsarApi.Subscription;
-	using TxnAction = org.apache.pulsar.common.api.proto.PulsarApi.TxnAction;
-	using SchemaVersion = org.apache.pulsar.common.protocol.schema.SchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using ByteBufCodedInputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedInputStream;
-	using ByteBufCodedOutputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedOutputStream;
-	using ByteString = org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString; 
-	*/
+	//using static SharpPulsar.Common.Proto.Api.PulsarApi;
 
 	public class Commands
 	{
@@ -148,50 +62,46 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
-			CommandConnect connect = new CommandConnect
-			{
-				ClientVersion = (!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client"),
-				AuthMethodName = (authMethodName)
-			};
-
+			CommandConnect.Builder connect = CommandConnect.newBuilder().setClientVersion((!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client"))
+				.setAuthMethodName(authMethodName);
 			if ("ycav1".Equals(authMethodName))
 			{
 				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
 				// name. An example would be in broker-to-broker replication. We need to make sure the clients are still
 				// passing both the enum and the string until all brokers are upgraded.
-				connect.AuthMethod = AuthMethod.AuthMethodYcaV1;
+				connect.setAuthMethod(AuthMethod.AuthMethodYcaV1);
 			}
 
 			if (!string.ReferenceEquals(targetBroker, null))
 			{
 				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				connect.ProxyToBrokerUrl = (targetBroker);
+				connect.setProxyToBrokerUrl(targetBroker);
 			}
 
 			if (!string.ReferenceEquals(authData, null))
 			{
-				connect.AuthData = ByteString.CopyFromUtf8(authData).ToByteArray();
+				connect.setAuthData(ByteString.CopyFromUtf8(authData));
 			}
 
 			if (!string.ReferenceEquals(originalPrincipal, null))
 			{
-				connect.OriginalPrincipal = (originalPrincipal);
+				connect.setOriginalPrincipal(originalPrincipal);
 			}
 
 			if (!string.ReferenceEquals(originalAuthData, null))
 			{
-				connect.OriginalAuthData = (originalAuthData);
+				connect.setOriginalAuthData(originalAuthData);
 			}
 
 			if (!string.ReferenceEquals(originalAuthMethod, null))
 			{
-				connect.OriginalAuthMethod = (originalAuthMethod);
+				connect.setOriginalAuthMethod(originalAuthMethod);
 			}
-			connect.ProtocolVersion = protocolVersion;
-			PulsarApi.CommandConnect connectcmd = connect;
-			IByteBuffer res = serializeWithSize(BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.Connect).setConnect(connect));
+			connect.setProtocolVersion(protocolVersion);
+			CommandConnect.Builder connectcmd = connect.build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.newBuilder().setType(BaseCommand.Type.CONNECT).setConnect(connect));
 			connect.recycle();
-			connectBuilder.recycle();
+			connectcmd.recycle();
 			return res;
 		}
 
@@ -264,8 +174,9 @@ namespace SharpPulsar.Common.Protocol
 
 			CommandConnected connected = connectedBuilder;
 			IByteBuffer res = SerializeWithSize(new BaseCommand
-			{ type = BaseCommand.Type.Connected,
-			  Connected = (connected) 
+			{
+				type = BaseCommand.Type.Connected,
+				Connected = (connected)
 			});
 			connected.recycle();
 			connectedBuilder.recycle();
@@ -274,7 +185,7 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
 		{
-			CommandAuthChallenge challengeBuilder =  new CommandAuthChallenge();
+			CommandAuthChallenge challengeBuilder = new CommandAuthChallenge();
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
@@ -282,7 +193,8 @@ namespace SharpPulsar.Common.Protocol
 			int versionToAdvertise = Math.Min(currentProtocolVersion, clientProtocolVersion);
 
 			challengeBuilder.ProtocolVersion = versionToAdvertise;
-			var authData = new AuthData {
+			var authData = new AuthData
+			{
 				auth_data = ByteString.CopyFrom(brokerData.auth_data).ToByteArray(),
 				AuthMethodName = authMethod
 			};
@@ -315,7 +227,7 @@ namespace SharpPulsar.Common.Protocol
 			};
 			CommandAuthResponse response = responseBuilder;
 
-			IByteBuffer res = SerializeWithSize(				
+			IByteBuffer res = SerializeWithSize(
 				new BaseCommand
 				{
 					type = BaseCommand.Type.AuthResponse,
@@ -450,14 +362,14 @@ namespace SharpPulsar.Common.Protocol
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
 				SkipChecksumIfPresent(buffer);
-				int metadataSize = (int) buffer.ReadUnsignedInt();
+				int metadataSize = (int)buffer.ReadUnsignedInt();
 
 				int writerIndex = buffer.WriterIndex;
 				buffer.writerIndex(buffer.readerIndex() + metadataSize);
 
 				ByteBufCodedInputStream stream = ByteBufCodedInputStream.Get(buffer);
-				MessageMetadata messageMetadataBuilder = new MessageMetadata();
-				MessageMetadata res = messageMetadataBuilder.MergeFrom(stream, null);
+				MessageMetadata.Builder messageMetadataBuilder = MessageMetadata.newBuilder();
+				MessageMetadata.Builder res = messageMetadataBuilder.mergeFrom(stream, null);
 				buffer.writerIndex(writerIndex);
 				messageMetadataBuilder.recycle();
 				stream.recycle();
@@ -474,7 +386,7 @@ namespace SharpPulsar.Common.Protocol
 			// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
 			// metadata
 			SkipChecksumIfPresent(buffer);
-			int metadataSize = (int) buffer.ReadUnsignedInt();
+			int metadataSize = (int)buffer.ReadUnsignedInt();
 			buffer.SkipBytes(metadataSize);
 		}
 
@@ -576,15 +488,15 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
-					return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
+			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
 
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
 		{
 			CommandSubscribe subscribeBuilder = new CommandSubscribe();
 			subscribeBuilder.Topic = (topic);
-			subscribeBuilder.Subscription  = subscription;
-			subscribeBuilder.subType = subType; 
+			subscribeBuilder.Subscription = subscription;
+			subscribeBuilder.subType = subType;
 			subscribeBuilder.ConsumerId = (ulong)consumerId;
 			subscribeBuilder.ConsumerName = (consumerName);
 			subscribeBuilder.RequestId = (ulong)requestId;
@@ -601,7 +513,8 @@ namespace SharpPulsar.Common.Protocol
 				{
 					case Enum.KeySharedMode.AUTO_SPLIT:
 						{
-							var keySharedData = new KeySharedMeta { 
+							var keySharedData = new KeySharedMeta
+							{
 								keySharedMode = KeySharedMode.AutoSplit
 							};
 							subscribeBuilder.keySharedMeta = keySharedData;
@@ -609,7 +522,7 @@ namespace SharpPulsar.Common.Protocol
 						break;
 					case Enum.KeySharedMode.STICKY:
 						KeySharedMeta builder = new KeySharedMeta { keySharedMode = KeySharedMode.Sticky };
-						IList<Entity.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky) keySharedPolicy).GetRanges;
+						IList<Entity.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).GetRanges;
 						foreach (Entity.Range range in ranges)
 						{
 							//builder.addHashRanges(new IntRange { Start = (range.Start), End = (range.End) }); cant find addRanges
@@ -688,7 +601,7 @@ namespace SharpPulsar.Common.Protocol
 			MessageIdData messageIdBuilder = new MessageIdData();
 			messageIdBuilder.ledgerId = (ulong)ledgerId;
 			messageIdBuilder.entryId = (ulong)entryId;
-			
+
 			MessageIdData messageId = messageIdBuilder;
 			seekBuilder.MessageId = (messageId);
 
@@ -749,7 +662,8 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewCloseProducer(long producerId, long requestId)
 		{
-			CommandCloseProducer closeProducerBuilder = new CommandCloseProducer{
+			CommandCloseProducer closeProducerBuilder = new CommandCloseProducer
+			{
 				ProducerId = (ulong)producerId,
 				RequestId = (ulong)requestId
 			};
@@ -1078,7 +992,7 @@ namespace SharpPulsar.Common.Protocol
 		{
 			CommandRedeliverUnacknowledgedMessages redeliverBuilder = new CommandRedeliverUnacknowledgedMessages();
 			redeliverBuilder.ConsumerId = (ulong)consumerId;
-			
+
 			CommandRedeliverUnacknowledgedMessages redeliver = redeliverBuilder;
 			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.RedeliverUnacknowledgedMessages, redeliverUnacknowledgedMessages = redeliverBuilder });
 			redeliver.recycle();
@@ -1158,211 +1072,280 @@ namespace SharpPulsar.Common.Protocol
 
 		static Commands()
 		{
-			IByteBuffer serializedCmdPing = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.PING).setPing(PulsarApi.CommandPing.DefaultInstance));
-			cmdPing = Unpooled.copiedBuffer(serializedCmdPing);
-			serializedCmdPing.release();
-			IByteBuffer serializedCmdPong = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.PONG).setPong(PulsarApi.CommandPong.DefaultInstance));
-			cmdPong = Unpooled.copiedBuffer(serializedCmdPong);
-			serializedCmdPong.release();
+			IByteBuffer serializedCmdPing = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Ping, Ping = new CommandPing() });
+			cmdPing = Unpooled.CopiedBuffer(serializedCmdPing);
+			serializedCmdPing.Release();
+			IByteBuffer serializedCmdPong = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Pong, Pong = new CommandPong() });
+			cmdPong = Unpooled.CopiedBuffer(serializedCmdPong);
+			serializedCmdPong.Release();
 		}
 
-		internal static IByteBuffer newPing()
+		internal static IByteBuffer NewPing()
 		{
-			return cmdPing.retainedDuplicate();
+			return cmdPing.RetainedDuplicate();
 		}
 
 		private static readonly IByteBuffer cmdPong;
 
 
-		internal static IByteBuffer newPong()
+		internal static IByteBuffer NewPong()
 		{
-			return cmdPong.retainedDuplicate();
+			return cmdPong.RetainedDuplicate();
 		}
 
-		public static IByteBuffer newGetLastMessageId(long consumerId, long requestId)
+		public static IByteBuffer NewGetLastMessageId(long consumerId, long requestId)
 		{
-			PulsarApi.CommandGetLastMessageId.Builder cmdBuilder = PulsarApi.CommandGetLastMessageId.newBuilder();
-			cmdBuilder.setConsumerId(consumerId).setRequestId(requestId);
+			CommandGetLastMessageId cmdBuilder = new CommandGetLastMessageId
+			{
+				ConsumerId = (ulong)consumerId,
+				RequestId = (ulong)requestId
+			};
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_LAST_MESSAGE_ID).setGetLastMessageId(cmdBuilder.build()));
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetLastMessageId, getLastMessageId = cmdBuilder });
 			cmdBuilder.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetLastMessageIdResponse(long requestId, PulsarApi.MessageIdData messageIdData)
+		public static IByteBuffer NewGetLastMessageIdResponse(long requestId, MessageIdData messageIdData)
 		{
-			PulsarApi.CommandGetLastMessageIdResponse.Builder response = PulsarApi.CommandGetLastMessageIdResponse.newBuilder().setLastMessageId(messageIdData).setRequestId(requestId);
+			CommandGetLastMessageIdResponse response = new CommandGetLastMessageIdResponse
+			{
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_LAST_MESSAGE_ID_RESPONSE).setGetLastMessageIdResponse(response.build()));
+				LastMessageId = (messageIdData),
+				RequestId = (ulong)(requestId)
+			};
+
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetLastMessageIdResponse, getLastMessageIdResponse = response });
 			response.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetSchema(long requestId, string topic, Optional<SchemaVersion> version)
+		public static IByteBuffer NewGetSchema(long requestId, string topic, Option<SchemaVersion> version)
 		{
-			PulsarApi.CommandGetSchema.Builder schema = PulsarApi.CommandGetSchema.newBuilder().setRequestId(requestId);
-			schema.setTopic(topic);
-			if (version.Present)
+			CommandGetSchema schema = new CommandGetSchema();
+			schema.RequestId = (ulong)requestId;
+			schema.Topic = topic;
+			if (version.HasValue)
 			{
-				schema.SchemaVersion = ByteString.copyFrom(version.get().bytes());
+				var ver = version.ValueOr(new EmptyVersion());
+				schema.SchemaVersion = ByteString.CopyFrom((byte[])(Array)ver.Bytes()).ToArray();
 			}
 
-			PulsarApi.CommandGetSchema getSchema = schema.build();
+			CommandGetSchema getSchema = schema;
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_SCHEMA).setGetSchema(getSchema));
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetSchema, getSchema = getSchema });
 			schema.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetSchemaResponse(long requestId, PulsarApi.CommandGetSchemaResponse response)
+		public static IByteBuffer NewGetSchemaResponse(long requestId, CommandGetSchemaResponse response)
 		{
-			PulsarApi.CommandGetSchemaResponse.Builder schemaResponseBuilder = PulsarApi.CommandGetSchemaResponse.newBuilder(response).setRequestId(requestId);
+			var cmdRes = response;
+			cmdRes.RequestId = (ulong)requestId;
+			CommandGetSchemaResponse schemaResponseBuilder = cmdRes;
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(schemaResponseBuilder.build()));
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetSchemaResponse, getSchemaResponse = schemaResponseBuilder });
 			schemaResponseBuilder.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetSchemaResponse(long requestId, SchemaInfo schema, SchemaVersion version)
+		public static IByteBuffer NewGetSchemaResponse(long requestId, SchemaInfo schema, SchemaVersion version)
 		{
-			PulsarApi.CommandGetSchemaResponse.Builder schemaResponse = PulsarApi.CommandGetSchemaResponse.newBuilder().setRequestId(requestId).setSchemaVersion(ByteString.copyFrom(version.bytes())).setSchema(getSchema(schema));
+			CommandGetSchemaResponse schemaResponse = new CommandGetSchemaResponse();
+			schemaResponse.RequestId = (ulong)requestId;
+			schemaResponse.SchemaVersion = ByteString.CopyFrom((byte[])(Array)version.Bytes()).ToArray();
+			schemaResponse.Schema = GetSchema(schema);
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(schemaResponse.build()));
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetSchemaResponse, getSchemaResponse = schemaResponse });
 			schemaResponse.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetSchemaResponseError(long requestId, PulsarApi.ServerError error, string errorMessage)
+		public static IByteBuffer NewGetSchemaResponseError(long requestId, ServerError error, string errorMessage)
 		{
-			PulsarApi.CommandGetSchemaResponse.Builder schemaResponse = PulsarApi.CommandGetSchemaResponse.newBuilder().setRequestId(requestId).setErrorCode(error).setErrorMessage(errorMessage);
+			CommandGetSchemaResponse schemaResponse = new CommandGetSchemaResponse
+			{
+				RequestId = (ulong)(requestId),
+				ErrorCode = error,
+				ErrorMessage = errorMessage
+			};
 
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(schemaResponse.build()));
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetSchemaResponse, getSchemaResponse = schemaResponse });
 			schemaResponse.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
+		public static IByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
 		{
-			PulsarApi.CommandGetOrCreateSchema getOrCreateSchema = PulsarApi.CommandGetOrCreateSchema.newBuilder().setRequestId(requestId).setTopic(topic).setSchema(getSchema(schemaInfo)).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_OR_CREATE_SCHEMA).setGetOrCreateSchema(getOrCreateSchema));
+			CommandGetOrCreateSchema getOrCreateSchema = new CommandGetOrCreateSchema();
+			getOrCreateSchema.RequestId = (ulong)requestId;
+			getOrCreateSchema.Topic = topic;
+			getOrCreateSchema.Schema = GetSchema(schemaInfo);
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetOrCreateSchema, getOrCreateSchema = getOrCreateSchema });
 			getOrCreateSchema.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetOrCreateSchemaResponse(long requestId, SchemaVersion schemaVersion)
+		public static IByteBuffer NewGetOrCreateSchemaResponse(long requestId, SchemaVersion schemaVersion)
 		{
-			PulsarApi.CommandGetOrCreateSchemaResponse.Builder schemaResponse = PulsarApi.CommandGetOrCreateSchemaResponse.newBuilder().setRequestId(requestId).setSchemaVersion(ByteString.copyFrom(schemaVersion.bytes()));
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_OR_CREATE_SCHEMA_RESPONSE).setGetOrCreateSchemaResponse(schemaResponse.build()));
+			CommandGetOrCreateSchemaResponse schemaResponse = new CommandGetOrCreateSchemaResponse
+			{
+				RequestId = (ulong)(requestId),
+				SchemaVersion = ByteString.CopyFrom((byte[])(object)schemaVersion.Bytes()).ToArray()
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetOrCreateSchemaResponse, getOrCreateSchemaResponse = schemaResponse });
 			schemaResponse.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newGetOrCreateSchemaResponseError(long requestId, PulsarApi.ServerError error, string errorMessage)
+		public static IByteBuffer NewGetOrCreateSchemaResponseError(long requestId, ServerError error, string errorMessage)
 		{
-			PulsarApi.CommandGetOrCreateSchemaResponse.Builder schemaResponse = PulsarApi.CommandGetOrCreateSchemaResponse.newBuilder().setRequestId(requestId).setErrorCode(error).setErrorMessage(errorMessage);
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.GET_OR_CREATE_SCHEMA_RESPONSE).setGetOrCreateSchemaResponse(schemaResponse.build()));
+			CommandGetOrCreateSchemaResponse schemaResponse = new CommandGetOrCreateSchemaResponse
+			{
+				RequestId = (ulong)(requestId),
+				ErrorCode = (error),
+				ErrorMessage = errorMessage
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.GetOrCreateSchemaResponse, getOrCreateSchemaResponse = schemaResponse });
 			schemaResponse.recycle();
 			return res;
 		}
 
 		// ---- transaction related ----
 
-		public static IByteBuffer newTxn(long tcId, long requestId, long ttlSeconds)
+		public static IByteBuffer NewTxn(long tcId, long requestId, long ttlSeconds)
 		{
-			PulsarApi.CommandNewTxn commandNewTxn = PulsarApi.CommandNewTxn.newBuilder().setTcId(tcId).setRequestId(requestId).setTxnTtlSeconds(ttlSeconds).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.NEW_TXN).setNewTxn(commandNewTxn));
+			CommandNewTxn commandNewTxn = new CommandNewTxn
+			{
+				TcId = (ulong)tcId,
+				RequestId = (ulong)(requestId),
+				TxnTtlSeconds = (ulong)ttlSeconds
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.NewTxn, newTxn = commandNewTxn });
 			commandNewTxn.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		public static IByteBuffer NewTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandNewTxnResponse commandNewTxnResponse = PulsarApi.CommandNewTxnResponse.newBuilder().setRequestId(requestId).setTxnidMostBits(txnIdMostBits).setTxnidLeastBits(txnIdLeastBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.NEW_TXN_RESPONSE).setNewTxnResponse(commandNewTxnResponse));
+			CommandNewTxnResponse commandNewTxnResponse = new CommandNewTxnResponse
+			{
+				RequestId = (ulong)requestId,
+				TxnidMostBits = (ulong)(txnIdMostBits),
+				TxnidLeastBits = (ulong)txnIdLeastBits
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.NewTxnResponse, newTxnResponse = commandNewTxnResponse });
 			commandNewTxnResponse.recycle();
 
 			return res;
 		}
 
-		public static IByteBuffer newTxnResponse(long requestId, long txnIdMostBits, PulsarApi.ServerError error, string errorMsg)
+		public static IByteBuffer NewTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandNewTxnResponse.Builder builder = PulsarApi.CommandNewTxnResponse.newBuilder();
-			builder.RequestId = requestId;
-			builder.TxnidMostBits = txnIdMostBits;
-			builder.Error = error;
+			CommandNewTxnResponse builder = new CommandNewTxnResponse
+			{
+				RequestId = (ulong)requestId,
+				TxnidMostBits = (ulong)txnIdMostBits,
+				Error = error
+			};
 			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				builder.setMessage(errorMsg);
+				builder.Message = (errorMsg);
 			}
-			PulsarApi.CommandNewTxnResponse errorResponse = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.NEW_TXN_RESPONSE).setNewTxnResponse(errorResponse));
+			CommandNewTxnResponse errorResponse = builder;
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.NewTxnResponse, newTxnResponse = errorResponse });
 			builder.recycle();
 			errorResponse.recycle();
 
 			return res;
 		}
 
-		public static IByteBuffer newAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		public static IByteBuffer NewAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandAddPartitionToTxn commandAddPartitionToTxn = PulsarApi.CommandAddPartitionToTxn.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_PARTITION_TO_TXN).setAddPartitionToTxn(commandAddPartitionToTxn));
+			CommandAddPartitionToTxn commandAddPartitionToTxn = new CommandAddPartitionToTxn
+			{
+				RequestId = (ulong)(requestId),
+				TxnidLeastBits = (ulong)(txnIdLeastBits),
+				TxnidMostBits = (ulong)txnIdMostBits
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddPartitionToTxn, addPartitionToTxn = commandAddPartitionToTxn });
 			commandAddPartitionToTxn.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newAddPartitionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		public static IByteBuffer NewAddPartitionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = PulsarApi.CommandAddPartitionToTxnResponse.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_PARTITION_TO_TXN_RESPONSE).setAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
+			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = new CommandAddPartitionToTxnResponse
+			{
+				RequestId = (ulong)(requestId),
+				TxnidLeastBits = (ulong)(txnIdLeastBits),
+				TxnidMostBits = (ulong)txnIdMostBits
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddPartitionToTxnResponse, addPartitionToTxnResponse = commandAddPartitionToTxnResponse });
 			commandAddPartitionToTxnResponse.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newAddPartitionToTxnResponse(long requestId, long txnIdMostBits, PulsarApi.ServerError error, string errorMsg)
+		public static IByteBuffer NewAddPartitionToTxnResponse(long requestId, long txnIdMostBits, PulsarApi.ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandAddPartitionToTxnResponse.Builder builder = PulsarApi.CommandAddPartitionToTxnResponse.newBuilder();
-			builder.RequestId = requestId;
-			builder.TxnidMostBits = txnIdMostBits;
-			builder.Error = error;
+			CommandAddPartitionToTxnResponse builder = new CommandAddPartitionToTxnResponse
+			{
+				RequestId = (ulong)requestId,
+				TxnidMostBits = (ulong)txnIdMostBits,
+				Error = error
+			};
 			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				builder.setMessage(errorMsg);
+				builder.Message = errorMsg;
 			}
-			PulsarApi.CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_PARTITION_TO_TXN_RESPONSE).setAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
+			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = builder;
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddPartitionToTxnResponse, addPartitionToTxnResponse = commandAddPartitionToTxnResponse });
 			builder.recycle();
 			commandAddPartitionToTxnResponse.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newAddSubscriptionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, IList<PulsarApi.Subscription> subscription)
+		public static IByteBuffer NewAddSubscriptionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, IList<Subscription> subscription)
 		{
-			PulsarApi.CommandAddSubscriptionToTxn commandAddSubscriptionToTxn = PulsarApi.CommandAddSubscriptionToTxn.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).addAllSubscription(subscription).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN).setAddSubscriptionToTxn(commandAddSubscriptionToTxn));
+			CommandAddSubscriptionToTxn commandAddSubscriptionToTxn = new CommandAddSubscriptionToTxn
+			{
+				RequestId = (ulong)(requestId),
+				TxnidLeastBits = (ulong)(txnIdLeastBits),
+				TxnidMostBits = (ulong)txnIdMostBits,
+				addAllSubscription = (subscription)
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddSubscriptionToTxn, addSubscriptionToTxn = commandAddSubscriptionToTxn });
 			commandAddSubscriptionToTxn.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newAddSubscriptionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		public static IByteBuffer NewAddSubscriptionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandAddSubscriptionToTxnResponse command = PulsarApi.CommandAddSubscriptionToTxnResponse.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN_RESPONSE).setAddSubscriptionToTxnResponse(command));
+			CommandAddSubscriptionToTxnResponse command = new CommandAddSubscriptionToTxnResponse
+			{
+				RequestId = (ulong)(requestId),
+				TxnidLeastBits = (ulong)(txnIdLeastBits),
+				TxnidMostBits = (ulong)(txnIdMostBits)
+			};
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddSubscriptionToTxnResponse, addSubscriptionToTxnResponse = command });
 			command.recycle();
 			return res;
 		}
 
-		public static IByteBuffer newAddSubscriptionToTxnResponse(long requestId, long txnIdMostBits, PulsarApi.ServerError error, string errorMsg)
+		public static IByteBuffer NewAddSubscriptionToTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandAddSubscriptionToTxnResponse.Builder builder = PulsarApi.CommandAddSubscriptionToTxnResponse.newBuilder();
-			builder.RequestId = requestId;
-			builder.TxnidMostBits = txnIdMostBits;
-			builder.Error = error;
+			CommandAddSubscriptionToTxnResponse builder = new CommandAddSubscriptionToTxnResponse
+			{
+				RequestId = (ulong)requestId,
+				TxnidMostBits = (ulong)txnIdMostBits,
+				Error = error
+			};
 			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				builder.setMessage(errorMsg);
+				builder.Message = (errorMsg);
 			}
-			PulsarApi.CommandAddSubscriptionToTxnResponse errorResponse = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN_RESPONSE).setAddSubscriptionToTxnResponse(errorResponse));
+			CommandAddSubscriptionToTxnResponse errorResponse = builder;
+			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.AddSubscriptionToTxnResponse, addSubscriptionToTxnResponse = errorResponse });
 			builder.recycle();
 			errorResponse.recycle();
 			return res;
@@ -1370,23 +1353,23 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer newEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, PulsarApi.TxnAction txnAction)
 		{
-			PulsarApi.CommandEndTxn commandEndTxn = PulsarApi.CommandEndTxn.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setTxnAction(txnAction).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN).setEndTxn(commandEndTxn));
+			PulsarApi.CommandEndTxn commandEndTxn = PulsarApi.CommandEndTxn().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setTxnAction(txnAction).build();
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN).setEndTxn(commandEndTxn));
 			commandEndTxn.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandEndTxnResponse commandEndTxnResponse = PulsarApi.CommandEndTxnResponse.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(commandEndTxnResponse));
+			PulsarApi.CommandEndTxnResponse commandEndTxnResponse = PulsarApi.CommandEndTxnResponse().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(commandEndTxnResponse));
 			commandEndTxnResponse.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnResponse(long requestId, long txnIdMostBits, PulsarApi.ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandEndTxnResponse.Builder builder = PulsarApi.CommandEndTxnResponse.newBuilder();
+			PulsarApi.CommandEndTxnResponse builder = PulsarApi.CommandEndTxnResponse();
 			builder.RequestId = requestId;
 			builder.TxnidMostBits = txnIdMostBits;
 			builder.Error = error;
@@ -1395,7 +1378,7 @@ namespace SharpPulsar.Common.Protocol
 				builder.setMessage(errorMsg);
 			}
 			PulsarApi.CommandEndTxnResponse commandEndTxnResponse = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(commandEndTxnResponse));
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(commandEndTxnResponse));
 			builder.recycle();
 			commandEndTxnResponse.recycle();
 			return res;
@@ -1403,23 +1386,23 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer newEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, PulsarApi.TxnAction txnAction)
 		{
-			PulsarApi.CommandEndTxnOnPartition.Builder txnEndOnPartition = PulsarApi.CommandEndTxnOnPartition.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setTopic(topic).setTxnAction(txnAction);
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION).setEndTxnOnPartition(txnEndOnPartition));
+			PulsarApi.CommandEndTxnOnPartition txnEndOnPartition = PulsarApi.CommandEndTxnOnPartition().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setTopic(topic).setTxnAction(txnAction);
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION).setEndTxnOnPartition(txnEndOnPartition));
 			txnEndOnPartition.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnOnPartitionResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = PulsarApi.CommandEndTxnOnPartitionResponse.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
+			PulsarApi.CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = PulsarApi.CommandEndTxnOnPartitionResponse().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
 			commandEndTxnOnPartitionResponse.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnOnPartitionResponse(long requestId, PulsarApi.ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandEndTxnOnPartitionResponse.Builder builder = PulsarApi.CommandEndTxnOnPartitionResponse.newBuilder();
+			PulsarApi.CommandEndTxnOnPartitionResponse builder = PulsarApi.CommandEndTxnOnPartitionResponse();
 			builder.RequestId = requestId;
 			builder.Error = error;
 			if (!string.ReferenceEquals(errorMsg, null))
@@ -1427,7 +1410,7 @@ namespace SharpPulsar.Common.Protocol
 				builder.setMessage(errorMsg);
 			}
 			PulsarApi.CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
 			builder.recycle();
 			commandEndTxnOnPartitionResponse.recycle();
 			return res;
@@ -1435,23 +1418,23 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer newEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, PulsarApi.Subscription subscription, PulsarApi.TxnAction txnAction)
 		{
-			PulsarApi.CommandEndTxnOnSubscription commandEndTxnOnSubscription = PulsarApi.CommandEndTxnOnSubscription.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setSubscription(subscription).setTxnAction(txnAction).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION).setEndTxnOnSubscription(commandEndTxnOnSubscription));
+			PulsarApi.CommandEndTxnOnSubscription commandEndTxnOnSubscription = PulsarApi.CommandEndTxnOnSubscription().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).setSubscription(subscription).setTxnAction(txnAction).build();
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION).setEndTxnOnSubscription(commandEndTxnOnSubscription));
 			commandEndTxnOnSubscription.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnOnSubscriptionResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			PulsarApi.CommandEndTxnOnSubscriptionResponse response = PulsarApi.CommandEndTxnOnSubscriptionResponse.newBuilder().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
+			PulsarApi.CommandEndTxnOnSubscriptionResponse response = PulsarApi.CommandEndTxnOnSubscriptionResponse().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
 			response.recycle();
 			return res;
 		}
 
 		public static IByteBuffer newEndTxnOnSubscriptionResponse(long requestId, PulsarApi.ServerError error, string errorMsg)
 		{
-			PulsarApi.CommandEndTxnOnSubscriptionResponse.Builder builder = PulsarApi.CommandEndTxnOnSubscriptionResponse.newBuilder();
+			PulsarApi.CommandEndTxnOnSubscriptionResponse builder = PulsarApi.CommandEndTxnOnSubscriptionResponse();
 			builder.RequestId = requestId;
 			builder.Error = error;
 			if (!string.ReferenceEquals(errorMsg, null))
@@ -1459,7 +1442,7 @@ namespace SharpPulsar.Common.Protocol
 				builder.setMessage(errorMsg);
 			}
 			PulsarApi.CommandEndTxnOnSubscriptionResponse response = builder.build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand.newBuilder().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
+			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
 			builder.recycle();
 			response.recycle();
 			return res;
@@ -1484,7 +1467,7 @@ namespace SharpPulsar.Common.Protocol
 
 			try
 			{
-				cmd.writeTo(outStream);
+				cmd..writeTo(outStream);
 			}
 			catch (IOException e)
 			{
@@ -1621,7 +1604,7 @@ namespace SharpPulsar.Common.Protocol
 			return metadataAndPayload;
 		}
 
-		public static long initBatchMessageMetadata(PulsarApi.MessageMetadata.Builder messageMetadata, PulsarApi.MessageMetadata.Builder builder)
+		public static long initBatchMessageMetadata(PulsarApi.MessageMetadata messageMetadata, PulsarApi.MessageMetadata builder)
 		{
 			messageMetadata.PublishTime = builder.PublishTime;
 			messageMetadata.setProducerName(builder.getProducerName());
@@ -1641,7 +1624,7 @@ namespace SharpPulsar.Common.Protocol
 			return builder.SequenceId;
 		}
 
-		public static IByteBuffer serializeSingleMessageInBatchWithPayload(PulsarApi.SingleMessageMetadata.Builder singleMessageMetadataBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
+		public static IByteBuffer serializeSingleMessageInBatchWithPayload(PulsarApi.SingleMessageMetadata singleMessageMetadataBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
 		{
 			int payLoadSize = payload.readableBytes();
 			PulsarApi.SingleMessageMetadata singleMessageMetadata = singleMessageMetadataBuilder.setPayloadSize(payLoadSize).build();
@@ -1662,11 +1645,11 @@ namespace SharpPulsar.Common.Protocol
 			return batchBuffer.writeBytes(payload);
 		}
 
-		public static IByteBuffer serializeSingleMessageInBatchWithPayload(PulsarApi.MessageMetadata.Builder msgBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
+		public static IByteBuffer serializeSingleMessageInBatchWithPayload(PulsarApi.MessageMetadata msgBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
 		{
 
 			// build single message meta-data
-			PulsarApi.SingleMessageMetadata.Builder singleMessageMetadataBuilder = PulsarApi.SingleMessageMetadata.newBuilder();
+			PulsarApi.SingleMessageMetadata singleMessageMetadataBuilder = PulsarApi.SingleMessageMetadata();
 			if (msgBuilder.hasPartitionKey())
 			{
 				singleMessageMetadataBuilder = singleMessageMetadataBuilder.setPartitionKey(msgBuilder.getPartitionKey()).setPartitionKeyB64Encoded(msgBuilder.PartitionKeyB64Encoded);
@@ -1700,11 +1683,11 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.buffer.IByteBuffer deSerializeSingleMessageInBatch(io.netty.buffer.IByteBuffer uncompressedPayload, org.apache.pulsar.common.api.proto.PulsarApi.SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize) throws java.io.IOException
-		public static IByteBuffer deSerializeSingleMessageInBatch(IByteBuffer uncompressedPayload, PulsarApi.SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: public static io.netty.buffer.IByteBuffer deSerializeSingleMessageInBatch(io.netty.buffer.IByteBuffer uncompressedPayload, org.apache.pulsar.common.api.proto.PulsarApi.SingleMessageMetadata singleMessageMetadataBuilder, int index, int batchSize) throws java.io.IOException
+		public static IByteBuffer deSerializeSingleMessageInBatch(IByteBuffer uncompressedPayload, PulsarApi.SingleMessageMetadata singleMessageMetadataBuilder, int index, int batchSize)
 		{
-			int singleMetaSize = (int) uncompressedPayload.readUnsignedInt();
+			int singleMetaSize = (int)uncompressedPayload.readUnsignedInt();
 			int writerIndex = uncompressedPayload.writerIndex();
 			int beginIndex = uncompressedPayload.readerIndex() + singleMetaSize;
 			uncompressedPayload.writerIndex(beginIndex);
@@ -1757,7 +1740,7 @@ namespace SharpPulsar.Common.Protocol
 				throw new Exception(e);
 			}
 
-			return (IByteBufferPair) IByteBufferPair.get(headers, metadataAndPayload);
+			return (IByteBufferPair)IByteBufferPair.get(headers, metadataAndPayload);
 		}
 
 		public static int getNumberOfMessagesInBatch(IByteBuffer metadataAndPayload, string subscription, long consumerId)
@@ -1780,13 +1763,13 @@ namespace SharpPulsar.Common.Protocol
 			try
 			{
 				// save the reader index and restore after parsing
-				int readerIdx = metadataAndPayload.readerIndex();
-				PulsarApi.MessageMetadata metadata = Commands.parseMessageMetadata(metadataAndPayload);
-				metadataAndPayload.readerIndex(readerIdx);
+				int readerIdx = metadataAndPayload.ReaderIndex;
+				PulsarApi.MessageMetadata.Builder metadata = Commands.ParseMessageMetadata(metadataAndPayload);
+				metadataAndPayload.SetReaderIndex(readerIdx);
 
 				return metadata;
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				log.error("[{}] [{}] Failed to parse message metadata", subscription, consumerId, t);
 				return null;
@@ -1811,29 +1794,29 @@ namespace SharpPulsar.Common.Protocol
 			None
 		}
 
-		public static bool peerSupportsGetLastMessageId(int peerVersion)
+		public static bool PeerSupportsGetLastMessageId(int peerVersion)
 		{
-			return peerVersion >= PulsarApi.ProtocolVersion.v12.Number;
+			return peerVersion >= (int)PulsarApi.ProtocolVersion.V12;
 		}
 
-		public static bool peerSupportsActiveConsumerListener(int peerVersion)
+		public static bool PeerSupportsActiveConsumerListener(int peerVersion)
 		{
-			return peerVersion >= PulsarApi.ProtocolVersion.v12.Number;
+			return peerVersion >= (int)ProtocolVersion.V12;
 		}
 
-		public static bool peerSupportsMultiMessageAcknowledgment(int peerVersion)
+		public static bool PeerSupportsMultiMessageAcknowledgment(int peerVersion)
 		{
-			return peerVersion >= PulsarApi.ProtocolVersion.v12.Number;
+			return peerVersion >= (int)PulsarApi.ProtocolVersion.V12;
 		}
 
-		public static bool peerSupportJsonSchemaAvroFormat(int peerVersion)
+		public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
 		{
-			return peerVersion >= PulsarApi.ProtocolVersion.v13.Number;
+			return peerVersion >= (int)PulsarApi.ProtocolVersion.V13;
 		}
 
-		public static bool peerSupportsGetOrCreateSchema(int peerVersion)
+		public static bool PeerSupportsGetOrCreateSchema(int peerVersion)
 		{
-			return peerVersion >= PulsarApi.ProtocolVersion.v15.Number;
+			return peerVersion >= (int)PulsarApi.ProtocolVersion.V15;
 		}
 	}
 

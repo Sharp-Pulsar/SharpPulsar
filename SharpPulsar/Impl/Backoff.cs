@@ -39,9 +39,6 @@ namespace SharpPulsar.Impl
 		private bool mandatoryStopMade = false;
 
 		private static readonly Random random = new Random();
-
-//Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting Backoff(long initial, java.util.concurrent.TimeUnit unitInitial, long max, java.util.concurrent.TimeUnit unitMax, long mandatoryStop, java.util.concurrent.TimeUnit unitMandatoryStop, java.time.Clock clock)
 		internal Backoff(long initial, TimeUnit unitInitial, long max, TimeUnit unitMax, long mandatoryStop, TimeUnit unitMandatoryStop, Clock clock)
 		{
 			this.initial = unitInitial.toMillis(initial);

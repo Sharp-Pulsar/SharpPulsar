@@ -18,58 +18,52 @@
 /// </summary>
 namespace SharpPulsar.Common.Protocol
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using ChannelInboundHandlerAdapter = io.netty.channel.ChannelInboundHandlerAdapter;
-	using ByteBufCodedInputStream = org.apache.pulsar.common.util.protobuf.ByteBufCodedInputStream;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
     using SharpPulsar.Common.Protocol.Schema;
 	using PulsarApi = SharpPulsar.Common.PulsarApi;
+    using DotNetty.Buffers;
+    using DotNetty.Transport.Channels;
+    using SharpPulsar.Util.Protobuf;
+    using static SharpPulsar.Common.Proto.Api.PulsarApi;
 
-	/// <summary>
-	/// Basic implementation of the channel handler to process inbound Pulsar data.
-	/// </summary>
-	public abstract class PulsarDecoder : ChannelInboundHandlerAdapter
+    //using SharpPulsar.Common.PulsarApi;
+
+    /// <summary>
+    /// Basic implementation of the channel handler to process inbound Pulsar data.
+    /// </summary>
+    public abstract class PulsarDecoder : ChannelInboundHandlerAdapter
 	{
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelRead(io.netty.channel.ChannelHandlerContext ctx, Object msg) throws Exception
-		public override void channelRead(ChannelHandlerContext ctx, object msg)
+		public override void ChannelRead(IChannelHandlerContext ctx, object msg)
 		{
 			// Get a buffer that contains the full frame
-			ByteBuf buffer = (ByteBuf) msg;
-			SharpPulsar.Common.PulsarApi.BaseCommand cmd = null;
-			SharpPulsar.Common.PulsarApi.BaseCommand.Builder cmdBuilder = null;
+			IByteBuffer buffer = (IByteBuffer) msg;
+			PulsarApi.BaseCommand cmd = null;
+			PulsarApi.BaseCommand cmdBuilder = null;
 
 			try
 			{
 				// De-serialize the command
-				int cmdSize = (int) buffer.readUnsignedInt();
-				int writerIndex = buffer.writerIndex();
+				int cmdSize = (int) buffer.ReadUnsignedInt();
+				int writerIndex = buffer.WriterIndex;
 				buffer.writerIndex(buffer.readerIndex() + cmdSize);
-				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.get(buffer);
-				cmdBuilder = SharpPulsar.Common.PulsarApi.BaseCommand.newBuilder();
-				cmd = cmdBuilder.mergeFrom(cmdInputStream, null).build();
+				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.Get(buffer);
+				cmdBuilder = new PulsarApi.BaseCommand();
+				cmd = cmdBuilder.MergeFrom(cmdInputStream, null).build();
 				buffer.writerIndex(writerIndex);
 
 				cmdInputStream.recycle();
 
 				if (log.DebugEnabled)
 				{
-					log.debug("[{}] Received cmd {}", ctx.channel().remoteAddress(), cmd.getType());
+					log.debug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, cmd.GetType());
 				}
 
 				messageReceived();
 
-				switch (cmd.getType())
+				switch (cmd.GetType())
 				{
-				case PARTITIONED_METADATA:
+				case BaseCommand.Type.PARTITIONED_METADATA:
 					checkArgument(cmd.hasPartitionMetadata());
-					handlePartitionMetadataRequest(cmd.PartitionMetadata);
+					handlePartitionMetadataRequest(cmd.partitionMetadata);
 					cmd.PartitionMetadata.recycle();
 					break;
 

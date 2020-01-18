@@ -43,7 +43,7 @@ namespace SharpPulsar.Util.Protobuf
 	{
 		public interface ByteBufMessageBuilder
 		{
-			ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistryLite ext);
+			ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry ext);
 		}
 
 		private IByteBuffer buf;
@@ -126,7 +126,7 @@ namespace SharpPulsar.Util.Protobuf
 
 		/// <summary>
 		/// Read an embedded message field value from the stream. </summary>
-		public virtual void ReadMessage(ByteBufMessageBuilder builder, ExtensionRegistryLite extensionRegistry)
+		public virtual void ReadMessage(ByteBufMessageBuilder builder, ExtensionRegistry extensionRegistry)
 		{
 			int length = ReadRawVarint32();
 
@@ -146,7 +146,7 @@ namespace SharpPulsar.Util.Protobuf
 			int size = ReadRawVarint32();
 			if (size == 0)
 			{
-				return ByteString.EMPTY;
+				return ByteString.Empty;
 			}
 			else
 			{
@@ -158,7 +158,7 @@ namespace SharpPulsar.Util.Protobuf
 				}
 
 				buf.ReadBytes(localBuf, 0, size);
-				ByteString res = ByteString.copyFrom(localBuf, 0, size);
+				ByteString res = ByteString.CopyFrom(localBuf, 0, size);
 				return res;
 			}
 		}
@@ -256,7 +256,7 @@ namespace SharpPulsar.Util.Protobuf
 
 		/// <summary>
 		/// Read an {@code int32} field value from the stream. </summary>
-		public virtual int readInt32()
+		public virtual int ReadInt32()
 		{
 			return ReadRawVarint32();
 		}
