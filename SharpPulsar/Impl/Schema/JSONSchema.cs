@@ -33,13 +33,14 @@ namespace SharpPulsar.Impl.Schema
     using SharpPulsar.Interface.Schema;
     using SharpPulsar.Common.Schema;
     using SharpPulsar.Common.Protocol.Schema;
+	using DotNetty.Buffers;
 
-    /// <summary>
-    /// A schema implementation to deal with json data.
-    /// </summary>
-    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-    //ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
-    public class JSONSchema<T> : StructSchema<T>
+	/// <summary>
+	/// A schema implementation to deal with json data.
+	/// </summary>
+	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+	//ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
+	public class JSONSchema<T> : StructSchema<T>
 	{
 		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
 		// return shaded version of object mapper
@@ -60,9 +61,9 @@ namespace SharpPulsar.Impl.Schema
 			Reader = new JsonReader<T>(JSON_MAPPER.get(), pojo);
 		}
 
-		protected internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
+		protected override internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			throw new Exception("JSONSchema don't support schema versioning");
+			throw new System.Exception("JSONSchema don't support schema versioning");
 		}
 
 		/// <summary>
@@ -90,27 +91,31 @@ namespace SharpPulsar.Impl.Schema
 				}
 				catch (JsonProcessingException ex)
 				{
-					throw new Exception(ex);
+					throw new System.Exception(ex);
 				}
 				return backwardsCompatibleSchemaInfo;
 			}
 		}
 
-		public static JSONSchema<T> Of<T>(ISchemaDefinition<T> schemaDefinition)
+		public static JSONSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
 		{
 			return new JSONSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.JSON), schemaDefinition.Pojo);
 		}
 
-		public static JSONSchema<T> Of<T>(Type pojo)
+		public static JSONSchema<T> Of(Type pojo)
 		{
-			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
-		public static JSONSchema<T> Of<T>(Type pojo, IDictionary<string, string> properties)
+		public static JSONSchema<T> Of(Type pojo, IDictionary<string, string> properties)
 		{
-			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
 
+		public override T Decode(IByteBuffer byteBuf)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

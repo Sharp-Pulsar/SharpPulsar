@@ -150,7 +150,7 @@ namespace SharpPulsar.Interface
 		/// PulsarClient client = PulsarClient.builder()
 		///          .serviceUrl("pulsar+ssl://broker.example.com:6651/)
 		///          .authentication(
-		///              "org.apache.pulsar.client.impl.auth.AuthenticationTls",
+		///              "SharpPulsar.Impl.auth.AuthenticationTls",
 		///              "tlsCertFile:/my/cert/file,tlsKeyFile:/my/key/file")
 		///          .build();
 		/// </code>
@@ -180,7 +180,7 @@ namespace SharpPulsar.Interface
 		/// PulsarClient client = PulsarClient.builder()
 		///          .serviceUrl("pulsar+ssl://broker.example.com:6651/)
 		///          .authentication(
-		///              "org.apache.pulsar.client.impl.auth.AuthenticationTls", conf)
+		///              "SharpPulsar.Impl.auth.AuthenticationTls", conf)
 		///          .build();
 		/// }</pre>
 		/// 

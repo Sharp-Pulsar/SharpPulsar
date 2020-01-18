@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Impl.Message;
+using SharpPulsar.Impl.Producer;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -50,7 +52,7 @@ namespace SharpPulsar.Impl.Batch
 
 		private IDictionary<string, KeyedBatch> batches = new Dictionary<string, KeyedBatch>();
 
-		public override bool add<T1>(MessageImpl<T1> msg, SendCallback callback)
+		public bool Add<T1>(MessageImpl<T1> msg, SendCallback callback)
 		{
 			if (log.DebugEnabled)
 			{
@@ -78,14 +80,14 @@ namespace SharpPulsar.Impl.Batch
 			return BatchFull;
 		}
 
-		public override void clear()
+		public void Clear()
 		{
 			numMessagesInBatch = 0;
 			currentBatchSizeBytes = 0;
 			batches = new Dictionary<string, KeyedBatch>();
 		}
 
-		public override bool Empty
+		public bool Empty
 		{
 			get
 			{
@@ -93,7 +95,7 @@ namespace SharpPulsar.Impl.Batch
 			}
 		}
 
-		public override void discard(Exception ex)
+		public void Discard(System.Exception ex)
 		{
 			try
 			{
@@ -108,7 +110,7 @@ namespace SharpPulsar.Impl.Batch
 			clear();
 		}
 
-		public override bool MultiBatches
+		public bool MultiBatches
 		{
 			get
 			{
@@ -117,8 +119,7 @@ namespace SharpPulsar.Impl.Batch
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch) throws java.io.IOException
-		private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch)
+		private ProducerImpl.OpSendMsg CreateOpSendMsg(KeyedBatch keyedBatch)
 		{
 			ByteBuf encryptedPayload = producer.encryptMessage(keyedBatch.messageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
 			if (encryptedPayload.readableBytes() > ClientConnection.MaxMessageSize)
@@ -148,7 +149,6 @@ namespace SharpPulsar.Impl.Batch
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public java.util.List<ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException
 		public override IList<ProducerImpl.OpSendMsg> createOpSendMsgs()
 		{
 			IList<ProducerImpl.OpSendMsg> result = new List<ProducerImpl.OpSendMsg>();

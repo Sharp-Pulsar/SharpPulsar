@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using ChannelInitializer = io.netty.channel.ChannelInitializer;
@@ -27,7 +27,7 @@ namespace org.apache.pulsar.client.impl
 	using SslContext = io.netty.handler.ssl.SslContext;
 
 	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
 	using org.apache.pulsar.client.util;
 	using ByteBufPair = org.apache.pulsar.common.protocol.ByteBufPair;
 	using Commands = org.apache.pulsar.common.protocol.Commands;
@@ -46,7 +46,7 @@ namespace org.apache.pulsar.client.impl
 		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = TimeUnit.MINUTES.toMillis(1);
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarChannelInitializer(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws Exception
+//ORIGINAL LINE: public PulsarChannelInitializer(SharpPulsar.Impl.conf.ClientConfigurationData conf, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws Exception
 		public PulsarChannelInitializer(ClientConfigurationData conf, System.Func<ClientCnx> clientCnxSupplier) : base()
 		{
 			this.clientCnxSupplier = clientCnxSupplier;

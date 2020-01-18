@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl.Producer
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using CryptoException = org.apache.pulsar.client.api.PulsarClientException.CryptoException;
 	using Schema = org.apache.pulsar.client.api.Schema;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
+	using ProducerConfigurationData = SharpPulsar.Impl.conf.ProducerConfigurationData;
 	using SharpPulsar.Impl.Schema;
 	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
 	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
@@ -267,10 +267,10 @@ namespace SharpPulsar.Impl.Producer
 
 			private CompletableFuture<MessageId> future;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private org.apache.pulsar.client.impl.MessageImpl<JavaToDotNetGenericWildcard> interceptorMessage;
-			private org.apache.pulsar.client.impl.MessageImpl<object> interceptorMessage;
+//ORIGINAL LINE: private SharpPulsar.Impl.MessageImpl<JavaToDotNetGenericWildcard> interceptorMessage;
+			private SharpPulsar.Impl.MessageImpl<object> interceptorMessage;
 
-			public SendCallbackAnonymousInnerClass<T1>(ProducerImpl<T> outerInstance, CompletableFuture<MessageId> future, org.apache.pulsar.client.impl.MessageImpl<T1> interceptorMessage)
+			public SendCallbackAnonymousInnerClass<T1>(ProducerImpl<T> outerInstance, CompletableFuture<MessageId> future, SharpPulsar.Impl.MessageImpl<T1> interceptorMessage)
 			{
 				this.outerInstance = outerInstance;
 				this.future = future;

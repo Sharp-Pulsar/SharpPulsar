@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Interface.Schema;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,17 +23,10 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-
-	using FieldSchemaBuilder = org.apache.pulsar.client.api.schema.FieldSchemaBuilder;
-	using GenericSchema = org.apache.pulsar.client.api.schema.GenericSchema;
-	using RecordSchemaBuilder = org.apache.pulsar.client.api.schema.RecordSchemaBuilder;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// The default implementation of <seealso cref="RecordSchemaBuilder"/>.
 	/// </summary>
-	public class RecordSchemaBuilderImpl : RecordSchemaBuilder
+	public class RecordSchemaBuilderImpl : IRecordSchemaBuilder
 	{
 
 		public const string NAMESPACE = "org.apache.pulsar.schema.record";
@@ -40,7 +35,6 @@ namespace SharpPulsar.Impl.Schema
 		private readonly string name;
 		private readonly IDictionary<string, string> properties;
 		private readonly IList<FieldSchemaBuilderImpl> fields = new List<FieldSchemaBuilderImpl>();
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		private string doc_Conflict;
 
 		public RecordSchemaBuilderImpl(string name)
@@ -49,33 +43,33 @@ namespace SharpPulsar.Impl.Schema
 			this.properties = new Dictionary<string, string>();
 		}
 
-		public override RecordSchemaBuilder property(string name, string val)
+		public IRecordSchemaBuilder Property(string name, string val)
 		{
 			this.properties[name] = val;
 			return this;
 		}
 
-		public override FieldSchemaBuilder field(string fieldName)
+		public FieldSchemaBuilderImpl Field(string fieldName)
 		{
 			FieldSchemaBuilderImpl field = new FieldSchemaBuilderImpl(fieldName);
 			fields.Add(field);
 			return field;
 		}
 
-		public override FieldSchemaBuilder field(string fieldName, GenericSchema genericSchema)
+		public override IFieldSchemaBuilder<FieldSchemaBuilderImpl> Field(string fieldName, GenericSchema genericSchema)
 		{
 			FieldSchemaBuilderImpl field = new FieldSchemaBuilderImpl(fieldName, genericSchema);
 			fields.Add(field);
 			return field;
 		}
 
-		public override RecordSchemaBuilder doc(string doc)
+		public IRecordSchemaBuilder Doc(string doc)
 		{
 			this.doc_Conflict = doc;
 			return this;
 		}
 
-		public override SchemaInfo build(SchemaType schemaType)
+		public SchemaInfo Build(SchemaType schemaType)
 		{
 			switch (schemaType)
 			{
@@ -110,7 +104,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <summary>
 		/// Split a full dotted-syntax name into a namespace and a single-component name.
 		/// </summary>
-		private static string[] splitName(string fullName)
+		private static string[] SplitName(string fullName)
 		{
 			string[] result = new string[2];
 			int indexLastDot = fullName.LastIndexOf('.');

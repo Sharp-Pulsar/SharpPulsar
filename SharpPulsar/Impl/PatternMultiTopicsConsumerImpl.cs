@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -30,7 +30,7 @@ namespace org.apache.pulsar.client.impl
 	using TimerTask = io.netty.util.TimerTask;
 	using Consumer = org.apache.pulsar.client.api.Consumer;
 	using Schema = org.apache.pulsar.client.api.Schema;
-	using org.apache.pulsar.client.impl.conf;
+	using SharpPulsar.Impl.conf;
 	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
 	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
 	using TopicName = org.apache.pulsar.common.naming.TopicName;

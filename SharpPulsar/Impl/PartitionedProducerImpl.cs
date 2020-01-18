@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -40,7 +40,7 @@ namespace org.apache.pulsar.client.impl
 	using NotSupportedException = org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
 	using Schema = org.apache.pulsar.client.api.Schema;
 	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
+	using ProducerConfigurationData = SharpPulsar.Impl.conf.ProducerConfigurationData;
 	using TopicName = org.apache.pulsar.common.naming.TopicName;
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 	using Logger = org.slf4j.Logger;

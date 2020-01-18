@@ -19,7 +19,7 @@ using System;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	public class ProducerStatsRecorderImpl : IProducerStatsRecorder

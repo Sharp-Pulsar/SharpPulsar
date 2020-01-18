@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Impl.Batch;
+using SharpPulsar.Interface.Batch;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,17 +18,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
-	using BatchMessageContainer = org.apache.pulsar.client.api.BatchMessageContainer;
-	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
 
-	public class KeyBasedBatcherBuilder : BatcherBuilder
+	public class KeyBasedBatcherBuilder : IBatcherBuilder
 	{
 
 		private const long serialVersionUID = 1L;
 
-		public override BatchMessageContainer build()
+		public IBatchMessageContainer Build()
 		{
 			return new BatchMessageKeyBasedContainer();
 		}

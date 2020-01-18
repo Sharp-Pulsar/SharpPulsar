@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Interface.Batch;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +22,7 @@
 namespace SharpPulsar.Impl.Batch
 {
 
-	public interface BatchMessageContainerBase : BatchMessageContainer
+	public interface BatchMessageContainerBase : IBatchMessageContainer
 	{
 
 		/// <summary>
@@ -68,7 +69,7 @@ namespace SharpPulsar.Impl.Batch
 		/// <returns> list of OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: java.util.List<org.apache.pulsar.client.impl.ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException;
+//ORIGINAL LINE: java.util.List<SharpPulsar.Impl.ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException;
 		IList<OpSendMsg> createOpSendMsgs();
 
 		/// <summary>
@@ -77,7 +78,7 @@ namespace SharpPulsar.Impl.Batch
 		/// <returns> OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: org.apache.pulsar.client.impl.ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException;
+//ORIGINAL LINE: SharpPulsar.Impl.ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException;
 		OpSendMsg createOpSendMsg();
 	}
 

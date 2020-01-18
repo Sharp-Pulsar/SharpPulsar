@@ -21,7 +21,7 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
 	using Schema = Avro.Schema;
 	using BinaryEncoder = Avro.IO.BinaryEncoder;

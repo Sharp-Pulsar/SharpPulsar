@@ -3,8 +3,10 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Enum;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Batch;
 using SharpPulsar.Impl.Message;
 using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
 using SharpPulsar.Interface.Batch;
@@ -169,13 +171,13 @@ namespace SharpPulsar.Common
 
 		public static ISchema<T> NewProtobufSchema<T>(ISchemaDefinition<T> schemaDefinition) //where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return ProtobufSchema<T>.Of<T>(schemaDefinition);
+			return ProtobufSchema<T>.Of<T>(schemaDefinition.GetType());
 			//return catchExceptions(() => (Schema<T>) getStaticMethod("SharpPulsar.Impl.Schema.ProtobufSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
 		}
 		
 		public static ISchema<T> NewJSONSchema<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return JSONSchema<T>.Of<T>(schemaDefinition);
+			return JSONSchema<T>.Of(schemaDefinition);
 		}
 
 		public static ISchema<IGenericRecord> NewAutoConsumeSchema()
@@ -185,48 +187,51 @@ namespace SharpPulsar.Common
 
 		public static ISchema<sbyte[]> NewAutoProduceSchema()
 		{
-			return catchExceptions(() => (Schema<sbyte[]>) newClassInstance("SharpPulsar.Impl.Schema.AutoProduceBytesSchema").newInstance());
+			return new AutoProduceBytesSchema<sbyte[]>();
 		}
 
 		public static ISchema<sbyte[]> NewAutoProduceSchema<T1>(ISchema<T1> schema)
 		{
-			return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
+			return new AutoProduceBytesSchema<sbyte[]>(schema);
+			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
 		public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
 		{
-			return catchExceptions(() => (Schema<KeyValue<sbyte[], sbyte[]>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "kvBytes").invoke(null));
+			return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
+			//return catchExceptions(() => (Schema<KeyValue<sbyte[], sbyte[]>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "kvBytes").invoke(null));
 		}
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, keySchema, valueSchema));
+			return KeyValueSchema<K, V>.Of(keySchema, valueSchema);
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, keySchema, valueSchema));
 		}
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, keySchema, valueSchema, keyValueEncodingType));
+			return KeyValueSchema<K, V>.Of(keySchema, valueSchema, keyValueEncodingType);
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, keySchema, valueSchema, keyValueEncodingType));
 		}
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(Type key, Type value, SchemaType type)
 		{
-			return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, key, value, type));
+			return KeyValueSchema<K, V>.Of(key, value, type);
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, key, value, type));
 		}
 		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: return catchExceptions(() -> (org.apache.pulsar.client.api.Schema<?>) getStaticMethod("SharpPulsar.Impl.Schema.AutoConsumeSchema", "getSchema", org.apache.pulsar.common.schema.SchemaInfo.class).invoke(null, schemaInfo));
-			return catchExceptions(() => (Schema<object>) getStaticMethod("SharpPulsar.Impl.Schema.AutoConsumeSchema", "getSchema", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return (ISchema<object>)AutoConsumeSchema.GetSchema(schemaInfo);
 		}
 
 		public static IGenericSchema<IGenericRecord> GetGenericSchema(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (GenericSchema) getStaticMethod("SharpPulsar.Impl.Schema.generic.GenericSchemaImpl", "of", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return GenericSchemaImpl.Of(schemaInfo);
 		}
 
 		public static IRecordSchemaBuilder NewRecordSchemaBuilder(string name)
 		{
-			return catchExceptions(() => (RecordSchemaBuilder) getConstructor("SharpPulsar.Impl.Schema.RecordSchemaBuilderImpl", typeof(string)).newInstance(name));
+			return new RecordSchemaBuilderImpl(name);
 		}
 
 		/// <summary>
@@ -236,7 +241,7 @@ namespace SharpPulsar.Common
 		/// <returns> the kv encoding type </returns>
 		public static KeyValueEncodingType DecodeKeyValueEncodingType(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (KeyValueEncodingType) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "decodeKeyValueEncodingType", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return KeyValueSchemaInfo.DecodeKeyValueEncodingType(schemaInfo);
 		}
 
 		/// <summary>
@@ -261,7 +266,7 @@ namespace SharpPulsar.Common
 		/// <returns> the final schema info </returns>
 		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(string schemaName, ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
-			return catchExceptions(() => (SchemaInfo) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "encodeKeyValueSchemaInfo", typeof(string), typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, schemaName, keySchema, valueSchema, keyValueEncodingType));
+			return KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(schemaName, keySchema, valueSchema, keyValueEncodingType);
 		}
 
 		/// <summary>
@@ -271,7 +276,7 @@ namespace SharpPulsar.Common
 		/// <returns> the pair of key schema info and value schema info </returns>
 		public static KeyValue<SchemaInfo, SchemaInfo> DecodeKeyValueSchemaInfo(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (KeyValue<SchemaInfo, SchemaInfo>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchemaInfo", "decodeKeyValueSchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
 		}
 
 		/// <summary>
@@ -281,7 +286,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info </returns>
 		public static string JsonifySchemaInfo(SchemaInfo schemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifySchemaInfo", typeof(SchemaInfo)).invoke(null, schemaInfo));
+			return SchemaUtils.JsonifySchemaInfo(schemaInfo);
 		}
 
 		/// <summary>
@@ -291,7 +296,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info with version </returns>
 		public static string JsonifySchemaInfoWithVersion(SchemaInfoWithVersion schemaInfoWithVersion)
 		{
-			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifySchemaInfoWithVersion", typeof(SchemaInfoWithVersion)).invoke(null, schemaInfoWithVersion));
+			return SchemaUtils.JsonifySchemaInfoWithVersion(schemaInfoWithVersion);
 		}
 
 		/// <summary>
@@ -301,7 +306,7 @@ namespace SharpPulsar.Common
 		/// <returns> the jsonified schema info </returns>
 		public static string JsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "jsonifyKeyValueSchemaInfo", typeof(KeyValue)).invoke(null, kvSchemaInfo));
+			return SchemaUtils.JsonifyKeyValueSchemaInfo(kvSchemaInfo);
 		}
 
 		/// <summary>
@@ -311,7 +316,7 @@ namespace SharpPulsar.Common
 		/// <returns> the convert key/value schema data string </returns>
 		public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
 		{
-			return catchExceptions(() => (string) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "convertKeyValueSchemaInfoDataToString", typeof(KeyValue)).invoke(null, kvSchemaInfo));
+			return SchemaUtils.ConvertKeyValueSchemaInfoDataToString(kvSchemaInfo);
 		}
 
 		/// <summary>
@@ -321,17 +326,17 @@ namespace SharpPulsar.Common
 		/// <returns> the key/value schema info data bytes </returns>
 		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] keyValueSchemaInfoDataJsonBytes)
 		{
-			return catchExceptions(() => (sbyte[]) getStaticMethod("SharpPulsar.Impl.Schema.SchemaUtils", "convertKeyValueDataStringToSchemaInfoSchema", typeof(sbyte[])).invoke(null, keyValueSchemaInfoDataJsonBytes));
+			return SchemaUtils.ConvertKeyValueDataStringToSchemaInfoSchema(keyValueSchemaInfoDataJsonBytes);
 		}
 
 		public static IBatcherBuilder NewDefaultBatcherBuilder()
 		{
-			return catchExceptions(() => (BatcherBuilder) getConstructor("org.apache.pulsar.client.impl.DefaultBatcherBuilder").newInstance());
+			return new DefaultBatcherBuilder();
 		}
 
 		public static IBatcherBuilder NewKeyBasedBatcherBuilder()
 		{
-			return catchExceptions(() => (BatcherBuilder) getConstructor("org.apache.pulsar.client.impl.KeyBasedBatcherBuilder").newInstance());
+			return new KeyBasedBatcherBuilder();
 		}
 	}
 

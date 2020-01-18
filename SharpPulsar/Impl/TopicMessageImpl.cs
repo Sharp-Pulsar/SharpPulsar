@@ -19,7 +19,7 @@
 /// under the License.
 /// </summary>
 
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using Message = org.apache.pulsar.client.api.Message;
 	using MessageId = org.apache.pulsar.client.api.MessageId;

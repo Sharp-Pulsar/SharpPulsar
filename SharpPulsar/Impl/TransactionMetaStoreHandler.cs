@@ -19,7 +19,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using Recycler = io.netty.util.Recycler;
@@ -29,7 +29,7 @@ namespace org.apache.pulsar.client.impl
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using TransactionCoordinatorClientException = org.apache.pulsar.client.api.transaction.TransactionCoordinatorClientException;
 
-	using RequestTime = org.apache.pulsar.client.impl.ClientCnx.RequestTime;
+	using RequestTime = SharpPulsar.Impl.ClientCnx.RequestTime;
 	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
 	using Commands = org.apache.pulsar.common.protocol.Commands;
 	using ConcurrentLongHashMap = org.apache.pulsar.common.util.collections.ConcurrentLongHashMap;

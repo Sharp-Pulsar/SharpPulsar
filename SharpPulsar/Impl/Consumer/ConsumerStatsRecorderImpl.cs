@@ -18,12 +18,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using ConsumerStats = org.apache.pulsar.client.api.ConsumerStats;
 	using Message = org.apache.pulsar.client.api.Message;
-	using org.apache.pulsar.client.impl.conf;
+	using SharpPulsar.Impl.conf;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 

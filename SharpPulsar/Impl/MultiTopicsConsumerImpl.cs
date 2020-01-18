@@ -22,7 +22,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkArgument;
@@ -48,9 +48,9 @@ namespace org.apache.pulsar.client.impl
 	using NotSupportedException = org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
 	using Schema = org.apache.pulsar.client.api.Schema;
 	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using SubscriptionMode = org.apache.pulsar.client.impl.ConsumerImpl.SubscriptionMode;
-	using org.apache.pulsar.client.impl.conf;
-	using TransactionImpl = org.apache.pulsar.client.impl.transaction.TransactionImpl;
+	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
+	using SharpPulsar.Impl.conf;
+	using TransactionImpl = SharpPulsar.Impl.transaction.TransactionImpl;
 	using ConsumerName = org.apache.pulsar.client.util.ConsumerName;
 	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
 	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;

@@ -1,4 +1,9 @@
-﻿using System;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Enum;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface.Schema;
+using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,46 +25,24 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using Getter = lombok.Getter;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// [Key, Value] pair schema definition
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class KeyValueSchema<K, V> implements org.apache.pulsar.client.api.Schema<org.apache.pulsar.common.schema.KeyValue<K, V>>
-	public class KeyValueSchema<K, V> : Schema<KeyValue<K, V>>
+	public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<K> keySchema;
-		private readonly Schema<K> keySchema;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<V> valueSchema;
-		private readonly Schema<V> valueSchema;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final org.apache.pulsar.common.schema.KeyValueEncodingType keyValueEncodingType;
+		private readonly ISchema<K> keySchema;
+		private readonly ISchema<V> valueSchema;
 		private readonly KeyValueEncodingType keyValueEncodingType;
 
 		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
 		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
 		private SchemaInfo schemaInfo;
-		protected internal SchemaInfoProvider schemaInfoProvider;
+		protected internal ISchemaInfoProvider schemaInfoProvider;
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		public static Schema<KeyValue<K, V>> of<K, V>(Type key, Type value, SchemaType type)
+		public static ISchema<KeyValue<K, V>> Of(Type key, Type value, SchemaType type)
 		{
 			checkArgument(SchemaType.JSON == type || SchemaType.AVRO == type);
 			if (SchemaType.JSON == type)
@@ -74,33 +57,33 @@ namespace SharpPulsar.Impl.Schema
 		}
 
 
-		public static Schema<KeyValue<K, V>> of<K, V>(Schema<K> keySchema, Schema<V> valueSchema)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema)
 		{
 			return new KeyValueSchema<KeyValue<K, V>>(keySchema, valueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static Schema<KeyValue<K, V>> of<K, V>(Schema<K> keySchema, Schema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
 			return new KeyValueSchema<KeyValue<K, V>>(keySchema, valueSchema, keyValueEncodingType);
 		}
 
-		private static readonly Schema<KeyValue<sbyte[], sbyte[]>> KV_BYTES = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.of(), BytesSchema.of());
+		private static readonly ISchema<KeyValue<sbyte[], sbyte[]>> KV_BYTES = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.Of(), BytesSchema.Of());
 
-		public static Schema<KeyValue<sbyte[], sbyte[]>> kvBytes()
+		public static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
 			return KV_BYTES;
 		}
 
-		public override bool supportSchemaVersioning()
+		public bool SupportSchemaVersioning()
 		{
-			return keySchema.supportSchemaVersioning() || valueSchema.supportSchemaVersioning();
+			return keySchema.SupportSchemaVersioning() || valueSchema.SupportSchemaVersioning();
 		}
 
-		private KeyValueSchema(Schema<K> keySchema, Schema<V> valueSchema) : this(keySchema, valueSchema, KeyValueEncodingType.INLINE)
+		private KeyValueSchema(ISchema<K> keySchema, ISchema<V> valueSchema) : this(keySchema, valueSchema, KeyValueEncodingType.INLINE)
 		{
 		}
 
-		private KeyValueSchema(Schema<K> keySchema, Schema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		private KeyValueSchema(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
 			this.keySchema = keySchema;
 			this.valueSchema = valueSchema;
@@ -109,13 +92,13 @@ namespace SharpPulsar.Impl.Schema
 			// if either key schema or value schema requires fetching schema info,
 			// we don't need to configure the key/value schema info right now.
 			// defer configuring the key/value schema info until `configureSchemaInfo` is called.
-			if (!requireFetchingSchemaInfo())
+			if (!RequireFetchingSchemaInfo())
 			{
-				configureKeyValueSchemaInfo();
+				ConfigureKeyValueSchemaInfo();
 			}
 		}
 
-		private class SchemaInfoProviderAnonymousInnerClass : SchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> outerInstance;
 
@@ -124,20 +107,21 @@ namespace SharpPulsar.Impl.Schema
 				this.outerInstance = outerInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] schemaVersion)
+			public async ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
 			{
-				return CompletableFuture.completedFuture(outerInstance.schemaInfo);
+				return await Task.FromResult(outerInstance.schemaInfo);
+				//return CompletableFuture.completedFuture(outerInstance.schemaInfo);
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public SchemaInfo LatestSchema
 			{
 				get
 				{
-					return CompletableFuture.completedFuture(outerInstance.schemaInfo);
+					return outerInstance.schemaInfo;
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{
@@ -147,52 +131,52 @@ namespace SharpPulsar.Impl.Schema
 		}
 
 		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
-		public virtual sbyte[] encode(KeyValue<K, V> message)
+		public virtual sbyte[] Encode(KeyValue<K, V> message)
 		{
 			if (keyValueEncodingType != null && keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
-				return KeyValue.encode(message.Key, keySchema, message.Value, valueSchema);
+				return KeyValue<K, V>.Encode(message.Key, keySchema, message.Value, valueSchema);
 			}
 			else
 			{
-				return valueSchema.encode(message.Value);
+				return valueSchema.Encode(message.Value);
 			}
 		}
 
-		public virtual KeyValue<K, V> decode(sbyte[] bytes)
+		public virtual KeyValue<K, V> Decode(sbyte[] bytes)
 		{
-			return decode(bytes, null);
+			return Decode(bytes, null);
 		}
 
-		public virtual KeyValue<K, V> decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public virtual KeyValue<K, V> Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			if (this.keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 			{
 				throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
 			}
 
-			return KeyValue.decode(bytes, (keyBytes, valueBytes) => decode(keyBytes, valueBytes, schemaVersion));
+			return KeyValue<K,V>.Decode(bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, schemaVersion));
 		}
 
-		public virtual KeyValue<K, V> decode(sbyte[] keyBytes, sbyte[] valueBytes, sbyte[] schemaVersion)
+		public virtual KeyValue<K, V> Decode(sbyte[] keyBytes, sbyte[] valueBytes, sbyte[] schemaVersion)
 		{
 			K k;
-			if (keySchema.supportSchemaVersioning() && schemaVersion != null)
+			if (keySchema.SupportSchemaVersioning() && schemaVersion != null)
 			{
-				k = keySchema.decode(keyBytes, schemaVersion);
+				k = keySchema.Decode((byte[])(Array)keyBytes, (byte[])(Array)schemaVersion);
 			}
 			else
 			{
-				k = keySchema.decode(keyBytes);
+				k = keySchema.Decode((byte[])(Array)keyBytes);
 			}
 			V v;
-			if (valueSchema.supportSchemaVersioning() && schemaVersion != null)
+			if (valueSchema.SupportSchemaVersioning() && schemaVersion != null)
 			{
-				v = valueSchema.decode(valueBytes, schemaVersion);
+				v = valueSchema.Decode((byte[])(Array)valueBytes, (byte[])(Array)schemaVersion);
 			}
 			else
 			{
-				v = valueSchema.decode(valueBytes);
+				v = valueSchema.Decode((byte[])(Array)valueBytes);
 			}
 			return new KeyValue<K, V>(k, v);
 		}
@@ -205,7 +189,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public virtual SchemaInfoProvider SchemaInfoProvider
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -213,34 +197,34 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public override bool requireFetchingSchemaInfo()
+		public bool RequireFetchingSchemaInfo()
 		{
-			return keySchema.requireFetchingSchemaInfo() || valueSchema.requireFetchingSchemaInfo();
+			return keySchema.RequireFetchingSchemaInfo() || valueSchema.RequireFetchingSchemaInfo();
 		}
 
-		public override void configureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
+		public void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
 		{
-			KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.decodeKeyValueSchemaInfo(schemaInfo);
-			keySchema.configureSchemaInfo(topicName, "key", kvSchemaInfo.Key);
-			valueSchema.configureSchemaInfo(topicName, "value", kvSchemaInfo.Value);
+			KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
+			keySchema.ConfigureSchemaInfo(topicName, "key", kvSchemaInfo.Key);
+			valueSchema.ConfigureSchemaInfo(topicName, "value", kvSchemaInfo.Value);
 			configureKeyValueSchemaInfo();
 
 			if (null == this.schemaInfo)
 			{
-				throw new Exception("No key schema info or value schema info : key = " + keySchema.SchemaInfo + ", value = " + valueSchema.SchemaInfo);
+				throw new System.Exception("No key schema info or value schema info : key = " + keySchema.SchemaInfo + ", value = " + valueSchema.SchemaInfo);
 			}
 		}
 
-		private void configureKeyValueSchemaInfo()
+		private void ConfigureKeyValueSchemaInfo()
 		{
-			this.schemaInfo = KeyValueSchemaInfo.encodeKeyValueSchemaInfo(keySchema, valueSchema, keyValueEncodingType);
+			this.schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(keySchema, valueSchema, keyValueEncodingType);
 
 			this.keySchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass2(this);
 
 			this.valueSchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass3(this);
 		}
 
-		private class SchemaInfoProviderAnonymousInnerClass2 : SchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass2 : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> outerInstance;
 
@@ -249,12 +233,12 @@ namespace SharpPulsar.Impl.Schema
 				this.outerInstance = outerInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] schemaVersion)
+			public ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
 			{
-				return outerInstance.schemaInfoProvider.getSchemaByVersion(schemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Key);
+				return outerInstance.schemaInfoProvider.GetSchemaByVersion(schemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Key);
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public CompletableFuture<SchemaInfo> LatestSchema
 			{
 				get
 				{
@@ -262,7 +246,7 @@ namespace SharpPulsar.Impl.Schema
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{
@@ -271,7 +255,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		private class SchemaInfoProviderAnonymousInnerClass3 : SchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass3 : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> outerInstance;
 
@@ -280,12 +264,12 @@ namespace SharpPulsar.Impl.Schema
 				this.outerInstance = outerInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] schemaVersion)
+			public ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
 			{
-				return outerInstance.schemaInfoProvider.getSchemaByVersion(schemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Value);
+				return outerInstance.schemaInfoProvider.GetSchemaByVersion(schemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Value);
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public ValueTask<SchemaInfo> LatestSchema
 			{
 				get
 				{
@@ -293,7 +277,7 @@ namespace SharpPulsar.Impl.Schema
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{

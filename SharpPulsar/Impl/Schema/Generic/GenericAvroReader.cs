@@ -1,5 +1,7 @@
 ﻿using Avro.Generic;
-using Pulsar.Api.Schema;
+using SharpPulsar.Entity;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface.Schema;
 using System.Collections.Generic;
 using System.IO;
 
@@ -21,23 +23,14 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
 	using Schema = Avro.Schema;
 	using BinaryEncoder = Avro.IO.BinaryEncoder;
 	using Decoder = Avro.IO.Decoder;
-	using DecoderFactory = Avro.IO.DecoderFactory;
-	using EncoderFactory = Avro.IO.EncoderFactory;
-	using SchemaSerializationException = Api.SchemaSerializationException;
-	using Field = Api.Schema.Field;
-	using GenericRecord = Api.Schema.GenericRecord;
-
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-
-	public class GenericAvroReader : SchemaReader<GenericRecord>
+	public class GenericAvroReader : ISchemaReader<IGenericRecord>
 	{
 
 		private readonly GenericDatumReader<GenericAvroRecord> reader;
@@ -53,7 +46,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		public GenericAvroReader(Schema writerSchema, Schema readerSchema, sbyte[] schemaVersion)
 		{
 			this.schema = readerSchema;
-			this.fields = schema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
+			this.fields = schema.Field.Select(f => new Field(f.name(), f.pos())).ToList();
 			this.schemaVersion = schemaVersion;
 			if (writerSchema == null)
 			{
@@ -67,12 +60,12 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public GenericRecord  Read(sbyte[] bytes, int offset, int length)
+		public IGenericRecord  Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
 				Decoder decoder = DecoderFactory.get().binaryDecoder(bytes, offset, length, null);
-				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.read(null, decoder);
+				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.Read(null, decoder);
 				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
 			}
 			catch (IOException e)
@@ -81,7 +74,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			}
 		}
 
-		public GenericRecord Read(Stream inputStream)
+		public IGenericRecord Read(Stream inputStream)
 		{
 			try
 			{
@@ -105,7 +98,8 @@ namespace Pulsar.Client.Impl.Schema.Generic
 				}
 			}
 		}
-
+		
+		
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(GenericAvroReader));
 	}

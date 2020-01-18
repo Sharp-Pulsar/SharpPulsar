@@ -19,14 +19,14 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using Timeout = io.netty.util.Timeout;
 	using Timer = io.netty.util.Timer;
 
 
 	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using org.apache.pulsar.client.impl.conf;
+	using SharpPulsar.Impl.conf;
 
 	internal class NegativeAcksTracker
 	{

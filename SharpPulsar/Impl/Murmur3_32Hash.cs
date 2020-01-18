@@ -23,7 +23,7 @@
  * public domain. This source code, implemented by Licht Takeuchi, is based on
  * the orignal MurmurHash3 source code.
  */
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	public class Murmur3_32Hash : Hash

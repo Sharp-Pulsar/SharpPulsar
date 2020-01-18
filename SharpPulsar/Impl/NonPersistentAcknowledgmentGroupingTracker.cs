@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using MessageId = org.apache.pulsar.client.api.MessageId;
 	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;

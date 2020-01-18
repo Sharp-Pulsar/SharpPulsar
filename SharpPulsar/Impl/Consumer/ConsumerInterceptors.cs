@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using Consumer = org.apache.pulsar.client.api.Consumer;
 	using ConsumerInterceptor = org.apache.pulsar.client.api.ConsumerInterceptor;

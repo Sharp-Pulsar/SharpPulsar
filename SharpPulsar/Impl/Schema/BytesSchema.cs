@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl.Schema
 			INSTANCE = new BytesSchema();
 		}
 
-		public static BytesSchema of()
+		public static BytesSchema Of()
 		{
 			return INSTANCE;
 		}

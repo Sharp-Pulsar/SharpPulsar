@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Batch
 
 	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using OpSendMsg = org.apache.pulsar.client.impl.ProducerImpl.OpSendMsg;
+	using OpSendMsg = SharpPulsar.Impl.ProducerImpl.OpSendMsg;
 	using PulsarByteBufAllocator = org.apache.pulsar.common.allocator.PulsarByteBufAllocator;
 
 	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
@@ -201,7 +201,7 @@ namespace SharpPulsar.Impl.Batch
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.impl.ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException
+//ORIGINAL LINE: @Override public SharpPulsar.Impl.ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException
 		public override OpSendMsg createOpSendMsg()
 		{
 			ByteBuf encryptedPayload = producer.encryptMessage(messageMetadata, CompressedBatchMetadataAndPayload);

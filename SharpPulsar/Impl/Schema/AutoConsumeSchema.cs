@@ -1,4 +1,4 @@
-﻿using Pulsar.Client.Impl.Schema.Generic;
+﻿using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Interface.Schema;
@@ -23,7 +23,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Impl.Schema
 {
 	using GenericSchemaImpl = GenericSchemaImpl;
 
@@ -80,7 +80,7 @@ namespace Pulsar.Client.Impl.Schema
 				SchemaInfo schemaInfo = null;
 				try
 				{
-					schemaInfo = schemaInfoProvider.LatestSchema.get();
+					schemaInfo = schemaInfoProvider.LatestSchema.Result;
 				}
 				catch (Exception e) when (e is InterruptedException || e is ExecutionException)
 				{
@@ -151,7 +151,7 @@ namespace Pulsar.Client.Impl.Schema
 			}
 			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
 			// to decode the messages.
-			return GenericSchemaImpl.of(schemaInfo, false);
+			return GenericSchemaImpl.Of(schemaInfo, false);
 		}
 		public static ISchema<T> GetSchema(SchemaInfo schemaInfo)
 		{

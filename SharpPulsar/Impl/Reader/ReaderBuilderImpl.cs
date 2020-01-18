@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using AccessLevel = lombok.AccessLevel;
@@ -35,8 +35,8 @@ namespace org.apache.pulsar.client.impl
 	using ReaderBuilder = org.apache.pulsar.client.api.ReaderBuilder;
 	using ReaderListener = org.apache.pulsar.client.api.ReaderListener;
 	using Schema = org.apache.pulsar.client.api.Schema;
-	using ConfigurationDataUtils = org.apache.pulsar.client.impl.conf.ConfigurationDataUtils;
-	using org.apache.pulsar.client.impl.conf;
+	using ConfigurationDataUtils = SharpPulsar.Impl.conf.ConfigurationDataUtils;
+	using SharpPulsar.Impl.conf;
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.api.KeySharedPolicy.DEFAULT_HASH_RANGE_SIZE;

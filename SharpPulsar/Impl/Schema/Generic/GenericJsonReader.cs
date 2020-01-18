@@ -20,7 +20,7 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;

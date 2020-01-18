@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using Lists = com.google.common.collect.Lists;
 
@@ -30,7 +30,7 @@ namespace org.apache.pulsar.client.impl
 	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using NotFoundException = org.apache.pulsar.client.api.PulsarClientException.NotFoundException;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
 	using LookupData = org.apache.pulsar.common.lookup.data.LookupData;
 	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
 	using TopicName = org.apache.pulsar.common.naming.TopicName;
@@ -55,7 +55,7 @@ namespace org.apache.pulsar.client.impl
 		private const string BasePathV2 = "lookup/v2/topic/";
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public HttpLookupService(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public HttpLookupService(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
 		public HttpLookupService(ClientConfigurationData conf, EventLoopGroup eventLoopGroup)
 		{
 			this.httpClient = new HttpClient(conf.ServiceUrl, conf.Authentication, eventLoopGroup, conf.TlsAllowInsecureConnection, conf.TlsTrustCertsFilePath);

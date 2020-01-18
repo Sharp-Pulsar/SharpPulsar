@@ -18,12 +18,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using State = org.apache.pulsar.client.impl.HandlerState.State;
+	using State = SharpPulsar.Impl.HandlerState.State;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 

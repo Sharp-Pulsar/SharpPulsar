@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using InvalidServiceURL = org.apache.pulsar.client.api.PulsarClientException.InvalidServiceURL;
 	using ServiceURI = org.apache.pulsar.common.net.ServiceURI;

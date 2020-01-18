@@ -16,14 +16,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using DigestUtils = org.apache.commons.codec.digest.DigestUtils;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using org.apache.pulsar.client.api;
-	using SubscriptionMode = org.apache.pulsar.client.impl.ConsumerImpl.SubscriptionMode;
-	using org.apache.pulsar.client.impl.conf;
-	using org.apache.pulsar.client.impl.conf;
+	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
+	using SharpPulsar.Impl.conf;
+	using SharpPulsar.Impl.conf;
 	using TopicName = org.apache.pulsar.common.naming.TopicName;
 
 	public class ReaderImpl<T> : Reader<T>

@@ -43,8 +43,8 @@ namespace SharpPulsar.Impl
 	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using TimeoutException = org.apache.pulsar.client.api.PulsarClientException.TimeoutException;
-	using LookupDataResult = org.apache.pulsar.client.impl.BinaryProtoLookupService.LookupDataResult;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using LookupDataResult = SharpPulsar.Impl.BinaryProtoLookupService.LookupDataResult;
+	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
 	using AuthData = org.apache.pulsar.common.api.AuthData;
 	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
 	using Commands = org.apache.pulsar.common.protocol.Commands;

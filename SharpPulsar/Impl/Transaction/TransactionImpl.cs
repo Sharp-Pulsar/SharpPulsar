@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.transaction
+namespace SharpPulsar.Impl.transaction
 {
 	using Data = lombok.Data;
 	using Getter = lombok.Getter;

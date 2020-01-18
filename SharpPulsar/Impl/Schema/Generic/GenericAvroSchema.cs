@@ -16,14 +16,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Schema = Avro.Schema;
-	using GenericRecord = Api.Schema.GenericRecord;
-	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using ISchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-    using Pulsar.Api.Schema;
+	using DotNetty.Buffers;
+	using SharpPulsar.Common.Protocol.Schema;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Interface.Schema;
+    using Schema = Avro.Schema;
 
     /// <summary>
     /// A generic avro schema.
@@ -43,7 +43,12 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			Writer = new GenericAvroWriter(schema);
 		}
 
-		public GenericRecordBuilder NewRecordBuilder()
+		public override IGenericRecord Decode(IByteBuffer byteBuf)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public IGenericRecordBuilder NewRecordBuilder()
 		{
 			return new AvroRecordBuilderImpl(this);
 		}
@@ -53,19 +58,19 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			return true;
 		}
 
-		protected internal SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
+		protected internal override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			 SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.get());
+			 SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
 			 if (schemaInfo != null)
 			 {
-				 log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), schemaInfo);
+				 //log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), schemaInfo);
 				 Schema writerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
-				 Schema readerSchema = UseProvidedSchemaAsReaderSchema ? schema : writerSchema;
-				 return new GenericAvroReader(writerSchema, readerSchema, schemaVersion.get());
+				 Schema readerSchema = useProvidedSchemaAsReaderSchema ? schema : writerSchema;
+				 return new GenericAvroReader(writerSchema, readerSchema, schemaVersion.Get());
 			 }
 			 else
 			 {
-				 log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), this.schemaInfo);
+				 //log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), this.schemaInfo);
 				 return reader;
 			 }
 		}

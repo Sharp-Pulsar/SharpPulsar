@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.google.common.@base.Preconditions.checkNotNull;
@@ -33,7 +33,7 @@ namespace org.apache.pulsar.client.impl
 	using MessageId = org.apache.pulsar.client.api.MessageId;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using Schema = org.apache.pulsar.client.api.Schema;
-	using org.apache.pulsar.client.impl.conf;
+	using SharpPulsar.Impl.conf;
 	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
 	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
 

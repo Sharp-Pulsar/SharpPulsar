@@ -92,19 +92,19 @@ namespace SharpPulsar.Impl
 		private readonly Clock clientClock;
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf) throws org.apache.pulsar.client.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData conf) : this(conf, getEventLoopGroup(conf))
 		{
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup))
 		{
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, ConnectionPool cnxPool) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, ConnectionPool cnxPool) throws org.apache.pulsar.client.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool cnxPool)
 		{
 			if (conf == null || isBlank(conf.ServiceUrl) || eventLoopGroup == null)
@@ -133,7 +133,7 @@ namespace SharpPulsar.Impl
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void setAuth(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: private void setAuth(SharpPulsar.Impl.conf.ClientConfigurationData conf) throws org.apache.pulsar.client.api.PulsarClientException
 		private ClientConfigurationData Auth
 		{
 			set

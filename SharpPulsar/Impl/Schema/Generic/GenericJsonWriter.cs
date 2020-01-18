@@ -16,15 +16,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = Api.SchemaSerializationException;
-	using GenericRecord = Api.Schema.GenericRecord;
-    using Pulsar.Api.Schema;
+	//using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
     using System.IO;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Exception;
+    using SharpPulsar.Interface.Schema;
 
-    public class GenericJsonWriter : SchemaWriter<GenericRecord>
+    public class GenericJsonWriter : SchemaWriter<IGenericRecord>
 	{
 
 		private readonly ObjectMapper objectMapper;
@@ -34,7 +34,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			this.objectMapper = new ObjectMapper();
 		}
 
-		public sbyte[] Write(GenericRecord message)
+		public sbyte[] Write(IGenericRecord message)
 		{
 			try
 			{

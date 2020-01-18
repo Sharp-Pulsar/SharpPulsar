@@ -18,19 +18,18 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-
-	using Field = Api.Schema.Field;
-	using GenericRecord = Api.Schema.GenericRecord;
-	using SharpPulsar.Impl.Schema;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-    using Pulsar.Api.Schema;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Entity;
+    using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Interface.Schema;
+    using static SharpPulsar.Common.Schema.SchemaType;
 
     /// <summary>
     /// A generic schema representation.
     /// </summary>
-    public abstract class GenericSchemaImpl : StructSchema<GenericRecord>, GenericSchema<GenericRecord>
+    public abstract class GenericSchemaImpl : StructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
 	{
 
 		protected internal readonly IList<Field> fields;
@@ -59,24 +58,25 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-		public static GenericSchemaImpl of(SchemaInfo schemaInfo)
+		public static GenericSchemaImpl Of(SchemaInfo schemaInfo)
 		{
-			return of(schemaInfo, true);
+			return Of(schemaInfo, true);
 		}
 
 		public static GenericSchemaImpl Of(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
 		{
-			switch (schemaInfo.Type)
+			return schemaInfo.Type switch
 			{
-				case Avro:
-					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
-				case JSON:
-					return new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
-				default:
-					throw new System.NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");
-			}
+				AVRO avro => new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema),
+				JSON => new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema),
+				_ => throw new System.NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'"),
+			};
 		}
 
+		public IGenericRecordBuilder NewRecordBuilder()
+		{
+			throw new System.NotImplementedException();
+		}
 	}
 
 }

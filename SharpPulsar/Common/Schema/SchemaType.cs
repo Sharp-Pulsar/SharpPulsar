@@ -146,6 +146,7 @@ namespace SharpPulsar.Common.Schema
 
 		private static readonly IList<SchemaType> valueList = new List<SchemaType>();
 
+		
 		static SchemaType()
 		{
 			valueList.Add(NONE);
@@ -218,53 +219,33 @@ namespace SharpPulsar.Common.Schema
 			}
 		}
 
+		
 		public static SchemaType ValueOf(int value)
 		{
-			switch (value)
+			return value switch
 			{
-			  case 0:
-				  return NONE;
-			  case 1:
-				  return STRING;
-			  case 2:
-				  return JSON;
-			  case 3:
-				  return PROTOBUF;
-			  case 4:
-				  return AVRO;
-			  case 5:
-				  return BOOLEAN;
-			  case 6:
-				  return INT8;
-			  case 7:
-				  return INT16;
-			  case 8:
-				  return INT32;
-			  case 9:
-				  return INT64;
-			  case 10:
-				  return FLOAT;
-			  case 11:
-				  return DOUBLE;
-			  case 12:
-				  return DATE;
-			  case 13:
-				  return TIME;
-			  case 14:
-				  return TIMESTAMP;
-			  case 15:
-				  return KEY_VALUE;
-			  case -1:
-				  return BYTES;
-			  case -2:
-				  return AUTO;
-			  case -3:
-				  return AUTO_CONSUME;
-			  case -4:
-				  return AUTO_PUBLISH;
-			  default:
-				  return NONE;
-			}
+				0 => NONE,
+				1 => STRING,
+				2 => JSON,
+				3 => PROTOBUF,
+				4 => AVRO,
+				5 => BOOLEAN,
+				6 => INT8,
+				7 => INT16,
+				8 => INT32,
+				9 => INT64,
+				10 => FLOAT,
+				11 => DOUBLE,
+				12 => DATE,
+				13 => TIME,
+				14 => TIMESTAMP,
+				15 => KEY_VALUE,
+				-1 => BYTES,
+				-2 => AUTO,
+				-3 => AUTO_CONSUME,
+				-4 => AUTO_PUBLISH,
+				_ => NONE,
+			};
 		}
 
 
@@ -321,12 +302,12 @@ namespace SharpPulsar.Common.Schema
 			}
 		}
 
-		public static IList<SchemaType> values()
+		public static IList<SchemaType> Values()
 		{
 			return valueList;
 		}
 
-		public int ordinal()
+		public int Ordinal()
 		{
 			return ordinalValue;
 		}
@@ -335,6 +316,7 @@ namespace SharpPulsar.Common.Schema
 		{
 			return nameValue;
 		}
+
 	}
 
 }

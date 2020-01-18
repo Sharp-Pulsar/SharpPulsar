@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Entity;
+using SharpPulsar.Impl.Schema.Generic;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,16 +20,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Utf8 = Avro.Util.Utf8;
-	using Field = Api.Schema.Field;
 
 	/// <summary>
 	/// A generic avro record.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class GenericAvroRecord extends VersionedGenericRecord
 	public class GenericAvroRecord : VersionedGenericRecord
 	{
 
@@ -38,18 +36,18 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		{
 			this.schema = schema;
 			this.record = record;
+			
 		}
 
-		public object GetField(string fieldName)
+		public new object GetField(string fieldName)
 		{
-			object value = record.Get(fieldName);
+			record.TryGetValue(fieldName,out var value);
 			if (value is Utf8)
 			{
 				return ((Utf8) value).ToString();
 			}
-			else if (value is Avro.Generic.GenericRecord)
+			else if (value is Avro.Generic.GenericRecord avroRecord)
 			{
-				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord) value;
 				Avro.Schema recordSchema = avroRecord.Schema;
 				IList<Field> fields = recordSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
 				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);

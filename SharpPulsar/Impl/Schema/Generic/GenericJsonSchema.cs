@@ -16,22 +16,17 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-
-	using Schema = Avro.Schema;
-	using Field = Api.Schema.Field;
-	using GenericRecord = Api.Schema.GenericRecord;
-	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using ISchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-    using Pulsar.Api.Schema;
+    using SharpPulsar.Common.Protocol.Schema;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Interface.Schema;
+    using Schema = Avro.Schema;
 
     /// <summary>
     /// A generic json schema.
     /// </summary>
-    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-    //ORIGINAL LINE: @Slf4j class GenericJsonSchema extends GenericSchemaImpl
     internal class GenericJsonSchema : GenericSchemaImpl
 	{
 
@@ -45,12 +40,12 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			Reader = new GenericJsonReader(fields);
 		}
 
-		protected internal SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
+		protected internal ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.get());
+			SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
 			if (schemaInfo != null)
 			{
-				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), schemaInfo.SchemaDefinition);
+				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.get()), schemaInfo.SchemaDefinition);
 				Schema readerSchema;
 				if (useProvidedSchemaAsReaderSchema)
 				{
@@ -60,16 +55,16 @@ namespace Pulsar.Client.Impl.Schema.Generic
 				{
 					readerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
 				}
-				return new GenericJsonReader(schemaVersion.get(), readerSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
+				return new GenericJsonReader(schemaVersion.Get(), readerSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
 			}
 			else
 			{
-				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), this.schemaInfo.SchemaDefinition);
+				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.get()), this.schemaInfo.SchemaDefinition);
 				return reader;
 			}
 		}
 
-		public GenericRecordBuilder NewRecordBuilder()
+		public IGenericRecordBuilder NewRecordBuilder()
 		{
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}

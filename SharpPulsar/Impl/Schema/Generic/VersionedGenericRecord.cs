@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Entity;
+using SharpPulsar.Interface.Schema;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,15 +20,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-	using GenericRecord = Api.Schema.GenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.
 	/// </summary>
-	internal abstract class VersionedGenericRecord : GenericRecord
+	public abstract class VersionedGenericRecord : IGenericRecord
 	{
 
 		protected internal readonly sbyte[] schemaVersion;

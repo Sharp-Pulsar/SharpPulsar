@@ -20,7 +20,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl
+namespace SharpPulsar.Impl
 {
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
@@ -36,7 +36,7 @@ namespace org.apache.pulsar.client.impl
 
 
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
 	using PulsarByteBufAllocator = org.apache.pulsar.common.allocator.PulsarByteBufAllocator;
 	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
 	using Logger = org.slf4j.Logger;
@@ -53,13 +53,13 @@ namespace org.apache.pulsar.client.impl
 		protected internal readonly DnsNameResolver dnsResolver;
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public ConnectionPool(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public ConnectionPool(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
 		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () -> new ClientCnx(conf, eventLoopGroup))
 		{
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public ConnectionPool(org.apache.pulsar.client.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws org.apache.pulsar.client.api.PulsarClientException
+//ORIGINAL LINE: public ConnectionPool(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws org.apache.pulsar.client.api.PulsarClientException
 		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, System.Func<ClientCnx> clientCnxSupplier)
 		{
 			this.eventLoopGroup = eventLoopGroup;

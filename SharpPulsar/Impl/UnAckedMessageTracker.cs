@@ -131,11 +131,11 @@ namespace SharpPulsar.Impl
 		{
 			private readonly UnAckedMessageTracker outerInstance;
 
-			private org.apache.pulsar.client.impl.PulsarClientImpl client;
-			private org.apache.pulsar.client.impl.ConsumerBase<T1> consumerBase;
+			private SharpPulsar.Impl.PulsarClientImpl client;
+			private SharpPulsar.Impl.ConsumerBase<T1> consumerBase;
 			private long tickDurationInMs;
 
-			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, org.apache.pulsar.client.impl.PulsarClientImpl client, org.apache.pulsar.client.impl.ConsumerBase<T1> consumerBase, long tickDurationInMs)
+			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, SharpPulsar.Impl.PulsarClientImpl client, SharpPulsar.Impl.ConsumerBase<T1> consumerBase, long tickDurationInMs)
 			{
 				this.outerInstance = outerInstance;
 				this.client = client;

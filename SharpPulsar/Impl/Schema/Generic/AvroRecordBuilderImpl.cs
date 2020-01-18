@@ -16,25 +16,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-	using GenericRecord = Api.Schema.GenericRecord;
-	using GenericRecordBuilder = Api.Schema.GenericRecordBuilder;
+    using Avro.Generic;
+    using SharpPulsar.Entity;
+    using SharpPulsar.Interface.Schema;
 
 	/// <summary>
 	/// Builder to build <seealso cref="org.apache.pulsar.client.api.schema.GenericRecord"/>.
 	/// </summary>
-	internal class AvroRecordBuilderImpl : GenericRecordBuilder
+	internal class AvroRecordBuilderImpl : IGenericRecordBuilder
 	{
 
 		private readonly GenericSchemaImpl genericSchema;
-		private readonly org.apache.avro.generic.GenericRecordBuilder avroRecordBuilder;
+		private readonly IGenericRecordBuilder avroRecordBuilder;
 
 		internal AvroRecordBuilderImpl(GenericSchemaImpl genericSchema)
 		{
 			this.genericSchema = genericSchema;
-			this.avroRecordBuilder = new org.apache.avro.generic.GenericRecordBuilder(genericSchema.AvroSchema);
+			this.avroRecordBuilder = GenericRecordBuilder(genericSchema.AvroSchema);
 		}
 
 		/// <summary>
@@ -43,13 +43,13 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// <param name="fieldName"> the name of the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public GenericRecordBuilder Set(string fieldName, object value)
+		public IGenericRecordBuilder Set(string fieldName, object value)
 		{
 			if (value is GenericRecord)
 			{
 				if (value is GenericAvroRecord)
 				{
-					avroRecordBuilder.set(fieldName, ((GenericAvroRecord)value).AvroRecord);
+					avroRecordBuilder.Set(fieldName, ((GenericAvroRecord)value).AvroRecord);
 				}
 				else
 				{
@@ -58,7 +58,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			}
 			else
 			{
-				avroRecordBuilder.set(fieldName, value);
+				avroRecordBuilder.Set(fieldName, value);
 			}
 			return this;
 		}
@@ -69,7 +69,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// <param name="field"> the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public GenericRecordBuilder Set(Field field, object value)
+		public IGenericRecordBuilder Set(Field field, object value)
 		{
 			Set(field.Index, value);
 			return this;
@@ -81,13 +81,13 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// <param name="index"> the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		protected internal virtual GenericRecordBuilder Set(int index, object value)
+		protected internal virtual IGenericRecordBuilder Set(int index, object value)
 		{
 			if (value is GenericRecord)
 			{
 				if (value is GenericAvroRecord)
 				{
-					avroRecordBuilder.set(genericSchema.AvroSchema.Fields.get(index), ((GenericAvroRecord) value).AvroRecord);
+					avroRecordBuilder.Set(genericSchema.AvroSchema.Fields.get(index), ((GenericAvroRecord) value).AvroRecord);
 				}
 				else
 				{
@@ -96,7 +96,7 @@ namespace Pulsar.Client.Impl.Schema.Generic
 			}
 			else
 			{
-				avroRecordBuilder.set(genericSchema.AvroSchema.Fields.get(index), value);
+				avroRecordBuilder.Set(genericSchema.AvroSchema.Fields.get(index), value);
 			}
 			return this;
 		}
@@ -106,9 +106,9 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// </summary>
 		/// <param name="fieldName"> the name of the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public GenericRecordBuilder Clear(string fieldName)
+		public IGenericRecordBuilder Clear(string fieldName)
 		{
-			avroRecordBuilder.clear(fieldName);
+			avroRecordBuilder.Clear(fieldName);
 			return this;
 		}
 
@@ -117,9 +117,9 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// </summary>
 		/// <param name="field"> the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public GenericRecordBuilder Clear(Field field)
+		public IGenericRecordBuilder Clear(Field field)
 		{
-			return clear(field.Index);
+			return Clear(field.Index);
 		}
 
 		/// <summary>
@@ -127,16 +127,17 @@ namespace Pulsar.Client.Impl.Schema.Generic
 		/// </summary>
 		/// <param name="index"> the index of the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		protected internal virtual GenericRecordBuilder Clear(int index)
+		protected internal virtual IGenericRecordBuilder Clear(int index)
 		{
-			avroRecordBuilder.clear(genericSchema.AvroSchema.Fields.get(index));
+			avroRecordBuilder.Clear(genericSchema.AvroSchema.Fields.get(index));
 			return this;
 		}
 
-		public GenericRecord build()
+		public IGenericRecord Build()
 		{
-			return new GenericAvroRecord(null, genericSchema.AvroSchema, genericSchema.Fields, avroRecordBuilder.build());
+			return new GenericAvroRecord(null, genericSchema.AvroSchema, genericSchema.Fields, avroRecordBuilder.Build());
 		}
+
 	}
 
 }
