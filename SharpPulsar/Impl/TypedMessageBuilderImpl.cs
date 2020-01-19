@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Transactions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,55 +22,43 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.util.TypeCheckUtil.checkType;
+	//using Preconditions = com.google.common.@base.Preconditions;
+	using TransactionImpl = Transaction.TransactionImpl;
+	using SharpPulsar.Interface;
+	using SharpPulsar.Impl.Producer;
+	using SharpPulsar.Interface.Schema;
+	using SharpPulsar.Interface.Message;
+    using System.Threading.Tasks;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Enum;
+    using BAMCIS.Util.Concurrent;
+    using SharpPulsar.Util;
 
-	using Preconditions = com.google.common.@base.Preconditions;
-
-
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using TypedMessageBuilder = org.apache.pulsar.client.api.TypedMessageBuilder;
-	using SharpPulsar.Impl.Schema;
-	using TransactionImpl = SharpPulsar.Impl.transaction.TransactionImpl;
-	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
-	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using ByteString = org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString;
-
-	public class TypedMessageBuilderImpl<T> : TypedMessageBuilder<T>
+    public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>
 	{
 
 		private const long serialVersionUID = 0L;
 
 		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final ProducerBase<?> producer;
-		private readonly ProducerBase<object> producer;
+		private readonly ProducerBase<T> producer;
 		private readonly MessageMetadata.Builder msgMetadataBuilder = MessageMetadata.newBuilder();
-		private readonly Schema<T> schema;
+		private readonly ISchema<T> schema;
 		private ByteBuffer content;
 		private readonly TransactionImpl txn;
 
-		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> producer, Schema<T> schema) : this(producer, schema, null)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema):this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> producer, Schema<T> schema, TransactionImpl txn)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl txn)
 		{
 			this.producer = producer;
 			this.schema = schema;
 			this.content = EMPTY_CONTENT;
 			this.txn = txn;
 		}
-
-		private long beforeSend()
+		private long BeforeSend()
 		{
 			if (txn == null)
 			{
@@ -81,10 +70,7 @@ namespace SharpPulsar.Impl
 			msgMetadataBuilder.SequenceId = sequenceId;
 			return sequenceId;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.MessageId send() throws org.apache.pulsar.client.api.PulsarClientException
-		public override MessageId send()
+		public IMessageId Send()
 		{
 			if (null != txn)
 			{
@@ -92,21 +78,21 @@ namespace SharpPulsar.Impl
 				//       because #send only completes when a transaction is committed or aborted.
 				throw new System.InvalidOperationException("Use sendAsync to send a transactional message");
 			}
-			return producer.send(Message);
+			return producer.Send(Message);
 		}
 
-		public override CompletableFuture<MessageId> sendAsync()
+		public async ValueTask<IMessageId> SendAsync()
 		{
-			long sequenceId = beforeSend();
-			CompletableFuture<MessageId> sendFuture = producer.internalSendAsync(Message);
+			long sequenceId = BeforeSend();
+			var sendFuture = await producer.InternalSendAsync(Message);
 			if (txn != null)
 			{
 				// it is okay that we register produced topic after sending the messages. because
 				// the transactional messages will not be visible for consumers until the transaction
 				// is committed.
-				txn.registerProducedTopic(producer.Topic);
+				txn.RegisterProducedTopic(producer.Topic);
 				// register the sendFuture as part of the transaction
-				return txn.registerSendOp(sequenceId, sendFuture);
+				return txn.RegisterSendOp(sequenceId, sendFuture);
 			}
 			else
 			{
@@ -114,11 +100,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override TypedMessageBuilder<T> key(string key)
+		public ITypedMessageBuilder<T> GetKey(string key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema) schema;
+				KeyValueSchema kvSchema = (KeyValueSchema)schema;
 				checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
 			msgMetadataBuilder.PartitionKey = key;
@@ -126,11 +112,11 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> keyBytes(sbyte[] key)
+		public override ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema) schema;
+				KeyValueSchema kvSchema = (KeyValueSchema)schema;
 				checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
 			msgMetadataBuilder.PartitionKey = Base64.Encoder.encodeToString(key);
@@ -150,8 +136,8 @@ namespace SharpPulsar.Impl
 			checkArgument(value != null, "Need Non-Null content value");
 			if (schema.SchemaInfo != null && schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema) schema;
-				org.apache.pulsar.common.schema.KeyValue kv = (org.apache.pulsar.common.schema.KeyValue) value;
+				KeyValueSchema kvSchema = (KeyValueSchema)schema;
+				org.apache.pulsar.common.schema.KeyValue kv = (org.apache.pulsar.common.schema.KeyValue)value;
 				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
 					// set key as the message key
@@ -215,9 +201,9 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> deliverAfter(long delay, TimeUnit unit)
+		public override ITypedMessageBuilder<T> DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			return deliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.toMillis(delay));
+			return deliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMillis(delay));
 		}
 
 		public override TypedMessageBuilder<T> deliverAt(long timestamp)
@@ -226,52 +212,50 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") @Override public org.apache.pulsar.client.api.TypedMessageBuilder<T> loadConf(java.util.Map<String, Object> config)
 		public override TypedMessageBuilder<T> loadConf(IDictionary<string, object> config)
 		{
 			config.forEach((key, value) =>
 			{
-			if (key.Equals(CONF_KEY))
-			{
-				this.key(checkType(value, typeof(string)));
-			}
-			else if (key.Equals(CONF_PROPERTIES))
-			{
-				this.properties(checkType(value, typeof(System.Collections.IDictionary)));
-			}
-			else if (key.Equals(CONF_EVENT_TIME))
-			{
-				this.eventTime(checkType(value, typeof(Long)));
-			}
-			else if (key.Equals(CONF_SEQUENCE_ID))
-			{
-				this.sequenceId(checkType(value, typeof(Long)));
-			}
-			else if (key.Equals(CONF_REPLICATION_CLUSTERS))
-			{
-				this.replicationClusters(checkType(value, typeof(System.Collections.IList)));
-			}
-			else if (key.Equals(CONF_DISABLE_REPLICATION))
-			{
-				bool disableReplication = checkType(value, typeof(Boolean));
-				if (disableReplication)
+				if (key.Equals(CONF_KEY))
 				{
-					this.disableReplication();
+					this.key(checkType(value, typeof(string)));
 				}
-			}
-			else if (key.Equals(CONF_DELIVERY_AFTER_SECONDS))
-			{
-				this.deliverAfter(checkType(value, typeof(Long)), TimeUnit.SECONDS);
-			}
-			else if (key.Equals(CONF_DELIVERY_AT))
-			{
-				this.deliverAt(checkType(value, typeof(Long)));
-			}
-			else
-			{
-				throw new Exception("Invalid message config key '" + key + "'");
-			}
+				else if (key.Equals(CONF_PROPERTIES))
+				{
+					this.properties(checkType(value, typeof(System.Collections.IDictionary)));
+				}
+				else if (key.Equals(CONF_EVENT_TIME))
+				{
+					this.eventTime(checkType(value, typeof(Long)));
+				}
+				else if (key.Equals(CONF_SEQUENCE_ID))
+				{
+					this.sequenceId(checkType(value, typeof(Long)));
+				}
+				else if (key.Equals(CONF_REPLICATION_CLUSTERS))
+				{
+					this.replicationClusters(checkType(value, typeof(System.Collections.IList)));
+				}
+				else if (key.Equals(CONF_DISABLE_REPLICATION))
+				{
+					bool disableReplication = checkType(value, typeof(Boolean));
+					if (disableReplication)
+					{
+						this.disableReplication();
+					}
+				}
+				else if (key.Equals(CONF_DELIVERY_AFTER_SECONDS))
+				{
+					this.deliverAfter(checkType(value, typeof(Long)), TimeUnit.SECONDS);
+				}
+				else if (key.Equals(CONF_DELIVERY_AT))
+				{
+					this.deliverAt(checkType(value, typeof(Long)));
+				}
+				else
+				{
+					throw new Exception("Invalid message config key '" + key + "'");
+				}
 			});
 			return this;
 		}
@@ -321,6 +305,5 @@ namespace SharpPulsar.Impl
 				return content;
 			}
 		}
-	}
-
+}
 }

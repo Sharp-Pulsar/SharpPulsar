@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using SharpPulsar.Common.Proto.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -33,7 +34,7 @@ using System.Text;
 /// </summary>
 namespace SharpPulsar.Common.Protocol
 {
-	//using static SharpPulsar.Common.Proto.Api.PulsarApi;
+	using static SharpPulsar.Common.Proto.Api.PulsarApi;
 
 	public class Commands
 	{

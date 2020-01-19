@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Message;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Interface.Message;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -55,8 +56,6 @@ namespace SharpPulsar.Interface
 		/// </para>
 		/// </summary>
 		/// <returns> the <seealso cref="IMessageId"/> assigned by the broker to the published message. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: MessageId send() throws PulsarClientException;
 		IMessageId Send();
 
 		/// <summary>

@@ -46,11 +46,12 @@ namespace SharpPulsar.Impl.Message
     using SharpPulsar.Interface.Message;
     using Optional;
     using SharpPulsar.Interface.Schema;
+    using DotNetty.Buffers;
 
     public class MessageImpl<T> : IMessage<T>
 	{
 
-		protected internal MessageId messageId;
+		protected internal IMessageId messageId;
 		private PulsarApi.MessageMetadata.Builder msgMetadataBuilder;
 		private ClientConnection cnx;
 		private ByteBuf payload;
@@ -184,12 +185,8 @@ namespace SharpPulsar.Impl.Message
 			this.redeliveryCount = 0;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static MessageImpl<byte[]> deserialize(io.netty.buffer.ByteBuf headersAndPayload) throws java.io.IOException
 		public static MessageImpl<sbyte[]> deserialize(ByteBuf headersAndPayload)
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") MessageImpl<byte[]> msg = (MessageImpl<byte[]>) RECYCLER.get();
 			MessageImpl<sbyte[]> msg = (MessageImpl<sbyte[]>) RECYCLER.get();
 			PulsarApi.MessageMetadata msgMetadata = Commands.parseMessageMetadata(headersAndPayload);
 
@@ -393,7 +390,7 @@ namespace SharpPulsar.Impl.Message
 			}
 		}
 
-		public virtual ByteBuf DataBuffer
+		public virtual IByteBuffer DataBuffer
 		{
 			get
 			{
@@ -531,28 +528,18 @@ namespace SharpPulsar.Impl.Message
 			}
 		}
 
-		private MessageImpl<T1>(Recycler.Handle<T1> recyclerHandle)
+		private MessageImpl(Recycler.Handle<T1> recyclerHandle)
 		{
 			this.recyclerHandle = recyclerHandle;
 			this.redeliveryCount = 0;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private io.netty.util.Recycler.Handle<MessageImpl<?>> recyclerHandle;
 		private Recycler.Handle<MessageImpl<object>> recyclerHandle;
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final static io.netty.util.Recycler<MessageImpl<?>> RECYCLER = new io.netty.util.Recycler<MessageImpl<?>>()
 		private static readonly Recycler<MessageImpl<object>> RECYCLER = new RecyclerAnonymousInnerClass();
 
 		private class RecyclerAnonymousInnerClass : Recycler<MessageImpl<JavaToDotNetGenericWildcard>>
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: @Override protected MessageImpl<?> newObject(io.netty.util.Recycler.Handle<MessageImpl<?>> handle)
 			protected internal override MessageImpl<object> newObject<T1>(Recycler.Handle<T1> handle)
 			{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: return new MessageImpl<>(handle);
 				return new MessageImpl<object>(handle);
 			}
 		}

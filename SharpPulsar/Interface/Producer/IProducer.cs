@@ -1,5 +1,4 @@
-﻿using Pulsar.Api.Schema;
-using SharpPulsar.Interface.Message;
+﻿using SharpPulsar.Interface.Message;
 using SharpPulsar.Interface.Schema;
 using System;
 using System.Threading.Tasks;

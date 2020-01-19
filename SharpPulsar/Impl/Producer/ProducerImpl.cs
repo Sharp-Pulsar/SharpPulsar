@@ -64,6 +64,8 @@ namespace SharpPulsar.Impl.Producer
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
     using SharpPulsar.Impl.Message;
+    using SharpPulsar.Interface.Message;
+    using DotNetty.Buffers;
 
     public class ProducerImpl<T> : ProducerBase<T>, TimerTask, ConnectionHandler.Connection
 	{
@@ -270,7 +272,7 @@ namespace SharpPulsar.Impl.Producer
 //ORIGINAL LINE: private SharpPulsar.Impl.MessageImpl<JavaToDotNetGenericWildcard> interceptorMessage;
 			private SharpPulsar.Impl.MessageImpl<object> interceptorMessage;
 
-			public SendCallbackAnonymousInnerClass<T1>(ProducerImpl<T> outerInstance, CompletableFuture<MessageId> future, SharpPulsar.Impl.MessageImpl<T1> interceptorMessage)
+			public SendCallbackAnonymousInnerClass(ProducerImpl<T> outerInstance, CompletableFuture<MessageId> future, SharpPulsar.Impl.MessageImpl<T1> interceptorMessage)
 			{
 				this.outerInstance = outerInstance;
 				this.future = future;
@@ -373,7 +375,7 @@ namespace SharpPulsar.Impl.Producer
 			}
 		}
 
-		public virtual void sendAsync<T1>(Message<T1> message, SendCallback callback)
+		public virtual void sendAsync<T1>(IMessage<T1> message, SendCallback callback)
 		{
 			checkArgument(message is MessageImpl);
 
@@ -386,16 +388,13 @@ namespace SharpPulsar.Impl.Producer
 			{
 				return;
 			}
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> msg = (MessageImpl) message;
-			MessageImpl<object> msg = (MessageImpl) message;
+			MessageImpl<T1> msg = (MessageImpl<T1>) message;
 			MessageMetadata.Builder msgMetadataBuilder = msg.MessageBuilder;
-			ByteBuf payload = msg.DataBuffer;
+			IByteBuffer payload = msg.DataBuffer;
 
 			// If compression is enabled, we are compressing, otherwise it will simply use the same buffer
-			int uncompressedSize = payload.readableBytes();
-			ByteBuf compressedPayload = payload;
+			int uncompressedSize = payload.ReadableBytes;
+			IByteBuffer compressedPayload = payload;
 			// Batch will be compressed when closed
 			// If a message has a delayed delivery time, we'll always send it individually
 			if (!BatchMessagingEnabled || msgMetadataBuilder.hasDeliverAtTime())
@@ -404,10 +403,10 @@ namespace SharpPulsar.Impl.Producer
 				payload.release();
 
 				// validate msg-size (For batching this will be check at the batch completion size)
-				int compressedSize = compressedPayload.readableBytes();
-				if (compressedSize > ClientCnx.MaxMessageSize)
+				int compressedSize = compressedPayload.ReadableBytes;
+				if (compressedSize > ClientConnection.maxMessageSize)
 				{
-					compressedPayload.release();
+					compressedPayload.Release();
 					string compressedStr = (!BatchMessagingEnabled && conf.CompressionType != CompressionType.NONE) ? "Compressed" : "";
 					PulsarClientException.InvalidMessageException invalidMessageException = new PulsarClientException.InvalidMessageException(format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", producerName, topic, compressedStr, compressedSize, ClientCnx.MaxMessageSize));
 					callback.sendComplete(invalidMessageException);
@@ -423,7 +422,7 @@ namespace SharpPulsar.Impl.Producer
 				return;
 			}
 
-			if (!populateMessageSchema(msg, callback))
+			if (!PopulateMessageSchema(msg, callback))
 			{
 				compressedPayload.release();
 				return;
@@ -540,7 +539,7 @@ namespace SharpPulsar.Impl.Producer
 			}
 		}
 
-		private bool populateMessageSchema(MessageImpl msg, SendCallback callback)
+		private bool PopulateMessageSchema(MessageImpl msg, SendCallback callback)
 		{
 			MessageMetadata.Builder msgMetadataBuilder = msg.MessageBuilder;
 			if (msg.Schema == schema)
@@ -626,9 +625,6 @@ namespace SharpPulsar.Impl.Producer
 			log.info("[{}] [{}] GetOrCreateSchema request", topic, producerName);
 			return cnx.sendGetOrCreateSchema(request, requestId);
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected io.netty.buffer.ByteBuf encryptMessage(org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata.Builder msgMetadata, io.netty.buffer.ByteBuf compressedPayload) throws org.apache.pulsar.client.api.PulsarClientException
 		protected internal virtual ByteBuf encryptMessage(MessageMetadata.Builder msgMetadata, ByteBuf compressedPayload)
 		{
 
@@ -825,8 +821,6 @@ namespace SharpPulsar.Impl.Producer
 
 		public override CompletableFuture<Void> closeAsync()
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final State currentState = getAndUpdateState(state ->
 			State currentState = getAndUpdateState(state =>
 			{
 			if (state == State.Closed)

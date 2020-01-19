@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Interface.Message;
+using SharpPulsar.Interface.Transaction;
+using SharpPulsar.Util.Atomic;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,13 +22,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.transaction
+namespace SharpPulsar.Impl.Transaction
 {
-	using Data = lombok.Data;
-	using Getter = lombok.Getter;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Transaction = org.apache.pulsar.client.api.transaction.Transaction;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 
 	/// <summary>
 	/// The default implementation of <seealso cref="Transaction"/>.
@@ -36,24 +35,18 @@ namespace SharpPulsar.Impl.transaction
 	/// much as possible.
 	/// </para>
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter public class TransactionImpl implements org.apache.pulsar.client.api.transaction.Transaction
-	public class TransactionImpl : Transaction
+	public class TransactionImpl : ITransaction
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data private static class TransactionalSendOp
 		private class TransactionalSendOp
 		{
-			internal readonly CompletableFuture<MessageId> sendFuture;
-			internal readonly CompletableFuture<MessageId> transactionalSendFuture;
+			internal readonly ValueTask<IMessageId> sendAsync;
+			internal readonly ValueTask<IMessageId> transactionalSendAsync;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data private static class TransactionalAckOp
 		private class TransactionalAckOp
 		{
-			internal readonly CompletableFuture<Void> ackFuture;
-			internal readonly CompletableFuture<Void> transactionalAckFuture;
+			internal readonly ValueTask ackAsync;
+			internal readonly ValueTask transactionalAckAsyync;
 		}
 
 		private readonly PulsarClientImpl client;
@@ -78,13 +71,13 @@ namespace SharpPulsar.Impl.transaction
 			this.ackedTopics = new HashSet<string>();
 		}
 
-		public virtual long nextSequenceId()
+		public virtual long NextSequenceId()
 		{
-			return sequenceId.AndIncrement;
+			return sequenceId.Increment();
 		}
 
 		// register the topics that will be modified by this transaction
-		public virtual void registerProducedTopic(string topic)
+		public virtual void RegisterProducedTopic(string topic)
 		{
 			lock (this)
 			{
@@ -95,7 +88,7 @@ namespace SharpPulsar.Impl.transaction
 			}
 		}
 
-		public virtual CompletableFuture<MessageId> registerSendOp(long sequenceId, CompletableFuture<MessageId> sendFuture)
+		public virtual ValueTask<IMessageId> RegisterSendOp(long sequenceId, CompletableFuture<MessageId> sendFuture)
 		{
 			lock (this)
 			{
@@ -107,7 +100,7 @@ namespace SharpPulsar.Impl.transaction
 		}
 
 		// register the topics that will be modified by this transaction
-		public virtual void registerAckedTopic(string topic)
+		public virtual void RegisterAckedTopic(string topic)
 		{
 			lock (this)
 			{
@@ -118,7 +111,7 @@ namespace SharpPulsar.Impl.transaction
 			}
 		}
 
-		public virtual CompletableFuture<Void> registerAckOp(CompletableFuture<Void> ackFuture)
+		public virtual CompletableFuture<Void> RegisterAckOp(CompletableFuture<Void> ackFuture)
 		{
 			lock (this)
 			{
@@ -129,12 +122,12 @@ namespace SharpPulsar.Impl.transaction
 			}
 		}
 
-		public override CompletableFuture<Void> commit()
+		public override ValueTask Commit()
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public override CompletableFuture<Void> abort()
+		public override ValueTask Abort()
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
