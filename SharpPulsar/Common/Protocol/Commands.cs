@@ -67,21 +67,6 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}	
 
-		
-		public static IByteBuffer NewReachedEndOfTopic(long consumerId)
-		{
-			CommandReachedEndOfTopic reachedEndOfTopicBuilder = new CommandReachedEndOfTopic
-			{
-				ConsumerId = (ulong)consumerId
-			};
-
-			PulsarApi.CommandReachedEndOfTopic reachedEndOfTopic = reachedEndOfTopicBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.ReachedEndOfTopic, reachedEndOfTopic = (reachedEndOfTopic) });
-			reachedEndOfTopicBuilder.recycle();
-			reachedEndOfTopic.recycle();
-			return res;
-		}
-
 		public static IByteBuffer NewCloseProducer(long producerId, long requestId)
 		{
 			CommandCloseProducer closeProducerBuilder = new CommandCloseProducer
