@@ -572,9 +572,13 @@ namespace SharpPulsar.Exception
 		}
 
 		// wrap an exception to enriching more info messages.
-		public static IOException Wrap(IOException t, string msg)
+		public static System.Exception Wrap(System.Exception t, string msg)
 		{
 			msg += "\n" + t.Message;
+			if(t is NullReferenceException)
+			{
+				throw t;
+			}
 			// wrap an exception with new message info
 			if (t is TimeoutException)
 			{
@@ -680,21 +684,9 @@ namespace SharpPulsar.Exception
 			{
 				return new PulsarClientException(msg);
 			}
-			else if (t is CompletionException)
-			{
-				return t;
-			}
 			else if (t is IOException)
 			{
 				return new IOException(msg, t.InnerException);
-			}
-			else if (t is ThreadInterruptedException)
-			{
-				return t;
-			}
-			else if (t is ExecutionException)
-			{
-				return t;
 			}
 
 			return t;
@@ -706,23 +698,13 @@ namespace SharpPulsar.Exception
 			{
 				return (PulsarClientException) t;
 			}
-			else if (t is Exception)
+			else if (t is System.Exception)
 			{
-				throw (Exception) t;
+				throw t;
 			}
-			else if (t is InterruptedException)
-			{
-				return new PulsarClientException(t);
-			}
-			else if (!(t is ExecutionException))
-			{
-				// Generic exception
-				return new PulsarClientException(t);
-			}
-
 			// Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
 			// site
-			Exception cause = t.InnerException;
+			System.Exception cause = t.InnerException;
 			string msg = cause.Message;
 			if (cause is TimeoutException)
 			{
@@ -830,7 +812,7 @@ namespace SharpPulsar.Exception
 			}
 			else
 			{
-				return new PulsarClientException(t);
+				return new PulsarClientException(t.Message);
 			}
 		}
 	}

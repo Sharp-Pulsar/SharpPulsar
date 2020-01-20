@@ -268,8 +268,6 @@ namespace SharpPulsar.Impl.Producer
 			private readonly ProducerImpl<T> outerInstance;
 
 			private CompletableFuture<MessageId> future;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private SharpPulsar.Impl.MessageImpl<JavaToDotNetGenericWildcard> interceptorMessage;
 			private SharpPulsar.Impl.MessageImpl<object> interceptorMessage;
 
 			public SendCallbackAnonymousInnerClass(ProducerImpl<T> outerInstance, CompletableFuture<MessageId> future, SharpPulsar.Impl.MessageImpl<T1> interceptorMessage)
@@ -283,8 +281,6 @@ namespace SharpPulsar.Impl.Producer
 			}
 
 			internal SendCallback nextCallback;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> nextMsg;
 			internal MessageImpl<object> nextMsg;
 			internal long createdAt;
 
@@ -303,10 +299,7 @@ namespace SharpPulsar.Impl.Producer
 					return nextCallback;
 				}
 			}
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: public MessageImpl<?> getNextMessage()
-			public MessageImpl<object> NextMessage
+			public MessageImpl<T> NextMessage
 			{
 				get
 				{
@@ -339,9 +332,7 @@ namespace SharpPulsar.Impl.Producer
 				while (nextCallback != null)
 				{
 					SendCallback sendCallback = nextCallback;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> msg = nextMsg;
-					MessageImpl<object> msg = nextMsg;
+					MessageImpl<T> msg = nextMsg;
 					//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
 					try
 					{
@@ -612,7 +603,16 @@ namespace SharpPulsar.Impl.Producer
 			});
 			return null;
 			});
+public void connectionFailed(org.apache.pulsar.client.api.PulsarClientException exception)
+		{
+			throw new NotImplementedException();
 		}
+
+		public void connectionOpened(ClientCnx cnx)
+		{
+			throw new NotImplementedException();
+		}
+	}
 
 		private CompletableFuture<sbyte[]> getOrCreateSchemaAsync(ClientCnx cnx, SchemaInfo schemaInfo)
 		{

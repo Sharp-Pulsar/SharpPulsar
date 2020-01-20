@@ -8,7 +8,7 @@ using static SharpPulsar.Common.Proto.Api.PulsarApi;
 
 namespace SharpPulsar.Common.Proto.Extension
 {
-	public partial class CommandConnect : CommandConnectOrBuilder, ByteBufCodedOutputStream.ByteBufGeneratedMessage
+	public partial class CommandConnectw : CommandConnectOrBuilder, ByteBufCodedOutputStream.ByteBufGeneratedMessage
 	{
 		private static ThreadLocalPool<CommandConnect> pool = new ThreadLocalPool<CommandConnect>(handle => new CommandConnect(handle),1, true);
 		// Use CommandConnect.NewBuilder() to construct.

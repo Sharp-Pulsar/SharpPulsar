@@ -1,4 +1,5 @@
 ﻿using DotNetty.Buffers;
+using DotNetty.Common;
 using Google.Protobuf;
 using System;
 
@@ -47,20 +48,20 @@ namespace SharpPulsar.Util.Protobuf
 			void WriteTo(ByteBufCodedOutputStream output);
 		}
 
-		private IByteBuffer buf;
+		private IByteBuffer _buf;
 
 		private readonly Recycler.Handle<ByteBufCodedOutputStream> recyclerHandle;
 
 		public static ByteBufCodedOutputStream Get(IByteBuffer buf)
 		{
 			ByteBufCodedOutputStream stream = RECYCLER.get();
-			stream.buf = buf;
+			stream._buf = buf;
 			return stream;
 		}
 
 		public virtual void Recycle()
 		{
-			buf = null;
+			_buf = null;
 			recyclerHandle.recycle(this);
 		}
 
@@ -83,7 +84,7 @@ namespace SharpPulsar.Util.Protobuf
 		/// Write a single byte. </summary>
 		public virtual void WriteRawByte(int value)
 		{
-			buf.WriteByte(value);
+			_buf.WriteByte(value);
 		}
 
 		/// <summary>
@@ -192,7 +193,7 @@ namespace SharpPulsar.Util.Protobuf
 		/// Write a {@code bytes} field to the stream. </summary>
 		public virtual void WriteBytesNoTag(ByteString value)
 		{
-			writeRawVarint32(value.Length);
+			WriteRawVarint32(value.Length);
 			WriteRawBytes(value);
 		}
 
@@ -203,15 +204,15 @@ namespace SharpPulsar.Util.Protobuf
 		/// Write a byte string. </summary>
 		public virtual void WriteRawBytes(ByteString value)
 		{
-			sbyte[] localBuf = localByteArray.get();
+			sbyte[] localBuf = localByteArray.Value;
 			if (localBuf == null || localBuf.Length < value.Length)
 			{
 				localBuf = new sbyte[Math.Max(value.Length, 1024)];
-				localByteArray.set(localBuf);
+				localByteArray.Set(localBuf);
 			}
 
 			value.CopyTo(localBuf, 0);
-			buf.WriteBytes(localBuf, 0, value.Length);
+			_buf.WriteBytes(localBuf, 0, value.Length);
 		}
 
 		public virtual void WriteEnum(int fieldNumber, int value)
@@ -242,7 +243,7 @@ namespace SharpPulsar.Util.Protobuf
 		}
 		public virtual void WriteSFixed64NoTag(long value)
 		{
-			buf.WriteLongLE(value);
+			_buf.WriteLongLE(value);
 		}
 
 		/// <summary>
@@ -261,7 +262,7 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			if (value >= 0)
 			{
-				writeRawVarint32(value);
+				WriteRawVarint32(value);
 			}
 			else
 			{
@@ -302,7 +303,7 @@ namespace SharpPulsar.Util.Protobuf
 		public virtual void WriteDouble(int fieldNumber, double value)
 		{
 			WriteTag(fieldNumber, (int)WireFormat.WireType.Fixed64);
-			buf.WriteLongLE(BitConverter.DoubleToInt64Bits(value));
+			_buf.WriteLongLE(BitConverter.DoubleToInt64Bits(value));
 		}
 	}
 

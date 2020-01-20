@@ -63,7 +63,8 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
-			CommandConnect.Builder connect = CommandConnect.newBuilder().setClientVersion((!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client"))
+			CommandConnect connect = new CommandConnect()//.newBuilder()
+				//.setClientVersion((!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client"))
 				.setAuthMethodName(authMethodName);
 			if ("ycav1".Equals(authMethodName))
 			{
@@ -1428,7 +1429,7 @@ namespace SharpPulsar.Common.Protocol
 		public static IByteBuffer newEndTxnOnSubscriptionResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
 			PulsarApi.CommandEndTxnOnSubscriptionResponse response = PulsarApi.CommandEndTxnOnSubscriptionResponse().setRequestId(requestId).setTxnidLeastBits(txnIdLeastBits).setTxnidMostBits(txnIdMostBits).build();
-			IByteBuffer res = serializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
+			IByteBuffer res = SerializeWithSize(PulsarApi.BaseCommand().setType(PulsarApi.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(response));
 			response.recycle();
 			return res;
 		}
@@ -1468,7 +1469,7 @@ namespace SharpPulsar.Common.Protocol
 
 			try
 			{
-				cmd..writeTo(outStream);
+				cmd.writeTo(outStream);
 			}
 			catch (IOException e)
 			{
@@ -1479,7 +1480,7 @@ namespace SharpPulsar.Common.Protocol
 			{
 				cmd.recycle();
 				cmdBuilder.recycle();
-				outStream.recycle();
+				outStream.Recycle();
 			}
 
 			return buf;
