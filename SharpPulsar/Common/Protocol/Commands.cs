@@ -108,36 +108,7 @@ namespace SharpPulsar.Common.Protocol
 			return schema;
 		}
 
-		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
-		{
-			CommandProducer producerBuilder = new CommandProducer
-			{
-				Topic = (topic),
-				ProducerId = (ulong)producerId,
-				RequestId = (ulong)requestId,
-				Epoch = (ulong)epoch
-			};
-			if (!string.ReferenceEquals(producerName, null))
-			{
-				producerBuilder.ProducerName = (producerName);
-			}
-			producerBuilder.UserProvidedProducerName = userProvidedProducerName;
-			producerBuilder.Encrypted = encrypted;
-
-			producerBuilder.Metadatas = (CommandUtils.ToKeyValueList(metadata));
-
-			if (null != schemaInfo)
-			{
-				producerBuilder.Schema = GetSchema(schemaInfo);
-			}
-
-			CommandProducer producer = producerBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Producer, Producer = (producer) });
-			producerBuilder.recycle();
-			producer.recycle();
-			return res;
-		}
-
+		
 		public static IByteBuffer NewPartitionMetadataResponse(ServerError error, string errorMsg, long requestId)
 		{
 			CommandPartitionedTopicMetadataResponse partitionMetadataResponseBuilder = new CommandPartitionedTopicMetadataResponse
