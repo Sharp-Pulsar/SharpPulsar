@@ -43,17 +43,6 @@ namespace SharpPulsar.Common.Protocol
 		private const int checksumSize = 4;	
 		
 		
-		public static IByteBuffer NewSuccess(long requestId)
-		{
-			CommandSuccess successBuilder = new CommandSuccess();
-			successBuilder.RequestId = (ulong)requestId;
-			CommandSuccess success = successBuilder;
-			IByteBuffer res = SerializeWithSize(
-				new BaseCommand { type = BaseCommand.Type.Success, Success = success });
-			successBuilder.recycle();
-			success.recycle();
-			return res;
-		}
 
 		public static IByteBuffer NewProducerSuccess(long requestId, string producerName, SchemaVersion schemaVersion)
 		{
