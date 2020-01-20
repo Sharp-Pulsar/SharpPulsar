@@ -4,7 +4,7 @@ namespace SharpPulsar.Command.Builder
 {
     public class CommandErrorBuilder
     {
-        private static CommandError _error;
+        private readonly CommandError _error;
         public CommandErrorBuilder()
         {
             _error = new CommandError();
@@ -13,22 +13,22 @@ namespace SharpPulsar.Command.Builder
         {
             _error = error;
         }
-        public static CommandErrorBuilder SetRequestId(long requestId)
+        public  CommandErrorBuilder SetRequestId(long requestId)
         {
             _error.RequestId = (ulong)requestId;
             return new CommandErrorBuilder(_error);
         }
-        public static CommandErrorBuilder SetError(ServerError error)
+        public  CommandErrorBuilder SetError(ServerError error)
         {
             _error.Error = error;
             return new CommandErrorBuilder(_error);
         }
-        public static CommandErrorBuilder SetMessage(string message)
+        public  CommandErrorBuilder SetMessage(string message)
         {
             _error.Message = message;
             return new CommandErrorBuilder(_error);
         }
-        public static CommandError Build()
+        public  CommandError Build()
         {
             return _error;
         }

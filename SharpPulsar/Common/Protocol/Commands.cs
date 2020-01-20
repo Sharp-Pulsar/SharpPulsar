@@ -126,7 +126,7 @@ namespace SharpPulsar.Common.Protocol
 				buffer.writerIndex(buffer.readerIndex() + metadataSize);
 
 				ByteBufCodedInputStream stream = ByteBufCodedInputStream.Get(buffer);
-				MessageMetadata.Builder messageMetadataBuilder = MessageMetadata.newBuilder();
+				MessageMetadata.Builder messageMetadataBuilder = MessageMetadata.newBuilder().addAllEncryptionKeys;
 				MessageMetadata.Builder res = messageMetadataBuilder.mergeFrom(stream, null);
 				buffer.writerIndex(writerIndex);
 				messageMetadataBuilder.recycle();

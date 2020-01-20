@@ -6,7 +6,7 @@ namespace SharpPulsar.Command.Builder
 {
     public class CommandAuthChallengeBuilder
     {
-        private static CommandAuthChallenge _challenge;
+        private readonly CommandAuthChallenge _challenge;
         public CommandAuthChallengeBuilder()
         {
             _challenge = new CommandAuthChallenge();
@@ -16,7 +16,7 @@ namespace SharpPulsar.Command.Builder
         {
             _challenge = challenge;
         }
-        public static CommandAuthChallengeBuilder SetProtocolVersion(int clientProtocolVersion)
+        public  CommandAuthChallengeBuilder SetProtocolVersion(int clientProtocolVersion)
         {
             // If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
             // client supports, to avoid confusing the client.
@@ -25,7 +25,7 @@ namespace SharpPulsar.Command.Builder
             _challenge.ProtocolVersion = versionToAdvertise;
             return new CommandAuthChallengeBuilder(_challenge);
         }
-        public static CommandAuthChallengeBuilder SetChallenge(string authMethod, AuthData brokerData)
+        public  CommandAuthChallengeBuilder SetChallenge(string authMethod, AuthData brokerData)
         {
             var authData = new AuthData
 			{
@@ -35,11 +35,11 @@ namespace SharpPulsar.Command.Builder
             _challenge.Challenge = authData;
             return new CommandAuthChallengeBuilder(_challenge);
         }
-        public static CommandAuthChallenge Build()
+        public  CommandAuthChallenge Build()
         {
             return _challenge;
         }
-        private static int CurrentProtocolVersion
+        private  int CurrentProtocolVersion
         {
             get
             {

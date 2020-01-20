@@ -4,7 +4,7 @@ namespace SharpPulsar.Command.Builder
 {
     public class CommandSuccessBuilder
     {
-        private static CommandSuccess _success;
+        private readonly CommandSuccess _success;
         public CommandSuccessBuilder()
         {
             _success = new CommandSuccess();
@@ -13,12 +13,12 @@ namespace SharpPulsar.Command.Builder
         {
             _success = success;
         }
-        public static CommandSuccessBuilder SetRequestId(long requestId)
+        public  CommandSuccessBuilder SetRequestId(long requestId)
         {
             _success.RequestId = (ulong)requestId;
             return new CommandSuccessBuilder(_success);
         }
-        public static CommandSuccess Build()
+        public  CommandSuccess Build()
         {
             return _success;
         }

@@ -6,7 +6,7 @@ namespace SharpPulsar.Command.Builder
 {
     public class CommandConnectedBuilder
     {
-        private static CommandConnected _connected;
+        private readonly CommandConnected _connected;
         public const int INVALID_MAX_MESSAGE_SIZE = -1;
         public CommandConnectedBuilder()
         {
@@ -16,12 +16,12 @@ namespace SharpPulsar.Command.Builder
         {
             _connected = connected;
         }       
-        public static CommandConnectedBuilder SetServerVersion(string serverVersion)
+        public  CommandConnectedBuilder SetServerVersion(string serverVersion)
         {
             _connected.ServerVersion = serverVersion;
             return new CommandConnectedBuilder(_connected);
         }
-        public static CommandConnectedBuilder SetMaxMessageSize(int maxMessageSize)
+        public  CommandConnectedBuilder SetMaxMessageSize(int maxMessageSize)
         {
             if (INVALID_MAX_MESSAGE_SIZE != maxMessageSize)
             {
@@ -30,7 +30,7 @@ namespace SharpPulsar.Command.Builder
             return new CommandConnectedBuilder(_connected);
         }
         
-        public static CommandConnectedBuilder SetProtocolVersion(int clientProtocolVersion)
+        public  CommandConnectedBuilder SetProtocolVersion(int clientProtocolVersion)
         {
             // If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
             // client supports, to avoid confusing the client.
@@ -39,11 +39,11 @@ namespace SharpPulsar.Command.Builder
             _connected.ProtocolVersion = versionToAdvertise;
             return new CommandConnectedBuilder(_connected);
         }
-        public static CommandConnected Build()
+        public  CommandConnected Build()
         {
             return _connected;
         }
-        private static int CurrentProtocolVersion
+        private  int CurrentProtocolVersion
         {
             get
             {

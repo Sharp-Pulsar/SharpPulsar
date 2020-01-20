@@ -4,7 +4,7 @@ namespace SharpPulsar.Command.Builder
 {
     public class CommandAuthResponseBuilder
     {
-        private static CommandAuthResponse _response;
+        private readonly CommandAuthResponse _response;
         public CommandAuthResponseBuilder()
         {
             _response = new CommandAuthResponse();
@@ -13,12 +13,12 @@ namespace SharpPulsar.Command.Builder
         {
             _response = response;
         }
-        public static CommandAuthResponseBuilder SetProtocolVersion(int clientProtocolVersion)
+        public  CommandAuthResponseBuilder SetProtocolVersion(int clientProtocolVersion)
         {            
             _response.ProtocolVersion = clientProtocolVersion;
             return new CommandAuthResponseBuilder(_response);
         }
-        public static CommandAuthResponseBuilder SetAuthData(string authMethod, AuthData clientData)
+        public  CommandAuthResponseBuilder SetAuthData(string authMethod, AuthData clientData)
         {
             var authData = new AuthData
             {
@@ -28,12 +28,12 @@ namespace SharpPulsar.Command.Builder
             _response.Response = authData;
             return new CommandAuthResponseBuilder(_response);
         }
-        public static CommandAuthResponseBuilder SetClientVersion(string clientversion)
+        public  CommandAuthResponseBuilder SetClientVersion(string clientversion)
         {
             _response.ClientVersion = clientversion;
             return new CommandAuthResponseBuilder(_response);
         }
-        public static CommandAuthResponse Build()
+        public  CommandAuthResponse Build()
         {
             if (string.IsNullOrWhiteSpace(_response.ClientVersion))
                 _response.ClientVersion = "Pulsar Client";
