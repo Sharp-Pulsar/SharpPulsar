@@ -67,28 +67,6 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}	
 
-		public static IByteBuffer NewCloseProducer(long producerId, long requestId)
-		{
-			CommandCloseProducer closeProducerBuilder = new CommandCloseProducer
-			{
-				ProducerId = (ulong)producerId,
-				RequestId = (ulong)requestId
-			};
-			CommandCloseProducer closeProducer = closeProducerBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.CloseProducer, CloseProducer = (closeProducerBuilder) });
-			closeProducerBuilder.recycle();
-			closeProducer.recycle();
-			return res;
-		}
-		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata)
-		{
-			return NewProducer(topic, producerId, requestId, producerName, false, metadata);
-		}
-
-		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata)
-		{
-			return newProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false);
-		}
 
 		private static PulsarApi.Schema.Type GetSchemaType(SchemaType type)
 		{
