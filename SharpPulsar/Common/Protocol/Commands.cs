@@ -42,34 +42,6 @@ namespace SharpPulsar.Common.Protocol
 		public const short magicCrc32c = 0x0e01;
 		private const int checksumSize = 4;	
 		
-
-		public static IByteBuffer NewSendReceipt(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
-		{
-			CommandSendReceipt sendReceiptBuilder = new CommandSendReceipt
-			{
-				ProducerId = (ulong)producerId,
-				SequenceId = (ulong)sequenceId,
-				HighestSequenceId = (ulong)highestId
-			};
-
-			MessageIdData messageIdBuilder = new MessageIdData
-			{
-				ledgerId = (ulong)ledgerId,
-				entryId = (ulong)entryId
-			};
-			MessageIdData messageId = messageIdBuilder;
-			sendReceiptBuilder.MessageId = (messageId);
-
-			CommandSendReceipt sendReceipt = sendReceiptBuilder;
-			IByteBuffer res = SerializeWithSize(
-				new BaseCommand { type = BaseCommand.Type.SendReceipt, SendReceipt = (sendReceipt) });
-			messageIdBuilder.recycle();
-			messageId.recycle();
-			sendReceiptBuilder.recycle();
-			sendReceipt.recycle();
-			return res;
-		}
-
 		public static IByteBuffer NewSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
 		{
 			CommandSendError sendErrorBuilder = new CommandSendError
