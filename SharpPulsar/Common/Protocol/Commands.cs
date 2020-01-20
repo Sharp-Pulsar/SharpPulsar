@@ -42,42 +42,6 @@ namespace SharpPulsar.Common.Protocol
 		public const short magicCrc32c = 0x0e01;
 		private const int checksumSize = 4;	
 		
-		
-
-		public static IByteBuffer NewProducerSuccess(long requestId, string producerName, SchemaVersion schemaVersion)
-		{
-			return NewProducerSuccess(requestId, producerName, -1, schemaVersion);
-		}
-
-		public static IByteBuffer NewProducerSuccess(long requestId, string producerName, long lastSequenceId, SchemaVersion schemaVersion)
-		{
-			CommandProducerSuccess producerSuccessBuilder = new CommandProducerSuccess();
-			producerSuccessBuilder.RequestId = (ulong)requestId;
-			producerSuccessBuilder.ProducerName = (producerName);
-			producerSuccessBuilder.LastSequenceId = lastSequenceId;
-			producerSuccessBuilder.SchemaVersion = ByteString.CopyFrom((byte[])(Array)schemaVersion.Bytes()).ToByteArray();
-			CommandProducerSuccess producerSuccess = producerSuccessBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.ProducerSuccess, ProducerSuccess = (producerSuccess) });
-			producerSuccess.recycle();
-			producerSuccessBuilder.recycle();
-			return res;
-		}
-
-		public static IByteBuffer NewError(long requestId, ServerError error, string message)
-		{
-			CommandError cmdErrorBuilder = new CommandError
-			{
-				RequestId = (ulong)requestId,
-				Error = error,
-				Message = (message)
-			};
-			CommandError cmdError = cmdErrorBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Error, Error = (cmdError) });
-			cmdError.recycle();
-			cmdErrorBuilder.recycle();
-			return res;
-
-		}
 
 		public static IByteBuffer NewSendReceipt(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
 		{
