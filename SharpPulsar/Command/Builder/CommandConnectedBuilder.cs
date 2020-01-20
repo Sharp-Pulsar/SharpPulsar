@@ -29,12 +29,19 @@ namespace SharpPulsar.Command.Builder
             }
             return new CommandConnectedBuilder(_connected);
         }
+        
         public static CommandConnectedBuilder SetProtocolVersion(int clientProtocolVersion)
         {
+            // If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
+            // client supports, to avoid confusing the client.
             int currentProtocolVersion = CurrentProtocolVersion;
             int versionToAdvertise = Math.Min(currentProtocolVersion, clientProtocolVersion);
             _connected.ProtocolVersion = versionToAdvertise;
             return new CommandConnectedBuilder(_connected);
+        }
+        public static CommandConnected Build()
+        {
+            return _connected;
         }
         private static int CurrentProtocolVersion
         {
