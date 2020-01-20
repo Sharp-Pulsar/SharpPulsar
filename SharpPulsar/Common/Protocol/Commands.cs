@@ -67,47 +67,7 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}	
 
-		public static IByteBuffer NewSeek(long consumerId, long requestId, long ledgerId, long entryId)
-		{
-			CommandSeek seekBuilder = new CommandSeek
-			{
-				ConsumerId = (ulong)consumerId,
-				RequestId = (ulong)requestId
-			};
-
-			MessageIdData messageIdBuilder = new MessageIdData();
-			messageIdBuilder.ledgerId = (ulong)ledgerId;
-			messageIdBuilder.entryId = (ulong)entryId;
-
-			MessageIdData messageId = messageIdBuilder;
-			seekBuilder.MessageId = (messageId);
-
-			CommandSeek seek = seekBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Seek, Seek = (seek) });
-			messageId.recycle();
-			messageIdBuilder.recycle();
-			seekBuilder.recycle();
-			seek.recycle();
-			return res;
-		}
-
-		public static IByteBuffer NewSeek(long consumerId, long requestId, long timestamp)
-		{
-			CommandSeek seekBuilder = new CommandSeek
-			{
-				ConsumerId = (ulong)consumerId,
-				RequestId = (ulong)requestId,
-				MessagePublishTime = (ulong)timestamp
-			};
-
-			CommandSeek seek = seekBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Seek, Seek = (seek) });
-
-			seekBuilder.recycle();
-			seek.recycle();
-			return res;
-		}
-
+		
 		public static IByteBuffer NewCloseConsumer(long consumerId, long requestId)
 		{
 			CommandCloseConsumer closeConsumerBuilder = new CommandCloseConsumer
