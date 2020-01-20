@@ -41,17 +41,7 @@ namespace SharpPulsar.Command.Builder
         }
         public static CommandConnectBuilder SetAuthMethod(AuthMethod authMethod)
         {
-            if ("ycav1".Equals(_connect.AuthMethodName))
-            {
-                // Handle the case of a client that gets updated before the broker and starts sending the string auth method
-                // name. An example would be in broker-to-broker replication. We need to make sure the clients are still
-                // passing both the enum and the string until all brokers are upgraded.
-                _connect.AuthMethod = AuthMethod.AuthMethodYcaV1;
-            }
-            else
-            {
-                _connect.AuthMethod = authMethod;
-            }            
+            _connect.AuthMethod = authMethod;
             return new CommandConnectBuilder(_connect);
         }
         public static CommandConnectBuilder SetOriginalAuthData(string originalAuthData)
@@ -78,6 +68,8 @@ namespace SharpPulsar.Command.Builder
                 // passing both the enum and the string until all brokers are upgraded.
                 _connect.AuthMethod = AuthMethod.AuthMethodYcaV1;
             }
+            if (string.IsNullOrWhiteSpace(_connect.ClientVersion))
+                _connect.ClientVersion = "Pulsar Client";
             return _connect;
         }
     }
