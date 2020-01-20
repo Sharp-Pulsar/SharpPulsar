@@ -68,21 +68,6 @@ namespace SharpPulsar.Common.Protocol
 		}	
 
 		
-		public static IByteBuffer NewCloseConsumer(long consumerId, long requestId)
-		{
-			CommandCloseConsumer closeConsumerBuilder = new CommandCloseConsumer
-			{
-				ConsumerId = (ulong)consumerId,
-				RequestId = (ulong)requestId
-			};
-
-			CommandCloseConsumer closeConsumer = closeConsumerBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.CloseConsumer, CloseConsumer = (closeConsumer) });
-			closeConsumerBuilder.recycle();
-			closeConsumer.recycle();
-			return res;
-		}
-
 		public static IByteBuffer NewReachedEndOfTopic(long consumerId)
 		{
 			CommandReachedEndOfTopic reachedEndOfTopicBuilder = new CommandReachedEndOfTopic

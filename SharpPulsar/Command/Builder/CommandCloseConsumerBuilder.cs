@@ -12,7 +12,7 @@ namespace SharpPulsar.Command.Builder
         {
             _consumer = new CommandCloseConsumer();
         }
-        public CommandCloseConsumerBuilder(CommandCloseConsumer consumer)
+        private CommandCloseConsumerBuilder(CommandCloseConsumer consumer)
         {
             _consumer = consumer;
         }
