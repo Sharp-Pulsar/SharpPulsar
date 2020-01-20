@@ -66,62 +66,7 @@ namespace SharpPulsar.Common.Protocol
 				ReadChecksum(buffer);
 			}
 		}
-
-
-
-		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, PulsarApi.MessageMetadata messageData, IByteBuffer payload)
-		{
-			CommandSend sendBuilder = new CommandSend
-			{
-				ProducerId = (ulong)producerId,
-				SequenceId = (ulong)sequenceId
-			};
-			if (numMessages > 1)
-			{
-				sendBuilder.NumMessages = numMessages;
-			}
-			if (txnIdLeastBits > 0)
-			{
-				sendBuilder.TxnidLeastBits = (ulong)txnIdLeastBits;
-			}
-			if (txnIdMostBits > 0)
-			{
-				sendBuilder.TxnidMostBits = (ulong)txnIdMostBits;
-			}
-			CommandSend send = sendBuilder;
-
-			ByteBufPair res = SerializeCommandSendWithSize(new BaseCommand { type = BaseCommand.Type.Send, Send = send }, checksumType, messageData, payload);
-			send.recycle();
-			sendBuilder.recycle();
-			return res;
-		}
-
-		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, PulsarApi.MessageMetadata messageData, IByteBuffer payload)
-		{
-			CommandSend sendBuilder = new CommandSend();
-			sendBuilder.ProducerId = (ulong)producerId;
-			sendBuilder.SequenceId = (ulong)lowestSequenceId;
-			sendBuilder.HighestSequenceId = (ulong)highestSequenceId;
-			if (numMessages > 1)
-			{
-				sendBuilder.NumMessages = numMessages;
-			}
-			if (txnIdLeastBits > 0)
-			{
-				sendBuilder.TxnidLeastBits = (ulong)txnIdLeastBits;
-			}
-			if (txnIdMostBits > 0)
-			{
-				sendBuilder.TxnidMostBits = (ulong)txnIdMostBits;
-			}
-			CommandSend send = sendBuilder;
-
-			ByteBufPair res = SerializeCommandSendWithSize(new BaseCommand { type = BaseCommand.Type.Send, Send = send }, checksumType, messageData, payload);
-			send.recycle();
-			sendBuilder.recycle();
-			return res;
-		}
-
+		
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
 		{
 			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string, string>(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
@@ -132,7 +77,7 @@ namespace SharpPulsar.Common.Protocol
 			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
 
-		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInf, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
 		{
 			CommandSubscribe subscribeBuilder = new CommandSubscribe();
 			subscribeBuilder.Topic = (topic);
@@ -166,7 +111,7 @@ namespace SharpPulsar.Common.Protocol
 						IList<Entity.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).GetRanges;
 						foreach (Entity.Range range in ranges)
 						{
-							//builder.addHashRanges(new IntRange { Start = (range.Start), End = (range.End) }); cant find addRanges
+							builder.addHashRanges(new IntRange { Start = (range.Start), End = (range.End) }); cant find addRanges
 						}
 						subscribeBuilder.keySharedMeta = (builder);
 						break;
@@ -186,7 +131,7 @@ namespace SharpPulsar.Common.Protocol
 			PulsarApi.Schema schema = null;
 			if (schemaInfo != null)
 			{
-				schema = getSchema(schemaInfo);
+				schema = GetSchema(schemaInfo);
 				subscribeBuilder.Schema = (schema);
 			}
 
@@ -356,7 +301,7 @@ namespace SharpPulsar.Common.Protocol
 				Name = (schemaInfo.Name),
 				SchemaData = ByteString.CopyFrom((byte[])(object)schemaInfo.Schema).ToByteArray(),
 				type = GetSchemaType(schemaInfo.Type),
-				//[addAllProperties]Properties = schemaInfo.Properties.Select(entry => new KeyValue { Key = entry.Key, Value = (entry.Value) })
+				//[addAllProperties = schemaInfo.Properties.Select(entry => new KeyValue { Key = entry.Key, Value = (entry.Value) })
 
 			};
 			PulsarApi.Schema schema = builder;
