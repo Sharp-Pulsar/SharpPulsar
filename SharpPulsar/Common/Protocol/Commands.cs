@@ -42,24 +42,6 @@ namespace SharpPulsar.Common.Protocol
 		public const short magicCrc32c = 0x0e01;
 		private const int checksumSize = 4;	
 		
-		public static IByteBuffer NewSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
-		{
-			CommandSendError sendErrorBuilder = new CommandSendError
-			{
-				ProducerId = (ulong)producerId,
-				SequenceId = (ulong)sequenceId,
-				Error = error,
-				Message = (errorMsg)
-			};
-			CommandSendError sendError = sendErrorBuilder;
-			IByteBuffer res = SerializeWithSize(
-				new BaseCommand { type = BaseCommand.Type.SendError, SendError = (sendError) });
-			sendErrorBuilder.recycle();
-			sendError.recycle();
-			return res;
-		}
-
-
 		public static bool HasChecksum(IByteBuffer buffer)
 		{
 			return buffer.GetShort(buffer.ReaderIndex) == magicCrc32c;
@@ -85,40 +67,7 @@ namespace SharpPulsar.Common.Protocol
 			}
 		}
 
-		public static MessageMetadata ParseMessageMetadata(IByteBuffer buffer)
-		{
-			try
-			{
-				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
-				// to parse metadata
-				SkipChecksumIfPresent(buffer);
-				int metadataSize = (int)buffer.ReadUnsignedInt();
 
-				int writerIndex = buffer.WriterIndex;
-				buffer.writerIndex(buffer.readerIndex() + metadataSize);
-
-				ByteBufCodedInputStream stream = ByteBufCodedInputStream.Get(buffer);
-				MessageMetadata.Builder messageMetadataBuilder = MessageMetadata.newBuilder().addAllEncryptionKeys;
-				MessageMetadata.Builder res = messageMetadataBuilder.mergeFrom(stream, null);
-				buffer.writerIndex(writerIndex);
-				messageMetadataBuilder.recycle();
-				stream.recycle();
-				return res;
-			}
-			catch (IOException e)
-			{
-				throw new Exception(e);
-			}
-		}
-
-		public static void SkipMessageMetadata(IByteBuffer buffer)
-		{
-			// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
-			// metadata
-			SkipChecksumIfPresent(buffer);
-			int metadataSize = (int)buffer.ReadUnsignedInt();
-			buffer.SkipBytes(metadataSize);
-		}
 
 		public static ByteBufPair NewMessage(long consumerId, MessageIdData messageId, int redeliveryCount, IByteBuffer metadataAndPayload)
 		{
