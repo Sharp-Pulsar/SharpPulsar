@@ -1,7 +1,9 @@
-﻿using SharpPulsar.Common.PulsarApi;
+﻿using SharpPulsar.Common.Protocol;
+using SharpPulsar.Common.PulsarApi;
 using SharpPulsar.Common.Schema;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SharpPulsar.Command.Builder
@@ -52,6 +54,11 @@ namespace SharpPulsar.Command.Builder
         public CommandProducerBuilder SetTopic(string topic)
         {
             _producer.Topic = topic;
+            return new CommandProducerBuilder(_producer);
+        }
+        public CommandProducerBuilder SetMetadata(IDictionary<string, string> metadata)
+        {
+            _producer.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata)); //The generated code was readonly, I editted it
             return new CommandProducerBuilder(_producer);
         }
         public CommandProducerBuilder SetUserProvidedProducerName(bool userProvidedProducerName)

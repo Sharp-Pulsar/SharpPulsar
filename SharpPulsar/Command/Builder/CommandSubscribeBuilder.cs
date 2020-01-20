@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.PulsarApi;
+﻿using SharpPulsar.Common.Protocol;
+using SharpPulsar.Common.PulsarApi;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Entity;
 using System;
@@ -66,7 +67,7 @@ namespace SharpPulsar.Command.Builder
                         {
                             intRanges.Add(new IntRange { Start = (range.Start), End = (range.End) });
                         }
-                        //sharedMeta.hashRanges = intRanges;
+                        sharedMeta.hashRanges.AddRange(intRanges);//This field was generated as readonly, I editted
                         _subscribe.keySharedMeta = sharedMeta;
                         break;
                 }
@@ -124,7 +125,13 @@ namespace SharpPulsar.Command.Builder
             _subscribe.subType = subType;
             return new CommandSubscribeBuilder(_subscribe);
         }
-        
+
+        public CommandSubscribeBuilder AddAllMetadata(IDictionary<string, string> metadata)
+        {
+            _subscribe.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata));//This field was generated as readonly, I editted
+            return new CommandSubscribeBuilder(_subscribe);
+        }
+
         public CommandSubscribeBuilder SetTopic(string topic)
         {
             if (string.IsNullOrWhiteSpace(topic))

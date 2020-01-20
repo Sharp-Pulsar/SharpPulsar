@@ -23,7 +23,7 @@ namespace SharpPulsar.Common.PulsarApi
         public Type type { get; set; }
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyValue> Properties { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoContract()]
         public enum Type
@@ -666,7 +666,7 @@ namespace SharpPulsar.Common.PulsarApi
         public KeySharedMode keySharedMode { get; set; }
 
         [global::ProtoBuf.ProtoMember(3)]
-        public global::System.Collections.Generic.List<IntRange> hashRanges { get; } = new global::System.Collections.Generic.List<IntRange>();
+        public global::System.Collections.Generic.List<IntRange> hashRanges { get; set; } = new global::System.Collections.Generic.List<IntRange>();
 
     }
 
@@ -1113,7 +1113,7 @@ namespace SharpPulsar.Common.PulsarApi
         private bool? __pbn__Encrypted;
 
         [global::ProtoBuf.ProtoMember(6, Name = @"metadata")]
-        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(7, Name = @"schema")]
         public Schema Schema { get; set; }
