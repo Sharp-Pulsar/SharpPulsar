@@ -69,44 +69,6 @@ namespace SharpPulsar.Common.Protocol
 
 
 
-		public static ByteBufPair NewMessage(long consumerId, MessageIdData messageId, int redeliveryCount, IByteBuffer metadataAndPayload)
-		{
-			CommandMessage msgBuilder = new CommandMessage
-			{
-				ConsumerId = (ulong)consumerId,
-				MessageId = (messageId)
-			};
-			if (redeliveryCount > 0)
-			{
-				msgBuilder.RedeliveryCount = (uint)redeliveryCount;
-			}
-			CommandMessage msg = msgBuilder;
-			BaseCommand cmdBuilder = new BaseCommand
-			{
-				type = BaseCommand.Type.Message,
-				Message = msg
-			};
-			BaseCommand cmd = cmdBuilder;
-
-			ByteBufPair res = SerializeCommandMessageWithSize(cmd, metadataAndPayload);
-
-			cmd.recycle();
-			cmdBuilder.recycle();
-			msg.recycle();
-			msgBuilder.recycle();
-			return res;
-		}
-
-		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessaegs, ChecksumType checksumType, PulsarApi.MessageMetadata messageMetadata, IByteBuffer payload)
-		{
-			return NewSend(producerId, sequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
-		}
-
-		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, ChecksumType checksumType, PulsarApi.MessageMetadata messageMetadata, IByteBuffer payload)
-		{
-			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
-		}
-
 		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, PulsarApi.MessageMetadata messageData, IByteBuffer payload)
 		{
 			CommandSend sendBuilder = new CommandSend
