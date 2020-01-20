@@ -1,9 +1,7 @@
 ﻿using DotNetty.Buffers;
 using Google.Protobuf;
 using Optional;
-using SharpPulsar.Common.Allocator;
 using SharpPulsar.Common.Protocol.Schema;
-using SharpPulsar.Common.PulsarApi;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Entity;
 using SharpPulsar.Util.Protobuf;
@@ -11,8 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using SharpPulsar.Common.Proto.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,65 +40,9 @@ namespace SharpPulsar.Common.Protocol
 		public const int MESSAGE_SIZE_FRAME_PADDING = 10 * 1024;
 		public const int INVALID_MAX_MESSAGE_SIZE = -1;
 		public const short magicCrc32c = 0x0e01;
-		private const int checksumSize = 4;
-
+		private const int checksumSize = 4;	
 		
 		
-		public static IByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
-		{
-			CommandAuthChallenge challengeBuilder = new CommandAuthChallenge();
-
-			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
-			// client supports, to avoid confusing the client.
-			int currentProtocolVersion = CurrentProtocolVersion;
-			int versionToAdvertise = Math.Min(currentProtocolVersion, clientProtocolVersion);
-
-			challengeBuilder.ProtocolVersion = versionToAdvertise;
-			var authData = new AuthData
-			{
-				auth_data = ByteString.CopyFrom(brokerData.auth_data).ToByteArray(),
-				AuthMethodName = authMethod
-			};
-			challengeBuilder.Challenge = authData;
-			CommandAuthChallenge challenge = challengeBuilder;
-
-			IByteBuffer res = SerializeWithSize(
-				new BaseCommand
-				{
-					type = BaseCommand.Type.AuthChallenge,
-					authChallenge = challenge
-				});
-			challenge.recycle();
-			challengeBuilder.recycle();
-			return res;
-		}
-
-		public static IByteBuffer NewAuthResponse(string authMethod, AuthData clientData, int clientProtocolVersion, string clientVersion)
-		{
-			CommandAuthResponse responseBuilder = new CommandAuthResponse
-			{
-				ClientVersion = (!string.ReferenceEquals(clientVersion, null) ? clientVersion : "Pulsar Client"),
-				ProtocolVersion = clientProtocolVersion,
-				Response =
-				new AuthData
-				{
-					auth_data = ByteString.CopyFrom(clientData.auth_data).ToByteArray(),
-					AuthMethodName = authMethod
-				}
-			};
-			CommandAuthResponse response = responseBuilder;
-
-			IByteBuffer res = SerializeWithSize(
-				new BaseCommand
-				{
-					type = BaseCommand.Type.AuthResponse,
-					authResponse = response
-				});
-			response.recycle();
-			responseBuilder.recycle();
-			return res;
-		}
-
 		public static IByteBuffer NewSuccess(long requestId)
 		{
 			CommandSuccess successBuilder = new CommandSuccess();
