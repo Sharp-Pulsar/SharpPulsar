@@ -2141,7 +2141,7 @@ namespace SharpPulsar.Common.PulsarApi
         private ulong? __pbn__TxnidMostBits;
 
         [global::ProtoBuf.ProtoMember(4, Name = @"partitions")]
-        public global::System.Collections.Generic.List<string> Partitions { get; } = new global::System.Collections.Generic.List<string>();
+        public global::System.Collections.Generic.List<string> Partitions { get; set; } = new global::System.Collections.Generic.List<string>();
 
     }
 
