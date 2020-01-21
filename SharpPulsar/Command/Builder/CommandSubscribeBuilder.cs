@@ -67,7 +67,7 @@ namespace SharpPulsar.Command.Builder
                         {
                             intRanges.Add(new IntRange { Start = (range.Start), End = (range.End) });
                         }
-                        sharedMeta.hashRanges.AddRange(intRanges);//This field was generated as readonly, I editted
+                        sharedMeta.hashRanges.AddRange(intRanges);
                         _subscribe.keySharedMeta = sharedMeta;
                         break;
                 }

@@ -18,7 +18,7 @@ namespace SharpPulsar.Command.Builder
         }
         public CommandAddPartitionToTxnBuilder SetPartitions(IList<string> parts)
         {
-            _txn.Partitions.AddRange(parts);//Generated as readonly, I editted
+            _txn.Partitions.AddRange(parts);
             return new CommandAddPartitionToTxnBuilder(_txn);
         }
         public CommandAddPartitionToTxnBuilder SetRequestId(long requestId)

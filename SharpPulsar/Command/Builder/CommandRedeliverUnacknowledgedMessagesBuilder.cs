@@ -21,7 +21,7 @@ namespace SharpPulsar.Command.Builder
         }
         public CommandRedeliverUnacknowledgedMessagesBuilder SetMessageIds(IList<MessageIdData> messageIds)
         {
-            _messages.MessageIds.AddRange(messageIds);//Was generated as readonly, I editted
+            _messages.MessageIds.AddRange(messageIds);
             return new CommandRedeliverUnacknowledgedMessagesBuilder(_messages);
         }
         public CommandRedeliverUnacknowledgedMessages Build()

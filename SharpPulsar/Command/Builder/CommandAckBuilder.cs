@@ -67,7 +67,7 @@ namespace SharpPulsar.Command.Builder
                 var messageIdData = new MessageIdDataBuilder()
                 .SetLedgerId(ledgerId)
                 .SetEntryId(entryId).Build();
-                _ack.MessageIds.Add(messageIdData);//Was generated as readonly, I editted
+                _ack.MessageIds.Add(messageIdData);
             }
             return new CommandAckBuilder(_ack);
         }

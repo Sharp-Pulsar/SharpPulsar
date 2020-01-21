@@ -23,7 +23,7 @@ namespace SharpPulsar.Common.PulsarApi
         public Type type { get; set; }
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Properties { get;} = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoContract()]
         public enum Type
@@ -666,7 +666,7 @@ namespace SharpPulsar.Common.PulsarApi
         public KeySharedMode keySharedMode { get; set; }
 
         [global::ProtoBuf.ProtoMember(3)]
-        public global::System.Collections.Generic.List<IntRange> hashRanges { get; set; } = new global::System.Collections.Generic.List<IntRange>();
+        public global::System.Collections.Generic.List<IntRange> hashRanges { get; } = new global::System.Collections.Generic.List<IntRange>();
 
     }
 
@@ -1113,7 +1113,7 @@ namespace SharpPulsar.Common.PulsarApi
         private bool? __pbn__Encrypted;
 
         [global::ProtoBuf.ProtoMember(6, Name = @"metadata")]
-        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Metadatas { get;} = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(7, Name = @"schema")]
         public Schema Schema { get; set; }
@@ -1291,7 +1291,7 @@ namespace SharpPulsar.Common.PulsarApi
         public AckType ack_type { get; set; }
 
         [global::ProtoBuf.ProtoMember(3, Name = @"message_id")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get;} = new global::System.Collections.Generic.List<MessageIdData>();
 
         [global::ProtoBuf.ProtoMember(4)]
         [global::System.ComponentModel.DefaultValue(ValidationError.UncompressedSizeCorruption)]
@@ -1305,7 +1305,7 @@ namespace SharpPulsar.Common.PulsarApi
         private ValidationError? __pbn__validation_error;
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyLongValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyLongValue>();
+        public global::System.Collections.Generic.List<KeyLongValue> Properties { get;} = new global::System.Collections.Generic.List<KeyLongValue>();
 
         [global::ProtoBuf.ProtoMember(6, Name = @"txnid_least_bits")]
         [global::System.ComponentModel.DefaultValue(0)]
@@ -1538,7 +1538,7 @@ namespace SharpPulsar.Common.PulsarApi
         public ulong ConsumerId { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"message_ids")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; } = new global::System.Collections.Generic.List<MessageIdData>();
 
     }
 
@@ -2141,7 +2141,7 @@ namespace SharpPulsar.Common.PulsarApi
         private ulong? __pbn__TxnidMostBits;
 
         [global::ProtoBuf.ProtoMember(4, Name = @"partitions")]
-        public global::System.Collections.Generic.List<string> Partitions { get; set; } = new global::System.Collections.Generic.List<string>();
+        public global::System.Collections.Generic.List<string> Partitions { get; } = new global::System.Collections.Generic.List<string>();
 
     }
 

@@ -32,7 +32,7 @@ namespace SharpPulsar.Command.Builder
         }
         public SchemaBuilder AddAllProperties(SchemaInfo schemaInfo)
         {
-            _schema.Properties.AddRange(schemaInfo.Properties.Select(x => new KeyValue { Key = x.Key, Value = x.Value}));//This field was generated as readonly, I editted
+            _schema.Properties.AddRange(schemaInfo.Properties.Select(x => new KeyValue { Key = x.Key, Value = x.Value}));
             return new SchemaBuilder(_schema);
         }
         public Schema Build()

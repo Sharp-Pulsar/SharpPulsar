@@ -58,7 +58,7 @@ namespace SharpPulsar.Command.Builder
         }
         public CommandProducerBuilder SetMetadata(IDictionary<string, string> metadata)
         {
-            _producer.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata)); //The generated code was readonly, I editted it
+            _producer.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata)); 
             return new CommandProducerBuilder(_producer);
         }
         public CommandProducerBuilder SetUserProvidedProducerName(bool userProvidedProducerName)
