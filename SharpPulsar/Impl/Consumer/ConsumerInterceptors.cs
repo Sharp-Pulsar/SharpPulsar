@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interface.Interceptor;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -39,9 +40,9 @@ namespace SharpPulsar.Impl
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerInterceptors));
 
-		private readonly IList<ConsumerInterceptor<T>> interceptors;
+		private readonly IList<IConsumerInterceptor<T>> interceptors;
 
-		public ConsumerInterceptors(IList<ConsumerInterceptor<T>> interceptors)
+		public ConsumerInterceptors(IList<IConsumerInterceptor<T>> interceptors)
 		{
 			this.interceptors = interceptors;
 		}

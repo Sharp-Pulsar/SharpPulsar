@@ -42,7 +42,7 @@ namespace SharpPulsar.Common.Protocol.Schema
 			return si;
 		}
 
-		public static SchemaInfo NewSchemaInfo(Proto.Schema schema)
+		public static SchemaInfo NewSchemaInfo(Schema schema)
 		{
 			SchemaInfo si = new SchemaInfo
 			{
@@ -59,7 +59,7 @@ namespace SharpPulsar.Common.Protocol.Schema
 				si.Properties = new SortedDictionary<string,  string>();
 				for (int i = 0; i < schema.Properties.Count; i++)
 				{
-					Proto.KeyValue kv = schema.Properties[i];
+					KeyValue kv = schema.Properties[i];
 					si.Properties.Add(kv.Key, kv.Value);
 				}
 			}

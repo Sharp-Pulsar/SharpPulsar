@@ -47,6 +47,7 @@ namespace SharpPulsar.Impl
     using Optional;
     using SharpPulsar.Common.Schema;
     using SharpPulsar.Exception;
+    using SharpPulsar.Impl.Schema;
 
     public class PulsarClientImpl : IPulsarClient
 	{
@@ -287,12 +288,12 @@ namespace SharpPulsar.Impl
 			return producerCreatedFuture;
 		}
 
-		public virtual ValueTask<sbyte[]> SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
+		public virtual async ValueTask SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
 		{
-			return SubscribeAsync(conf, Schema.BYTES, null);
+			return await SubscribeAsync(conf, new BytesSchema(), interceptors: null);
 		}
 
-		public virtual ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> conf, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		public async virtual ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
 			if (state.get() != State.Open)
 			{

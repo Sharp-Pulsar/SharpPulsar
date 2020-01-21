@@ -21,303 +21,304 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
+    using SharpPulsar.Interface.Consumer;
+    using SharpPulsar.Configuration;
+    using SharpPulsar.Interface.Schema;
+    using SharpPulsar.Interface.Interceptor;
+    using SharpPulsar.Exception;
+    using System.Threading.Tasks;
+    using System.Linq;
+    using SharpPulsar.Enum;
+    using System.Text.RegularExpressions;
+    using BAMCIS.Util.Concurrent;
+    using SharpPulsar.Util;
+    using SharpPulsar.Interface.Message;
+    using SharpPulsar.Interface;
+    using SharpPulsar.Entity;
 
-
-	using AccessLevel = lombok.AccessLevel;
-	using Getter = lombok.Getter;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatchReceivePolicy = org.apache.pulsar.client.api.BatchReceivePolicy;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using ConsumerBuilder = org.apache.pulsar.client.api.ConsumerBuilder;
-	using ConsumerCryptoFailureAction = org.apache.pulsar.client.api.ConsumerCryptoFailureAction;
-	using ConsumerEventListener = org.apache.pulsar.client.api.ConsumerEventListener;
-	using ConsumerInterceptor = org.apache.pulsar.client.api.ConsumerInterceptor;
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using DeadLetterPolicy = org.apache.pulsar.client.api.DeadLetterPolicy;
-	using KeySharedPolicy = org.apache.pulsar.client.api.KeySharedPolicy;
-	using MessageListener = org.apache.pulsar.client.api.MessageListener;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using RegexSubscriptionMode = org.apache.pulsar.client.api.RegexSubscriptionMode;
-	using InvalidConfigurationException = org.apache.pulsar.client.api.PulsarClientException.InvalidConfigurationException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionInitialPosition = org.apache.pulsar.client.api.SubscriptionInitialPosition;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using ConfigurationDataUtils = SharpPulsar.Impl.conf.ConfigurationDataUtils;
-	using SharpPulsar.Impl.conf;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-
-	using Lists = com.google.common.collect.Lists;
-	using NonNull = lombok.NonNull;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter(AccessLevel.PUBLIC) public class ConsumerBuilderImpl<T> implements org.apache.pulsar.client.api.ConsumerBuilder<T>
-	public class ConsumerBuilderImpl<T> : ConsumerBuilder<T>
+    public class ConsumerBuilderImpl<T> : IConsumerBuilder<T>
 	{
 
 		private readonly PulsarClientImpl client;
 		private ConsumerConfigurationData<T> conf;
-		private readonly Schema<T> schema;
-		private IList<ConsumerInterceptor<T>> interceptorList;
+		private readonly ISchema<T> schema;
+		private IList<IConsumerInterceptor<T>> interceptorList;
 
 		private static long MIN_ACK_TIMEOUT_MILLIS = 1000;
 		private static long MIN_TICK_TIME_MILLIS = 100;
 		private static long DEFAULT_ACK_TIMEOUT_MILLIS_FOR_DEAD_LETTER = 30000L;
 
 
-		public ConsumerBuilderImpl(PulsarClientImpl client, Schema<T> schema) : this(client, new ConsumerConfigurationData<T>(), schema)
+		public ConsumerBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ConsumerConfigurationData<T>(), schema)
 		{
 		}
 
-		internal ConsumerBuilderImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, Schema<T> schema)
+		internal ConsumerBuilderImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, ISchema<T> schema)
 		{
 			this.client = client;
 			this.conf = conf;
 			this.schema = schema;
 		}
 
-		public override ConsumerBuilder<T> loadConf(IDictionary<string, object> config)
+		public IConsumerBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			this.conf = ConfigurationDataUtils.loadData(config, conf, typeof(ConsumerConfigurationData));
+			conf = ConfigurationDataUtils.LoadData(config, conf, typeof(ConsumerConfigurationData<T>));
 			return this;
 		}
 
-		public override ConsumerBuilder<T> clone()
+		public IConsumerBuilder<T> Clone()
 		{
-			return new ConsumerBuilderImpl<T>(client, conf.clone(), schema);
+			return new ConsumerBuilderImpl<T>(client, conf, schema);
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Consumer<T> subscribe() throws org.apache.pulsar.client.api.PulsarClientException
-		public override Consumer<T> subscribe()
+		public IConsumer<T> Subscribe()
 		{
 			try
 			{
-				return subscribeAsync().get();
+				return SubscribeAsync().GetAwaiter().GetResult();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Consumer<T>> subscribeAsync()
+		public async ValueTask<IConsumer<T>> SubscribeAsync()
 		{
-			if (conf.TopicNames.Empty && conf.TopicsPattern == null)
+			if (!conf.TopicNames.Any() && conf.TopicsPattern == null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Topic name must be set on the consumer builder"));
+				throw new PulsarClientException.InvalidConfigurationException("Topic name must be set on the consumer builder");
 			}
 
-			if (StringUtils.isBlank(conf.SubscriptionName))
+			if (string.IsNullOrWhiteSpace(conf.SubscriptionName))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Subscription name must be set on the consumer builder"));
+				throw new PulsarClientException.InvalidConfigurationException("Subscription name must be set on the consumer builder");
 			}
 
-			if (conf.KeySharedPolicy != null && conf.SubscriptionType != SubscriptionType.Key_Shared)
+			if (conf.KeySharedPolicy != null && conf.SubscriptionType != Enum.SubscriptionType.Key_Shared)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("KeySharedPolicy must set with KeyShared subscription"));
+				throw new PulsarClientException.InvalidConfigurationException("KeySharedPolicy must set with KeyShared subscription");
 			}
 
-			return interceptorList == null || interceptorList.Count == 0 ? client.subscribeAsync(conf, schema, null) : client.subscribeAsync(conf, schema, new ConsumerInterceptors<>(interceptorList));
+			return interceptorList == null || interceptorList.Count == 0 ? await client.SubscribeAsync(conf, schema, null) : await client.SubscribeAsync(conf, schema, new ConsumerInterceptors<T>(interceptorList));
 		}
 
-		public override ConsumerBuilder<T> topic(params string[] topicNames)
+		public IConsumerBuilder<T> Topic(params string[] topicNames)
 		{
-			checkArgument(topicNames != null && topicNames.Length > 0, "Passed in topicNames should not be null or empty.");
-			java.util.topicNames.ForEach(topicName => checkArgument(StringUtils.isNotBlank(topicName), "topicNames cannot have blank topic"));
-			conf.TopicNames.addAll(Lists.newArrayList(java.util.topicNames.Select(StringUtils.Trim).ToList()));
+			if(topicNames != null && topicNames.Length > 0)
+				throw new NullReferenceException("Passed in topicNames should not be null or empty.");
+			foreach(var topic in topicNames)
+			{
+				if(string.IsNullOrWhiteSpace(topic))
+				{
+					new NullReferenceException("topicNames cannot have blank topic");
+				}
+			}
+			foreach(var topic in topicNames)
+			{
+				conf.TopicNames.Add(topic.Trim());
+			}
 			return this;
 		}
 
-		public override ConsumerBuilder<T> topics(IList<string> topicNames)
+		public IConsumerBuilder<T> Topics(IList<string> topicNames)
 		{
-			checkArgument(topicNames != null && topicNames.Count > 0, "Passed in topicNames list should not be null or empty.");
-			topicNames.ForEach(topicName => checkArgument(StringUtils.isNotBlank(topicName), "topicNames cannot have blank topic"));
-			conf.TopicNames.addAll(topicNames.Select(StringUtils.Trim).ToList());
+			if (topicNames != null && topicNames.Count > 0)
+				throw new NullReferenceException("Passed in topicNames list should not be null or empty.");
+			foreach (var topic in topicNames)
+			{
+				if (string.IsNullOrWhiteSpace(topic))
+				{
+					new NullReferenceException("topicNames cannot have blank topic");
+				}
+			}
+			foreach (var topic in topicNames)
+			{
+				conf.TopicNames.Add(topic.Trim());
+			}
 			return this;
 		}
 
-		public override ConsumerBuilder<T> topicsPattern(Pattern topicsPattern)
+		public IConsumerBuilder<T> TopicsPattern(Regex topicsPattern)
 		{
-			checkArgument(conf.TopicsPattern == null, "Pattern has already been set.");
+			if (conf.TopicsPattern != null)
+				throw new System.Exception("Pattern has already been set.");
 			conf.TopicsPattern = topicsPattern;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> topicsPattern(string topicsPattern)
+		public IConsumerBuilder<T> TopicsPattern(string topicsPattern)
 		{
-			checkArgument(conf.TopicsPattern == null, "Pattern has already been set.");
-			conf.TopicsPattern = Pattern.compile(topicsPattern);
+			if (conf.TopicsPattern != null)
+				throw new System.Exception("Pattern has already been set.");
+			conf.TopicsPattern = new Regex(topicsPattern);
 			return this;
 		}
 
-		public override ConsumerBuilder<T> subscriptionName(string subscriptionName)
+		public IConsumerBuilder<T> SubscriptionName(string subscriptionName)
 		{
-			checkArgument(StringUtils.isNotBlank(subscriptionName), "subscriptionName cannot be blank");
+			if(string.IsNullOrWhiteSpace(subscriptionName))
+				throw new System.Exception("subscriptionName cannot be blank");
 			conf.SubscriptionName = subscriptionName;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> ackTimeout(long ackTimeout, TimeUnit timeUnit)
+		public IConsumerBuilder<T> AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			checkArgument(ackTimeout == 0 || timeUnit.toMillis(ackTimeout) >= MIN_ACK_TIMEOUT_MILLIS, "Ack timeout should be greater than " + MIN_ACK_TIMEOUT_MILLIS + " ms");
-			conf.AckTimeoutMillis = timeUnit.toMillis(ackTimeout);
+			if(timeUnit.ToMillis(ackTimeout) < MIN_ACK_TIMEOUT_MILLIS)
+				throw new System.Exception("Ack timeout should be greater than " + MIN_ACK_TIMEOUT_MILLIS + " ms"); 
+			conf.AckTimeoutMillis = timeUnit.ToMillis(ackTimeout);
 			return this;
 		}
 
-		public override ConsumerBuilder<T> ackTimeoutTickTime(long tickTime, TimeUnit timeUnit)
+		public IConsumerBuilder<T> AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			checkArgument(timeUnit.toMillis(tickTime) >= MIN_TICK_TIME_MILLIS, "Ack timeout tick time should be greater than " + MIN_TICK_TIME_MILLIS + " ms");
-			conf.TickDurationMillis = timeUnit.toMillis(tickTime);
+			if(timeUnit.ToMillis(tickTime) <= MIN_TICK_TIME_MILLIS)
+				throw new System.Exception("Ack timeout tick time should be greater than " + MIN_TICK_TIME_MILLIS + " ms");
+			conf.TickDurationMillis = timeUnit.ToMillis(tickTime);
 			return this;
 		}
 
-		public override ConsumerBuilder<T> negativeAckRedeliveryDelay(long redeliveryDelay, TimeUnit timeUnit)
+		public IConsumerBuilder<T> NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			checkArgument(redeliveryDelay >= 0, "redeliveryDelay needs to be >= 0");
-			conf.NegativeAckRedeliveryDelayMicros = timeUnit.toMicros(redeliveryDelay);
+			if(redeliveryDelay < 0)
+				throw new System.Exception("redeliveryDelay needs to be >= 0");
+			conf.NegativeAckRedeliveryDelayMicros = timeUnit.ToMicros(redeliveryDelay);
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> subscriptionType(@NonNull SubscriptionType subscriptionType)
-		public override ConsumerBuilder<T> subscriptionType(SubscriptionType subscriptionType)
+		public IConsumerBuilder<T> SubscriptionType(SubscriptionType subscriptionType)
 		{
 			conf.SubscriptionType = subscriptionType;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> messageListener(@NonNull MessageListener<T> messageListener)
-		public override ConsumerBuilder<T> messageListener(MessageListener<T> messageListener)
+		public IConsumerBuilder<T> MessageListener(IMessageListener<T> messageListener)
 		{
 			conf.MessageListener = messageListener;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> consumerEventListener(@NonNull ConsumerEventListener consumerEventListener)
-		public override ConsumerBuilder<T> consumerEventListener(ConsumerEventListener consumerEventListener)
+		public IConsumerBuilder<T> ConsumerEventListener(IConsumerEventListener consumerEventListener)
 		{
 			conf.ConsumerEventListener = consumerEventListener;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> cryptoKeyReader(@NonNull CryptoKeyReader cryptoKeyReader)
-		public override ConsumerBuilder<T> cryptoKeyReader(CryptoKeyReader cryptoKeyReader)
+		public IConsumerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> cryptoFailureAction(@NonNull ConsumerCryptoFailureAction action)
-		public override ConsumerBuilder<T> cryptoFailureAction(ConsumerCryptoFailureAction action)
+		public IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
 			conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> receiverQueueSize(int receiverQueueSize)
+		public IConsumerBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
-			checkArgument(receiverQueueSize >= 0, "receiverQueueSize needs to be >= 0");
+			if(receiverQueueSize <= 0)
+				throw new System.Exception("receiverQueueSize needs to be >= 0");
 			conf.ReceiverQueueSize = receiverQueueSize;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> acknowledgmentGroupTime(long delay, TimeUnit unit)
+		public IConsumerBuilder<T> AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			checkArgument(delay >= 0, "acknowledgmentGroupTime needs to be >= 0");
-			conf.AcknowledgementsGroupTimeMicros = unit.toMicros(delay);
+			if(delay <= 0)
+				throw new System.Exception("acknowledgmentGroupTime needs to be >= 0");
+			conf.AcknowledgementsGroupTimeMicros = unit.ToMicros(delay);
 			return this;
 		}
 
-		public override ConsumerBuilder<T> consumerName(string consumerName)
+		public IConsumerBuilder<T> ConsumerName(string consumerName)
 		{
-			checkArgument(StringUtils.isNotBlank(consumerName), "consumerName cannot be blank");
+			if(string.IsNullOrWhiteSpace(consumerName))
+				throw new System.Exception("consumerName cannot be blank");
 			conf.ConsumerName = consumerName;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> priorityLevel(int priorityLevel)
+		public IConsumerBuilder<T> PriorityLevel(int priorityLevel)
 		{
-			checkArgument(priorityLevel >= 0, "priorityLevel needs to be >= 0");
+			if(priorityLevel <= 0)
+				throw new System.Exception("priorityLevel needs to be >= 0");
 			conf.PriorityLevel = priorityLevel;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> property(string key, string value)
+		public IConsumerBuilder<T> Property(string key, string value)
 		{
-			checkArgument(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value), "property key/value cannot be blank");
-			conf.Properties.put(key, value);
+			if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
+				throw new System.Exception("property key/value cannot be blank");
+			conf.Properties.Add(key, value);
+			return this;
+		}
+		public IConsumerBuilder<T> Properties(IDictionary<string, string> properties)
+		{
+			if(!properties.Any())
+				throw new System.Exception("properties cannot be empty");
+			foreach(var prop in properties)
+			{
+				if (string.IsNullOrWhiteSpace(prop.Key) && string.IsNullOrWhiteSpace(prop.Value))
+					throw new System.Exception("properties' key/value cannot be blank");
+				conf.Properties.Add(prop.Key, prop.Value);
+			}
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> properties(@NonNull Map<String, String> properties)
-		public override ConsumerBuilder<T> properties(IDictionary<string, string> properties)
+		public IConsumerBuilder<T> MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
 		{
-			checkArgument(!properties.Empty, "properties cannot be empty");
-			properties.entrySet().forEach(entry => checkArgument(StringUtils.isNotBlank(entry.Key) && StringUtils.isNotBlank(entry.Value), "properties' key/value cannot be blank"));
-			conf.Properties.putAll(properties);
-			return this;
-		}
-
-		public override ConsumerBuilder<T> maxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
-		{
-			checkArgument(maxTotalReceiverQueueSizeAcrossPartitions >= 0, "maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0");
+			if(maxTotalReceiverQueueSizeAcrossPartitions < 0)
+				throw new System.Exception("maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0");
 			conf.MaxTotalReceiverQueueSizeAcrossPartitions = maxTotalReceiverQueueSizeAcrossPartitions;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> readCompacted(bool readCompacted)
+		public IConsumerBuilder<T> ReadCompacted(bool readCompacted)
 		{
 			conf.ReadCompacted = readCompacted;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> patternAutoDiscoveryPeriod(int periodInMinutes)
+		public IConsumerBuilder<T> PatternAutoDiscoveryPeriod(int periodInMinutes)
 		{
-			checkArgument(periodInMinutes >= 0, "periodInMinutes needs to be >= 0");
+			if(periodInMinutes < 0)
+				throw new System.Exception("periodInMinutes needs to be >= 0");
 			conf.PatternAutoDiscoveryPeriod = periodInMinutes;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> subscriptionInitialPosition(@NonNull SubscriptionInitialPosition subscriptionInitialPosition)
-		public override ConsumerBuilder<T> subscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
+		public IConsumerBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
 		{
 			conf.SubscriptionInitialPosition = subscriptionInitialPosition;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.ConsumerBuilder<T> subscriptionTopicsMode(@NonNull RegexSubscriptionMode mode)
-		public override ConsumerBuilder<T> subscriptionTopicsMode(RegexSubscriptionMode mode)
+		public IConsumerBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{
 			conf.RegexSubscriptionMode = mode;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> replicateSubscriptionState(bool replicateSubscriptionState)
+		public IConsumerBuilder<T> ReplicateSubscriptionState(bool replicateSubscriptionState)
 		{
 			conf.ReplicateSubscriptionState = replicateSubscriptionState;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> intercept(params ConsumerInterceptor<T>[] interceptors)
+		public IConsumerBuilder<T> intercept(params IConsumerInterceptor<T>[] interceptors)
 		{
 			if (interceptorList == null)
 			{
-				interceptorList = new List<ConsumerInterceptor<T>>();
+				interceptorList = new List<IConsumerInterceptor<T>>();
 			}
-			((List<ConsumerInterceptor<T>>)interceptorList).AddRange(Arrays.asList(interceptors));
+			((List<IConsumerInterceptor<T>>)interceptorList).AddRange(interceptors.ToList());
 			return this;
 		}
 
-		public override ConsumerBuilder<T> deadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
+		public IConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
 		{
 			if (deadLetterPolicy != null)
 			{
@@ -330,22 +331,23 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ConsumerBuilder<T> autoUpdatePartitions(bool autoUpdate)
+		public IConsumerBuilder<T> AutoUpdatePartitions(bool autoUpdate)
 		{
 			conf.AutoUpdatePartitions = autoUpdate;
 			return this;
 		}
 
-		public override ConsumerBuilder<T> startMessageIdInclusive()
+		public IConsumerBuilder<T> StartMessageIdInclusive()
 		{
 			conf.ResetIncludeHead = true;
 			return this;
 		}
 
-		public virtual ConsumerBuilder<T> batchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
+		public virtual IConsumerBuilder<T> BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
 		{
-			checkArgument(batchReceivePolicy != null, "batchReceivePolicy must not be null.");
-			batchReceivePolicy.verify();
+			if(batchReceivePolicy == null)
+				throw new NullReferenceException("batchReceivePolicy must not be null.");
+			batchReceivePolicy.Verify();
 			conf.BatchReceivePolicy = batchReceivePolicy;
 			return this;
 		}
@@ -355,11 +357,21 @@ namespace SharpPulsar.Impl
 			return conf != null ? conf.ToString() : null;
 		}
 
-		public override ConsumerBuilder<T> keySharedPolicy(KeySharedPolicy keySharedPolicy)
+		public IConsumerBuilder<T> KeySharedPolicy(KeySharedPolicy keySharedPolicy)
 		{
-			keySharedPolicy.validate();
+			keySharedPolicy.Validate();
 			conf.KeySharedPolicy = keySharedPolicy;
 			return this;
+		}
+		
+		public IConsumerBuilder<T> Intercept(params IConsumerInterceptor<T>[] interceptors)
+		{
+			throw new NotImplementedException();
+		}
+
+		object ICloneable.Clone()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

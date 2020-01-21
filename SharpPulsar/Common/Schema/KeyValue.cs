@@ -77,7 +77,7 @@ namespace SharpPulsar.Common.Schema
 		/// <summary>
 		/// Decoder to decode key/value bytes.
 		/// </summary>
-		public delegate Schema.KeyValue<K, V> KeyValueDecoder<K, V>(sbyte[] keyData, sbyte[] valueData);
+		public delegate KeyValue<K, V> KeyValueDecoder<K, V>(sbyte[] keyData, sbyte[] valueData);
 
 		/// <summary>
 		/// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
@@ -92,8 +92,8 @@ namespace SharpPulsar.Common.Schema
 			sbyte[] keyBytes = keyWriter.Encode(key);
 			sbyte[] valueBytes = valueWriter.Encode(value);
 			ByteBuffer byteBuffer = ByteBuffer.Allocate(4 + keyBytes.Length + 4 + valueBytes.Length);
-			byteBuffer.putInt(keyBytes.Length).put((byte)(object)keyBytes).putInt(valueBytes.Length).put((byte)(object)valueBytes);
-			return byteBuffer.array();
+			byteBuffer.PutInt(keyBytes.Length).Put((byte)(object)keyBytes).PutInt(valueBytes.Length).Put((byte)(object)valueBytes);
+			return byteBuffer.ToArray();
 		}
 
 		/// <summary>
@@ -107,11 +107,11 @@ namespace SharpPulsar.Common.Schema
 			ByteBuffer byteBuffer = ByteBuffer.Wrap(data);
 			int keyLength = byteBuffer.Int;
 			sbyte[] keyBytes = new sbyte[keyLength];
-			byteBuffer.get(keyBytes);
+			byteBuffer.Get(keyBytes);
 
 			int valueLength = byteBuffer.Int;
 			sbyte[] valueBytes = new sbyte[valueLength];
-			byteBuffer.get(valueBytes);
+			byteBuffer.Get(valueBytes);
 
 			return decoder(keyBytes, valueBytes);
 		}

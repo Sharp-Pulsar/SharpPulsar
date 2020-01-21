@@ -30,97 +30,74 @@ using SharpPulsar.Entity;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ConsumerConfigurationData<T> implements java.io.Serializable, Cloneable
-	[Serializable]
-	public class ConsumerConfigurationData<T> : ICloneable
+	public sealed class ConsumerConfigurationData<T>
 	{
-		private const long serialVersionUID = 1L;
+		public const long serialVersionUID = 1L;
 
-		private ISet<string> topicNames = Sets.newTreeSet();
+		public HashSet<string> TopicNames = new HashSet<string>();
 
-		private Regex _topicsPattern;
+		public Regex TopicsPattern;
 
-		private string _subscriptionName;
+		public string SubscriptionName;
 
-		private SubscriptionType subscriptionType = SubscriptionType.Exclusive;
-		private IMessageListener<T> MessageListener;
-		private IConsumerEventListener consumerEventListener;
+		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
+		public IMessageListener<T> MessageListener;
+		public IConsumerEventListener SonsumerEventListener;
 
-		private int receiverQueueSize = 1000;
+		public int ReceiverQueueSize = 1000;
 
-		private long acknowledgementsGroupTimeMicros = TimeUnit.MILLISECONDS.ToMicros(100);
+		public long AcknowledgementsGroupTimeMicros = TimeUnit.MILLISECONDS.ToMicros(100);
 
-		private long negativeAckRedeliveryDelayMicros = TimeUnit.MINUTES.ToMicros(1);
+		public long NegativeAckRedeliveryDelayMicros = TimeUnit.MINUTES.ToMicros(1);
 
-		private int maxTotalReceiverQueueSizeAcrossPartitions = 50000;
+		public int MaxTotalReceiverQueueSizeAcrossPartitions = 50000;
 
-		private string consumerName = null;
+		public string ConsumerName = null;
 
-		private long ackTimeoutMillis = 0;
+		public long AckTimeoutMillis = 0;
 
-		private long tickDurationMillis = 1000;
+		public long TickDurationMillis = 1000;
 
-		private int priorityLevel = 0;
+		public int PriorityLevel = 0;
 
-		private ICryptoKeyReader cryptoKeyReader = null;
+		public ICryptoKeyReader CryptoKeyReader = null;
 
-		private ConsumerCryptoFailureAction cryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
+		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
 
-		private SortedDictionary<string, string> properties = new SortedDictionary<string, string>();
+		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
 
-		private bool readCompacted = false;
+		public bool ReadCompacted = false;
 
-		private SubscriptionInitialPosition subscriptionInitialPosition = SubscriptionInitialPosition.Latest;
+		public SubscriptionInitialPosition SubscriptionInitialPosition = SubscriptionInitialPosition.Latest;
 
-		private int patternAutoDiscoveryPeriod = 1;
+		public int PatternAutoDiscoveryPeriod = 1;
 
-		private RegexSubscriptionMode regexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
+		public RegexSubscriptionMode RegexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
 
-		private DeadLetterPolicy deadLetterPolicy;
-		private BatchReceivePolicy batchReceivePolicy;
+		public DeadLetterPolicy DeadLetterPolicy;
+		public BatchReceivePolicy BatchReceivePolicy;
 
-		private bool autoUpdatePartitions = true;
+		public bool AutoUpdatePartitions = true;
 
-		private bool replicateSubscriptionState = false;
+		public bool ReplicateSubscriptionState = false;
 
-		private bool resetIncludeHead = false;
+		public bool ResetIncludeHead = false;
 
-		private KeySharedPolicy keySharedPolicy;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore public String getSingleTopic()
-		public virtual string SingleTopic
+		public KeySharedPolicy KeySharedPolicy;
+		public string SingleTopic
 		{
 			get
 			{
-				checkArgument(topicNames.Count == 1);
-				return topicNames.GetEnumerator().next();
+				if(TopicNames.Count == 1)
+				{
+					TopicNames.GetEnumerator().MoveNext();
+					return TopicNames.GetEnumerator().Current;
+				}
+				return string.Empty;
 			}
 		}
 
-		public virtual ConsumerConfigurationData<T> clone()
-		{
-			try
-			{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") ConsumerConfigurationData<T> c = (ConsumerConfigurationData<T>) super.clone();
-				ConsumerConfigurationData<T> c = (ConsumerConfigurationData<T>) base.clone();
-				c.topicNames = Sets.newTreeSet(this.topicNames);
-				c.properties = Maps.newTreeMap(this.properties);
-				return c;
-			}
-			catch (CloneNotSupportedException)
-			{
-				throw new Exception("Failed to clone ConsumerConfigurationData");
-			}
-		}
-
-		public object Clone()
-		{
-			throw new NotImplementedException();
-		}
+		public IConsumerEventListener ConsumerEventListener { get; internal set; }
 	}
 
 }

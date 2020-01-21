@@ -566,14 +566,14 @@ namespace SharpPulsar.Interface.Consumer
 		/// </para>
 		/// </summary>
 		/// <param name="keySharedPolicy"> The <seealso cref="KeySharedPolicy"/> want to specify </param>
-		IConsumerBuilder<T> keySharedPolicy(KeySharedPolicy keySharedPolicy);
+		IConsumerBuilder<T> KeySharedPolicy(KeySharedPolicy keySharedPolicy);
 
 		/// <summary>
 		/// Set the consumer to include the given position of any reset operation like {@link Consumer#seek(long) or
 		/// <seealso cref="IConsumer.seek(IMessageId)"/>}.
 		/// </summary>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> startMessageIdInclusive();
+		IConsumerBuilder<T> StartMessageIdInclusive();
 
 		/// <summary>
 		/// Set batch receive policy <seealso cref="BatchReceivePolicy"/> for consumer.
