@@ -1538,7 +1538,7 @@ namespace SharpPulsar.Common.PulsarApi
         public ulong ConsumerId { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"message_ids")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
 
     }
 
