@@ -12,19 +12,16 @@ namespace SharpPulsar.Command.Builder
         {
             _consumer = new CommandCloseConsumer();
         }
-        private CommandCloseConsumerBuilder(CommandCloseConsumer consumer)
-        {
-            _consumer = consumer;
-        }
+        
         public CommandCloseConsumerBuilder SetConsumerId(long consumerid)
         {
             _consumer.ConsumerId = (ulong)consumerid;
-            return new CommandCloseConsumerBuilder(_consumer);
+            return this;
         }
         public CommandCloseConsumerBuilder SetRequestId(long requestid)
         {
             _consumer.RequestId = (ulong)requestid;
-            return new CommandCloseConsumerBuilder(_consumer);
+            return this;
         }
         public CommandCloseConsumer Build()
         {

@@ -9,24 +9,21 @@ namespace SharpPulsar.Command.Builder
         {
             _error = new CommandError();
         }
-        private CommandErrorBuilder(CommandError error)
-        {
-            _error = error;
-        }
+        
         public  CommandErrorBuilder SetRequestId(long requestId)
         {
             _error.RequestId = (ulong)requestId;
-            return new CommandErrorBuilder(_error);
+            return this;
         }
         public  CommandErrorBuilder SetError(ServerError error)
         {
             _error.Error = error;
-            return new CommandErrorBuilder(_error);
+            return this;
         }
         public  CommandErrorBuilder SetMessage(string message)
         {
             _error.Message = message;
-            return new CommandErrorBuilder(_error);
+            return this;
         }
         public  CommandError Build()
         {

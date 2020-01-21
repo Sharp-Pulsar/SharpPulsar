@@ -11,29 +11,26 @@ namespace SharpPulsar.Command.Builder
         {
             _schema = new Schema();
         }
-        private SchemaBuilder(Schema schema)
-        {
-            _schema = schema;
-        }
+        
         public SchemaBuilder SetName(SchemaInfo schemaInfo)
         {
             _schema.Name = schemaInfo.Name;
-            return new SchemaBuilder(_schema);
+            return this;
         }
         public SchemaBuilder SetSchemaData(SchemaInfo schemaInfo)
         {
             _schema.SchemaData = (byte[])(object)schemaInfo.Schema;
-            return new SchemaBuilder(_schema);
+            return this;
         }
         public SchemaBuilder SetType(SchemaInfo schemaInfo)
         {
             _schema.type = GetSchemaType(schemaInfo.Type);
-            return new SchemaBuilder(_schema);
+            return this;
         }
         public SchemaBuilder AddAllProperties(SchemaInfo schemaInfo)
         {
             _schema.Properties.AddRange(schemaInfo.Properties.Select(x => new KeyValue { Key = x.Key, Value = x.Value}));
-            return new SchemaBuilder(_schema);
+            return this;
         }
         public Schema Build()
         {

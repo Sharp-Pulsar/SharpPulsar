@@ -9,19 +9,16 @@ namespace SharpPulsar.Command.Builder
         {
             _producer = new CommandCloseProducer();
         }
-        private CommandCloseProducerBuilder(CommandCloseProducer producer)
-        {
-            _producer = producer;
-        }
+        
         public CommandCloseProducerBuilder SetProducerId(long producerid)
         {
             _producer.ProducerId = (ulong)producerid;
-            return new CommandCloseProducerBuilder(_producer);
+            return this;
         }
         public CommandCloseProducerBuilder SetRequestId(long requestid)
         {
             _producer.RequestId = (ulong)requestid;
-            return new CommandCloseProducerBuilder(_producer);
+            return this;
         }
         public CommandCloseProducer Build()
         {

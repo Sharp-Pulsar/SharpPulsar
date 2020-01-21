@@ -9,19 +9,16 @@ namespace SharpPulsar.Command.Builder
         {
             _id = new CommandGetLastMessageId();
         }
-        private CommandGetLastMessageIdBuilder(CommandGetLastMessageId id)
-        {
-            _id = id;
-        }
+        
         public CommandGetLastMessageIdBuilder SetConsumerId(long consumerId)
         {
             _id.ConsumerId = (ulong)consumerId;
-            return new CommandGetLastMessageIdBuilder(_id);
+            return this;
         }
         public CommandGetLastMessageIdBuilder SetRequestId(long requestId)
         {
             _id.RequestId = (ulong)requestId;
-            return new CommandGetLastMessageIdBuilder(_id);
+            return this;
         }
         public CommandGetLastMessageId Build()
         {

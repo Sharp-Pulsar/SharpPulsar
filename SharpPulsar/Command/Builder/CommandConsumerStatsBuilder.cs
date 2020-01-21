@@ -9,19 +9,16 @@ namespace SharpPulsar.Command.Builder
         {
             _stats = new CommandConsumerStats();
         }
-        private CommandConsumerStatsBuilder(CommandConsumerStats stats)
-        {
-            _stats = stats;
-        }
+        
         public CommandConsumerStatsBuilder SetConsumerId(long consumerId)
         {
             _stats.ConsumerId = (ulong)consumerId;
-            return new CommandConsumerStatsBuilder(_stats);
+            return this;
         }
         public CommandConsumerStatsBuilder SetRequestId(long requestId)
         {
             _stats.RequestId = (ulong)requestId;
-            return new CommandConsumerStatsBuilder(_stats);
+            return this;
         }
         public CommandConsumerStats Build()
         {

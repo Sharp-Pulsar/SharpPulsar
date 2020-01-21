@@ -9,19 +9,16 @@ namespace SharpPulsar.Command.Builder
         {
             _flow = new CommandFlow();
         }
-        private CommandFlowBuilder(CommandFlow ack)
-        {
-            _flow = ack;
-        }
+        
         public CommandFlowBuilder SetConsumerId(long consumerId)
         {
             _flow.ConsumerId = (ulong)consumerId;
-            return new CommandFlowBuilder(_flow);
+            return this;
         }
         public CommandFlowBuilder SetMessagePermits(int messagePermits)
         {
             _flow.messagePermits = (uint)messagePermits;
-            return new CommandFlowBuilder(_flow);
+            return this;
         }
         public CommandFlow Build()
         {

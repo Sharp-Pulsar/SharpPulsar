@@ -10,29 +10,26 @@ namespace SharpPulsar.Command.Builder
         {
             _txn = new CommandAddSubscriptionToTxn();
         }
-        private CommandAddSubscriptionToTxnBuilder(CommandAddSubscriptionToTxn txn)
-        {
-            _txn = txn;
-        }
+        
         public CommandAddSubscriptionToTxnBuilder SetRequestId(long requestId)
         {
             _txn.RequestId = (ulong)requestId;
-            return new CommandAddSubscriptionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddSubscriptionToTxnBuilder AddSubscriptions(IList<Subscription> subscription)
         {
             _txn.Subscriptions.AddRange(subscription);
-            return new CommandAddSubscriptionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddSubscriptionToTxnBuilder SetTxnidLeastBits(long txnidLeastBits)
         {
             _txn.TxnidLeastBits = (ulong)txnidLeastBits;
-            return new CommandAddSubscriptionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddSubscriptionToTxnBuilder SetTxnidMostBits(long txnidMostBits)
         {
             _txn.TxnidMostBits = (ulong)txnidMostBits;
-            return new CommandAddSubscriptionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddSubscriptionToTxn Build()
         {

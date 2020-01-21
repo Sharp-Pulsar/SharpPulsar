@@ -10,24 +10,21 @@ namespace SharpPulsar.Command.Builder
         {
             _namespace = new CommandGetTopicsOfNamespace();
         }
-        private CommandGetTopicsOfNamespaceBuilder(CommandGetTopicsOfNamespace @namespace)
-        {
-            _namespace = @namespace;
-        }
+        
         public CommandGetTopicsOfNamespaceBuilder SetMode(Mode mode)
         {
             _namespace.mode = mode;
-            return new CommandGetTopicsOfNamespaceBuilder(_namespace);
+            return this;
         }
         public CommandGetTopicsOfNamespaceBuilder SetNamespace(string @namespace)
         {
             _namespace.Namespace = @namespace;
-            return new CommandGetTopicsOfNamespaceBuilder(_namespace);
+            return this;
         }
         public CommandGetTopicsOfNamespaceBuilder SetRequestId(long requestid)
         {
             _namespace.RequestId = (ulong)requestid;
-            return new CommandGetTopicsOfNamespaceBuilder(_namespace);
+            return this;
         }
         public CommandGetTopicsOfNamespace Build()
         {

@@ -9,14 +9,11 @@ namespace SharpPulsar.Command.Builder
         {
             _success = new CommandSuccess();
         }
-        private CommandSuccessBuilder(CommandSuccess success)
-        {
-            _success = success;
-        }
+        
         public  CommandSuccessBuilder SetRequestId(long requestId)
         {
             _success.RequestId = (ulong)requestId;
-            return new CommandSuccessBuilder(_success);
+            return this;
         }
         public  CommandSuccess Build()
         {

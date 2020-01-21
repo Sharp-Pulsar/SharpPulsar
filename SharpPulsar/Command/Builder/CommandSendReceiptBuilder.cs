@@ -9,24 +9,21 @@ namespace SharpPulsar.Command.Builder
         {
             _receipt = new CommandSendReceipt();
         }
-        private CommandSendReceiptBuilder(CommandSendReceipt receipt)
-        {
-            _receipt = receipt;
-        }
+        
         public  CommandSendReceiptBuilder SetProducerId(long producerId)
         {
             _receipt.ProducerId = (ulong)producerId;
-            return new CommandSendReceiptBuilder(_receipt);
+            return this;
         }
         public  CommandSendReceiptBuilder SetSequenceId(long sequenceId)
         {
             _receipt.SequenceId = (ulong)sequenceId;
-            return new CommandSendReceiptBuilder(_receipt);
+            return this;
         }
         public  CommandSendReceiptBuilder SetHighestSequenceId(long highestId)
         {
             _receipt.HighestSequenceId = (ulong)highestId;
-            return new CommandSendReceiptBuilder(_receipt);
+            return this;
         }
         public  CommandSendReceiptBuilder SetMessageId(long ledgerId, long entryId)
         {
@@ -35,7 +32,7 @@ namespace SharpPulsar.Command.Builder
                 .SetEntryId(entryId);
 
             _receipt.MessageId = messageIdBuilder.Build();
-            return new CommandSendReceiptBuilder(_receipt);
+            return this;
         }
 
         public  CommandSendReceipt Build()

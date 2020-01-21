@@ -13,19 +13,16 @@ namespace SharpPulsar.Command.Builder
         {
             _ack = new CommandAck();
         }
-        private CommandAckBuilder(CommandAck ack)
-        {
-            _ack = ack;
-        }
+        
         public CommandAckBuilder SetAckType(AckType type)
         {
             _ack.ack_type = type;
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder SetConsumerId(long consumerid)
         {
             _ack.ConsumerId = (ulong)consumerid;
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder SetTxnidLeastBits(long txnIdLeastBits)
         {
@@ -33,7 +30,7 @@ namespace SharpPulsar.Command.Builder
             {
                 _ack.TxnidLeastBits = (ulong)txnIdLeastBits;
             }
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder SetTxnidMostBits(long txnidMostBits)
         {
@@ -41,12 +38,12 @@ namespace SharpPulsar.Command.Builder
             {
                 _ack.TxnidMostBits = (ulong)txnidMostBits;
             }
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder SetValidationError(ValidationError error)
         {
             _ack.validation_error = error;
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder AddProperties(IDictionary<string, long> properties)
         {
@@ -54,7 +51,7 @@ namespace SharpPulsar.Command.Builder
             {
                 _ack.Properties.Add(new KeyLongValue { Key = e.Key, Value = (ulong)e.Value });
             }
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAckBuilder SetMessageIds(IList<KeyValuePair<long, long>> entries)
         {
@@ -69,7 +66,7 @@ namespace SharpPulsar.Command.Builder
                 .SetEntryId(entryId).Build();
                 _ack.MessageIds.Add(messageIdData);
             }
-            return new CommandAckBuilder(_ack);
+            return this;
         }
         public CommandAck Build()
         {

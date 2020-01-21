@@ -13,56 +13,53 @@ namespace SharpPulsar.Command.Builder
         {
             _producer = new CommandProducer();
         }
-        private CommandProducerBuilder(CommandProducer producer)
-        {
-            _producer = producer;
-        }
+        
         public CommandProducerBuilder SetEncrypted(bool encrypted)
         {
             _producer.Encrypted = encrypted;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetEpoch(long epoch)
         {
             _producer.Epoch = (ulong)epoch;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetProducerId(long producerid)
         {
             _producer.ProducerId = (ulong)producerid;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetProducerName(string producerName)
         {
             if (!string.IsNullOrWhiteSpace(producerName))
                 _producer.ProducerName = producerName;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetRequestId(long requestid)
         {
             _producer.RequestId = (ulong)requestid;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetSchema(SchemaInfo schemaInfo)
         {
             if (schemaInfo != null)
                 _producer.Schema = GetSchema(schemaInfo);
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetTopic(string topic)
         {
             _producer.Topic = topic;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetMetadata(IDictionary<string, string> metadata)
         {
             _producer.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata)); 
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducerBuilder SetUserProvidedProducerName(bool userProvidedProducerName)
         {
             _producer.UserProvidedProducerName = userProvidedProducerName;
-            return new CommandProducerBuilder(_producer);
+            return this;
         }
         public CommandProducer Build()
         {

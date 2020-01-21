@@ -12,19 +12,16 @@ namespace SharpPulsar.Command.Builder
         {
             _unsubscribe = new CommandUnsubscribe();
         }
-        private CommandUnsubscribeBuilder(CommandUnsubscribe unsubscribe)
-        {
-            _unsubscribe = unsubscribe;
-        }
+        
         public CommandUnsubscribeBuilder SetConsumerId(long consumerId)
         {
             _unsubscribe.ConsumerId = (ulong)consumerId;
-            return new CommandUnsubscribeBuilder(_unsubscribe);
+            return this;
         }
         public CommandUnsubscribeBuilder SetRequestId(long requestId)
         {
             _unsubscribe.RequestId = (ulong)requestId;
-            return new CommandUnsubscribeBuilder(_unsubscribe);
+            return this;
         }
         public CommandUnsubscribe Build()
         {

@@ -15,34 +15,31 @@ namespace SharpPulsar.Command.Builder
         {
             _subscribe = new CommandSubscribe();
         }
-        private CommandSubscribeBuilder(CommandSubscribe subscribe)
-        {
-            _subscribe = subscribe;
-        }
+        
         public CommandSubscribeBuilder SetConsumerId(long consumerId)
         {
             _subscribe.ConsumerId = (ulong)consumerId;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetConsumerName(string consumerName)
         {
             _subscribe.ConsumerName = consumerName;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetDurable(bool isDurable)
         {
             _subscribe.Durable = isDurable;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetForceTopicCreation(bool forceTopicCreation)
         {
             _subscribe.ForceTopicCreation = forceTopicCreation;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetInitialPosition(InitialPosition position)
         {
             _subscribe.initialPosition = position;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetkeySharedMeta(KeySharedPolicy keySharedPolicy)
         {
@@ -72,32 +69,32 @@ namespace SharpPulsar.Command.Builder
                         break;
                 }
             }
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetPriorityLevel(int priorityLevel)
         {
             _subscribe.PriorityLevel = priorityLevel;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetReadCompacted(bool readCompacted)
         {
             _subscribe.ReadCompacted = readCompacted;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetReplicateSubscriptionState(bool replicate)
         {
             _subscribe.ReplicateSubscriptionState = replicate;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetRequestId(long requestid)
         {
             _subscribe.RequestId = (ulong)requestid;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetSchema(SchemaInfo schemaInfo)
         {
             _subscribe.Schema = GetSchema(schemaInfo);
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetStartMessageId(MessageIdData startMessageId)
         {
@@ -105,7 +102,7 @@ namespace SharpPulsar.Command.Builder
             {
                 _subscribe.StartMessageId = startMessageId;
             }
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetReadCompacted(long startMessageRollbackDurationInSec)
         {
@@ -113,23 +110,23 @@ namespace SharpPulsar.Command.Builder
             {
                 _subscribe.StartMessageRollbackDurationSec = (ulong)startMessageRollbackDurationInSec;
             }
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetSubscription(string subscription)
         {
             _subscribe.Subscription = subscription;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribeBuilder SetSubType(SubType subType)
         {
             _subscribe.subType = subType;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
 
         public CommandSubscribeBuilder AddAllMetadata(IDictionary<string, string> metadata)
         {
             _subscribe.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata));//This field was generated as readonly, I editted
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
 
         public CommandSubscribeBuilder SetTopic(string topic)
@@ -137,7 +134,7 @@ namespace SharpPulsar.Command.Builder
             if (string.IsNullOrWhiteSpace(topic))
                 throw new NullReferenceException("Topic can not be empty");
             _subscribe.Topic = topic;
-            return new CommandSubscribeBuilder(_subscribe);
+            return this;
         }
         public CommandSubscribe Build()
         {

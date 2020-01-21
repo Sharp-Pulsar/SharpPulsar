@@ -10,24 +10,21 @@ namespace SharpPulsar.Command.Builder
         {
             _schema = new CommandGetOrCreateSchema();
         }
-        private CommandGetOrCreateSchemaBuilder(CommandGetOrCreateSchema schema)
-        {
-            _schema = schema;
-        }
+        
         public CommandGetOrCreateSchemaBuilder SetRequestId(long requestId)
         {
             _schema.RequestId = (ulong)requestId;
-            return new CommandGetOrCreateSchemaBuilder(_schema);
+            return this;
         }
         public CommandGetOrCreateSchemaBuilder SetSchema(SchemaInfo schema)
         {
             _schema.Schema = GetSchema(schema);
-            return new CommandGetOrCreateSchemaBuilder(_schema);
+            return this;
         }
         public CommandGetOrCreateSchemaBuilder SetTopic(string topic)
         {
             _schema.Topic = topic;
-            return new CommandGetOrCreateSchemaBuilder(_schema);
+            return this;
         }
         public CommandGetOrCreateSchema Build()
         {

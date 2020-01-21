@@ -12,29 +12,26 @@ namespace SharpPulsar.Command.Builder
         {
             _txn = new CommandEndTxn();
         }
-        private CommandEndTxnBuilder(CommandEndTxn txn)
-        {
-            _txn = txn;
-        }
+        
         public CommandEndTxnBuilder SetRequestId(long requestId)
         {
             _txn.RequestId = (ulong)requestId;
-            return new CommandEndTxnBuilder(_txn);
+            return this;
         }
         public CommandEndTxnBuilder SetTxnAction(TxnAction action)
         {
             _txn.TxnAction = action;
-            return new CommandEndTxnBuilder(_txn);
+            return this;
         }
         public CommandEndTxnBuilder SetTxnidLeastBits(long txnidLeastBits)
         {
             _txn.TxnidLeastBits = (ulong)txnidLeastBits;
-            return new CommandEndTxnBuilder(_txn);
+            return this;
         }
         public CommandEndTxnBuilder SetTxnidMostBits(long txnidMostBits)
         {
             _txn.TxnidMostBits = (ulong)txnidMostBits;
-            return new CommandEndTxnBuilder(_txn);
+            return this;
         }
         public CommandEndTxn Build()
         {

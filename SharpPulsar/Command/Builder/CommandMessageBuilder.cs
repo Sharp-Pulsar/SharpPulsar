@@ -10,19 +10,16 @@ namespace SharpPulsar.Command.Builder
         {
             _message = new CommandMessage();
         }
-        private CommandMessageBuilder(CommandMessage message)
-        {
-            _message = message;
-        }
+        
         public CommandMessageBuilder SetConsumerId(long consumerid)
         {
             _message.ConsumerId = (ulong)consumerid;
-            return new CommandMessageBuilder(_message);
+            return this;
         }
         public CommandMessageBuilder SetMessageId(MessageIdData messageId)
         {
             _message.MessageId = messageId;
-            return new CommandMessageBuilder(_message);
+            return this;
         }
         public CommandMessageBuilder SetRedeliveryCount(int redeliveryCount)
         {
@@ -30,7 +27,7 @@ namespace SharpPulsar.Command.Builder
             {
                 _message.RedeliveryCount = (uint)redeliveryCount;
             }
-            return new CommandMessageBuilder(_message);
+            return this;
         }
         public CommandMessage Build()
         {

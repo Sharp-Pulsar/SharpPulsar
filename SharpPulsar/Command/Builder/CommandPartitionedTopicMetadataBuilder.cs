@@ -9,34 +9,31 @@ namespace SharpPulsar.Command.Builder
         {
             _metadata = new CommandPartitionedTopicMetadata();
         }
-        private CommandPartitionedTopicMetadataBuilder(CommandPartitionedTopicMetadata metadata)
-        {
-            _metadata = metadata;
-        }
+       
         public CommandPartitionedTopicMetadataBuilder SetOriginalAuthData(string originalAuthData)
         {
             _metadata.OriginalAuthData = originalAuthData;
-            return new CommandPartitionedTopicMetadataBuilder(_metadata);
+            return this;
         }
         public CommandPartitionedTopicMetadataBuilder SetOriginalAuthMethod(string originalAuthMethod)
         {
             _metadata.OriginalAuthMethod = originalAuthMethod;
-            return new CommandPartitionedTopicMetadataBuilder(_metadata);
+            return this;
         }
         public CommandPartitionedTopicMetadataBuilder SetOriginalPrincipal(string originalPrincipal)
         {
             _metadata.OriginalPrincipal = originalPrincipal;
-            return new CommandPartitionedTopicMetadataBuilder(_metadata);
+            return this;
         }
         public CommandPartitionedTopicMetadataBuilder SetRequestId(long requestId)
         {
             _metadata.RequestId = (ulong)requestId;
-            return new CommandPartitionedTopicMetadataBuilder(_metadata);
+            return this;
         }
         public CommandPartitionedTopicMetadataBuilder SetTopic(string topic)
         {
             _metadata.Topic = topic;
-            return new CommandPartitionedTopicMetadataBuilder(_metadata);
+            return this;
         }
         
         public CommandPartitionedTopicMetadata Build()

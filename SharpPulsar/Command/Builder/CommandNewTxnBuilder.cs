@@ -12,24 +12,21 @@ namespace SharpPulsar.Command.Builder
         {
             _txn = new CommandNewTxn();
         }
-        private CommandNewTxnBuilder(CommandNewTxn txn)
-        {
-            _txn = txn;
-        }
+        
         public CommandNewTxnBuilder SetRequestId(long requestId)
         {
             _txn.RequestId = (ulong)requestId;
-            return new CommandNewTxnBuilder(_txn);
+            return this;
         }
         public CommandNewTxnBuilder SetTcId(long tcId)
         {
             _txn.TcId = (ulong)tcId;
-            return new CommandNewTxnBuilder(_txn);
+            return this;
         }
         public CommandNewTxnBuilder SetTxnTtlSeconds(long txnTtlSeconds)
         {
             _txn.TxnTtlSeconds = (ulong)txnTtlSeconds;
-            return new CommandNewTxnBuilder(_txn);
+            return this;
         }
         public CommandNewTxn Build()
         {

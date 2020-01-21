@@ -1,8 +1,4 @@
 ﻿using SharpPulsar.Common.PulsarApi;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace SharpPulsar.Command.Builder
 {
     public class CommandReachedEndOfTopicBuilder
@@ -12,14 +8,11 @@ namespace SharpPulsar.Command.Builder
         {
             _topic = new CommandReachedEndOfTopic();
         }
-        public CommandReachedEndOfTopicBuilder(CommandReachedEndOfTopic topic)
-        {
-            _topic = topic;
-        }
+        
         public CommandReachedEndOfTopicBuilder SetConsumerId(long consumerid)
         {
             _topic.ConsumerId = (ulong)consumerid;
-            return new CommandReachedEndOfTopicBuilder(_topic);
+            return this;
         }
         public CommandReachedEndOfTopic Build()
         {

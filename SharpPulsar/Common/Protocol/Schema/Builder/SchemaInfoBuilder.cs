@@ -12,29 +12,26 @@ namespace SharpPulsar.Common.Protocol.Schema.Builder
         {
             _info = new SchemaInfo();
         }
-        private SchemaInfoBuilder(SchemaInfo info)
-        {
-            _info = info;
-        }
+        
         public SchemaInfoBuilder SetName(string name)
         {
             _info.Name = name;
-            return new SchemaInfoBuilder(_info);
+            return this;
         }
         public SchemaInfoBuilder SetProperties(IDictionary<string, string> properties)
         {
             _info.Properties = properties;
-            return new SchemaInfoBuilder(_info);
+            return this;
         }
         public SchemaInfoBuilder SetSchema(sbyte[] schema)
         {
             _info.Schema = schema;
-            return new SchemaInfoBuilder(_info);
+            return this;
         }
         public SchemaInfoBuilder SetType(SchemaType type)
         {
             _info.Type = type;
-            return new SchemaInfoBuilder(_info);
+            return this;
         }
         public SchemaInfo Build()
         {

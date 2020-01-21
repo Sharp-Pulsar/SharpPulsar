@@ -12,19 +12,16 @@ namespace SharpPulsar.Command.Builder
         {
             _change = new CommandActiveConsumerChange();
         }
-        private CommandActiveConsumerChangeBuilder(CommandActiveConsumerChange change)
-        {
-            _change = change;
-        }
+        
         public CommandActiveConsumerChangeBuilder SetConsumerId(long consumerId)
         {
             _change.ConsumerId = (ulong)consumerId;
-            return new CommandActiveConsumerChangeBuilder(_change);
+            return this;
         }
         public CommandActiveConsumerChangeBuilder SetIsActive(bool isActive)
         {
             _change.IsActive = isActive;
-            return new CommandActiveConsumerChangeBuilder(_change);
+            return this;
         }
         public CommandActiveConsumerChange Build()
         {

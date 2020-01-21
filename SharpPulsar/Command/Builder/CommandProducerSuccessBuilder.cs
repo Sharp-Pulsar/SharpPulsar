@@ -11,30 +11,27 @@ namespace SharpPulsar.Command.Builder
         {
             _success = new CommandProducerSuccess();
         }
-        private CommandProducerSuccessBuilder(CommandProducerSuccess success)
-        {
-            _success = success;
-        }
+        
         public  CommandProducerSuccessBuilder SetRequestId(long requestId)
         {
             _success.RequestId = (ulong)requestId;
-            return new CommandProducerSuccessBuilder(_success);
+            return this;
         }
         public  CommandProducerSuccessBuilder SetProducerName(string producerName)
         {
             _success.ProducerName = producerName;
-            return new CommandProducerSuccessBuilder(_success);
+            return this;
         }
         public  CommandProducerSuccessBuilder SetLastSequenceId(long lastSequenceId)
         {
             _success.LastSequenceId = lastSequenceId;
-            return new CommandProducerSuccessBuilder(_success);
+            return this;
 
         }
         public  CommandProducerSuccessBuilder SetSchemaVersion(SchemaVersion schemaVersion)
         {
             _success.SchemaVersion = (byte[])(Array)schemaVersion.Bytes();
-            return new CommandProducerSuccessBuilder(_success);
+            return this;
         }
         public  CommandProducerSuccess Build()
         {

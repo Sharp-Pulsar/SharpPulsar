@@ -9,42 +9,39 @@ namespace SharpPulsar.Command.Builder
         {
             _send = new CommandSend();
         }
-        private CommandSendBuilder(CommandSend send)
-        {
-            _send = send;
-        }
+        
         public CommandSendBuilder SetHighestSequenceId(long highestSequenceId)
         {
             _send.HighestSequenceId = (ulong)highestSequenceId;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSendBuilder SetNumberOfMessages(int numMessages) 
         {
             if(numMessages > 1)
                 _send.NumMessages = numMessages;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSendBuilder SetProducerId(long producerid)
         {
             _send.ProducerId = (ulong)producerid;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSendBuilder SetSequenceId(long sequenceId)
         {
             _send.SequenceId = (ulong)sequenceId;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSendBuilder SetTxnidLeastBits(long txnidLeastBits)
         {
             if(txnidLeastBits > 0)
                 _send.TxnidLeastBits = (ulong)txnidLeastBits;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSendBuilder TxnidMostBits(long txnidMostBits)
         {
             if(txnidMostBits > 0)
                 _send.TxnidMostBits = (ulong)txnidMostBits;
-            return new CommandSendBuilder(_send);
+            return this;
         }
         public CommandSend Build()
         {

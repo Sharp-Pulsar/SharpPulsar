@@ -10,19 +10,16 @@ namespace SharpPulsar.Command.Builder
         {
             _messages = new CommandRedeliverUnacknowledgedMessages();
         }
-        private CommandRedeliverUnacknowledgedMessagesBuilder(CommandRedeliverUnacknowledgedMessages messages)
-        {
-            _messages = messages;
-        }
+        
         public CommandRedeliverUnacknowledgedMessagesBuilder SetConsumerId(long consumerId)
         {
             _messages.ConsumerId = (ulong)consumerId;
-            return new CommandRedeliverUnacknowledgedMessagesBuilder(_messages);
+            return this;
         }
         public CommandRedeliverUnacknowledgedMessagesBuilder SetMessageIds(IList<MessageIdData> messageIds)
         {
             _messages.MessageIds.AddRange(messageIds);
-            return new CommandRedeliverUnacknowledgedMessagesBuilder(_messages);
+            return this;
         }
         public CommandRedeliverUnacknowledgedMessages Build()
         {

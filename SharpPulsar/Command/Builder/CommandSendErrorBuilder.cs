@@ -9,29 +9,26 @@ namespace SharpPulsar.Command.Builder
         {
             _error = new CommandSendError();
         }
-        private CommandSendErrorBuilder(CommandSendError error)
-        {
-            _error = error;
-        }
+        
         public CommandSendErrorBuilder SetProducerId(long producerId)
         {
             _error.ProducerId = (ulong)producerId;
-            return new CommandSendErrorBuilder(_error);
+            return this;
         }
         public CommandSendErrorBuilder SetSequenceId(long sequenceId)
         {
             _error.SequenceId = (ulong)sequenceId;
-            return new CommandSendErrorBuilder(_error);
+            return this;
         }
         public CommandSendErrorBuilder SetError(ServerError error)
         {
             _error.Error = error;
-            return new CommandSendErrorBuilder(_error);
+            return this;
         }
         public CommandSendErrorBuilder SetMessage(string errorMsg)
         {
 			_error.Message = (errorMsg);
-            return new CommandSendErrorBuilder(_error);
+            return this;
         }
         public CommandSendError Build()
         {

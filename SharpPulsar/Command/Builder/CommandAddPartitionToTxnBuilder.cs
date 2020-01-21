@@ -12,29 +12,26 @@ namespace SharpPulsar.Command.Builder
         {
             _txn = new CommandAddPartitionToTxn();
         }
-        private CommandAddPartitionToTxnBuilder(CommandAddPartitionToTxn txn)
-        {
-            _txn = txn;
-        }
+       
         public CommandAddPartitionToTxnBuilder SetPartitions(IList<string> parts)
         {
             _txn.Partitions.AddRange(parts);
-            return new CommandAddPartitionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddPartitionToTxnBuilder SetRequestId(long requestId)
         {
             _txn.RequestId = (ulong)requestId;
-            return new CommandAddPartitionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddPartitionToTxnBuilder SetTxnidLeastBits(long txnidLeastBits)
         {
             _txn.TxnidLeastBits = (ulong)txnidLeastBits;
-            return new CommandAddPartitionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddPartitionToTxnBuilder SetTxnidMostBits(long txnidMostBits)
         {
             _txn.TxnidMostBits = (ulong)txnidMostBits;
-            return new CommandAddPartitionToTxnBuilder(_txn);
+            return this;
         }
         public CommandAddPartitionToTxn Build()
         {

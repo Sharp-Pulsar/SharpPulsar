@@ -9,19 +9,16 @@ namespace SharpPulsar.Command.Builder
         {
             _seek = new CommandSeek();
         }
-        private CommandSeekBuilder(CommandSeek seek)
-        {
-            _seek = seek;
-        }
+        
         public CommandSeekBuilder SetConsumerId(long consumerid)
         {
             _seek.ConsumerId = (ulong)consumerid;
-            return new CommandSeekBuilder(_seek);
+            return this;
         }
         public CommandSeekBuilder SetRequestId(long requestid)
         {
             _seek.RequestId = (ulong)requestid;
-            return new CommandSeekBuilder(_seek);
+            return this;
         }
         public CommandSeekBuilder SetMessageId(long ledgerid, long entryId)
         {
@@ -29,12 +26,12 @@ namespace SharpPulsar.Command.Builder
                 .SetLedgerId(ledgerid)
                 .SetEntryId(entryId).Build();
             _seek.MessageId = messageid;
-            return new CommandSeekBuilder(_seek);
+            return this;
         }
         public CommandSeekBuilder SetMessagePublishTime(long messagePublishTime)
         {
             _seek.MessagePublishTime = (ulong)messagePublishTime;
-            return new CommandSeekBuilder(_seek);
+            return this;
         }
         public CommandSeek Build()
         {

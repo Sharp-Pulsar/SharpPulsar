@@ -9,29 +9,26 @@ namespace SharpPulsar.Command.Builder
         {
             _data = new MessageIdData();
         }
-        private MessageIdDataBuilder(MessageIdData data)
-        {
-            _data = data;
-        }
+        
         public MessageIdDataBuilder SetLedgerId(long ledgerid)
         {
             _data.ledgerId = (ulong)ledgerid;
-            return new MessageIdDataBuilder(_data);
+            return this;
         }
         public  MessageIdDataBuilder SetEntryId(long entryId)
         {
             _data.entryId = (ulong)entryId;
-            return new MessageIdDataBuilder(_data);
+            return this;
         }
         public MessageIdDataBuilder SetPartition(int partition)
         {
             _data.Partition = partition;
-            return new MessageIdDataBuilder(_data);
+            return this;
         }
         public MessageIdDataBuilder SetBatchIndex(int batch)
         {
             _data.BatchIndex = batch;
-            return new MessageIdDataBuilder(_data);
+            return this;
         }
         public MessageIdData Build()
         {
