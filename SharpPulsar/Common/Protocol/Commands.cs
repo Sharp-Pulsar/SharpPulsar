@@ -110,22 +110,7 @@ namespace SharpPulsar.Common.Protocol
 
 		
 		
-		public static IByteBuffer NewLookup(string topic, bool authoritative, long requestId)
-		{
-			CommandLookupTopic lookupTopicBuilder = new CommandLookupTopic
-			{
-				Topic = (topic),
-				RequestId = (ulong)requestId,
-				Authoritative = authoritative
-			};
-
-			CommandLookupTopic lookupBroker = lookupTopicBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.Lookup, lookupTopic = (lookupBroker) });
-			lookupTopicBuilder.recycle();
-			lookupBroker.recycle();
-			return res;
-		}
-
+		
 		public static IByteBuffer NewLookupResponse(string brokerServiceUrl, string brokerServiceUrlTls, bool authoritative, PulsarApi.CommandLookupTopicResponse.LookupType response, long requestId, bool proxyThroughServiceUrl)
 		{
 			CommandLookupTopicResponse commandLookupTopicResponseBuilder = new CommandLookupTopicResponse

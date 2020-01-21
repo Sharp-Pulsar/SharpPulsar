@@ -1291,7 +1291,7 @@ namespace SharpPulsar.Common.PulsarApi
         public AckType ack_type { get; set; }
 
         [global::ProtoBuf.ProtoMember(3, Name = @"message_id")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
 
         [global::ProtoBuf.ProtoMember(4)]
         [global::System.ComponentModel.DefaultValue(ValidationError.UncompressedSizeCorruption)]
@@ -1305,7 +1305,7 @@ namespace SharpPulsar.Common.PulsarApi
         private ValidationError? __pbn__validation_error;
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyLongValue> Properties { get; } = new global::System.Collections.Generic.List<KeyLongValue>();
+        public global::System.Collections.Generic.List<KeyLongValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyLongValue>();
 
         [global::ProtoBuf.ProtoMember(6, Name = @"txnid_least_bits")]
         [global::System.ComponentModel.DefaultValue(0)]
