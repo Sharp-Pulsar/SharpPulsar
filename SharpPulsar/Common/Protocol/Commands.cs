@@ -109,26 +109,6 @@ namespace SharpPulsar.Common.Protocol
 		}
 
 		
-		public static IByteBuffer NewPartitionMetadataResponse(ServerError error, string errorMsg, long requestId)
-		{
-			CommandPartitionedTopicMetadataResponse partitionMetadataResponseBuilder = new CommandPartitionedTopicMetadataResponse
-			{
-				RequestId = (ulong)requestId,
-				Error = error,
-				Response = CommandPartitionedTopicMetadataResponse.LookupType.Failed
-			};
-			if (!string.ReferenceEquals(errorMsg, null))
-			{
-				partitionMetadataResponseBuilder.Message = (errorMsg);
-			}
-
-			CommandPartitionedTopicMetadataResponse partitionMetadataResponse = partitionMetadataResponseBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.PartitionedMetadataResponse, partitionMetadataResponse = (partitionMetadataResponse) });
-			partitionMetadataResponseBuilder.recycle();
-			partitionMetadataResponse.recycle();
-			return res;
-		}
-
 		public static IByteBuffer NewPartitionMetadataRequest(string topic, long requestId)
 		{
 			CommandPartitionedTopicMetadata partitionMetadataBuilder = new CommandPartitionedTopicMetadata();
