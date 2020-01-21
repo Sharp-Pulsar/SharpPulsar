@@ -109,33 +109,7 @@ namespace SharpPulsar.Common.Protocol
 		}
 
 		
-		public static IByteBuffer NewPartitionMetadataRequest(string topic, long requestId)
-		{
-			CommandPartitionedTopicMetadata partitionMetadataBuilder = new CommandPartitionedTopicMetadata();
-			partitionMetadataBuilder.Topic = (topic);
-			partitionMetadataBuilder.RequestId = (ulong)requestId;
-
-			CommandPartitionedTopicMetadata partitionMetadata = partitionMetadataBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.PartitionedMetadata, partitionMetadata = (partitionMetadata) });
-			partitionMetadataBuilder.recycle();
-			partitionMetadata.recycle();
-			return res;
-		}
-
-		public static IByteBuffer NewPartitionMetadataResponse(int partitions, long requestId)
-		{
-			CommandPartitionedTopicMetadataResponse partitionMetadataResponseBuilder = new CommandPartitionedTopicMetadataResponse();
-			partitionMetadataResponseBuilder.Partitions = (uint)partitions;
-			partitionMetadataResponseBuilder.Response = CommandPartitionedTopicMetadataResponse.LookupType.Success;
-			partitionMetadataResponseBuilder.RequestId = (ulong)requestId;
-
-			CommandPartitionedTopicMetadataResponse partitionMetadataResponse = partitionMetadataResponseBuilder;
-			IByteBuffer res = SerializeWithSize(new BaseCommand { type = BaseCommand.Type.PartitionedMetadataResponse, partitionMetadataResponse = (partitionMetadataResponse) });
-			partitionMetadataResponseBuilder.recycle();
-			partitionMetadataResponse.recycle();
-			return res;
-		}
-
+		
 		public static IByteBuffer NewLookup(string topic, bool authoritative, long requestId)
 		{
 			CommandLookupTopic lookupTopicBuilder = new CommandLookupTopic
