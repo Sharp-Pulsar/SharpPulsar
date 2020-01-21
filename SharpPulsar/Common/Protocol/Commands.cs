@@ -311,6 +311,7 @@ namespace SharpPulsar.Common.Protocol
 
 		public static IByteBuffer NewConsumerStatsResponse(ServerError serverError, string errMsg, long requestId)
 		{
+			CommandUnsubscribe
 			CommandConsumerStatsResponse commandConsumerStatsResponseBuilder = new CommandConsumerStatsResponse();
 			commandConsumerStatsResponseBuilder.RequestId = (ulong)requestId;
 			commandConsumerStatsResponseBuilder.ErrorMessage = (errMsg);

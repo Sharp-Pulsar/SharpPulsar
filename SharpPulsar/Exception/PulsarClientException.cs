@@ -431,7 +431,42 @@ namespace SharpPulsar.Exception
 			{
 			}
 		}
-
+		public sealed class ServiceNotReadyException : PulsarClientException
+		{
+			public ServiceNotReadyException(string message) : base(message) { }
+		}
+		public sealed class StreamNotReadyException : PulsarClientException
+		{
+			public StreamNotReadyException() : base("The service is not ready yet") { }
+		}
+		public sealed class PersistenceException : PulsarClientException
+		{
+			public PersistenceException(string message) : base(message) { }
+		}
+		public sealed class MetadataException : PulsarClientException
+		{
+			public MetadataException(string message) : base(message) { }
+		}
+		public sealed class SubscriptionNotFoundException : PulsarClientException
+		{
+			public SubscriptionNotFoundException(string message) : base(message) { }
+		}
+		public sealed class TopicNotFoundException : PulsarClientException
+		{
+			public TopicNotFoundException(string message) : base(message) { }
+		}
+		public sealed class UnknownException : PulsarClientException
+		{
+			public UnknownException(string message) : base(message) { }
+		}
+		public sealed class UnsupportedVersionException : PulsarClientException
+		{
+			public UnsupportedVersionException(string message) : base(message) { }
+		}
+		public sealed class ConsumerAssignException : PulsarClientException
+		{
+			public ConsumerAssignException(string message) : base(message) { }
+		}
 		/// <summary>
 		/// Not connected exception thrown by Pulsar client.
 		/// </summary>
@@ -474,7 +509,17 @@ namespace SharpPulsar.Exception
 			{
 			}
 		}
-
+		public sealed class UnexpectedResponseException : PulsarClientException
+		{
+			public UnexpectedResponseException(string message) : base(message) { }
+		}
+		/// <summary>
+		/// Consumer Not Found Exception thrown by Pulsar client.
+		/// </summary>
+		public sealed class ConsumerNotFoundException : PulsarClientException
+		{
+			public ConsumerNotFoundException(string message) : base(message) { }
+		}
 		/// <summary>
 		/// Not supported exception thrown by Pulsar client.
 		/// </summary>
