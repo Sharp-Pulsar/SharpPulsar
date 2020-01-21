@@ -23,8 +23,6 @@ namespace SharpPulsar.Common.Protocol.Schema
 	/// <summary>
 	/// Response containing all schemas.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class GetAllVersionsSchemaResponse
 	public class GetAllVersionsSchemaResponse
 	{
 		public IList<GetSchemaResponse> GetSchemaResponses { get; set; }

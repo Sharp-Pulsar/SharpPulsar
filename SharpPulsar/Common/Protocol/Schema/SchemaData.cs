@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.Schema;
+﻿using SharpPulsar.Common.Protocol.Schema.Builder;
+using SharpPulsar.Common.Schema;
 using System.Collections.Generic;
 
 /// <summary>
@@ -40,7 +41,7 @@ namespace SharpPulsar.Common.Protocol.Schema
 		/// <returns> the converted schema info. </returns>
 		public virtual SchemaInfo ToSchemaInfo()
 		{
-			return SchemaInfo.Builder().name("").Type(Type).schema(Data).Properties(Props).build();
+			return new SchemaInfoBuilder().SetName("").SetType(Type).SetSchema(Data).SetProperties(Props).Build();
 		}
 
 		/// <summary>
@@ -50,7 +51,7 @@ namespace SharpPulsar.Common.Protocol.Schema
 		/// <returns> the converted schema schema data </returns>
 		public static SchemaData FromSchemaInfo(SchemaInfo schemaInfo)
 		{
-			return SchemaData.builder().type(schemaInfo.Type).data(schemaInfo.Schema).props(schemaInfo.Properties).build();
+			return new SchemaDataBuilder().SetType(schemaInfo.Type).SetData(schemaInfo.Schema).SetProps(schemaInfo.Properties).Build();
 		}
 
 	}

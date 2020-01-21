@@ -20,7 +20,7 @@ using System.Linq;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Protocol
+namespace SharpPulsar.Command
 {
 
 	/// <summary>
