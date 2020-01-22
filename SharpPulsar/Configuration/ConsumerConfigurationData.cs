@@ -42,7 +42,7 @@ namespace SharpPulsar.Configuration
 
 		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
 		public IMessageListener<T> MessageListener;
-		public IConsumerEventListener SonsumerEventListener;
+		public IConsumerEventListener ConsumerEventListener;
 
 		public int ReceiverQueueSize = 1000;
 
@@ -97,7 +97,6 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
-		public IConsumerEventListener ConsumerEventListener { get; internal set; }
 	}
 
 }

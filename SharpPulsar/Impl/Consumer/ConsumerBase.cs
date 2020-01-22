@@ -36,7 +36,6 @@ namespace SharpPulsar.Impl
     using static SharpPulsar.Common.PulsarApi.CommandAck;
     using SharpPulsar.Enum;
     using static SharpPulsar.Common.PulsarApi.CommandSubscribe;
-    using DotNetty.Common.Internal;
 
     public abstract class ConsumerBase<T> : HandlerState, IConsumer<T>
 	{
@@ -70,7 +69,7 @@ namespace SharpPulsar.Impl
 			maxReceiverQueueSize = receiverQueueSize;
 			subscription = conf.SubscriptionName;
 			this.conf = conf;
-			consumerName = conf.ConsumerName == null ? ConsumerName.generateRandomName() : conf.ConsumerName;
+			consumerName = conf.ConsumerName == null ? Util.ConsumerName.GenerateRandomName() : conf.ConsumerName;
 			subscribeAsync = subscribeFuture;
 			listener = conf.MessageListener;
 			consumerEventListener = conf.ConsumerEventListener;

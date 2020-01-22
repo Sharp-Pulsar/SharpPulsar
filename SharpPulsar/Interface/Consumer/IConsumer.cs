@@ -164,7 +164,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// <param name="messages"> messages </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
-		void Acknowledge<T1>(IMessages<T1> messages);
+		void Acknowledge(IMessages<T> messages);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -197,7 +197,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// </summary>
 		/// <param name="message">
 		///            The {@code Message} to be acknowledged </param>
-		void NegativeAcknowledge<T1>(IMessage<T1> message);
+		void NegativeAcknowledge(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
