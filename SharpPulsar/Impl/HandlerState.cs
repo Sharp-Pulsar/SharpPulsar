@@ -25,9 +25,8 @@ namespace SharpPulsar.Impl
 		protected internal readonly string topic;
 
 		private static readonly AtomicReferenceFieldUpdater<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile State state = null;
-		private volatile State state = null;
+
+		private readonly State _state;
 
 		internal enum State
 		{
@@ -50,31 +49,28 @@ namespace SharpPulsar.Impl
 		}
 
 		// moves the state to ready if it wasn't closed
-		protected internal virtual bool changeToReadyState()
+		protected internal virtual bool ChangeToReadyState()
 		{
 			return (STATE_UPDATER.compareAndSet(this, State.Uninitialized, State.Ready) || STATE_UPDATER.compareAndSet(this, State.Connecting, State.Ready) || STATE_UPDATER.compareAndSet(this, State.RegisteringSchema, State.Ready));
 		}
 
-		protected internal virtual bool changeToRegisteringSchemaState()
+		protected internal virtual bool ChangeToRegisteringSchemaState()
 		{
 			return STATE_UPDATER.compareAndSet(this, State.Ready, State.RegisteringSchema);
 		}
 
-		protected internal virtual State getState()
+		protected internal virtual State GetState()
 		{
 			return STATE_UPDATER.get(this);
 		}
 
-		protected internal virtual void setState(State s)
+		protected internal virtual void SetState(State s)
 		{
 			STATE_UPDATER.set(this, s);
 		}
 
 		internal abstract string HandlerName {get;}
-
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: protected State getAndUpdateState(final java.util.function.UnaryOperator<State> updater)
-		protected internal virtual State getAndUpdateState(System.Func<State, State> updater)
+		protected internal virtual State GetAndUpdateState(System.Func<State, State> updater)
 		{
 			return STATE_UPDATER.getAndUpdate(this, updater);
 		}

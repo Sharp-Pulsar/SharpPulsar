@@ -77,8 +77,17 @@ namespace SharpPulsar.Impl
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Interface;
+    using SharpPulsar.Impl.Batch;
+    using SharpPulsar.Impl.Message;
+    using SharpPulsar.Interface.Producer;
+    using SharpPulsar.Configuration;
+    using System.Threading.Tasks;
+    using SharpPulsar.Interface.Consumer;
+    using SharpPulsar.Interface.Schema;
+    using SharpPulsar.Interface.Message;
 
-	public class ConsumerImpl<T> : ConsumerBase<T>, ConnectionHandler.Connection
+    public class ConsumerImpl<T> : ConsumerBase<T>, ConnectionHandler.Connection
 	{
 		private const int MAX_REDELIVER_UNACKNOWLEDGED = 1000;
 
@@ -86,11 +95,7 @@ namespace SharpPulsar.Impl
 
 		// Number of messages that have delivered to the application. Every once in a while, this number will be sent to the
 		// broker to notify that we are ready to get (and store in the incoming messages queue) more messages
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("rawtypes") private static final java.util.concurrent.atomic.AtomicIntegerFieldUpdater<ConsumerImpl> AVAILABLE_PERMITS_UPDATER = java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater(ConsumerImpl.class, "availablePermits");
 		private static readonly AtomicIntegerFieldUpdater<ConsumerImpl> AVAILABLE_PERMITS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ConsumerImpl), "availablePermits");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile int availablePermits = 0;
 		private volatile int availablePermits = 0;
 
 		protected internal volatile MessageId lastDequeuedMessage = MessageId.earliest;
@@ -136,7 +141,7 @@ namespace SharpPulsar.Impl
 
 		private readonly DeadLetterPolicy deadLetterPolicy;
 
-		private Producer<T> deadLetterProducer;
+		private IProducer<T> deadLetterProducer;
 
 		protected internal volatile bool paused;
 
@@ -152,7 +157,7 @@ namespace SharpPulsar.Impl
 			NonDurable
 		}
 
-		internal static ConsumerImpl<T> newConsumerImpl<T>(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, int partitionIndex, bool hasParentConsumer, CompletableFuture<Consumer<T>> subscribeFuture, SubscriptionMode subscriptionMode, MessageId startMessageId, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist)
+		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, int partitionIndex, bool hasParentConsumer, ValueTask<IConsumer<T>> subscribeFuture, SubscriptionMode subscriptionMode, MessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist)
 		{
 			if (conf.ReceiverQueueSize == 0)
 			{
@@ -164,9 +169,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal ConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, int partitionIndex, bool hasParentConsumer, CompletableFuture<Consumer<T>> subscribeFuture, SubscriptionMode subscriptionMode, MessageId startMessageId, long startMessageRollbackDurationInSec, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, subscribeFuture, schema, interceptors)
+		protected internal ConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, int partitionIndex, bool hasParentConsumer, ValueTask<IConsumer<T>> subscribeFuture, SubscriptionMode subscriptionMode, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, subscribeFuture, schema, interceptors)
 		{
-			this.consumerId = client.newConsumerId();
+			this.consumerId = client.NewConsumerId();
 			this.subscriptionMode = subscriptionMode;
 			this.startMessageId = startMessageId != null ? new BatchMessageIdImpl((MessageIdImpl) startMessageId) : null;
 			this.lastDequeuedMessage = startMessageId == null ? MessageId.earliest : startMessageId;

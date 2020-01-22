@@ -30,7 +30,6 @@ namespace SharpPulsar.Impl
     using System.Linq;
     using SharpPulsar.Enum;
     using System.Text.RegularExpressions;
-    using BAMCIS.Util.Concurrent;
     using SharpPulsar.Util;
     using SharpPulsar.Interface.Message;
     using SharpPulsar.Interface;
@@ -42,7 +41,7 @@ namespace SharpPulsar.Impl
 		private readonly PulsarClientImpl client;
 		private ConsumerConfigurationData<T> conf;
 		private readonly ISchema<T> schema;
-		private IList<IConsumerInterceptor<T>> interceptorList;
+		private IList<Disposeasync<T>> interceptorList;
 
 		private static long MIN_ACK_TIMEOUT_MILLIS = 1000;
 		private static long MIN_TICK_TIME_MILLIS = 100;
@@ -308,13 +307,13 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IConsumerBuilder<T> intercept(params IConsumerInterceptor<T>[] interceptors)
+		public IConsumerBuilder<T> intercept(params Disposeasync<T>[] interceptors)
 		{
 			if (interceptorList == null)
 			{
-				interceptorList = new List<IConsumerInterceptor<T>>();
+				interceptorList = new List<Disposeasync<T>>();
 			}
-			((List<IConsumerInterceptor<T>>)interceptorList).AddRange(interceptors.ToList());
+			((List<Disposeasync<T>>)interceptorList).AddRange(interceptors.ToList());
 			return this;
 		}
 
@@ -364,7 +363,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 		
-		public IConsumerBuilder<T> Intercept(params IConsumerInterceptor<T>[] interceptors)
+		public IConsumerBuilder<T> Intercept(params Disposeasync<T>[] interceptors)
 		{
 			throw new NotImplementedException();
 		}

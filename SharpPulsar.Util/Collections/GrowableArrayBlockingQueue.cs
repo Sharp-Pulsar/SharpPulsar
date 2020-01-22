@@ -1,4 +1,8 @@
-﻿using System;
+﻿using DotNetty.Common.Internal;
+using java.util.concurrent.atomic;
+using SharpPulsar.Util.Atomic.Collections.Concurrent;
+using SharpPulsar.Util.Atomic.Locking;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -20,7 +24,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util.collections
+namespace SharpPulsar.Util.Collections
 {
 
 	/// <summary>
@@ -35,7 +39,7 @@ namespace org.apache.pulsar.common.util.collections
 
 		private void InitializeInstanceFields()
 		{
-			isNotEmpty = headLock.newCondition();
+			isNotEmpty = headLock.NewCondition();
 		}
 
 
@@ -43,15 +47,11 @@ namespace org.apache.pulsar.common.util.collections
 		private readonly PaddedInt headIndex = new PaddedInt();
 		private readonly PaddedInt tailIndex = new PaddedInt();
 		private readonly ReentrantLock tailLock = new ReentrantLock();
-		private Condition isNotEmpty;
+		private ICondition isNotEmpty;
 
 		private T[] data;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("rawtypes") private static final java.util.concurrent.atomic.AtomicIntegerFieldUpdater<GrowableArrayBlockingQueue> SIZE_UPDATER = java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater(GrowableArrayBlockingQueue.class, "size");
 		private static readonly AtomicIntegerFieldUpdater<GrowableArrayBlockingQueue> SIZE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(GrowableArrayBlockingQueue), "size");
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private volatile int size_Conflict = 0;
+		private volatile int size = 0;
 
 		public GrowableArrayBlockingQueue() : this(64)
 		{
@@ -62,8 +62,6 @@ namespace org.apache.pulsar.common.util.collections
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") public GrowableArrayBlockingQueue(int initialCapacity)
 		public GrowableArrayBlockingQueue(int initialCapacity)
 		{
 			if (!InstanceFieldsInitialized)
@@ -74,7 +72,7 @@ namespace org.apache.pulsar.common.util.collections
 			headIndex.value = 0;
 			tailIndex.value = 0;
 
-			int capacity = io.netty.util.@internal.MathUtil.findNextPositivePowerOfTwo(initialCapacity);
+			int capacity = MathUtil.FindNextPositivePowerOfTwo(initialCapacity);
 			data = (T[]) new object[capacity];
 		}
 
@@ -89,9 +87,9 @@ namespace org.apache.pulsar.common.util.collections
 			return item;
 		}
 
-		public override T poll()
+		public override T Poll()
 		{
-			headLock.@lock();
+			headLock.Lock();
 			try
 			{
 				if (SIZE_UPDATER.get(this) > 0)
@@ -109,11 +107,11 @@ namespace org.apache.pulsar.common.util.collections
 			}
 			finally
 			{
-				headLock.unlock();
+				headLock.Unlock();
 			}
 		}
 
-		public override T element()
+		public override T Element()
 		{
 			T item = peek();
 			if (item == null)
@@ -124,7 +122,7 @@ namespace org.apache.pulsar.common.util.collections
 			return item;
 		}
 
-		public override T peek()
+		public override T Peek()
 		{
 			headLock.@lock();
 			try
@@ -232,15 +230,13 @@ namespace org.apache.pulsar.common.util.collections
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public T poll(long timeout, java.util.concurrent.TimeUnit unit) throws InterruptedException
-		public override T poll(long timeout, TimeUnit unit)
+		public T Poll(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			headLock.lockInterruptibly();
 
 			try
 			{
-				long timeoutNanos = unit.toNanos(timeout);
+				long timeoutNanos = unit.ToNanos(timeout);
 				while (SIZE_UPDATER.get(this) == 0)
 				{
 					if (timeoutNanos <= 0)
@@ -257,17 +253,17 @@ namespace org.apache.pulsar.common.util.collections
 				if (SIZE_UPDATER.decrementAndGet(this) > 0)
 				{
 					// There are still entries to consume
-					isNotEmpty.signal();
+					isNotEmpty.Signal();
 				}
 				return item;
 			}
 			finally
 			{
-				headLock.unlock();
+				headLock.Unlock();
 			}
 		}
 
-		public override int remainingCapacity()
+		public int RemainingCapacity()
 		{
 			return int.MaxValue;
 		}

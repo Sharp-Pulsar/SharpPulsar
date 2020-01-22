@@ -21,33 +21,24 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
+    using SharpPulsar.Configuration;
+    using System.Threading.Tasks;
+    using SharpPulsar.Interface.Consumer;
+    using SharpPulsar.Interface.Message;
+    using SharpPulsar.Interface.Schema;
+    using BAMCIS.Util.Concurrent;
+    using SharpPulsar.Impl.Message;
+    using SharpPulsar.Util.Collections;
+    using SharpPulsar.Exception;
+    using static SharpPulsar.Exception.PulsarClientException;
+    using SharpPulsar.Interface.Transaction;
+    using SharpPulsar.Impl.Transaction;
+    using static SharpPulsar.Common.PulsarApi.CommandAck;
+    using SharpPulsar.Enum;
+    using static SharpPulsar.Common.PulsarApi.CommandSubscribe;
+    using DotNetty.Common.Internal;
 
-	using Queues = com.google.common.collect.Queues;
-
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-	using BatchReceivePolicy = org.apache.pulsar.client.api.BatchReceivePolicy;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using ConsumerEventListener = org.apache.pulsar.client.api.ConsumerEventListener;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using MessageListener = org.apache.pulsar.client.api.MessageListener;
-	using Messages = org.apache.pulsar.client.api.Messages;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using Transaction = org.apache.pulsar.client.api.transaction.Transaction;
-	using SharpPulsar.Impl.conf;
-	using TransactionImpl = SharpPulsar.Impl.transaction.TransactionImpl;
-	using ConsumerName = org.apache.pulsar.client.util.ConsumerName;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using SubType = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.SubType;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using GrowableArrayBlockingQueue = org.apache.pulsar.common.util.collections.GrowableArrayBlockingQueue;
-
-	public abstract class ConsumerBase<T> : HandlerState, TimerTask, Consumer<T>
+    public abstract class ConsumerBase<T> : HandlerState, IConsumer<T>
 	{
 
 		internal enum ConsumerType
@@ -59,45 +50,44 @@ namespace SharpPulsar.Impl
 		protected internal readonly string subscription;
 		protected internal readonly ConsumerConfigurationData<T> conf;
 		protected internal readonly string consumerName;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly CompletableFuture<Consumer<T>> subscribeFuture_Conflict;
-		protected internal readonly MessageListener<T> listener;
-		protected internal readonly ConsumerEventListener consumerEventListener;
+		protected internal readonly ValueTask<IConsumer<T>> subscribeAsync;
+		protected internal readonly IMessageListener<T> listener;
+		protected internal readonly IConsumerEventListener consumerEventListener;
 		protected internal readonly ExecutorService listenerExecutor;
-		internal readonly BlockingQueue<Message<T>> incomingMessages;
+		internal readonly GrowableArrayBlockingQueue<IMessage<T>> incomingMessages;
 		protected internal readonly ConcurrentLinkedQueue<CompletableFuture<Message<T>>> pendingReceives;
 		protected internal int maxReceiverQueueSize;
-		protected internal readonly Schema<T> schema;
+		protected internal readonly ISchema<T> schema;
 		protected internal readonly ConsumerInterceptors<T> interceptors;
 		protected internal readonly BatchReceivePolicy batchReceivePolicy;
 		protected internal ConcurrentLinkedQueue<OpBatchReceive<T>> pendingBatchReceives;
 		protected internal static readonly AtomicLongFieldUpdater<ConsumerBase> INCOMING_MESSAGES_SIZE_UPDATER = AtomicLongFieldUpdater.newUpdater(typeof(ConsumerBase), "incomingMessagesSize");
-		protected internal volatile long incomingMessagesSize = 0;
+		protected internal volatile int incomingMessagesSize = 0;
 		protected internal volatile Timeout batchReceiveTimeout = null;
 
-		protected internal ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors interceptors) : base(client, topic)
+		protected internal ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, ISchema<T> schema, Disposeasync interceptors) : base(client, topic)
 		{
-			this.maxReceiverQueueSize = receiverQueueSize;
-			this.subscription = conf.SubscriptionName;
+			maxReceiverQueueSize = receiverQueueSize;
+			subscription = conf.SubscriptionName;
 			this.conf = conf;
-			this.consumerName = conf.ConsumerName == null ? ConsumerName.generateRandomName() : conf.ConsumerName;
-			this.subscribeFuture_Conflict = subscribeFuture;
-			this.listener = conf.MessageListener;
-			this.consumerEventListener = conf.ConsumerEventListener;
+			consumerName = conf.ConsumerName == null ? ConsumerName.generateRandomName() : conf.ConsumerName;
+			subscribeAsync = subscribeFuture;
+			listener = conf.MessageListener;
+			consumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
-			this.incomingMessages = new GrowableArrayBlockingQueue<Message<T>>();
+			incomingMessages = new GrowableArrayBlockingQueue<IMessage<T>>();
 
 			this.listenerExecutor = listenerExecutor;
-			this.pendingReceives = Queues.newConcurrentLinkedQueue();
+			pendingReceives = Queues.newConcurrentLinkedQueue();
 			this.schema = schema;
 			this.interceptors = interceptors;
 			if (conf.BatchReceivePolicy != null)
 			{
-				this.batchReceivePolicy = conf.BatchReceivePolicy;
+				batchReceivePolicy = conf.BatchReceivePolicy;
 			}
 			else
 			{
-				this.batchReceivePolicy = BatchReceivePolicy.DEFAULT_POLICY;
+				batchReceivePolicy = BatchReceivePolicy.DEFAULT_POLICY;
 			}
 			if (batchReceivePolicy.TimeoutMs > 0)
 			{
@@ -105,322 +95,298 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Message<T> receive() throws org.apache.pulsar.client.api.PulsarClientException
-		public override Message<T> receive()
+
+		public IMessage<T> Receive()
 		{
 			if (listener != null)
 			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+				throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
-			verifyConsumerState();
-			return internalReceive();
+			VerifyConsumerState();
+			return InternalReceive();
 		}
 
-		public override CompletableFuture<Message<T>> receiveAsync()
+		public ValueTask<IMessage<T>> ReceiveAsync()
 		{
 			if (listener != null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set"));
+				return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(new InvalidConfigurationException("Cannot use receive() when a listener has been set")));
 			}
 			try
 			{
-				verifyConsumerState();
+				VerifyConsumerState();
 			}
 			catch (PulsarClientException e)
 			{
-				return FutureUtil.failedFuture(e);
+				return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(e));
 			}
-			return internalReceiveAsync();
+			return InternalReceiveAsync();
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected abstract org.apache.pulsar.client.api.Message<T> internalReceive() throws org.apache.pulsar.client.api.PulsarClientException;
-		protected internal abstract Message<T> internalReceive();
+		protected internal abstract IMessage<T> InternalReceive();
 
-		protected internal abstract CompletableFuture<Message<T>> internalReceiveAsync();
+		protected internal abstract ValueTask<IMessage<T>> InternalReceiveAsync();
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Message<T> receive(int timeout, java.util.concurrent.TimeUnit unit) throws org.apache.pulsar.client.api.PulsarClientException
-		public override Message<T> receive(int timeout, TimeUnit unit)
+
+		public IMessage<T> Receive(int timeout, TimeUnit unit)
 		{
 			if (conf.ReceiverQueueSize == 0)
 			{
-				throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
+				throw new InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
 			}
 			if (listener != null)
 			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+				throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
 
-			verifyConsumerState();
-			return internalReceive(timeout, unit);
+			VerifyConsumerState();
+			return InternalReceive(timeout, unit);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected abstract org.apache.pulsar.client.api.Message<T> internalReceive(int timeout, java.util.concurrent.TimeUnit unit) throws org.apache.pulsar.client.api.PulsarClientException;
-		protected internal abstract Message<T> internalReceive(int timeout, TimeUnit unit);
+		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Messages<T> batchReceive() throws org.apache.pulsar.client.api.PulsarClientException
-		public override Messages<T> batchReceive()
+		public IMessages<T> BatchReceive()
 		{
-			verifyBatchReceive();
-			verifyConsumerState();
-			return internalBatchReceive();
+			VerifyBatchReceive();
+			VerifyConsumerState();
+			return InternalBatchReceive();
 		}
 
-		public override CompletableFuture<Messages<T>> batchReceiveAsync()
+		public ValueTask<IMessages<T>> BatchReceiveAsync()
 		{
 			try
 			{
-				verifyBatchReceive();
-				verifyConsumerState();
-				return internalBatchReceiveAsync();
+				VerifyBatchReceive();
+				VerifyConsumerState();
+				return InternalBatchReceiveAsync();
 			}
 			catch (PulsarClientException e)
 			{
-				return FutureUtil.failedFuture(e);
+				return new ValueTask<IMessages<T>>(Task.FromException<IMessages<T>>(e));
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected abstract org.apache.pulsar.client.api.Messages<T> internalBatchReceive() throws org.apache.pulsar.client.api.PulsarClientException;
-		protected internal abstract Messages<T> internalBatchReceive();
+		protected internal abstract IMessages<T> InternalBatchReceive();
 
-		protected internal abstract CompletableFuture<Messages<T>> internalBatchReceiveAsync();
+		protected internal abstract ValueTask<IMessages<T>> InternalBatchReceiveAsync();
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void acknowledge(org.apache.pulsar.client.api.Message<?> message) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void acknowledge<T1>(Message<T1> message)
+		public void Acknowledge(IMessage<T> message)
 		{
 			try
 			{
-				acknowledge(message.MessageId);
+				Acknowledge(message.MessageId);
 			}
-			catch (System.NullReferenceException npe)
+			catch (NullReferenceException npe)
 			{
-				throw new PulsarClientException.InvalidMessageException(npe.Message);
+				throw new InvalidMessageException(npe.Message);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void acknowledge(org.apache.pulsar.client.api.MessageId messageId) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void acknowledge(MessageId messageId)
+		public void Acknowledge(IMessageId messageId)
 		{
 			try
 			{
-				acknowledgeAsync(messageId).get();
+				AcknowledgeAsync(messageId);
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw Unwrap(e);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void acknowledge(org.apache.pulsar.client.api.Messages<?> messages) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void acknowledge<T1>(Messages<T1> messages)
+		public void Acknowledge(IMessages<T> messages)
 		{
 			try
 			{
-				acknowledgeAsync(messages).get();
+				AcknowledgeAsync(messages);
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw Unwrap(e);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void acknowledgeCumulative(org.apache.pulsar.client.api.Message<?> message) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void acknowledgeCumulative<T1>(Message<T1> message)
+		public void AcknowledgeCumulative(IMessage<T> message)
 		{
 			try
 			{
-				acknowledgeCumulative(message.MessageId);
+				AcknowledgeCumulative(message.MessageId);
 			}
-			catch (System.NullReferenceException npe)
+			catch (NullReferenceException npe)
 			{
-				throw new PulsarClientException.InvalidMessageException(npe.Message);
+				throw new InvalidMessageException(npe.Message);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void acknowledgeCumulative(org.apache.pulsar.client.api.MessageId messageId) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void acknowledgeCumulative(MessageId messageId)
+		public void AcknowledgeCumulative(IMessageId messageId)
 		{
 			try
 			{
-				acknowledgeCumulativeAsync(messageId).get();
+				AcknowledgeCumulativeAsync(messageId);
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Void> acknowledgeAsync<T1>(Message<T1> message)
+		public ValueTask AcknowledgeAsync(IMessage<T> message)
 		{
 			try
 			{
-				return acknowledgeAsync(message.MessageId);
+				return AcknowledgeAsync(message.MessageId);
 			}
-			catch (System.NullReferenceException npe)
+			catch (NullReferenceException npe)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
+				return new ValueTask(Task.FromException<IMessage<T>>(new InvalidMessageException(npe.Message)));
 			}
 		}
 
-		public override CompletableFuture<Void> acknowledgeAsync<T1>(Messages<T1> messages)
+		public ValueTask AcknowledgeAsync(IMessages<T> messages)
 		{
 			try
 			{
-				messages.forEach(this.acknowledgeAsync);
-				return CompletableFuture.completedFuture(null);
+				foreach(var m in messages)
+				{
+					this.AcknowledgeAsync(m);
+				}
+				return new ValueTask(Task.CompletedTask);
 			}
-			catch (System.NullReferenceException npe)
+			catch (NullReferenceException npe)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
+				return new ValueTask(Task.FromException(new InvalidMessageException(npe.Message)));
 			}
 		}
 
-		public override CompletableFuture<Void> acknowledgeCumulativeAsync<T1>(Message<T1> message)
+		public ValueTask AcknowledgeCumulativeAsync(IMessage<T> message)
 		{
 			try
 			{
-				return acknowledgeCumulativeAsync(message.MessageId);
+				return AcknowledgeCumulativeAsync(message.MessageId);
 			}
-			catch (System.NullReferenceException npe)
+			catch (NullReferenceException npe)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
+				return new ValueTask(Task.FromException(new InvalidMessageException(npe.Message)));
 			}
 		}
 
-		public override CompletableFuture<Void> acknowledgeAsync(MessageId messageId)
+		public ValueTask AcknowledgeAsync(IMessageId messageId)
 		{
-			return acknowledgeAsync(messageId, null);
+			return AcknowledgeAsync(messageId, null);
 		}
 
 		// TODO: expose this method to consumer interface when the transaction feature is completed
 		// @Override
-		public virtual CompletableFuture<Void> acknowledgeAsync(MessageId messageId, Transaction txn)
+		public virtual ValueTask AcknowledgeAsync(IMessageId messageId, ITransaction txn)
 		{
 			TransactionImpl txnImpl = null;
 			if (null != txn)
 			{
-				checkArgument(txn is TransactionImpl);
-				txnImpl = (TransactionImpl) txn;
+				if(txn is TransactionImpl);
+					txnImpl = (TransactionImpl) txn;
 			}
-			return doAcknowledgeWithTxn(messageId, AckType.Individual, Collections.emptyMap(), txnImpl);
+			return DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), txnImpl);
 		}
 
-		public override CompletableFuture<Void> acknowledgeCumulativeAsync(MessageId messageId)
+		public ValueTask AcknowledgeCumulativeAsync(IMessageId messageId)
 		{
-			return acknowledgeCumulativeAsync(messageId, null);
+			return AcknowledgeCumulativeAsync(messageId, null);
 		}
 
 		// TODO: expose this method to consumer interface when the transaction feature is completed
 		// @Override
-		public virtual CompletableFuture<Void> acknowledgeCumulativeAsync(MessageId messageId, Transaction txn)
+		public virtual ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, ITransaction txn)
 		{
-			if (!isCumulativeAcknowledgementAllowed(conf.SubscriptionType))
+			if (!IsCumulativeAcknowledgementAllowed(conf.SubscriptionType))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"));
+				return new ValueTask(Task.FromException(new InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription")));
 			}
 
 			TransactionImpl txnImpl = null;
 			if (null != txn)
 			{
-				checkArgument(txn is TransactionImpl);
-				txnImpl = (TransactionImpl) txn;
+				if(txn is TransactionImpl);
+					txnImpl = (TransactionImpl) txn;
 			}
-			return doAcknowledgeWithTxn(messageId, AckType.Cumulative, Collections.emptyMap(), txnImpl);
+			return DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txnImpl);
 		}
 
-		public override void negativeAcknowledge<T1>(Message<T1> message)
+		public void NegativeAcknowledge(IMessage<T> message)
 		{
-			negativeAcknowledge(message.MessageId);
+			NegativeAcknowledge(message.MessageId);
 		}
 
-		protected internal virtual CompletableFuture<Void> doAcknowledgeWithTxn(MessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
+		protected internal virtual ValueTask DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
 		{
-			CompletableFuture<Void> ackFuture = doAcknowledge(messageId, ackType, properties, txn);
+			var ack = DoAcknowledge(messageId, ackType, properties, txn);
 			if (txn != null)
 			{
 				// it is okay that we register acked topic after sending the acknowledgements. because
 				// the transactional ack will not be visiable for consumers until the transaction is
 				// committed
-				txn.registerAckedTopic(Topic);
+				txn.RegisterAckedTopic(Topic);
 				// register the ackFuture as part of the transaction
-				return txn.registerAckOp(ackFuture);
+				return txn.RegisterAckOp(ack);
 			}
 			else
 			{
-				return ackFuture;
+				return ack;
 			}
 		}
 
-		protected internal abstract CompletableFuture<Void> doAcknowledge(MessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
-		public override void negativeAcknowledge<T1>(Messages<T1> messages)
+		protected internal abstract ValueTask DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
+		public void NegativeAcknowledge(IMessages<T> messages)
 		{
-			messages.forEach(this.negativeAcknowledge);
+			foreach(var m in messages)
+				this.NegativeAcknowledge(m);
 		}
 
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void unsubscribe() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void unsubscribe()
+		public void Unsubscribe()
 		{
 			try
 			{
-				unsubscribeAsync().get();
+				UnsubscribeAsync();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw Unwrap(e);
 			}
 		}
 
-		public override abstract CompletableFuture<Void> unsubscribeAsync();
+		public abstract ValueTask UnsubscribeAsync();
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void close()
+		public void Close()
 		{
 			try
 			{
-				closeAsync().get();
+				CloseAsync();
 			}
-			catch (Exception e)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw Unwrap(e);
 			}
 		}
 
-		public override abstract CompletableFuture<Void> closeAsync();
+		public abstract ValueTask CloseAsync();
 
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.MessageId getLastMessageId() throws org.apache.pulsar.client.api.PulsarClientException
-		public override MessageId LastMessageId
+		public IMessageId LastMessageId
 		{
 			get
 			{
 				try
 				{
-					return LastMessageIdAsync.get();
+					return LastMessageIdAsync.Result;
 				}
-				catch (Exception e)
+				catch (System.Exception e)
 				{
-					throw PulsarClientException.unwrap(e);
+					throw Unwrap(e);
 				}
 			}
 		}
 
-		public override abstract CompletableFuture<MessageId> LastMessageIdAsync {get;}
+		public abstract ValueTask<IMessageId> LastMessageIdAsync {get;}
 
-		private bool isCumulativeAcknowledgementAllowed(SubscriptionType type)
+		private bool IsCumulativeAcknowledgementAllowed(SubscriptionType type)
 		{
 			return SubscriptionType.Shared != type && SubscriptionType.Key_Shared != type;
 		}
@@ -432,34 +398,32 @@ namespace SharpPulsar.Impl
 				SubscriptionType type = conf.SubscriptionType;
 				switch (type)
 				{
-				case Exclusive:
-					return SubType.Exclusive;
+					case SubscriptionType.Exclusive:
+						return SubType.Exclusive;
     
-				case Shared:
-					return SubType.Shared;
+					case SubscriptionType.Shared:
+						return SubType.Shared;
     
-				case Failover:
-					return SubType.Failover;
+					case SubscriptionType.Failover:
+						return SubType.Failover;
     
-				case Key_Shared:
-					return SubType.Key_Shared;
+					case SubscriptionType.Key_Shared:
+						return SubType.KeyShared;
+					default: return SubType.Exclusive;
 				}
-    
-				// Should not happen since we cover all cases above
-				return null;
 			}
 		}
 
 		public abstract int AvailablePermits {get;}
 
-		public abstract int numMessagesInQueue();
+		public abstract int NumMessagesInQueue();
 
-		public virtual CompletableFuture<Consumer<T>> subscribeFuture()
+		public virtual ValueTask<IConsumer<T>> SubscribeAsync()
 		{
-			return subscribeFuture_Conflict;
+			return subscribeAsync;
 		}
 
-		public override string Topic
+		public string Topic
 		{
 			get
 			{
@@ -467,7 +431,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override string Subscription
+		public string Subscription
 		{
 			get
 			{
@@ -475,11 +439,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override string ConsumerName
+		public string ConsumerName
 		{
 			get
 			{
-				return this.consumerName;
+				return consumerName;
 			}
 		}
 
@@ -489,7 +453,7 @@ namespace SharpPulsar.Impl
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		protected internal abstract void redeliverUnacknowledgedMessages(ISet<MessageId> messageIds);
+		public abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
 
 		public override string ToString()
 		{
@@ -500,15 +464,15 @@ namespace SharpPulsar.Impl
 		{
 			set
 			{
-				this.maxReceiverQueueSize = value;
+				maxReceiverQueueSize = value;
 			}
 		}
 
-		protected internal virtual Message<T> beforeConsume(Message<T> message)
+		protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
 		{
 			if (interceptors != null)
 			{
-				return interceptors.beforeConsume(this, message);
+				return interceptors.BeforeConsume(this, message);
 			}
 			else
 			{
@@ -516,55 +480,55 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void onAcknowledge(MessageId messageId, Exception exception)
+		protected internal virtual void OnAcknowledge(IMessageId messageId, System.Exception exception)
 		{
 			if (interceptors != null)
 			{
-				interceptors.onAcknowledge(this, messageId, exception);
+				interceptors.OnAcknowledge(this, messageId, exception);
 			}
 		}
 
-		protected internal virtual void onAcknowledgeCumulative(MessageId messageId, Exception exception)
+		protected internal virtual void OnAcknowledgeCumulative(IMessageId messageId, System.Exception exception)
 		{
 			if (interceptors != null)
 			{
-				interceptors.onAcknowledgeCumulative(this, messageId, exception);
+				interceptors.OnAcknowledgeCumulative(this, messageId, exception);
 			}
 		}
 
-		protected internal virtual void onNegativeAcksSend(ISet<MessageId> messageIds)
+		protected internal virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
 		{
 			if (interceptors != null)
 			{
-				interceptors.onNegativeAcksSend(this, messageIds);
+				interceptors.OnNegativeAcksSend(this, messageIds);
 			}
 		}
 
-		protected internal virtual void onAckTimeoutSend(ISet<MessageId> messageIds)
+		protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
 		{
 			if (interceptors != null)
 			{
-				interceptors.onAckTimeoutSend(this, messageIds);
+				interceptors.OnAckTimeoutSend(this, messageIds);
 			}
 		}
 
-		protected internal virtual bool canEnqueueMessage(Message<T> message)
+		protected internal virtual bool CanEnqueueMessage(IMessage<T> message)
 		{
 			// Default behavior, can be overridden in subclasses
 			return true;
 		}
 
-		protected internal virtual bool enqueueMessageAndCheckBatchReceive(Message<T> message)
+		protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
-			if (canEnqueueMessage(message))
+			if (CanEnqueueMessage(message))
 			{
 				incomingMessages.add(message);
-				INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, message.Data.length);
+				INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, message.Data.Length);
 			}
-			return hasEnoughMessagesForBatchReceive();
+			return HasEnoughMessagesForBatchReceive();
 		}
 
-		protected internal virtual bool hasEnoughMessagesForBatchReceive()
+		protected internal virtual bool HasEnoughMessagesForBatchReceive()
 		{
 			if (batchReceivePolicy.MaxNumMessages <= 0 && batchReceivePolicy.MaxNumMessages <= 0)
 			{
@@ -573,83 +537,76 @@ namespace SharpPulsar.Impl
 			return (batchReceivePolicy.MaxNumMessages > 0 && incomingMessages.size() >= batchReceivePolicy.MaxNumMessages) || (batchReceivePolicy.MaxNumBytes > 0 && INCOMING_MESSAGES_SIZE_UPDATER.get(this) >= batchReceivePolicy.MaxNumBytes);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void verifyConsumerState() throws org.apache.pulsar.client.api.PulsarClientException
-		private void verifyConsumerState()
+		private void VerifyConsumerState()
 		{
 			switch (State)
 			{
-				case Ready:
-				case Connecting:
+				case State.Ready:
+				case State.Connecting:
 					break; // Ok
-					goto case Closing;
-				case Closing:
-				case Closed:
-					throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
-				case Terminated:
-					throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
-				case Failed:
-				case Uninitialized:
-					throw new PulsarClientException.NotConnectedException();
+				case State.Closing:
+				case State.Closed:
+					throw new AlreadyClosedException("Consumer already closed");
+				case State.Terminated:
+					throw new AlreadyClosedException("Topic was terminated");
+				case State.Failed:
+				case State.Uninitialized:
+					throw new NotConnectedException();
 				default:
 					break;
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void verifyBatchReceive() throws org.apache.pulsar.client.api.PulsarClientException
-		private void verifyBatchReceive()
+		private void VerifyBatchReceive()
 		{
 			if (listener != null)
 			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+				throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
 			if (conf.ReceiverQueueSize == 0)
 			{
-				throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
+				throw new InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
 			}
 		}
 
-		protected internal sealed class OpBatchReceive<T>
+		protected internal sealed class OpBatchReceive
 		{
 
-			internal readonly CompletableFuture<Messages<T>> future;
+			internal readonly ValueTask<IMessages<T>> future;
 			internal readonly long createdAt;
 
-			internal OpBatchReceive(CompletableFuture<Messages<T>> future)
+			internal OpBatchReceive(ValueTask<IMessages<T>> future)
 			{
 				this.future = future;
-				this.createdAt = DateTimeHelper.CurrentUnixTimeMillis();
+				createdAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
-			internal static OpBatchReceive<T> of<T>(CompletableFuture<Messages<T>> future)
+			internal static OpBatchReceive Of(ValueTask<IMessages<T>> future)
 			{
-				return new OpBatchReceive<T>(future);
+				return new OpBatchReceive(future);
 			}
 		}
 
-		protected internal virtual void notifyPendingBatchReceivedCallBack()
+		protected internal virtual void NotifyPendingBatchReceivedCallBack()
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final OpBatchReceive<T> opBatchReceive = pendingBatchReceives.poll();
-			OpBatchReceive<T> opBatchReceive = pendingBatchReceives.poll();
+			OpBatchReceive opBatchReceive = pendingBatchReceives.poll();
 			if (opBatchReceive == null || opBatchReceive.future == null)
 			{
 				return;
 			}
-			notifyPendingBatchReceivedCallBack(opBatchReceive);
+			NotifyPendingBatchReceivedCallBack(opBatchReceive);
 		}
 
-		protected internal virtual void notifyPendingBatchReceivedCallBack(OpBatchReceive<T> opBatchReceive)
+		protected internal virtual void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
 		{
 			MessagesImpl<T> messages = NewMessagesImpl;
-			Message<T> msgPeeked = incomingMessages.peek();
-			while (msgPeeked != null && messages.canAdd(msgPeeked))
+			IMessage<T> msgPeeked = incomingMessages.Peek();
+			while (msgPeeked != null && messages.CanAdd(msgPeeked))
 			{
-				Message<T> msg = null;
+				IMessage<T> msg = null;
 				try
 				{
-					msg = incomingMessages.poll(0L, TimeUnit.MILLISECONDS);
+					msg = incomingMessages.Poll(0L, TimeUnit.MILLISECONDS);
 				}
 				catch (InterruptedException)
 				{
@@ -657,20 +614,17 @@ namespace SharpPulsar.Impl
 				}
 				if (msg != null)
 				{
-					messageProcessed(msg);
-					Message<T> interceptMsg = beforeConsume(msg);
-					messages.add(interceptMsg);
+					MessageProcessed(msg);
+					IMessage<T> interceptMsg = BeforeConsume(msg);
+					messages.Add(interceptMsg);
 				}
-				msgPeeked = incomingMessages.peek();
+				msgPeeked = incomingMessages.Peek();
 			}
-			opBatchReceive.future.complete(messages);
+			opBatchReceive.future.IsCompleted;
 		}
 
-		protected internal abstract void messageProcessed<T1>(Message<T1> msg);
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-		public override void run(Timeout timeout)
+		protected internal abstract void MessageProcessed<T1>(IMessage<T1> msg);
+		public override void Run(Timeout timeout)
 		{
 			if (timeout.Cancelled)
 			{
@@ -682,15 +636,15 @@ namespace SharpPulsar.Impl
 			lock (this)
 			{
 				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if (State == State.Closing || State == State.Closed)
+				if (HandlerState.State == State.Closing || State == State.Closed)
 				{
 					return;
 				}
 				if (pendingBatchReceives == null)
 				{
-					pendingBatchReceives = Queues.newConcurrentLinkedQueue();
+					pendingBatchReceives = IQueue.newConcurrentLinkedQueue();
 				}
-				OpBatchReceive<T> firstOpBatchReceive = pendingBatchReceives.peek();
+				OpBatchReceive firstOpBatchReceive = pendingBatchReceives.peek();
 				timeToWaitMs = batchReceivePolicy.TimeoutMs;
 
 				while (firstOpBatchReceive != null)
@@ -702,8 +656,8 @@ namespace SharpPulsar.Impl
 					{
 						// The diff is less than or equal to zero, meaning that the batch receive has been timed out.
 						// complete the OpBatchReceive and continue to check the next OpBatchReceive in pendingBatchReceives.
-						OpBatchReceive<T> op = pendingBatchReceives.poll();
-						completeOpBatchReceive(op);
+						OpBatchReceive op = pendingBatchReceives.Poll();
+						CompleteOpBatchReceive(op);
 						firstOpBatchReceive = pendingBatchReceives.peek();
 					}
 					else
@@ -725,12 +679,25 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual bool hasPendingBatchReceive()
+		public abstract IConsumerStats Stats { get; }
+		public abstract bool Connected { get; }
+
+		protected internal virtual bool HasPendingBatchReceive()
 		{
 			return pendingBatchReceives != null && !pendingBatchReceives.Empty;
 		}
 
-		protected internal abstract void completeOpBatchReceive(OpBatchReceive<T> op);
+		protected internal abstract void CompleteOpBatchReceive(OpBatchReceive op);
+		public abstract void NegativeAcknowledge(IMessageId messageId);
+		public abstract bool HasReachedEndOfTopic();
+		public abstract void RedeliverUnacknowledgedMessages();
+		public abstract void Seek(IMessageId messageId);
+		public abstract void Seek(long timestamp);
+		public abstract ValueTask SeekAsync(IMessageId messageId);
+		public abstract ValueTask SeekAsync(long timestamp);
+		public abstract void Pause();
+		public abstract void Resume();
+		public abstract ValueTask DisposeAsync();
 	}
 
 }

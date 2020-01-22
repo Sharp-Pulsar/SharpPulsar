@@ -28,7 +28,7 @@ namespace SharpPulsar.Util.Atomic.Threading
 
     using System;
     using System.Threading;
-    using CSharp.Collections.Concurrent;
+    using SharpPulsar.Util.Atomic.Collections.Concurrent;
 
 
     /// <summary>
@@ -86,9 +86,11 @@ namespace SharpPulsar.Util.Atomic.Threading
             }
 
             if (_running.CompareAndSet(false, true)) {
-                _thread = new Thread(ExecuteAction);
-                _thread.IsBackground = true;
-                _thread.Priority = _priority;
+                _thread = new Thread(ExecuteAction)
+                {
+                    IsBackground = true,
+                    Priority = _priority
+                };
                 _thread.Start();
             }
 
@@ -124,10 +126,10 @@ namespace SharpPulsar.Util.Atomic.Threading
 
                 try {
                     _thread.Abort();
-                } catch (Exception e) {
-                    if (null != OnException) {
-                        OnException(e);
-                    }
+                }
+                catch (Exception e)
+                {
+                    OnException?.Invoke(e);
                 }
             }
         }
@@ -138,9 +140,7 @@ namespace SharpPulsar.Util.Atomic.Threading
                     Action action = _actions.Dequeue();
                     action();
                 } catch (Exception e) {
-                    if (null != OnException) {
-                        OnException(e);
-                    }
+                    OnException?.Invoke(e);
                 }
             }
         }

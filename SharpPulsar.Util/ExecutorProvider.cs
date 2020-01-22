@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Util.Atomic;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +25,7 @@ namespace SharpPulsar.Util
 	{
 		private readonly int numThreads;
 		private readonly IList<ExecutorService> executors;
-		private readonly AtomicInteger currentThread = new AtomicInteger(0);
+		private readonly AtomicInt currentThread = new AtomicInt(0);
 
 		public ExecutorProvider(int numThreads, ThreadFactory threadFactory)
 		{
@@ -42,11 +43,11 @@ namespace SharpPulsar.Util
 		{
 			get
 			{
-				return executors[(currentThread.AndIncrement & int.MaxValue) % numThreads];
+				return executors[(currentThread.Increment() & int.MaxValue) % numThreads];
 			}
 		}
 
-		public virtual void shutdownNow()
+		public virtual void ShutdownNow()
 		{
 			executors.ForEach(executor => executor.shutdownNow());
 		}

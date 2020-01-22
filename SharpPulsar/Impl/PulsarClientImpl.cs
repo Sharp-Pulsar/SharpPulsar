@@ -48,6 +48,7 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Common.Schema;
     using SharpPulsar.Exception;
     using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Util.Atomic;
 
     public class PulsarClientImpl : IPulsarClient
 	{
@@ -70,8 +71,8 @@ namespace SharpPulsar.Impl
 		}
 
 		private readonly AtomicReference<State> state = new AtomicReference<State>();
-		private readonly IdentityHashMap<ProducerBase<object>, bool> producers;
-		private readonly IdentityHashMap<ConsumerBase<object>, bool> consumers;
+		private readonly HashSet<ProducerBase<object>> producers;
+		private readonly HashSet<ConsumerBase<object>> consumers;
 
 		private readonly AtomicLong producerIdGenerator = new AtomicLong();
 		private readonly AtomicLong consumerIdGenerator = new AtomicLong();
@@ -79,21 +80,18 @@ namespace SharpPulsar.Impl
 
 		private readonly EventLoopGroup eventLoopGroup_Conflict;
 
-		private readonly LoadingCache<string, SchemaInfoProvider> schemaProviderLoadingCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		
 
-		private class CacheLoaderAnonymousInnerClass : CacheLoader<string, SchemaInfoProvider>
+		private class CacheLoaderAnonymousInnerClass : CacheLoader<string, ISchemaInfoProvider>
 		{
 
-			public override SchemaInfoProvider load(string topicName)
+			public ISchemaInfoProvider Load(string topicName)
 			{
 				return outerInstance.newSchemaProvider(topicName);
 			}
 		}
 
-		private readonly Clock clientClock;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf) throws org.apache.pulsar.client.api.PulsarClientException
+		private readonly DateTime clientClock;
 		public PulsarClientImpl(ClientConfigurationData conf) : this(conf, getEventLoopGroup(conf))
 		{
 		}
@@ -104,8 +102,6 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, ConnectionPool cnxPool) throws org.apache.pulsar.client.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool cnxPool)
 		{
 			if (conf == null || isBlank(conf.ServiceUrl) || eventLoopGroup == null)
@@ -635,8 +631,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
-//ORIGINAL LINE: protected java.util.concurrent.CompletableFuture<ClientCnx> getConnection(final String topic)
 		protected internal virtual CompletableFuture<ClientCnx> getConnection(string topic)
 		{
 			TopicName topicName = TopicName.get(topic);
@@ -655,19 +649,19 @@ namespace SharpPulsar.Impl
 			return externalExecutorProvider_Conflict;
 		}
 
-		internal virtual long newProducerId()
+		internal virtual long NewProducerId()
 		{
-			return producerIdGenerator.AndIncrement;
+			return producerIdGenerator.Increment();
 		}
 
-		internal virtual long newConsumerId()
+		internal virtual long NewConsumerId()
 		{
-			return consumerIdGenerator.AndIncrement;
+			return consumerIdGenerator.Increment();
 		}
 
-		public virtual long newRequestId()
+		public virtual long NewRequestId()
 		{
-			return requestIdGenerator.AndIncrement;
+			return requestIdGenerator.Increment();
 		}
 
 		public virtual ConnectionPool CnxPool

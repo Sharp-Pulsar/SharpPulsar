@@ -20,8 +20,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Objects = com.google.common.@base.Objects;
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
 
 	public class ConsumerId : IComparable<ConsumerId>
 	{
@@ -57,10 +55,9 @@ namespace SharpPulsar.Impl
 
 		public override bool Equals(object obj)
 		{
-			if (obj is ConsumerId)
+			if (obj is ConsumerId other)
 			{
-				ConsumerId other = (ConsumerId) obj;
-				return Objects.equal(this.topic, other.topic) && Objects.equal(this.subscription, other.subscription);
+				return Equals(topic, other.topic) && Equals(subscription, other.subscription);
 			}
 
 			return false;

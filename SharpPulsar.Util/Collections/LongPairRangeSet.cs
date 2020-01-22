@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util.collections
+namespace SharpPulsar.Util.Collections
 {
 	using ComparisonChain = com.google.common.collect.ComparisonChain;
 	using Lists = com.google.common.collect.Lists;

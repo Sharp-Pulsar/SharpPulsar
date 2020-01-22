@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using Optional;
+using SharpPulsar.Interface.Consumer;
+using SharpPulsar.Interface.Message;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,44 +21,38 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using ConsumerStats = org.apache.pulsar.client.api.ConsumerStats;
-	using Message = org.apache.pulsar.client.api.Message;
-
-	using Timeout = io.netty.util.Timeout;
-
 	public class ConsumerStatsDisabled : ConsumerStatsRecorder
 	{
 		private const long serialVersionUID = 1L;
 
 		internal static readonly ConsumerStatsRecorder INSTANCE = new ConsumerStatsDisabled();
 
-		public virtual void updateNumMsgsReceived<T1>(Message<T1> message)
+		public virtual void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
 		{
 			// Do nothing
 		}
 
-		public virtual void incrementNumReceiveFailed()
+		public virtual void IncrementNumReceiveFailed()
 		{
 			// Do nothing
 		}
 
-		public virtual void incrementNumBatchReceiveFailed()
+		public virtual void IncrementNumBatchReceiveFailed()
 		{
 			// Do nothing
 		}
 
-		public virtual void incrementNumAcksSent(long numAcks)
+		public virtual void IncrementNumAcksSent(long numAcks)
 		{
 			// Do nothing
 		}
 
-		public virtual void incrementNumAcksFailed()
+		public virtual void IncrementNumAcksFailed()
 		{
 			// Do nothing
 		}
 
-		public override long NumMsgsReceived
+		public long NumMsgsReceived
 		{
 			get
 			{
@@ -63,7 +60,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumBytesReceived
+		public long NumBytesReceived
 		{
 			get
 			{
@@ -71,7 +68,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumAcksSent
+		public long NumAcksSent
 		{
 			get
 			{
@@ -79,7 +76,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumAcksFailed
+		public long NumAcksFailed
 		{
 			get
 			{
@@ -87,7 +84,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumReceiveFailed
+		public long NumReceiveFailed
 		{
 			get
 			{
@@ -95,7 +92,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumBatchReceiveFailed
+		public long NumBatchReceiveFailed
 		{
 			get
 			{
@@ -103,7 +100,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotalMsgsReceived
+		public long TotalMsgsReceived
 		{
 			get
 			{
@@ -111,7 +108,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotalBytesReceived
+		public long TotalBytesReceived
 		{
 			get
 			{
@@ -119,7 +116,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotalReceivedFailed
+		public long TotalReceivedFailed
 		{
 			get
 			{
@@ -127,7 +124,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotaBatchReceivedFailed
+		public long TotaBatchReceivedFailed
 		{
 			get
 			{
@@ -135,7 +132,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotalAcksSent
+		public long TotalAcksSent
 		{
 			get
 			{
@@ -143,7 +140,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotalAcksFailed
+		public long TotalAcksFailed
 		{
 			get
 			{
@@ -151,7 +148,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override double RateMsgsReceived
+		public double RateMsgsReceived
 		{
 			get
 			{
@@ -159,7 +156,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override double RateBytesReceived
+		public double RateBytesReceived
 		{
 			get
 			{
@@ -167,20 +164,15 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual Optional<Timeout> StatTimeout
-		{
-			get
-			{
-				return null;
-			}
-		}
 
-		public virtual void reset()
+		Option<Timeout> ConsumerStatsRecorder.StatTimeout => throw new System.NotImplementedException();
+
+		public virtual void Reset()
 		{
 			// do nothing
 		}
 
-		public virtual void updateCumulativeStats(ConsumerStats stats)
+		public virtual void UpdateCumulativeStats(IConsumerStats stats)
 		{
 			// do nothing
 		}

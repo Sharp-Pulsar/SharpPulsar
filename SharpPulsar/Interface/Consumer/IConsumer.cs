@@ -76,7 +76,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// </para>
 		/// </summary>
 		/// <returns> the received message </returns>
-		/// <exception cref="PulsarClientException.AlreadyClosedException">
+		/// <exception cref="AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
@@ -147,7 +147,7 @@ namespace SharpPulsar.Interface.Consumer
 		///            The {@code Message} to be acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-		void Acknowledge<T>(IMessage<T> message);
+		void Acknowledge(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -253,7 +253,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// </summary>
 		/// <param name="messages">
 		///            The {@code Message} to be acknowledged </param>
-		void NegativeAcknowledge<T>(IMessages<T> messages);
+		void NegativeAcknowledge(IMessages<T> messages);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -273,7 +273,7 @@ namespace SharpPulsar.Interface.Consumer
 		///            The {@code Message} to be cumulatively acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-		void AcknowledgeCumulative<T>(IMessage<T> message);
+		void AcknowledgeCumulative(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -301,7 +301,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// <param name="message">
 		///            The {@code Message} to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask AcknowledgeAsync<T>(IMessage<T> message);
+		ValueTask AcknowledgeAsync(IMessage<T> message);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -317,7 +317,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// <param name="messages">
 		///            The <seealso cref="Messages"/> to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask AcknowledgeAsync<T>(IMessages<T> messages);
+		ValueTask AcknowledgeAsync(IMessages<T> messages);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -330,7 +330,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// <param name="message">
 		///            The {@code Message} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask AcknowledgeCumulativeAsync<T>(IMessage<T> message);
+		ValueTask AcknowledgeCumulativeAsync(IMessage<T> message);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided

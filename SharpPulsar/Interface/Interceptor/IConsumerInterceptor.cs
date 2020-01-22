@@ -37,7 +37,7 @@ namespace SharpPulsar.Interface.Interceptor
 	/// not propagated further.
 	/// </para>
 	/// </summary>
-	public interface IConsumerInterceptor<T> : IAsyncDisposable
+	public interface Disposeasync<T> : IAsyncDisposable
 	{
 
 		
@@ -58,7 +58,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// <para>Since the consumer may run multiple interceptors, a particular
 		/// interceptor's
 		/// <tt>beforeConsume</tt> callback will be called in the order specified by
-		/// <seealso cref="IConsumerBuilder.intercept(IConsumerInterceptor[])"/>. The first
+		/// <seealso cref="IConsumerBuilder.intercept(Disposeasync[])"/>. The first
 		/// interceptor in the list gets the consumed message, the following
 		/// interceptor will be passed
 		/// the message returned by the previous interceptor, and so on. Since
@@ -127,6 +127,7 @@ namespace SharpPulsar.Interface.Interceptor
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
 		void OnAckTimeoutSend(IConsumer<T> consumer, ISet<IMessageId> messageIds);
+		void Close();
 	}
 
 }

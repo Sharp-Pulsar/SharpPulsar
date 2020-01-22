@@ -33,15 +33,18 @@ namespace SharpPulsar.Impl
 
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
+    using SharpPulsar.Configuration;
+    using System.IO;
+    using SharpPulsar.Interface.Message;
+    using Optional;
+    using BAMCIS.Util.Concurrent;
 
-	public class ConsumerStatsRecorderImpl : ConsumerStatsRecorder
+    public class ConsumerStatsRecorderImpl<T1, T2> : ConsumerStatsRecorder
 	{
 
 		private const long serialVersionUID = 1L;
 		private TimerTask stat;
 		private Timeout statTimeout;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ConsumerImpl<?> consumer;
 		private ConsumerImpl<object> consumer;
 		private PulsarClientImpl pulsarClient;
 		private long oldTime;
@@ -59,8 +62,8 @@ namespace SharpPulsar.Impl
 		private readonly LongAdder totalAcksSent;
 		private readonly LongAdder totalAcksFailed;
 
-		private volatile double receivedMsgsRate;
-		private volatile double receivedBytesRate;
+		private volatile int _receivedMsgsRate;
+		private volatile int _receivedBytesRate;
 
 		private static readonly DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat("0.00");
 
@@ -80,7 +83,7 @@ namespace SharpPulsar.Impl
 			totalAcksFailed = new LongAdder();
 		}
 
-		public ConsumerStatsRecorderImpl<T1, T2>(PulsarClientImpl pulsarClient, ConsumerConfigurationData<T1> conf, ConsumerImpl<T2> consumer)
+		public ConsumerStatsRecorderImpl(PulsarClientImpl pulsarClient, ConsumerConfigurationData<T1> conf, ConsumerImpl<T2> consumer)
 		{
 			this.pulsarClient = pulsarClient;
 			this.consumer = consumer;
@@ -97,10 +100,10 @@ namespace SharpPulsar.Impl
 			totalBatchReceiveFailed = new LongAdder();
 			totalAcksSent = new LongAdder();
 			totalAcksFailed = new LongAdder();
-			init(conf);
+			Init(conf);
 		}
 
-		private void init<T1>(ConsumerConfigurationData<T1> conf)
+		private void Init(ConsumerConfigurationData<T1> conf)
 		{
 			ObjectMapper m = new ObjectMapper();
 			m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -141,12 +144,12 @@ namespace SharpPulsar.Impl
 				totalAcksSent.add(currentNumAcksSent);
 				totalAcksFailed.add(currentNumAcksFailed);
 
-				receivedMsgsRate = currentNumMsgsReceived / elapsed;
-				receivedBytesRate = currentNumBytesReceived / elapsed;
+				_receivedMsgsRate = currentNumMsgsReceived / elapsed;
+				_receivedBytesRate = currentNumBytesReceived / elapsed;
 
 				if ((currentNumMsgsReceived | currentNumBytesReceived | currentNumReceiveFailed | currentNumAcksSent | currentNumAcksFailed) != 0)
 				{
-					log.info("[{}] [{}] [{}] Prefetched messages: {} --- " + "Consume throughput received: {} msgs/s --- {} Mbit/s --- " + "Ack sent rate: {} ack/s --- " + "Failed messages: {} --- batch messages: {} ---" + "Failed acks: {}", consumer.Topic, consumer.Subscription, consumer.consumerName, consumer.incomingMessages.size(), THROUGHPUT_FORMAT.format(receivedMsgsRate), THROUGHPUT_FORMAT.format(receivedBytesRate * 8 / 1024 / 1024), THROUGHPUT_FORMAT.format(currentNumAcksSent / elapsed), currentNumReceiveFailed, currentNumBatchReceiveFailed, currentNumAcksFailed);
+					log.info("[{}] [{}] [{}] Prefetched messages: {} --- " + "Consume throughput received: {} msgs/s --- {} Mbit/s --- " + "Ack sent rate: {} ack/s --- " + "Failed messages: {} --- batch messages: {} ---" + "Failed acks: {}", consumer.Topic, consumer.Subscription, consumer.consumerName, consumer.incomingMessages.size(), THROUGHPUT_FORMAT.format(_receivedMsgsRate), THROUGHPUT_FORMAT.format(_receivedBytesRate * 8 / 1024 / 1024), THROUGHPUT_FORMAT.format(currentNumAcksSent / elapsed), currentNumReceiveFailed, currentNumBatchReceiveFailed, currentNumAcksFailed);
 				}
 			}
 			catch (Exception e)
@@ -164,44 +167,44 @@ namespace SharpPulsar.Impl
 			statTimeout = pulsarClient.timer().newTimeout(stat, statsIntervalSeconds, TimeUnit.SECONDS);
 		}
 
-		public virtual void updateNumMsgsReceived<T1>(Message<T1> message)
+		public virtual void UpdateNumMsgsReceived(IMessage<T1> message)
 		{
 			if (message != null)
 			{
 				numMsgsReceived.increment();
-				numBytesReceived.add(message.Data.length);
+				numBytesReceived.add(message.Data.Length);
 			}
 		}
 
-		public virtual void incrementNumAcksSent(long numAcks)
+		public virtual void IncrementNumAcksSent(long numAcks)
 		{
 			numAcksSent.add(numAcks);
 		}
 
-		public virtual void incrementNumAcksFailed()
+		public virtual void IncrementNumAcksFailed()
 		{
 			numAcksFailed.increment();
 		}
 
-		public virtual void incrementNumReceiveFailed()
+		public virtual void IncrementNumReceiveFailed()
 		{
 			numReceiveFailed.increment();
 		}
 
-		public virtual void incrementNumBatchReceiveFailed()
+		public virtual void IncrementNumBatchReceiveFailed()
 		{
 			numBatchReceiveFailed.increment();
 		}
 
-		public virtual Optional<Timeout> StatTimeout
+		public virtual Option<Timeout> StatTimeout
 		{
 			get
 			{
-				return Optional.ofNullable(statTimeout);
+				return Option.Some(statTimeout);
 			}
 		}
 
-		public virtual void reset()
+		public virtual void Reset()
 		{
 			numMsgsReceived.reset();
 			numBytesReceived.reset();
@@ -217,7 +220,7 @@ namespace SharpPulsar.Impl
 			totalAcksFailed.reset();
 		}
 
-		public virtual void updateCumulativeStats(ConsumerStats stats)
+		public virtual void UpdateCumulativeStats(ConsumerStats stats)
 		{
 			if (stats == null)
 			{
@@ -277,7 +280,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long NumBatchReceiveFailed
+		public long NumBatchReceiveFailed
 		{
 			get
 			{
@@ -309,7 +312,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long TotaBatchReceivedFailed
+		public long TotaBatchReceivedFailed
 		{
 			get
 			{
@@ -333,19 +336,19 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override double RateMsgsReceived
+		public double RateMsgsReceived
 		{
 			get
 			{
-				return receivedMsgsRate;
+				return _receivedMsgsRate;
 			}
 		}
 
-		public override double RateBytesReceived
+		public double RateBytesReceived
 		{
 			get
 			{
-				return receivedBytesRate;
+				return _receivedBytesRate;
 			}
 		}
 

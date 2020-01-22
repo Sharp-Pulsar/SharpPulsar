@@ -39,14 +39,14 @@ namespace SharpPulsar.Impl.Transaction
 	{
 		private class TransactionalSendOp
 		{
-			internal readonly ValueTask<IMessageId> sendAsync;
-			internal readonly ValueTask<IMessageId> transactionalSendAsync;
+			internal ValueTask<IMessageId> SendAsync;
+			internal ValueTask<IMessageId> TransactionalSendAsync;
 		}
 
 		private class TransactionalAckOp
 		{
-			internal readonly ValueTask ackAsync;
-			internal readonly ValueTask transactionalAckAsyync;
+			internal ValueTask AckAsync;
+			internal ValueTask TransactionalAckAsync;
 		}
 
 		private readonly PulsarClientImpl client;
@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl.Transaction
 		private readonly long txnIdLeastBits;
 		private readonly long txnIdMostBits;
 		private readonly AtomicLong sequenceId = new AtomicLong(0L);
-		private readonly LinkedHashMap<long, TransactionalSendOp> sendOps;
+		private readonly IDictionary<long, TransactionalSendOp> sendOps;
 		private readonly ISet<string> producedTopics;
 		private readonly ISet<TransactionalAckOp> ackOps;
 		private readonly ISet<string> ackedTopics;
@@ -65,7 +65,7 @@ namespace SharpPulsar.Impl.Transaction
 			this.transactionTimeoutMs = transactionTimeoutMs;
 			this.txnIdLeastBits = txnIdLeastBits;
 			this.txnIdMostBits = txnIdMostBits;
-			this.sendOps = new LinkedHashMap<long, TransactionalSendOp>();
+			this.sendOps = new Dictionary<long, TransactionalSendOp>();
 			this.producedTopics = new HashSet<string>();
 			this.ackOps = new HashSet<TransactionalAckOp>();
 			this.ackedTopics = new HashSet<string>();
@@ -88,14 +88,18 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public virtual ValueTask<IMessageId> RegisterSendOp(long sequenceId, CompletableFuture<MessageId> sendFuture)
+		public virtual ValueTask<IMessageId> RegisterSendOp(long sequenceId, ValueTask<IMessageId> send)
 		{
 			lock (this)
 			{
-				CompletableFuture<MessageId> transactionalSendFuture = new CompletableFuture<MessageId>();
-				TransactionalSendOp sendOp = new TransactionalSendOp(sendFuture, transactionalSendFuture);
-				sendOps.put(sequenceId, sendOp);
-				return transactionalSendFuture;
+				var transactionalSend = new ValueTask<IMessageId>();
+				TransactionalSendOp sendOp = new TransactionalSendOp
+				{
+					SendAsync = send,
+					TransactionalSendAsync = transactionalSend
+				};
+				sendOps.Add(sequenceId, sendOp);
+				return transactionalSend;
 			}
 		}
 
@@ -111,25 +115,29 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public virtual CompletableFuture<Void> RegisterAckOp(CompletableFuture<Void> ackFuture)
+		public virtual ValueTask RegisterAckOp(ValueTask ack)
 		{
 			lock (this)
 			{
-				CompletableFuture<Void> transactionalAckFuture = new CompletableFuture<Void>();
-				TransactionalAckOp ackOp = new TransactionalAckOp(ackFuture, transactionalAckFuture);
+				var transactionalAck = new ValueTask();
+				TransactionalAckOp ackOp = new TransactionalAckOp
+				{
+					AckAsync = ack,
+					TransactionalAckAsync = transactionalAck
+				};
 				ackOps.Add(ackOp);
-				return transactionalAckFuture;
+				return transactionalAck;
 			}
 		}
 
-		public override ValueTask Commit()
+		public ValueTask Commit()
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 
-		public override ValueTask Abort()
+		public ValueTask Abort()
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 	}
 

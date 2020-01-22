@@ -18,31 +18,27 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
+    using Optional;
+    using SharpPulsar.Interface.Consumer;
+    using SharpPulsar.Interface.Message;
 
-	using ConsumerStats = org.apache.pulsar.client.api.ConsumerStats;
-	using Message = org.apache.pulsar.client.api.Message;
-
-	using Timeout = io.netty.util.Timeout;
-
-	public interface ConsumerStatsRecorder : ConsumerStats
+    public interface ConsumerStatsRecorder : IConsumerStats
 	{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void updateNumMsgsReceived(org.apache.pulsar.client.api.Message<?> message);
-		void updateNumMsgsReceived<T1>(Message<T1> message);
+		void UpdateNumMsgsReceived<T1>(IMessage<T1> message);
 
-		void incrementNumAcksSent(long numAcks);
+		void IncrementNumAcksSent(long numAcks);
 
-		void incrementNumAcksFailed();
+		void IncrementNumAcksFailed();
 
-		void incrementNumReceiveFailed();
+		void IncrementNumReceiveFailed();
 
-		void incrementNumBatchReceiveFailed();
+		void IncrementNumBatchReceiveFailed();
 
-		Optional<Timeout> StatTimeout {get;}
+		Option<Timeout> StatTimeout {get;}
 
-		void reset();
+		void Reset();
 
-		void updateCumulativeStats(ConsumerStats stats);
+		void UpdateCumulativeStats(IConsumerStats stats);
 	}
 
 }

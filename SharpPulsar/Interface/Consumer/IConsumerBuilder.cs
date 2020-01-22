@@ -499,7 +499,7 @@ namespace SharpPulsar.Interface.Consumer
 		/// Intercept <seealso cref="Consumer"/>.
 		/// </summary>
 		/// <param name="interceptors"> the list of interceptors to intercept the consumer created by this builder. </param>
-		IConsumerBuilder<T> Intercept(params IConsumerInterceptor<T> [] interceptors);
+		IConsumerBuilder<T> Intercept(params Disposeasync<T> [] interceptors);
 
 		/// <summary>
 		/// Set dead letter policy for consumer.
