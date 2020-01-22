@@ -27,13 +27,14 @@ namespace SharpPulsar.Impl
 	using SslContext = io.netty.handler.ssl.SslContext;
 
 	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
 	using org.apache.pulsar.client.util;
 	using ByteBufPair = org.apache.pulsar.common.protocol.ByteBufPair;
 	using Commands = org.apache.pulsar.common.protocol.Commands;
 	using SecurityUtility = org.apache.pulsar.common.util.SecurityUtility;
+    using SharpPulsar.Configuration;
+    using SharpPulsar.Util;
 
-	public class PulsarChannelInitializer : ChannelInitializer<SocketChannel>
+    public class PulsarChannelInitializer : ChannelInitializer<SocketChannel>
 	{
 
 		public const string TLS_HANDLER = "tls";
@@ -45,9 +46,7 @@ namespace SharpPulsar.Impl
 
 		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = TimeUnit.MINUTES.toMillis(1);
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarChannelInitializer(SharpPulsar.Impl.conf.ClientConfigurationData conf, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws Exception
-		public PulsarChannelInitializer(ClientConfigurationData conf, System.Func<ClientCnx> clientCnxSupplier) : base()
+		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientConnection> clientCnxSupplier) : base()
 		{
 			this.clientCnxSupplier = clientCnxSupplier;
 			this.tlsEnabled = conf.UseTls;

@@ -24,7 +24,7 @@ namespace SharpPulsar.Impl
 		protected internal readonly PulsarClientImpl client;
 		protected internal readonly string topic;
 
-		private static readonly AtomicReferenceFieldUpdater<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
+		private static readonly AtomicReference<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
 
 		private readonly State _state;
 

@@ -20,8 +20,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
 	using State = SharpPulsar.Impl.HandlerState.State;
 	using Logger = org.slf4j.Logger;

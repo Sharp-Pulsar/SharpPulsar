@@ -1,4 +1,18 @@
 ﻿using System;
+using ServerBootstrap = DotNetty.Transport.Bootstrapping.ServerBootstrap;
+using EventLoopGroup = DotNetty.Transport.Channels.IEventLoopGroup;
+//using Epoll = DotNetty.Transport.Channels.Embedded..epoll.Epoll;
+//using EpollChannelOption = io.netty.channel.epoll.EpollChannelOption;
+//using EpollDatagramChannel = io.netty.channel.epoll.EpollDatagramChannel;
+//using EpollEventLoopGroup = io.netty.channel.epoll.EpollEventLoopGroup;
+//using EpollMode = io.netty.channel.epoll.EpollMode;
+//using EpollServerSocketChannel = io.netty.channel.epoll.EpollServerSocketChannel;
+//using EpollSocketChannel = DotNetty.Transport.Channels.Pool. io.netty.channel.epoll.EpollSocketChannel;
+using NioEventLoopGroup = DotNetty.Transport.Channels.IEventLoopGroup;
+using NioDatagramChannel = DotNetty.Transport.Channels.Sockets.SocketDatagramChannel;
+using NioServerSocketChannel = DotNetty.Transport.Channels.Sockets.TcpServerSocketChannel;
+using NioSocketChannel = DotNetty.Transport.Channels.Sockets.TcpSocketChannel;
+using DotNetty.Transport.Channels;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,32 +32,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util.netty
+namespace SharpPulsar.Util.Netty
 {
-	using ServerBootstrap = io.netty.bootstrap.ServerBootstrap;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using Epoll = io.netty.channel.epoll.Epoll;
-	using EpollChannelOption = io.netty.channel.epoll.EpollChannelOption;
-	using EpollDatagramChannel = io.netty.channel.epoll.EpollDatagramChannel;
-	using EpollEventLoopGroup = io.netty.channel.epoll.EpollEventLoopGroup;
-	using EpollMode = io.netty.channel.epoll.EpollMode;
-	using EpollServerSocketChannel = io.netty.channel.epoll.EpollServerSocketChannel;
-	using EpollSocketChannel = io.netty.channel.epoll.EpollSocketChannel;
-	using NioEventLoopGroup = io.netty.channel.nio.NioEventLoopGroup;
-	using DatagramChannel = io.netty.channel.socket.DatagramChannel;
-	using ServerSocketChannel = io.netty.channel.socket.ServerSocketChannel;
-	using SocketChannel = io.netty.channel.socket.SocketChannel;
-	using NioDatagramChannel = io.netty.channel.socket.nio.NioDatagramChannel;
-	using NioServerSocketChannel = io.netty.channel.socket.nio.NioServerSocketChannel;
-	using NioSocketChannel = io.netty.channel.socket.nio.NioSocketChannel;
-
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("checkstyle:JavadocType") public class EventLoopUtil
 	public class EventLoopUtil
 	{
 
 		/// <returns> an EventLoopGroup suitable for the current platform </returns>
-		public static EventLoopGroup newEventLoopGroup(int nThreads, ThreadFactory threadFactory)
+		public static EventLoopGroup NewEventLoopGroup(int nThreads, ThreadFactory threadFactory)
 		{
 			if (Epoll.Available)
 			{
@@ -61,7 +58,7 @@ namespace org.apache.pulsar.common.util.netty
 		/// </summary>
 		/// <param name="eventLoopGroup">
 		/// @return </param>
-		public static Type getClientSocketChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetClientSocketChannelClass(EventLoopGroup eventLoopGroup)
 		{
 			if (eventLoopGroup is EpollEventLoopGroup)
 			{
@@ -97,11 +94,11 @@ namespace org.apache.pulsar.common.util.netty
 			}
 		}
 
-		public static void enableTriggeredMode(ServerBootstrap bootstrap)
+		public static void EnableTriggeredMode(ServerBootstrap bootstrap)
 		{
 			if (Epoll.Available)
 			{
-				bootstrap.childOption(EpollChannelOption.EPOLL_MODE, EpollMode.LEVEL_TRIGGERED);
+				bootstrap.ChildOption(ChannelOption..EPOLL_MODE, EpollMode.LEVEL_TRIGGERED);
 			}
 		}
 	}

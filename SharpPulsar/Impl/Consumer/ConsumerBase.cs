@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Enum;
     using static SharpPulsar.Common.PulsarApi.CommandSubscribe;
 
-    public abstract class ConsumerBase<T> : HandlerState, IConsumer<T>
+    public abstract class ConsumerBase<T> : IConsumer<T>
 	{
 
 		internal enum ConsumerType
@@ -538,7 +538,7 @@ namespace SharpPulsar.Impl
 
 		private void VerifyConsumerState()
 		{
-			switch (GetState())
+			switch (ConsumerState)
 			{
 				case State.Ready:
 				case State.Connecting:

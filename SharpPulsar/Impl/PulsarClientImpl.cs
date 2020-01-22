@@ -58,9 +58,7 @@ namespace SharpPulsar.Impl
 		private readonly ClientConfigurationData conf;
 		private LookupService lookup;
 		private readonly ConnectionPool cnxPool;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		private readonly Timer timer_Conflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		private readonly ExecutorProvider externalExecutorProvider_Conflict;
 
 		internal enum State

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Common.PulsarApi;
+using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
