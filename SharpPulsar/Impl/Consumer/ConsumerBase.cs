@@ -539,7 +539,7 @@ namespace SharpPulsar.Impl
 
 		private void VerifyConsumerState()
 		{
-			switch (State)
+			switch (GetState())
 			{
 				case State.Ready:
 				case State.Connecting:
@@ -635,8 +635,9 @@ namespace SharpPulsar.Impl
 
 			lock (this)
 			{
+				var state = GetState();
 				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if (HandlerState.State == State.Closing || State == State.Closed)
+				if (state == State.Closing || state == State.Closed)
 				{
 					return;
 				}
