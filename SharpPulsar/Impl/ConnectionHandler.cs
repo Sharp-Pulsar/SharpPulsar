@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Exception;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,8 +22,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using State = SharpPulsar.Impl.HandlerState.State;
+	using State = HandlerState.State;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -29,16 +30,16 @@ namespace SharpPulsar.Impl
 	{
 		private static readonly AtomicReferenceFieldUpdater<ConnectionHandler, ClientCnx> CLIENT_CNX_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(ConnectionHandler), typeof(ClientCnx), "clientCnx");
 
-		private volatile ClientCnx clientCnx = null;
+		private volatile ClientConnection clientCnx = null;
 
 		protected internal readonly HandlerState state;
 		protected internal readonly Backoff backoff;
 		protected internal long epoch = 0L;
 
-		internal interface Connection
+		public interface Connection
 		{
-			void connectionFailed(PulsarClientException exception);
-			void connectionOpened(ClientCnx cnx);
+			void ConnectionFailed(PulsarClientException exception);
+			void ConnectionOpened(ClientConnection cnx);
 		}
 
 		protected internal Connection connection;
@@ -51,7 +52,7 @@ namespace SharpPulsar.Impl
 			CLIENT_CNX_UPDATER.set(this, null);
 		}
 
-		protected internal virtual void grabCnx()
+		protected internal virtual void GrabCnx()
 		{
 			if (CLIENT_CNX_UPDATER.get(this) != null)
 			{
@@ -62,46 +63,45 @@ namespace SharpPulsar.Impl
 			if (!ValidStateForReconnection)
 			{
 				// Ignore connection closed when we are shutting down
-				log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.getState());
+				log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.GetState());
 				return;
 			}
 
 			try
 			{
-				state.client.getConnection(state.topic).thenAccept(cnx => connection.connectionOpened(cnx)).exceptionally(this.handleConnectionError);
+				state.client.getConnection(state.topic).thenAccept(cnx => connection.connectionOpened(cnx)).exceptionally(this.HandleConnectionError);
 			}
-			catch (Exception t)
+			catch (System.Exception t)
 			{
 				log.warn("[{}] [{}] Exception thrown while getting connection: ", state.topic, state.HandlerName, t);
-				reconnectLater(t);
+				ReconnectLater(t);
 			}
 		}
 
-		private Void handleConnectionError(Exception exception)
+		private void HandleConnectionError(System.Exception exception)
 		{
-			log.warn("[{}] [{}] Error connecting to broker: {}", state.topic, state.HandlerName, exception.Message);
-			connection.connectionFailed(new PulsarClientException(exception));
+			log.warn("[{}] [{}] Error connecting to broker: {}", this.state.topic, this.state.HandlerName, exception.Message);
+			connection.ConnectionFailed(new PulsarClientException(exception.Message));
 
-			State state = this.state.getState();
+			State state = this.state.GetState();
 			if (state == State.Uninitialized || state == State.Connecting || state == State.Ready)
 			{
-				reconnectLater(exception);
+				ReconnectLater(exception);
 			}
-
-			return null;
+			return ;
 		}
 
-		protected internal virtual void reconnectLater(Exception exception)
+		protected internal virtual void ReconnectLater(System.Exception exception)
 		{
 			CLIENT_CNX_UPDATER.set(this, null);
 			if (!ValidStateForReconnection)
 			{
-				log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.getState());
+				log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.GetState());
 				return;
 			}
-			long delayMs = backoff.next();
+			long delayMs = backoff.Next();
 			log.warn("[{}] [{}] Could not get connection to broker: {} -- Will try again in {} s", state.topic, state.HandlerName, exception.Message, delayMs / 1000.0);
-			state.setState(State.Connecting);
+			state.SetState(State.Connecting);
 			state.client.timer().newTimeout(timeout =>
 			{
 			log.info("[{}] [{}] Reconnecting after connection was closed", state.topic, state.HandlerName);
@@ -109,21 +109,19 @@ namespace SharpPulsar.Impl
 			grabCnx();
 			}, delayMs, TimeUnit.MILLISECONDS);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public void connectionClosed(ClientCnx cnx)
-		public virtual void connectionClosed(ClientCnx cnx)
+		
+		public virtual void ConnectionClosed(ClientConnection cnx)
 		{
 			if (CLIENT_CNX_UPDATER.compareAndSet(this, cnx, null))
 			{
 				if (!ValidStateForReconnection)
 				{
-					log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.getState());
+					log.info("[{}] [{}] Ignoring reconnection request (state: {})", state.topic, state.HandlerName, state.GetState());
 					return;
 				}
-				long delayMs = backoff.next();
-				state.setState(State.Connecting);
-				log.info("[{}] [{}] Closed connection {} -- Will try again in {} s", state.topic, state.HandlerName, cnx.channel(), delayMs / 1000.0);
+				long delayMs = backoff.Next();
+				state.SetState(State.Connecting);
+				log.info("[{}] [{}] Closed connection {} -- Will try again in {} s", state.topic, state.HandlerName, cnx.Channel(), delayMs / 1000.0);
 				state.client.timer().newTimeout(timeout =>
 				{
 				log.info("[{}] [{}] Reconnecting after timeout", state.topic, state.HandlerName);
@@ -133,12 +131,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void resetBackoff()
+		protected internal virtual void ResetBackoff()
 		{
-			backoff.reset();
+			backoff.Reset();
 		}
 
-		protected internal virtual ClientCnx cnx()
+		protected internal virtual ClientConnection Cnx()
 		{
 			return CLIENT_CNX_UPDATER.get(this);
 		}
@@ -148,9 +146,8 @@ namespace SharpPulsar.Impl
 			return e is PulsarClientException.LookupException;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public ClientCnx getClientCnx()
-		public virtual ClientCnx ClientCnx
+
+		public virtual ClientConnection ClientCnx
 		{
 			get
 			{
@@ -167,7 +164,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				State state = this.state.getState();
+				State state = this.state.GetState();
 				switch (state)
 				{
 					case State.Uninitialized:
@@ -186,8 +183,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public long getEpoch()
 		public virtual long Epoch
 		{
 			get

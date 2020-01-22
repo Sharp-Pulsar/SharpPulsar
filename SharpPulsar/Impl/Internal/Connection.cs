@@ -1,6 +1,8 @@
 ﻿
+using SharpPulsar.Command.Extension;
 using SharpPulsar.Common.PulsarApi;
 using SharpPulsar.Impl.Internal;
+using SharpPulsar.Impl.Internal.Interface;
 using System;
 using System.Buffers;
 using System.IO;
@@ -43,14 +45,14 @@ namespace SharpPulsar.Impl.Internal
             using (await _lock.Lock())
             {
                 _producerManager.Outgoing(command, proxy);
-                var baseCommand = command.AsBaseCommand();
+                var baseCommand = command.ToBaseCommand();
                 responseTask = _requestResponseHandler.Outgoing(baseCommand);
                 var sequence = Serializer.Serialize(baseCommand);
                 await _stream.Send(sequence);
             }
 
             var response = await responseTask;
-            if (response.CommandType == BaseCommand.Type.Error)
+            if (response.type == BaseCommand.Type.Error)
             {
                 _producerManager.Remove(command.ProducerId);
                 response.Error.Throw();
@@ -65,14 +67,14 @@ namespace SharpPulsar.Impl.Internal
             using (await _lock.Lock())
             {
                 _consumerManager.Outgoing(command, proxy);
-                var baseCommand = command.AsBaseCommand();
+                var baseCommand = command.ToBaseCommand();
                 responseTask = _requestResponseHandler.Outgoing(baseCommand);
                 var sequence = Serializer.Serialize(baseCommand);
                 await _stream.Send(sequence);
             }
 
             var response = await responseTask;
-            if (response.CommandType == BaseCommand.Type.Error)
+            if (response.type == BaseCommand.Type.Error)
             {
                 _consumerManager.Remove(command.ConsumerId);
                 response.Error.Throw();
@@ -81,36 +83,36 @@ namespace SharpPulsar.Impl.Internal
             return new SubscribeResponse(command.ConsumerId);
         }
 
-        public async Task Send(CommandPing command) => await Send(command.AsBaseCommand());
-        public async Task Send(CommandPong command) => await Send(command.AsBaseCommand());
-        public async Task Send(CommandAck command) => await Send(command.AsBaseCommand());
-        public async Task Send(CommandFlow command) => await Send(command.AsBaseCommand());
+        public async Task Send(CommandPing command) => await Send(command.ToBaseCommand());
+        public async Task Send(CommandPong command) => await Send(command.ToBaseCommand());
+        public async Task Send(CommandAck command) => await Send(command.ToBaseCommand());
+        public async Task Send(CommandFlow command) => await Send(command.ToBaseCommand());
 
         public async Task<BaseCommand> Send(CommandUnsubscribe command)
         {
-            var response = await SendRequestResponse(command.AsBaseCommand());
-            if (response.CommandType == BaseCommand.Type.Success)
+            var response = await SendRequestResponse(command.ToBaseCommand());
+            if (response.type == BaseCommand.Type.Success)
                 _consumerManager.Remove(command.ConsumerId);
             return response;
         }
 
-        public async Task<BaseCommand> Send(CommandConnect command) => await SendRequestResponse(command.AsBaseCommand());
-        public async Task<BaseCommand> Send(CommandLookupTopic command) => await SendRequestResponse(command.AsBaseCommand());
-        public async Task<BaseCommand> Send(CommandSeek command) => await SendRequestResponse(command.AsBaseCommand());
-        public async Task<BaseCommand> Send(CommandGetLastMessageId command) => await SendRequestResponse(command.AsBaseCommand());
+        public async Task<BaseCommand> Send(CommandConnect command) => await SendRequestResponse(command.ToBaseCommand());
+        public async Task<BaseCommand> Send(CommandLookupTopic command) => await SendRequestResponse(command.ToBaseCommand());
+        public async Task<BaseCommand> Send(CommandSeek command) => await SendRequestResponse(command.ToBaseCommand());
+        public async Task<BaseCommand> Send(CommandGetLastMessageId command) => await SendRequestResponse(command.ToBaseCommand());
 
         public async Task<BaseCommand> Send(CommandCloseProducer command)
         {
-            var response = await SendRequestResponse(command.AsBaseCommand());
-            if (response.CommandType == BaseCommand.Type.Success)
+            var response = await SendRequestResponse(command.ToBaseCommand());
+            if (response.type == BaseCommand.Type.Success)
                 _producerManager.Remove(command.ProducerId);
             return response;
         }
 
         public async Task<BaseCommand> Send(CommandCloseConsumer command)
         {
-            var response = await SendRequestResponse(command.AsBaseCommand());
-            if (response.CommandType == BaseCommand.Type.Success)
+            var response = await SendRequestResponse(command.ToBaseCommand());
+            if (response.type == BaseCommand.Type.Success)
                 _consumerManager.Remove(command.ConsumerId);
             return response;
         }
@@ -120,7 +122,7 @@ namespace SharpPulsar.Impl.Internal
             Task<BaseCommand>? response = null;
             using (await _lock.Lock())
             {
-                var baseCommand = command.Command.AsBaseCommand();
+                var baseCommand = command.Command.ToBaseCommand();
                 response = _requestResponseHandler.Outgoing(baseCommand);
                 var sequence = Serializer.Serialize(baseCommand, command.Metadata, command.Payload);
                 await _stream.Send(sequence);
@@ -153,7 +155,7 @@ namespace SharpPulsar.Impl.Internal
         {
             var command = Serializer.Deserialize<BaseCommand>(sequence.Slice(0, commandSize));
 
-            switch (command.CommandType)
+            switch (command.type)
             {
                 case BaseCommand.Type.Message:
                     _consumerManager.Incoming(command.Message, sequence.Slice(commandSize));
@@ -165,7 +167,7 @@ namespace SharpPulsar.Impl.Internal
                     _consumerManager.Incoming(command.ActiveConsumerChange);
                     return;
                 case BaseCommand.Type.ReachedEndOfTopic:
-                    _consumerManager.Incoming(command.ReachedEndOfTopic);
+                    _consumerManager.Incoming(command.reachedEndOfTopic);
                     return;
                 case BaseCommand.Type.CloseProducer:
                     _producerManager.Incoming(command.CloseProducer);

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.PulsarApi;
+﻿using SharpPulsar.Command.Extension;
+using SharpPulsar.Common.PulsarApi;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -60,14 +61,14 @@ namespace SharpPulsar.Impl.Internal
                 var response = await connection.Send(lookup);
                 response.Expect(BaseCommand.Type.LookupResponse);
 
-                if (response.LookupTopicResponse.Response == CommandLookupTopicResponse.LookupType.Failed)
-                    response.LookupTopicResponse.Throw();
+                if (response.lookupTopicResponse.Response == CommandLookupTopicResponse.LookupType.Failed)
+                    response.lookupTopicResponse.Throw();
 
-                lookup.Authoritative = response.LookupTopicResponse.Authoritative;
+                lookup.Authoritative = response.lookupTopicResponse.Authoritative;
 
-                serviceUrl = new Uri(GetBrokerServiceUrl(response.LookupTopicResponse));
+                serviceUrl = new Uri(GetBrokerServiceUrl(response.lookupTopicResponse));
 
-                if (response.LookupTopicResponse.Response == CommandLookupTopicResponse.LookupType.Redirect || !response.LookupTopicResponse.Authoritative)
+                if (response.lookupTopicResponse.Response == CommandLookupTopicResponse.LookupType.Redirect || !response.lookupTopicResponse.Authoritative)
                     continue;
 
                 if (_serviceUrl.IsLoopback) // LookupType is 'Connect', ServiceUrl is local and response is authoritative. Assume the Pulsar server is a standalone docker.
@@ -79,24 +80,24 @@ namespace SharpPulsar.Impl.Internal
 
         private string GetBrokerServiceUrl(CommandLookupTopicResponse response)
         {
-            var hasBrokerServiceUrl = !string.IsNullOrEmpty(response.BrokerServiceUrl);
-            var hasBrokerServiceUrlTls = !string.IsNullOrEmpty(response.BrokerServiceUrlTls);
+            var hasBrokerServiceUrl = !string.IsNullOrEmpty(response.brokerServiceUrl);
+            var hasBrokerServiceUrlTls = !string.IsNullOrEmpty(response.brokerServiceUrlTls);
 
             switch (_encryptionPolicy)
             {
                 case EncryptionPolicy.EnforceEncrypted:
                     if (!hasBrokerServiceUrlTls)
                         throw new ConnectionSecurityException("Cannot enforce encrypted connections. The lookup topic response from broker gave no secure alternative.");
-                    return response.BrokerServiceUrlTls;
+                    return response.brokerServiceUrlTls;
                 case EncryptionPolicy.EnforceUnencrypted:
                     if (!hasBrokerServiceUrl)
                         throw new ConnectionSecurityException("Cannot enforce unencrypted connections. The lookup topic response from broker gave no unsecure alternative.");
-                    return response.BrokerServiceUrl;
+                    return response.brokerServiceUrl;
                 case EncryptionPolicy.PreferEncrypted:
-                    return hasBrokerServiceUrlTls ? response.BrokerServiceUrlTls : response.BrokerServiceUrl;
+                    return hasBrokerServiceUrlTls ? response.brokerServiceUrlTls : response.brokerServiceUrl;
                 case EncryptionPolicy.PreferUnencrypted:
                 default:
-                    return hasBrokerServiceUrl ? response.BrokerServiceUrl : response.BrokerServiceUrlTls;
+                    return hasBrokerServiceUrl ? response.brokerServiceUrl : response.brokerServiceUrlTls;
             }
         }
 

@@ -24,11 +24,6 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using ImmutableMap = com.google.common.collect.ImmutableMap;
 	using Builder = com.google.common.collect.ImmutableMap.Builder;
@@ -58,8 +53,10 @@ namespace SharpPulsar.Impl
 	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Configuration;
+    using SharpPulsar.Util.Atomic;
 
-	public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
+    public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
 	{
 
 		public const string DUMMY_TOPIC_NAME_PREFIX = "MultiTopicsConsumer-";
@@ -75,14 +72,14 @@ namespace SharpPulsar.Impl
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
-		private readonly ConcurrentLinkedQueue<ConsumerImpl<T>> pausedConsumers;
+		private readonly ConcurrentQueue<ConsumerImpl<T>> pausedConsumers;
 
 		// Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
 		// resume receiving from the paused consumer partitions
 		private readonly int sharedQueueResumeThreshold;
 
 		// sum of topicPartitions, simple topic has 1, partitioned topic equals to partition number.
-		internal AtomicInteger allTopicPartitionsNumber;
+		internal AtomicInt allTopicPartitionsNumber;
 
 		// timeout related to auto check and subscribe partition increasement
 		private volatile Timeout partitionsAutoUpdateTimeout = null;
@@ -105,7 +102,7 @@ namespace SharpPulsar.Impl
 
 			this.topics = new ConcurrentDictionary<string, int>();
 			this.consumers = new ConcurrentDictionary<string, ConsumerImpl<T>>();
-			this.pausedConsumers = new ConcurrentLinkedQueue<ConsumerImpl<T>>();
+			this.pausedConsumers = new ConcurrentQueue<ConsumerImpl<T>>();
 			this.sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
 			this.allTopicPartitionsNumber = new AtomicInteger(0);
 
@@ -1192,7 +1189,7 @@ namespace SharpPulsar.Impl
 		}
 
 		// This listener is triggered when topics partitions are updated.
-		private class TopicsPartitionChangedListener : PartitionsChangedListener
+		internal class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
 			private readonly MultiTopicsConsumerImpl<T> outerInstance;
 

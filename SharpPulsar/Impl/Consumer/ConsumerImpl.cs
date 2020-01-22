@@ -23,60 +23,6 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.computeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.hasChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.readChecksum;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Iterables = com.google.common.collect.Iterables;
-
-	using Queues = com.google.common.collect.Queues;
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Timeout = io.netty.util.Timeout;
-
-
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using ConsumerCryptoFailureAction = org.apache.pulsar.client.api.ConsumerCryptoFailureAction;
-	using ConsumerStats = org.apache.pulsar.client.api.ConsumerStats;
-	using DeadLetterPolicy = org.apache.pulsar.client.api.DeadLetterPolicy;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Messages = org.apache.pulsar.client.api.Messages;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionInitialPosition = org.apache.pulsar.client.api.SubscriptionInitialPosition;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using TopicDoesNotExistException = org.apache.pulsar.client.api.PulsarClientException.TopicDoesNotExistException;
-	using SharpPulsar.Impl.conf;
-	using TransactionImpl = SharpPulsar.Impl.transaction.TransactionImpl;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using EncryptionContext = org.apache.pulsar.common.api.EncryptionContext;
-	using EncryptionKey = org.apache.pulsar.common.api.EncryptionContext.EncryptionKey;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using ValidationError = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.ValidationError;
-	using InitialPosition = org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.InitialPosition;
-	using CompressionType = org.apache.pulsar.common.api.proto.PulsarApi.CompressionType;
-	using EncryptionKeys = org.apache.pulsar.common.api.proto.PulsarApi.EncryptionKeys;
-	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
-	using MessageIdData = org.apache.pulsar.common.api.proto.PulsarApi.MessageIdData;
-	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
-	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
-	using CompressionCodec = org.apache.pulsar.common.compression.CompressionCodec;
-	using CompressionCodecProvider = org.apache.pulsar.common.compression.CompressionCodecProvider;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
     using SharpPulsar.Interface;
     using SharpPulsar.Impl.Batch;
     using SharpPulsar.Impl.Message;
@@ -86,6 +32,7 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Interface.Consumer;
     using SharpPulsar.Interface.Schema;
     using SharpPulsar.Interface.Message;
+    using SharpPulsar.Entity;
 
     public class ConsumerImpl<T> : ConsumerBase<T>, ConnectionHandler.Connection
 	{
@@ -291,8 +238,6 @@ namespace SharpPulsar.Impl
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Consumer was already closed"));
 			}
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> unsubscribeFuture = new java.util.concurrent.CompletableFuture<>();
 			CompletableFuture<Void> unsubscribeFuture = new CompletableFuture<Void>();
 			if (Connected)
 			{

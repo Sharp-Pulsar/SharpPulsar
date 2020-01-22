@@ -5,6 +5,24 @@ namespace SharpPulsar.Command.Extension
 {
     public static class CommandExtension
     {
+        public static void Expect(this BaseCommand command, BaseCommand.Type type)
+        {
+            if (command.type == type)
+                return;
+
+            switch (command.type)
+            {
+                case BaseCommand.Type.Error:
+                    command.Error.Throw();
+                    return;
+                case BaseCommand.Type.SendError:
+                    command.SendError.Throw();
+                    return;
+            }
+
+            throw new UnexpectedResponseException($"Expected '{type}' but got '{command.type}'");
+        }
+
         public static void Throw(this CommandSendError command) => Throw(command.Error, command.Message);
 
         public static void Throw(this CommandLookupTopicResponse command) => Throw(command.Error, command.Message);

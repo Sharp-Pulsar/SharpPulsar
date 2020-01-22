@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Configuration;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Configuration;
 using SharpPulsar.Enum;
 using SharpPulsar.Exception;
 using SharpPulsar.Interface;
@@ -180,7 +181,8 @@ namespace SharpPulsar.Impl.Producer
 
 		public IProducerBuilder<T> AddEncryptionKey(string key)
 		{
-			checkArgument(StringUtils.isNotBlank(key), "Encryption key cannot be blank");
+			if(string.IsNullOrWhiteSpace(key))
+				throw new ArgumentNullException("Encryption key cannot be blank");
 			conf.EncryptionKeys.Add(key);
 			return this;
 		}

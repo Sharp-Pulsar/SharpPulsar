@@ -19,7 +19,7 @@ namespace SharpPulsar.Impl.Internal
             _batches = new LinkedList<Batch>();
         }
 
-        public IMessage Add(MessageIdData messageId, MessageMetadata metadata, ReadOnlySequence<byte> data)
+        public IMessage<T> Add(MessageIdData messageId, MessageMetadata metadata, ReadOnlySequence<byte> data)
         {
             if (_trackBatches)
                 _batches.AddLast(new Batch(messageId, metadata.NumMessagesInBatch));

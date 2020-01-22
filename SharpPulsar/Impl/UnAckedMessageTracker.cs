@@ -1,4 +1,7 @@
-﻿using System;
+﻿using DotNetty.Common;
+using SharpPulsar.Interface.Message;
+using SharpPulsar.Util.Collections;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -33,11 +36,11 @@ namespace SharpPulsar.Impl
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class UnAckedMessageTracker : System.IDisposable
+	public class UnAckedMessageTracker : IDisposable
 	{
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
 
-		protected internal readonly ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>> messageIdPartitionMap;
+		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>> messageIdPartitionMap;
 		protected internal readonly LinkedList<ConcurrentOpenHashSet<MessageId>> timePartitions;
 
 		protected internal readonly Lock readLock;
@@ -47,28 +50,28 @@ namespace SharpPulsar.Impl
 		private readonly long ackTimeoutMillis;
 		private readonly long tickDurationInMs;
 
-		private class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
+		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
 		{
-			public override void clear()
+			public void Clear()
 			{
 			}
 
-			internal override long size()
+			internal long Size()
 			{
 				return 0;
 			}
 
-			public override bool add(MessageId m)
+			public override bool Add(MessageId m)
 			{
 				return true;
 			}
 
-			public override bool remove(MessageId m)
+			public override bool Remove(MessageId m)
 			{
 				return true;
 			}
 
-			public override int removeMessagesTill(MessageId msgId)
+			public override int RemoveMessagesTill(MessageId msgId)
 			{
 				return 0;
 			}
@@ -90,23 +93,21 @@ namespace SharpPulsar.Impl
 			this.tickDurationInMs = 0;
 		}
 
-		public UnAckedMessageTracker<T1>(PulsarClientImpl client, ConsumerBase<T1> consumerBase, long ackTimeoutMillis) : this(client, consumerBase, ackTimeoutMillis, ackTimeoutMillis)
+		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : this(client, consumerBase, ackTimeoutMillis, ackTimeoutMillis)
 		{
 		}
 
-		private static readonly FastThreadLocal<HashSet<MessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
+		private static readonly FastThreadLocal<HashSet<IMessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
 
-		private class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<MessageId>>
+		private class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<IMessageId>>
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected java.util.HashSet<org.apache.pulsar.client.api.MessageId> initialValue() throws Exception
-			protected internal override HashSet<MessageId> initialValue()
+			protected internal override HashSet<MessageId> InitialValue()
 			{
-				return new HashSet<MessageId>();
+				return new HashSet<IMessageId>();
 			}
 		}
 
-		public UnAckedMessageTracker<T1>(PulsarClientImpl client, ConsumerBase<T1> consumerBase, long ackTimeoutMillis, long tickDurationInMs)
+		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationInMs)
 		{
 			Preconditions.checkArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
 			this.ackTimeoutMillis = ackTimeoutMillis;
@@ -132,10 +133,10 @@ namespace SharpPulsar.Impl
 			private readonly UnAckedMessageTracker outerInstance;
 
 			private SharpPulsar.Impl.PulsarClientImpl client;
-			private SharpPulsar.Impl.ConsumerBase<T1> consumerBase;
+			private SharpPulsar.Impl.ConsumerBase<T> consumerBase;
 			private long tickDurationInMs;
 
-			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, SharpPulsar.Impl.PulsarClientImpl client, SharpPulsar.Impl.ConsumerBase<T1> consumerBase, long tickDurationInMs)
+			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, SharpPulsar.Impl.PulsarClientImpl client, SharpPulsar.Impl.ConsumerBase<T> consumerBase, long tickDurationInMs)
 			{
 				this.outerInstance = outerInstance;
 				this.client = client;
@@ -143,8 +144,6 @@ namespace SharpPulsar.Impl
 				this.tickDurationInMs = tickDurationInMs;
 			}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout t) throws Exception
 			public override void run(Timeout t)
 			{
 				ISet<MessageId> messageIds = TL_MESSAGE_IDS_SET.get();

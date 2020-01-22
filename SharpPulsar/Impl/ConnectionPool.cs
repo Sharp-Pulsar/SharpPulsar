@@ -35,7 +35,6 @@ namespace SharpPulsar.Impl
 	using EventLoopGroup = DotNetty.Transport.Channels.AffinitizedEventLoopGroup;
 	using DnsNameResolver = DotNetty.Transport.Bootstrapping.DefaultNameResolver;
 	//using DnsNameResolverBuilder = DotNetty.Transport.Bootstrapping.DnsNameResolverBuilder;
-	
 
 	public class ConnectionPool : IDisposable
 	{
@@ -46,7 +45,7 @@ namespace SharpPulsar.Impl
 		private readonly int maxConnectionsPerHosts;
 
 		protected internal readonly DnsNameResolver dnsResolver;
-		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () -> new ClientCnx(conf, eventLoopGroup))
+		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () => new ClientConnection(conf, eventLoopGroup))
 		{
 		}
 		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, Func<ClientConnection> clientCnxSupplier)
@@ -72,7 +71,7 @@ namespace SharpPulsar.Impl
 				log.error("Failed to create channel initializer");
 				throw new PulsarClientException(e);
 			}
-
+			var dns = new DnsNameResolver();
 			dnsResolver = (new DnsNameResolverBuilder(eventLoopGroup.GetNext())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(eventLoopGroup)).build();
 		}
 

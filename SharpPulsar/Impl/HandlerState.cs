@@ -19,7 +19,7 @@
 namespace SharpPulsar.Impl
 {
 
-	internal abstract class HandlerState
+	public abstract class HandlerState
 	{
 		protected internal readonly PulsarClientImpl client;
 		protected internal readonly string topic;

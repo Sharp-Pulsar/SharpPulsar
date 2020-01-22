@@ -21,14 +21,14 @@
 namespace SharpPulsar.Impl
 {
 
-	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
+	public class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker
 	{
 
-		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl client, ConsumerBase<T1> consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
 		{
 		}
 
-		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl client, ConsumerBase<T1> consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
 		{
 		}
 
@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl
 			try
 			{
 				int removed = 0;
-				IEnumerator<MessageId> iterator = messageIdPartitionMap.Keys.GetEnumerator();
+				IEnumerator<IMessageId> iterator = messageIdPartitionMap.Keys.GetEnumerator();
 				while (iterator.MoveNext())
 				{
 					MessageId messageId = iterator.Current;
@@ -49,7 +49,6 @@ namespace SharpPulsar.Impl
 						{
 							exist.remove(messageId);
 						}
-//JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
 						iterator.remove();
 						removed++;
 					}

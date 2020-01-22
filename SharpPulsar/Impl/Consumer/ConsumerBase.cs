@@ -36,6 +36,11 @@ namespace SharpPulsar.Impl
     using static SharpPulsar.Common.PulsarApi.CommandAck;
     using SharpPulsar.Enum;
     using static SharpPulsar.Common.PulsarApi.CommandSubscribe;
+    using SharpPulsar.Impl.Internal;
+    using SharpPulsar.Common.PulsarApi;
+    using SharpPulsar.Impl.Internal.Interface;
+    using System.Threading;
+    using SharpPulsar.Interface.Interceptor;
 
     public abstract class ConsumerBase<T> : IConsumer<T>
 	{
@@ -45,32 +50,41 @@ namespace SharpPulsar.Impl
 			PARTITIONED,
 			NON_PARTITIONED
 		}
-
-		protected internal readonly string subscription;
-		protected internal readonly ConsumerConfigurationData<T> conf;
-		protected internal readonly string consumerName;
-		protected internal readonly ValueTask<IConsumer<T>> subscribeAsync;
-		protected internal readonly IMessageListener<T> listener;
-		protected internal readonly IConsumerEventListener consumerEventListener;
-		protected internal readonly ExecutorService listenerExecutor;
+		private readonly Executor _executor;
+		private readonly CommandAck _cachedCommandAck;
+		private readonly IConsumerStreamFactory _streamFactory;
+		private readonly IFaultStrategy _faultStrategy;
+		private readonly bool _setProxyState;
+		private readonly StateManager<IConsumerStats> _stateManager;
+		private readonly CancellationTokenSource _connectTokenSource;
+		private readonly Task _connectTask;
+		private Action _throwIfClosedOrFaulted;
+		private IConsumerStream Stream { get; set; }
+		private readonly string subscription;
+		private readonly ConsumerConfigurationData<T> _conf;
+		private readonly string consumerName;
+		private readonly ValueTask<IConsumer<T>> _subscribeAsync;
+		private readonly IMessageListener<T> listener;
+		private readonly IConsumerEventListener consumerEventListener;
+		private readonly ExecutorService listenerExecutor;
 		internal readonly GrowableArrayBlockingQueue<IMessage<T>> incomingMessages;
-		protected internal readonly ConcurrentLinkedQueue<CompletableFuture<Message<T>>> pendingReceives;
-		protected internal int maxReceiverQueueSize;
-		protected internal readonly ISchema<T> schema;
-		protected internal readonly ConsumerInterceptors<T> interceptors;
-		protected internal readonly BatchReceivePolicy batchReceivePolicy;
-		protected internal ConcurrentLinkedQueue<OpBatchReceive<T>> pendingBatchReceives;
-		protected internal static readonly AtomicLongFieldUpdater<ConsumerBase> INCOMING_MESSAGES_SIZE_UPDATER = AtomicLongFieldUpdater.newUpdater(typeof(ConsumerBase), "incomingMessagesSize");
-		protected internal volatile int incomingMessagesSize = 0;
-		protected internal volatile Timeout batchReceiveTimeout = null;
+		private readonly ConcurrentLinkedQueue<CompletableFuture<Message<T>>> pendingReceives;
+		private int maxReceiverQueueSize;
+		private readonly ISchema<T> schema;
+		private readonly ConsumerInterceptors<T> interceptors;
+		private readonly BatchReceivePolicy batchReceivePolicy;
+		private ConcurrentLinkedQueue<OpBatchReceive<T>> pendingBatchReceives;
+		private static readonly AtomicLongFieldUpdater<ConsumerBase> INCOMING_MESSAGES_SIZE_UPDATER = AtomicLongFieldUpdater.newUpdater(typeof(ConsumerBase), "incomingMessagesSize");
+		private volatile int incomingMessagesSize = 0;
+		private volatile Timeout batchReceiveTimeout = null;
 
-		protected internal ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, ISchema<T> schema, Disposeasync interceptors) : base(client, topic)
+		private ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, ISchema<T> schema, Disposeasync interceptors) : base(client, topic)
 		{
 			maxReceiverQueueSize = receiverQueueSize;
 			subscription = conf.SubscriptionName;
-			this.conf = conf;
+			_conf = conf;
 			consumerName = conf.ConsumerName == null ? Util.ConsumerName.GenerateRandomName() : conf.ConsumerName;
-			subscribeAsync = subscribeFuture;
+			_subscribeAsync = subscribeFuture;
 			listener = conf.MessageListener;
 			consumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
@@ -122,9 +136,9 @@ namespace SharpPulsar.Impl
 			return InternalReceiveAsync();
 		}
 
-		protected internal abstract IMessage<T> InternalReceive();
+		private abstract IMessage<T> InternalReceive();
 
-		protected internal abstract ValueTask<IMessage<T>> InternalReceiveAsync();
+		private abstract ValueTask<IMessage<T>> InternalReceiveAsync();
 
 
 		public IMessage<T> Receive(int timeout, TimeUnit unit)
@@ -142,7 +156,7 @@ namespace SharpPulsar.Impl
 			return InternalReceive(timeout, unit);
 		}
 
-		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
+		private abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
 
 		public IMessages<T> BatchReceive()
 		{
@@ -165,9 +179,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal abstract IMessages<T> InternalBatchReceive();
+		private abstract IMessages<T> InternalBatchReceive();
 
-		protected internal abstract ValueTask<IMessages<T>> InternalBatchReceiveAsync();
+		private abstract ValueTask<IMessages<T>> InternalBatchReceiveAsync();
 
 		public void Acknowledge(IMessage<T> message)
 		{
@@ -315,7 +329,7 @@ namespace SharpPulsar.Impl
 			NegativeAcknowledge(message.MessageId);
 		}
 
-		protected internal virtual ValueTask DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
+		private virtual ValueTask DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
 		{
 			var ack = DoAcknowledge(messageId, ackType, properties, txn);
 			if (txn != null)
@@ -333,7 +347,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal abstract ValueTask DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
+		private abstract ValueTask DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
 		public void NegativeAcknowledge(IMessages<T> messages)
 		{
 			foreach(var m in messages)
@@ -344,7 +358,7 @@ namespace SharpPulsar.Impl
 		{
 			try
 			{
-				UnsubscribeAsync();
+				Un_subscribeAsync();
 			}
 			catch (System.Exception e)
 			{
@@ -352,7 +366,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public abstract ValueTask UnsubscribeAsync();
+		public abstract ValueTask Un_subscribeAsync();
 
 		public void Close()
 		{
@@ -390,7 +404,7 @@ namespace SharpPulsar.Impl
 			return SubscriptionType.Shared != type && SubscriptionType.Key_Shared != type;
 		}
 
-		protected internal virtual SubType SubType
+		private virtual SubType SubType
 		{
 			get
 			{
@@ -417,9 +431,9 @@ namespace SharpPulsar.Impl
 
 		public abstract int NumMessagesInQueue();
 
-		public virtual ValueTask<IConsumer<T>> SubscribeAsync()
+		public virtual ValueTask<IConsumer<T>> _subscribeAsync()
 		{
-			return subscribeAsync;
+			return _subscribeAsync;
 		}
 
 		public string Topic
@@ -459,7 +473,7 @@ namespace SharpPulsar.Impl
 			return "ConsumerBase{" + "subscription='" + subscription + '\'' + ", consumerName='" + consumerName + '\'' + ", topic='" + topic + '\'' + '}';
 		}
 
-		protected internal virtual int MaxReceiverQueueSize
+		private virtual int MaxReceiverQueueSize
 		{
 			set
 			{
@@ -467,7 +481,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
+		private virtual IMessage<T> BeforeConsume(IMessage<T> message)
 		{
 			if (interceptors != null)
 			{
@@ -479,7 +493,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void OnAcknowledge(IMessageId messageId, System.Exception exception)
+		private virtual void OnAcknowledge(IMessageId messageId, System.Exception exception)
 		{
 			if (interceptors != null)
 			{
@@ -487,7 +501,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void OnAcknowledgeCumulative(IMessageId messageId, System.Exception exception)
+		private virtual void OnAcknowledgeCumulative(IMessageId messageId, System.Exception exception)
 		{
 			if (interceptors != null)
 			{
@@ -495,7 +509,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
+		private virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
 		{
 			if (interceptors != null)
 			{
@@ -503,7 +517,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
+		private virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
 		{
 			if (interceptors != null)
 			{
@@ -511,13 +525,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual bool CanEnqueueMessage(IMessage<T> message)
+		private virtual bool CanEnqueueMessage(IMessage<T> message)
 		{
 			// Default behavior, can be overridden in subclasses
 			return true;
 		}
 
-		protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
+		private virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
 			if (CanEnqueueMessage(message))
 			{
@@ -527,7 +541,7 @@ namespace SharpPulsar.Impl
 			return HasEnoughMessagesForBatchReceive();
 		}
 
-		protected internal virtual bool HasEnoughMessagesForBatchReceive()
+		private virtual bool HasEnoughMessagesForBatchReceive()
 		{
 			if (batchReceivePolicy.MaxNumMessages <= 0 && batchReceivePolicy.MaxNumMessages <= 0)
 			{
@@ -568,7 +582,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal sealed class OpBatchReceive
+		private sealed class OpBatchReceive
 		{
 
 			internal readonly ValueTask<IMessages<T>> future;
@@ -586,7 +600,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual void NotifyPendingBatchReceivedCallBack()
+		private virtual void NotifyPendingBatchReceivedCallBack()
 		{
 			OpBatchReceive opBatchReceive = pendingBatchReceives.poll();
 			if (opBatchReceive == null || opBatchReceive.future == null)
@@ -596,7 +610,7 @@ namespace SharpPulsar.Impl
 			NotifyPendingBatchReceivedCallBack(opBatchReceive);
 		}
 
-		protected internal virtual void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
+		private virtual void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
 		{
 			MessagesImpl<T> messages = NewMessagesImpl;
 			IMessage<T> msgPeeked = incomingMessages.Peek();
@@ -622,7 +636,7 @@ namespace SharpPulsar.Impl
 			opBatchReceive.future.IsCompleted;
 		}
 
-		protected internal abstract void MessageProcessed<T1>(IMessage<T1> msg);
+		private abstract void MessageProcessed<T1>(IMessage<T1> msg);
 		public override void Run(Timeout timeout)
 		{
 			if (timeout.Cancelled)
@@ -671,7 +685,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal virtual MessagesImpl<T> NewMessagesImpl
+		private virtual MessagesImpl<T> NewMessagesImpl
 		{
 			get
 			{
@@ -682,12 +696,12 @@ namespace SharpPulsar.Impl
 		public abstract IConsumerStats Stats { get; }
 		public abstract bool Connected { get; }
 
-		protected internal virtual bool HasPendingBatchReceive()
+		private virtual bool HasPendingBatchReceive()
 		{
 			return pendingBatchReceives != null && !pendingBatchReceives.Empty;
 		}
 
-		protected internal abstract void CompleteOpBatchReceive(OpBatchReceive op);
+		private abstract void CompleteOpBatchReceive(OpBatchReceive op);
 		public abstract void NegativeAcknowledge(IMessageId messageId);
 		public abstract bool HasReachedEndOfTopic();
 		public abstract void RedeliverUnacknowledgedMessages();

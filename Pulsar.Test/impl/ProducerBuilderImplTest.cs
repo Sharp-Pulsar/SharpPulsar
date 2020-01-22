@@ -59,9 +59,6 @@ namespace org.apache.pulsar.client.impl
 			when(client.createProducerAsync(any(typeof(ProducerConfigurationData)), any(typeof(Schema)), eq(null))).thenReturn(CompletableFuture.completedFuture(producer));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImpl() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void testProducerBuilderImpl()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();

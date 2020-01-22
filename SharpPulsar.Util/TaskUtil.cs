@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,7 +27,7 @@ namespace org.apache.pulsar.common.util
 	/// <summary>
 	/// This class is aimed at simplifying work with {@code CompletableFuture}.
 	/// </summary>
-	public class FutureUtil
+	public class TaskUtil
 	{
 
 		/// <summary>
@@ -33,23 +35,21 @@ namespace org.apache.pulsar.common.util
 		/// </summary>
 		/// <param name="futures">
 		/// @return </param>
-		public static CompletableFuture<Void> waitForAll<T>(IList<CompletableFuture<T>> futures)
+		public static Task WaitForAll<T>(IList<Task<T>> tasks)
 		{
-			return CompletableFuture.allOf(((List<CompletableFuture<T>>)futures).ToArray());
+			return Task.WhenAll(tasks.ToArray());
 		}
 
-		public static CompletableFuture<T> failedFuture<T>(Exception t)
+		public static ValueTask<T> FailedTask<T>(Exception t)
 		{
-			CompletableFuture<T> future = new CompletableFuture<T>();
-			future.completeExceptionally(t);
-			return future;
+			return new ValueTask<T>(Task.FromException(t));
 		}
 
-		public static Exception unwrapCompletionException(Exception t)
+		public static Exception UnwrapCompletionException(Exception t)
 		{
 			if (t is CompletionException)
 			{
-				return unwrapCompletionException(t.InnerException);
+				return UnwrapCompletionException(t.InnerException);
 			}
 			else
 			{

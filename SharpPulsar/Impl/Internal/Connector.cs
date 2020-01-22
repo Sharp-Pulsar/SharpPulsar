@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl.Internal
                 else
                     sslStream.Dispose();
 
-                throw new DotPulsar.Exceptions.AuthenticationException("Got an authentication exception while trying to establish an encrypted connection. See inner exception for details.", exception);
+                throw new AuthenticationException("Got an authentication exception while trying to establish an encrypted connection. See inner exception for details.", exception);
             }
         }
 
