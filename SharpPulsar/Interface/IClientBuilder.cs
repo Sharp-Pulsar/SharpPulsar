@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interface.Auth;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Interface.Auth;
 using System;
 using System.Collections.Generic;
 

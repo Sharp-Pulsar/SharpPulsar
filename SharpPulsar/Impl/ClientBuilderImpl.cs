@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Configuration;
 using SharpPulsar.Interface;
 using SharpPulsar.Interface.Auth;
+using SharpPulsar.Util;
 using System;
 using System.Collections.Generic;
 
@@ -114,9 +115,9 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IClientBuilder OperationTimeout(int operationTimeout, TimeUnit unit)
+		public IClientBuilder OperationTimeout(int operationTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.OperationTimeoutMs = unit.toMillis(operationTimeout);
+			conf.OperationTimeoutMs = unit.ToMillis(operationTimeout);
 			return this;
 		}
 
@@ -168,9 +169,9 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IClientBuilder StatsInterval(long statsInterval, TimeUnit unit)
+		public IClientBuilder StatsInterval(long statsInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.StatsIntervalSeconds = unit.toSeconds(statsInterval);
+			conf.StatsIntervalSeconds = unit.ToSeconds(statsInterval);
 			return this;
 		}
 
@@ -192,27 +193,27 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IClientBuilder KeepAliveInterval(int keepAliveInterval, TimeUnit unit)
+		public IClientBuilder KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.KeepAliveIntervalSeconds = (int)unit.toSeconds(keepAliveInterval);
+			conf.KeepAliveIntervalSeconds = (int)unit.ToSeconds(keepAliveInterval);
 			return this;
 		}
 
-		public IClientBuilder ConnectionTimeout(int duration, TimeUnit unit)
+		public IClientBuilder ConnectionTimeout(int duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.ConnectionTimeoutMs = (int)unit.toMillis(duration);
+			conf.ConnectionTimeoutMs = (int)unit.ToMillis(duration);
 			return this;
 		}
 
-		public IClientBuilder StartingBackoffInterval(long duration, TimeUnit unit)
+		public IClientBuilder StartingBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.InitialBackoffIntervalNanos = unit.toNanos(duration);
+			conf.InitialBackoffIntervalNanos = unit.ToNanos(duration);
 			return this;
 		}
 
-		public IClientBuilder MaxBackoffInterval(long duration, TimeUnit unit)
+		public IClientBuilder MaxBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.MaxBackoffIntervalNanos = unit.toNanos(duration);
+			conf.MaxBackoffIntervalNanos = unit.ToNanos(duration);
 			return this;
 		}
 
