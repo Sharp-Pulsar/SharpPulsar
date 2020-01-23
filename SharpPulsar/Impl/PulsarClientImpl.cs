@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,59 +24,8 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.commons.lang3.StringUtils.isBlank;
 
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using CacheBuilder = com.google.common.cache.CacheBuilder;
-	using CacheLoader = com.google.common.cache.CacheLoader;
-	using LoadingCache = com.google.common.cache.LoadingCache;
-	using Lists = com.google.common.collect.Lists;
-	using Maps = com.google.common.collect.Maps;
-
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using HashedWheelTimer = io.netty.util.HashedWheelTimer;
-	using Timer = io.netty.util.Timer;
-	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-
-
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Consumer = SharpPulsar.Api.Consumer;
-	using SharpPulsar.Api;
-	using Producer = SharpPulsar.Api.Producer;
-	using SharpPulsar.Api;
-	using PulsarClient = SharpPulsar.Api.PulsarClient;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using Reader = SharpPulsar.Api.Reader;
-	using SharpPulsar.Api;
-	using RegexSubscriptionMode = SharpPulsar.Api.RegexSubscriptionMode;
-	using SharpPulsar.Api;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
-	using AuthenticationFactory = SharpPulsar.Api.AuthenticationFactory;
-	using TransactionBuilder = SharpPulsar.Api.Transaction.TransactionBuilder;
-	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using SharpPulsar.Impl.Conf;
-	using ProducerConfigurationData = SharpPulsar.Impl.Conf.ProducerConfigurationData;
-	using SharpPulsar.Impl.Conf;
-	using AutoConsumeSchema = SharpPulsar.Impl.Schema.AutoConsumeSchema;
-	using SharpPulsar.Impl.Schema;
-	using MultiVersionSchemaInfoProvider = SharpPulsar.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
-	using TransactionBuilderImpl = SharpPulsar.Impl.Transaction.TransactionBuilderImpl;
-	using ExecutorProvider = SharpPulsar.Util.ExecutorProvider;
-	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
-	using TopicDomain = Org.Apache.Pulsar.Common.Naming.TopicDomain;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	public class PulsarClientImpl : PulsarClient
+	public class PulsarClientImpl : IPulsarClient
 	{
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarClientImpl));
@@ -93,11 +44,7 @@ namespace SharpPulsar.Impl
 		}
 
 		private AtomicReference<State> state = new AtomicReference<State>();
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final java.util.IdentityHashMap<ProducerBase<?>, bool> producers;
 		private readonly IdentityHashMap<ProducerBase<object>, bool> producers;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final java.util.IdentityHashMap<ConsumerBase<?>, bool> consumers;
 		private readonly IdentityHashMap<ConsumerBase<object>, bool> consumers;
 
 		private readonly AtomicLong producerIdGenerator = new AtomicLong();
@@ -118,21 +65,15 @@ namespace SharpPulsar.Impl
 		}
 
 		public virtual ClientClock {get;}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.impl.conf.ClientConfigurationData conf) throws SharpPulsar.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, GetEventLoopGroup(Conf))
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws SharpPulsar.api.PulsarClientException
+
 		public PulsarClientImpl(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, new ConnectionPool(Conf, EventLoopGroup))
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, ConnectionPool cnxPool) throws SharpPulsar.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup, ConnectionPool CnxPool)
 		{
 			if (Conf == null || isBlank(Conf.ServiceUrl) || EventLoopGroup == null)
@@ -160,8 +101,6 @@ namespace SharpPulsar.Impl
 			state.set(State.Open);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void setAuth(SharpPulsar.impl.conf.ClientConfigurationData conf) throws SharpPulsar.api.PulsarClientException
 		private ClientConfigurationData Auth
 		{
 			set
@@ -176,8 +115,6 @@ namespace SharpPulsar.Impl
 		}
 
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public java.time.Clock getClientClock()
 
 		public override ProducerBuilder<sbyte[]> NewProducer()
 		{
@@ -209,17 +146,17 @@ namespace SharpPulsar.Impl
 			return new ReaderBuilderImpl<T>(this, Schema);
 		}
 
-		public virtual CompletableFuture<Producer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData Conf)
+		public virtual ValueTask<IProducer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData Conf)
 		{
 			return CreateProducerAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		public virtual CompletableFuture<Producer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema)
 		{
 			return CreateProducerAsync(Conf, Schema, null);
 		}
 
-		public virtual CompletableFuture<Producer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
 		{
 			if (Conf == null)
 			{
@@ -270,9 +207,9 @@ namespace SharpPulsar.Impl
 
 		}
 
-		private CompletableFuture<Producer<T>> CreateProducerAsync<T>(string Topic, ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
+		private ValueTask<Producer<T>> CreateProducerAsync<T>(string Topic, ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
 		{
-			CompletableFuture<Producer<T>> ProducerCreatedFuture = new CompletableFuture<Producer<T>>();
+			ValueTask<Producer<T>> ProducerCreatedFuture = new ValueTask<Producer<T>>();
 
 			GetPartitionedTopicMetadata(Topic).thenAccept(metadata =>
 			{
@@ -303,12 +240,12 @@ namespace SharpPulsar.Impl
 			return ProducerCreatedFuture;
 		}
 
-		public virtual CompletableFuture<Consumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<Consumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
 			return SubscribeAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		public virtual CompletableFuture<Consumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		public virtual ValueTask<Consumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
 			if (state.get() != State.Open)
 			{
@@ -359,14 +296,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private CompletableFuture<Consumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<Consumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
 			return PreProcessSchemaBeforeSubscribe(this, Schema, Conf.SingleTopic).thenCompose(ignored => DoSingleTopicSubscribeAsync(Conf, Schema, Interceptors));
 		}
 
-		private CompletableFuture<Consumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<Consumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			CompletableFuture<Consumer<T>> ConsumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
 
 			string Topic = Conf.SingleTopic;
 
@@ -401,9 +338,9 @@ namespace SharpPulsar.Impl
 			return ConsumerSubscribedFuture;
 		}
 
-		private CompletableFuture<Consumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<Consumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			CompletableFuture<Consumer<T>> ConsumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
 
 			ConsumerBase<T> Consumer = new MultiTopicsConsumerImpl<T>(PulsarClientImpl.this, Conf, externalExecutorProvider.Executor, ConsumerSubscribedFuture, Schema, Interceptors, true);
 
@@ -415,19 +352,19 @@ namespace SharpPulsar.Impl
 			return ConsumerSubscribedFuture;
 		}
 
-		public virtual CompletableFuture<Consumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<Consumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
 			return PatternTopicSubscribeAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		private CompletableFuture<Consumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<Consumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
 			string Regex = Conf.TopicsPattern.pattern();
 			Mode SubscriptionMode = ConvertRegexSubscriptionMode(Conf.RegexSubscriptionMode);
 			TopicName Destination = TopicName.get(Regex);
 			NamespaceName NamespaceName = Destination.NamespaceObject;
 
-			CompletableFuture<Consumer<T>> ConsumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
 			Lookup.GetTopicsUnderNamespace(NamespaceName, SubscriptionMode).thenAccept(topics =>
 			{
 			if (log.DebugEnabled)
@@ -464,17 +401,17 @@ namespace SharpPulsar.Impl
 			return Original.Select(TopicName.get).Select(TopicName::toString).Where(topic => ShortenedTopicsPattern.matcher(topic.Split(@"\:\/\/")[1]).matches()).ToList();
 		}
 
-		public virtual CompletableFuture<Reader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<Reader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> Conf)
 		{
 			return CreateReaderAsync(Conf, SchemaFields.BYTES);
 		}
 
-		public virtual CompletableFuture<Reader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
+		public virtual ValueTask<Reader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
 		{
 			return PreProcessSchemaBeforeSubscribe(this, Schema, Conf.TopicName).thenCompose(ignored => DoCreateReaderAsync(Conf, Schema));
 		}
 
-		public virtual CompletableFuture<Reader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
+		public virtual ValueTask<Reader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
 		{
 			if (state.get() != State.Open)
 			{
@@ -498,7 +435,7 @@ namespace SharpPulsar.Impl
 				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Invalid startMessageId"));
 			}
 
-			CompletableFuture<Reader<T>> ReaderFuture = new CompletableFuture<Reader<T>>();
+			ValueTask<Reader<T>> ReaderFuture = new ValueTask<Reader<T>>();
 
 			GetPartitionedTopicMetadata(Topic).thenAccept(metadata =>
 			{
@@ -511,7 +448,7 @@ namespace SharpPulsar.Impl
 				ReaderFuture.completeExceptionally(new PulsarClientException("Topic reader cannot be created on a partitioned topic"));
 				return;
 			}
-			CompletableFuture<Consumer<T>> ConsumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
 			ExecutorService ListenerThread = externalExecutorProvider.Executor;
 			ReaderImpl<T> Reader = new ReaderImpl<T>(PulsarClientImpl.this, Conf, ListenerThread, ConsumerSubscribedFuture, Schema);
 			lock (consumers)
@@ -542,7 +479,7 @@ namespace SharpPulsar.Impl
 		/// 
 		/// If the topic does not exist or it has no schema associated, it will return an empty response
 		/// </summary>
-		public virtual CompletableFuture<Optional<SchemaInfo>> GetSchema(string Topic)
+		public virtual ValueTask<Optional<SchemaInfo>> GetSchema(string Topic)
 		{
 			TopicName TopicName;
 			try
@@ -571,7 +508,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Void> CloseAsync()
+		public override ValueTask<Void> CloseAsync()
 		{
 			log.info("Client closing. URL: {}", Lookup.ServiceUrl);
 			if (!state.compareAndSet(State.Open, State.Closing))
@@ -580,9 +517,9 @@ namespace SharpPulsar.Impl
 			}
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> closeFuture = new java.util.concurrent.CompletableFuture<>();
-			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
-			IList<CompletableFuture<Void>> Futures = Lists.newArrayList();
+//ORIGINAL LINE: final java.util.concurrent.ValueTask<Void> closeFuture = new java.util.concurrent.ValueTask<>();
+			ValueTask<Void> CloseFuture = new ValueTask<Void>();
+			IList<ValueTask<Void>> Futures = Lists.newArrayList();
 
 			lock (producers)
 			{
@@ -660,7 +597,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<ClientCnx> GetConnection(in string Topic)
+		public virtual ValueTask<ClientCnx> GetConnection(in string Topic)
 		{
 			TopicName TopicName = TopicName.get(Topic);
 			return Lookup.GetBroker(TopicName).thenCompose(pair => CnxPool.GetConnection(pair.Left, pair.Right));
@@ -714,15 +651,15 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<int> GetNumberOfPartitions(string Topic)
+		public virtual ValueTask<int> GetNumberOfPartitions(string Topic)
 		{
 			return GetPartitionedTopicMetadata(Topic).thenApply(metadata => metadata.partitions);
 		}
 
-		public virtual CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string Topic)
+		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string Topic)
 		{
 
-			CompletableFuture<PartitionedTopicMetadata> MetadataFuture = new CompletableFuture<PartitionedTopicMetadata>();
+			ValueTask<PartitionedTopicMetadata> MetadataFuture = new ValueTask<PartitionedTopicMetadata>();
 
 			try
 			{
@@ -738,7 +675,7 @@ namespace SharpPulsar.Impl
 			return MetadataFuture;
 		}
 
-		private void GetPartitionedTopicMetadata(TopicName TopicName, Backoff Backoff, AtomicLong RemainingTime, CompletableFuture<PartitionedTopicMetadata> Future)
+		private void GetPartitionedTopicMetadata(TopicName TopicName, Backoff Backoff, AtomicLong RemainingTime, ValueTask<PartitionedTopicMetadata> Future)
 		{
 			Lookup.GetPartitionedTopicMetadata(TopicName).thenAccept(Future.complete).exceptionally(e =>
 			{
@@ -759,7 +696,7 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		public override CompletableFuture<IList<string>> GetPartitionsForTopic(string Topic)
+		public override ValueTask<IList<string>> GetPartitionsForTopic(string Topic)
 		{
 			return GetPartitionedTopicMetadata(Topic).thenApply(metadata =>
 			{
@@ -856,8 +793,8 @@ namespace SharpPulsar.Impl
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") protected java.util.concurrent.CompletableFuture<Void> preProcessSchemaBeforeSubscribe(PulsarClientImpl pulsarClientImpl, SharpPulsar.api.Schema schema, String topicName)
-		public virtual CompletableFuture<Void> PreProcessSchemaBeforeSubscribe(PulsarClientImpl PulsarClientImpl, Schema Schema, string TopicName)
+//ORIGINAL LINE: @SuppressWarnings("unchecked") protected java.util.concurrent.ValueTask<Void> preProcessSchemaBeforeSubscribe(PulsarClientImpl pulsarClientImpl, SharpPulsar.api.Schema schema, String topicName)
+		public virtual ValueTask<Void> PreProcessSchemaBeforeSubscribe(PulsarClientImpl PulsarClientImpl, Schema Schema, string TopicName)
 		{
 			if (Schema != null && Schema.supportSchemaVersioning())
 			{
@@ -895,7 +832,7 @@ namespace SharpPulsar.Impl
 						return FutureUtil.failedFuture(Re);
 					}
 					Schema.SchemaInfoProvider = SchemaInfoProvider;
-					return CompletableFuture.completedFuture(null);
+					return ValueTask.completedFuture(null);
 					});
 				}
 				else
@@ -903,7 +840,7 @@ namespace SharpPulsar.Impl
 					Schema.SchemaInfoProvider = SchemaInfoProvider;
 				}
 			}
-			return CompletableFuture.completedFuture(null);
+			return ValueTask.completedFuture(null);
 		}
 
 		//

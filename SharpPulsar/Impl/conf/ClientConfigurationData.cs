@@ -1,4 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Util;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,13 +23,6 @@
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using Authentication = SharpPulsar.Api.Authentication;
-	using ServiceUrlProvider = SharpPulsar.Api.ServiceUrlProvider;
-	using AuthenticationDisabled = SharpPulsar.Impl.Auth.AuthenticationDisabled;
 
 
 	/// <summary>
@@ -44,9 +40,6 @@ namespace SharpPulsar.Impl.Conf
 //ORIGINAL LINE: @JsonIgnore private transient SharpPulsar.api.ServiceUrlProvider serviceUrlProvider;
 		[NonSerialized]
 		private ServiceUrlProvider serviceUrlProvider;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private transient SharpPulsar.api.Authentication authentication = new SharpPulsar.impl.auth.AuthenticationDisabled();
 		[NonSerialized]
 		private Authentication authentication = new AuthenticationDisabled();
 		private string authPluginClassName;
@@ -71,14 +64,11 @@ namespace SharpPulsar.Impl.Conf
 		private int keepAliveIntervalSeconds = 30;
 		private int connectionTimeoutMs = 10000;
 		private int requestTimeoutMs = 60000;
-		private long initialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toNanos(100);
-		private long maxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.toNanos(60);
+		private long initialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
+		private long maxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
+		private DateTime clock = DateTime.Now;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private java.time.Clock clock = java.time.Clock.systemDefaultZone();
-		private Clock clock = Clock.systemDefaultZone();
-
-		public virtual Authentication Authentication
+		public virtual IAuthentication Authentication
 		{
 			get
 			{
@@ -115,7 +105,7 @@ namespace SharpPulsar.Impl.Conf
 			}
 			catch (CloneNotSupportedException)
 			{
-				throw new Exception("Failed to clone ClientConfigurationData");
+				throw new System.Exception("Failed to clone ClientConfigurationData");
 			}
 		}
 

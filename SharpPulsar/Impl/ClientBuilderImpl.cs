@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl
 	using Authentication = SharpPulsar.Api.Authentication;
 	using AuthenticationFactory = SharpPulsar.Api.AuthenticationFactory;
 	using ClientBuilder = SharpPulsar.Api.ClientBuilder;
-	using PulsarClient = SharpPulsar.Api.PulsarClient;
+	using IPulsarClient = SharpPulsar.Api.IPulsarClient;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using UnsupportedAuthenticationException = SharpPulsar.Api.PulsarClientException.UnsupportedAuthenticationException;
 	using ServiceUrlProvider = SharpPulsar.Api.ServiceUrlProvider;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.PulsarClient build() throws SharpPulsar.api.PulsarClientException
-		public override PulsarClient Build()
+		public override IPulsarClient Build()
 		{
 			if (StringUtils.isBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
 			{
@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
 					Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
 				}
 			}
-			PulsarClient Client = new PulsarClientImpl(Conf);
+			IPulsarClient Client = new PulsarClientImpl(Conf);
 			if (Conf.ServiceUrlProvider != null)
 			{
 				Conf.ServiceUrlProvider.initialize(Client);

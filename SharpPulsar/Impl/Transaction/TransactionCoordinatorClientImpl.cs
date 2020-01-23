@@ -23,7 +23,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using PulsarClient = SharpPulsar.Api.PulsarClient;
+	using IPulsarClient = SharpPulsar.Api.IPulsarClient;
 	using TransactionCoordinatorClient = SharpPulsar.Api.Transaction.TransactionCoordinatorClient;
 	using TransactionCoordinatorClientException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException;
 	using CoordinatorClientStateException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException.CoordinatorClientStateException;
@@ -52,7 +52,7 @@ namespace SharpPulsar.Impl.Transaction
 		private static readonly AtomicReferenceFieldUpdater<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(TransactionCoordinatorClientImpl), typeof(TransactionCoordinatorClientState), "state");
 		private volatile TransactionCoordinatorClientState state = TransactionCoordinatorClientState.NONE;
 
-		public TransactionCoordinatorClientImpl(PulsarClient PulsarClient)
+		public TransactionCoordinatorClientImpl(IPulsarClient PulsarClient)
 		{
 			this.pulsarClient = (PulsarClientImpl) PulsarClient;
 		}

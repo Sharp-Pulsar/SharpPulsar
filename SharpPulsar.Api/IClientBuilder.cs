@@ -26,7 +26,7 @@ namespace SharpPulsar.Api
 	using UnsupportedAuthenticationException = UnsupportedAuthenticationException;
 
 	/// <summary>
-	/// Builder interface that is used to configure and construct a <seealso cref="PulsarClient"/> instance.
+	/// Builder interface that is used to configure and construct a <seealso cref="IPulsarClient"/> instance.
 	/// 
 	/// @since 2.0.0
 	/// </summary>
@@ -34,10 +34,10 @@ namespace SharpPulsar.Api
 	{
 
 		/// <summary>
-		/// Construct the final <seealso cref="PulsarClient"/> instance.
+		/// Construct the final <seealso cref="IPulsarClient"/> instance.
 		/// </summary>
-		/// <returns> the new <seealso cref="PulsarClient"/> instance </returns>
-		PulsarClient Build();
+		/// <returns> the new <seealso cref="IPulsarClient"/> instance </returns>
+		IPulsarClient Build();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -312,7 +312,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Number of concurrent lookup-requests allowed to send on each broker-connection to prevent overload on broker.
 		/// <i>(default: 5000)</i> It should be configured with higher value only in case of it requires to produce/subscribe
-		/// on thousands of topic using created <seealso cref="PulsarClient"/>.
+		/// on thousands of topic using created <seealso cref="IPulsarClient"/>.
 		/// </summary>
 		/// <param name="maxConcurrentLookupRequests"> </param>
 		/// <returns> the client builder instance </returns>

@@ -28,7 +28,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
 	/// </summary>
-	/// <seealso cref= PulsarClient#newProducer() </seealso>
+	/// <seealso cref= IPulsarClient#newProducer() </seealso>
 	/// <seealso cref= PulsarClient#newProducer(Schema) </seealso>
 	public interface ProducerBuilder<T> : ICloneable
 	{

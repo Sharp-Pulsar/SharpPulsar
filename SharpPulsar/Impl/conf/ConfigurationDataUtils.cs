@@ -1,5 +1,8 @@
-﻿using System;
+﻿using DotNetty.Common;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,12 +24,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-	using Include = com.fasterxml.jackson.annotation.JsonInclude.Include;
-	using DeserializationFeature = com.fasterxml.jackson.databind.DeserializationFeature;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using Maps = com.google.common.collect.Maps;
-	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
-
 	/// <summary>
 	/// Utils for loading configuration data.
 	/// </summary>
@@ -35,21 +32,14 @@ namespace SharpPulsar.Impl.Conf
 
 		public static ObjectMapper Create()
 		{
-			ObjectMapper Mapper = new ObjectMapper();
-			// forward compatibility for the properties may go away in the future
-			Mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-			Mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, false);
-			Mapper.SerializationInclusion = Include.NON_NULL;
-			return Mapper;
+			return new ObjectMapper();
 		}
 
 		private static readonly FastThreadLocal<ObjectMapper> mapper = new FastThreadLocalAnonymousInnerClass();
 
 		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<ObjectMapper>
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected com.fasterxml.jackson.databind.ObjectMapper initialValue() throws Exception
-			public override ObjectMapper initialValue()
+			public ObjectMapper InitialValue()
 			{
 				return Create();
 			}
@@ -59,7 +49,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 			get
 			{
-				return mapper.get();
+				return mapper.Value;
 			}
 		}
 
@@ -69,27 +59,44 @@ namespace SharpPulsar.Impl.Conf
 
 		public static T LoadData<T>(IDictionary<string, object> Config, T ExistingData, Type DataCls)
 		{
-			ObjectMapper Mapper = ThreadLocal;
+			var Mapper = ThreadLocal;
 			try
 			{
-				string ExistingConfigJson = Mapper.writeValueAsString(ExistingData);
-				IDictionary<string, object> ExistingConfig = Mapper.readValue(ExistingConfigJson, typeof(System.Collections.IDictionary));
-				IDictionary<string, object> NewConfig = Maps.newHashMap();
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
-				NewConfig.putAll(ExistingConfig);
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
-				NewConfig.putAll(Config);
-				string ConfigJson = Mapper.writeValueAsString(NewConfig);
-				return Mapper.readValue(ConfigJson, DataCls);
+				string ExistingConfigJson = Mapper.WriteValueAsString(ExistingData);
+				IDictionary<string, object> existingConfig = Mapper.ReadValue<IDictionary<string, object>>(ExistingConfigJson);
+				IDictionary<string, object> newConfig = new Dictionary<string, object>();
+				newConfig.Add(existingConfig);
+				newConfig.Add(Config);
+				string ConfigJson = Mapper.WriteValueAsString(newConfig);
+				return Mapper.ReadValue<DataCls>(ConfigJson);
 			}
 			catch (IOException E)
 			{
-				throw new Exception("Failed to load config into existing configuration data", E);
+				throw new System.Exception("Failed to load config into existing configuration data", E);
 			}
 
 		}
 
 	}
 
-
+	public class ObjectMapper
+	{
+		public  JsonSerializerOptions Options()
+		{
+			var jsonObject = new JsonSerializerOptions
+			{
+				IgnoreNullValues = true,
+				WriteIndented = true
+			};
+			return jsonObject;
+		}
+		public string WriteValueAsString<T>(T @object)
+		{
+			return JsonSerializer.Serialize(@object, Options());
+		}
+		public T ReadValue<T>(string existingConfigJson)
+		{
+			return JsonSerializer.Deserialize<T>(existingConfigJson);
+		}
+	}
 }

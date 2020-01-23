@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,8 +21,6 @@
 /// </summary>
 namespace SharpPulsar.Api
 {
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-
 	/// <summary>
 	/// Class that provides a client interface to Pulsar.
 	/// 
@@ -38,11 +37,11 @@ namespace SharpPulsar.Api
 	/// }</pre>
 	/// </para>
 	/// </summary>
-	public interface PulsarClient : System.IDisposable
+	public interface IPulsarClient : System.IDisposable
 	{
 
 		/// <summary>
-		/// Get a new builder instance that can used to configure and build a <seealso cref="PulsarClient"/> instance.
+		/// Get a new builder instance that can used to configure and build a <seealso cref="IPulsarClient"/> instance.
 		/// </summary>
 		/// <returns> the <seealso cref="IClientBuilder"/>
 		/// 
@@ -93,7 +92,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ProducerBuilder<T> newProducer<T>(Schema<T> Schema);
+		ProducerBuilder<T> NewProducer<T>(Schema<T> Schema);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -143,7 +142,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IConsumerBuilder<T> newConsumer<T>(Schema<T> Schema);
+		IConsumerBuilder<T> NewConsumer<T>(Schema<T> Schema);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -225,7 +224,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<T> newReader<T>(Schema<T> Schema);
+		ReaderBuilder<T> NewReader<T>(Schema<T> Schema);
 
 		/// <summary>
 		/// Update the service URL this client is using.
@@ -239,8 +238,6 @@ namespace SharpPulsar.Api
 		///            the new service URL this client should connect to </param>
 		/// <exception cref="PulsarClientException">
 		///             in case the serviceUrl is not valid </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws PulsarClientException;
 		void UpdateServiceUrl(string ServiceUrl);
 
 		/// <summary>
@@ -273,8 +270,6 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the close operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override void close() throws PulsarClientException;
 		void Close();
 
 		/// <summary>
@@ -288,7 +283,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the close operation fails </exception>
-		ValueTask<Void> CloseAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Perform immediate shutdown of PulsarClient.
@@ -300,8 +295,6 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the forceful shutdown fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void shutdown() throws PulsarClientException;
 		void Shutdown();
 	}
 

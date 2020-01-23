@@ -35,13 +35,13 @@ namespace SharpPulsar.Api
 		/// Initialize the service url provider with Pulsar client instance.
 		/// 
 		/// <para>This can be used by the provider to force the Pulsar client to reconnect whenever the service url might have
-		/// changed. See <seealso cref="PulsarClient.updateServiceUrl(string)"/>.
+		/// changed. See <seealso cref="IPulsarClient.updateServiceUrl(string)"/>.
 		/// 
 		/// </para>
 		/// </summary>
 		/// <param name="client">
 		///            created pulsar client. </param>
-		void Initialize(PulsarClient Client);
+		void Initialize(IPulsarClient Client);
 
 		/// <summary>
 		/// Get the current service URL the Pulsar client should connect to.

@@ -28,7 +28,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// <seealso cref="ConsumerBuilder"/> is used to configure and create instances of <seealso cref="Consumer"/>.
 	/// </summary>
-	/// <seealso cref= PulsarClient#newConsumer()
+	/// <seealso cref= IPulsarClient#newConsumer()
 	/// 
 	/// @since 2.0.0 </seealso>
 	public interface IConsumerBuilder<T> : ICloneable

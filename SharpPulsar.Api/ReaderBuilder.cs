@@ -25,7 +25,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// <seealso cref="ReaderBuilder"/> is used to configure and create instances of <seealso cref="Reader"/>.
 	/// </summary>
-	/// <seealso cref= PulsarClient#newReader()
+	/// <seealso cref= IPulsarClient#newReader()
 	/// 
 	/// @since 2.0.0 </seealso>
 	public interface ReaderBuilder<T> : ICloneable

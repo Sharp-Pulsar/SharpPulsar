@@ -22,7 +22,7 @@ namespace SharpPulsar.Impl
 
 	public abstract class HandlerState
 	{
-		protected internal readonly PulsarClientImpl ClientConflict;
+		protected internal readonly PulsarClientImpl _client;
 		protected internal readonly string Topic;
 
 		private static readonly ConcurrentDictionary<HandlerState, State> StateUpdater = new ConcurrentDictionary<HandlerState, State>();
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl
 
 		public HandlerState(PulsarClientImpl Client, string Topic)
 		{
-			this.ClientConflict = Client;
+			_client = Client;
 			this.Topic = Topic;
 			StateUpdater[this] =  State.Uninitialized;
 		}
@@ -83,7 +83,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return ClientConflict;
+				return _client;
 			}
 		}
 	}
