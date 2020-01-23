@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar.Api\SharpPulsar.Api.csproj" />
     <ProjectReference Include="..\SharpPulsar.Util\SharpPulsar.Util.csproj" />
   </ItemGroup>
 

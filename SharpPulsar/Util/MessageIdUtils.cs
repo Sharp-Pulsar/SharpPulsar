@@ -18,8 +18,8 @@
 /// </summary>
 namespace SharpPulsar.Util
 {
-	using MessageId = SharpPulsar.Api.MessageId;
-	using MessageIdImpl = SharpPulsar.Impl.MessageIdImpl;
+    using SharpPulsar.Api;
+    using MessageIdImpl = Impl.MessageIdImpl;
 
 	public class MessageIdUtils
 	{

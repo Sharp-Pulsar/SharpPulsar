@@ -18,11 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Util
 {
-	using UtilityClass = lombok.experimental.UtilityClass;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass public class MathUtils
-	public class MathUtils
+	public static class MathUtils
 	{
 		/// <summary>
 		/// Compute sign safe mod

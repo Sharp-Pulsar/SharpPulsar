@@ -1,4 +1,9 @@
 ﻿using System.Collections.Generic;
+using System;
+using SharpPulsar.Util.Atomic;
+using System.Threading.Tasks;
+using System.Linq;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,43 +25,46 @@
 /// </summary>
 namespace SharpPulsar.Util
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
-
-
-	using Lists = com.google.common.collect.Lists;
 
 	public class ExecutorProvider
 	{
 		private readonly int numThreads;
-		private readonly IList<ExecutorService> executors;
-		private readonly AtomicInteger currentThread = new AtomicInteger(0);
+		private readonly IList<Task> _executors;
+		private readonly AtomicInt _currentThread = new AtomicInt(0);
+		private readonly CancellationTokenSource _cancellationToken;
 
-		public ExecutorProvider(int NumThreads, ThreadFactory ThreadFactory)
+		public ExecutorProvider(int NumThreads, Action taskFactory)
 		{
-			checkArgument(NumThreads > 0);
+			_cancellationToken = new CancellationTokenSource();
+			if (NumThreads < 1)
+				throw new ArgumentException("Number of threads most be greater than 0");
 			this.numThreads = NumThreads;
-			checkNotNull(ThreadFactory);
-			executors = Lists.newArrayListWithCapacity(NumThreads);
+			if (taskFactory is null)
+				throw new NullReferenceException("ThreadFactory cannot be null");
+			_executors = new List<Task>(NumThreads);
 			for (int I = 0; I < NumThreads; I++)
 			{
-				executors.Add(Executors.newSingleThreadScheduledExecutor(ThreadFactory));
+				_executors.Add(Task.Factory.StartNew(taskFactory, _cancellationToken.Token));
 			}
 		}
 
-		public virtual ExecutorService Executor
+		public virtual Task Executor
 		{
 			get
 			{
-				return executors[(currentThread.AndIncrement & int.MaxValue) % numThreads];
+				return _executors[(_currentThread.Increment() & int.MaxValue) % numThreads];
 			}
 		}
 
 		public virtual void ShutdownNow()
 		{
-			executors.ForEach(executor => executor.shutdownNow());
+			_cancellationToken.Cancel();
+			_executors.ToList().ForEach(executor => { 
+				if(executor.IsCanceled)
+				{
+					//log for example
+				}
+			});
 		}
 	}
 
