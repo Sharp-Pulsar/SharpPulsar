@@ -22,57 +22,50 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using Lists = com.google.common.collect.Lists;
-	using Field = Api.Schema.Field;
+	using Field = SharpPulsar.Api.Schema.Field;
 
 	/// <summary>
 	/// Generic json record.
 	/// </summary>
-	internal class GenericJsonRecord : VersionedGenericRecord
+	public class GenericJsonRecord : VersionedGenericRecord
 	{
 
-		private readonly JsonNode jn;
+		internal virtual JsonNode {get;}
 
-		internal GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JsonNode jn) : base(schemaVersion, fields)
+		public GenericJsonRecord(sbyte[] SchemaVersion, IList<Field> Fields, JsonNode Jn) : base(SchemaVersion, Fields)
 		{
-			this.jn = jn;
+			this.JsonNode = Jn;
 		}
 
-		internal virtual JsonNode JsonNode
-		{
-			get
-			{
-				return jn;
-			}
-		}
 
-		public object GetField(string fieldName)
+		public override object GetField(string FieldName)
 		{
-			JsonNode fn = jn.get(fieldName);
-			if (fn.ContainerNode)
+			JsonNode Fn = JsonNode.get(FieldName);
+			if (Fn.ContainerNode)
 			{
-				AtomicInteger idx = new AtomicInteger(0);
-				IList<Field> fields = Lists.newArrayList(fn.fieldNames()).Select(f => new Field(f, idx.AndIncrement)).ToList();
-				return new GenericJsonRecord(schemaVersion, fields, fn);
+				AtomicInteger Idx = new AtomicInteger(0);
+				IList<Field> Fields = Lists.newArrayList(Fn.fieldNames()).Select(f => new Field(f, Idx.AndIncrement)).ToList();
+				return new GenericJsonRecord(SchemaVersionConflict, Fields, Fn);
 			}
-			else if (fn.Boolean)
+			else if (Fn.Boolean)
 			{
-				return fn.asBoolean();
+				return Fn.asBoolean();
 			}
-			else if (fn.Int)
+			else if (Fn.Int)
 			{
-				return fn.asInt();
+				return Fn.asInt();
 			}
-			else if (fn.FloatingPointNumber)
+			else if (Fn.FloatingPointNumber)
 			{
-				return fn.asDouble();
+				return Fn.asDouble();
 			}
-			else if (fn.Double)
+			else if (Fn.Double)
 			{
-				return fn.asDouble();
+				return Fn.asDouble();
 			}
 			else
 			{
-				return fn.asText();
+				return Fn.asText();
 			}
 		}
 	}

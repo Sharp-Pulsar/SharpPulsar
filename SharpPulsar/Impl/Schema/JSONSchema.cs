@@ -27,43 +27,44 @@ namespace SharpPulsar.Impl.Schema
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using JsonSchema = com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 	using JsonSchemaGenerator = com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-    using System.Threading;
-    using Pulsar.Client.Impl.Schema.Writer;
-    using Pulsar.Client.Impl.Schema.Reader;
-    using SharpPulsar.Interface.Schema;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Common.Protocol.Schema;
-	using DotNetty.Buffers;
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Impl.Schema.Reader;
+	using SharpPulsar.Impl.Schema.Writer;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>
-	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-	//ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
 	public class JSONSchema<T> : StructSchema<T>
 	{
 		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
 		// return shaded version of object mapper
 		private static readonly ThreadLocal<ObjectMapper> JSON_MAPPER = ThreadLocal.withInitial(() =>
 		{
-			ObjectMapper mapper = new ObjectMapper();
-			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-			mapper.SerializationInclusion = JsonInclude.Include.NON_NULL;
-			return mapper;
+		ObjectMapper Mapper = new ObjectMapper();
+		Mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		Mapper.SerializationInclusion = JsonInclude.Include.NON_NULL;
+		return Mapper;
 		});
 
 		private readonly Type pojo = typeof(T);
 
-		private JSONSchema(SchemaInfo schemaInfo, Type pojo) : base(schemaInfo)
+		private JSONSchema(SchemaInfo SchemaInfo, Type Pojo) : base(SchemaInfo)
 		{
-			this.pojo = pojo;
-			Writer = new JsonWriter<T>(JSON_MAPPER.get());
-			Reader = new JsonReader<T>(JSON_MAPPER.get(), pojo);
+			this.pojo = Pojo;
+			Writer = new JsonWriter<>(JSON_MAPPER.get());
+			Reader = new JsonReader<>(JSON_MAPPER.get(), Pojo);
 		}
 
-		protected override internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
+		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
-			throw new System.Exception("JSONSchema don't support schema versioning");
+			throw new Exception("JSONSchema don't support schema versioning");
 		}
 
 		/// <summary>
@@ -77,45 +78,41 @@ namespace SharpPulsar.Impl.Schema
 		{
 			get
 			{
-				SchemaInfo backwardsCompatibleSchemaInfo;
+				SchemaInfo BackwardsCompatibleSchemaInfo;
 				try
 				{
-					ObjectMapper objectMapper = new ObjectMapper();
-					JsonSchemaGenerator schemaGen = new JsonSchemaGenerator(objectMapper);
-					JsonSchema jsonBackwardsCompatibleSchema = schemaGen.generateSchema(pojo);
-					backwardsCompatibleSchemaInfo = new SchemaInfo();
-					backwardsCompatibleSchemaInfo.Name = "";
-					backwardsCompatibleSchemaInfo.Properties = schemaInfo.Properties;
-					backwardsCompatibleSchemaInfo.Type = SchemaType.JSON;
-					backwardsCompatibleSchemaInfo.Schema = objectMapper.writeValueAsBytes(jsonBackwardsCompatibleSchema);
+					ObjectMapper ObjectMapper = new ObjectMapper();
+					JsonSchemaGenerator SchemaGen = new JsonSchemaGenerator(ObjectMapper);
+					JsonSchema JsonBackwardsCompatibleSchema = SchemaGen.generateSchema(pojo);
+					BackwardsCompatibleSchemaInfo = new SchemaInfo();
+					BackwardsCompatibleSchemaInfo.Name = "";
+					BackwardsCompatibleSchemaInfo.Properties = SchemaInfoConflict.Properties;
+					BackwardsCompatibleSchemaInfo.Type = SchemaType.JSON;
+					BackwardsCompatibleSchemaInfo.Schema = ObjectMapper.writeValueAsBytes(JsonBackwardsCompatibleSchema);
 				}
-				catch (JsonProcessingException ex)
+				catch (JsonProcessingException Ex)
 				{
-					throw new System.Exception(ex);
+					throw new Exception(Ex);
 				}
-				return backwardsCompatibleSchemaInfo;
+				return BackwardsCompatibleSchemaInfo;
 			}
 		}
 
-		public static JSONSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
+		public static JSONSchema<T> Of<T>(SchemaDefinition<T> SchemaDefinition)
 		{
-			return new JSONSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.JSON), schemaDefinition.Pojo);
+			return new JSONSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.JSON), SchemaDefinition.Pojo);
 		}
 
-		public static JSONSchema<T> Of(Type pojo)
+		public static JSONSchema<T> Of<T>(Type Pojo)
 		{
-			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+			return JSONSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).build());
 		}
 
-		public static JSONSchema<T> Of(Type pojo, IDictionary<string, string> properties)
+		public static JSONSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
+			return JSONSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build());
 		}
 
-		public override T Decode(IByteBuffer byteBuf)
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 }

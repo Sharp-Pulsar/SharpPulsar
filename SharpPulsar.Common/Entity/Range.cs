@@ -62,7 +62,7 @@ namespace SharpPulsar.Common.Entity
 		public virtual Range Intersect(Range range)
 		{
 			int start = range.Start > this.Start ? range.Start : this.Start;
-			int end = range.End < this.End ? range.End : this.End;
+			int end = range.End < End ? range.End : this.End;
 			if (end >= start)
 			{
 				return Of(start, end);

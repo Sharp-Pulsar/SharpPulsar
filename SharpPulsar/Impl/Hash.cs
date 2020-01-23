@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using Org.Apache.Pulsar.Common.Util;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,14 +20,14 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public interface Hash : org.apache.pulsar.common.util.Hash
+	public interface Hash : Hash
 	{
 
 		/// <summary>
 		/// Generate the hash of a given String
 		/// </summary> </returns>
 		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
-		int makeHash(string s);
+		int MakeHash(string S);
 	}
 
 }

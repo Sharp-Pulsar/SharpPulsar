@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Entity;
-using SharpPulsar.Impl.Schema.Generic;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,49 +20,47 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using Utf8 = org.apache.avro.util.Utf8;
+	using Field = SharpPulsar.Api.Schema.Field;
 
 	/// <summary>
 	/// A generic avro record.
 	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public class GenericAvroRecord extends VersionedGenericRecord
 	public class GenericAvroRecord : VersionedGenericRecord
 	{
 
-		private readonly Avro.Schema schema;
-		private readonly Avro.Generic.GenericRecord record;
+		private readonly org.apache.avro.Schema schema;
+		public virtual AvroRecord {get;}
 
-		public GenericAvroRecord(sbyte[] schemaVersion, Avro.Schema schema, IList<Field> fields, Avro.Generic.GenericRecord record) : base(schemaVersion, fields)
+		public GenericAvroRecord(sbyte[] SchemaVersion, org.apache.avro.Schema Schema, IList<Field> Fields, org.apache.avro.generic.GenericRecord Record) : base(SchemaVersion, Fields)
 		{
-			this.schema = schema;
-			this.record = record;
-			
+			this.schema = Schema;
+			this.AvroRecord = Record;
 		}
 
-		public new object GetField(string fieldName)
+		public override object GetField(string FieldName)
 		{
-			record.TryGetValue(fieldName,out var value);
-			if (value is Utf8)
+			object Value = AvroRecord.get(FieldName);
+			if (Value is Utf8)
 			{
-				return ((Utf8) value).ToString();
+				return ((Utf8) Value).ToString();
 			}
-			else if (value is Avro.Generic.GenericRecord avroRecord)
+			else if (Value is org.apache.avro.generic.GenericRecord)
 			{
-				Avro.Schema recordSchema = avroRecord.Schema;
-				IList<Field> fields = recordSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
-				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
+				org.apache.avro.generic.GenericRecord AvroRecord = (org.apache.avro.generic.GenericRecord) Value;
+				org.apache.avro.Schema RecordSchema = AvroRecord.Schema;
+				IList<Field> Fields = RecordSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
+				return new GenericAvroRecord(SchemaVersionConflict, schema, Fields, AvroRecord);
 			}
 			else
 			{
-				return value;
+				return Value;
 			}
 		}
 
-		public virtual Avro.Generic.GenericRecord AvroRecord
-		{
-			get
-			{
-				return record;
-			}
-		}
 
 	}
 

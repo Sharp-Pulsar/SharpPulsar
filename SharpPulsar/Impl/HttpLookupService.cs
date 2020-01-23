@@ -27,25 +27,25 @@ namespace SharpPulsar.Impl
 
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using NotFoundException = org.apache.pulsar.client.api.PulsarClientException.NotFoundException;
-	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
-	using LookupData = org.apache.pulsar.common.lookup.data.LookupData;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using GetSchemaResponse = org.apache.pulsar.common.protocol.schema.GetSchemaResponse;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaInfoUtil = org.apache.pulsar.common.protocol.schema.SchemaInfoUtil;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using NotFoundException = SharpPulsar.Api.PulsarClientException.NotFoundException;
+	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
+	using LookupData = Org.Apache.Pulsar.Common.Lookup.Data.LookupData;
+	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
+	using GetSchemaResponse = Org.Apache.Pulsar.Common.Protocol.Schema.GetSchemaResponse;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaInfoUtil = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaInfoUtil;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.yahoo.sketches.Util.bytesToLong;
 
-	internal class HttpLookupService : LookupService
+	public class HttpLookupService : LookupService
 	{
 
 		private readonly HttpClient httpClient;
@@ -55,18 +55,18 @@ namespace SharpPulsar.Impl
 		private const string BasePathV2 = "lookup/v2/topic/";
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public HttpLookupService(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
-		public HttpLookupService(ClientConfigurationData conf, EventLoopGroup eventLoopGroup)
+//ORIGINAL LINE: public HttpLookupService(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws SharpPulsar.api.PulsarClientException
+		public HttpLookupService(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup)
 		{
-			this.httpClient = new HttpClient(conf.ServiceUrl, conf.Authentication, eventLoopGroup, conf.TlsAllowInsecureConnection, conf.TlsTrustCertsFilePath);
-			this.useTls = conf.UseTls;
+			this.httpClient = new HttpClient(Conf.ServiceUrl, Conf.Authentication, EventLoopGroup, Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
+			this.useTls = Conf.UseTls;
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException
-		public virtual void updateServiceUrl(string serviceUrl)
+//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException
+		public override void UpdateServiceUrl(string ServiceUrl)
 		{
-			httpClient.ServiceUrl = serviceUrl;
+			httpClient.ServiceUrl = ServiceUrl;
 		}
 
 		/// <summary>
@@ -76,43 +76,43 @@ namespace SharpPulsar.Impl
 		/// <returns> broker-socket-address that serves given topic </returns>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("deprecation") public java.util.concurrent.CompletableFuture<org.apache.commons.lang3.tuple.Pair<java.net.InetSocketAddress, java.net.InetSocketAddress>> getBroker(org.apache.pulsar.common.naming.TopicName topicName)
-		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> getBroker(TopicName topicName)
+		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName TopicName)
 		{
-			string basePath = topicName.V2 ? BasePathV2 : BasePathV1;
+			string BasePath = TopicName.V2 ? BasePathV2 : BasePathV1;
 
-			return httpClient.get(basePath + topicName.LookupName, typeof(LookupData)).thenCompose(lookupData =>
+			return httpClient.Get(BasePath + TopicName.LookupName, typeof(LookupData)).thenCompose(lookupData =>
 			{
-			URI uri = null;
+			URI Uri = null;
 			try
 			{
 				if (useTls)
 				{
-					uri = new URI(lookupData.BrokerUrlTls);
+					Uri = new URI(lookupData.BrokerUrlTls);
 				}
 				else
 				{
-					string serviceUrl = lookupData.BrokerUrl;
-					if (string.ReferenceEquals(serviceUrl, null))
+					string ServiceUrl = lookupData.BrokerUrl;
+					if (string.ReferenceEquals(ServiceUrl, null))
 					{
-						serviceUrl = lookupData.NativeUrl;
+						ServiceUrl = lookupData.NativeUrl;
 					}
-					uri = new URI(serviceUrl);
+					Uri = new URI(ServiceUrl);
 				}
-				InetSocketAddress brokerAddress = InetSocketAddress.createUnresolved(uri.Host, uri.Port);
-				return CompletableFuture.completedFuture(Pair.of(brokerAddress, brokerAddress));
+				InetSocketAddress BrokerAddress = InetSocketAddress.createUnresolved(Uri.Host, Uri.Port);
+				return CompletableFuture.completedFuture(Pair.of(BrokerAddress, BrokerAddress));
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				log.warn("[{}] Lookup Failed due to invalid url {}, {}", topicName, uri, e.Message);
-				return FutureUtil.failedFuture(e);
+				log.warn("[{}] Lookup Failed due to invalid url {}, {}", TopicName, Uri, E.Message);
+				return FutureUtil.failedFuture(E);
 			}
 			});
 		}
 
-		public virtual CompletableFuture<PartitionedTopicMetadata> getPartitionedTopicMetadata(TopicName topicName)
+		public virtual CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName)
 		{
-			string format = topicName.V2 ? "admin/v2/%s/partitions" : "admin/%s/partitions";
-			return httpClient.get(string.format(format, topicName.LookupName) + "?checkAllowAutoCreation=true", typeof(PartitionedTopicMetadata));
+			string Format = TopicName.V2 ? "admin/v2/%s/partitions" : "admin/%s/partitions";
+			return httpClient.Get(string.format(Format, TopicName.LookupName) + "?checkAllowAutoCreation=true", typeof(PartitionedTopicMetadata));
 		}
 
 		public virtual string ServiceUrl
@@ -123,69 +123,69 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<IList<string>> getTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+		public override CompletableFuture<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode)
 		{
-			CompletableFuture<IList<string>> future = new CompletableFuture<IList<string>>();
+			CompletableFuture<IList<string>> Future = new CompletableFuture<IList<string>>();
 
-			string format = @namespace.V2 ? "admin/v2/namespaces/%s/topics?mode=%s" : "admin/namespaces/%s/destinations?mode=%s";
-			httpClient.get(string.format(format, @namespace, mode.ToString()), typeof(string[])).thenAccept(topics =>
+			string Format = Namespace.V2 ? "admin/v2/namespaces/%s/topics?mode=%s" : "admin/namespaces/%s/destinations?mode=%s";
+			httpClient.Get(string.format(Format, Namespace, Mode.ToString()), typeof(string[])).thenAccept(topics =>
 			{
-			IList<string> result = Lists.newArrayList();
+			IList<string> Result = Lists.newArrayList();
 			Arrays.asList(topics).forEach(topic =>
 			{
-				string filtered = TopicName.get(topic).PartitionedTopicName;
-				if (!result.contains(filtered))
+				string Filtered = TopicName.get(topic).PartitionedTopicName;
+				if (!Result.Contains(Filtered))
 				{
-					result.add(filtered);
+					Result.Add(Filtered);
 				}
 			});
-			future.complete(result);
+			Future.complete(Result);
 			}).exceptionally(ex =>
 			{
-			log.warn("Failed to getTopicsUnderNamespace namespace: {}.", @namespace, ex.Message);
-			future.completeExceptionally(ex);
+			log.warn("Failed to getTopicsUnderNamespace namespace: {}.", Namespace, ex.Message);
+			Future.completeExceptionally(ex);
 			return null;
 		});
-			return future;
+			return Future;
 		}
 
-		public virtual CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName)
+		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName)
 		{
-			return getSchema(topicName, null);
+			return GetSchema(TopicName, null);
 		}
 
-		public virtual CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName, sbyte[] version)
+		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName, sbyte[] Version)
 		{
-			CompletableFuture<Optional<SchemaInfo>> future = new CompletableFuture<Optional<SchemaInfo>>();
+			CompletableFuture<Optional<SchemaInfo>> Future = new CompletableFuture<Optional<SchemaInfo>>();
 
-			string schemaName = topicName.SchemaName;
-			string path = string.Format("admin/v2/schemas/{0}/schema", schemaName);
-			if (version != null)
+			string SchemaName = TopicName.SchemaName;
+			string Path = string.Format("admin/v2/schemas/{0}/schema", SchemaName);
+			if (Version != null)
 			{
-				path = string.Format("admin/v2/schemas/{0}/schema/{1}", schemaName, bytesToLong(version));
+				Path = string.Format("admin/v2/schemas/{0}/schema/{1}", SchemaName, bytesToLong(Version));
 			}
-			httpClient.get(path, typeof(GetSchemaResponse)).thenAccept(response =>
+			httpClient.Get(Path, typeof(GetSchemaResponse)).thenAccept(response =>
 			{
-			future.complete(SchemaInfoUtil.newSchemaInfo(schemaName, response));
+			Future.complete(SchemaInfoUtil.newSchemaInfo(SchemaName, response));
 			}).exceptionally(ex =>
 			{
 			if (ex.Cause is NotFoundException)
 			{
-				future.complete(null);
+				Future.complete(null);
 			}
 			else
 			{
-				log.warn("Failed to get schema for topic {} version {}", topicName, version != null ? Base64.Encoder.encodeToString(version) : null, ex.Cause);
-				future.completeExceptionally(ex);
+				log.warn("Failed to get schema for topic {} version {}", TopicName, Version != null ? Base64.Encoder.encodeToString(Version) : null, ex.Cause);
+				Future.completeExceptionally(ex);
 			}
 			return null;
 		});
-			return future;
+			return Future;
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void close() throws Exception
-		public override void close()
+		public override void Close()
 		{
 			httpClient.Dispose();
 		}

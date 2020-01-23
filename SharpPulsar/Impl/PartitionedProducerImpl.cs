@@ -31,18 +31,18 @@ namespace SharpPulsar.Impl
 	using Lists = com.google.common.collect.Lists;
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using MessageRouter = org.apache.pulsar.client.api.MessageRouter;
-	using MessageRoutingMode = org.apache.pulsar.client.api.MessageRoutingMode;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using NotSupportedException = org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
-	using ProducerConfigurationData = SharpPulsar.Impl.conf.ProducerConfigurationData;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using SharpPulsar.Api;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageRouter = SharpPulsar.Api.MessageRouter;
+	using MessageRoutingMode = SharpPulsar.Api.MessageRoutingMode;
+	using Producer = SharpPulsar.Api.Producer;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using NotSupportedException = SharpPulsar.Api.PulsarClientException.NotSupportedException;
+	using SharpPulsar.Api;
+	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
+	using ProducerConfigurationData = SharpPulsar.Impl.Conf.ProducerConfigurationData;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -57,26 +57,26 @@ namespace SharpPulsar.Impl
 		private TopicMetadata topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
-		private volatile Timeout partitionsAutoUpdateTimeout = null;
-		internal TopicsPartitionChangedListener topicsPartitionChangedListener;
-		internal CompletableFuture<Void> partitionsAutoUpdateFuture = null;
+		public virtual PartitionsAutoUpdateTimeout {get;} = null;
+		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
+		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
 
-		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, CompletableFuture<Producer<T>> producerCreatedFuture, Schema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedFuture, schema, interceptors)
+		public PartitionedProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, int NumPartitions, CompletableFuture<Producer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, ProducerCreatedFuture, Schema, Interceptors)
 		{
-			this.producers = Lists.newArrayListWithCapacity(numPartitions);
-			this.topicMetadata = new TopicMetadataImpl(numPartitions);
+			this.producers = Lists.newArrayListWithCapacity(NumPartitions);
+			this.topicMetadata = new TopicMetadataImpl(NumPartitions);
 			this.routerPolicy = MessageRouter;
-			stats = client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl() : null;
+			stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl() : null;
 
-			int maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
-			conf.MaxPendingMessages = maxPendingMessages;
-			start();
+			int MaxPendingMessages = Math.Min(Conf.MaxPendingMessages, Conf.MaxPendingMessagesAcrossPartitions / NumPartitions);
+			Conf.MaxPendingMessages = MaxPendingMessages;
+			Start();
 
 			// start track and auto subscribe partition increasement
-			if (conf.AutoUpdatePartitions)
+			if (Conf.AutoUpdatePartitions)
 			{
-				topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
-				partitionsAutoUpdateTimeout = client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, TimeUnit.MINUTES);
+				TopicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
+				PartitionsAutoUpdateTimeout = Client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 			}
 		}
 
@@ -84,25 +84,25 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				MessageRouter messageRouter;
+				MessageRouter MessageRouter;
     
-				MessageRoutingMode messageRouteMode = conf.MessageRoutingMode;
+				MessageRoutingMode MessageRouteMode = Conf.MessageRoutingMode;
     
-				switch (messageRouteMode)
+				switch (MessageRouteMode)
 				{
-					case CustomPartition:
-						messageRouter = checkNotNull(conf.CustomMessageRouter);
+					case MessageRoutingMode.CustomPartition:
+						MessageRouter = checkNotNull(Conf.CustomMessageRouter);
 						break;
-					case SinglePartition:
-						messageRouter = new SinglePartitionMessageRouterImpl(ThreadLocalRandom.current().Next(topicMetadata.numPartitions()), conf.HashingScheme);
+					case MessageRoutingMode.SinglePartition:
+						MessageRouter = new SinglePartitionMessageRouterImpl(ThreadLocalRandom.current().Next(topicMetadata.NumPartitions()), Conf.HashingScheme);
 						break;
-					case RoundRobinPartition:
+					case MessageRoutingMode.RoundRobinPartition:
 					default:
-						messageRouter = new RoundRobinPartitionMessageRouterImpl(conf.HashingScheme, ThreadLocalRandom.current().Next(topicMetadata.numPartitions()), conf.BatchingEnabled, TimeUnit.MICROSECONDS.toMillis(conf.batchingPartitionSwitchFrequencyIntervalMicros()));
+						MessageRouter = new RoundRobinPartitionMessageRouterImpl(Conf.HashingScheme, ThreadLocalRandom.current().Next(topicMetadata.NumPartitions()), Conf.BatchingEnabled, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.toMillis(Conf.batchingPartitionSwitchFrequencyIntervalMicros()));
 					break;
 				}
     
-				return messageRouter;
+				return MessageRouter;
 			}
 		}
 
@@ -120,41 +120,42 @@ namespace SharpPulsar.Impl
 			{
 				// Return the highest sequence id across all partitions. This will be correct,
 				// since there is a single id generator across all partitions for the same producer
-				return producers.Select(Producer.getLastSequenceId).Select(long?.longValue).Max().orElse(-1);
+	//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
+				return producers.Select(Producer::getLastSequenceId).Select(long?.longValue).Max().orElse(-1);
 			}
 		}
 
-		private void start()
+		private void Start()
 		{
-			AtomicReference<Exception> createFail = new AtomicReference<Exception>();
-			AtomicInteger completed = new AtomicInteger();
-			for (int partitionIndex = 0; partitionIndex < topicMetadata.numPartitions(); partitionIndex++)
+			AtomicReference<Exception> CreateFail = new AtomicReference<Exception>();
+			AtomicInteger Completed = new AtomicInteger();
+			for (int PartitionIndex = 0; PartitionIndex < topicMetadata.NumPartitions(); PartitionIndex++)
 			{
-				string partitionName = TopicName.get(topic).getPartition(partitionIndex).ToString();
-				ProducerImpl<T> producer = new ProducerImpl<T>(client, partitionName, conf, new CompletableFuture<Producer<T>>(), partitionIndex, schema, interceptors);
-				producers.Add(producer);
-				producer.producerCreatedFuture().handle((prod, createException) =>
+				string PartitionName = TopicName.get(Topic).getPartition(PartitionIndex).ToString();
+				ProducerImpl<T> Producer = new ProducerImpl<T>(ClientConflict, PartitionName, Conf, new CompletableFuture<Producer<T>>(), PartitionIndex, Schema, Interceptors);
+				producers.Add(Producer);
+				Producer.producerCreatedFuture().handle((prod, createException) =>
 				{
 				if (createException != null)
 				{
 					State = State.Failed;
-					createFail.compareAndSet(null, createException);
+					CreateFail.compareAndSet(null, createException);
 				}
-				if (completed.incrementAndGet() == topicMetadata.numPartitions())
+				if (Completed.incrementAndGet() == topicMetadata.NumPartitions())
 				{
-					if (createFail.get() == null)
+					if (CreateFail.get() == null)
 					{
 						State = State.Ready;
-						log.info("[{}] Created partitioned producer", topic);
-						producerCreatedFuture().complete(PartitionedProducerImpl.this);
+						log.info("[{}] Created partitioned producer", Topic);
+						ProducerCreatedFuture().complete(PartitionedProducerImpl.this);
 					}
 					else
 					{
-						log.error("[{}] Could not create partitioned producer.", topic, createFail.get().Cause);
-						closeAsync().handle((ok, closeException) =>
+						log.error("[{}] Could not create partitioned producer.", Topic, CreateFail.get().Cause);
+						CloseAsync().handle((ok, closeException) =>
 						{
-							producerCreatedFuture().completeExceptionally(createFail.get());
-							client.cleanupProducer(this);
+							ProducerCreatedFuture().completeExceptionally(CreateFail.get());
+							ClientConflict.cleanupProducer(this);
 							return null;
 						});
 					}
@@ -165,7 +166,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		internal override CompletableFuture<MessageId> internalSendAsync<T1>(Message<T1> message)
+		public override CompletableFuture<MessageId> InternalSendAsync<T1>(Message<T1> Message)
 		{
 
 			switch (State)
@@ -184,19 +185,19 @@ namespace SharpPulsar.Impl
 				return FutureUtil.failedFuture(new PulsarClientException.NotConnectedException());
 			}
 
-			int partition = routerPolicy.choosePartition(message, topicMetadata);
-			checkArgument(partition >= 0 && partition < topicMetadata.numPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
-			return producers[partition].internalSendAsync(message);
+			int Partition = routerPolicy.ChoosePartition(Message, topicMetadata);
+			checkArgument(Partition >= 0 && Partition < topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + Partition);
+			return producers[Partition].internalSendAsync(Message);
 		}
 
-		public override CompletableFuture<Void> flushAsync()
+		public override CompletableFuture<Void> FlushAsync()
 		{
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			IList<CompletableFuture<Void>> flushFutures = producers.Select(ProducerImpl::flushAsync).ToList();
-			return CompletableFuture.allOf(((List<CompletableFuture<Void>>)flushFutures).ToArray());
+			IList<CompletableFuture<Void>> FlushFutures = producers.Select(ProducerImpl::flushAsync).ToList();
+			return CompletableFuture.allOf(((List<CompletableFuture<Void>>)FlushFutures).ToArray());
 		}
 
-		internal override void triggerFlush()
+		public override void TriggerFlush()
 		{
 			producers.ForEach(ProducerImpl.triggerFlush);
 		}
@@ -211,7 +212,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Void> closeAsync()
+		public override CompletableFuture<Void> CloseAsync()
 		{
 			if (State == State.Closing || State == State.Closed)
 			{
@@ -219,39 +220,39 @@ namespace SharpPulsar.Impl
 			}
 			State = State.Closing;
 
-			if (partitionsAutoUpdateTimeout != null)
+			if (PartitionsAutoUpdateTimeout != null)
 			{
-				partitionsAutoUpdateTimeout.cancel();
-				partitionsAutoUpdateTimeout = null;
+				PartitionsAutoUpdateTimeout.cancel();
+				PartitionsAutoUpdateTimeout = null;
 			}
 
-			AtomicReference<Exception> closeFail = new AtomicReference<Exception>();
-			AtomicInteger completed = new AtomicInteger(topicMetadata.numPartitions());
-			CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
-			foreach (Producer<T> producer in producers)
+			AtomicReference<Exception> CloseFail = new AtomicReference<Exception>();
+			AtomicInteger Completed = new AtomicInteger(topicMetadata.NumPartitions());
+			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
+			foreach (Producer<T> Producer in producers)
 			{
-				if (producer != null)
+				if (Producer != null)
 				{
-					producer.closeAsync().handle((closed, ex) =>
+					Producer.closeAsync().handle((closed, ex) =>
 					{
 					if (ex != null)
 					{
-						closeFail.compareAndSet(null, ex);
+						CloseFail.compareAndSet(null, ex);
 					}
-					if (completed.decrementAndGet() == 0)
+					if (Completed.decrementAndGet() == 0)
 					{
-						if (closeFail.get() == null)
+						if (CloseFail.get() == null)
 						{
 							State = State.Closed;
-							closeFuture.complete(null);
-							log.info("[{}] Closed Partitioned Producer", topic);
-							client.cleanupProducer(this);
+							CloseFuture.complete(null);
+							log.info("[{}] Closed Partitioned Producer", Topic);
+							ClientConflict.cleanupProducer(this);
 						}
 						else
 						{
 							State = State.Failed;
-							closeFuture.completeExceptionally(closeFail.get());
-							log.error("[{}] Could not close Partitioned Producer", topic, closeFail.get().Cause);
+							CloseFuture.completeExceptionally(CloseFail.get());
+							log.error("[{}] Could not close Partitioned Producer", Topic, CloseFail.get().Cause);
 						}
 					}
 					return null;
@@ -260,7 +261,7 @@ namespace SharpPulsar.Impl
 
 			}
 
-			return closeFuture;
+			return CloseFuture;
 		}
 
 		public override ProducerStatsRecorderImpl Stats
@@ -273,10 +274,10 @@ namespace SharpPulsar.Impl
 					{
 						return null;
 					}
-					stats.reset();
-					for (int i = 0; i < topicMetadata.numPartitions(); i++)
+					stats.Reset();
+					for (int I = 0; I < topicMetadata.NumPartitions(); I++)
 					{
-						stats.updateCumulativeStats(producers[i].Stats);
+						stats.UpdateCumulativeStats(producers[I].Stats);
 					}
 					return stats;
 				}
@@ -291,7 +292,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		internal override string HandlerName
+		public override string HandlerName
 		{
 			get
 			{
@@ -300,87 +301,87 @@ namespace SharpPulsar.Impl
 		}
 
 		// This listener is triggered when topics partitions are updated.
-		private class TopicsPartitionChangedListener : PartitionsChangedListener
+		public class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
 			private readonly PartitionedProducerImpl<T> outerInstance;
 
 			public TopicsPartitionChangedListener(PartitionedProducerImpl<T> outerInstance)
 			{
-				this.outerInstance = outerInstance;
+				this.outerInstance = OuterInstance;
 			}
 
 			// Check partitions changes of passed in topics, and add new topic partitions.
-			public virtual CompletableFuture<Void> onTopicsExtended(ICollection<string> topicsExtended)
+			public override CompletableFuture<Void> OnTopicsExtended(ICollection<string> TopicsExtended)
 			{
-				CompletableFuture<Void> future = new CompletableFuture<Void>();
-				if (topicsExtended.Count == 0 || !topicsExtended.Contains(outerInstance.topic))
+				CompletableFuture<Void> Future = new CompletableFuture<Void>();
+				if (TopicsExtended.Count == 0 || !TopicsExtended.Contains(outerInstance.Topic))
 				{
-					future.complete(null);
-					return future;
+					Future.complete(null);
+					return Future;
 				}
 
-				outerInstance.client.getPartitionsForTopic(outerInstance.topic).thenCompose(list =>
+				outerInstance.ClientConflict.getPartitionsForTopic(outerInstance.Topic).thenCompose(list =>
 				{
-				int oldPartitionNumber = outerInstance.topicMetadata.numPartitions();
-				int currentPartitionNumber = list.size();
+				int OldPartitionNumber = outerInstance.topicMetadata.NumPartitions();
+				int CurrentPartitionNumber = list.size();
 				if (log.DebugEnabled)
 				{
-					log.debug("[{}] partitions number. old: {}, new: {}", outerInstance.topic, oldPartitionNumber, currentPartitionNumber);
+					log.debug("[{}] partitions number. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
 				}
-				if (oldPartitionNumber == currentPartitionNumber)
+				if (OldPartitionNumber == CurrentPartitionNumber)
 				{
-					future.complete(null);
-					return future;
+					Future.complete(null);
+					return Future;
 				}
-				else if (oldPartitionNumber < currentPartitionNumber)
+				else if (OldPartitionNumber < CurrentPartitionNumber)
 				{
-					IList<CompletableFuture<Producer<T>>> futureList = list.subList(oldPartitionNumber, currentPartitionNumber).Select(partitionName =>
+					IList<CompletableFuture<Producer<T>>> FutureList = list.subList(OldPartitionNumber, CurrentPartitionNumber).Select(partitionName =>
 					{
-						int partitionIndex = TopicName.getPartitionIndex(partitionName);
-						ProducerImpl<T> producer = new ProducerImpl<T>(outerInstance.client, partitionName, outerInstance.conf, new CompletableFuture<org.apache.pulsar.client.api.Producer<T>>(), partitionIndex, outerInstance.schema, outerInstance.interceptors);
-						outerInstance.producers.Add(producer);
-						return producer.producerCreatedFuture();
+						int PartitionIndex = TopicName.getPartitionIndex(partitionName);
+						ProducerImpl<T> Producer = new ProducerImpl<T>(outerInstance.ClientConflict, partitionName, outerInstance.Conf, new CompletableFuture<Producer<T>>(), PartitionIndex, outerInstance.Schema, outerInstance.Interceptors);
+						outerInstance.producers.Add(Producer);
+						return Producer.producerCreatedFuture();
 					}).ToList();
-					FutureUtil.waitForAll(futureList).thenAccept(finalFuture =>
+					FutureUtil.waitForAll(FutureList).thenAccept(finalFuture =>
 					{
 						if (log.DebugEnabled)
 						{
-							log.debug("[{}] success create producers for extended partitions. old: {}, new: {}", outerInstance.topic, oldPartitionNumber, currentPartitionNumber);
+							log.debug("[{}] success create producers for extended partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
 						}
-						outerInstance.topicMetadata = new TopicMetadataImpl(currentPartitionNumber);
-						future.complete(null);
+						outerInstance.topicMetadata = new TopicMetadataImpl(CurrentPartitionNumber);
+						Future.complete(null);
 					}).exceptionally(ex =>
 					{
-						log.warn("[{}] fail create producers for extended partitions. old: {}, new: {}", outerInstance.topic, oldPartitionNumber, currentPartitionNumber);
-						IList<ProducerImpl<T>> sublist = outerInstance.producers.subList(oldPartitionNumber, outerInstance.producers.Count);
-						sublist.forEach(newProducer => newProducer.closeAsync());
-						sublist.clear();
-						future.completeExceptionally(ex);
+						log.warn("[{}] fail create producers for extended partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
+						IList<ProducerImpl<T>> Sublist = outerInstance.producers.subList(OldPartitionNumber, outerInstance.producers.Count);
+						Sublist.ForEach(newProducer => newProducer.closeAsync());
+						Sublist.Clear();
+						Future.completeExceptionally(ex);
 						return null;
 					});
 					return null;
 				}
 				else
 				{
-					log.error("[{}] not support shrink topic partitions. old: {}, new: {}", outerInstance.topic, oldPartitionNumber, currentPartitionNumber);
-					future.completeExceptionally(new NotSupportedException("not support shrink topic partitions"));
+					log.error("[{}] not support shrink topic partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
+					Future.completeExceptionally(new NotSupportedException("not support shrink topic partitions"));
 				}
-				return future;
+				return Future;
 				});
 
-				return future;
+				return Future;
 			}
 		}
 
 		private TimerTask partitionsAutoUpdateTimerTask = new TimerTaskAnonymousInnerClass();
 
-		private class TimerTaskAnonymousInnerClass : TimerTask
+		public class TimerTaskAnonymousInnerClass : TimerTask
 		{
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-			public override void run(Timeout timeout)
+			public override void run(Timeout Timeout)
 			{
-				if (timeout.Cancelled || outerInstance.State != State.Ready)
+				if (Timeout.Cancelled || outerInstance.State != State.Ready)
 				{
 					return;
 				}
@@ -397,19 +398,12 @@ namespace SharpPulsar.Impl
 				}
 
 				// schedule the next re-check task
-				outerInstance.partitionsAutoUpdateTimeout = outerInstance.client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, TimeUnit.MINUTES);
+				outerInstance.PartitionsAutoUpdateTimeout = outerInstance.client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 			}
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @VisibleForTesting public io.netty.util.Timeout getPartitionsAutoUpdateTimeout()
-		public virtual Timeout PartitionsAutoUpdateTimeout
-		{
-			get
-			{
-				return partitionsAutoUpdateTimeout;
-			}
-		}
 
 	}
 

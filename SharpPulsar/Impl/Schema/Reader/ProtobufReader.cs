@@ -1,5 +1,4 @@
-﻿using Pulsar.Api.Schema;
-using System.IO;
+﻿using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,10 +18,12 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Reader
+namespace SharpPulsar.Impl.Schema.Reader
 {
 	using InvalidProtocolBufferException = com.google.protobuf.InvalidProtocolBufferException;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Parser = com.google.protobuf.Parser;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -32,42 +33,42 @@ namespace Pulsar.Client.Impl.Schema.Reader
 	{
 		private Parser<T> tParser;
 
-		public ProtobufReader(T protoMessageInstance)
+		public ProtobufReader(T ProtoMessageInstance)
 		{
-			tParser = (Parser<T>)(protoMessageInstance).ParserForType;
+			tParser = (Parser<T>)(ProtoMessageInstance).ParserForType;
 		}
 
-		public T Read(sbyte[] bytes, int offset, int length)
+		public override T Read(sbyte[] Bytes, int Offset, int Length)
 		{
 			try
 			{
-				return this.tParser.parseFrom(bytes, offset, length);
+				return this.tParser.parseFrom(Bytes, Offset, Length);
 			}
-			catch (InvalidProtocolBufferException e)
+			catch (InvalidProtocolBufferException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 		}
 
-		public T Read(Stream inputStream)
+		public override T Read(Stream InputStream)
 		{
 			try
 			{
-				return this.tParser.parseFrom(inputStream);
+				return this.tParser.parseFrom(InputStream);
 			}
-			catch (InvalidProtocolBufferException e)
+			catch (InvalidProtocolBufferException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 			finally
 			{
 				try
 				{
-					inputStream.Close();
+					InputStream.Close();
 				}
-				catch (IOException e)
+				catch (IOException E)
 				{
-					log.error("ProtobufReader close inputStream close error", e.Message);
+					log.error("ProtobufReader close inputStream close error", E.Message);
 				}
 			}
 		}

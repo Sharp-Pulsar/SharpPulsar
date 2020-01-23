@@ -1,11 +1,5 @@
-﻿using Pulsar.Client.Impl.Auth;
-using SharpPulsar.Exception;
-using SharpPulsar.Interface;
-using SharpPulsar.Interface.Auth;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,12 +22,28 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Impl.Auth
 {
-	public class AuthenticationBasic : IAuthentication, IEncodedAuthenticationParameterSupport
+	using Gson = com.google.gson.Gson;
+	using JsonObject = com.google.gson.JsonObject;
+	using Authentication = SharpPulsar.Api.Authentication;
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+
+
+	[Serializable]
+	public class AuthenticationBasic : Authentication, EncodedAuthenticationParameterSupport
 	{
 		private string userId;
 		private string password;
 
-		public string AuthMethodName
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void close() throws java.io.IOException
+		public override void Close()
+		{
+			// noop
+		}
+
+		public virtual string AuthMethodName
 		{
 			get
 			{
@@ -41,7 +51,9 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public  IAuthenticationDataProvider AuthData
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
+		public virtual AuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -49,36 +61,32 @@ namespace SharpPulsar.Impl.Auth
 				{
 					return new AuthenticationDataBasic(userId, password);
 				}
-				catch (System.Exception e)
+				catch (Exception E)
 				{
-					throw PulsarClientException.Unwrap(e);
+					throw PulsarClientException.unwrap(E);
 				}
 			}
 		}
 
-		public void Configure(IDictionary<string, string> authParams)
+		public override void Configure(IDictionary<string, string> AuthParams)
 		{
-			var jsonString = JsonSerializer.Serialize(authParams);
-			Configure(jsonString);
+			configure((new Gson()).toJson(AuthParams));
 		}
 
-		public void Configure(string encodedAuthParamString)
+		public override void Configure(string EncodedAuthParamString)
 		{
-			var authParams = JsonSerializer.Deserialize<IDictionary<string, string>>(encodedAuthParamString);
-			userId = authParams["userId"];
-			password = authParams["password"];
+			JsonObject Params = (new Gson()).fromJson(EncodedAuthParamString, typeof(JsonObject));
+			userId = Params.get("userId").AsString;
+			password = Params.get("password").AsString;
 		}
 
-		
-		public void Start()
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
+		public override void Start()
 		{
-			throw new NotImplementedException();
+			// noop
 		}
 
-		public ValueTask DisposeAsync()
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 }

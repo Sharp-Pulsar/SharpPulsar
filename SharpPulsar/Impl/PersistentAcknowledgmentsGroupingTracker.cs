@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Api;
+
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,10 +29,10 @@ namespace SharpPulsar.Impl
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using SharpPulsar.Impl.conf;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using SharpPulsar.Impl.Conf;
+	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
+	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 
 	/// <summary>
 	/// Group the acknowledgements for a certain time and then sends them out in a single protobuf command.
@@ -43,7 +45,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// When reaching the max group size, an ack command is sent out immediately
 		/// </summary>
-		private const int MAX_ACK_GROUP_SIZE = 1000;
+		private const int MaxAckGroupSize = 1000;
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: private final ConsumerImpl<?> consumer;
@@ -54,7 +56,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Latest cumulative ack sent to broker
 		/// </summary>
-		private volatile MessageIdImpl lastCumulativeAck = (MessageIdImpl) MessageId.earliest;
+		private volatile MessageIdImpl lastCumulativeAck = (MessageIdImpl) MessageIdFields.Earliest;
 		private volatile bool cumulativeAckFlushRequired = false;
 
 		private static readonly AtomicReferenceFieldUpdater<PersistentAcknowledgmentsGroupingTracker, MessageIdImpl> LAST_CUMULATIVE_ACK_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(PersistentAcknowledgmentsGroupingTracker), typeof(MessageIdImpl), "lastCumulativeAck");
@@ -69,15 +71,15 @@ namespace SharpPulsar.Impl
 //ORIGINAL LINE: private final java.util.concurrent.ScheduledFuture<?> scheduledTask;
 		private readonly ScheduledFuture<object> scheduledTask;
 
-		public PersistentAcknowledgmentsGroupingTracker<T1, T2>(ConsumerImpl<T1> consumer, ConsumerConfigurationData<T2> conf, EventLoopGroup eventLoopGroup)
+		public PersistentAcknowledgmentsGroupingTracker<T1, T2>(ConsumerImpl<T1> Consumer, ConsumerConfigurationData<T2> Conf, EventLoopGroup EventLoopGroup)
 		{
-			this.consumer = consumer;
+			this.consumer = Consumer;
 			this.pendingIndividualAcks = new ConcurrentSkipListSet<MessageIdImpl>();
-			this.acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
+			this.acknowledgementGroupTimeMicros = Conf.AcknowledgementsGroupTimeMicros;
 
 			if (acknowledgementGroupTimeMicros > 0)
 			{
-				scheduledTask = eventLoopGroup.next().scheduleWithFixedDelay(this.flush, acknowledgementGroupTimeMicros, acknowledgementGroupTimeMicros, TimeUnit.MICROSECONDS);
+				scheduledTask = EventLoopGroup.next().scheduleWithFixedDelay(this.flush, acknowledgementGroupTimeMicros, acknowledgementGroupTimeMicros, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS);
 			}
 			else
 			{
@@ -89,51 +91,51 @@ namespace SharpPulsar.Impl
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
 		/// resent after a disconnection and for which the user has already sent an acknowledgement.
 		/// </summary>
-		public virtual bool isDuplicate(MessageId messageId)
+		public virtual bool IsDuplicate(MessageId MessageId)
 		{
-			if (messageId.compareTo(lastCumulativeAck) <= 0)
+			if (MessageId.CompareTo(lastCumulativeAck) <= 0)
 			{
 				// Already included in a cumulative ack
 				return true;
 			}
 			else
 			{
-				return pendingIndividualAcks.contains(messageId);
+				return pendingIndividualAcks.contains(MessageId);
 			}
 		}
 
-		public virtual void addAcknowledgment(MessageIdImpl msgId, AckType ackType, IDictionary<string, long> properties)
+		public virtual void AddAcknowledgment(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties)
 		{
-			if (acknowledgementGroupTimeMicros == 0 || properties.Count > 0)
+			if (acknowledgementGroupTimeMicros == 0 || Properties.Count > 0)
 			{
 				// We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
 				// uncommon condition since it's only used for the compaction subscription.
-				doImmediateAck(msgId, ackType, properties);
+				DoImmediateAck(MsgId, AckType, Properties);
 			}
-			else if (ackType == AckType.Cumulative)
+			else if (AckType == AckType.Cumulative)
 			{
-				doCumulativeAck(msgId);
+				DoCumulativeAck(MsgId);
 			}
 			else
 			{
 				// Individual ack
-				pendingIndividualAcks.add(msgId);
-				if (pendingIndividualAcks.size() >= MAX_ACK_GROUP_SIZE)
+				pendingIndividualAcks.add(MsgId);
+				if (pendingIndividualAcks.size() >= MaxAckGroupSize)
 				{
-					flush();
+					Flush();
 				}
 			}
 		}
 
-		private void doCumulativeAck(MessageIdImpl msgId)
+		private void DoCumulativeAck(MessageIdImpl MsgId)
 		{
 			// Handle concurrent updates from different threads
 			while (true)
 			{
-				MessageIdImpl lastCumlativeAck = this.lastCumulativeAck;
-				if (msgId.compareTo(lastCumlativeAck) > 0)
+				MessageIdImpl LastCumlativeAck = this.lastCumulativeAck;
+				if (MsgId.CompareTo(LastCumlativeAck) > 0)
 				{
-					if (LAST_CUMULATIVE_ACK_UPDATER.compareAndSet(this, lastCumlativeAck, msgId))
+					if (LAST_CUMULATIVE_ACK_UPDATER.compareAndSet(this, LastCumlativeAck, MsgId))
 					{
 						// Successfully updated the last cumulative ack. Next flush iteration will send this to broker.
 						cumulativeAckFlushRequired = true;
@@ -148,31 +150,31 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private bool doImmediateAck(MessageIdImpl msgId, AckType ackType, IDictionary<string, long> properties)
+		private bool DoImmediateAck(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties)
 		{
-			ClientCnx cnx = consumer.ClientCnx;
+			ClientCnx Cnx = consumer.ClientCnx;
 
-			if (cnx == null)
+			if (Cnx == null)
 			{
 				return false;
 			}
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final io.netty.buffer.ByteBuf cmd = org.apache.pulsar.common.protocol.Commands.newAck(consumer.consumerId, msgId.getLedgerId(), msgId.getEntryId(), ackType, null, properties);
-			ByteBuf cmd = Commands.newAck(consumer.consumerId, msgId.LedgerId, msgId.EntryId, ackType, null, properties);
+			ByteBuf Cmd = Commands.newAck(consumer.ConsumerId, MsgId.LedgerId, MsgId.EntryId, AckType, null, Properties);
 
-			cnx.ctx().writeAndFlush(cmd, cnx.ctx().voidPromise());
+			Cnx.ctx().writeAndFlush(Cmd, Cnx.ctx().voidPromise());
 			return true;
 		}
 
 		/// <summary>
 		/// Flush all the pending acks and send them to the broker
 		/// </summary>
-		public virtual void flush()
+		public virtual void Flush()
 		{
-			ClientCnx cnx = consumer.ClientCnx;
+			ClientCnx Cnx = consumer.ClientCnx;
 
-			if (cnx == null)
+			if (Cnx == null)
 			{
 				if (log.DebugEnabled)
 				{
@@ -181,73 +183,73 @@ namespace SharpPulsar.Impl
 				return;
 			}
 
-			bool shouldFlush = false;
+			bool ShouldFlush = false;
 			if (cumulativeAckFlushRequired)
 			{
-				ByteBuf cmd = Commands.newAck(consumer.consumerId, lastCumulativeAck.ledgerId, lastCumulativeAck.entryId, AckType.Cumulative, null, Collections.emptyMap());
-				cnx.ctx().write(cmd, cnx.ctx().voidPromise());
-				shouldFlush = true;
+				ByteBuf Cmd = Commands.newAck(consumer.ConsumerId, lastCumulativeAck.LedgerIdConflict, lastCumulativeAck.EntryIdConflict, AckType.Cumulative, null, Collections.emptyMap());
+				Cnx.ctx().write(Cmd, Cnx.ctx().voidPromise());
+				ShouldFlush = true;
 				cumulativeAckFlushRequired = false;
 			}
 
 			// Flush all individual acks
 			if (!pendingIndividualAcks.Empty)
 			{
-				if (Commands.peerSupportsMultiMessageAcknowledgment(cnx.RemoteEndpointProtocolVersion))
+				if (Commands.peerSupportsMultiMessageAcknowledgment(Cnx.RemoteEndpointProtocolVersion))
 				{
 					// We can send 1 single protobuf command with all individual acks
-					IList<Pair<long, long>> entriesToAck = new List<Pair<long, long>>(pendingIndividualAcks.size());
+					IList<Pair<long, long>> EntriesToAck = new List<Pair<long, long>>(pendingIndividualAcks.size());
 					while (true)
 					{
-						MessageIdImpl msgId = pendingIndividualAcks.pollFirst();
-						if (msgId == null)
+						MessageIdImpl MsgId = pendingIndividualAcks.pollFirst();
+						if (MsgId == null)
 						{
 							break;
 						}
 
-						entriesToAck.Add(Pair.of(msgId.LedgerId, msgId.EntryId));
+						EntriesToAck.Add(Pair.of(MsgId.LedgerId, MsgId.EntryId));
 					}
 
-					cnx.ctx().write(Commands.newMultiMessageAck(consumer.consumerId, entriesToAck), cnx.ctx().voidPromise());
-					shouldFlush = true;
+					Cnx.ctx().write(Commands.newMultiMessageAck(consumer.ConsumerId, EntriesToAck), Cnx.ctx().voidPromise());
+					ShouldFlush = true;
 				}
 				else
 				{
 					// When talking to older brokers, send the acknowledgements individually
 					while (true)
 					{
-						MessageIdImpl msgId = pendingIndividualAcks.pollFirst();
-						if (msgId == null)
+						MessageIdImpl MsgId = pendingIndividualAcks.pollFirst();
+						if (MsgId == null)
 						{
 							break;
 						}
 
-						cnx.ctx().write(Commands.newAck(consumer.consumerId, msgId.LedgerId, msgId.EntryId, AckType.Individual, null, Collections.emptyMap()), cnx.ctx().voidPromise());
-						shouldFlush = true;
+						Cnx.ctx().write(Commands.newAck(consumer.ConsumerId, MsgId.LedgerId, MsgId.EntryId, AckType.Individual, null, Collections.emptyMap()), Cnx.ctx().voidPromise());
+						ShouldFlush = true;
 					}
 				}
 			}
 
-			if (shouldFlush)
+			if (ShouldFlush)
 			{
 				if (log.DebugEnabled)
 				{
 					log.debug("[{}] Flushing pending acks to broker: last-cumulative-ack: {} -- individual-acks: {}", consumer, lastCumulativeAck, pendingIndividualAcks);
 				}
-				cnx.ctx().flush();
+				Cnx.ctx().flush();
 			}
 		}
 
-		public virtual void flushAndClean()
+		public override void FlushAndClean()
 		{
-			flush();
-			lastCumulativeAck = (MessageIdImpl) MessageId.earliest;
+			Flush();
+			lastCumulativeAck = (MessageIdImpl) MessageIdFields.Earliest;
 			pendingIndividualAcks.clear();
 		}
 
-		public virtual void close()
+		public override void Close()
 		{
-			flush();
+			Flush();
 			if (scheduledTask != null && !scheduledTask.Cancelled)
 			{
 				scheduledTask.cancel(true);

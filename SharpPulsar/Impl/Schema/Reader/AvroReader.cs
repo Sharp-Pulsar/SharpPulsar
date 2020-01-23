@@ -1,7 +1,5 @@
-﻿using Pulsar.Api.Schema;
-using System;
+﻿using System;
 using System.IO;
-using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,12 +19,14 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Reader
+namespace SharpPulsar.Impl.Schema.Reader
 {
-	using Schema = Avro.Schema;
-	using BinaryDecoder = Avro.IO.BinaryDecoder;
-	using DecoderFactory = Avro.IO.DecoderFactory;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Schema = org.apache.avro.Schema;
+	using BinaryDecoder = org.apache.avro.io.BinaryDecoder;
+	using DecoderFactory = org.apache.avro.io.DecoderFactory;
+	using ReflectDatumReader = org.apache.avro.reflect.ReflectDatumReader;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -38,59 +38,59 @@ namespace Pulsar.Client.Impl.Schema.Reader
 		private ReflectDatumReader<T> reader;
 		private static readonly ThreadLocal<BinaryDecoder> decoders = new ThreadLocal<BinaryDecoder>();
 
-		public AvroReader(Schema schema)
+		public AvroReader(Schema Schema)
 		{
-			this.reader = new ReflectDatumReader<T>(schema);
+			this.reader = new ReflectDatumReader<T>(Schema);
 		}
 
-		public AvroReader(Schema writerSchema, Schema readerSchema)
+		public AvroReader(Schema WriterSchema, Schema ReaderSchema)
 		{
-			this.reader = new ReflectDatumReader<T>(writerSchema, readerSchema);
+			this.reader = new ReflectDatumReader<T>(WriterSchema, ReaderSchema);
 		}
 
-		public T Read(sbyte[] bytes, int offset, int length)
+		public override T Read(sbyte[] Bytes, int Offset, int Length)
 		{
 			try
 			{
-				BinaryDecoder decoderFromCache = decoders.Get();
-				BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(bytes, offset, length, decoderFromCache);
-				if (decoderFromCache == null)
+				BinaryDecoder DecoderFromCache = decoders.get();
+				BinaryDecoder Decoder = DecoderFactory.get().binaryDecoder(Bytes, Offset, Length, DecoderFromCache);
+				if (DecoderFromCache == null)
 				{
-					decoders.set(decoder);
+					decoders.set(Decoder);
 				}
-				return reader.read(null, DecoderFactory.get().binaryDecoder(bytes, offset, length, decoder));
+				return reader.read(null, DecoderFactory.get().binaryDecoder(Bytes, Offset, Length, Decoder));
 			}
-			catch (IOException e)
+			catch (IOException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 		}
 
-		public T Read(Stream inputStream)
+		public override T Read(Stream InputStream)
 		{
 			try
 			{
-				BinaryDecoder decoderFromCache = decoders.get();
-				BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(inputStream, decoderFromCache);
-				if (decoderFromCache == null)
+				BinaryDecoder DecoderFromCache = decoders.get();
+				BinaryDecoder Decoder = DecoderFactory.get().binaryDecoder(InputStream, DecoderFromCache);
+				if (DecoderFromCache == null)
 				{
-					decoders.set(decoder);
+					decoders.set(Decoder);
 				}
-				return reader.read(null, DecoderFactory.get().binaryDecoder(inputStream, decoder));
+				return reader.read(null, DecoderFactory.get().binaryDecoder(InputStream, Decoder));
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 			finally
 			{
 				try
 				{
-					inputStream.Close();
+					InputStream.Close();
 				}
-				catch (IOException e)
+				catch (IOException E)
 				{
-					log.error("AvroReader close inputStream close error", e.Message);
+					log.error("AvroReader close inputStream close error", E.Message);
 				}
 			}
 		}

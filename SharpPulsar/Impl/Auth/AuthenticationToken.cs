@@ -1,9 +1,5 @@
-﻿using SharpPulsar.Interface;
-using SharpPulsar.Interface.Auth;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,11 +22,19 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Impl.Auth
 {
+	using Charsets = com.google.common.@base.Charsets;
+
+
+	using Authentication = SharpPulsar.Api.Authentication;
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 
 	/// <summary>
 	/// Token based authentication provider.
 	/// </summary>
-	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
+	[Serializable]
+	public class AuthenticationToken : Authentication, EncodedAuthenticationParameterSupport
 	{
 
 		private System.Func<string> tokenSupplier;
@@ -39,23 +43,23 @@ namespace SharpPulsar.Impl.Auth
 		{
 		}
 
-		public AuthenticationToken(string token) : this(() => token)
+		public AuthenticationToken(string Token) : this(() -> Token)
 		{
 		}
 
-		public AuthenticationToken(System.Func<string> tokenSupplier)
+		public AuthenticationToken(System.Func<string> TokenSupplier)
 		{
-			this.tokenSupplier = tokenSupplier;
+			this.tokenSupplier = TokenSupplier;
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public void close() throws java.io.IOException
-		public void Close()
+//ORIGINAL LINE: @Override public void close() throws java.io.IOException
+		public override void Close()
 		{
 			// noop
 		}
 
-		public string AuthMethodName
+		public virtual string AuthMethodName
 		{
 			get
 			{
@@ -64,8 +68,8 @@ namespace SharpPulsar.Impl.Auth
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public IAuthenticationDataProvider AuthData
+//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
+		public virtual AuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -73,52 +77,48 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public void Configure(string encodedAuthParamString)
+		public override void Configure(string EncodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix
-			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
+			if (EncodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
 			{
-				this.tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
+				this.tokenSupplier = () => EncodedAuthParamString.Substring("token:".Length);
 			}
-			else if (encodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
+			else if (EncodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
 			{
 				// Read token from a file
-				URI filePath = URI.create(encodedAuthParamString);
+				URI FilePath = URI.create(EncodedAuthParamString);
 				this.tokenSupplier = () =>
 				{
 				try
 				{
-					return (new string(File.ReadAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
+					return (new string(Files.readAllBytes(Paths.get(FilePath)), Charsets.UTF_8)).Trim();
 				}
-				catch (IOException e)
+				catch (IOException E)
 				{
-					throw new Exception("Failed to read token from file", e);
+					throw new Exception("Failed to read token from file", E);
 				}
 				};
 			}
 			else
 			{
-				this.tokenSupplier = () => encodedAuthParamString;
+				this.tokenSupplier = () => EncodedAuthParamString;
 			}
 		}
 
-		public void Configure(IDictionary<string, string> authParams)
+		public override void Configure(IDictionary<string, string> AuthParams)
 		{
 			// noop
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @public void start() throws org.apache.pulsar.client.api.PulsarClientException
-		public void Start()
+//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
+		public override void Start()
 		{
 			// noop
 		}
 
-		public ValueTask DisposeAsync()
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 }

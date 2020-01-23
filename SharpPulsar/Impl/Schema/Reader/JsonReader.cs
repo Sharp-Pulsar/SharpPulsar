@@ -1,5 +1,4 @@
-﻿using Pulsar.Api.Schema;
-using System;
+﻿using System;
 using System.IO;
 
 /// <summary>
@@ -20,10 +19,11 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Reader
+namespace SharpPulsar.Impl.Schema.Reader
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -33,43 +33,43 @@ namespace Pulsar.Client.Impl.Schema.Reader
 		private readonly Type pojo = typeof(T);
 		private readonly ObjectMapper objectMapper;
 
-		public JsonReader(ObjectMapper objectMapper, Type pojo)
+		public JsonReader(ObjectMapper ObjectMapper, Type Pojo)
 		{
-			this.pojo = pojo;
-			this.objectMapper = objectMapper;
+			this.pojo = Pojo;
+			this.objectMapper = ObjectMapper;
 		}
 
-		public T Read(sbyte[] bytes, int offset, int length)
+		public override T Read(sbyte[] Bytes, int Offset, int Length)
 		{
 			try
 			{
-				return objectMapper.readValue(bytes, offset, length, this.pojo);
+				return objectMapper.readValue(Bytes, Offset, Length, this.pojo);
 			}
-			catch (IOException e)
+			catch (IOException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 		}
 
-		public T Read(Stream inputStream)
+		public override T Read(Stream InputStream)
 		{
 			try
 			{
-				return objectMapper.readValue(inputStream, pojo);
+				return objectMapper.readValue(InputStream, pojo);
 			}
-			catch (IOException e)
+			catch (IOException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 			finally
 			{
 				try
 				{
-					inputStream.Close();
+					InputStream.Close();
 				}
-				catch (IOException e)
+				catch (IOException E)
 				{
-					log.error("JsonReader close inputStream close error", e.Message);
+					log.error("JsonReader close inputStream close error", E.Message);
 				}
 			}
 		}

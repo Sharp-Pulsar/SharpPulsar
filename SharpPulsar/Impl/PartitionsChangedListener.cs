@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl
 		/// Notified when topic partitions increased.
 		/// Passed in topics that have partitions increased.
 		/// </summary>
-		CompletableFuture<Void> onTopicsExtended(ICollection<string> topicsExtended);
+		CompletableFuture<Void> OnTopicsExtended(ICollection<string> TopicsExtended);
 	}
 
 }

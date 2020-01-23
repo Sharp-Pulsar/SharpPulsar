@@ -18,22 +18,23 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using DotNetty.Buffers;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Exception;
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
-    /// <summary>
-    /// A schema for 'Byte'.
-    /// </summary>
-    internal class ByteSchema : AbstractSchema<sbyte>
+	/// <summary>
+	/// A schema for 'Byte'.
+	/// </summary>
+	public class ByteSchema : AbstractSchema<sbyte>
 	{
 
 		private static readonly ByteSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static ByteSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("INT8").setType(SchemaType.INT8).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("INT8").setType(SchemaType.INT8).setSchema(new sbyte[0]);
 			INSTANCE = new ByteSchema();
 		}
 
@@ -42,62 +43,54 @@ namespace SharpPulsar.Impl.Schema
 			return INSTANCE;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
-			if (message.Length != 1)
+			if (Message.Length != 1)
 			{
 				throw new SchemaSerializationException("Size of data received by ByteSchema is not 1");
 			}
 		}
 
-		public void Validate(IByteBuffer message)
+		public override void Validate(ByteBuf Message)
 		{
-			if (message.ReadableBytes != 1)
+			if (Message.readableBytes() != 1)
 			{
 				throw new SchemaSerializationException("Size of data received by ByteSchema is not 1");
 			}
 		}
 
-		public sbyte[] Encode(sbyte message)
+		public override sbyte[] Encode(sbyte? Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				return new sbyte[]{message};
+				return new sbyte[]{Message};
 			}
 		}
 
-		public sbyte? Decode(sbyte[] bytes)
+		public override sbyte? Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
-			Validate(bytes);
-			return bytes[0];
+			Validate(Bytes);
+			return Bytes[0];
 		}
 
-		public override sbyte? Decode(IByteBuffer byteBuf)
+		public override sbyte? Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
-			Validate(byteBuf);
-			return (sbyte) byteBuf.GetByte(0);
+			Validate(ByteBuf);
+			return ByteBuf.getByte(0);
 		}
 
-		
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static SharpPulsar.Exception.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,8 +23,7 @@ using System.Collections.Generic;
 namespace SharpPulsar.Api
 {
 
-	using UnsupportedAuthenticationException = SharpPulsar.Api.PulsarClientException.UnsupportedAuthenticationException;
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
+	using UnsupportedAuthenticationException = UnsupportedAuthenticationException;
 
 	/// <summary>
 	/// Factory class that allows to create <seealso cref="IAuthentication"/> instances
@@ -81,8 +81,6 @@ namespace SharpPulsar.Api
 		///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
 		/// <returns> instance of the Authentication object </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static Authentication create(String authPluginClassName, String authParamsString) throws SharpPulsar.Api.PulsarClientException.UnsupportedAuthenticationException
 		public static IAuthentication Create(string AuthPluginClassName, string AuthParamsString)
 		{
 			try
@@ -102,8 +100,6 @@ namespace SharpPulsar.Api
 		/// <param name="authParams">          map which represents parameters for the Authentication-Plugin </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static Authentication create(String authPluginClassName, java.util.Map<String, String> authParams) throws SharpPulsar.Api.PulsarClientException.UnsupportedAuthenticationException
 		public static IAuthentication Create(string AuthPluginClassName, IDictionary<string, string> AuthParams)
 		{
 			try

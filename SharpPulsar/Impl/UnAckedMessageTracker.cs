@@ -1,6 +1,5 @@
-﻿using DotNetty.Common;
-using SharpPulsar.Interface.Message;
-using SharpPulsar.Util.Collections;
+﻿using SharpPulsar.Impl;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -30,53 +29,53 @@ namespace SharpPulsar.Impl
 	using TimerTask = io.netty.util.TimerTask;
 	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
 
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using ConcurrentOpenHashSet = org.apache.pulsar.common.util.collections.ConcurrentOpenHashSet;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using Org.Apache.Pulsar.Common.Util.Collections;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class UnAckedMessageTracker : IDisposable
+	public class UnAckedMessageTracker : System.IDisposable
 	{
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
 
-		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>> messageIdPartitionMap;
-		protected internal readonly LinkedList<ConcurrentOpenHashSet<MessageId>> timePartitions;
+		protected internal readonly ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>> MessageIdPartitionMap;
+		protected internal readonly LinkedList<ConcurrentOpenHashSet<MessageId>> TimePartitions;
 
-		protected internal readonly Lock readLock;
-		protected internal readonly Lock writeLock;
+		protected internal readonly Lock ReadLock;
+		protected internal readonly Lock WriteLock;
 
-		public static readonly UnAckedMessageTrackerDisabled UNACKED_MESSAGE_TRACKER_DISABLED = new UnAckedMessageTrackerDisabled();
+		public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled = new UnAckedMessageTrackerDisabled();
 		private readonly long ackTimeoutMillis;
 		private readonly long tickDurationInMs;
 
 		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
 		{
-			public void Clear()
+			public override void Clear()
 			{
 			}
 
-			internal long Size()
-			{
-				return 0;
-			}
-
-			public override bool Add(MessageId m)
-			{
-				return true;
-			}
-
-			public override bool Remove(MessageId m)
-			{
-				return true;
-			}
-
-			public override int RemoveMessagesTill(MessageId msgId)
+			public override long Size()
 			{
 				return 0;
 			}
 
-			public virtual void Dispose()
+			public override bool Add(MessageId M)
+			{
+				return true;
+			}
+
+			public override bool Remove(MessageId M)
+			{
+				return true;
+			}
+
+			public override int RemoveMessagesTill(MessageId MsgId)
+			{
+				return 0;
+			}
+
+			public override void Close()
 			{
 			}
 		}
@@ -85,124 +84,128 @@ namespace SharpPulsar.Impl
 
 		public UnAckedMessageTracker()
 		{
-			readLock = null;
-			writeLock = null;
-			timePartitions = null;
-			messageIdPartitionMap = null;
+			ReadLock = null;
+			WriteLock = null;
+			TimePartitions = null;
+			MessageIdPartitionMap = null;
 			this.ackTimeoutMillis = 0;
 			this.tickDurationInMs = 0;
 		}
 
-		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : this(client, consumerBase, ackTimeoutMillis, ackTimeoutMillis)
+		public UnAckedMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis) : this(Client, ConsumerBase, AckTimeoutMillis, AckTimeoutMillis)
 		{
 		}
 
-		private static readonly FastThreadLocal<HashSet<IMessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
+		private static readonly FastThreadLocal<HashSet<MessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
 
-		private class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<IMessageId>>
+		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<MessageId>>
 		{
-			protected internal override HashSet<MessageId> InitialValue()
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override protected java.util.HashSet<SharpPulsar.api.MessageId> initialValue() throws Exception
+			public override HashSet<MessageId> initialValue()
 			{
-				return new HashSet<IMessageId>();
+				return new HashSet<MessageId>();
 			}
 		}
 
-		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationInMs)
+		public UnAckedMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis, long TickDurationInMs)
 		{
-			Preconditions.checkArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
-			this.ackTimeoutMillis = ackTimeoutMillis;
-			this.tickDurationInMs = tickDurationInMs;
-			ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-			this.readLock = readWriteLock.readLock();
-			this.writeLock = readWriteLock.writeLock();
-			this.messageIdPartitionMap = new ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>>();
-			this.timePartitions = new LinkedList<ConcurrentOpenHashSet<MessageId>>();
+			Preconditions.checkArgument(TickDurationInMs > 0 && AckTimeoutMillis >= TickDurationInMs);
+			this.ackTimeoutMillis = AckTimeoutMillis;
+			this.tickDurationInMs = TickDurationInMs;
+			ReentrantReadWriteLock ReadWriteLock = new ReentrantReadWriteLock();
+			this.ReadLock = ReadWriteLock.readLock();
+			this.WriteLock = ReadWriteLock.writeLock();
+			this.MessageIdPartitionMap = new ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>>();
+			this.TimePartitions = new LinkedList<ConcurrentOpenHashSet<MessageId>>();
 
-			int blankPartitions = (int)Math.Ceiling((double)this.ackTimeoutMillis / this.tickDurationInMs);
-			for (int i = 0; i < blankPartitions + 1; i++)
+			int BlankPartitions = (int)Math.Ceiling((double)this.ackTimeoutMillis / this.tickDurationInMs);
+			for (int I = 0; I < BlankPartitions + 1; I++)
 			{
-				timePartitions.AddLast(new ConcurrentOpenHashSet<>(16, 1));
+				TimePartitions.AddLast(new ConcurrentOpenHashSet<>(16, 1));
 			}
 
-			timeout = client.timer().newTimeout(new TimerTaskAnonymousInnerClass(this, client, consumerBase, tickDurationInMs)
-		   , this.tickDurationInMs, TimeUnit.MILLISECONDS);
+			timeout = Client.timer().newTimeout(new TimerTaskAnonymousInnerClass(this, Client, ConsumerBase, TickDurationInMs)
+		   , this.tickDurationInMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		private class TimerTaskAnonymousInnerClass : TimerTask
+		public class TimerTaskAnonymousInnerClass : TimerTask
 		{
 			private readonly UnAckedMessageTracker outerInstance;
 
-			private SharpPulsar.Impl.PulsarClientImpl client;
-			private SharpPulsar.Impl.ConsumerBase<T> consumerBase;
+			private PulsarClientImpl client;
+			private ConsumerBase<T1> consumerBase;
 			private long tickDurationInMs;
 
-			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, SharpPulsar.Impl.PulsarClientImpl client, SharpPulsar.Impl.ConsumerBase<T> consumerBase, long tickDurationInMs)
+			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker OuterInstance, PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long TickDurationInMs)
 			{
-				this.outerInstance = outerInstance;
-				this.client = client;
-				this.consumerBase = consumerBase;
-				this.tickDurationInMs = tickDurationInMs;
+				this.outerInstance = OuterInstance;
+				this.client = Client;
+				this.consumerBase = ConsumerBase;
+				this.tickDurationInMs = TickDurationInMs;
 			}
 
-			public override void run(Timeout t)
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout t) throws Exception
+			public override void run(Timeout T)
 			{
-				ISet<MessageId> messageIds = TL_MESSAGE_IDS_SET.get();
-				messageIds.Clear();
+				ISet<MessageId> MessageIds = TL_MESSAGE_IDS_SET.get();
+				MessageIds.Clear();
 
-				outerInstance.writeLock.@lock();
+				outerInstance.WriteLock.@lock();
 				try
 				{
-					ConcurrentOpenHashSet<MessageId> headPartition = outerInstance.timePartitions.RemoveFirst();
-					if (!headPartition.Empty)
+					ConcurrentOpenHashSet<MessageId> HeadPartition = outerInstance.TimePartitions.RemoveFirst();
+					if (!HeadPartition.Empty)
 					{
-						log.warn("[{}] {} messages have timed-out", consumerBase, headPartition.size());
-						headPartition.forEach(messageId =>
+						log.warn("[{}] {} messages have timed-out", consumerBase, HeadPartition.size());
+						HeadPartition.forEach(messageId =>
 						{
-						messageIds.Add(messageId);
-						outerInstance.messageIdPartitionMap.Remove(messageId);
+						MessageIds.Add(messageId);
+						outerInstance.MessageIdPartitionMap.Remove(messageId);
 						});
 					}
 
-					headPartition.clear();
-					outerInstance.timePartitions.AddLast(headPartition);
+					HeadPartition.clear();
+					outerInstance.TimePartitions.AddLast(HeadPartition);
 				}
 				finally
 				{
-					if (messageIds.Count > 0)
+					if (MessageIds.Count > 0)
 					{
-						consumerBase.onAckTimeoutSend(messageIds);
-						consumerBase.redeliverUnacknowledgedMessages(messageIds);
+						consumerBase.OnAckTimeoutSend(MessageIds);
+						consumerBase.RedeliverUnacknowledgedMessages(MessageIds);
 					}
-					outerInstance.timeout = client.timer().newTimeout(this, tickDurationInMs, TimeUnit.MILLISECONDS);
-					outerInstance.writeLock.unlock();
+					outerInstance.timeout = client.Timer().newTimeout(this, tickDurationInMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+					outerInstance.WriteLock.unlock();
 				}
 			}
 		}
 
-		public virtual void clear()
+		public virtual void Clear()
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
-				messageIdPartitionMap.Clear();
-				timePartitions.forEach(tp => tp.clear());
+				MessageIdPartitionMap.Clear();
+				TimePartitions.forEach(tp => tp.clear());
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
-		public virtual bool add(MessageId messageId)
+		public virtual bool Add(MessageId MessageId)
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
-				ConcurrentOpenHashSet<MessageId> partition = timePartitions.peekLast();
-				ConcurrentOpenHashSet<MessageId> previousPartition = messageIdPartitionMap.GetOrAdd(messageId, partition);
-				if (previousPartition == null)
+				ConcurrentOpenHashSet<MessageId> Partition = TimePartitions.peekLast();
+				ConcurrentOpenHashSet<MessageId> PreviousPartition = MessageIdPartitionMap.GetOrAdd(MessageId, Partition);
+				if (PreviousPartition == null)
 				{
-					return partition.add(messageId);
+					return Partition.add(MessageId);
 				}
 				else
 				{
@@ -211,108 +214,108 @@ namespace SharpPulsar.Impl
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
-		internal virtual bool Empty
+		public virtual bool Empty
 		{
 			get
 			{
-				readLock.@lock();
+				ReadLock.@lock();
 				try
 				{
-					return messageIdPartitionMap.IsEmpty;
+					return MessageIdPartitionMap.IsEmpty;
 				}
 				finally
 				{
-					readLock.unlock();
+					ReadLock.unlock();
 				}
 			}
 		}
 
-		public virtual bool remove(MessageId messageId)
+		public virtual bool Remove(MessageId MessageId)
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
-				bool removed = false;
-				ConcurrentOpenHashSet<MessageId> exist = messageIdPartitionMap.Remove(messageId);
-				if (exist != null)
+				bool Removed = false;
+				ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap.Remove(MessageId);
+				if (Exist != null)
 				{
-					removed = exist.remove(messageId);
+					Removed = Exist.remove(MessageId);
 				}
-				return removed;
+				return Removed;
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
-		internal virtual long size()
+		public virtual long Size()
 		{
-			readLock.@lock();
+			ReadLock.@lock();
 			try
 			{
-				return messageIdPartitionMap.Count;
+				return MessageIdPartitionMap.Count;
 			}
 			finally
 			{
-				readLock.unlock();
+				ReadLock.unlock();
 			}
 		}
 
-		public virtual int removeMessagesTill(MessageId msgId)
+		public virtual int RemoveMessagesTill(MessageId MsgId)
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
-				int removed = 0;
-				IEnumerator<MessageId> iterator = messageIdPartitionMap.Keys.GetEnumerator();
-				while (iterator.MoveNext())
+				int Removed = 0;
+				IEnumerator<MessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
+				while (Iterator.MoveNext())
 				{
-					MessageId messageId = iterator.Current;
-					if (messageId.compareTo(msgId) <= 0)
+					MessageId MessageId = Iterator.Current;
+					if (MessageId.CompareTo(MsgId) <= 0)
 					{
-						ConcurrentOpenHashSet<MessageId> exist = messageIdPartitionMap[messageId];
-						if (exist != null)
+						ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap[MessageId];
+						if (Exist != null)
 						{
-							exist.remove(messageId);
+							Exist.remove(MessageId);
 						}
 //JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
-						iterator.remove();
-						removed++;
+						Iterator.remove();
+						Removed++;
 					}
 				}
-				return removed;
+				return Removed;
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
-		private void stop()
+		private void Stop()
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
 				if (timeout != null && !timeout.Cancelled)
 				{
 					timeout.cancel();
 				}
-				this.clear();
+				this.Clear();
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
-		public virtual void Dispose()
+		public override void Close()
 		{
-			stop();
+			Stop();
 		}
 	}
 

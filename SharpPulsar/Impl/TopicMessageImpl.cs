@@ -21,32 +21,32 @@
 
 namespace SharpPulsar.Impl
 {
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using EncryptionContext = org.apache.pulsar.common.api.EncryptionContext;
+	using SharpPulsar.Api;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using EncryptionContext = Org.Apache.Pulsar.Common.Api.EncryptionContext;
 
 	public class TopicMessageImpl<T> : Message<T>
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
-		private readonly string topicPartitionName;
+		public virtual TopicPartitionName {get;}
 
 		private readonly Message<T> msg;
 		private readonly TopicMessageIdImpl messageId;
 
-		internal TopicMessageImpl(string topicPartitionName, string topicName, Message<T> msg)
+		public TopicMessageImpl(string TopicPartitionName, string TopicName, Message<T> Msg)
 		{
-			this.topicPartitionName = topicPartitionName;
+			this.TopicPartitionName = TopicPartitionName;
 
-			this.msg = msg;
-			this.messageId = new TopicMessageIdImpl(topicPartitionName, topicName, msg.MessageId);
+			this.msg = Msg;
+			this.messageId = new TopicMessageIdImpl(TopicPartitionName, TopicName, Msg.MessageId);
 		}
 
 		/// <summary>
 		/// Get the topic name without partition part of this message. </summary>
 		/// <returns> the name of the topic on which this message was published </returns>
-		public override string TopicName
+		public virtual string TopicName
 		{
 			get
 			{
@@ -57,15 +57,8 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
-		public virtual string TopicPartitionName
-		{
-			get
-			{
-				return topicPartitionName;
-			}
-		}
 
-		public override MessageId MessageId
+		public virtual MessageId MessageId
 		{
 			get
 			{
@@ -81,7 +74,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override IDictionary<string, string> Properties
+		public virtual IDictionary<string, string> Properties
 		{
 			get
 			{
@@ -89,17 +82,17 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool hasProperty(string name)
+		public override bool HasProperty(string Name)
 		{
-			return msg.hasProperty(name);
+			return msg.HasProperty(Name);
 		}
 
-		public override string getProperty(string name)
+		public override string GetProperty(string Name)
 		{
-			return msg.getProperty(name);
+			return msg.GetProperty(Name);
 		}
 
-		public override sbyte[] Data
+		public virtual sbyte[] Data
 		{
 			get
 			{
@@ -107,7 +100,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long PublishTime
+		public virtual long PublishTime
 		{
 			get
 			{
@@ -115,7 +108,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long EventTime
+		public virtual long EventTime
 		{
 			get
 			{
@@ -123,7 +116,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override long SequenceId
+		public virtual long SequenceId
 		{
 			get
 			{
@@ -131,7 +124,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override string ProducerName
+		public virtual string ProducerName
 		{
 			get
 			{
@@ -139,12 +132,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool hasKey()
+		public override bool HasKey()
 		{
-			return msg.hasKey();
+			return msg.HasKey();
 		}
 
-		public override string Key
+		public virtual string Key
 		{
 			get
 			{
@@ -152,12 +145,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool hasBase64EncodedKey()
+		public override bool HasBase64EncodedKey()
 		{
-			return msg.hasBase64EncodedKey();
+			return msg.HasBase64EncodedKey();
 		}
 
-		public override sbyte[] KeyBytes
+		public virtual sbyte[] KeyBytes
 		{
 			get
 			{
@@ -165,12 +158,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool hasOrderingKey()
+		public override bool HasOrderingKey()
 		{
-			return msg.hasOrderingKey();
+			return msg.HasOrderingKey();
 		}
 
-		public override sbyte[] OrderingKey
+		public virtual sbyte[] OrderingKey
 		{
 			get
 			{
@@ -178,7 +171,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override T Value
+		public virtual T Value
 		{
 			get
 			{
@@ -186,7 +179,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override Optional<EncryptionContext> EncryptionCtx
+		public virtual Optional<EncryptionContext> EncryptionCtx
 		{
 			get
 			{
@@ -194,7 +187,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override int RedeliveryCount
+		public virtual int RedeliveryCount
 		{
 			get
 			{
@@ -202,7 +195,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override sbyte[] SchemaVersion
+		public virtual sbyte[] SchemaVersion
 		{
 			get
 			{
@@ -210,7 +203,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool Replicated
+		public virtual bool Replicated
 		{
 			get
 			{
@@ -218,7 +211,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override string ReplicatedFrom
+		public virtual string ReplicatedFrom
 		{
 			get
 			{

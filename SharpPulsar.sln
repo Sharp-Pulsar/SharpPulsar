@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pulsar.Test", "Pulsar.Test\Pulsar.Test.csproj", "{BE927603-02F8-4F33-9BA4-58A0F0F6460E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test", "SharpPulsar.Test\SharpPulsar.Test.csproj", "{82E83F82-B004-40B9-9391-1ED2B8E12AB1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B9FEDDC4-BE7A-46A8-899E-B5001704ABF1}"
@@ -30,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Exception", "Sh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Shared", "SharpPulsar.Shared\SharpPulsar.Shared.csproj", "{A6E586CB-C032-4527-B728-866A4716A50A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{43E2BD05-1E73-4887-80E4-17FB49711AF1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,10 +40,6 @@ Global
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE927603-02F8-4F33-9BA4-58A0F0F6460E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07E7C022-6FFA-4E3F-B7EE-82D6AB7F4C6A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -80,6 +76,10 @@ Global
 		{A6E586CB-C032-4527-B728-866A4716A50A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6E586CB-C032-4527-B728-866A4716A50A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6E586CB-C032-4527-B728-866A4716A50A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,8 +1,4 @@
-﻿using SharpPulsar.Common.Protocol.Schema;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
-using SharpPulsar.Interface.Schema;
-using System;
+﻿using System;
 using System.Threading;
 
 /// <summary>
@@ -33,11 +29,21 @@ namespace SharpPulsar.Impl.Schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufInputStream = io.netty.buffer.ByteBufInputStream;
 	using AvroTypeException = org.apache.avro.AvroTypeException;
-	using Schema = org.apache.avro.Schema;
 	using Parser = org.apache.avro.Schema.Parser;
 	using ReflectData = org.apache.avro.reflect.ReflectData;
 	using Hex = org.apache.commons.codec.binary.Hex;
-	using SerializationException = org.apache.commons.
+	using SerializationException = org.apache.commons.lang3.SerializationException;
+	using StringUtils = org.apache.commons.lang3.StringUtils;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
+	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	/// <summary>
 	/// This is a base schema implementation for `Struct` types.
@@ -53,125 +59,106 @@ namespace SharpPulsar.Impl.Schema
 	public abstract class StructSchema<T> : AbstractSchema<T>
 	{
 
-		//protected internal static readonly Logger LOG = LoggerFactory.getLogger(typeof(StructSchema));
+		protected internal static readonly Logger LOG = LoggerFactory.getLogger(typeof(StructSchema));
 
-		protected internal readonly Schema schema;
-		protected internal readonly SchemaInfo schemaInfo;
-		protected internal ISchemaReader<T> reader;
-		protected internal SchemaWriter<T> writer;
-		protected internal ISchemaInfoProvider schemaInfoProvider;
+		protected internal readonly org.apache.avro.Schema Schema;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly SchemaInfo SchemaInfoConflict;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal SchemaReader<T> ReaderConflict;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal SchemaWriter<T> WriterConflict;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
 
-		private readonly LoadingCache<BytesSchemaVersion, ISchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly LoadingCache<BytesSchemaVersion, SchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
-		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, SchemaReader<T>>
+		public class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, SchemaReader<T>>
 		{
-			public ISchemaReader<T> Load(BytesSchemaVersion schemaVersion)
+			public override SchemaReader<T> load(BytesSchemaVersion SchemaVersion)
 			{
-				return outerInstance.loadReader(schemaVersion);
+				return outerInstance.loadReader(SchemaVersion);
 			}
 		}
 
-		protected internal StructSchema(SchemaInfo schemaInfo)
+		public StructSchema(SchemaInfo SchemaInfo)
 		{
-			this.schema = ParseAvroSchema(new string(schemaInfo.Schema, UTF_8));
-			this.schemaInfo = schemaInfo;
+			this.Schema = ParseAvroSchema(new string(SchemaInfo.Schema, UTF_8));
+			this.SchemaInfoConflict = SchemaInfo;
 		}
 
-		public virtual Schema AvroSchema
+		public virtual org.apache.avro.Schema AvroSchema
 		{
 			get
 			{
-				return schema;
+				return Schema;
 			}
 		}
 
-		public sbyte[] Encode(T message)
+		public override sbyte[] Encode(T Message)
 		{
-			return writer.write(message);
+			return WriterConflict.write(Message);
 		}
 
-		public T Decode(sbyte[] bytes)
+		public override T Decode(sbyte[] Bytes)
 		{
-			return reader.Read(bytes);
+			return ReaderConflict.read(Bytes);
 		}
 
-		public T Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public override T Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
 			try
 			{
-				return readerCache.get(BytesSchemaVersion.of(schemaVersion)).read(bytes);
+				return readerCache.get(BytesSchemaVersion.of(SchemaVersion)).read(Bytes);
 			}
-			catch (System.Exception e) when (e is ExecutionException || e is AvroTypeException)
+			catch (Exception e) when (e is ExecutionException || e is AvroTypeException)
 			{
 				if (e is AvroTypeException)
 				{
 					throw new SchemaSerializationException(e);
 				}
-				LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.TopicName, Hex.encodeHexString(schemaVersion), e);
-				throw new System.Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
+				LOG.error("Can't get generic schema for topic {} schema version {}", SchemaInfoProviderConflict.TopicName, Hex.encodeHexString(SchemaVersion), e);
+				throw new Exception("Can't get generic schema for topic " + SchemaInfoProviderConflict.TopicName);
 			}
 		}
 
-		public override T Decode(ByteBuf byteBuf)
+		public override T Decode(ByteBuf ByteBuf)
 		{
-			return reader.Read(new ByteBufInputStream(byteBuf));
+			return ReaderConflict.read(new ByteBufInputStream(ByteBuf));
 		}
 
-		public override T Decode(ByteBuf byteBuf, sbyte[] schemaVersion)
+		public override T Decode(ByteBuf ByteBuf, sbyte[] SchemaVersion)
 		{
 			try
 			{
-				return readerCache.get(BytesSchemaVersion.of(schemaVersion)).read(new ByteBufInputStream(byteBuf));
+				return readerCache.get(BytesSchemaVersion.of(SchemaVersion)).read(new ByteBufInputStream(ByteBuf));
 			}
-			catch (ExecutionException e)
+			catch (ExecutionException E)
 			{
-				LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.TopicName, Hex.encodeHexString(schemaVersion), e);
-				throw new Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
+				LOG.error("Can't get generic schema for topic {} schema version {}", SchemaInfoProviderConflict.TopicName, Hex.encodeHexString(SchemaVersion), E);
+				throw new Exception("Can't get generic schema for topic " + SchemaInfoProviderConflict.TopicName);
 			}
 		}
 
-		public SchemaInfo SchemaInfo
+		public override SchemaInfo SchemaInfo
 		{
 			get
 			{
-				return this.schemaInfo;
+				return this.SchemaInfoConflict;
 			}
 		}
 
-		protected internal static Schema CreateAvroSchema(ISchemaDefinition<T> schemaDefinition)
+		protected internal static org.apache.avro.Schema CreateAvroSchema(SchemaDefinition SchemaDefinition)
 		{
-			Type pojo = schemaDefinition.Pojo;
+			Type Pojo = SchemaDefinition.Pojo;
 
-			if (!string.IsNullOrWhiteSpace(schemaDefinition.JsonDef))
+			if (StringUtils.isNotBlank(SchemaDefinition.JsonDef))
 			{
-				return ParseAvroSchema(schemaDefinition.JsonDef);
+				return ParseAvroSchema(SchemaDefinition.JsonDef);
 			}
-			else if (pojo != null)
+			else if (Pojo != null)
 			{
-				ThreadLocal<bool> validateDefaults = null;
-
-				try
-				{
-					System.Reflection.FieldInfo validateDefaultsField = typeof(Schema).getDeclaredField("VALIDATE_DEFAULTS");
-					validateDefaultsField.Accessible = true;
-					validateDefaults = (ThreadLocal<bool>) validateDefaultsField.get(null);
-				}
-				catch (Exception e) when (e is NoSuchFieldException || e is IllegalAccessException)
-				{
-					throw new Exception("Cannot disable validation of default values", e);
-				}
-				bool savedValidateDefaults = validateDefaults.get();
-
-				try
-				{
-					// Disable validation of default values for compatibility
-					validateDefaults.set(false);
-					return schemaDefinition.AlwaysAllowNull ? ReflectData.AllowNull.get().getSchema(pojo) : ReflectData.get().getSchema(pojo);
-				}
-				finally
-				{
-					validateDefaults.set(savedValidateDefaults);
-				}
+				return SchemaDefinition.AlwaysAllowNull ? ReflectData.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
 			}
 			else
 			{
@@ -179,23 +166,24 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		protected internal static Schema ParseAvroSchema(string schemaJson)
+		protected internal static org.apache.avro.Schema ParseAvroSchema(string SchemaJson)
 		{
-			Schema.Parser parser = new Schema.Parser();
-			parser.ValidateDefaults = false;
-			return parser.parse(schemaJson);
+//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+//ORIGINAL LINE: final org.apache.avro.Schema.Parser parser = new org.apache.avro.Schema.Parser();
+			Parser Parser = new Parser();
+			return Parser.parse(SchemaJson);
 		}
 
-		protected internal static SchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
+		protected internal static SchemaInfo ParseSchemaInfo<T>(SchemaDefinition<T> SchemaDefinition, SchemaType SchemaType)
 		{
-			return ISchemaInfo.Builder<T>().schema(CreateAvroSchema(schemaDefinition).ToString().GetBytes(UTF_8)).properties(schemaDefinition.Properties).name("").type(schemaType).build();
+			return SchemaInfo.builder().schema(CreateAvroSchema(SchemaDefinition).ToString().GetBytes(UTF_8)).properties(SchemaDefinition.Properties).name("").type(SchemaType).build();
 		}
 
-		public virtual ISchemaInfoProvider SchemaInfoProvider
+		public override SchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
-				this.schemaInfoProvider = value;
+				this.SchemaInfoProviderConflict = value;
 			}
 		}
 
@@ -204,45 +192,45 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		protected internal abstract ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion);
+		public abstract SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async
 		/// </summary>
-		protected internal virtual SchemaInfo GetSchemaInfoByVersion(sbyte[] schemaVersion)
+		public virtual SchemaInfo GetSchemaInfoByVersion(sbyte[] SchemaVersion)
 		{
 			try
 			{
-				return schemaInfoProvider.GetSchemaByVersion(schemaVersion).Result;
+				return SchemaInfoProviderConflict.getSchemaByVersion(SchemaVersion).get();
 			}
-			catch (InterruptedException e)
+			catch (InterruptedException E)
 			{
 				Thread.CurrentThread.Interrupt();
-				throw new SerializationException("Interrupted at fetching schema info for " + SchemaUtils.getStringSchemaVersion(schemaVersion), e);
+				throw new SerializationException("Interrupted at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(SchemaVersion), E);
 			}
-			catch (ExecutionException e)
+			catch (ExecutionException E)
 			{
-				throw new SerializationException("Failed at fetching schema info for " + SchemaUtils.getStringSchemaVersion(schemaVersion), e.InnerException);
-			}
-		}
-
-		protected internal virtual SchemaWriter<T> Writer
-		{
-			set
-			{
-				this.writer = value;
+				throw new SerializationException("Failed at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(SchemaVersion), E.InnerException);
 			}
 		}
 
-		protected internal virtual ISchemaReader<T> Reader
+		public virtual SchemaWriter<T> Writer
 		{
 			set
 			{
-				this.reader = value;
+				this.WriterConflict = value;
+			}
+		}
+
+		public virtual SchemaReader<T> Reader
+		{
+			set
+			{
+				this.ReaderConflict = value;
 			}
 			get
 			{
-				return reader;
+				return ReaderConflict;
 			}
 		}
 

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,8 +26,8 @@ namespace SharpPulsar.Impl.Schema
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 
 	/// <summary>
@@ -37,120 +36,113 @@ namespace SharpPulsar.Impl.Schema
 	public class StringSchema : AbstractSchema<string>
 	{
 
-		internal static readonly string CHARSET_KEY;
+		internal static readonly string CharsetKey;
 
 		private static readonly SchemaInfo DEFAULT_SCHEMA_INFO;
-		private static readonly CharSet DEFAULT_CHARSET;
+		private static readonly Charset DEFAULT_CHARSET;
 		private static readonly StringSchema UTF8;
 
 		static StringSchema()
 		{
 			// Ensure the ordering of the static initialization
-			CHARSET_KEY = "__charset";
-			DEFAULT_CHARSET = CharSet.Ansi;
+			CharsetKey = "__charset";
+			DEFAULT_CHARSET = StandardCharsets.UTF_8;
 			DEFAULT_SCHEMA_INFO = (new SchemaInfo()).setName("String").setType(SchemaType.STRING).setSchema(new sbyte[0]);
 
-			UTF8 = new StringSchema(CharSet.Ansi);
+			UTF8 = new StringSchema(StandardCharsets.UTF_8);
 		}
 
 		private static readonly FastThreadLocal<sbyte[]> tmpBuffer = new FastThreadLocalAnonymousInnerClass();
 
-		private class FastThreadLocalAnonymousInnerClass : FastThreadLocal<sbyte[]>
+		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<sbyte[]>
 		{
-			protected internal override sbyte[] initialValue()
+			public override sbyte[] initialValue()
 			{
 				return new sbyte[1024];
 			}
 		}
 
-		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
+		public static StringSchema FromSchemaInfo(SchemaInfo SchemaInfo)
 		{
-			checkArgument(SchemaType.STRING == schemaInfo.Type, "Not a string schema");
-			string charsetName = schemaInfo.Properties.get(CHARSET_KEY);
-			if (null == charsetName)
+			checkArgument(SchemaType.STRING == SchemaInfo.Type, "Not a string schema");
+			string CharsetName = SchemaInfo.Properties.get(CharsetKey);
+			if (null == CharsetName)
 			{
 				return UTF8;
 			}
 			else
 			{
-				return new StringSchema(CharSet.ForName(charsetName));
+				return new StringSchema(Charset.forName(CharsetName));
 			}
 		}
 
-		public static StringSchema utf8()
+		public static StringSchema Utf8()
 		{
 			return UTF8;
 		}
 
-		private readonly CharSet charset;
-		private readonly SchemaInfo schemaInfo;
+		private readonly Charset charset;
+		public virtual SchemaInfo {get;}
 
 		public StringSchema()
 		{
 			this.charset = DEFAULT_CHARSET;
-			this.schemaInfo = DEFAULT_SCHEMA_INFO;
+			this.SchemaInfo = DEFAULT_SCHEMA_INFO;
 		}
 
-		public StringSchema(CharSet charset)
+		public StringSchema(Charset Charset)
 		{
-			this.charset = charset;
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties[CHARSET_KEY] = charset.name();
-			this.schemaInfo = (new SchemaInfo()).setName(DEFAULT_SCHEMA_INFO.Name).setType(SchemaType.STRING).setSchema(DEFAULT_SCHEMA_INFO.Schema).setProperties(properties);
+			this.charset = Charset;
+			IDictionary<string, string> Properties = new Dictionary<string, string>();
+			Properties[CharsetKey] = Charset.name();
+			this.SchemaInfo = (new SchemaInfo()).setName(DEFAULT_SCHEMA_INFO.Name).setType(SchemaType.STRING).setSchema(DEFAULT_SCHEMA_INFO.Schema).setProperties(Properties);
 		}
 
-		public virtual sbyte[] Encode(string message)
+		public virtual sbyte[] Encode(string Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				return message.GetBytes(charset);
+				return Message.GetBytes(charset);
 			}
 		}
 
-		public virtual string Decode(sbyte[] bytes)
+		public virtual string Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
 			else
 			{
-				return StringHelper.NewString(bytes, charset);
+				return StringHelper.NewString(Bytes, charset);
 			}
 		}
 
-		public override string Decode(ByteBuf byteBuf)
+		public virtual string Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
 			else
 			{
-				int size = byteBuf.readableBytes();
-				sbyte[] bytes = tmpBuffer.get();
-				if (size > bytes.Length)
+				int Size = ByteBuf.readableBytes();
+				sbyte[] Bytes = tmpBuffer.get();
+				if (Size > Bytes.Length)
 				{
-					bytes = new sbyte[size * 2];
-					tmpBuffer.set(bytes);
+					Bytes = new sbyte[Size * 2];
+					tmpBuffer.set(Bytes);
 				}
-				byteBuf.readBytes(bytes, 0, size);
+				ByteBuf.readBytes(Bytes, 0, Size);
 
-				return StringHelper.NewString(bytes, 0, size, charset);
+				return StringHelper.NewString(Bytes, 0, Size, charset);
 			}
 		}
 
-		public virtual SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return schemaInfo;
-			}
-		}
 	}
 
 }

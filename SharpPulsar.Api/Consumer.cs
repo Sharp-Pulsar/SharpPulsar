@@ -184,7 +184,7 @@ namespace SharpPulsar.Api
 		/// 
 		/// <para>When a message is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="IConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -219,7 +219,7 @@ namespace SharpPulsar.Api
 		/// 
 		/// <para>When a message is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="IConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -242,7 +242,7 @@ namespace SharpPulsar.Api
 		/// 
 		/// <para>When messages is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="IConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.

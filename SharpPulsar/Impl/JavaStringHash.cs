@@ -35,14 +35,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual int makeHash(string s)
+		public override int MakeHash(string S)
 		{
-			return s.GetHashCode() & int.MaxValue;
+			return S.GetHashCode() & int.MaxValue;
 		}
 
-		public virtual int makeHash(sbyte[] b)
+		public override int MakeHash(sbyte[] B)
 		{
-			return makeHash(StringHelper.NewString(b, UTF_8));
+			return MakeHash(StringHelper.NewString(B, UTF_8));
 		}
 
 	}

@@ -1,7 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,6 +18,10 @@ using SharpPulsar.Exception;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `Float`.
@@ -29,11 +30,11 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly FloatSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static FloatSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("Float").setType(SchemaType.FLOAT).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("Float").setType(SchemaType.FLOAT).setSchema(new sbyte[0]);
 			INSTANCE = new FloatSchema();
 		}
 
@@ -42,75 +43,68 @@ namespace SharpPulsar.Impl.Schema
 			return INSTANCE;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
-			if (message.Length != 4)
+			if (Message.Length != 4)
 			{
 				throw new SchemaSerializationException("Size of data received by FloatSchema is not 4");
 			}
 		}
 
-		public void Validate(IByteBuffer message)
+		public override void Validate(ByteBuf Message)
 		{
-			if (message.ReadableBytes != 4)
+			if (Message.readableBytes() != 4)
 			{
 				throw new SchemaSerializationException("Size of data received by FloatSchema is not 4");
 			}
 		}
 
-		public sbyte[] Encode(float? message)
+		public override sbyte[] Encode(float? Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				long bits = Float.floatToRawIntBits(message);
-				return new sbyte[] {(sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
+				long Bits = Float.floatToRawIntBits(Message);
+				return new sbyte[] {(sbyte)((long)((ulong)Bits >> 24)), (sbyte)((long)((ulong)Bits >> 16)), (sbyte)((long)((ulong)Bits >> 8)), (sbyte) Bits};
 			}
 		}
 
-		public float? Decode(sbyte[] bytes)
+		public override float? Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
-			Validate(bytes);
-			int value = 0;
-			foreach (sbyte b in bytes)
+			Validate(Bytes);
+			int Value = 0;
+			foreach (sbyte B in Bytes)
 			{
-				value <<= 8;
-				value |= b & 0xFF;
+				Value <<= 8;
+				Value |= B & 0xFF;
 			}
-			return Float.intBitsToFloat(value);
+			return Float.intBitsToFloat(Value);
 		}
 
-		public override float Decode(IByteBuffer byteBuf)
+		public override float? Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
-			Validate(byteBuf);
-			int value = 0;
-			for (int i = 0; i < 4; i++)
+			Validate(ByteBuf);
+			int Value = 0;
+			for (int I = 0; I < 4; I++)
 			{
-				value <<= 8;
-				value |= byteBuf.GetByte(i) & 0xFF;
+				Value <<= 8;
+				Value |= ByteBuf.getByte(I) & 0xFF;
 			}
 
-			return Float.intBitsToFloat(value);
+			return Float.intBitsToFloat(Value);
 		}
 
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

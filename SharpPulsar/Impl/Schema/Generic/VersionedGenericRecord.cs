@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Entity;
-using SharpPulsar.Interface.Schema;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,42 +20,44 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
+	using Field = SharpPulsar.Api.Schema.Field;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.
 	/// </summary>
-	public abstract class VersionedGenericRecord : IGenericRecord
+	public abstract class VersionedGenericRecord : GenericRecord
 	{
+		public abstract object GetField(string FieldName);
+		public abstract object GetField(Field Field);
 
-		protected internal readonly sbyte[] schemaVersion;
-		protected internal readonly IList<Field> fields;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly sbyte[] SchemaVersionConflict;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly IList<Field> FieldsConflict;
 
-		protected internal VersionedGenericRecord(sbyte[] schemaVersion, IList<Field> fields)
+		public VersionedGenericRecord(sbyte[] SchemaVersion, IList<Field> Fields)
 		{
-			this.schemaVersion = schemaVersion;
-			this.fields = fields;
+			this.SchemaVersionConflict = SchemaVersion;
+			this.FieldsConflict = Fields;
 		}
 
-		public sbyte[] SchemaVersion
-		{
-			get
-			{
-				return schemaVersion;
-			}
-		}
-
-		public IList<Field> Fields
+		public virtual sbyte[] SchemaVersion
 		{
 			get
 			{
-				return fields;
+				return SchemaVersionConflict;
 			}
 		}
 
-		public object GetField(string fieldName)
+		public virtual IList<Field> Fields
 		{
-			throw new System.NotImplementedException();
+			get
+			{
+				return FieldsConflict;
+			}
 		}
+
 	}
 
 }

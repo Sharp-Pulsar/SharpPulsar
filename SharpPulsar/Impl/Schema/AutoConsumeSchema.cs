@@ -1,8 +1,4 @@
-﻿using SharpPulsar.Impl.Schema.Generic;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Schema;
-using SharpPulsar.Interface.Schema;
-using System;
+﻿using System;
 using System.Threading;
 
 /// <summary>
@@ -25,23 +21,37 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using GenericSchemaImpl = GenericSchemaImpl;
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkState;
+
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using SharpPulsar.Api;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using SharpPulsar.Api.Schema;
+	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
+	using GenericSchemaImpl = SharpPulsar.Impl.Schema.Generic.GenericSchemaImpl;
+	using Org.Apache.Pulsar.Common.Schema;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoConsumeSchema : ISchema<IGenericRecord>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public class AutoConsumeSchema implements SharpPulsar.api.Schema<SharpPulsar.api.schema.GenericRecord>
+	public class AutoConsumeSchema : Schema<GenericRecord>
 	{
 
-		private ISchema<IGenericRecord> schema;
+		private Schema<GenericRecord> schema;
 
 		private string topicName;
 
 		private string componentName;
 
-		private ISchemaInfoProvider schemaInfoProvider;
+		private SchemaInfoProvider schemaInfoProvider;
 
-		public virtual ISchema<IGenericRecord> Schema
+		public virtual Schema<GenericRecord> Schema
 		{
 			set
 			{
@@ -54,33 +64,33 @@ namespace SharpPulsar.Impl.Schema
 			checkState(null != schema, "Schema is not initialized before used");
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
 			EnsureSchemaInitialized();
 
-			schema.Validate(message);
+			schema.Validate(Message);
 		}
 
-		public bool SupportSchemaVersioning()
+		public override bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 
-		public sbyte[] Encode(IGenericRecord message)
+		public override sbyte[] Encode(GenericRecord Message)
 		{
 			EnsureSchemaInitialized();
 
-			return schema.Encode(message);
+			return schema.Encode(Message);
 		}
 
-		public IGenericRecord Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public override GenericRecord Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
 			if (schema == null)
 			{
-				SchemaInfo schemaInfo = null;
+				SchemaInfo SchemaInfo = null;
 				try
 				{
-					schemaInfo = schemaInfoProvider.LatestSchema.Result;
+					SchemaInfo = schemaInfoProvider.LatestSchema.get();
 				}
 				catch (Exception e) when (e is InterruptedException || e is ExecutionException)
 				{
@@ -91,15 +101,15 @@ namespace SharpPulsar.Impl.Schema
 					log.error("Con't get last schema for topic {} use AutoConsumeSchema", topicName);
 					throw new SchemaSerializationException(e.Cause);
 				}
-				schema = GenerateSchema(schemaInfo);
+				schema = GenerateSchema(SchemaInfo);
 				schema.SchemaInfoProvider = schemaInfoProvider;
-				log.info("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
+				log.info("Configure {} schema for topic {} : {}", componentName, topicName, SchemaInfo.SchemaDefinition);
 			}
 			EnsureSchemaInitialized();
-			return schema.Decode(bytes, schemaVersion);
+			return schema.Decode(Bytes, SchemaVersion);
 		}
 
-		public ISchemaInfoProvider SchemaInfoProvider
+		public virtual SchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -114,7 +124,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public SchemaInfo SchemaInfo
+		public virtual SchemaInfo SchemaInfo
 		{
 			get
 			{
@@ -126,71 +136,78 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public  bool RequireFetchingSchemaInfo()
+		public override bool RequireFetchingSchemaInfo()
 		{
 			return true;
 		}
 
-		public void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
+		public override void ConfigureSchemaInfo(string TopicName, string ComponentName, SchemaInfo SchemaInfo)
 		{
-			this.topicName = topicName;
-			this.componentName = componentName;
-			if (schemaInfo != null)
+			this.topicName = TopicName;
+			this.componentName = ComponentName;
+			if (SchemaInfo != null)
 			{
-				IGenericSchema genericSchema = GenerateSchema(schemaInfo);
-				Schema = genericSchema;
-				log.info("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
+				GenericSchema GenericSchema = GenerateSchema(SchemaInfo);
+				Schema = GenericSchema;
+				log.info("Configure {} schema for topic {} : {}", ComponentName, TopicName, SchemaInfo.SchemaDefinition);
 			}
 		}
 
-		private IGenericSchema<T> GenerateSchema(SchemaInfo schemaInfo)
+		private GenericSchema GenerateSchema(SchemaInfo SchemaInfo)
 		{
-			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
+			if (SchemaInfo.Type != SchemaType.AVRO && SchemaInfo.Type != SchemaType.JSON)
 			{
 				throw new Exception("Currently auto consume only works for topics with avro or json schemas");
 			}
 			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
 			// to decode the messages.
-			return GenericSchemaImpl.Of(schemaInfo, false);
+			return GenericSchemaImpl.of(SchemaInfo, false);
 		}
-		public static ISchema<T> GetSchema(SchemaInfo schemaInfo)
+
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+//ORIGINAL LINE: public static SharpPulsar.api.Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
+		public static Schema<object> GetSchema(SchemaInfo SchemaInfo)
 		{
-			switch (schemaInfo.Type)
+			switch (SchemaInfo.Type)
 			{
-				case INT8:
+				case SchemaFields.INT8:
 					return ByteSchema.Of();
-				case INT16:
-					return ShortSchema.of();
-				case INT32:
-					return IntSchema.of();
-				case INT64:
-					return LongSchema.of();
-				case STRING:
-					return StringSchema.utf8();
-				case FLOAT:
-					return FloatSchema.of();
-				case DOUBLE:
-					return DoubleSchema.of();
+				case SchemaFields.INT16:
+					return ShortSchema.Of();
+				case SchemaFields.INT32:
+					return IntSchema.Of();
+				case SchemaFields.INT64:
+					return LongSchema.Of();
+				case SchemaFields.STRING:
+					return StringSchema.Utf8();
+				case SchemaFields.FLOAT:
+					return FloatSchema.Of();
+				case SchemaFields.DOUBLE:
+					return DoubleSchema.Of();
 				case BOOLEAN:
-					return BoolSchema.of();
-				case BYTES:
-					return BytesSchema.of();
-				case DATE:
-					return DateSchema.of();
-				case TIME:
-					return TimeSchema.of();
-				case TIMESTAMP:
-					return TimestampSchema.of();
+					return BooleanSchema.Of();
+				case SchemaFields.BYTES:
+					return BytesSchema.Of();
+				case SchemaFields.DATE:
+					return DateSchema.Of();
+				case SchemaFields.TIME:
+					return TimeSchema.Of();
+				case SchemaFields.TIMESTAMP:
+					return TimestampSchema.Of();
 				case JSON:
 				case AVRO:
-					return GenericSchemaImpl.Of(schemaInfo);
+					return GenericSchemaImpl.of(SchemaInfo);
 				case KEY_VALUE:
-					KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.decodeKeyValueSchemaInfo(schemaInfo);
-					ISchema<object> keySchema = GetSchema(kvSchemaInfo.Key);
-					ISchema<object> valueSchema = GetSchema(kvSchemaInfo.Value);
-					return KeyValueSchema<K,V>.Of(keySchema, valueSchema);
+					KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(SchemaInfo);
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+//ORIGINAL LINE: SharpPulsar.api.Schema<?> keySchema = getSchema(kvSchemaInfo.getKey());
+					Schema<object> KeySchema = GetSchema(KvSchemaInfo.Key);
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+//ORIGINAL LINE: SharpPulsar.api.Schema<?> valueSchema = getSchema(kvSchemaInfo.getValue());
+					Schema<object> ValueSchema = GetSchema(KvSchemaInfo.Value);
+					return KeyValueSchema.Of(KeySchema, ValueSchema);
 				default:
-					throw new System.ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
+					throw new System.ArgumentException("Retrieve schema instance from schema info for type '" + SchemaInfo.Type + "' is not supported yet");
 			}
 		}
 	}

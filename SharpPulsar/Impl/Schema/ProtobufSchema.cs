@@ -28,104 +28,102 @@ namespace SharpPulsar.Impl.Schema
 	using AllArgsConstructor = lombok.AllArgsConstructor;
 	using Getter = lombok.Getter;
 	using ProtobufData = org.apache.avro.protobuf.ProtobufData;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using SchemaReader = org.apache.pulsar.client.api.schema.SchemaReader;
-	using SharpPulsar.Impl.Schema.reader;
-	using SharpPulsar.Impl.Schema.writer;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using ISchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-    using Pulsar.Client.Impl.Schema.Reader;
-    using Pulsar.Client.Impl.Schema.Writer;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Interface.Schema;
-    using SharpPulsar.Common.Protocol.Schema;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Impl.Schema.Reader;
+	using SharpPulsar.Impl.Schema.Writer;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 
-    /// <summary>
-    /// A schema implementation to deal with protobuf generated messages.
-    /// </summary>
-    public class ProtobufSchema<T> : StructSchema<T> //where T :  com.google.protobuf.GeneratedMessageV3
+	/// <summary>
+	/// A schema implementation to deal with protobuf generated messages.
+	/// </summary>
+	public class ProtobufSchema<T> : StructSchema<T> where T : com.google.protobuf.GeneratedMessageV3
 	{
 
-		public const string PARSING_INFO_PROPERTY = "__PARSING_INFO__";
+		public const string ParsingInfoProperty = "__PARSING_INFO__";
+
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Getter @AllArgsConstructor public static class ProtoBufParsingInfo
 		public class ProtoBufParsingInfo
 		{
-			internal readonly int number;
-			internal readonly string name;
-			internal readonly string type;
-			internal readonly string label;
+			internal readonly int Number;
+			internal readonly string Name;
+			internal readonly string Type;
+			internal readonly string Label;
 			// For future nested fields
-			internal readonly IDictionary<string, object> definition;
+			internal readonly IDictionary<string, object> Definition;
 		}
 
-		private static Avro.Schema CreateProtobufAvroSchema<T>(Type pojo)
+		private static org.apache.avro.Schema CreateProtobufAvroSchema<T>(Type Pojo)
 		{
-			return ProtobufData.get().getSchema(pojo);
+			return ProtobufData.get().getSchema(Pojo);
 		}
 
-		private ProtobufSchema(SchemaInfo schemaInfo, T protoMessageInstance) : base(schemaInfo)
+		private ProtobufSchema(SchemaInfo SchemaInfo, T ProtoMessageInstance) : base(SchemaInfo)
 		{
-			Reader = new ProtobufReader<T>(protoMessageInstance);
-			Writer = new ProtobufWriter<T>();
+			Reader = new ProtobufReader<>(ProtoMessageInstance);
+			Writer = new ProtobufWriter<>();
 			// update properties with protobuf related properties
-			IDictionary<string, string> allProperties = new Dictionary<string, string>();
+			IDictionary<string, string> AllProperties = new Dictionary<string, string>();
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
-			allProperties.putAll(schemaInfo.Properties);
+			AllProperties.putAll(SchemaInfo.Properties);
 			// set protobuf parsing info
-			allProperties[PARSING_INFO_PROPERTY] = GetParsingInfo(protoMessageInstance);
-			schemaInfo.Properties = allProperties;
+			AllProperties[ParsingInfoProperty] = GetParsingInfo(ProtoMessageInstance);
+			SchemaInfo.Properties = AllProperties;
 		}
 
-		private string GetParsingInfo(T protoMessageInstance)
+		private string GetParsingInfo(T ProtoMessageInstance)
 		{
-			IList<ProtoBufParsingInfo> protoBufParsingInfos = new LinkedList<ProtoBufParsingInfo>();
-			protoMessageInstance.DescriptorForType.Fields.forEach((Descriptors.FieldDescriptor fieldDescriptor) =>
+			IList<ProtoBufParsingInfo> ProtoBufParsingInfos = new LinkedList<ProtoBufParsingInfo>();
+			ProtoMessageInstance.DescriptorForType.Fields.forEach((Descriptors.FieldDescriptor FieldDescriptor) =>
 			{
-			protoBufParsingInfos.Add(new ProtoBufParsingInfo(fieldDescriptor.Number, fieldDescriptor.Name, fieldDescriptor.Type.name(), fieldDescriptor.toProto().Label.name(), null));
+			ProtoBufParsingInfos.Add(new ProtoBufParsingInfo(FieldDescriptor.Number, FieldDescriptor.Name, FieldDescriptor.Type.name(), FieldDescriptor.toProto().Label.name(), null));
 			});
 
 			try
 			{
-				return (new ObjectMapper()).writeValueAsString(protoBufParsingInfos);
+				return (new ObjectMapper()).writeValueAsString(ProtoBufParsingInfos);
 			}
-			catch (JsonProcessingException e)
+			catch (JsonProcessingException E)
 			{
-				throw new Exception(e);
+				throw new Exception(E);
 			}
 		}
 
-		protected internal override ISchemaReader<T> LooadReader(BytesSchemaVersion schemaVersion)
+		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			throw new Exception("ProtobufSchema don't support schema versioning");
 		}
 
-		public static ProtobufSchema<T> Of<T>(Type pojo) //where T : com.google.protobuf.GeneratedMessageV3
+		public static ProtobufSchema<T> Of<T>(Type Pojo) where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return Of(pojo, new Dictionary<string, string>());
+			return Of(Pojo, new Dictionary<string, string>());
 		}
 
-		public static ProtobufSchema<T> OfGenericClass<T>(Type pojo, IDictionary<string, string> properties)
+		public static ProtobufSchema OfGenericClass<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			ISchemaDefinition<T> schemaDefinition = SchemaDefinition.builder<T>().withPojo(pojo).withProperties(properties).build();
-			return ProtobufSchema<T>.Of<T>(schemaDefinition);
+			SchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
+			return ProtobufSchema.Of(SchemaDefinition);
 		}
 
-		public static ProtobufSchema of<T>(SchemaDefinition<T> schemaDefinition)
+		public static ProtobufSchema Of<T>(SchemaDefinition<T> SchemaDefinition)
 		{
-			Type pojo = schemaDefinition.Pojo;
+			Type Pojo = SchemaDefinition.Pojo;
 
-			if (!pojo.IsAssignableFrom(typeof(GeneratedMessageV3)))
+			if (!Pojo.IsAssignableFrom(typeof(GeneratedMessageV3)))
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException(typeof(GeneratedMessageV3).FullName + " is not assignable from " + pojo.FullName);
+				throw new System.ArgumentException(typeof(GeneratedMessageV3).FullName + " is not assignable from " + Pojo.FullName);
 			}
 
-				SchemaInfo schemaInfo = ISchemaInfo.builder().schema(createProtobufAvroSchema(schemaDefinition.Pojo).ToString().GetBytes(UTF_8)).type(SchemaType.PROTOBUF).name("").properties(schemaDefinition.Properties).build();
+				SchemaInfo SchemaInfo = SchemaInfo.builder().schema(CreateProtobufAvroSchema(SchemaDefinition.Pojo).ToString().GetBytes(UTF_8)).type(SchemaType.PROTOBUF).name("").properties(SchemaDefinition.Properties).build();
 
 			try
 			{
-				return new ProtobufSchema(schemaInfo, (GeneratedMessageV3) pojo.GetMethod("getDefaultInstance").invoke(null));
+				return new ProtobufSchema(SchemaInfo, (GeneratedMessageV3) Pojo.GetMethod("getDefaultInstance").invoke(null));
 			}
 			catch (Exception e) when (e is IllegalAccessException || e is InvocationTargetException || e is NoSuchMethodException)
 			{
@@ -133,9 +131,9 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public static ProtobufSchema<T> of<T>(Type pojo, IDictionary<string, string> properties) where T : com.google.protobuf.GeneratedMessageV3
+		public static ProtobufSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties) where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return ofGenericClass(pojo, properties);
+			return OfGenericClass(Pojo, Properties);
 		}
 	}
 

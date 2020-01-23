@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,8 +20,9 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = org.apache.pulsar.client.api.MessageId;
+	using MessageId = SharpPulsar.Api.MessageId;
 
+	[Serializable]
 	public class TopicMessageIdImpl : MessageId
 	{
 
@@ -27,13 +30,13 @@ namespace SharpPulsar.Impl
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		private readonly string topicPartitionName;
 		private readonly string topicName;
-		private readonly MessageId messageId;
+		public virtual InnerMessageId {get;}
 
-		public TopicMessageIdImpl(string topicPartitionName, string topicName, MessageId messageId)
+		public TopicMessageIdImpl(string TopicPartitionName, string TopicName, MessageId MessageId)
 		{
-			this.messageId = messageId;
-			this.topicPartitionName = topicPartitionName;
-			this.topicName = topicName;
+			this.InnerMessageId = MessageId;
+			this.topicPartitionName = TopicPartitionName;
+			this.topicName = TopicName;
 		}
 
 		/// <summary>
@@ -58,37 +61,30 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual MessageId InnerMessageId
-		{
-			get
-			{
-				return messageId;
-			}
-		}
 
-		public override sbyte[] toByteArray()
+		public override sbyte[] ToByteArray()
 		{
-			return messageId.toByteArray();
+			return InnerMessageId.ToByteArray();
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(topicPartitionName, messageId);
+			return Objects.hash(topicPartitionName, InnerMessageId);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object Obj)
 		{
-			if (!(obj is TopicMessageIdImpl))
+			if (!(Obj is TopicMessageIdImpl))
 			{
 				return false;
 			}
-			TopicMessageIdImpl other = (TopicMessageIdImpl) obj;
-			return Objects.equals(topicPartitionName, other.topicPartitionName) && Objects.equals(messageId, other.messageId);
+			TopicMessageIdImpl Other = (TopicMessageIdImpl) Obj;
+			return Objects.equals(topicPartitionName, Other.topicPartitionName) && Objects.equals(InnerMessageId, Other.InnerMessageId);
 		}
 
-		public override int compareTo(MessageId o)
+		public override int CompareTo(MessageId O)
 		{
-			return messageId.compareTo(o);
+			return InnerMessageId.CompareTo(O);
 		}
 	}
 

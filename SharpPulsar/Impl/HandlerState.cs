@@ -21,14 +21,16 @@ namespace SharpPulsar.Impl
 
 	public abstract class HandlerState
 	{
-		protected internal readonly PulsarClientImpl client;
-		protected internal readonly string topic;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly PulsarClientImpl ClientConflict;
+		protected internal readonly string Topic;
 
-		private static readonly AtomicReference<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
+		private static readonly AtomicReferenceFieldUpdater<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @SuppressWarnings("unused") private volatile State state = null;
+		private volatile State state = null;
 
-		private readonly State _state;
-
-		internal enum State
+		public enum State
 		{
 			Uninitialized, // Not initialized
 			Connecting, // Client connecting to broker
@@ -41,45 +43,46 @@ namespace SharpPulsar.Impl
 			RegisteringSchema // Handler is registering schema
 		}
 
-		public HandlerState(PulsarClientImpl client, string topic)
+		public HandlerState(PulsarClientImpl Client, string Topic)
 		{
-			this.client = client;
-			this.topic = topic;
+			this.ClientConflict = Client;
+			this.Topic = Topic;
 			STATE_UPDATER.set(this, State.Uninitialized);
 		}
 
 		// moves the state to ready if it wasn't closed
-		protected internal virtual bool ChangeToReadyState()
+		public virtual bool ChangeToReadyState()
 		{
 			return (STATE_UPDATER.compareAndSet(this, State.Uninitialized, State.Ready) || STATE_UPDATER.compareAndSet(this, State.Connecting, State.Ready) || STATE_UPDATER.compareAndSet(this, State.RegisteringSchema, State.Ready));
 		}
 
-		protected internal virtual bool ChangeToRegisteringSchemaState()
+		public virtual bool ChangeToRegisteringSchemaState()
 		{
 			return STATE_UPDATER.compareAndSet(this, State.Ready, State.RegisteringSchema);
 		}
 
-		protected internal virtual State GetState()
+		public virtual State? GetState()
 		{
 			return STATE_UPDATER.get(this);
 		}
 
-		protected internal virtual void SetState(State s)
+		public virtual void SetState(State S)
 		{
-			STATE_UPDATER.set(this, s);
+			STATE_UPDATER.set(this, S);
 		}
 
-		internal abstract string HandlerName {get;}
-		protected internal virtual State GetAndUpdateState(System.Func<State, State> updater)
+		public abstract string HandlerName {get;}
+
+		public virtual State? GetAndUpdateState(in System.Func<State, State> Updater)
 		{
-			return STATE_UPDATER.getAndUpdate(this, updater);
+			return STATE_UPDATER.getAndUpdate(this, Updater);
 		}
 
 		public virtual PulsarClientImpl Client
 		{
 			get
 			{
-				return client;
+				return ClientConflict;
 			}
 		}
 	}

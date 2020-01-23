@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,30 +21,31 @@
 namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.util.MathUtils.signSafeMod;
+//	import static SharpPulsar.util.MathUtils.signSafeMod;
 
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using Message = org.apache.pulsar.client.api.Message;
-	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
+	using HashingScheme = SharpPulsar.Api.HashingScheme;
+	using SharpPulsar.Api;
+	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
 
+	[Serializable]
 	public class SinglePartitionMessageRouterImpl : MessageRouterBase
 	{
 
-		private const long serialVersionUID = 1L;
+		private const long SerialVersionUID = 1L;
 
 		private readonly int partitionIndex;
 
-		public SinglePartitionMessageRouterImpl(int partitionIndex, HashingScheme hashingScheme) : base(hashingScheme)
+		public SinglePartitionMessageRouterImpl(int PartitionIndex, HashingScheme HashingScheme) : base(HashingScheme)
 		{
-			this.partitionIndex = partitionIndex;
+			this.partitionIndex = PartitionIndex;
 		}
 
-		public override int choosePartition<T1>(Message<T1> msg, TopicMetadata metadata)
+		public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata Metadata)
 		{
 			// If the message has a key, it supersedes the single partition routing policy
-			if (msg.hasKey())
+			if (Msg.hasKey())
 			{
-				return signSafeMod(hash.makeHash(msg.Key), metadata.numPartitions());
+				return signSafeMod(Hash.makeHash(Msg.Key), Metadata.numPartitions());
 			}
 
 			return partitionIndex;

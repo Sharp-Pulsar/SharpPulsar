@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Org.Apache.Pulsar.Common.Util;
+
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,14 +44,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual int makeHash(string s)
+		public override int MakeHash(string S)
 		{
-			return org.apache.pulsar.common.util.Murmur3_32Hash.Instance.makeHash(s.GetBytes(Encoding.UTF8)) & int.MaxValue;
+			return Murmur3_32Hash.Instance.makeHash(S.GetBytes(Encoding.UTF8)) & int.MaxValue;
 		}
 
-		public virtual int makeHash(sbyte[] b)
+		public override int MakeHash(sbyte[] B)
 		{
-			return org.apache.pulsar.common.util.Murmur3_32Hash.Instance.makeHash(b) & int.MaxValue;
+			return Murmur3_32Hash.Instance.makeHash(B) & int.MaxValue;
 		}
 	}
 

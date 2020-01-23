@@ -24,6 +24,11 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkArgument;
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkState;
+
 	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 	using ImmutableMap = com.google.common.collect.ImmutableMap;
 	using Builder = com.google.common.collect.ImmutableMap.Builder;
@@ -34,130 +39,129 @@ namespace SharpPulsar.Impl
 	using TimerTask = io.netty.util.TimerTask;
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using ConsumerStats = org.apache.pulsar.client.api.ConsumerStats;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Messages = org.apache.pulsar.client.api.Messages;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using NotSupportedException = org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
+	using Consumer = SharpPulsar.Api.Consumer;
+	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
+	using SharpPulsar.Api;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using SharpPulsar.Api;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using NotSupportedException = SharpPulsar.Api.PulsarClientException.NotSupportedException;
+	using SharpPulsar.Api;
+	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
 	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
-	using SharpPulsar.Impl.conf;
-	using TransactionImpl = SharpPulsar.Impl.transaction.TransactionImpl;
-	using ConsumerName = org.apache.pulsar.client.util.ConsumerName;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using SharpPulsar.Impl.Conf;
+	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
+	using ConsumerName = SharpPulsar.Util.ConsumerName;
+	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
+	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
-    using SharpPulsar.Configuration;
-    using SharpPulsar.Util.Atomic;
 
-    public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
+	public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
 	{
 
-		public const string DUMMY_TOPIC_NAME_PREFIX = "MultiTopicsConsumer-";
+		public const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
 
 		// All topics should be in same namespace
-		protected internal NamespaceName namespaceName;
+		protected internal NamespaceName NamespaceName;
 
 		// Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
 		private readonly ConcurrentDictionary<string, ConsumerImpl<T>> consumers;
 
 		// Map <topic, numPartitions>, store partition number for each topic
-		protected internal readonly ConcurrentDictionary<string, int> topics;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly ConcurrentDictionary<string, int> TopicsConflict;
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
-		private readonly ConcurrentQueue<ConsumerImpl<T>> pausedConsumers;
+		private readonly ConcurrentLinkedQueue<ConsumerImpl<T>> pausedConsumers;
 
 		// Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
 		// resume receiving from the paused consumer partitions
 		private readonly int sharedQueueResumeThreshold;
 
 		// sum of topicPartitions, simple topic has 1, partitioned topic equals to partition number.
-		internal AtomicInt allTopicPartitionsNumber;
+		internal AtomicInteger AllTopicPartitionsNumber;
 
 		// timeout related to auto check and subscribe partition increasement
-		private volatile Timeout partitionsAutoUpdateTimeout = null;
-		internal TopicsPartitionChangedListener topicsPartitionChangedListener;
-		internal CompletableFuture<Void> partitionsAutoUpdateFuture = null;
+		public virtual PartitionsAutoUpdateTimeout {get;} = null;
+		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
+		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
 
 		private readonly ReadWriteLock @lock = new ReentrantReadWriteLock();
 		private readonly ConsumerStatsRecorder stats;
-		private readonly UnAckedMessageTracker unAckedMessageTracker;
+		public virtual UnAckedMessageTracker {get;}
 		private readonly ConsumerConfigurationData<T> internalConfig;
 
-		internal MultiTopicsConsumerImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : this(client, DUMMY_TOPIC_NAME_PREFIX + ConsumerName.generateRandomName(), conf, listenerExecutor, subscribeFuture, schema, interceptors, createTopicIfDoesNotExist)
+		public MultiTopicsConsumerImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : this(Client, DummyTopicNamePrefix + ConsumerName.generateRandomName(), Conf, ListenerExecutor, SubscribeFuture, Schema, Interceptors, CreateTopicIfDoesNotExist)
 		{
 		}
 
-		internal MultiTopicsConsumerImpl(PulsarClientImpl client, string singleTopic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, subscribeFuture, schema, interceptors)
+		public MultiTopicsConsumerImpl(PulsarClientImpl Client, string SingleTopic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, SingleTopic, Conf, Math.Max(2, Conf.ReceiverQueueSize), ListenerExecutor, SubscribeFuture, Schema, Interceptors)
 		{
 
-			checkArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
+			checkArgument(Conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
 
-			this.topics = new ConcurrentDictionary<string, int>();
+			this.TopicsConflict = new ConcurrentDictionary<string, int>();
 			this.consumers = new ConcurrentDictionary<string, ConsumerImpl<T>>();
-			this.pausedConsumers = new ConcurrentQueue<ConsumerImpl<T>>();
-			this.sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
-			this.allTopicPartitionsNumber = new AtomicInteger(0);
+			this.pausedConsumers = new ConcurrentLinkedQueue<ConsumerImpl<T>>();
+			this.sharedQueueResumeThreshold = MaxReceiverQueueSizeConflict / 2;
+			this.AllTopicPartitionsNumber = new AtomicInteger(0);
 
-			if (conf.AckTimeoutMillis != 0)
+			if (Conf.AckTimeoutMillis != 0)
 			{
-				if (conf.TickDurationMillis > 0)
+				if (Conf.TickDurationMillis > 0)
 				{
-					this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis, conf.TickDurationMillis);
+					this.UnAckedMessageTracker = new UnAckedTopicMessageTracker(Client, this, Conf.AckTimeoutMillis, Conf.TickDurationMillis);
 				}
 				else
 				{
-					this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis);
+					this.UnAckedMessageTracker = new UnAckedTopicMessageTracker(Client, this, Conf.AckTimeoutMillis);
 				}
 			}
 			else
 			{
-				this.unAckedMessageTracker = UnAckedMessageTracker.UNACKED_MESSAGE_TRACKER_DISABLED;
+				this.UnAckedMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
 			}
 
 			this.internalConfig = InternalConsumerConfig;
-			this.stats = client.Configuration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorderImpl() : null;
+			this.stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorderImpl() : null;
 
 			// start track and auto subscribe partition increasement
-			if (conf.AutoUpdatePartitions)
+			if (Conf.AutoUpdatePartitions)
 			{
-				topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
-				partitionsAutoUpdateTimeout = client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, TimeUnit.MINUTES);
+				TopicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
+				PartitionsAutoUpdateTimeout = Client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 			}
 
-			if (conf.TopicNames.Empty)
+			if (Conf.TopicNames.Empty)
 			{
-				this.namespaceName = null;
+				this.NamespaceName = null;
 				State = State.Ready;
 				subscribeFuture().complete(MultiTopicsConsumerImpl.this);
 				return;
 			}
 
-			checkArgument(conf.TopicNames.Empty || topicNamesValid(conf.TopicNames), "Topics should have same namespace.");
-			this.namespaceName = conf.TopicNames.First().flatMap(s => (TopicName.get(s).NamespaceObject)).get();
+			checkArgument(Conf.TopicNames.Empty || TopicNamesValid(Conf.TopicNames), "Topics should have same namespace.");
+			this.NamespaceName = Conf.TopicNames.First().flatMap(s => (TopicName.get(s).NamespaceObject)).get();
 
-			IList<CompletableFuture<Void>> futures = conf.TopicNames.Select(t => subscribeAsync(t, createTopicIfDoesNotExist)).ToList();
-			FutureUtil.waitForAll(futures).thenAccept(finalFuture =>
+			IList<CompletableFuture<Void>> Futures = Conf.TopicNames.Select(t => subscribeAsync(t, CreateTopicIfDoesNotExist)).ToList();
+			FutureUtil.waitForAll(Futures).thenAccept(finalFuture =>
 			{
-			if (allTopicPartitionsNumber.get() > maxReceiverQueueSize)
+			if (AllTopicPartitionsNumber.get() > MaxReceiverQueueSizeConflict)
 			{
-				MaxReceiverQueueSize = allTopicPartitionsNumber.get();
+				MaxReceiverQueueSize = AllTopicPartitionsNumber.get();
 			}
 			State = State.Ready;
-			startReceivingMessages(new List<ConsumerImpl<T>>(consumers.Values));
-			log.info("[{}] [{}] Created topics consumer with {} sub-consumers", topic, subscription, allTopicPartitionsNumber.get());
+			StartReceivingMessages(new List<ConsumerImpl<T>>(consumers.Values));
+			log.info("[{}] [{}] Created topics consumer with {} sub-consumers", Topic, SubscriptionConflict, AllTopicPartitionsNumber.get());
 			subscribeFuture().complete(MultiTopicsConsumerImpl.this);
 			}).exceptionally(ex =>
 			{
-			log.warn("[{}] Failed to subscribe topics: {}", topic, ex.Message);
-			subscribeFuture.completeExceptionally(ex);
+			log.warn("[{}] Failed to subscribe topics: {}", Topic, ex.Message);
+			SubscribeFuture.completeExceptionally(ex);
 			return null;
 		});
 		}
@@ -166,23 +170,23 @@ namespace SharpPulsar.Impl
 		// - each topic is valid,
 		// - every topic has same namespace,
 		// - topic names are unique.
-		private static bool topicNamesValid(ICollection<string> topics)
+		private static bool TopicNamesValid(ICollection<string> Topics)
 		{
-			checkState(topics != null && topics.Count >= 1, "topics should contain more than 1 topic");
+			checkState(Topics != null && Topics.Count >= 1, "topics should contain more than 1 topic");
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final String namespace = org.apache.pulsar.common.naming.TopicName.get(topics.stream().findFirst().get()).getNamespace();
-			string @namespace = TopicName.get(topics.First().get()).Namespace;
+			string Namespace = TopicName.get(Topics.First().get()).Namespace;
 
-			Optional<string> result = topics.Where(topic =>
+			Optional<string> Result = Topics.Where(Topic =>
 			{
-			bool topicInvalid = !TopicName.isValid(topic);
-			if (topicInvalid)
+			bool TopicInvalid = !TopicName.isValid(Topic);
+			if (TopicInvalid)
 			{
 				return true;
 			}
-			string newNamespace = TopicName.get(topic).Namespace;
-			if (!@namespace.Equals(newNamespace))
+			string NewNamespace = TopicName.get(Topic).Namespace;
+			if (!Namespace.Equals(NewNamespace))
 			{
 				return true;
 			}
@@ -192,63 +196,63 @@ namespace SharpPulsar.Impl
 			}
 			}).First();
 
-			if (result.Present)
+			if (Result.Present)
 			{
-				log.warn("Received invalid topic name: {}", result.get());
+				log.warn("Received invalid topic name: {}", Result.get());
 				return false;
 			}
 
 			// check topic names are unique
-			HashSet<string> set = new HashSet<string>(topics);
-			if (set.Count == topics.Count)
+			HashSet<string> Set = new HashSet<string>(Topics);
+			if (Set.Count == Topics.Count)
 			{
 				return true;
 			}
 			else
 			{
-				log.warn("Topic names not unique. unique/all : {}/{}", set.Count, topics.Count);
+				log.warn("Topic names not unique. unique/all : {}/{}", Set.Count, Topics.Count);
 				return false;
 			}
 		}
 
-		private void startReceivingMessages(IList<ConsumerImpl<T>> newConsumers)
+		private void StartReceivingMessages(IList<ConsumerImpl<T>> NewConsumers)
 		{
 			if (log.DebugEnabled)
 			{
-				log.debug("[{}] startReceivingMessages for {} new consumers in topics consumer, state: {}", topic, newConsumers.Count, State);
+				log.debug("[{}] startReceivingMessages for {} new consumers in topics consumer, state: {}", Topic, NewConsumers.Count, State);
 			}
 			if (State == State.Ready)
 			{
-				newConsumers.ForEach(consumer =>
+				NewConsumers.ForEach(consumer =>
 				{
-				consumer.sendFlowPermitsToBroker(consumer.ConnectionHandler.cnx(), conf.ReceiverQueueSize);
-				receiveMessageFromConsumer(consumer);
+				consumer.sendFlowPermitsToBroker(consumer.ConnectionHandler.cnx(), Conf.ReceiverQueueSize);
+				ReceiveMessageFromConsumer(consumer);
 				});
 			}
 		}
 
-		private void receiveMessageFromConsumer(ConsumerImpl<T> consumer)
+		private void ReceiveMessageFromConsumer(ConsumerImpl<T> Consumer)
 		{
-			consumer.receiveAsync().thenAccept(message =>
+			Consumer.receiveAsync().thenAccept(message =>
 			{
 			if (log.DebugEnabled)
 			{
-				log.debug("[{}] [{}] Receive message from sub consumer:{}", topic, subscription, consumer.Topic);
+				log.debug("[{}] [{}] Receive message from sub consumer:{}", Topic, SubscriptionConflict, Consumer.Topic);
 			}
-			messageReceived(consumer, message);
+			MessageReceived(Consumer, message);
 			@lock.writeLock().@lock();
 			try
 			{
-				int size = incomingMessages.size();
-				if (size >= maxReceiverQueueSize || (size > sharedQueueResumeThreshold && !pausedConsumers.Empty))
+				int Size = IncomingMessages.size();
+				if (Size >= MaxReceiverQueueSizeConflict || (Size > sharedQueueResumeThreshold && !pausedConsumers.Empty))
 				{
-					pausedConsumers.add(consumer);
+					pausedConsumers.add(Consumer);
 				}
 				else
 				{
-					client.eventLoopGroup().execute(() =>
+					ClientConflict.eventLoopGroup().execute(() =>
 					{
-						receiveMessageFromConsumer(consumer);
+						ReceiveMessageFromConsumer(Consumer);
 					});
 				}
 			}
@@ -259,31 +263,31 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		private void messageReceived(ConsumerImpl<T> consumer, Message<T> message)
+		private void MessageReceived(ConsumerImpl<T> Consumer, Message<T> Message)
 		{
-			checkArgument(message is MessageImpl);
+			checkArgument(Message is MessageImpl);
 			@lock.writeLock().@lock();
 			try
 			{
-				TopicMessageImpl<T> topicMessage = new TopicMessageImpl<T>(consumer.Topic, consumer.TopicNameWithoutPartition, message);
+				TopicMessageImpl<T> TopicMessage = new TopicMessageImpl<T>(Consumer.Topic, Consumer.TopicNameWithoutPartition, Message);
 
 				if (log.DebugEnabled)
 				{
-					log.debug("[{}][{}] Received message from topics-consumer {}", topic, subscription, message.MessageId);
+					log.debug("[{}][{}] Received message from topics-consumer {}", Topic, SubscriptionConflict, Message.MessageId);
 				}
 
 				// if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
-				if (!pendingReceives.Empty)
+				if (!PendingReceives.Empty)
 				{
-					CompletableFuture<Message<T>> receivedFuture = pendingReceives.poll();
-					unAckedMessageTracker.add(topicMessage.MessageId);
-					listenerExecutor.execute(() => receivedFuture.complete(topicMessage));
+					CompletableFuture<Message<T>> ReceivedFuture = PendingReceives.poll();
+					UnAckedMessageTracker.Add(TopicMessage.MessageId);
+					ListenerExecutor.execute(() => ReceivedFuture.complete(TopicMessage));
 				}
-				else if (enqueueMessageAndCheckBatchReceive(topicMessage))
+				else if (EnqueueMessageAndCheckBatchReceive(TopicMessage))
 				{
-					if (hasPendingBatchReceive())
+					if (HasPendingBatchReceive())
 					{
-						notifyPendingBatchReceivedCallBack();
+						NotifyPendingBatchReceivedCallBack();
 					}
 				}
 			}
@@ -292,66 +296,66 @@ namespace SharpPulsar.Impl
 				@lock.writeLock().unlock();
 			}
 
-			if (listener != null)
+			if (Listener != null)
 			{
 				// Trigger the notification on the message listener in a separate thread to avoid blocking the networking
 				// thread while the message processing happens
-				listenerExecutor.execute(() =>
+				ListenerExecutor.execute(() =>
 				{
-				Message<T> msg;
+				Message<T> Msg;
 				try
 				{
-					msg = internalReceive();
+					Msg = InternalReceive();
 				}
-				catch (PulsarClientException e)
+				catch (PulsarClientException E)
 				{
-					log.warn("[{}] [{}] Failed to dequeue the message for listener", topic, subscription, e);
+					log.warn("[{}] [{}] Failed to dequeue the message for listener", Topic, SubscriptionConflict, E);
 					return;
 				}
 				try
 				{
 					if (log.DebugEnabled)
 					{
-						log.debug("[{}][{}] Calling message listener for message {}", topic, subscription, message.MessageId);
+						log.debug("[{}][{}] Calling message listener for message {}", Topic, SubscriptionConflict, Message.MessageId);
 					}
-					listener.received(MultiTopicsConsumerImpl.this, msg);
+					Listener.received(MultiTopicsConsumerImpl.this, Msg);
 				}
-				catch (Exception t)
+				catch (Exception T)
 				{
-					log.error("[{}][{}] Message listener error in processing message: {}", topic, subscription, message, t);
+					log.error("[{}][{}] Message listener error in processing message: {}", Topic, SubscriptionConflict, Message, T);
 				}
 				});
 			}
 		}
 
-		protected internal override void messageProcessed<T1>(Message<T1> msg)
+		public virtual void MessageProcessed<T1>(Message<T1> Msg)
 		{
 			lock (this)
 			{
-				unAckedMessageTracker.add(msg.MessageId);
-				INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -msg.Data.length);
+				UnAckedMessageTracker.Add(Msg.MessageId);
+				IncomingMessagesSizeUpdater.addAndGet(this, -Msg.Data.Length);
 			}
 		}
 
-		private void resumeReceivingFromPausedConsumersIfNeeded()
+		private void ResumeReceivingFromPausedConsumersIfNeeded()
 		{
 			@lock.readLock().@lock();
 			try
 			{
-				if (incomingMessages.size() <= sharedQueueResumeThreshold && !pausedConsumers.Empty)
+				if (IncomingMessages.size() <= sharedQueueResumeThreshold && !pausedConsumers.Empty)
 				{
 					while (true)
 					{
-						ConsumerImpl<T> consumer = pausedConsumers.poll();
-						if (consumer == null)
+						ConsumerImpl<T> Consumer = pausedConsumers.poll();
+						if (Consumer == null)
 						{
 							break;
 						}
 
 						// if messages are readily available on consumer we will attempt to writeLock on the same thread
-						client.eventLoopGroup().execute(() =>
+						ClientConflict.eventLoopGroup().execute(() =>
 						{
-						receiveMessageFromConsumer(consumer);
+						ReceiveMessageFromConsumer(Consumer);
 						});
 					}
 				}
@@ -363,62 +367,62 @@ namespace SharpPulsar.Impl
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected org.apache.pulsar.client.api.Message<T> internalReceive() throws org.apache.pulsar.client.api.PulsarClientException
-		protected internal override Message<T> internalReceive()
+//ORIGINAL LINE: @Override protected SharpPulsar.api.Message<T> internalReceive() throws SharpPulsar.api.PulsarClientException
+		public override Message<T> InternalReceive()
 		{
-			Message<T> message;
+			Message<T> Message;
 			try
 			{
-				message = incomingMessages.take();
-				INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -message.Data.length);
-				checkState(message is TopicMessageImpl);
-				unAckedMessageTracker.add(message.MessageId);
-				resumeReceivingFromPausedConsumersIfNeeded();
-				return message;
+				Message = IncomingMessages.take();
+				IncomingMessagesSizeUpdater.addAndGet(this, -Message.Data.Length);
+				checkState(Message is TopicMessageImpl);
+				UnAckedMessageTracker.Add(Message.MessageId);
+				ResumeReceivingFromPausedConsumersIfNeeded();
+				return Message;
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.unwrap(E);
 			}
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected org.apache.pulsar.client.api.Message<T> internalReceive(int timeout, java.util.concurrent.TimeUnit unit) throws org.apache.pulsar.client.api.PulsarClientException
-		protected internal override Message<T> internalReceive(int timeout, TimeUnit unit)
+//ORIGINAL LINE: @Override protected SharpPulsar.api.Message<T> internalReceive(int timeout, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unit) throws SharpPulsar.api.PulsarClientException
+		public override Message<T> InternalReceive(int Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
-			Message<T> message;
+			Message<T> Message;
 			try
 			{
-				message = incomingMessages.poll(timeout, unit);
-				if (message != null)
+				Message = IncomingMessages.poll(Timeout, Unit);
+				if (Message != null)
 				{
-					INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -message.Data.length);
-					checkArgument(message is TopicMessageImpl);
-					unAckedMessageTracker.add(message.MessageId);
+					IncomingMessagesSizeUpdater.addAndGet(this, -Message.Data.Length);
+					checkArgument(Message is TopicMessageImpl);
+					UnAckedMessageTracker.Add(Message.MessageId);
 				}
-				resumeReceivingFromPausedConsumersIfNeeded();
-				return message;
+				ResumeReceivingFromPausedConsumersIfNeeded();
+				return Message;
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.unwrap(E);
 			}
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected org.apache.pulsar.client.api.Messages<T> internalBatchReceive() throws org.apache.pulsar.client.api.PulsarClientException
-		protected internal override Messages<T> internalBatchReceive()
+//ORIGINAL LINE: @Override protected SharpPulsar.api.Messages<T> internalBatchReceive() throws SharpPulsar.api.PulsarClientException
+		public override Messages<T> InternalBatchReceive()
 		{
 			try
 			{
-				return internalBatchReceiveAsync().get();
+				return InternalBatchReceiveAsync().get();
 			}
 			catch (Exception e) when (e is InterruptedException || e is ExecutionException)
 			{
-				State state = State;
-				if (state != State.Closing && state != State.Closed)
+				State State = State;
+				if (State != State.Closing && State != State.Closed)
 				{
-					stats.incrementNumBatchReceiveFailed();
+					stats.IncrementNumBatchReceiveFailed();
 					throw PulsarClientException.unwrap(e);
 				}
 				else
@@ -428,96 +432,96 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		protected internal override CompletableFuture<Messages<T>> internalBatchReceiveAsync()
+		public override CompletableFuture<Messages<T>> InternalBatchReceiveAsync()
 		{
-			CompletableFuture<Messages<T>> result = new CompletableFuture<Messages<T>>();
+			CompletableFuture<Messages<T>> Result = new CompletableFuture<Messages<T>>();
 			try
 			{
 				@lock.writeLock().@lock();
-				if (pendingBatchReceives == null)
+				if (PendingBatchReceives == null)
 				{
-					pendingBatchReceives = Queues.newConcurrentLinkedQueue();
+					PendingBatchReceives = Queues.newConcurrentLinkedQueue();
 				}
-				if (hasEnoughMessagesForBatchReceive())
+				if (HasEnoughMessagesForBatchReceive())
 				{
-					MessagesImpl<T> messages = NewMessagesImpl;
-					Message<T> msgPeeked = incomingMessages.peek();
-					while (msgPeeked != null && messages.canAdd(msgPeeked))
+					MessagesImpl<T> Messages = NewMessagesImpl;
+					Message<T> MsgPeeked = IncomingMessages.peek();
+					while (MsgPeeked != null && Messages.canAdd(MsgPeeked))
 					{
-						Message<T> msg = incomingMessages.poll();
-						if (msg != null)
+						Message<T> Msg = IncomingMessages.poll();
+						if (Msg != null)
 						{
-							INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -msg.Data.length);
-							Message<T> interceptMsg = beforeConsume(msg);
-							messages.add(interceptMsg);
+							IncomingMessagesSizeUpdater.addAndGet(this, -Msg.Data.Length);
+							Message<T> InterceptMsg = BeforeConsume(Msg);
+							Messages.add(InterceptMsg);
 						}
-						msgPeeked = incomingMessages.peek();
+						MsgPeeked = IncomingMessages.peek();
 					}
-					result.complete(messages);
+					Result.complete(Messages);
 				}
 				else
 				{
-					pendingBatchReceives.add(OpBatchReceive.of(result));
+					PendingBatchReceives.add(OpBatchReceive.Of(Result));
 				}
 			}
 			finally
 			{
 				@lock.writeLock().unlock();
 			}
-			return result;
+			return Result;
 		}
 
-		protected internal override CompletableFuture<Message<T>> internalReceiveAsync()
+		public override CompletableFuture<Message<T>> InternalReceiveAsync()
 		{
-			CompletableFuture<Message<T>> result = new CompletableFuture<Message<T>>();
-			Message<T> message;
+			CompletableFuture<Message<T>> Result = new CompletableFuture<Message<T>>();
+			Message<T> Message;
 			try
 			{
 				@lock.writeLock().@lock();
-				message = incomingMessages.poll(0, TimeUnit.SECONDS);
-				if (message == null)
+				Message = IncomingMessages.poll(0, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+				if (Message == null)
 				{
-					pendingReceives.add(result);
+					PendingReceives.add(Result);
 				}
 				else
 				{
-					INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -message.Data.length);
-					checkState(message is TopicMessageImpl);
-					unAckedMessageTracker.add(message.MessageId);
-					resumeReceivingFromPausedConsumersIfNeeded();
-					result.complete(message);
+					IncomingMessagesSizeUpdater.addAndGet(this, -Message.Data.Length);
+					checkState(Message is TopicMessageImpl);
+					UnAckedMessageTracker.Add(Message.MessageId);
+					ResumeReceivingFromPausedConsumersIfNeeded();
+					Result.complete(Message);
 				}
 			}
-			catch (InterruptedException e)
+			catch (InterruptedException E)
 			{
 				Thread.CurrentThread.Interrupt();
-				result.completeExceptionally(new PulsarClientException(e));
+				Result.completeExceptionally(new PulsarClientException(E));
 			}
 			finally
 			{
 				@lock.writeLock().unlock();
 			}
 
-			return result;
+			return Result;
 		}
 
-		protected internal override CompletableFuture<Void> doAcknowledge(MessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txnImpl)
+		public override CompletableFuture<Void> DoAcknowledge(MessageId MessageId, AckType AckType, IDictionary<string, long> Properties, TransactionImpl TxnImpl)
 		{
-			checkArgument(messageId is TopicMessageIdImpl);
-			TopicMessageIdImpl topicMessageId = (TopicMessageIdImpl) messageId;
+			checkArgument(MessageId is TopicMessageIdImpl);
+			TopicMessageIdImpl TopicMessageId = (TopicMessageIdImpl) MessageId;
 
 			if (State != State.Ready)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException("Consumer already closed"));
 			}
 
-			if (ackType == AckType.Cumulative)
+			if (AckType == AckType.Cumulative)
 			{
-				Consumer individualConsumer = consumers[topicMessageId.TopicPartitionName];
-				if (individualConsumer != null)
+				Consumer IndividualConsumer = consumers[TopicMessageId.TopicPartitionName];
+				if (IndividualConsumer != null)
 				{
-					MessageId innerId = topicMessageId.InnerMessageId;
-					return individualConsumer.acknowledgeCumulativeAsync(innerId);
+					MessageId InnerId = TopicMessageId.InnerMessageId;
+					return IndividualConsumer.acknowledgeCumulativeAsync(InnerId);
 				}
 				else
 				{
@@ -526,23 +530,23 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				ConsumerImpl<T> consumer = consumers[topicMessageId.TopicPartitionName];
+				ConsumerImpl<T> Consumer = consumers[TopicMessageId.TopicPartitionName];
 
-				MessageId innerId = topicMessageId.InnerMessageId;
-				return consumer.doAcknowledgeWithTxn(innerId, ackType, properties, txnImpl).thenRun(() => unAckedMessageTracker.remove(topicMessageId));
+				MessageId InnerId = TopicMessageId.InnerMessageId;
+				return Consumer.doAcknowledgeWithTxn(InnerId, AckType, Properties, TxnImpl).thenRun(() => UnAckedMessageTracker.Remove(TopicMessageId));
 			}
 		}
 
-		public override void negativeAcknowledge(MessageId messageId)
+		public override void NegativeAcknowledge(MessageId MessageId)
 		{
-			checkArgument(messageId is TopicMessageIdImpl);
-			TopicMessageIdImpl topicMessageId = (TopicMessageIdImpl) messageId;
+			checkArgument(MessageId is TopicMessageIdImpl);
+			TopicMessageIdImpl TopicMessageId = (TopicMessageIdImpl) MessageId;
 
-			ConsumerImpl<T> consumer = consumers[topicMessageId.TopicPartitionName];
-			consumer.negativeAcknowledge(topicMessageId.InnerMessageId);
+			ConsumerImpl<T> Consumer = consumers[TopicMessageId.TopicPartitionName];
+			Consumer.negativeAcknowledge(TopicMessageId.InnerMessageId);
 		}
 
-		public override CompletableFuture<Void> unsubscribeAsync()
+		public override CompletableFuture<Void> UnsubscribeAsync()
 		{
 			if (State == State.Closing || State == State.Closed)
 			{
@@ -550,82 +554,82 @@ namespace SharpPulsar.Impl
 			}
 			State = State.Closing;
 
-			CompletableFuture<Void> unsubscribeFuture = new CompletableFuture<Void>();
-			IList<CompletableFuture<Void>> futureList = consumers.Values.Select(c => c.unsubscribeAsync()).ToList();
+			CompletableFuture<Void> UnsubscribeFuture = new CompletableFuture<Void>();
+			IList<CompletableFuture<Void>> FutureList = consumers.Values.Select(c => c.unsubscribeAsync()).ToList();
 
-			FutureUtil.waitForAll(futureList).whenComplete((r, ex) =>
+			FutureUtil.waitForAll(FutureList).whenComplete((r, ex) =>
 			{
 			if (ex == null)
 			{
 				State = State.Closed;
-				unAckedMessageTracker.Dispose();
-				unsubscribeFuture.complete(null);
-				log.info("[{}] [{}] [{}] Unsubscribed Topics Consumer", topic, subscription, consumerName);
+				UnAckedMessageTracker.Dispose();
+				UnsubscribeFuture.complete(null);
+				log.info("[{}] [{}] [{}] Unsubscribed Topics Consumer", Topic, SubscriptionConflict, ConsumerNameConflict);
 			}
 			else
 			{
 				State = State.Failed;
-				unsubscribeFuture.completeExceptionally(ex);
-				log.error("[{}] [{}] [{}] Could not unsubscribe Topics Consumer", topic, subscription, consumerName, ex.Cause);
+				UnsubscribeFuture.completeExceptionally(ex);
+				log.error("[{}] [{}] [{}] Could not unsubscribe Topics Consumer", Topic, SubscriptionConflict, ConsumerNameConflict, ex.Cause);
 			}
 			});
 
-			return unsubscribeFuture;
+			return UnsubscribeFuture;
 		}
 
-		public override CompletableFuture<Void> closeAsync()
+		public override CompletableFuture<Void> CloseAsync()
 		{
 			if (State == State.Closing || State == State.Closed)
 			{
-				unAckedMessageTracker.Dispose();
+				UnAckedMessageTracker.Dispose();
 				return CompletableFuture.completedFuture(null);
 			}
 			State = State.Closing;
 
-			if (partitionsAutoUpdateTimeout != null)
+			if (PartitionsAutoUpdateTimeout != null)
 			{
-				partitionsAutoUpdateTimeout.cancel();
-				partitionsAutoUpdateTimeout = null;
+				PartitionsAutoUpdateTimeout.cancel();
+				PartitionsAutoUpdateTimeout = null;
 			}
 
-			CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
-			IList<CompletableFuture<Void>> futureList = consumers.Values.Select(c => c.closeAsync()).ToList();
+			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
+			IList<CompletableFuture<Void>> FutureList = consumers.Values.Select(c => c.closeAsync()).ToList();
 
-			FutureUtil.waitForAll(futureList).whenComplete((r, ex) =>
+			FutureUtil.waitForAll(FutureList).whenComplete((r, ex) =>
 			{
 			if (ex == null)
 			{
 				State = State.Closed;
-				unAckedMessageTracker.Dispose();
-				closeFuture.complete(null);
-				log.info("[{}] [{}] Closed Topics Consumer", topic, subscription);
-				client.cleanupConsumer(this);
-				failPendingReceive();
+				UnAckedMessageTracker.Dispose();
+				CloseFuture.complete(null);
+				log.info("[{}] [{}] Closed Topics Consumer", Topic, SubscriptionConflict);
+				ClientConflict.cleanupConsumer(this);
+				FailPendingReceive();
 			}
 			else
 			{
 				State = State.Failed;
-				closeFuture.completeExceptionally(ex);
-				log.error("[{}] [{}] Could not close Topics Consumer", topic, subscription, ex.Cause);
+				CloseFuture.completeExceptionally(ex);
+				log.error("[{}] [{}] Could not close Topics Consumer", Topic, SubscriptionConflict, ex.Cause);
 			}
 			});
 
-			return closeFuture;
+			return CloseFuture;
 		}
 
-		private void failPendingReceive()
+		private void FailPendingReceive()
 		{
 			@lock.readLock().@lock();
 			try
 			{
-				if (listenerExecutor != null && !listenerExecutor.Shutdown)
+				if (ListenerExecutor != null && !ListenerExecutor.Shutdown)
 				{
-					while (!pendingReceives.Empty)
+					while (!PendingReceives.Empty)
 					{
-						CompletableFuture<Message<T>> receiveFuture = pendingReceives.poll();
-						if (receiveFuture != null)
+						CompletableFuture<Message<T>> ReceiveFuture = PendingReceives.poll();
+						if (ReceiveFuture != null)
 						{
-							receiveFuture.completeExceptionally(new PulsarClientException.AlreadyClosedException("Consumer is already closed"));
+							ReceiveFuture.completeExceptionally(new PulsarClientException.AlreadyClosedException("Consumer is already closed"));
 						}
 						else
 						{
@@ -648,11 +652,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		internal override string HandlerName
+		public override string HandlerName
 		{
 			get
 			{
-				return subscription;
+				return SubscriptionConflict;
 			}
 		}
 
@@ -660,96 +664,96 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				ConsumerConfigurationData<T> internalConsumerConfig = conf.clone();
-				internalConsumerConfig.SubscriptionName = subscription;
-				internalConsumerConfig.ConsumerName = consumerName;
-				internalConsumerConfig.MessageListener = null;
-				return internalConsumerConfig;
+				ConsumerConfigurationData<T> InternalConsumerConfig = Conf.clone();
+				InternalConsumerConfig.SubscriptionName = SubscriptionConflict;
+				InternalConsumerConfig.ConsumerName = ConsumerNameConflict;
+				InternalConsumerConfig.MessageListener = null;
+				return InternalConsumerConfig;
 			}
 		}
 
-		public override void redeliverUnacknowledgedMessages()
+		public override void RedeliverUnacknowledgedMessages()
 		{
 			@lock.writeLock().@lock();
 			try
 			{
 				consumers.Values.ForEach(consumer => consumer.redeliverUnacknowledgedMessages());
-				incomingMessages.clear();
-				INCOMING_MESSAGES_SIZE_UPDATER.set(this, 0);
-				unAckedMessageTracker.clear();
+				IncomingMessages.clear();
+				IncomingMessagesSizeUpdater.set(this, 0);
+				UnAckedMessageTracker.Clear();
 			}
 			finally
 			{
 				@lock.writeLock().unlock();
 			}
-			resumeReceivingFromPausedConsumersIfNeeded();
+			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		public override void redeliverUnacknowledgedMessages(ISet<MessageId> messageIds)
+		public override void RedeliverUnacknowledgedMessages(ISet<MessageId> MessageIds)
 		{
-			if (messageIds.Count == 0)
+			if (MessageIds.Count == 0)
 			{
 				return;
 			}
 
-			checkArgument(messageIds.First().get() is TopicMessageIdImpl);
+			checkArgument(MessageIds.First().get() is TopicMessageIdImpl);
 
-			if (conf.SubscriptionType != SubscriptionType.Shared)
+			if (Conf.SubscriptionType != SubscriptionType.Shared)
 			{
 				// We cannot redeliver single messages if subscription type is not Shared
-				redeliverUnacknowledgedMessages();
+				RedeliverUnacknowledgedMessages();
 				return;
 			}
-			removeExpiredMessagesFromQueue(messageIds);
+			RemoveExpiredMessagesFromQueue(MessageIds);
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
 //JAVA TO C# CONVERTER TODO TASK: Most Java stream collectors are not converted by Java to C# Converter:
-			messageIds.Select(messageId => (TopicMessageIdImpl)messageId).collect(Collectors.groupingBy(TopicMessageIdImpl::getTopicPartitionName, Collectors.toSet())).ForEach((topicName, messageIds1) => consumers[topicName].redeliverUnacknowledgedMessages(messageIds1.Select(mid => mid.InnerMessageId).collect(Collectors.toSet())));
-			resumeReceivingFromPausedConsumersIfNeeded();
+			MessageIds.Select(messageId => (TopicMessageIdImpl)messageId).collect(Collectors.groupingBy(TopicMessageIdImpl::getTopicPartitionName, Collectors.toSet())).ForEach((topicName, messageIds1) => consumers[topicName].redeliverUnacknowledgedMessages(messageIds1.Select(mid => mid.InnerMessageId).collect(Collectors.toSet())));
+			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		protected internal override void completeOpBatchReceive(OpBatchReceive<T> op)
+		public override void CompleteOpBatchReceive(OpBatchReceive<T> Op)
 		{
-			notifyPendingBatchReceivedCallBack(op);
+			NotifyPendingBatchReceivedCallBack(Op);
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(org.apache.pulsar.client.api.MessageId messageId) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void seek(MessageId messageId)
+//ORIGINAL LINE: @Override public void seek(SharpPulsar.api.MessageId messageId) throws SharpPulsar.api.PulsarClientException
+		public override void Seek(MessageId MessageId)
 		{
 			try
 			{
-				seekAsync(messageId).get();
+				SeekAsync(MessageId).get();
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.unwrap(E);
 			}
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(long timestamp) throws org.apache.pulsar.client.api.PulsarClientException
-		public override void seek(long timestamp)
+//ORIGINAL LINE: @Override public void seek(long timestamp) throws SharpPulsar.api.PulsarClientException
+		public override void Seek(long Timestamp)
 		{
 			try
 			{
-				seekAsync(timestamp).get();
+				SeekAsync(Timestamp).get();
 			}
-			catch (Exception e)
+			catch (Exception E)
 			{
-				throw PulsarClientException.unwrap(e);
+				throw PulsarClientException.unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<Void> seekAsync(MessageId messageId)
+		public override CompletableFuture<Void> SeekAsync(MessageId MessageId)
 		{
 			return FutureUtil.failedFuture(new PulsarClientException("Seek operation not supported on topics consumer"));
 		}
 
-		public override CompletableFuture<Void> seekAsync(long timestamp)
+		public override CompletableFuture<Void> SeekAsync(long Timestamp)
 		{
-			IList<CompletableFuture<Void>> futures = new List<CompletableFuture<Void>>(consumers.Count);
-			consumers.Values.forEach(consumer => futures.Add(consumer.seekAsync(timestamp)));
-			return FutureUtil.waitForAll(futures);
+			IList<CompletableFuture<Void>> Futures = new List<CompletableFuture<Void>>(consumers.Count);
+			consumers.Values.forEach(consumer => Futures.Add(consumer.seekAsync(Timestamp)));
+			return FutureUtil.waitForAll(Futures);
 		}
 
 		public override int AvailablePermits
@@ -761,15 +765,16 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool hasReachedEndOfTopic()
-		{
-			return consumers.Values.All(Consumer.hasReachedEndOfTopic);
-		}
-
-		public override int numMessagesInQueue()
+		public override bool HasReachedEndOfTopic()
 		{
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			return incomingMessages.size() + consumers.Values.Select(ConsumerImpl::numMessagesInQueue).Sum();
+			return consumers.Values.All(Consumer::hasReachedEndOfTopic);
+		}
+
+		public override int NumMessagesInQueue()
+		{
+//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
+			return IncomingMessages.size() + consumers.Values.Select(ConsumerImpl::numMessagesInQueue).Sum();
 		}
 
 		public override ConsumerStats Stats
@@ -782,7 +787,7 @@ namespace SharpPulsar.Impl
 					{
 						return null;
 					}
-					stats.reset();
+					stats.Reset();
             
 					consumers.Values.ForEach(consumer => stats.updateCumulativeStats(consumer.Stats));
 					return stats;
@@ -790,59 +795,52 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual UnAckedMessageTracker UnAckedMessageTracker
-		{
-			get
-			{
-				return unAckedMessageTracker;
-			}
-		}
 
-		private void removeExpiredMessagesFromQueue(ISet<MessageId> messageIds)
+		private void RemoveExpiredMessagesFromQueue(ISet<MessageId> MessageIds)
 		{
-			Message<T> peek = incomingMessages.peek();
-			if (peek != null)
+			Message<T> Peek = IncomingMessages.peek();
+			if (Peek != null)
 			{
-				if (!messageIds.Contains(peek.MessageId))
+				if (!MessageIds.Contains(Peek.MessageId))
 				{
 					// first message is not expired, then no message is expired in queue.
 					return;
 				}
 
 				// try not to remove elements that are added while we remove
-				Message<T> message = incomingMessages.poll();
-				checkState(message is TopicMessageImpl);
-				while (message != null)
+				Message<T> Message = IncomingMessages.poll();
+				checkState(Message is TopicMessageImpl);
+				while (Message != null)
 				{
-					INCOMING_MESSAGES_SIZE_UPDATER.addAndGet(this, -message.Data.length);
-					MessageId messageId = message.MessageId;
-					if (!messageIds.Contains(messageId))
+					IncomingMessagesSizeUpdater.addAndGet(this, -Message.Data.Length);
+					MessageId MessageId = Message.MessageId;
+					if (!MessageIds.Contains(MessageId))
 					{
-						messageIds.Add(messageId);
+						MessageIds.Add(MessageId);
 						break;
 					}
-					message = incomingMessages.poll();
+					Message = IncomingMessages.poll();
 				}
 			}
 		}
 
-		private bool topicNameValid(string topicName)
+		private bool TopicNameValid(string TopicName)
 		{
-			checkArgument(TopicName.isValid(topicName), "Invalid topic name:" + topicName);
-			checkArgument(!topics.ContainsKey(topicName), "Topics already contains topic:" + topicName);
+			checkArgument(TopicName.isValid(TopicName), "Invalid topic name:" + TopicName);
+			checkArgument(!TopicsConflict.ContainsKey(TopicName), "Topics already contains topic:" + TopicName);
 
-			if (this.namespaceName != null)
+			if (this.NamespaceName != null)
 			{
-				checkArgument(TopicName.get(topicName).Namespace.ToString().Equals(this.namespaceName.ToString()), "Topic " + topicName + " not in same namespace with Topics");
+				checkArgument(TopicName.get(TopicName).Namespace.ToString().Equals(this.NamespaceName.ToString()), "Topic " + TopicName + " not in same namespace with Topics");
 			}
 
 			return true;
 		}
 
 		// subscribe one more given topic
-		public virtual CompletableFuture<Void> subscribeAsync(string topicName, bool createTopicIfDoesNotExist)
+		public virtual CompletableFuture<Void> SubscribeAsync(string TopicName, bool CreateTopicIfDoesNotExist)
 		{
-			if (!topicNameValid(topicName))
+			if (!TopicNameValid(TopicName))
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topic name not valid"));
 			}
@@ -852,45 +850,45 @@ namespace SharpPulsar.Impl
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed"));
 			}
 
-			CompletableFuture<Void> subscribeResult = new CompletableFuture<Void>();
+			CompletableFuture<Void> SubscribeResult = new CompletableFuture<Void>();
 
-			client.getPartitionedTopicMetadata(topicName).thenAccept(metadata => subscribeTopicPartitions(subscribeResult, topicName, metadata.partitions, createTopicIfDoesNotExist)).exceptionally(ex1 =>
+			ClientConflict.getPartitionedTopicMetadata(TopicName).thenAccept(metadata => subscribeTopicPartitions(SubscribeResult, TopicName, metadata.partitions, CreateTopicIfDoesNotExist)).exceptionally(ex1 =>
 			{
-			log.warn("[{}] Failed to get partitioned topic metadata: {}", topicName, ex1.Message);
-			subscribeResult.completeExceptionally(ex1);
+			log.warn("[{}] Failed to get partitioned topic metadata: {}", TopicName, ex1.Message);
+			SubscribeResult.completeExceptionally(ex1);
 			return null;
 			});
 
-			return subscribeResult;
+			return SubscribeResult;
 		}
 
 		// create consumer for a single topic with already known partitions.
 		// first create a consumer with no topic, then do subscription for already know partitionedTopic.
-		public static MultiTopicsConsumerImpl<T> createPartitionedConsumer<T>(PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, int numPartitions, Schema<T> schema, ConsumerInterceptors<T> interceptors)
+		public static MultiTopicsConsumerImpl<T> CreatePartitionedConsumer<T>(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, int NumPartitions, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			checkArgument(conf.TopicNames.size() == 1, "Should have only 1 topic for partitioned consumer");
+			checkArgument(Conf.TopicNames.size() == 1, "Should have only 1 topic for partitioned consumer");
 
 			// get topic name, then remove it from conf, so constructor will create a consumer with no topic.
-			ConsumerConfigurationData cloneConf = conf.clone();
-			string topicName = cloneConf.SingleTopic;
-			cloneConf.TopicNames.remove(topicName);
+			ConsumerConfigurationData CloneConf = Conf.clone();
+			string TopicName = CloneConf.SingleTopic;
+			CloneConf.TopicNames.remove(TopicName);
 
-			CompletableFuture<Consumer> future = new CompletableFuture<Consumer>();
-			MultiTopicsConsumerImpl consumer = new MultiTopicsConsumerImpl(client, topicName, cloneConf, listenerExecutor, future, schema, interceptors, true);
+			CompletableFuture<Consumer> Future = new CompletableFuture<Consumer>();
+			MultiTopicsConsumerImpl Consumer = new MultiTopicsConsumerImpl(Client, TopicName, CloneConf, ListenerExecutor, Future, Schema, Interceptors, true);
 
-			future.thenCompose(c => ((MultiTopicsConsumerImpl)c).subscribeAsync(topicName, numPartitions)).thenRun(() => subscribeFuture.complete(consumer)).exceptionally(e =>
+			Future.thenCompose(c => ((MultiTopicsConsumerImpl)c).SubscribeAsync(TopicName, NumPartitions)).thenRun(() => SubscribeFuture.complete(Consumer)).exceptionally(e =>
 			{
-			log.warn("Failed subscription for createPartitionedConsumer: {} {}, e:{}", topicName, numPartitions, e);
-			subscribeFuture.completeExceptionally(PulsarClientException.wrap(((Exception) e).InnerException, string.Format("Failed to subscribe {0} with {1:D} partitions", topicName, numPartitions)));
+			log.warn("Failed subscription for createPartitionedConsumer: {} {}, e:{}", TopicName, NumPartitions, e);
+			SubscribeFuture.completeExceptionally(PulsarClientException.wrap(((Exception) e).InnerException, string.Format("Failed to subscribe {0} with {1:D} partitions", TopicName, NumPartitions)));
 			return null;
 			});
-			return consumer;
+			return Consumer;
 		}
 
 		// subscribe one more given topic, but already know the numberPartitions
-		private CompletableFuture<Void> subscribeAsync(string topicName, int numberPartitions)
+		private CompletableFuture<Void> SubscribeAsync(string TopicName, int NumberPartitions)
 		{
-			if (!topicNameValid(topicName))
+			if (!TopicNameValid(TopicName))
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topic name not valid"));
 			}
@@ -900,77 +898,77 @@ namespace SharpPulsar.Impl
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed"));
 			}
 
-			CompletableFuture<Void> subscribeResult = new CompletableFuture<Void>();
-			subscribeTopicPartitions(subscribeResult, topicName, numberPartitions, true);
+			CompletableFuture<Void> SubscribeResult = new CompletableFuture<Void>();
+			SubscribeTopicPartitions(SubscribeResult, TopicName, NumberPartitions, true);
 
-			return subscribeResult;
+			return SubscribeResult;
 		}
 
-		private void subscribeTopicPartitions(CompletableFuture<Void> subscribeResult, string topicName, int numPartitions, bool createIfDoesNotExist)
+		private void SubscribeTopicPartitions(CompletableFuture<Void> SubscribeResult, string TopicName, int NumPartitions, bool CreateIfDoesNotExist)
 		{
-			client.preProcessSchemaBeforeSubscribe(client, schema, topicName).whenComplete((ignored, cause) =>
+			ClientConflict.preProcessSchemaBeforeSubscribe(ClientConflict, Schema, TopicName).whenComplete((ignored, cause) =>
 			{
 			if (null == cause)
 			{
-				doSubscribeTopicPartitions(subscribeResult, topicName, numPartitions, createIfDoesNotExist);
+				DoSubscribeTopicPartitions(SubscribeResult, TopicName, NumPartitions, CreateIfDoesNotExist);
 			}
 			else
 			{
-				subscribeResult.completeExceptionally(cause);
+				SubscribeResult.completeExceptionally(cause);
 			}
 			});
 		}
 
-		private void doSubscribeTopicPartitions(CompletableFuture<Void> subscribeResult, string topicName, int numPartitions, bool createIfDoesNotExist)
+		private void DoSubscribeTopicPartitions(CompletableFuture<Void> SubscribeResult, string TopicName, int NumPartitions, bool CreateIfDoesNotExist)
 		{
 			if (log.DebugEnabled)
 			{
-				log.debug("Subscribe to topic {} metadata.partitions: {}", topicName, numPartitions);
+				log.debug("Subscribe to topic {} metadata.partitions: {}", TopicName, NumPartitions);
 			}
 
-			IList<CompletableFuture<Consumer<T>>> futureList;
-			if (numPartitions > 0)
+			IList<CompletableFuture<Consumer<T>>> FutureList;
+			if (NumPartitions > 0)
 			{
-				this.topics.GetOrAdd(topicName, numPartitions);
-				allTopicPartitionsNumber.addAndGet(numPartitions);
+				this.TopicsConflict.GetOrAdd(TopicName, NumPartitions);
+				AllTopicPartitionsNumber.addAndGet(NumPartitions);
 
-				int receiverQueueSize = Math.Min(conf.ReceiverQueueSize, conf.MaxTotalReceiverQueueSizeAcrossPartitions / numPartitions);
-				ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-				configurationData.ReceiverQueueSize = receiverQueueSize;
+				int ReceiverQueueSize = Math.Min(Conf.ReceiverQueueSize, Conf.MaxTotalReceiverQueueSizeAcrossPartitions / NumPartitions);
+				ConsumerConfigurationData<T> ConfigurationData = InternalConsumerConfig;
+				ConfigurationData.ReceiverQueueSize = ReceiverQueueSize;
 
-				futureList = IntStream.range(0, numPartitions).mapToObj(partitionIndex =>
+				FutureList = IntStream.range(0, NumPartitions).mapToObj(partitionIndex =>
 				{
-				string partitionName = TopicName.get(topicName).getPartition(partitionIndex).ToString();
-				CompletableFuture<Consumer<T>> subFuture = new CompletableFuture<Consumer<T>>();
-				ConsumerImpl<T> newConsumer = ConsumerImpl.newConsumerImpl(client, partitionName, configurationData, client.externalExecutorProvider().Executor, partitionIndex, true, subFuture, SubscriptionMode.Durable, null, schema, interceptors, createIfDoesNotExist);
-				consumers.GetOrAdd(newConsumer.Topic, newConsumer);
-				return subFuture;
+				string PartitionName = TopicName.get(TopicName).getPartition(partitionIndex).ToString();
+				CompletableFuture<Consumer<T>> SubFuture = new CompletableFuture<Consumer<T>>();
+				ConsumerImpl<T> NewConsumer = ConsumerImpl.NewConsumerImpl(ClientConflict, PartitionName, ConfigurationData, ClientConflict.externalExecutorProvider().Executor, partitionIndex, true, SubFuture, SubscriptionMode.Durable, null, Schema, Interceptors, CreateIfDoesNotExist);
+				consumers.GetOrAdd(NewConsumer.Topic, NewConsumer);
+				return SubFuture;
 				}).collect(Collectors.toList());
 			}
 			else
 			{
-				this.topics.GetOrAdd(topicName, 1);
-				allTopicPartitionsNumber.incrementAndGet();
+				this.TopicsConflict.GetOrAdd(TopicName, 1);
+				AllTopicPartitionsNumber.incrementAndGet();
 
-				CompletableFuture<Consumer<T>> subFuture = new CompletableFuture<Consumer<T>>();
-				ConsumerImpl<T> newConsumer = ConsumerImpl.newConsumerImpl(client, topicName, internalConfig, client.externalExecutorProvider().Executor, -1, true, subFuture, SubscriptionMode.Durable, null, schema, interceptors, createIfDoesNotExist);
-				consumers.GetOrAdd(newConsumer.Topic, newConsumer);
+				CompletableFuture<Consumer<T>> SubFuture = new CompletableFuture<Consumer<T>>();
+				ConsumerImpl<T> NewConsumer = ConsumerImpl.NewConsumerImpl(ClientConflict, TopicName, internalConfig, ClientConflict.externalExecutorProvider().Executor, -1, true, SubFuture, SubscriptionMode.Durable, null, Schema, Interceptors, CreateIfDoesNotExist);
+				consumers.GetOrAdd(NewConsumer.Topic, NewConsumer);
 
-				futureList = Collections.singletonList(subFuture);
+				FutureList = Collections.singletonList(SubFuture);
 			}
 
-			FutureUtil.waitForAll(futureList).thenAccept(finalFuture =>
+			FutureUtil.waitForAll(FutureList).thenAccept(finalFuture =>
 			{
-			if (allTopicPartitionsNumber.get() > maxReceiverQueueSize)
+			if (AllTopicPartitionsNumber.get() > MaxReceiverQueueSizeConflict)
 			{
-				MaxReceiverQueueSize = allTopicPartitionsNumber.get();
+				MaxReceiverQueueSize = AllTopicPartitionsNumber.get();
 			}
-			int numTopics = this.topics.Values.Select(int?.intValue).Sum();
-			checkState(allTopicPartitionsNumber.get() == numTopics, "allTopicPartitionsNumber " + allTopicPartitionsNumber.get() + " not equals expected: " + numTopics);
-			startReceivingMessages(consumers.Values.Where(consumer1 =>
+			int NumTopics = this.TopicsConflict.Values.Select(int?.intValue).Sum();
+			checkState(AllTopicPartitionsNumber.get() == NumTopics, "allTopicPartitionsNumber " + AllTopicPartitionsNumber.get() + " not equals expected: " + NumTopics);
+			StartReceivingMessages(consumers.Values.Where(consumer1 =>
 			{
-				string consumerTopicName = consumer1.Topic;
-				if (TopicName.get(consumerTopicName).PartitionedTopicName.Equals(TopicName.get(topicName).PartitionedTopicName.ToString()))
+				string ConsumerTopicName = consumer1.Topic;
+				if (TopicName.get(ConsumerTopicName).PartitionedTopicName.Equals(TopicName.get(TopicName).PartitionedTopicName.ToString()))
 				{
 					return true;
 				}
@@ -979,34 +977,34 @@ namespace SharpPulsar.Impl
 					return false;
 				}
 			}).ToList());
-			subscribeResult.complete(null);
-			log.info("[{}] [{}] Success subscribe new topic {} in topics consumer, partitions: {}, allTopicPartitionsNumber: {}", topic, subscription, topicName, numPartitions, allTopicPartitionsNumber.get());
-			if (this.namespaceName == null)
+			SubscribeResult.complete(null);
+			log.info("[{}] [{}] Success subscribe new topic {} in topics consumer, partitions: {}, allTopicPartitionsNumber: {}", Topic, SubscriptionConflict, TopicName, NumPartitions, AllTopicPartitionsNumber.get());
+			if (this.NamespaceName == null)
 			{
-				this.namespaceName = TopicName.get(topicName).NamespaceObject;
+				this.NamespaceName = TopicName.get(TopicName).NamespaceObject;
 			}
 			return;
 			}).exceptionally(ex =>
 			{
-			handleSubscribeOneTopicError(topicName, ex, subscribeResult);
+			HandleSubscribeOneTopicError(TopicName, ex, SubscribeResult);
 			return null;
 		});
 		}
 
 		// handling failure during subscribe new topic, unsubscribe success created partitions
-		private void handleSubscribeOneTopicError(string topicName, Exception error, CompletableFuture<Void> subscribeFuture)
+		private void HandleSubscribeOneTopicError(string TopicName, Exception Error, CompletableFuture<Void> SubscribeFuture)
 		{
-			log.warn("[{}] Failed to subscribe for topic [{}] in topics consumer {}", topic, topicName, error.Message);
+			log.warn("[{}] Failed to subscribe for topic [{}] in topics consumer {}", Topic, TopicName, Error.Message);
 
-			client.externalExecutorProvider().Executor.submit(() =>
+			ClientConflict.externalExecutorProvider().Executor.submit(() =>
 			{
-			AtomicInteger toCloseNum = new AtomicInteger(0);
+			AtomicInteger ToCloseNum = new AtomicInteger(0);
 			consumers.Values.Where(consumer1 =>
 			{
-				string consumerTopicName = consumer1.Topic;
-				if (TopicName.get(consumerTopicName).PartitionedTopicName.Equals(topicName))
+				string ConsumerTopicName = consumer1.Topic;
+				if (TopicName.get(ConsumerTopicName).PartitionedTopicName.Equals(TopicName))
 				{
-					toCloseNum.incrementAndGet();
+					ToCloseNum.incrementAndGet();
 					return true;
 				}
 				else
@@ -1017,15 +1015,15 @@ namespace SharpPulsar.Impl
 			{
 				consumer2.closeAsync().whenComplete((r, ex) =>
 				{
-					consumer2.subscribeFuture().completeExceptionally(error);
-					allTopicPartitionsNumber.decrementAndGet();
+					consumer2.subscribeFuture().completeExceptionally(Error);
+					AllTopicPartitionsNumber.decrementAndGet();
 					consumers.Remove(consumer2.Topic);
-					if (toCloseNum.decrementAndGet() == 0)
+					if (ToCloseNum.decrementAndGet() == 0)
 					{
-						log.warn("[{}] Failed to subscribe for topic [{}] in topics consumer, subscribe error: {}", topic, topicName, error.Message);
-						topics.Remove(topicName);
-						checkState(allTopicPartitionsNumber.get() == consumers.Values.Count);
-						subscribeFuture.completeExceptionally(error);
+						log.warn("[{}] Failed to subscribe for topic [{}] in topics consumer, subscribe error: {}", Topic, TopicName, Error.Message);
+						TopicsConflict.Remove(TopicName);
+						checkState(AllTopicPartitionsNumber.get() == consumers.Values.Count);
+						SubscribeFuture.completeExceptionally(Error);
 					}
 					return;
 				});
@@ -1034,28 +1032,28 @@ namespace SharpPulsar.Impl
 		}
 
 		// un-subscribe a given topic
-		public virtual CompletableFuture<Void> unsubscribeAsync(string topicName)
+		public virtual CompletableFuture<Void> UnsubscribeAsync(string TopicName)
 		{
-			checkArgument(TopicName.isValid(topicName), "Invalid topic name:" + topicName);
+			checkArgument(TopicName.isValid(TopicName), "Invalid topic name:" + TopicName);
 
 			if (State == State.Closing || State == State.Closed)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed"));
 			}
 
-			if (partitionsAutoUpdateTimeout != null)
+			if (PartitionsAutoUpdateTimeout != null)
 			{
-				partitionsAutoUpdateTimeout.cancel();
-				partitionsAutoUpdateTimeout = null;
+				PartitionsAutoUpdateTimeout.cancel();
+				PartitionsAutoUpdateTimeout = null;
 			}
 
-			CompletableFuture<Void> unsubscribeFuture = new CompletableFuture<Void>();
-			string topicPartName = TopicName.get(topicName).PartitionedTopicName;
+			CompletableFuture<Void> UnsubscribeFuture = new CompletableFuture<Void>();
+			string TopicPartName = TopicName.get(TopicName).PartitionedTopicName;
 
-			IList<ConsumerImpl<T>> consumersToUnsub = consumers.Values.Where(consumer =>
+			IList<ConsumerImpl<T>> ConsumersToUnsub = consumers.Values.Where(consumer =>
 			{
-			string consumerTopicName = consumer.Topic;
-			if (TopicName.get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
+			string ConsumerTopicName = consumer.Topic;
+			if (TopicName.get(ConsumerTopicName).PartitionedTopicName.Equals(TopicPartName))
 			{
 				return true;
 			}
@@ -1066,52 +1064,52 @@ namespace SharpPulsar.Impl
 			}).ToList();
 
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			IList<CompletableFuture<Void>> futureList = consumersToUnsub.Select(ConsumerImpl::unsubscribeAsync).ToList();
+			IList<CompletableFuture<Void>> FutureList = ConsumersToUnsub.Select(ConsumerImpl::unsubscribeAsync).ToList();
 
-			FutureUtil.waitForAll(futureList).whenComplete((r, ex) =>
+			FutureUtil.waitForAll(FutureList).whenComplete((r, ex) =>
 			{
 			if (ex == null)
 			{
-				consumersToUnsub.ForEach(consumer1 =>
+				ConsumersToUnsub.ForEach(consumer1 =>
 				{
 					consumers.Remove(consumer1.Topic);
 					pausedConsumers.remove(consumer1);
-					allTopicPartitionsNumber.decrementAndGet();
+					AllTopicPartitionsNumber.decrementAndGet();
 				});
-				topics.Remove(topicName);
-				((UnAckedTopicMessageTracker) unAckedMessageTracker).removeTopicMessages(topicName);
-				unsubscribeFuture.complete(null);
-				log.info("[{}] [{}] [{}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {}", topicName, subscription, consumerName, allTopicPartitionsNumber);
+				TopicsConflict.Remove(TopicName);
+				((UnAckedTopicMessageTracker) UnAckedMessageTracker).RemoveTopicMessages(TopicName);
+				UnsubscribeFuture.complete(null);
+				log.info("[{}] [{}] [{}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {}", TopicName, SubscriptionConflict, ConsumerNameConflict, AllTopicPartitionsNumber);
 			}
 			else
 			{
-				unsubscribeFuture.completeExceptionally(ex);
+				UnsubscribeFuture.completeExceptionally(ex);
 				State = State.Failed;
-				log.error("[{}] [{}] [{}] Could not unsubscribe Topics Consumer", topicName, subscription, consumerName, ex.Cause);
+				log.error("[{}] [{}] [{}] Could not unsubscribe Topics Consumer", TopicName, SubscriptionConflict, ConsumerNameConflict, ex.Cause);
 			}
 			});
 
-			return unsubscribeFuture;
+			return UnsubscribeFuture;
 		}
 
 		// Remove a consumer for a topic
-		public virtual CompletableFuture<Void> removeConsumerAsync(string topicName)
+		public virtual CompletableFuture<Void> RemoveConsumerAsync(string TopicName)
 		{
-			checkArgument(TopicName.isValid(topicName), "Invalid topic name:" + topicName);
+			checkArgument(TopicName.isValid(TopicName), "Invalid topic name:" + TopicName);
 
 			if (State == State.Closing || State == State.Closed)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed"));
 			}
 
-			CompletableFuture<Void> unsubscribeFuture = new CompletableFuture<Void>();
-			string topicPartName = TopicName.get(topicName).PartitionedTopicName;
+			CompletableFuture<Void> UnsubscribeFuture = new CompletableFuture<Void>();
+			string TopicPartName = TopicName.get(TopicName).PartitionedTopicName;
 
 
-			IList<ConsumerImpl<T>> consumersToClose = consumers.Values.Where(consumer =>
+			IList<ConsumerImpl<T>> ConsumersToClose = consumers.Values.Where(consumer =>
 			{
-			string consumerTopicName = consumer.Topic;
-			if (TopicName.get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
+			string ConsumerTopicName = consumer.Topic;
+			if (TopicName.get(ConsumerTopicName).PartitionedTopicName.Equals(TopicPartName))
 			{
 				return true;
 			}
@@ -1122,32 +1120,32 @@ namespace SharpPulsar.Impl
 			}).ToList();
 
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			IList<CompletableFuture<Void>> futureList = consumersToClose.Select(ConsumerImpl::closeAsync).ToList();
+			IList<CompletableFuture<Void>> FutureList = ConsumersToClose.Select(ConsumerImpl::closeAsync).ToList();
 
-			FutureUtil.waitForAll(futureList).whenComplete((r, ex) =>
+			FutureUtil.waitForAll(FutureList).whenComplete((r, ex) =>
 			{
 			if (ex == null)
 			{
-				consumersToClose.ForEach(consumer1 =>
+				ConsumersToClose.ForEach(consumer1 =>
 				{
 					consumers.Remove(consumer1.Topic);
 					pausedConsumers.remove(consumer1);
-					allTopicPartitionsNumber.decrementAndGet();
+					AllTopicPartitionsNumber.decrementAndGet();
 				});
-				topics.Remove(topicName);
-				((UnAckedTopicMessageTracker) unAckedMessageTracker).removeTopicMessages(topicName);
-				unsubscribeFuture.complete(null);
-				log.info("[{}] [{}] [{}] Removed Topics Consumer, allTopicPartitionsNumber: {}", topicName, subscription, consumerName, allTopicPartitionsNumber);
+				TopicsConflict.Remove(TopicName);
+				((UnAckedTopicMessageTracker) UnAckedMessageTracker).RemoveTopicMessages(TopicName);
+				UnsubscribeFuture.complete(null);
+				log.info("[{}] [{}] [{}] Removed Topics Consumer, allTopicPartitionsNumber: {}", TopicName, SubscriptionConflict, ConsumerNameConflict, AllTopicPartitionsNumber);
 			}
 			else
 			{
-				unsubscribeFuture.completeExceptionally(ex);
+				UnsubscribeFuture.completeExceptionally(ex);
 				State = State.Failed;
-				log.error("[{}] [{}] [{}] Could not remove Topics Consumer", topicName, subscription, consumerName, ex.Cause);
+				log.error("[{}] [{}] [{}] Could not remove Topics Consumer", TopicName, SubscriptionConflict, ConsumerNameConflict, ex.Cause);
 			}
 			});
 
-			return unsubscribeFuture;
+			return UnsubscribeFuture;
 		}
 
 
@@ -1156,7 +1154,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return topics.Keys.ToList();
+				return TopicsConflict.Keys.ToList();
 			}
 		}
 
@@ -1178,120 +1176,120 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void pause()
+		public override void Pause()
 		{
 			consumers.forEach((name, consumer) => consumer.pause());
 		}
 
-		public override void resume()
+		public override void Resume()
 		{
 			consumers.forEach((name, consumer) => consumer.resume());
 		}
 
 		// This listener is triggered when topics partitions are updated.
-		internal class TopicsPartitionChangedListener : PartitionsChangedListener
+		public class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
 			private readonly MultiTopicsConsumerImpl<T> outerInstance;
 
 			public TopicsPartitionChangedListener(MultiTopicsConsumerImpl<T> outerInstance)
 			{
-				this.outerInstance = outerInstance;
+				this.outerInstance = OuterInstance;
 			}
 
 			// Check partitions changes of passed in topics, and subscribe new added partitions.
-			public virtual CompletableFuture<Void> onTopicsExtended(ICollection<string> topicsExtended)
+			public override CompletableFuture<Void> OnTopicsExtended(ICollection<string> TopicsExtended)
 			{
-				CompletableFuture<Void> future = new CompletableFuture<Void>();
-				if (topicsExtended.Count == 0)
+				CompletableFuture<Void> Future = new CompletableFuture<Void>();
+				if (TopicsExtended.Count == 0)
 				{
-					future.complete(null);
-					return future;
+					Future.complete(null);
+					return Future;
 				}
 
 				if (log.DebugEnabled)
 				{
-					log.debug("[{}]  run onTopicsExtended: {}, size: {}", outerInstance.topic, topicsExtended.ToString(), topicsExtended.Count);
+					log.debug("[{}]  run onTopicsExtended: {}, size: {}", outerInstance.Topic, TopicsExtended.ToString(), TopicsExtended.Count);
 				}
 
-				IList<CompletableFuture<Void>> futureList = Lists.newArrayListWithExpectedSize(topicsExtended.Count);
-				topicsExtended.forEach(outerInstance.topic => futureList.Add(outerInstance.subscribeIncreasedTopicPartitions(outerInstance.topic)));
-				FutureUtil.waitForAll(futureList).thenAccept(finalFuture => future.complete(null)).exceptionally(ex =>
+				IList<CompletableFuture<Void>> FutureList = Lists.newArrayListWithExpectedSize(TopicsExtended.Count);
+				TopicsExtended.forEach(outerInstance.Topic => FutureList.Add(outerInstance.subscribeIncreasedTopicPartitions(outerInstance.Topic)));
+				FutureUtil.waitForAll(FutureList).thenAccept(finalFuture => Future.complete(null)).exceptionally(ex =>
 				{
-				log.warn("[{}] Failed to subscribe increased topics partitions: {}", outerInstance.topic, ex.Message);
-				future.completeExceptionally(ex);
+				log.warn("[{}] Failed to subscribe increased topics partitions: {}", outerInstance.Topic, ex.Message);
+				Future.completeExceptionally(ex);
 				return null;
 				});
 
-				return future;
+				return Future;
 			}
 		}
 
 		// subscribe increased partitions for a given topic
-		private CompletableFuture<Void> subscribeIncreasedTopicPartitions(string topicName)
+		private CompletableFuture<Void> SubscribeIncreasedTopicPartitions(string TopicName)
 		{
-			CompletableFuture<Void> future = new CompletableFuture<Void>();
+			CompletableFuture<Void> Future = new CompletableFuture<Void>();
 
-			client.getPartitionsForTopic(topicName).thenCompose(list =>
+			ClientConflict.getPartitionsForTopic(TopicName).thenCompose(list =>
 			{
-			int oldPartitionNumber = topics[topicName.ToString()];
-			int currentPartitionNumber = list.size();
+			int OldPartitionNumber = TopicsConflict[TopicName.ToString()];
+			int CurrentPartitionNumber = list.size();
 			if (log.DebugEnabled)
 			{
-				log.debug("[{}] partitions number. old: {}, new: {}", topicName.ToString(), oldPartitionNumber, currentPartitionNumber);
+				log.debug("[{}] partitions number. old: {}, new: {}", TopicName.ToString(), OldPartitionNumber, CurrentPartitionNumber);
 			}
-			if (oldPartitionNumber == currentPartitionNumber)
+			if (OldPartitionNumber == CurrentPartitionNumber)
 			{
-				future.complete(null);
-				return future;
+				Future.complete(null);
+				return Future;
 			}
-			else if (oldPartitionNumber < currentPartitionNumber)
+			else if (OldPartitionNumber < CurrentPartitionNumber)
 			{
-				IList<string> newPartitions = list.subList(oldPartitionNumber, currentPartitionNumber);
-				IList<CompletableFuture<Consumer<T>>> futureList = newPartitions.Select(partitionName =>
+				IList<string> NewPartitions = list.subList(OldPartitionNumber, CurrentPartitionNumber);
+				IList<CompletableFuture<Consumer<T>>> FutureList = NewPartitions.Select(partitionName =>
 				{
-					int partitionIndex = TopicName.getPartitionIndex(partitionName);
-					CompletableFuture<Consumer<T>> subFuture = new CompletableFuture<Consumer<T>>();
-					ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-					ConsumerImpl<T> newConsumer = ConsumerImpl.newConsumerImpl(client, partitionName, configurationData, client.externalExecutorProvider().Executor, partitionIndex, true, subFuture, SubscriptionMode.Durable, null, schema, interceptors, true);
-					consumers.GetOrAdd(newConsumer.Topic, newConsumer);
+					int PartitionIndex = TopicName.getPartitionIndex(partitionName);
+					CompletableFuture<Consumer<T>> SubFuture = new CompletableFuture<Consumer<T>>();
+					ConsumerConfigurationData<T> ConfigurationData = InternalConsumerConfig;
+					ConsumerImpl<T> NewConsumer = ConsumerImpl.NewConsumerImpl(ClientConflict, partitionName, ConfigurationData, ClientConflict.externalExecutorProvider().Executor, PartitionIndex, true, SubFuture, SubscriptionMode.Durable, null, Schema, Interceptors, true);
+					consumers.GetOrAdd(NewConsumer.Topic, NewConsumer);
 					if (log.DebugEnabled)
 					{
-						log.debug("[{}] create consumer {} for partitionName: {}", topicName.ToString(), newConsumer.Topic, partitionName);
+						log.debug("[{}] create consumer {} for partitionName: {}", TopicName.ToString(), NewConsumer.Topic, partitionName);
 					}
-					return subFuture;
+					return SubFuture;
 				}).ToList();
-				FutureUtil.waitForAll(futureList).thenAccept(finalFuture =>
+				FutureUtil.waitForAll(FutureList).thenAccept(finalFuture =>
 				{
-					IList<ConsumerImpl<T>> newConsumerList = newPartitions.Select(partitionTopic => consumers[partitionTopic]).ToList();
-					startReceivingMessages(newConsumerList);
-					future.complete(null);
+					IList<ConsumerImpl<T>> NewConsumerList = NewPartitions.Select(partitionTopic => consumers[partitionTopic]).ToList();
+					StartReceivingMessages(NewConsumerList);
+					Future.complete(null);
 				}).exceptionally(ex =>
 				{
-					log.warn("[{}] Failed to subscribe {} partition: {} - {}", topic, topicName.ToString(), oldPartitionNumber, currentPartitionNumber, ex.Message);
-					future.completeExceptionally(ex);
+					log.warn("[{}] Failed to subscribe {} partition: {} - {}", Topic, TopicName.ToString(), OldPartitionNumber, CurrentPartitionNumber, ex.Message);
+					Future.completeExceptionally(ex);
 					return null;
 				});
 			}
 			else
 			{
-				log.error("[{}] not support shrink topic partitions. old: {}, new: {}", topicName.ToString(), oldPartitionNumber, currentPartitionNumber);
-				future.completeExceptionally(new NotSupportedException("not support shrink topic partitions"));
+				log.error("[{}] not support shrink topic partitions. old: {}, new: {}", TopicName.ToString(), OldPartitionNumber, CurrentPartitionNumber);
+				Future.completeExceptionally(new NotSupportedException("not support shrink topic partitions"));
 			}
-			return future;
+			return Future;
 			});
 
-			return future;
+			return Future;
 		}
 
 		private TimerTask partitionsAutoUpdateTimerTask = new TimerTaskAnonymousInnerClass();
 
-		private class TimerTaskAnonymousInnerClass : TimerTask
+		public class TimerTaskAnonymousInnerClass : TimerTask
 		{
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-			public override void run(Timeout timeout)
+			public override void run(Timeout Timeout)
 			{
-				if (timeout.Cancelled || outerInstance.State != State.Ready)
+				if (Timeout.Cancelled || outerInstance.State != State.Ready)
 				{
 					return;
 				}
@@ -1308,52 +1306,45 @@ namespace SharpPulsar.Impl
 				}
 
 				// schedule the next re-check task
-				outerInstance.partitionsAutoUpdateTimeout = outerInstance.client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, TimeUnit.MINUTES);
+				outerInstance.PartitionsAutoUpdateTimeout = outerInstance.client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 			}
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @VisibleForTesting public io.netty.util.Timeout getPartitionsAutoUpdateTimeout()
-		public virtual Timeout PartitionsAutoUpdateTimeout
-		{
-			get
-			{
-				return partitionsAutoUpdateTimeout;
-			}
-		}
 
 		public override CompletableFuture<MessageId> LastMessageIdAsync
 		{
 			get
 			{
-				CompletableFuture<MessageId> returnFuture = new CompletableFuture<MessageId>();
+				CompletableFuture<MessageId> ReturnFuture = new CompletableFuture<MessageId>();
     
-				IDictionary<string, CompletableFuture<MessageId>> messageIdFutures = consumers.SetOfKeyValuePairs().Select(entry => Pair.of(entry.Key,entry.Value.LastMessageIdAsync)).ToDictionary(Pair.getKey, Pair.getValue);
+				IDictionary<string, CompletableFuture<MessageId>> MessageIdFutures = consumers.SetOfKeyValuePairs().Select(entry => Pair.of(entry.Key,entry.Value.LastMessageIdAsync)).ToDictionary(Pair.getKey, Pair.getValue);
     
 	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 	//ORIGINAL LINE: java.util.concurrent.CompletableFuture.allOf(messageIdFutures.entrySet().stream().map(java.util.Map.Entry::getValue).toArray(java.util.concurrent.CompletableFuture<?>[]::new)).whenComplete((ignore, ex) ->
 	//JAVA TO C# CONVERTER TODO TASK: Method reference constructor syntax is not converted by Java to C# Converter:
-				CompletableFuture.allOf(messageIdFutures.SetOfKeyValuePairs().Select(DictionaryEntry.getValue).ToArray(CompletableFuture<object>[]::new)).whenComplete((ignore, ex) =>
+				CompletableFuture.allOf(MessageIdFutures.SetOfKeyValuePairs().Select(DictionaryEntry.getValue).ToArray(CompletableFuture<object>[]::new)).whenComplete((ignore, ex) =>
 				{
-				Builder<string, MessageId> builder = ImmutableMap.builder<string, MessageId>();
-				messageIdFutures.forEach((key, future) =>
+				Builder<string, MessageId> Builder = ImmutableMap.builder<string, MessageId>();
+				MessageIdFutures.forEach((key, future) =>
 				{
-					MessageId messageId;
+					MessageId MessageId;
 					try
 					{
-						messageId = future.get();
+						MessageId = future.get();
 					}
-					catch (Exception e)
+					catch (Exception E)
 					{
-						log.warn("[{}] Exception when topic {} getLastMessageId.", key, e);
-						messageId = MessageId.earliest;
+						log.warn("[{}] Exception when topic {} getLastMessageId.", key, E);
+						MessageId = MessageId.earliest;
 					}
-					builder.put(key, messageId);
+					Builder.put(key, MessageId);
 				});
-				returnFuture.complete(new MultiMessageIdImpl(builder.build()));
+				ReturnFuture.complete(new MultiMessageIdImpl(Builder.build()));
 				});
     
-				return returnFuture;
+				return ReturnFuture;
 			}
 		}
 

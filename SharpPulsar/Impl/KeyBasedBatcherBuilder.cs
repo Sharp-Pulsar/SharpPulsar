@@ -1,5 +1,5 @@
-﻿using SharpPulsar.Impl.Batch;
-using SharpPulsar.Interface.Batch;
+﻿using System;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -20,13 +20,16 @@ using SharpPulsar.Interface.Batch;
 /// </summary>
 namespace SharpPulsar.Impl
 {
+	using BatchMessageContainer = SharpPulsar.Api.BatchMessageContainer;
+	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
 
-	public class KeyBasedBatcherBuilder : IBatcherBuilder
+	[Serializable]
+	public class KeyBasedBatcherBuilder : BatcherBuilder
 	{
 
-		private const long serialVersionUID = 1L;
+		private const long SerialVersionUID = 1L;
 
-		public IBatchMessageContainer Build()
+		public override BatchMessageContainer Build()
 		{
 			return new BatchMessageKeyBasedContainer();
 		}

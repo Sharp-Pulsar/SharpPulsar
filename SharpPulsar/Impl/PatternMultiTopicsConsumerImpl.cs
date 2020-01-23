@@ -28,13 +28,13 @@ namespace SharpPulsar.Impl
 	using Lists = com.google.common.collect.Lists;
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SharpPulsar.Impl.conf;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using Consumer = SharpPulsar.Api.Consumer;
+	using SharpPulsar.Api;
+	using SharpPulsar.Impl.Conf;
+	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
+	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -45,60 +45,60 @@ namespace SharpPulsar.Impl
 		private readonly Mode subscriptionMode;
 		private volatile Timeout recheckPatternTimeout = null;
 
-		public PatternMultiTopicsConsumerImpl(Pattern topicsPattern, PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, Schema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors) : base(client, conf, listenerExecutor, subscribeFuture, schema, interceptors, false)
+		public PatternMultiTopicsConsumerImpl(Pattern TopicsPattern, PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, Mode SubscriptionMode, ConsumerInterceptors<T> Interceptors) : base(Client, Conf, ListenerExecutor, SubscribeFuture, Schema, Interceptors, false)
 		{
-			this.topicsPattern = topicsPattern;
-			this.subscriptionMode = subscriptionMode;
+			this.topicsPattern = TopicsPattern;
+			this.subscriptionMode = SubscriptionMode;
 
-			if (this.namespaceName == null)
+			if (this.NamespaceName == null)
 			{
-				this.namespaceName = getNameSpaceFromPattern(topicsPattern);
+				this.NamespaceName = GetNameSpaceFromPattern(TopicsPattern);
 			}
-			checkArgument(getNameSpaceFromPattern(topicsPattern).ToString().Equals(this.namespaceName.ToString()));
+			checkArgument(GetNameSpaceFromPattern(TopicsPattern).ToString().Equals(this.NamespaceName.ToString()));
 
 			this.topicsChangeListener = new PatternTopicsChangedListener(this);
-			recheckPatternTimeout = client.timer().newTimeout(this, Math.Min(1, conf.PatternAutoDiscoveryPeriod), TimeUnit.MINUTES);
+			recheckPatternTimeout = Client.timer().newTimeout(this, Math.Min(1, Conf.PatternAutoDiscoveryPeriod), BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 		}
 
-		public static NamespaceName getNameSpaceFromPattern(Pattern pattern)
+		public static NamespaceName GetNameSpaceFromPattern(Pattern Pattern)
 		{
-			return TopicName.get(pattern.pattern()).NamespaceObject;
+			return TopicName.get(Pattern.pattern()).NamespaceObject;
 		}
 
 		// TimerTask to recheck topics change, and trigger subscribe/unsubscribe based on the change.
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-		public override void run(Timeout timeout)
+		public override void Run(Timeout Timeout)
 		{
-			if (timeout.Cancelled)
+			if (Timeout.Cancelled)
 			{
 				return;
 			}
 
-			CompletableFuture<Void> recheckFuture = new CompletableFuture<Void>();
-			IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(2);
+			CompletableFuture<Void> RecheckFuture = new CompletableFuture<Void>();
+			IList<CompletableFuture<Void>> Futures = Lists.newArrayListWithExpectedSize(2);
 
-			client.Lookup.getTopicsUnderNamespace(namespaceName, subscriptionMode).thenAccept(topics.Value =>
+			ClientConflict.Lookup.getTopicsUnderNamespace(NamespaceName, subscriptionMode).thenAccept(TopicsConflict.Value =>
 			{
 			if (log.DebugEnabled)
 			{
-				log.debug("Get topics under namespace {}, topics.size: {}", namespaceName.ToString(), topics.Count);
-				topics.forEach(topicName => log.debug("Get topics under namespace {}, topic: {}", namespaceName.ToString(), topicName));
+				log.debug("Get topics under namespace {}, topics.size: {}", NamespaceName.ToString(), TopicsConflict.Count);
+				TopicsConflict.forEach(topicName => log.debug("Get topics under namespace {}, topic: {}", NamespaceName.ToString(), topicName));
 			}
-			IList<string> newTopics = PulsarClientImpl.topicsPatternFilter(topics, topicsPattern);
-			IList<string> oldTopics = PatternMultiTopicsConsumerImpl.this.Topics;
-			futures.Add(topicsChangeListener.onTopicsAdded(topicsListsMinus(newTopics, oldTopics)));
-			futures.Add(topicsChangeListener.onTopicsRemoved(topicsListsMinus(oldTopics, newTopics)));
-			FutureUtil.waitForAll(futures).thenAccept(finalFuture => recheckFuture.complete(null)).exceptionally(ex =>
+			IList<string> NewTopics = PulsarClientImpl.TopicsPatternFilter(TopicsConflict, topicsPattern);
+			IList<string> OldTopics = PatternMultiTopicsConsumerImpl.this.Topics;
+			Futures.Add(topicsChangeListener.OnTopicsAdded(TopicsListsMinus(NewTopics, OldTopics)));
+			Futures.Add(topicsChangeListener.OnTopicsRemoved(TopicsListsMinus(OldTopics, NewTopics)));
+			FutureUtil.waitForAll(Futures).thenAccept(finalFuture => RecheckFuture.complete(null)).exceptionally(ex =>
 			{
-				log.warn("[{}] Failed to recheck topics change: {}", topic, ex.Message);
-				recheckFuture.completeExceptionally(ex);
+				log.warn("[{}] Failed to recheck topics change: {}", Topic, ex.Message);
+				RecheckFuture.completeExceptionally(ex);
 				return null;
 			});
 			});
 
 			// schedule the next re-check task
-			recheckPatternTimeout = client.timer().newTimeout(PatternMultiTopicsConsumerImpl.this, Math.Min(1, conf.PatternAutoDiscoveryPeriod), TimeUnit.MINUTES);
+			recheckPatternTimeout = ClientConflict.timer().newTimeout(PatternMultiTopicsConsumerImpl.this, Math.Min(1, Conf.PatternAutoDiscoveryPeriod), BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
 		}
 
 		public virtual Pattern Pattern
@@ -109,89 +109,89 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		internal interface TopicsChangedListener
+		public interface TopicsChangedListener
 		{
 			// unsubscribe and delete ConsumerImpl in the `consumers` map in `MultiTopicsConsumerImpl` based on added topics.
-			CompletableFuture<Void> onTopicsRemoved(ICollection<string> removedTopics);
+			CompletableFuture<Void> OnTopicsRemoved(ICollection<string> RemovedTopics);
 			// subscribe and create a list of new ConsumerImpl, added them to the `consumers` map in `MultiTopicsConsumerImpl`.
-			CompletableFuture<Void> onTopicsAdded(ICollection<string> addedTopics);
+			CompletableFuture<Void> OnTopicsAdded(ICollection<string> AddedTopics);
 		}
 
-		private class PatternTopicsChangedListener : TopicsChangedListener
+		public class PatternTopicsChangedListener : TopicsChangedListener
 		{
 			private readonly PatternMultiTopicsConsumerImpl<T> outerInstance;
 
 			public PatternTopicsChangedListener(PatternMultiTopicsConsumerImpl<T> outerInstance)
 			{
-				this.outerInstance = outerInstance;
+				this.outerInstance = OuterInstance;
 			}
 
-			public virtual CompletableFuture<Void> onTopicsRemoved(ICollection<string> removedTopics)
+			public override CompletableFuture<Void> OnTopicsRemoved(ICollection<string> RemovedTopics)
 			{
-				CompletableFuture<Void> removeFuture = new CompletableFuture<Void>();
+				CompletableFuture<Void> RemoveFuture = new CompletableFuture<Void>();
 
-				if (removedTopics.Count == 0)
+				if (RemovedTopics.Count == 0)
 				{
-					removeFuture.complete(null);
-					return removeFuture;
+					RemoveFuture.complete(null);
+					return RemoveFuture;
 				}
 
-				IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(outerInstance.topics.Count);
-				removedTopics.ForEach(outerInstance.topic => futures.Add(outerInstance.removeConsumerAsync(outerInstance.topic)));
-				FutureUtil.waitForAll(futures).thenAccept(finalFuture => removeFuture.complete(null)).exceptionally(ex =>
+				IList<CompletableFuture<Void>> Futures = Lists.newArrayListWithExpectedSize(outerInstance.TopicsConflict.Count);
+				RemovedTopics.ForEach(outerInstance.Topic => Futures.Add(outerInstance.RemoveConsumerAsync(outerInstance.Topic)));
+				FutureUtil.waitForAll(Futures).thenAccept(finalFuture => RemoveFuture.complete(null)).exceptionally(ex =>
 				{
-				log.warn("[{}] Failed to subscribe topics: {}", outerInstance.topic, ex.Message);
-				removeFuture.completeExceptionally(ex);
+				log.warn("[{}] Failed to subscribe topics: {}", outerInstance.Topic, ex.Message);
+				RemoveFuture.completeExceptionally(ex);
 				return null;
 				});
-				return removeFuture;
+				return RemoveFuture;
 			}
 
-			public virtual CompletableFuture<Void> onTopicsAdded(ICollection<string> addedTopics)
+			public override CompletableFuture<Void> OnTopicsAdded(ICollection<string> AddedTopics)
 			{
-				CompletableFuture<Void> addFuture = new CompletableFuture<Void>();
+				CompletableFuture<Void> AddFuture = new CompletableFuture<Void>();
 
-				if (addedTopics.Count == 0)
+				if (AddedTopics.Count == 0)
 				{
-					addFuture.complete(null);
-					return addFuture;
+					AddFuture.complete(null);
+					return AddFuture;
 				}
 
-				IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(outerInstance.topics.Count);
-				addedTopics.ForEach(outerInstance.topic => futures.Add(outerInstance.subscribeAsync(outerInstance.topic, false)));
-				FutureUtil.waitForAll(futures).thenAccept(finalFuture => addFuture.complete(null)).exceptionally(ex =>
+				IList<CompletableFuture<Void>> Futures = Lists.newArrayListWithExpectedSize(outerInstance.TopicsConflict.Count);
+				AddedTopics.ForEach(outerInstance.Topic => Futures.Add(outerInstance.SubscribeAsync(outerInstance.Topic, false)));
+				FutureUtil.waitForAll(Futures).thenAccept(finalFuture => AddFuture.complete(null)).exceptionally(ex =>
 				{
-				log.warn("[{}] Failed to unsubscribe topics: {}", outerInstance.topic, ex.Message);
-				addFuture.completeExceptionally(ex);
+				log.warn("[{}] Failed to unsubscribe topics: {}", outerInstance.Topic, ex.Message);
+				AddFuture.completeExceptionally(ex);
 				return null;
 				});
-				return addFuture;
+				return AddFuture;
 			}
 		}
 
 		// get topics, which are contained in list1, and not in list2
-		public static IList<string> topicsListsMinus(IList<string> list1, IList<string> list2)
+		public static IList<string> TopicsListsMinus(IList<string> List1, IList<string> List2)
 		{
-			HashSet<string> s1 = new HashSet<string>(list1);
+			HashSet<string> S1 = new HashSet<string>(List1);
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the java.util.Collection 'removeAll' method:
-			s1.removeAll(list2);
-			return s1.ToList();
+			S1.removeAll(List2);
+			return S1.ToList();
 		}
 
-		public override CompletableFuture<Void> closeAsync()
+		public override CompletableFuture<Void> CloseAsync()
 		{
-			Timeout timeout = recheckPatternTimeout;
-			if (timeout != null)
+			Timeout Timeout = recheckPatternTimeout;
+			if (Timeout != null)
 			{
-				timeout.cancel();
+				Timeout.cancel();
 				recheckPatternTimeout = null;
 			}
-			return base.closeAsync();
+			return base.CloseAsync();
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @VisibleForTesting Timeout getRecheckPatternTimeout()
-		internal virtual Timeout RecheckPatternTimeout
+		public virtual Timeout RecheckPatternTimeout
 		{
 			get
 			{

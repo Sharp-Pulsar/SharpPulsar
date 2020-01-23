@@ -16,32 +16,32 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Writer
+namespace SharpPulsar.Impl.Schema.Writer
 {
-    using Pulsar.Api.Schema;
-    using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
+	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
 
 	public class JsonWriter<T> : SchemaWriter<T>
 	{
 
 		private readonly ObjectMapper objectMapper;
 
-		public JsonWriter(ObjectMapper objectMapper)
+		public JsonWriter(ObjectMapper ObjectMapper)
 		{
-			this.objectMapper = objectMapper;
+			this.objectMapper = ObjectMapper;
 		}
 
-		public sbyte[] Write(T message)
+		public override sbyte[] Write(T Message)
 		{
 			try
 			{
-				return objectMapper.writeValueAsBytes(message);
+				return objectMapper.writeValueAsBytes(Message);
 			}
-			catch (JsonProcessingException e)
+			catch (JsonProcessingException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 		}
 	}

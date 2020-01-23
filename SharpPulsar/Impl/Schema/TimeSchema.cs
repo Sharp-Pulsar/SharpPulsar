@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,6 +18,10 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+
 	/// <summary>
 	/// A schema for `java.sql.Time`.
 	/// </summary>
@@ -26,11 +29,11 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 	   private static readonly TimeSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   public virtual SchemaInfo {get;}
 
 	   static TimeSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("Time").setType(SchemaType.TIME).setSchema(new sbyte[0]);
+		   SchemaInfo = (new SchemaInfo()).setName("Time").setType(SchemaType.TIME).setSchema(new sbyte[0]);
 		   INSTANCE = new TimeSchema();
 	   }
 
@@ -39,46 +42,39 @@ namespace SharpPulsar.Impl.Schema
 		  return INSTANCE;
 	   }
 
-	   public sbyte[] Encode(Time message)
+	   public override sbyte[] Encode(Time Message)
 	   {
-		  if (null == message)
+		  if (null == Message)
 		  {
 			 return null;
 		  }
 
-		  long? time = message.Time;
-		  return LongSchema.of().encode(time);
+		  long? Time = Message.Time;
+		  return LongSchema.Of().encode(Time);
 	   }
 
-	   public override Time decode(sbyte[] bytes)
+	   public override Time Decode(sbyte[] Bytes)
 	   {
-		  if (null == bytes)
+		  if (null == Bytes)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(bytes);
-		  return new Time(decode);
+		  long? Decode = LongSchema.Of().decode(Bytes);
+		  return new Time(Decode);
 	   }
 
-	   public override Time decode(ByteBuf byteBuf)
+	   public override Time Decode(ByteBuf ByteBuf)
 	   {
-		  if (null == byteBuf)
+		  if (null == ByteBuf)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(byteBuf);
-		  return new Time(decode);
+		  long? Decode = LongSchema.Of().decode(ByteBuf);
+		  return new Time(Decode);
 	   }
 
-	   public override SchemaInfo SchemaInfo
-	   {
-		   get
-		   {
-			  return SCHEMA_INFO;
-		   }
-	   }
 	}
 
 }

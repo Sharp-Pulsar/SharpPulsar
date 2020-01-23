@@ -21,12 +21,12 @@
 namespace SharpPulsar.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.util.MathUtils.signSafeMod;
+//	import static SharpPulsar.util.MathUtils.signSafeMod;
 
 
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using Message = org.apache.pulsar.client.api.Message;
-	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
+	using HashingScheme = SharpPulsar.Api.HashingScheme;
+	using SharpPulsar.Api;
+	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
 
 	/// <summary>
 	/// The routing strategy here:
@@ -36,10 +36,11 @@ namespace SharpPulsar.Impl
 	/// batching locality.
 	/// </ul>
 	/// </summary>
+	[Serializable]
 	public class RoundRobinPartitionMessageRouterImpl : MessageRouterBase
 	{
 
-		private const long serialVersionUID = 1L;
+		private const long SerialVersionUID = 1L;
 
 		private static readonly AtomicIntegerFieldUpdater<RoundRobinPartitionMessageRouterImpl> PARTITION_INDEX_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(RoundRobinPartitionMessageRouterImpl), "partitionIndex");
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -54,35 +55,35 @@ namespace SharpPulsar.Impl
 
 		private static readonly Clock SYSTEM_CLOCK = Clock.systemUTC();
 
-		public RoundRobinPartitionMessageRouterImpl(HashingScheme hashingScheme, int startPtnIdx, bool isBatchingEnabled, long partitionSwitchMs) : this(hashingScheme, startPtnIdx, isBatchingEnabled, partitionSwitchMs, SYSTEM_CLOCK)
+		public RoundRobinPartitionMessageRouterImpl(HashingScheme HashingScheme, int StartPtnIdx, bool IsBatchingEnabled, long PartitionSwitchMs) : this(HashingScheme, StartPtnIdx, IsBatchingEnabled, PartitionSwitchMs, SYSTEM_CLOCK)
 		{
 		}
 
-		public RoundRobinPartitionMessageRouterImpl(HashingScheme hashingScheme, int startPtnIdx, bool isBatchingEnabled, long partitionSwitchMs, Clock clock) : base(hashingScheme)
+		public RoundRobinPartitionMessageRouterImpl(HashingScheme HashingScheme, int StartPtnIdx, bool IsBatchingEnabled, long PartitionSwitchMs, Clock Clock) : base(HashingScheme)
 		{
-			PARTITION_INDEX_UPDATER.set(this, startPtnIdx);
-			this.startPtnIdx = startPtnIdx;
-			this.isBatchingEnabled = isBatchingEnabled;
-			this.partitionSwitchMs = Math.Max(1, partitionSwitchMs);
-			this.clock = clock;
+			PARTITION_INDEX_UPDATER.set(this, StartPtnIdx);
+			this.startPtnIdx = StartPtnIdx;
+			this.isBatchingEnabled = IsBatchingEnabled;
+			this.partitionSwitchMs = Math.Max(1, PartitionSwitchMs);
+			this.clock = Clock;
 		}
 
-		public override int choosePartition<T1>(Message<T1> msg, TopicMetadata topicMetadata)
+		public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata TopicMetadata)
 		{
 			// If the message has a key, it supersedes the round robin routing policy
-			if (msg.hasKey())
+			if (Msg.hasKey())
 			{
-				return signSafeMod(hash.makeHash(msg.Key), topicMetadata.numPartitions());
+				return signSafeMod(Hash.makeHash(Msg.Key), TopicMetadata.numPartitions());
 			}
 
 			if (isBatchingEnabled)
 			{ // if batching is enabled, choose partition on `partitionSwitchMs` boundary.
-				long currentMs = clock.millis();
-				return signSafeMod(currentMs / partitionSwitchMs + startPtnIdx, topicMetadata.numPartitions());
+				long CurrentMs = clock.millis();
+				return signSafeMod(CurrentMs / partitionSwitchMs + startPtnIdx, TopicMetadata.numPartitions());
 			}
 			else
 			{
-				return signSafeMod(PARTITION_INDEX_UPDATER.getAndIncrement(this), topicMetadata.numPartitions());
+				return signSafeMod(PARTITION_INDEX_UPDATER.getAndIncrement(this), TopicMetadata.numPartitions());
 			}
 		}
 

@@ -1,7 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,6 +18,11 @@ using SharpPulsar.Exception;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+
 	/// <summary>
 	/// A schema for `Double`.
 	/// </summary>
@@ -28,11 +30,11 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly DoubleSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static DoubleSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("Double").setType(SchemaType.DOUBLE).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("Double").setType(SchemaType.DOUBLE).setSchema(new sbyte[0]);
 			INSTANCE = new DoubleSchema();
 		}
 
@@ -41,76 +43,69 @@ namespace SharpPulsar.Impl.Schema
 			return INSTANCE;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
-			if (message.Length != 8)
+			if (Message.Length != 8)
 			{
 				throw new SchemaSerializationException("Size of data received by DoubleSchema is not 8");
 			}
 		}
 
-		public void Validate(IByteBuffer message)
+		public override void Validate(ByteBuf Message)
 		{
-			if (message.ReadableBytes != 8)
+			if (Message.readableBytes() != 8)
 			{
 				throw new SchemaSerializationException("Size of data received by DoubleSchema is not 8");
 			}
 		}
 
 
-		public sbyte[] Encode(double? message)
+		public override sbyte[] Encode(double? Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				long bits = System.BitConverter.DoubleToInt64Bits(message);
-				return new sbyte[] {(sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
+				long Bits = System.BitConverter.DoubleToInt64Bits(Message);
+				return new sbyte[] {(sbyte)((long)((ulong)Bits >> 56)), (sbyte)((long)((ulong)Bits >> 48)), (sbyte)((long)((ulong)Bits >> 40)), (sbyte)((long)((ulong)Bits >> 32)), (sbyte)((long)((ulong)Bits >> 24)), (sbyte)((long)((ulong)Bits >> 16)), (sbyte)((long)((ulong)Bits >> 8)), (sbyte) Bits};
 			}
 		}
 
-		public double? Decode(sbyte[] bytes)
+		public override double? Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
-			Validate(bytes);
-			long value = 0;
-			foreach (sbyte b in bytes)
+			Validate(Bytes);
+			long Value = 0;
+			foreach (sbyte B in Bytes)
 			{
-				value <<= 8;
-				value |= b & 0xFF;
+				Value <<= 8;
+				Value |= B & 0xFF;
 			}
-			return Double.longBitsToDouble(value);
+			return Double.longBitsToDouble(Value);
 		}
 
-		public override double Decode(IByteBuffer byteBuf)
+		public override double? Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
-			Validate(byteBuf);
-			long value = 0;
+			Validate(ByteBuf);
+			long Value = 0;
 
-			for (int i = 0; i < 8; i++)
+			for (int I = 0; I < 8; I++)
 			{
-				value <<= 8;
-				value |= byteBuf.GetByte(i) & 0xFF;
+				Value <<= 8;
+				Value |= ByteBuf.getByte(I) & 0xFF;
 			}
-			return Double.longBitsToDouble(value);
+			return Double.longBitsToDouble(Value);
 		}
 
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Api;
+using Org.Apache.Pulsar.Common.Schema;
+
+using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,36 +24,62 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Entity;
-    using SharpPulsar.Impl.Schema;
-    using SharpPulsar.Interface.Schema;
-    using static SharpPulsar.Common.Schema.SchemaType;
 
-    /// <summary>
-    /// A generic schema representation.
-    /// </summary>
-    public abstract class GenericSchemaImpl : StructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
+	using Field = SharpPulsar.Api.Schema.Field;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Impl.Schema;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+
+	/// <summary>
+	/// A generic schema representation.
+	/// </summary>
+	public abstract class GenericSchemaImpl : StructSchema<GenericRecord>, GenericSchema<GenericRecord>
 	{
+		public abstract GenericRecordBuilder NewRecordBuilder();
+		public override abstract GenericSchema<GenericRecord> Generic(SchemaInfo SchemaInfo);
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+//ORIGINAL LINE: public abstract Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
+		public override abstract Schema<object> GetSchema(SchemaInfo SchemaInfo);
+		public override abstract Schema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(Schema<T1> Schema);
+		public override abstract Schema<sbyte[]> AutoProduceBytes();
+		public override abstract Schema<GenericRecord> AutoConsume();
+		public override abstract Schema<GenericRecord> AUTO();
+		public override abstract Schema<KeyValue<K, V>> KeyValue(Schema<K> Key, Schema<V> Value, KeyValueEncodingType KeyValueEncodingType);
+		public override abstract Schema<KeyValue<K, V>> KeyValue(Schema<K> Key, Schema<V> Value);
+		public override abstract Schema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
+		public override abstract Schema<KeyValue<sbyte[], sbyte[]>> KvBytes();
+		public override abstract Schema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
+		public override abstract Schema<T> JSON(SchemaDefinition SchemaDefinition);
+		public override abstract Schema<T> JSON(Type Pojo);
+		public override abstract Schema<T> AVRO(SchemaDefinition<T> SchemaDefinition);
+		public override abstract Schema<T> AVRO(Type Pojo);
+		public override abstract Schema<T> PROTOBUF(SchemaDefinition<T> SchemaDefinition);
+		public override abstract Schema<T> PROTOBUF(Type Clazz);
+		public override abstract void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo);
+		public override abstract bool RequireFetchingSchemaInfo();
+		public override abstract bool SupportSchemaVersioning();
+		public override abstract void Validate(sbyte[] Message);
 
-		protected internal readonly IList<Field> fields;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal readonly IList<Field> FieldsConflict;
 		// the flag controls whether to use the provided schema as reader schema
 		// to decode the messages. In `AUTO_CONSUME` mode, setting this flag to `false`
 		// allows decoding the messages using the schema associated with the messages.
-		protected internal readonly bool useProvidedSchemaAsReaderSchema;
+		protected internal readonly bool UseProvidedSchemaAsReaderSchema;
 
-		protected internal GenericSchemaImpl(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
+		public GenericSchemaImpl(SchemaInfo SchemaInfo, bool UseProvidedSchemaAsReaderSchema) : base(SchemaInfo)
 		{
 
-			this.fields = schema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
-			this.useProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
+			this.FieldsConflict = Schema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
+			this.UseProvidedSchemaAsReaderSchema = UseProvidedSchemaAsReaderSchema;
 		}
 
-		public IList<Field> Fields
+		public virtual IList<Field> Fields
 		{
 			get
 			{
-				return fields;
+				return FieldsConflict;
 			}
 		}
 
@@ -58,25 +88,24 @@ namespace SharpPulsar.Impl.Schema.Generic
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-		public static GenericSchemaImpl Of(SchemaInfo schemaInfo)
+		public static GenericSchemaImpl Of(SchemaInfo SchemaInfo)
 		{
-			return Of(schemaInfo, true);
+			return Of(SchemaInfo, true);
 		}
 
-		public static GenericSchemaImpl Of(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
+		public static GenericSchemaImpl Of(SchemaInfo SchemaInfo, bool UseProvidedSchemaAsReaderSchema)
 		{
-			return schemaInfo.Type switch
+			switch (SchemaInfo.Type)
 			{
-				AVRO avro => new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema),
-				JSON => new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema),
-				_ => throw new System.NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'"),
-			};
+				case AVRO:
+					return new GenericAvroSchema(SchemaInfo, UseProvidedSchemaAsReaderSchema);
+				case JSON:
+					return new GenericJsonSchema(SchemaInfo, UseProvidedSchemaAsReaderSchema);
+				default:
+					throw new System.NotSupportedException("Generic schema is not supported on schema type " + SchemaInfo.Type + "'");
+			}
 		}
 
-		public IGenericRecordBuilder NewRecordBuilder()
-		{
-			throw new System.NotImplementedException();
-		}
 	}
 
 }

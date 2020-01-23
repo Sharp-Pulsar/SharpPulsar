@@ -26,13 +26,16 @@ namespace SharpPulsar.Impl
 		private long backoffIntervalNanos;
 		private long maxBackoffIntervalNanos;
 		private long initial;
-		private TimeUnit unitInitial;
+		private BAMCIS.Util.Concurrent.TimeUnit unitInitial;
 		private long max;
-		private TimeUnit unitMax;
+		private BAMCIS.Util.Concurrent.TimeUnit unitMax;
 		private Clock clock;
 		private long mandatoryStop;
-		private TimeUnit unitMandatoryStop;
-		internal BackoffBuilder()
+		private BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop;
+
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @VisibleForTesting BackoffBuilder()
+		public BackoffBuilder()
 		{
 			this.initial = 0;
 			this.max = 0;
@@ -42,24 +45,24 @@ namespace SharpPulsar.Impl
 			this.maxBackoffIntervalNanos = 0;
 		}
 
-		public virtual BackoffBuilder SetInitialTime(long initial, TimeUnit unitInitial)
+		public virtual BackoffBuilder SetInitialTime(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial)
 		{
-			this.unitInitial = unitInitial;
-			this.initial = initial;
+			this.unitInitial = UnitInitial;
+			this.initial = Initial;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMax(long max, TimeUnit unitMax)
+		public virtual BackoffBuilder SetMax(long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax)
 		{
-			this.unitMax = unitMax;
-			this.max = max;
+			this.unitMax = UnitMax;
+			this.max = Max;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMandatoryStop(long mandatoryStop, TimeUnit unitMandatoryStop)
+		public virtual BackoffBuilder SetMandatoryStop(long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop)
 		{
-			this.mandatoryStop = mandatoryStop;
-			this.unitMandatoryStop = unitMandatoryStop;
+			this.mandatoryStop = MandatoryStop;
+			this.unitMandatoryStop = UnitMandatoryStop;
 			return this;
 		}
 

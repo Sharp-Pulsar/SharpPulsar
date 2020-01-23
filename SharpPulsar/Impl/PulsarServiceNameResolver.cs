@@ -25,8 +25,8 @@ namespace SharpPulsar.Impl
 
 	using PlatformDependent = io.netty.util.@internal.PlatformDependent;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using InvalidServiceURL = org.apache.pulsar.client.api.PulsarClientException.InvalidServiceURL;
-	using ServiceURI = org.apache.pulsar.common.net.ServiceURI;
+	using InvalidServiceURL = SharpPulsar.Api.PulsarClientException.InvalidServiceURL;
+	using ServiceURI = Org.Apache.Pulsar.Common.Net.ServiceURI;
 
 	/// <summary>
 	/// The default implementation of <seealso cref="ServiceNameResolver"/>.
@@ -36,91 +36,77 @@ namespace SharpPulsar.Impl
 	public class PulsarServiceNameResolver : ServiceNameResolver
 	{
 
-		private volatile ServiceURI serviceUri;
-		private volatile string serviceUrl;
+		public virtual ServiceUri {get;}
+		public virtual ServiceUrl {get;}
 		private volatile int currentIndex;
 		private volatile IList<InetSocketAddress> addressList;
 
-		public virtual InetSocketAddress resolveHost()
+		public override InetSocketAddress ResolveHost()
 		{
-			IList<InetSocketAddress> list = addressList;
-			checkState(list != null, "No service url is provided yet");
-			checkState(list.Count > 0, "No hosts found for service url : " + serviceUrl);
-			if (list.Count == 1)
+			IList<InetSocketAddress> List = addressList;
+			checkState(List != null, "No service url is provided yet");
+			checkState(List.Count > 0, "No hosts found for service url : " + ServiceUrl);
+			if (List.Count == 1)
 			{
-				return list[0];
+				return List[0];
 			}
 			else
 			{
-				currentIndex = (currentIndex + 1) % list.Count;
-				return list[currentIndex];
+				currentIndex = (currentIndex + 1) % List.Count;
+				return List[currentIndex];
 
 			}
 		}
 
-		public virtual URI resolveHostUri()
+		public override URI ResolveHostUri()
 		{
-			InetSocketAddress host = resolveHost();
-			string hostUrl = serviceUri.ServiceScheme + "://" + host.HostName + ":" + host.Port;
-			return URI.create(hostUrl);
+			InetSocketAddress Host = ResolveHost();
+			string HostUrl = ServiceUri.ServiceScheme + "://" + Host.HostName + ":" + Host.Port;
+			return URI.create(HostUrl);
 		}
 
-		public virtual string ServiceUrl
-		{
-			get
-			{
-				return serviceUrl;
-			}
-		}
 
-		public virtual ServiceURI ServiceUri
-		{
-			get
-			{
-				return serviceUri;
-			}
-		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException.InvalidServiceURL
-		public virtual void updateServiceUrl(string serviceUrl)
+//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException.InvalidServiceURL
+		public override void UpdateServiceUrl(string ServiceUrl)
 		{
-			ServiceURI uri;
+			ServiceURI Uri;
 			try
 			{
-				uri = ServiceURI.create(serviceUrl);
+				Uri = ServiceURI.create(ServiceUrl);
 			}
-			catch (System.ArgumentException iae)
+			catch (System.ArgumentException Iae)
 			{
-				log.error("Invalid service-url {} provided {}", serviceUrl, iae.Message, iae);
-				throw new InvalidServiceURL(iae);
+				log.error("Invalid service-url {} provided {}", ServiceUrl, Iae.Message, Iae);
+				throw new InvalidServiceURL(Iae);
 			}
 
-			string[] hosts = uri.ServiceHosts;
-			IList<InetSocketAddress> addresses = new List<InetSocketAddress>(hosts.Length);
-			foreach (string host in hosts)
+			string[] Hosts = Uri.ServiceHosts;
+			IList<InetSocketAddress> Addresses = new List<InetSocketAddress>(Hosts.Length);
+			foreach (string Host in Hosts)
 			{
-				string hostUrl = uri.ServiceScheme + "://" + host;
+				string HostUrl = Uri.ServiceScheme + "://" + Host;
 				try
 				{
-					URI hostUri = new URI(hostUrl);
-					addresses.Add(InetSocketAddress.createUnresolved(hostUri.Host, hostUri.Port));
+					URI HostUri = new URI(HostUrl);
+					Addresses.Add(InetSocketAddress.createUnresolved(HostUri.Host, HostUri.Port));
 				}
-				catch (URISyntaxException e)
+				catch (URISyntaxException E)
 				{
-					log.error("Invalid host provided {}", hostUrl, e);
-					throw new InvalidServiceURL(e);
+					log.error("Invalid host provided {}", HostUrl, E);
+					throw new InvalidServiceURL(E);
 				}
 			}
-			this.addressList = addresses;
-			this.serviceUrl = serviceUrl;
-			this.serviceUri = uri;
-			this.currentIndex = randomIndex(addresses.Count);
+			this.addressList = Addresses;
+			this.ServiceUrl = ServiceUrl;
+			this.ServiceUri = Uri;
+			this.currentIndex = RandomIndex(Addresses.Count);
 		}
 
-		private static int randomIndex(int numAddresses)
+		private static int RandomIndex(int NumAddresses)
 		{
-			return numAddresses == 1 ? 0 : PlatformDependent.threadLocalRandom().Next(numAddresses);
+			return NumAddresses == 1 ? 0 : PlatformDependent.threadLocalRandom().Next(NumAddresses);
 		}
 	}
 

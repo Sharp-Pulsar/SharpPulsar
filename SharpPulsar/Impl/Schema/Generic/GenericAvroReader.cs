@@ -1,8 +1,4 @@
-﻿using Avro.Generic;
-using SharpPulsar.Entity;
-using SharpPulsar.Exception;
-using SharpPulsar.Interface.Schema;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 /// <summary>
@@ -25,12 +21,23 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Schema = Avro.Schema;
-	using BinaryEncoder = Avro.IO.BinaryEncoder;
-	using Decoder = Avro.IO.Decoder;
+	using Schema = org.apache.avro.Schema;
+	using GenericDatumReader = org.apache.avro.generic.GenericDatumReader;
+	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
+	using Decoder = org.apache.avro.io.Decoder;
+	using DecoderFactory = org.apache.avro.io.DecoderFactory;
+	using EncoderFactory = org.apache.avro.io.EncoderFactory;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using Field = SharpPulsar.Api.Schema.Field;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using SharpPulsar.Api.Schema;
+
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class GenericAvroReader : ISchemaReader<IGenericRecord>
+
+	public class GenericAvroReader : SchemaReader<GenericRecord>
 	{
 
 		private readonly GenericDatumReader<GenericAvroRecord> reader;
@@ -39,67 +46,65 @@ namespace SharpPulsar.Impl.Schema.Generic
 		private readonly IList<Field> fields;
 		private readonly Schema schema;
 		private readonly sbyte[] schemaVersion;
-		public GenericAvroReader(Schema schema) : this(null, schema, null)
+		public GenericAvroReader(Schema Schema) : this(null, Schema, null)
 		{
 		}
 
-		public GenericAvroReader(Schema writerSchema, Schema readerSchema, sbyte[] schemaVersion)
+		public GenericAvroReader(Schema WriterSchema, Schema ReaderSchema, sbyte[] SchemaVersion)
 		{
-			this.schema = readerSchema;
-			this.fields = schema.Field.Select(f => new Field(f.name(), f.pos())).ToList();
-			this.schemaVersion = schemaVersion;
-			if (writerSchema == null)
+			this.schema = ReaderSchema;
+			this.fields = schema.Fields.Select(f => new Field(f.name(), f.pos())).ToList();
+			this.schemaVersion = SchemaVersion;
+			if (WriterSchema == null)
 			{
-				this.reader = new GenericDatumReader<GenericAvroRecord>(readerSchema);
+				this.reader = new GenericDatumReader<GenericAvroRecord>(ReaderSchema);
 			}
 			else
 			{
-				this.reader = new GenericDatumReader<GenericAvroRecord>(writerSchema, readerSchema);
+				this.reader = new GenericDatumReader<GenericAvroRecord>(WriterSchema, ReaderSchema);
 			}
 			this.byteArrayOutputStream = new MemoryStream();
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public IGenericRecord  Read(sbyte[] bytes, int offset, int length)
+		public override GenericAvroRecord Read(sbyte[] Bytes, int Offset, int Length)
 		{
 			try
 			{
-				Decoder decoder = DecoderFactory.get().binaryDecoder(bytes, offset, length, null);
-				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.Read(null, decoder);
-				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
+				Decoder Decoder = DecoderFactory.get().binaryDecoder(Bytes, Offset, Length, null);
+				org.apache.avro.generic.GenericRecord AvroRecord = (org.apache.avro.generic.GenericRecord)reader.read(null, Decoder);
+				return new GenericAvroRecord(schemaVersion, schema, fields, AvroRecord);
 			}
-			catch (IOException e)
+			catch (IOException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 		}
 
-		public IGenericRecord Read(Stream inputStream)
+		public override GenericRecord Read(Stream InputStream)
 		{
 			try
 			{
-				Decoder decoder = DecoderFactory.get().binaryDecoder(inputStream, null);
-				Avro.Generic.GenericRecord avroRecord = (Avro.Generic.GenericRecord)reader.read(null, decoder);
-				return new GenericAvroRecord(schemaVersion, schema, fields, avroRecord);
+				Decoder Decoder = DecoderFactory.get().binaryDecoder(InputStream, null);
+				org.apache.avro.generic.GenericRecord AvroRecord = (org.apache.avro.generic.GenericRecord)reader.read(null, Decoder);
+				return new GenericAvroRecord(schemaVersion, schema, fields, AvroRecord);
 			}
-			catch (IOException e)
+			catch (IOException E)
 			{
-				throw new SchemaSerializationException(e);
+				throw new SchemaSerializationException(E);
 			}
 			finally
 			{
 				try
 				{
-					inputStream.Close();
+					InputStream.Close();
 				}
-				catch (IOException e)
+				catch (IOException E)
 				{
-					log.error("GenericAvroReader close inputStream close error", e.Message);
+					log.error("GenericAvroReader close inputStream close error", E.Message);
 				}
 			}
 		}
-		
-		
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(GenericAvroReader));
 	}

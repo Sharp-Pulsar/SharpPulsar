@@ -1,8 +1,5 @@
-﻿using SharpPulsar.Interface;
-using SharpPulsar.Interface.Auth;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,18 +22,24 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Impl.Auth
 {
 
-	public class AuthenticationDisabled : IAuthentication, IEncodedAuthenticationParameterSupport
+	using Authentication = SharpPulsar.Api.Authentication;
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+
+	[Serializable]
+	public class AuthenticationDisabled : Authentication, EncodedAuthenticationParameterSupport
 	{
 
-		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();
+		protected internal readonly AuthenticationDataProvider NullData = new AuthenticationDataNull();
 		/// 
-		private const long serialVersionUID = 1L;
+		private const long SerialVersionUID = 1L;
 
 		public AuthenticationDisabled()
 		{
 		}
 
-		public string AuthMethodName
+		public virtual string AuthMethodName
 		{
 			get
 			{
@@ -44,25 +47,36 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public IAuthenticationDataProvider AuthData
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
+		public virtual AuthenticationDataProvider AuthData
 		{
 			get
 			{
-				return nullData;
+				return NullData;
 			}
 		}
 
-		public void Configure(string encodedAuthParamString)
+		public override void Configure(string EncodedAuthParamString)
 		{
 		}
 
-		public void Start()
+		[Obsolete]
+		public override void Configure(IDictionary<string, string> AuthParams)
 		{
 		}
 
-		public ValueTask DisposeAsync()
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
+		public override void Start()
 		{
-			throw new NotImplementedException();
+		}
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void close() throws java.io.IOException
+		public override void Close()
+		{
+			// Do nothing
 		}
 	}
 

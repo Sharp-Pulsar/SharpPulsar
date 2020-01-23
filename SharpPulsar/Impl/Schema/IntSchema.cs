@@ -1,7 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,6 +18,10 @@ using SharpPulsar.Exception;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `Integer`.
@@ -29,11 +30,11 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly IntSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static IntSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("INT32").setType(SchemaType.INT32).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("INT32").setType(SchemaType.INT32).setSchema(new sbyte[0]);
 			INSTANCE = new IntSchema();
 		}
 
@@ -42,75 +43,68 @@ namespace SharpPulsar.Impl.Schema
 			return INSTANCE;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
-			if (message.Length != 4)
+			if (Message.Length != 4)
 			{
 				throw new SchemaSerializationException("Size of data received by IntSchema is not 4");
 			}
 		}
 
-		public void Validate(IByteBuffer message)
+		public override void Validate(ByteBuf Message)
 		{
-			if (message.ReadableBytes != 4)
+			if (Message.readableBytes() != 4)
 			{
 				throw new SchemaSerializationException("Size of data received by IntSchema is not 4");
 			}
 		}
 
-		public sbyte[] Encode(int? message)
+		public override sbyte[] Encode(int? Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				return new sbyte[] {(sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), message.Value};
+				return new sbyte[] {(sbyte)((int)((uint)Message >> 24)), (sbyte)((int)((uint)Message >> 16)), (sbyte)((int)((uint)Message >> 8)), Message.Value};
 			}
 		}
 
-		public int? Decode(sbyte[] bytes)
+		public override int? Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
-			Validate(bytes);
-			int value = 0;
-			foreach (sbyte b in bytes)
+			Validate(Bytes);
+			int Value = 0;
+			foreach (sbyte B in Bytes)
 			{
-				value <<= 8;
-				value |= b & 0xFF;
+				Value <<= 8;
+				Value |= B & 0xFF;
 			}
-			return value;
+			return Value;
 		}
 
-		public override int Decode(IByteBuffer byteBuf)
+		public override int? Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
-			Validate(byteBuf);
-			int value = 0;
+			Validate(ByteBuf);
+			int Value = 0;
 
-			for (int i = 0; i < 4; i++)
+			for (int I = 0; I < 4; I++)
 			{
-				value <<= 8;
-				value |= byteBuf.GetByte(i) & 0xFF;
+				Value <<= 8;
+				Value |= ByteBuf.getByte(I) & 0xFF;
 			}
 
-			return value;
+			return Value;
 		}
-		
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
+
 	}
 
 }

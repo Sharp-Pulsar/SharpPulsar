@@ -21,8 +21,8 @@ namespace SharpPulsar.Impl.Schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufUtil = io.netty.buffer.ByteBufUtil;
 	using Unpooled = io.netty.buffer.Unpooled;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A variant `Bytes` schema that takes <seealso cref="io.netty.buffer.ByteBuf"/>.
@@ -31,60 +31,53 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly ByteBufSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static ByteBufSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("ByteBuf").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("ByteBuf").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
 			INSTANCE = new ByteBufSchema();
 		}
 
-		public static ByteBufSchema of()
+		public static ByteBufSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public override sbyte[] encode(ByteBuf message)
+		public override sbyte[] Encode(ByteBuf Message)
 		{
-			if (message == null)
+			if (Message == null)
 			{
 				return null;
 			}
 
-			return ByteBufUtil.getBytes(message);
+			return ByteBufUtil.getBytes(Message);
 		}
 
-		public override ByteBuf decode(sbyte[] bytes)
+		public override ByteBuf Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
-			else
-			{
-				return Unpooled.wrappedBuffer(bytes);
-			}
-		}
-
-		public override ByteBuf decode(ByteBuf byteBuf)
-		{
-			if (null == byteBuf)
+			if (null == Bytes)
 			{
 				return null;
 			}
 			else
 			{
-				return byteBuf;
+				return Unpooled.wrappedBuffer(Bytes);
 			}
 		}
 
-		public override SchemaInfo SchemaInfo
+		public override ByteBuf Decode(ByteBuf ByteBuf)
 		{
-			get
+			if (null == ByteBuf)
 			{
-				return SCHEMA_INFO;
+				return null;
+			}
+			else
+			{
+				return ByteBuf;
 			}
 		}
+
 	}
 
 }

@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Interface.Transaction;
-using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,29 +18,30 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	
+	using Transaction = SharpPulsar.Api.Transaction.Transaction;
+	using TransactionBuilder = SharpPulsar.Api.Transaction.TransactionBuilder;
 
 	/// <summary>
 	/// The default implementation of transaction builder to build transactions.
 	/// </summary>
-	public class TransactionBuilderImpl : ITransactionBuilder
+	public class TransactionBuilderImpl : TransactionBuilder
 	{
 
 		private readonly PulsarClientImpl client;
 		private long txnTimeoutMs = 60000; // 1 minute
 
-		public TransactionBuilderImpl(PulsarClientImpl client)
+		public TransactionBuilderImpl(PulsarClientImpl Client)
 		{
-			this.client = client;
+			this.client = Client;
 		}
 
-		public ITransactionBuilder WithTransactionTimeout(long timeout, TimeUnit timeoutUnit)
+		public override TransactionBuilder WithTransactionTimeout(long Timeout, BAMCIS.Util.Concurrent.TimeUnit TimeoutUnit)
 		{
-			this.txnTimeoutMs = timeoutUnit.toMillis(timeout);
+			this.txnTimeoutMs = TimeoutUnit.toMillis(Timeout);
 			return this;
 		}
 
-		public ValueTask<ITransaction> Build()
+		public override CompletableFuture<Transaction> Build()
 		{
 			// TODO: talk to TC to begin a transaction
 			//       the builder is responsible for locating the transaction coorindator (TC)

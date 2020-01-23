@@ -29,187 +29,183 @@ namespace SharpPulsar.Impl.Schema
 	using Schema = org.apache.avro.Schema;
 	using Field = org.apache.avro.Schema.Field;
 	using SchemaBuilder = org.apache.avro.SchemaBuilder;
-	using FieldSchemaBuilder = org.apache.pulsar.client.api.schema.FieldSchemaBuilder;
-	using GenericSchema = org.apache.pulsar.client.api.schema.GenericSchema;
-	using GenericAvroSchema = SharpPulsar.Impl.Schema.generic.GenericAvroSchema;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using GenericAvroSchema = SharpPulsar.Impl.Schema.Generic.GenericAvroSchema;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// The default implementation of <seealso cref="FieldSchemaBuilder"/>.
 	/// </summary>
-	internal class FieldSchemaBuilderImpl : FieldSchemaBuilder<FieldSchemaBuilderImpl>
+	public class FieldSchemaBuilderImpl : FieldSchemaBuilder<FieldSchemaBuilderImpl>
 	{
 
 		private readonly string fieldName;
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private SchemaType type_Conflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private bool optional_Conflict = false;
+		private SchemaType type;
+		private bool optional = false;
 		private object defaultVal = null;
 		private readonly IDictionary<string, string> properties = new Dictionary<string, string>();
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private string doc_Conflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private string[] aliases_Conflict;
+		private string doc;
+		private string[] aliases;
 
 		private GenericSchema genericSchema;
 
-		internal FieldSchemaBuilderImpl(string fieldName) : this(fieldName, null)
+		public FieldSchemaBuilderImpl(string FieldName) : this(FieldName, null)
 		{
 		}
 
-		internal FieldSchemaBuilderImpl(string fieldName, GenericSchema genericSchema)
+		public FieldSchemaBuilderImpl(string FieldName, GenericSchema GenericSchema)
 		{
-			this.fieldName = fieldName;
-			this.genericSchema = genericSchema;
+			this.fieldName = FieldName;
+			this.genericSchema = GenericSchema;
 		}
 
-		public override FieldSchemaBuilderImpl property(string name, string val)
+		public override FieldSchemaBuilderImpl Property(string Name, string Val)
 		{
-			properties[name] = val;
+			properties[Name] = Val;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl doc(string doc)
+		public override FieldSchemaBuilderImpl Doc(string Doc)
 		{
-			this.doc_Conflict = doc;
+			this.doc = Doc;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl aliases(params string[] aliases)
+		public override FieldSchemaBuilderImpl Aliases(params string[] Aliases)
 		{
-			this.aliases_Conflict = aliases;
+			this.aliases = Aliases;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl type(SchemaType type)
+		public override FieldSchemaBuilderImpl Type(SchemaType Type)
 		{
-			this.type_Conflict = type;
+			this.type = Type;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl optional()
+		public override FieldSchemaBuilderImpl Optional()
 		{
-			optional_Conflict = true;
+			optional = true;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl required()
+		public override FieldSchemaBuilderImpl Required()
 		{
-			optional_Conflict = false;
+			optional = false;
 			return this;
 		}
 
-		public override FieldSchemaBuilderImpl defaultValue(object value)
+		public override FieldSchemaBuilderImpl DefaultValue(object Value)
 		{
-			defaultVal = value;
+			defaultVal = Value;
 			return this;
 		}
 
-		internal virtual Schema.Field build()
+		public virtual Schema.Field Build()
 		{
-			requireNonNull(type_Conflict, "Schema type is not provided");
+			requireNonNull(type, "Schema type is not provided");
 			// verify the default value and object
-			SchemaUtils.validateFieldSchema(fieldName, type_Conflict, defaultVal);
+			SchemaUtils.ValidateFieldSchema(fieldName, type, defaultVal);
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final org.apache.avro.Schema baseSchema;
-			Schema baseSchema;
-			switch (type_Conflict)
+			Schema BaseSchema;
+			switch (type.innerEnumValue)
 			{
-				case INT32:
-					baseSchema = SchemaBuilder.builder().intType();
+				case SchemaType.InnerEnum.INT32:
+					BaseSchema = SchemaBuilder.builder().intType();
 					break;
-				case INT64:
-					baseSchema = SchemaBuilder.builder().longType();
+				case SchemaType.InnerEnum.INT64:
+					BaseSchema = SchemaBuilder.builder().longType();
 					break;
-				case STRING:
-					baseSchema = SchemaBuilder.builder().stringType();
+				case SchemaType.InnerEnum.STRING:
+					BaseSchema = SchemaBuilder.builder().stringType();
 					break;
-				case FLOAT:
-					baseSchema = SchemaBuilder.builder().floatType();
+				case SchemaType.InnerEnum.FLOAT:
+					BaseSchema = SchemaBuilder.builder().floatType();
 					break;
-				case DOUBLE:
-					baseSchema = SchemaBuilder.builder().doubleType();
+				case SchemaType.InnerEnum.DOUBLE:
+					BaseSchema = SchemaBuilder.builder().doubleType();
 					break;
-				case BOOLEAN:
-					baseSchema = SchemaBuilder.builder().booleanType();
+				case SchemaType.InnerEnum.BOOLEAN:
+					BaseSchema = SchemaBuilder.builder().booleanType();
 					break;
-				case BYTES:
-					baseSchema = SchemaBuilder.builder().bytesType();
+				case SchemaType.InnerEnum.BYTES:
+					BaseSchema = SchemaBuilder.builder().bytesType();
 					break;
 				// DATE, TIME, TIMESTAMP support from generic record
-				case DATE:
-					baseSchema = LogicalTypes.date().addToSchema(Schema.create(Schema.Type.INT));
+				case SchemaType.InnerEnum.DATE:
+					BaseSchema = LogicalTypes.date().addToSchema(Schema.create(Schema.Type.INT));
 					break;
-				case TIME:
-					baseSchema = LogicalTypes.timeMillis().addToSchema(Schema.create(Schema.Type.INT));
+				case SchemaType.InnerEnum.TIME:
+					BaseSchema = LogicalTypes.timeMillis().addToSchema(Schema.create(Schema.Type.INT));
 					break;
-				case TIMESTAMP:
-					baseSchema = LogicalTypes.timestampMillis().addToSchema(Schema.create(Schema.Type.LONG));
+				case SchemaType.InnerEnum.TIMESTAMP:
+					BaseSchema = LogicalTypes.timestampMillis().addToSchema(Schema.create(Schema.Type.LONG));
 					break;
-				case AVRO:
+				case SchemaType.InnerEnum.AVRO:
 					checkArgument(genericSchema.SchemaInfo.Type == SchemaType.AVRO, "The field is expected to be using AVRO schema but " + genericSchema.SchemaInfo.Type + " schema is found");
-					GenericAvroSchema genericAvroSchema = (GenericAvroSchema) genericSchema;
-					baseSchema = genericAvroSchema.AvroSchema;
+					GenericAvroSchema GenericAvroSchema = (GenericAvroSchema) genericSchema;
+					BaseSchema = GenericAvroSchema.AvroSchema;
 					break;
 				default:
-					throw new Exception("Schema `" + type_Conflict + "` is not supported to be used as a field for now");
+					throw new Exception("Schema `" + type + "` is not supported to be used as a field for now");
 			}
 
-			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
+			foreach (KeyValuePair<string, string> Entry in properties.SetOfKeyValuePairs())
 			{
-				baseSchema.addProp(entry.Key, entry.Value);
+				BaseSchema.addProp(Entry.Key, Entry.Value);
 			}
 
-			if (null != aliases_Conflict)
+			if (null != aliases)
 			{
-				foreach (string alias in aliases_Conflict)
+				foreach (string Alias in aliases)
 				{
-					baseSchema.addAlias(alias);
+					BaseSchema.addAlias(Alias);
 				}
 			}
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final org.apache.avro.Schema finalSchema;
-			Schema finalSchema;
-			if (optional_Conflict)
+			Schema FinalSchema;
+			if (optional)
 			{
 				if (defaultVal != null)
 				{
-					finalSchema = SchemaBuilder.builder().unionOf().type(baseSchema).and().nullType().endUnion();
+					FinalSchema = SchemaBuilder.builder().unionOf().type(BaseSchema).and().nullType().endUnion();
 				}
 				else
 				{
-					finalSchema = SchemaBuilder.builder().unionOf().nullType().and().type(baseSchema).endUnion();
+					FinalSchema = SchemaBuilder.builder().unionOf().nullType().and().type(BaseSchema).endUnion();
 				}
 			}
 			else
 			{
-				finalSchema = baseSchema;
+				FinalSchema = BaseSchema;
 			}
 
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final Object finalDefaultValue;
-			object finalDefaultValue;
+			object FinalDefaultValue;
 			if (defaultVal != null)
 			{
-				finalDefaultValue = SchemaUtils.toAvroObject(defaultVal);
+				FinalDefaultValue = SchemaUtils.ToAvroObject(defaultVal);
 			}
 			else
 			{
-				if (optional_Conflict)
+				if (optional)
 				{
-					finalDefaultValue = JsonProperties.NULL_VALUE;
+					FinalDefaultValue = JsonProperties.NULL_VALUE;
 				}
 				else
 				{
-					finalDefaultValue = null;
+					FinalDefaultValue = null;
 				}
 			}
 
-			return new Schema.Field(fieldName, finalSchema, doc_Conflict, finalDefaultValue);
+			return new Schema.Field(fieldName, FinalSchema, doc, FinalDefaultValue);
 		}
 
 	}

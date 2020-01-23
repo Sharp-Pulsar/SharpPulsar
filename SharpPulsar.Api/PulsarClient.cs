@@ -44,10 +44,10 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Get a new builder instance that can used to configure and build a <seealso cref="PulsarClient"/> instance.
 		/// </summary>
-		/// <returns> the <seealso cref="ClientBuilder"/>
+		/// <returns> the <seealso cref="IClientBuilder"/>
 		/// 
 		/// @since 2.0.0 </returns>
-		static ClientBuilder Builder()
+		static IClientBuilder Builder()
 		{
 			return DefaultImplementation.newClientBuilder();
 		}
@@ -115,7 +115,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<sbyte[]> NewConsumer();
+		IConsumerBuilder<sbyte[]> NewConsumer();
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -143,7 +143,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<T> newConsumer<T>(Schema<T> Schema);
+		IConsumerBuilder<T> newConsumer<T>(Schema<T> Schema);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.

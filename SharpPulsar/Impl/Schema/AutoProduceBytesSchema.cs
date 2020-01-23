@@ -1,7 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Interface.Schema;
-using System;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,28 +18,34 @@ using System;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkState;
+
+	using SharpPulsar.Api;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoProduceBytesSchema<T> : ISchema<sbyte[]>
+	public class AutoProduceBytesSchema<T> : Schema<sbyte[]>
 	{
 
 		private bool requireSchemaValidation = true;
-		private ISchema<T> schema;
+		private Schema<T> schema;
 
 		public AutoProduceBytesSchema()
 		{
 		}
 
-		public AutoProduceBytesSchema(ISchema<T> schema)
+		public AutoProduceBytesSchema(Schema<T> Schema)
 		{
-			this.schema = schema;
-			SchemaInfo schemaInfo = schema.SchemaInfo;
-			this.requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
+			this.schema = Schema;
+			SchemaInfo SchemaInfo = Schema.SchemaInfo;
+			this.requireSchemaValidation = SchemaInfo != null && SchemaInfo.Type != SchemaType.BYTES && SchemaInfo.Type != SchemaType.NONE;
 		}
 
-		public virtual ISchema<T> Schema
+		public virtual Schema<T> Schema
 		{
 			set
 			{
@@ -61,40 +64,40 @@ namespace SharpPulsar.Impl.Schema
 			return schema != null;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
 			EnsureSchemaInitialized();
 
-			schema.Validate((byte[])(Array)message);
+			schema.Validate(Message);
 		}
 
-		public sbyte[] Encode(sbyte[] message)
+		public override sbyte[] Encode(sbyte[] Message)
 		{
 			EnsureSchemaInitialized();
 
 			if (requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				schema.Validate((byte[])(Array)message);
+				schema.Validate(Message);
 			}
 
-			return message;
+			return Message;
 		}
 
-		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public override sbyte[] Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
 			EnsureSchemaInitialized();
 
 			if (requireSchemaValidation)
 			{
 				// verify the message can be detected by the underlying schema
-				schema.Decode((byte[])(Array)bytes, (byte[])(Array)schemaVersion);
+				schema.Decode(Bytes, SchemaVersion);
 			}
 
-			return bytes;
+			return Bytes;
 		}
 
-		public SchemaInfo SchemaInfo
+		public virtual SchemaInfo SchemaInfo
 		{
 			get
 			{

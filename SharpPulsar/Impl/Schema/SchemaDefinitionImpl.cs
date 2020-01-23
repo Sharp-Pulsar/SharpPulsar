@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interface.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,13 +20,16 @@ using System.Collections.Generic;
 /// under the License.
 /// </summary>
 namespace SharpPulsar.Impl.Schema
-{ 
+{
+
+	using SharpPulsar.Api.Schema;
+
 
 	/// <summary>
 	/// A json schema definition
-	/// <seealso cref="ISchemaDefinition"/> for the json schema definition.
+	/// <seealso cref="SharpPulsar.api.schema.SchemaDefinition"/> for the json schema definition.
 	/// </summary>
-	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
+	public class SchemaDefinitionImpl<T> : SchemaDefinition<T>
 	{
 
 		/// <summary>
@@ -42,50 +44,36 @@ namespace SharpPulsar.Impl.Schema
 		/// false you can define the field by yourself by the annotation@Nullable
 		/// 
 		/// </summary>
-		private bool alwaysAllowNull;
+		public virtual AlwaysAllowNull {get;}
 
 		private IDictionary<string, string> properties;
 
-		private string jsonDef;
+		public virtual JsonDef {get;}
 
-		private bool supportSchemaVersioning;
+		public virtual SupportSchemaVersioning {get;}
 
-		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning)
+		public SchemaDefinitionImpl(Type Pojo, string JsonDef, bool AlwaysAllowNull, IDictionary<string, string> Properties, bool SupportSchemaVersioning)
 		{
-			this.alwaysAllowNull = alwaysAllowNull;
-			this.properties = properties;
-			this.jsonDef = jsonDef;
-			this.pojo = pojo;
-			this.supportSchemaVersioning = supportSchemaVersioning;
+			this.AlwaysAllowNull = AlwaysAllowNull;
+			this.properties = Properties;
+			this.JsonDef = JsonDef;
+			this.pojo = Pojo;
+			this.SupportSchemaVersioning = SupportSchemaVersioning;
 		}
 		/// <summary>
 		/// get schema whether always allow null or not
 		/// </summary>
 		/// <returns> schema always null or not </returns>
-		public virtual bool AlwaysAllowNull
-		{
-			get
-			{
-				return alwaysAllowNull;
-			}
-		}
 
 		/// <summary>
 		/// Get json schema definition
 		/// </summary>
 		/// <returns> schema class </returns>
-		public virtual string JsonDef
-		{
-			get
-			{
-				return jsonDef;
-			}
-		}
 		/// <summary>
 		/// Get pojo schema definition
 		/// </summary>
 		/// <returns> pojo class </returns>
-		public Type Pojo
+		public virtual Type<T> Pojo
 		{
 			get
 			{
@@ -93,13 +81,6 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public bool SupportSchemaVersioning
-		{
-			get
-			{
-				return supportSchemaVersioning;
-			}
-		}
 
 		/// <summary>
 		/// Get schema class

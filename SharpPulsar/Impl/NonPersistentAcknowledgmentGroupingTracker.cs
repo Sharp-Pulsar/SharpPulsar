@@ -20,8 +20,8 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 
 	/// <summary>
 	/// A no-op acknowledgment grouping tracker.
@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 	public class NonPersistentAcknowledgmentGroupingTracker : AcknowledgmentsGroupingTracker
 	{
 
-		public static NonPersistentAcknowledgmentGroupingTracker of()
+		public static NonPersistentAcknowledgmentGroupingTracker Of()
 		{
 			return INSTANCE;
 		}
@@ -40,27 +40,27 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public virtual bool isDuplicate(MessageId messageId)
+		public override bool IsDuplicate(MessageId MessageId)
 		{
 			return false;
 		}
 
-		public virtual void addAcknowledgment(MessageIdImpl msgId, AckType ackType, IDictionary<string, long> properties)
+		public override void AddAcknowledgment(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties)
 		{
 			// no-op
 		}
 
-		public virtual void flush()
+		public override void Flush()
 		{
 			// no-op
 		}
 
-		public virtual void close()
+		public override void Close()
 		{
 			// no-op
 		}
 
-		public virtual void flushAndClean()
+		public override void FlushAndClean()
 		{
 			// no-op
 		}

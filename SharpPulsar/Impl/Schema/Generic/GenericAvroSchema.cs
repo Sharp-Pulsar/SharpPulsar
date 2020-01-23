@@ -18,59 +18,55 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using DotNetty.Buffers;
-	using SharpPulsar.Common.Protocol.Schema;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Impl.Schema;
-    using SharpPulsar.Interface.Schema;
-    using Schema = Avro.Schema;
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using Schema = org.apache.avro.Schema;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using GenericRecordBuilder = SharpPulsar.Api.Schema.GenericRecordBuilder;
+	using SharpPulsar.Api.Schema;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 
-    /// <summary>
-    /// A generic avro schema.
-    /// </summary>
-    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-    //ORIGINAL LINE: @Slf4j public class GenericAvroSchema extends GenericSchemaImpl
-    public class GenericAvroSchema : GenericSchemaImpl
+	/// <summary>
+	/// A generic avro schema.
+	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public class GenericAvroSchema extends GenericSchemaImpl
+	public class GenericAvroSchema : GenericSchemaImpl
 	{
 
-		public GenericAvroSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+		public GenericAvroSchema(SchemaInfo SchemaInfo) : this(SchemaInfo, true)
 		{
 		}
 
-		internal GenericAvroSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+		public GenericAvroSchema(SchemaInfo SchemaInfo, bool UseProvidedSchemaAsReaderSchema) : base(SchemaInfo, UseProvidedSchemaAsReaderSchema)
 		{
 			Reader = new GenericAvroReader(schema);
 			Writer = new GenericAvroWriter(schema);
 		}
 
-		public override IGenericRecord Decode(IByteBuffer byteBuf)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		public IGenericRecordBuilder NewRecordBuilder()
+		public override GenericRecordBuilder NewRecordBuilder()
 		{
 			return new AvroRecordBuilderImpl(this);
 		}
 
-		public bool SupportSchemaVersioning()
+		public override bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 
-		protected internal override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
+		public override SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
-			 SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
-			 if (schemaInfo != null)
+			 SchemaInfo SchemaInfo = getSchemaInfoByVersion(SchemaVersion.get());
+			 if (SchemaInfo != null)
 			 {
-				 //log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), schemaInfo);
-				 Schema writerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
-				 Schema readerSchema = useProvidedSchemaAsReaderSchema ? schema : writerSchema;
-				 return new GenericAvroReader(writerSchema, readerSchema, schemaVersion.Get());
+				 log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), SchemaInfo);
+				 Schema WriterSchema = parseAvroSchema(SchemaInfo.SchemaDefinition);
+				 Schema ReaderSchema = UseProvidedSchemaAsReaderSchema ? schema : WriterSchema;
+				 return new GenericAvroReader(WriterSchema, ReaderSchema, SchemaVersion.get());
 			 }
 			 else
 			 {
-				 //log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), this.schemaInfo);
+				 log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), this.schemaInfo);
 				 return reader;
 			 }
 		}

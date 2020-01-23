@@ -1,5 +1,4 @@
-﻿using Pulsar.Api.Schema;
-using System;
+﻿using System;
 using System.IO;
 
 /// <summary>
@@ -20,12 +19,14 @@ using System.IO;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Client.Impl.Schema.Writer
+namespace SharpPulsar.Impl.Schema.Writer
 {
-	using Schema = Avro.Schema;
-	using BinaryEncoder = Avro.IO.BinaryEncoder;
-	using EncoderFactory = Avro.IO.EncoderFactory;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Schema = org.apache.avro.Schema;
+	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
+	using EncoderFactory = org.apache.avro.io.EncoderFactory;
+	using ReflectDatumWriter = org.apache.avro.reflect.ReflectDatumWriter;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SharpPulsar.Api.Schema;
 
 	public class AvroWriter<T> : SchemaWriter<T>
 	{
@@ -33,26 +34,26 @@ namespace Pulsar.Client.Impl.Schema.Writer
 		private BinaryEncoder encoder;
 		private MemoryStream byteArrayOutputStream;
 
-		public AvroWriter(Schema schema)
+		public AvroWriter(Schema Schema)
 		{
 			this.byteArrayOutputStream = new MemoryStream();
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, this.encoder);
-			this.writer = new ReflectDatumWriter<T>(schema);
+			this.writer = new ReflectDatumWriter<T>(Schema);
 		}
 
-		public sbyte[] Write(T message)
+		public override sbyte[] Write(T Message)
 		{
 			lock (this)
 			{
 				try
 				{
-					writer.write(message, this.encoder);
-					this.encoder.Flush();
+					writer.write(Message, this.encoder);
+					this.encoder.flush();
 					return this.byteArrayOutputStream.toByteArray();
 				}
-				catch (Exception e)
+				catch (Exception E)
 				{
-					throw new SchemaSerializationException(e);
+					throw new SchemaSerializationException(E);
 				}
 				finally
 				{

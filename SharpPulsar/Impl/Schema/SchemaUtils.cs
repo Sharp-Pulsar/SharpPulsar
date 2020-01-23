@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Common;
-using SharpPulsar.Common.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -37,7 +35,14 @@ namespace SharpPulsar.Impl.Schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
 	using ByteBufUtil = io.netty.buffer.ByteBufUtil;
-	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
+
+
+	using DefaultImplementation = SharpPulsar.@internal.DefaultImplementation;
+	using Org.Apache.Pulsar.Common.Schema;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaInfoWithVersion = Org.Apache.Pulsar.Common.Schema.SchemaInfoWithVersion;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+	using ObjectMapperFactory = Org.Apache.Pulsar.Common.Util.ObjectMapperFactory;
 
 
 	/// <summary>
@@ -48,7 +53,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private static readonly sbyte[] KEY_VALUE_SCHEMA_IS_PRIMITIVE = new sbyte[0];
 
-		private const string KEY_VALUE_SCHEMA_NULL_STRING = "\"\"";
+		private const string KeyValueSchemaNullString = @"""""";
 
 		private SchemaUtils()
 		{
@@ -85,74 +90,74 @@ namespace SharpPulsar.Impl.Schema
 			// bytes
 			SCHEMA_TYPE_CLASSES[SchemaType.BYTES] = Arrays.asList(typeof(sbyte[]), typeof(ByteBuffer), typeof(ByteBuf));
 			// build the reverse mapping
-			SCHEMA_TYPE_CLASSES..forEach((type, classes) => classes.forEach(clz => JAVA_CLASS_SCHEMA_TYPES.put(clz, type)));
+			SCHEMA_TYPE_CLASSES.forEach((type, classes) => classes.forEach(clz => JAVA_CLASS_SCHEMA_TYPES.put(clz, type)));
 		}
 
-		public static void validateFieldSchema(string name, SchemaType type, object val)
+		public static void ValidateFieldSchema(string Name, SchemaType Type, object Val)
 		{
-			if (null == val)
+			if (null == Val)
 			{
 				return;
 			}
 
-			IList<Type> expectedClasses = SCHEMA_TYPE_CLASSES[type];
+			IList<Type> ExpectedClasses = SCHEMA_TYPE_CLASSES[Type];
 
-			if (null == expectedClasses)
+			if (null == ExpectedClasses)
 			{
-				throw new Exception("Invalid Java object for schema type " + type + " : " + val.GetType() + " for field : \"" + name + "\"");
+				throw new Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
 			}
 
-			bool foundMatch = false;
-			foreach (Type expectedCls in expectedClasses)
+			bool FoundMatch = false;
+			foreach (Type ExpectedCls in ExpectedClasses)
 			{
-				if (expectedCls.IsInstanceOfType(val))
+				if (ExpectedCls.IsInstanceOfType(Val))
 				{
-					foundMatch = true;
+					FoundMatch = true;
 					break;
 				}
 			}
 
-			if (!foundMatch)
+			if (!FoundMatch)
 			{
-				throw new Exception("Invalid Java object for schema type " + type + " : " + val.GetType() + " for field : \"" + name + "\"");
+				throw new Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
 			}
 
-			switch (type)
+			switch (Type.innerEnumValue)
 			{
-				case INT8:
-				case INT16:
-				case PROTOBUF:
-				case AVRO:
-				case AUTO_CONSUME:
-				case AUTO_PUBLISH:
-				case AUTO:
-				case KEY_VALUE:
-				case JSON:
-				case NONE:
-					throw new Exception("Currently " + type.name() + " is not supported");
+				case SchemaType.InnerEnum.INT8:
+				case SchemaType.InnerEnum.INT16:
+				case SchemaType.InnerEnum.PROTOBUF:
+				case SchemaType.InnerEnum.AVRO:
+				case SchemaType.InnerEnum.AUTO_CONSUME:
+				case SchemaType.InnerEnum.AUTO_PUBLISH:
+				case SchemaType.InnerEnum.AUTO:
+				case SchemaType.InnerEnum.KEY_VALUE:
+				case SchemaType.InnerEnum.JSON:
+				case SchemaType.InnerEnum.NONE:
+					throw new Exception("Currently " + Type.name() + " is not supported");
 				default:
 					break;
 			}
 		}
 
-		public static object ToAvroObject(object value)
+		public static object ToAvroObject(object Value)
 		{
-			if (value != null)
+			if (Value != null)
 			{
-				if (value is ByteBuffer)
+				if (Value is ByteBuffer)
 				{
-					ByteBuffer bb = (ByteBuffer) value;
-					sbyte[] bytes = new sbyte[bb.remaining()];
-					bb.duplicate().get(bytes);
-					return bytes;
+					ByteBuffer Bb = (ByteBuffer) Value;
+					sbyte[] Bytes = new sbyte[Bb.remaining()];
+					Bb.duplicate().get(Bytes);
+					return Bytes;
 				}
-				else if (value is ByteBuf)
+				else if (Value is ByteBuf)
 				{
-					return ByteBufUtil.getBytes((ByteBuf) value);
+					return ByteBufUtil.getBytes((ByteBuf) Value);
 				}
 				else
 				{
-					return value;
+					return Value;
 				}
 			}
 			else
@@ -161,24 +166,24 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public static string GetStringSchemaVersion(sbyte[] schemaVersionBytes)
+		public static string GetStringSchemaVersion(sbyte[] SchemaVersionBytes)
 		{
-			if (null == schemaVersionBytes)
+			if (null == SchemaVersionBytes)
 			{
 				return "NULL";
 			}
-			else if (schemaVersionBytes.Length == Long.BYTES || schemaVersionBytes.Length == (sizeof(long) * 8))
+			else if (SchemaVersionBytes.Length == Long.BYTES || SchemaVersionBytes.Length == (sizeof(long) * 8))
 			{
-				ByteBuffer bb = ByteBuffer.wrap(schemaVersionBytes);
-				return bb.Long.ToString();
+				ByteBuffer Bb = ByteBuffer.wrap(SchemaVersionBytes);
+				return Bb.Long.ToString();
 			}
-			else if (schemaVersionBytes.Length == 0)
+			else if (SchemaVersionBytes.Length == 0)
 			{
 				return "EMPTY";
 			}
 			else
 			{
-				return Base64.Encoder.encodeToString(schemaVersionBytes);
+				return Base64.Encoder.encodeToString(SchemaVersionBytes);
 			}
 
 		}
@@ -188,11 +193,11 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaInfo"> the schema info </param>
 		/// <returns> the jsonified schema info </returns>
-		public static string JsonifySchemaInfo(SchemaInfo schemaInfo)
+		public static string JsonifySchemaInfo(SchemaInfo SchemaInfo)
 		{
-			GsonBuilder gsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(sbyte[]), new ByteArrayToStringAdapter(schemaInfo)).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
+			GsonBuilder GsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(sbyte[]), new ByteArrayToStringAdapter(SchemaInfo)).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
 
-			return gsonBuilder.create().toJson(schemaInfo);
+			return GsonBuilder.create().toJson(SchemaInfo);
 		}
 
 		/// <summary>
@@ -200,41 +205,42 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaInfoWithVersion"> the schema info </param>
 		/// <returns> the jsonified schema info with version </returns>
-		public static string JsonifySchemaInfoWithVersion(SchemaInfoWithVersion schemaInfoWithVersion)
+		public static string JsonifySchemaInfoWithVersion(SchemaInfoWithVersion SchemaInfoWithVersion)
 		{
-			GsonBuilder gsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
+			GsonBuilder GsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
 
-			return gsonBuilder.create().toJson(schemaInfoWithVersion);
+			return GsonBuilder.create().toJson(SchemaInfoWithVersion);
 		}
 
-		private class SchemaPropertiesSerializer : JsonSerializer<IDictionary<string, string>>
+		public class SchemaPropertiesSerializer : JsonSerializer<IDictionary<string, string>>
 		{
 
-			public override JsonElement serialize(IDictionary<string, string> properties, Type type, JsonSerializationContext jsonSerializationContext)
+			public override JsonElement Serialize(IDictionary<string, string> Properties, Type Type, JsonSerializationContext JsonSerializationContext)
 			{
-				SortedDictionary<string, string> sortedProperties = new SortedDictionary<string, string>();
-				sortedProperties.putAll(properties);
-				JsonObject @object = new JsonObject();
-				sortedProperties.forEach((key, value) =>
+				SortedDictionary<string, string> SortedProperties = new SortedDictionary<string, string>();
+//JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
+				SortedProperties.putAll(Properties);
+				JsonObject Object = new JsonObject();
+				SortedProperties.forEach((key, value) =>
 				{
-				@object.add(key, new JsonPrimitive(value));
+				Object.add(key, new JsonPrimitive(value));
 				});
-				return @object;
+				return Object;
 			}
 
 		}
 
-		private class SchemaPropertiesDeserializer : JsonDeserializer<IDictionary<string, string>>
+		public class SchemaPropertiesDeserializer : JsonDeserializer<IDictionary<string, string>>
 		{
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public java.util.Map<String, String> deserialize(com.google.gson.JsonElement jsonElement, Type type, com.google.gson.JsonDeserializationContext jsonDeserializationContext) throws com.google.gson.JsonParseException
-			public override IDictionary<string, string> Deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
+			public override IDictionary<string, string> Deserialize(JsonElement JsonElement, Type Type, JsonDeserializationContext JsonDeserializationContext)
 			{
 
-				SortedDictionary<string, string> sortedProperties = new SortedDictionary<string, string>();
-				jsonElement.AsJsonObject.entrySet().forEach(entry => sortedProperties.put(entry.Key, entry.Value.AsString));
-				return sortedProperties;
+				SortedDictionary<string, string> SortedProperties = new SortedDictionary<string, string>();
+				JsonElement.AsJsonObject.entrySet().forEach(entry => SortedProperties.put(entry.Key, entry.Value.AsString));
+				return SortedProperties;
 			}
 
 		}
@@ -243,52 +249,52 @@ namespace SharpPulsar.Impl.Schema
 
 		private static readonly SchemaPropertiesDeserializer SCHEMA_PROPERTIES_DESERIALIZER = new SchemaPropertiesDeserializer();
 
-		private class ByteArrayToStringAdapter : JsonSerializer<sbyte[]>
+		public class ByteArrayToStringAdapter : JsonSerializer<sbyte[]>
 		{
 
-			internal readonly SchemaInfo schemaInfo;
+			internal readonly SchemaInfo SchemaInfo;
 
-			public ByteArrayToStringAdapter(SchemaInfo schemaInfo)
+			public ByteArrayToStringAdapter(SchemaInfo SchemaInfo)
 			{
-				this.schemaInfo = schemaInfo;
+				this.SchemaInfo = SchemaInfo;
 			}
 
-			public virtual JsonElement Serialize(sbyte[] src, Type typeOfSrc, JsonSerializationContext context)
+			public virtual JsonElement Serialize(sbyte[] Src, Type TypeOfSrc, JsonSerializationContext Context)
 			{
-				string schemaDef = schemaInfo.SchemaDefinition;
-				SchemaType type = schemaInfo.Type;
-				switch (type)
+				string SchemaDef = SchemaInfo.SchemaDefinition;
+				SchemaType Type = SchemaInfo.Type;
+				switch (Type.innerEnumValue)
 				{
-					case AVRO:
-					case JSON:
-					case PROTOBUF:
-						return toJsonObject(schemaInfo.SchemaDefinition);
-					case KEY_VALUE:
-						KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfo);
-						JsonObject obj = new JsonObject();
-						string keyJson = JsonifySchemaInfo(schemaInfoKeyValue.Key);
-						string valueJson = JsonifySchemaInfo(schemaInfoKeyValue.Value);
-						obj.add("key", toJsonObject(keyJson));
-						obj.add("value", toJsonObject(valueJson));
-						return obj;
+					case SchemaType.InnerEnum.AVRO:
+					case SchemaType.InnerEnum.JSON:
+					case SchemaType.InnerEnum.PROTOBUF:
+						return ToJsonObject(SchemaInfo.SchemaDefinition);
+					case SchemaType.InnerEnum.KEY_VALUE:
+						KeyValue<SchemaInfo, SchemaInfo> SchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(SchemaInfo);
+						JsonObject Obj = new JsonObject();
+						string KeyJson = JsonifySchemaInfo(SchemaInfoKeyValue.Key);
+						string ValueJson = JsonifySchemaInfo(SchemaInfoKeyValue.Value);
+						Obj.add("key", ToJsonObject(KeyJson));
+						Obj.add("value", ToJsonObject(ValueJson));
+						return Obj;
 					default:
-						return new JsonPrimitive(schemaDef);
+						return new JsonPrimitive(SchemaDef);
 				}
 			}
 		}
 
-		public static JsonObject ToJsonObject(string json)
+		public static JsonObject ToJsonObject(string Json)
 		{
-			JsonParser parser = new JsonParser();
-			return parser.parse(json).AsJsonObject;
+			JsonParser Parser = new JsonParser();
+			return Parser.parse(Json).AsJsonObject;
 		}
 
-		private class SchemaInfoToStringAdapter : JsonSerializer<SchemaInfo>
+		public class SchemaInfoToStringAdapter : JsonSerializer<SchemaInfo>
 		{
 
-			public override JsonElement serialize(SchemaInfo schemaInfo, Type type, JsonSerializationContext jsonSerializationContext)
+			public override JsonElement Serialize(SchemaInfo SchemaInfo, Type Type, JsonSerializationContext JsonSerializationContext)
 			{
-				return ToJsonObject(JsonifySchemaInfo(schemaInfo));
+				return ToJsonObject(JsonifySchemaInfo(SchemaInfo));
 			}
 		}
 
@@ -299,10 +305,10 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="kvSchemaInfo"> the key/value schema info </param>
 		/// <returns> the jsonified schema info </returns>
-		public static string JsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+		public static string JsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo)
 		{
-			GsonBuilder gsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
-			return gsonBuilder.create().toJson(kvSchemaInfo);
+			GsonBuilder GsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
+			return GsonBuilder.create().toJson(KvSchemaInfo);
 		}
 
 		/// <summary>
@@ -312,16 +318,16 @@ namespace SharpPulsar.Impl.Schema
 		/// <returns> the convert schema info data string </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static String convertKeyValueSchemaInfoDataToString(org.apache.pulsar.common.schema.KeyValue<org.apache.pulsar.common.schema.SchemaInfo, org.apache.pulsar.common.schema.SchemaInfo> kvSchemaInfo) throws java.io.IOException
-		public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+		public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo)
 		{
-			ObjectMapper objectMapper = ObjectMapperFactory.create();
-			KeyValue<object, object> keyValue = new KeyValue<object, object>(SchemaType.IsPrimitiveType(kvSchemaInfo.Key.Type) ? "" : objectMapper.readTree(kvSchemaInfo.Key.Schema), SchemaType.isPrimitiveType(kvSchemaInfo.Value.Type) ? "" : objectMapper.readTree(kvSchemaInfo.Value.Schema));
-			return objectMapper.writeValueAsString(keyValue);
+			ObjectMapper ObjectMapper = ObjectMapperFactory.create();
+			KeyValue<object, object> KeyValue = new KeyValue<object, object>(SchemaType.isPrimitiveType(KvSchemaInfo.Key.Type) ? "" : ObjectMapper.readTree(KvSchemaInfo.Key.Schema), SchemaType.isPrimitiveType(KvSchemaInfo.Value.Type) ? "" : ObjectMapper.readTree(KvSchemaInfo.Value.Schema));
+			return ObjectMapper.writeValueAsString(KeyValue);
 		}
 
-		private static sbyte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)
+		private static sbyte[] GetKeyOrValueSchemaBytes(JsonElement JsonElement)
 		{
-			return KEY_VALUE_SCHEMA_NULL_STRING.Equals(jsonElement.ToString()) ? KEY_VALUE_SCHEMA_IS_PRIMITIVE : jsonElement.ToString().GetBytes(UTF_8);
+			return KeyValueSchemaNullString.Equals(JsonElement.ToString()) ? KEY_VALUE_SCHEMA_IS_PRIMITIVE : JsonElement.ToString().GetBytes(UTF_8);
 		}
 
 		/// <summary>
@@ -331,18 +337,18 @@ namespace SharpPulsar.Impl.Schema
 		/// <returns> the key/value schema info data bytes </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static byte[] convertKeyValueDataStringToSchemaInfoSchema(byte[] keyValueSchemaInfoDataJsonBytes) throws java.io.IOException
-		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] keyValueSchemaInfoDataJsonBytes)
+		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] KeyValueSchemaInfoDataJsonBytes)
 		{
-			JsonObject jsonObject = ToJsonObject(StringHelper.NewString(keyValueSchemaInfoDataJsonBytes, UTF_8));
-			sbyte[] keyBytes = GetKeyOrValueSchemaBytes(jsonObject.get("key"));
-			sbyte[] valueBytes = GetKeyOrValueSchemaBytes(jsonObject.get("value"));
-			int dataLength = 4 + keyBytes.Length + 4 + valueBytes.Length;
-			sbyte[] schema = new sbyte[dataLength];
+			JsonObject JsonObject = ToJsonObject(StringHelper.NewString(KeyValueSchemaInfoDataJsonBytes, UTF_8));
+			sbyte[] KeyBytes = GetKeyOrValueSchemaBytes(JsonObject.get("key"));
+			sbyte[] ValueBytes = GetKeyOrValueSchemaBytes(JsonObject.get("value"));
+			int DataLength = 4 + KeyBytes.Length + 4 + ValueBytes.Length;
+			sbyte[] Schema = new sbyte[DataLength];
 			//record the key value schema respective length
-			ByteBuf byteBuf = ByteBufAllocator.DEFAULT.heapBuffer(dataLength);
-			byteBuf.writeInt(keyBytes.Length).writeBytes(keyBytes).writeInt(valueBytes.Length).writeBytes(valueBytes);
-			byteBuf.readBytes(schema);
-			return schema;
+			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.heapBuffer(DataLength);
+			ByteBuf.writeInt(KeyBytes.Length).writeBytes(KeyBytes).writeInt(ValueBytes.Length).writeBytes(ValueBytes);
+			ByteBuf.readBytes(Schema);
+			return Schema;
 		}
 
 		/// <summary>
@@ -350,10 +356,10 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="properties"> schema properties </param>
 		/// <returns> the serialized schema properties </returns>
-		public static string serializeSchemaProperties(IDictionary<string, string> properties)
+		public static string SerializeSchemaProperties(IDictionary<string, string> Properties)
 		{
-			GsonBuilder gsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
-			return gsonBuilder.create().toJson(properties);
+			GsonBuilder GsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
+			return GsonBuilder.create().toJson(Properties);
 		}
 
 		/// <summary>
@@ -361,10 +367,10 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="serializedProperties"> serialized properties </param>
 		/// <returns> the deserialized properties </returns>
-		public static IDictionary<string, string> deserializeSchemaProperties(string serializedProperties)
+		public static IDictionary<string, string> DeserializeSchemaProperties(string SerializedProperties)
 		{
-			GsonBuilder gsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_DESERIALIZER);
-			return gsonBuilder.create().fromJson(serializedProperties, typeof(System.Collections.IDictionary));
+			GsonBuilder GsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_DESERIALIZER);
+			return GsonBuilder.create().fromJson(SerializedProperties, typeof(System.Collections.IDictionary));
 		}
 
 	}

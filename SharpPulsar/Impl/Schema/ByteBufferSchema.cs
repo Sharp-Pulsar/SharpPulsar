@@ -1,6 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,6 +18,12 @@ using SharpPulsar.Common.Schema;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+
+
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+
 	/// <summary>
 	/// A bytebuffer schema is effectively a `BYTES` schema.
 	/// </summary>
@@ -27,77 +31,70 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly ByteBufferSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static ByteBufferSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("ByteBuffer").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("ByteBuffer").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
 			INSTANCE = new ByteBufferSchema();
 		}
 
-		public static ByteBufferSchema of()
+		public static ByteBufferSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public sbyte[] Encode(ByteBuffer data)
+		public override sbyte[] Encode(ByteBuffer Data)
 		{
-			if (data == null)
+			if (Data == null)
 			{
 				return null;
 			}
 
-			data.rewind();
+			Data.rewind();
 
-			if (data.hasArray())
+			if (Data.hasArray())
 			{
-				sbyte[] arr = data.Array();
-				if (data.arrayOffset() == 0 && arr.Length == data.remaining())
+				sbyte[] Arr = Data.array();
+				if (Data.arrayOffset() == 0 && Arr.Length == Data.remaining())
 				{
-					return arr;
+					return Arr;
 				}
 			}
 
-			sbyte[] ret = new sbyte[data.remaining()];
-			data.get(ret, 0, ret.Length);
-			data.rewind();
-			return ret;
+			sbyte[] Ret = new sbyte[Data.remaining()];
+			Data.get(Ret, 0, Ret.Length);
+			Data.rewind();
+			return Ret;
 		}
 
-		public override ByteBuffer Decode(sbyte[] data)
+		public override ByteBuffer Decode(sbyte[] Data)
 		{
-			if (null == data)
+			if (null == Data)
 			{
 				return null;
 			}
 			else
 			{
-				return ByteBuffer.Wrap(data);
+				return ByteBuffer.wrap(Data);
 			}
 		}
 
-		public override ByteBuffer Decode(IByteBuffer byteBuf)
+		public override ByteBuffer Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
 			else
 			{
-				int size = byteBuf.ReadableBytes;
-				sbyte[] bytes = new sbyte[size];
-				byteBuf.ReadBytes(bytes);
-				return ByteBuffer.wrap(bytes);
+				int Size = ByteBuf.readableBytes();
+				sbyte[] Bytes = new sbyte[Size];
+				ByteBuf.readBytes(Bytes);
+				return ByteBuffer.wrap(Bytes);
 			}
 		}
 
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

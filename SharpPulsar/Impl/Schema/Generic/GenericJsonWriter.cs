@@ -18,13 +18,12 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	//using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-    using System.IO;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Exception;
-    using SharpPulsar.Interface.Schema;
+	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using SharpPulsar.Api.Schema;
 
-    public class GenericJsonWriter : SchemaWriter<IGenericRecord>
+	public class GenericJsonWriter : SchemaWriter<GenericRecord>
 	{
 
 		private readonly ObjectMapper objectMapper;
@@ -34,15 +33,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 			this.objectMapper = new ObjectMapper();
 		}
 
-		public sbyte[] Write(IGenericRecord message)
+		public override sbyte[] Write(GenericRecord Message)
 		{
 			try
 			{
-				return objectMapper.writeValueAsBytes(((GenericJsonRecord)message).JsonNode.ToString());
+				return objectMapper.writeValueAsBytes(((GenericJsonRecord)Message).JsonNode.ToString());
 			}
-			catch (IOException ioe)
+			catch (IOException Ioe)
 			{
-				throw new SchemaSerializationException(ioe);
+				throw new SchemaSerializationException(Ioe);
 			}
 		}
 	}

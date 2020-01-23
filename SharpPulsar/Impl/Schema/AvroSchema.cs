@@ -1,9 +1,4 @@
-﻿using Pulsar.Client.Impl.Schema.Reader;
-using Pulsar.Client.Impl.Schema.Writer;
-using SharpPulsar.Common.Protocol.Schema;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Interface.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -26,76 +21,106 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using Conversions = org.apache.avro.Conversions;
+	using TimeConversions = org.apache.avro.data.TimeConversions;
+	using ReflectData = org.apache.avro.reflect.ReflectData;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Impl.Schema.Reader;
+	using SharpPulsar.Impl.Schema.Writer;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
+
 	/// <summary>
 	/// An AVRO schema implementation.
 	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public class AvroSchema<T> extends StructSchema<T>
 	public class AvroSchema<T> : StructSchema<T>
 	{
 		private new static readonly Logger LOG = LoggerFactory.getLogger(typeof(AvroSchema));
 
-		// the aim to fix avro's bug
-		// https://issues.apache.org/jira/browse/AVRO-1891 bug address explain
-		// fix the avro logical type read and write
+		//      the aim to fix avro's bug
+	//      https://issues.apache.org/jira/browse/AVRO-1891  bug address explain
+	//      fix the avro logical type read and write
 		static AvroSchema()
 		{
-			ReflectData reflectDataAllowNull = ReflectData.AllowNull.get();
+			try
+			{
+				ReflectData ReflectDataAllowNull = ReflectData.AllowNull.get();
 
-			reflectDataAllowNull.addLogicalTypeConversion(new Conversions.DecimalConversion());
-			reflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.DateConversion());
-			reflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMillisConversion());
-			reflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMicrosConversion());
-			reflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
-			reflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMicrosConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new Conversions.DecimalConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.DateConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.LossyTimeMicrosConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.LossyTimestampMicrosConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMicrosConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMicrosConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampConversion());
+				ReflectDataAllowNull.addLogicalTypeConversion(new TimeConversions.TimeConversion());
 
-			ReflectData reflectDataNotAllowNull = ReflectData.get();
+				ReflectData ReflectDataNotAllowNull = ReflectData.get();
 
-			reflectDataNotAllowNull.addLogicalTypeConversion(new Conversions.DecimalConversion());
-			reflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.DateConversion());
-			reflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMillisConversion());
-			reflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMicrosConversion());
-			reflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
-			reflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMicrosConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new Conversions.DecimalConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.DateConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.LossyTimeMicrosConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.LossyTimestampMicrosConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimeMicrosConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimestampMicrosConversion());
+				ReflectDataNotAllowNull.addLogicalTypeConversion(new TimeConversions.TimeConversion());
+			}
+			catch (Exception)
+			{
+				if (LOG.DebugEnabled)
+				{
+					LOG.debug("Avro logical types are not available. If you are going to use avro logical types, " + "you can include `joda-time` in your dependency.");
+				}
+			}
 		}
 
-		private AvroSchema(SchemaInfo schemaInfo) : base(schemaInfo)
+		private AvroSchema(SchemaInfo SchemaInfo) : base(SchemaInfo)
 		{
-			Reader = new AvroReader<T>(schema);
-			Writer = new AvroWriter<T>(schema);
+			Reader = new AvroReader<>(Schema);
+			Writer = new AvroWriter<>(Schema);
 		}
 
-		public bool SupportSchemaVersioning()
+		public override bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 
-		public static AvroSchema<T> Of<T>(ISchemaDefinition<T> schemaDefinition)
+		public static AvroSchema<T> Of<T>(SchemaDefinition<T> SchemaDefinition)
 		{
-			return new AvroSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.AVRO));
+			return new AvroSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.AVRO));
 		}
 
-		public static AvroSchema<T> Of<T>(Type pojo)
+		public static AvroSchema<T> Of<T>(Type Pojo)
 		{
-			return AvroSchema.Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+			return AvroSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).build());
 		}
 
-		public static AvroSchema<T> Of<T>(Type pojo, IDictionary<string, string> properties)
+		public static AvroSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			ISchemaDefinition<T> schemaDefinition = ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build();
-			return new AvroSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.AVRO));
+			SchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
+			return new AvroSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.AVRO));
 		}
 
-		protected internal ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
+		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
-			SchemaInfo schemaInfo = getSchemaInfoByVersion(schemaVersion.Get());
-			if (schemaInfo != null)
+			SchemaInfo SchemaInfo = GetSchemaInfoByVersion(SchemaVersion.get());
+			if (SchemaInfo != null)
 			{
-				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), schemaInfo.SchemaDefinition);
-				return new AvroReader<T>(parseAvroSchema(schemaInfo.SchemaDefinition), schema);
+				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(SchemaVersion.get()), SchemaInfo.SchemaDefinition);
+				return new AvroReader<T>(ParseAvroSchema(SchemaInfo.SchemaDefinition), Schema);
 			}
 			else
 			{
-				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(schemaVersion.get()), this.schemaInfo.SchemaDefinition);
-				return reader;
+				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(SchemaVersion.get()), this.SchemaInfoConflict.SchemaDefinition);
+				return ReaderConflict;
 			}
 		}
 

@@ -18,53 +18,59 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    using SharpPulsar.Common.Protocol.Schema;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Impl.Schema;
-    using SharpPulsar.Interface.Schema;
-    using Schema = Avro.Schema;
 
-    /// <summary>
-    /// A generic json schema.
-    /// </summary>
-    internal class GenericJsonSchema : GenericSchemaImpl
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using Schema = org.apache.avro.Schema;
+	using Field = SharpPulsar.Api.Schema.Field;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using GenericRecordBuilder = SharpPulsar.Api.Schema.GenericRecordBuilder;
+	using SharpPulsar.Api.Schema;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+
+	/// <summary>
+	/// A generic json schema.
+	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j class GenericJsonSchema extends GenericSchemaImpl
+	public class GenericJsonSchema : GenericSchemaImpl
 	{
 
-		public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+		public GenericJsonSchema(SchemaInfo SchemaInfo) : this(SchemaInfo, true)
 		{
 		}
 
-		internal GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+		public GenericJsonSchema(SchemaInfo SchemaInfo, bool UseProvidedSchemaAsReaderSchema) : base(SchemaInfo, UseProvidedSchemaAsReaderSchema)
 		{
 			Writer = new GenericJsonWriter();
-			Reader = new GenericJsonReader(fields);
+			Reader = new GenericJsonReader(FieldsConflict);
 		}
 
-		protected internal ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
+		public override SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
-			SchemaInfo schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
-			if (schemaInfo != null)
+			SchemaInfo SchemaInfo = getSchemaInfoByVersion(SchemaVersion.get());
+			if (SchemaInfo != null)
 			{
-				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.get()), schemaInfo.SchemaDefinition);
-				Schema readerSchema;
-				if (useProvidedSchemaAsReaderSchema)
+				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), SchemaInfo.SchemaDefinition);
+				Schema ReaderSchema;
+				if (UseProvidedSchemaAsReaderSchema)
 				{
-					readerSchema = schema;
+					ReaderSchema = schema;
 				}
 				else
 				{
-					readerSchema = ParseAvroSchema(schemaInfo.SchemaDefinition);
+					ReaderSchema = parseAvroSchema(SchemaInfo.SchemaDefinition);
 				}
-				return new GenericJsonReader(schemaVersion.Get(), readerSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
+				return new GenericJsonReader(SchemaVersion.get(), ReaderSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
 			}
 			else
 			{
-				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.get()), this.schemaInfo.SchemaDefinition);
+				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), this.schemaInfo.SchemaDefinition);
 				return reader;
 			}
 		}
 
-		public IGenericRecordBuilder NewRecordBuilder()
+		public override GenericRecordBuilder NewRecordBuilder()
 		{
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}

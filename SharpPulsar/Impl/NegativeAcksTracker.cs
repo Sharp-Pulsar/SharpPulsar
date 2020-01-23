@@ -25,10 +25,10 @@ namespace SharpPulsar.Impl
 	using Timer = io.netty.util.Timer;
 
 
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using SharpPulsar.Impl.conf;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using SharpPulsar.Impl.Conf;
 
-	internal class NegativeAcksTracker
+	public class NegativeAcksTracker
 	{
 
 		private Dictionary<MessageId, long> nackedMessages = null;
@@ -43,17 +43,17 @@ namespace SharpPulsar.Impl
 		private Timeout timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
-		private static readonly long MIN_NACK_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(100);
+		private static readonly long MIN_NACK_DELAY_NANOS = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toNanos(100);
 
-		public NegativeAcksTracker<T1, T2>(ConsumerBase<T1> consumer, ConsumerConfigurationData<T2> conf)
+		public NegativeAcksTracker<T1, T2>(ConsumerBase<T1> Consumer, ConsumerConfigurationData<T2> Conf)
 		{
-			this.consumer = consumer;
-			this.timer = ((PulsarClientImpl) consumer.Client).timer();
-			this.nackDelayNanos = Math.Max(TimeUnit.MICROSECONDS.toNanos(conf.NegativeAckRedeliveryDelayMicros), MIN_NACK_DELAY_NANOS);
+			this.consumer = Consumer;
+			this.timer = ((PulsarClientImpl) Consumer.Client).timer();
+			this.nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.toNanos(Conf.NegativeAckRedeliveryDelayMicros), MIN_NACK_DELAY_NANOS);
 			this.timerIntervalNanos = nackDelayNanos / 3;
 		}
 
-		private void triggerRedelivery(Timeout t)
+		private void TriggerRedelivery(Timeout T)
 		{
 			lock (this)
 			{
@@ -64,45 +64,45 @@ namespace SharpPulsar.Impl
 				}
         
 				// Group all the nacked messages into one single re-delivery request
-				ISet<MessageId> messagesToRedeliver = new HashSet<MessageId>();
-				long now = System.nanoTime();
+				ISet<MessageId> MessagesToRedeliver = new HashSet<MessageId>();
+				long Now = System.nanoTime();
 				nackedMessages.forEach((msgId, timestamp) =>
 				{
-				if (timestamp < now)
+				if (timestamp < Now)
 				{
-					messagesToRedeliver.Add(msgId);
+					MessagesToRedeliver.Add(msgId);
 				}
 				});
         
-				messagesToRedeliver.forEach(nackedMessages.remove);
-				consumer.onNegativeAcksSend(messagesToRedeliver);
-				consumer.redeliverUnacknowledgedMessages(messagesToRedeliver);
+				MessagesToRedeliver.forEach(nackedMessages.remove);
+				consumer.OnNegativeAcksSend(MessagesToRedeliver);
+				consumer.RedeliverUnacknowledgedMessages(MessagesToRedeliver);
         
-				this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, TimeUnit.NANOSECONDS);
+				this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
 			}
 		}
 
-		public virtual void add(MessageId messageId)
+		public virtual void Add(MessageId MessageId)
 		{
 			lock (this)
 			{
-				if (messageId is BatchMessageIdImpl)
+				if (MessageId is BatchMessageIdImpl)
 				{
-					BatchMessageIdImpl batchMessageId = (BatchMessageIdImpl) messageId;
-					messageId = new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
+					BatchMessageIdImpl BatchMessageId = (BatchMessageIdImpl) MessageId;
+					MessageId = new MessageIdImpl(BatchMessageId.LedgerId, BatchMessageId.EntryId, BatchMessageId.PartitionIndex);
 				}
         
 				if (nackedMessages == null)
 				{
 					nackedMessages = new Dictionary<MessageId, long>();
 				}
-				nackedMessages[messageId] = System.nanoTime() + nackDelayNanos;
+				nackedMessages[MessageId] = System.nanoTime() + nackDelayNanos;
         
 				if (this.timeout == null)
 				{
 					// Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
 					// nack immediately following the current one will be batched into the same redeliver request.
-					this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, TimeUnit.NANOSECONDS);
+					this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
 				}
 			}
 		}

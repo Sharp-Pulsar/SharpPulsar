@@ -18,22 +18,21 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
+	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
 
-	internal class TopicMetadataImpl : TopicMetadata
+	public class TopicMetadataImpl : TopicMetadata
 	{
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private readonly int numPartitions_Conflict;
+		private readonly int numPartitions;
 
-		internal TopicMetadataImpl(int numPartitions)
+		public TopicMetadataImpl(int NumPartitions)
 		{
-			this.numPartitions_Conflict = numPartitions;
+			this.numPartitions = NumPartitions;
 		}
 
-		public override int numPartitions()
+		public override int NumPartitions()
 		{
-			return numPartitions_Conflict;
+			return numPartitions;
 		}
 	}
 

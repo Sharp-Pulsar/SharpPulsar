@@ -1,6 +1,4 @@
-﻿using Avro.Generic;
-using Pulsar.Api.Schema;
-using System;
+﻿using System;
 using System.IO;
 
 /// <summary>
@@ -23,43 +21,45 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Schema = Avro.Schema;
-	using BinaryEncoder = Avro.IO.BinaryEncoder;
-	using EncoderFactory = Avro.IO.EncoderFactory;
-	using SchemaSerializationException = Api.SchemaSerializationException;
-	using GenericRecord = Api.Schema.GenericRecord;
+	using Schema = org.apache.avro.Schema;
+	using GenericDatumWriter = org.apache.avro.generic.GenericDatumWriter;
+	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
+	using EncoderFactory = org.apache.avro.io.EncoderFactory;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using SharpPulsar.Api.Schema;
 
 	public class GenericAvroWriter : SchemaWriter<GenericRecord>
 	{
 
-		private readonly GenericDatumWriter<Avro.Generic.GenericRecord> writer;
+		private readonly GenericDatumWriter<org.apache.avro.generic.GenericRecord> writer;
 		private BinaryEncoder encoder;
 		private readonly MemoryStream byteArrayOutputStream;
 
-		public GenericAvroWriter(Schema schema)
+		public GenericAvroWriter(Schema Schema)
 		{
-			this.writer = new GenericDatumWriter<Avro.Generic.GenericRecord>(schema);
+			this.writer = new GenericDatumWriter<org.apache.avro.generic.GenericRecord>(Schema);
 			this.byteArrayOutputStream = new MemoryStream();
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public sbyte[]Write(GenericRecord message)
+		public override sbyte[] Write(GenericRecord Message)
 		{
 			lock (this)
 			{
 				try
 				{
-					writer.Write(((GenericAvroRecord)message).AvroRecord, this.encoder);
-					this.encoder.Flush();
-					return this.byteArrayOutputStream.ToByteArray();
+					writer.write(((GenericAvroRecord)Message).AvroRecord, this.encoder);
+					this.encoder.flush();
+					return this.byteArrayOutputStream.toByteArray();
 				}
-				catch (Exception e)
+				catch (Exception E)
 				{
-					throw new SchemaSerializationException(e);
+					throw new SchemaSerializationException(E);
 				}
 				finally
 				{
-					this.byteArrayOutputStream.Reset();
+					this.byteArrayOutputStream.reset();
 				}
 			}
 		}

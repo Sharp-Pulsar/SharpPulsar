@@ -1,7 +1,5 @@
-﻿using SharpPulsar.Interface.Auth;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,47 +22,42 @@ using System.Text;
 
 namespace SharpPulsar.Impl.Auth
 {
-	public class AuthenticationDataBasic : IAuthenticationDataProvider
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+
+
+	[Serializable]
+	public class AuthenticationDataBasic : AuthenticationDataProvider
 	{
-		private const string HTTP_HEADER_NAME = "Authorization";
+		private const string HttpHeaderName = "Authorization";
 		private string httpAuthToken;
-		private string commandAuthToken;
+		public virtual CommandData {get;}
 
-		public AuthenticationDataBasic(string userId, string password)
+		public AuthenticationDataBasic(string UserId, string Password)
 		{
-			httpAuthToken = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(userId + ":" + password));
-			commandAuthToken = userId + ":" + password;
+			httpAuthToken = "Basic " + Base64.Encoder.encodeToString((UserId + ":" + Password).GetBytes());
+			CommandData = UserId + ":" + Password;
 		}
 
-		public bool HasDataForHttp()
-		{
-			return true;
-		}
-
-		public ISet<KeyValuePair<string, string>> HttpHeaders
-		{
-			get
-			{
-				IDictionary<string, string> headers = new Dictionary<string, string>
-				{
-					[HTTP_HEADER_NAME] = httpAuthToken
-				};
-				return new HashSet<KeyValuePair<string, string>>(headers);
-			}
-		}
-
-		public bool HasDataFromCommand()
+		public override bool HasDataForHttp()
 		{
 			return true;
 		}
 
-		public string CommandData
+		public virtual ISet<KeyValuePair<string, string>> HttpHeaders
 		{
 			get
 			{
-				return commandAuthToken;
+				IDictionary<string, string> Headers = new Dictionary<string, string>();
+				Headers[HttpHeaderName] = httpAuthToken;
+				return Headers.SetOfKeyValuePairs();
 			}
 		}
+
+		public override bool HasDataFromCommand()
+		{
+			return true;
+		}
+
 	}
 
 }

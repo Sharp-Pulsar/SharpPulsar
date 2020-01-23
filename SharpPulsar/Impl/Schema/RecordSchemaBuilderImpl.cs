@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Interface.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -23,102 +21,109 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+
+	using SharpPulsar.Api.Schema;
+	using SharpPulsar.Api.Schema;
+	using RecordSchemaBuilder = SharpPulsar.Api.Schema.RecordSchemaBuilder;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+
 	/// <summary>
 	/// The default implementation of <seealso cref="RecordSchemaBuilder"/>.
 	/// </summary>
-	public class RecordSchemaBuilderImpl : IRecordSchemaBuilder
+	public class RecordSchemaBuilderImpl : RecordSchemaBuilder
 	{
 
 		public const string NAMESPACE = "org.apache.pulsar.schema.record";
-		public const string DEFAULT_SCHEMA_NAME = "PulsarDefault";
+		public const string DefaultSchemaName = "PulsarDefault";
 
 		private readonly string name;
 		private readonly IDictionary<string, string> properties;
 		private readonly IList<FieldSchemaBuilderImpl> fields = new List<FieldSchemaBuilderImpl>();
-		private string doc_Conflict;
+		private string doc;
 
-		public RecordSchemaBuilderImpl(string name)
+		public RecordSchemaBuilderImpl(string Name)
 		{
-			this.name = name;
+			this.name = Name;
 			this.properties = new Dictionary<string, string>();
 		}
 
-		public IRecordSchemaBuilder Property(string name, string val)
+		public override RecordSchemaBuilder Property(string Name, string Val)
 		{
-			this.properties[name] = val;
+			this.properties[Name] = Val;
 			return this;
 		}
 
-		public FieldSchemaBuilderImpl Field(string fieldName)
+		public override FieldSchemaBuilder Field(string FieldName)
 		{
-			FieldSchemaBuilderImpl field = new FieldSchemaBuilderImpl(fieldName);
-			fields.Add(field);
-			return field;
+			FieldSchemaBuilderImpl Field = new FieldSchemaBuilderImpl(FieldName);
+			fields.Add(Field);
+			return Field;
 		}
 
-		public override IFieldSchemaBuilder<FieldSchemaBuilderImpl> Field(string fieldName, GenericSchema genericSchema)
+		public override FieldSchemaBuilder Field(string FieldName, GenericSchema GenericSchema)
 		{
-			FieldSchemaBuilderImpl field = new FieldSchemaBuilderImpl(fieldName, genericSchema);
-			fields.Add(field);
-			return field;
+			FieldSchemaBuilderImpl Field = new FieldSchemaBuilderImpl(FieldName, GenericSchema);
+			fields.Add(Field);
+			return Field;
 		}
 
-		public IRecordSchemaBuilder Doc(string doc)
+		public override RecordSchemaBuilder Doc(string Doc)
 		{
-			this.doc_Conflict = doc;
+			this.doc = Doc;
 			return this;
 		}
 
-		public SchemaInfo Build(SchemaType schemaType)
+		public override SchemaInfo Build(SchemaType SchemaType)
 		{
-			switch (schemaType)
+			switch (SchemaType.innerEnumValue)
 			{
-				case JSON:
-				case AVRO:
+				case SchemaType.InnerEnum.JSON:
+				case SchemaType.InnerEnum.AVRO:
 					break;
 				default:
 					throw new Exception("Currently only AVRO and JSON record schema is supported");
 			}
 
-			string schemaNs = NAMESPACE;
-			string schemaName = DEFAULT_SCHEMA_NAME;
+			string SchemaNs = NAMESPACE;
+			string SchemaName = DefaultSchemaName;
 			if (!string.ReferenceEquals(name, null))
 			{
-				string[] split = splitName(name);
-				schemaNs = split[0];
-				schemaName = split[1];
+				string[] Split = SplitName(name);
+				SchemaNs = Split[0];
+				SchemaName = Split[1];
 			}
 
-			org.apache.avro.Schema baseSchema = org.apache.avro.Schema.createRecord(!string.ReferenceEquals(schemaName, null) ? schemaName : DEFAULT_SCHEMA_NAME, doc_Conflict, schemaNs, false);
+			org.apache.avro.Schema BaseSchema = org.apache.avro.Schema.createRecord(!string.ReferenceEquals(SchemaName, null) ? SchemaName : DefaultSchemaName, doc, SchemaNs, false);
 
-			IList<org.apache.avro.Schema.Field> avroFields = new List<org.apache.avro.Schema.Field>();
-			foreach (FieldSchemaBuilderImpl field in fields)
+			IList<org.apache.avro.Schema.Field> AvroFields = new List<org.apache.avro.Schema.Field>();
+			foreach (FieldSchemaBuilderImpl Field in fields)
 			{
-				avroFields.Add(field.build());
+				AvroFields.Add(Field.build());
 			}
 
-			baseSchema.Fields = avroFields;
-			return new SchemaInfo(name, baseSchema.ToString().GetBytes(UTF_8), schemaType, properties);
+			BaseSchema.Fields = AvroFields;
+			return new SchemaInfo(name, BaseSchema.ToString().GetBytes(UTF_8), SchemaType, properties);
 		}
 
 		/// <summary>
 		/// Split a full dotted-syntax name into a namespace and a single-component name.
 		/// </summary>
-		private static string[] SplitName(string fullName)
+		private static string[] SplitName(string FullName)
 		{
-			string[] result = new string[2];
-			int indexLastDot = fullName.LastIndexOf('.');
-			if (indexLastDot >= 0)
+			string[] Result = new string[2];
+			int IndexLastDot = FullName.LastIndexOf('.');
+			if (IndexLastDot >= 0)
 			{
-				result[0] = fullName.Substring(0, indexLastDot);
-				result[1] = fullName.Substring(indexLastDot + 1);
+				Result[0] = FullName.Substring(0, IndexLastDot);
+				Result[1] = FullName.Substring(IndexLastDot + 1);
 			}
 			else
 			{
-				result[0] = null;
-				result[1] = fullName;
+				Result[0] = null;
+				Result[1] = FullName;
 			}
-			return result;
+			return Result;
 		}
 
 	}

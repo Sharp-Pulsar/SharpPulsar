@@ -1,7 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,6 +18,10 @@ using SharpPulsar.Exception;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `Short`.
@@ -29,87 +30,80 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly ShortSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static ShortSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("INT16").setType(SchemaType.INT16).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("INT16").setType(SchemaType.INT16).setSchema(new sbyte[0]);
 			INSTANCE = new ShortSchema();
 		}
 
-		public static ShortSchema of()
+		public static ShortSchema Of()
 		{
 			return INSTANCE;
 		}
 
-		public void Validate(sbyte[] message)
+		public override void Validate(sbyte[] Message)
 		{
-			if (message.Length != 2)
+			if (Message.Length != 2)
 			{
 				throw new SchemaSerializationException("Size of data received by ShortSchema is not 2");
 			}
 		}
 
-		public void Validate(IByteBuffer message)
+		public override void Validate(ByteBuf Message)
 		{
-			if (message.ReadableBytes != 2)
+			if (Message.readableBytes() != 2)
 			{
 				throw new SchemaSerializationException("Size of data received by ShortSchema is not 2");
 			}
 		}
 
-		public sbyte[] Encode(short? message)
+		public override sbyte[] Encode(short? Message)
 		{
-			if (null == message)
+			if (null == Message)
 			{
 				return null;
 			}
 			else
 			{
-				return new sbyte[] {(sbyte)((int)((uint)message >> 8)), message.Value};
+				return new sbyte[] {(sbyte)((int)((uint)Message >> 8)), Message.Value};
 			}
 		}
 
-		public short? Decode(sbyte[] bytes)
+		public override short? Decode(sbyte[] Bytes)
 		{
-			if (null == bytes)
+			if (null == Bytes)
 			{
 				return null;
 			}
-			Validate(bytes);
-			short value = 0;
-			foreach (sbyte b in bytes)
+			Validate(Bytes);
+			short Value = 0;
+			foreach (sbyte B in Bytes)
 			{
-				value <<= 8;
-				value |= (short)(b & 0xFF);
+				Value <<= 8;
+				Value |= (short)(B & 0xFF);
 			}
-			return value;
+			return Value;
 		}
 
-		public short? Decode(IByteBuffer byteBuf)
+		public override short? Decode(ByteBuf ByteBuf)
 		{
-			if (null == byteBuf)
+			if (null == ByteBuf)
 			{
 				return null;
 			}
-			Validate(byteBuf);
-			short value = 0;
+			Validate(ByteBuf);
+			short Value = 0;
 
-			for (int i = 0; i < 2; i++)
+			for (int I = 0; I < 2; I++)
 			{
-				value <<= 8;
-				value |= (short)(byteBuf.GetByte(i) & 0xFF);
+				Value <<= 8;
+				Value |= (short)(ByteBuf.getByte(I) & 0xFF);
 			}
-			return value;
+			return Value;
 		}
 
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

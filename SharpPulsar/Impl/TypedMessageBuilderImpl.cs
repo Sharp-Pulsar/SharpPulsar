@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Org.Apache.Pulsar.Common.Schema;
+
+using System;
 using System.Collections.Generic;
-using System.Transactions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,55 +23,71 @@ using System.Transactions;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	//using Preconditions = com.google.common.@base.Preconditions;
-	using TransactionImpl = Transaction.TransactionImpl;
-	using SharpPulsar.Interface;
-	using SharpPulsar.Impl.Producer;
-	using SharpPulsar.Interface.Schema;
-	using SharpPulsar.Interface.Message;
-    using System.Threading.Tasks;
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Impl.Schema;
-    using SharpPulsar.Enum;
-    using BAMCIS.Util.Concurrent;
-    using SharpPulsar.Util;
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkArgument;
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static SharpPulsar.util.TypeCheckUtil.checkType;
 
-    public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>
+	using Preconditions = com.google.common.@base.Preconditions;
+
+
+	using SharpPulsar.Api;
+	using MessageId = SharpPulsar.Api.MessageId;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using SharpPulsar.Api;
+	using SharpPulsar.Api;
+	using SharpPulsar.Impl.Schema;
+	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
+	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
+	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
+	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
+
+	[Serializable]
+	public class TypedMessageBuilderImpl<T> : TypedMessageBuilder<T>
 	{
 
-		private const long serialVersionUID = 0L;
+		private const long SerialVersionUID = 0L;
 
-		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
-		private readonly ProducerBase<T> producer;
-		private readonly MessageMetadata.Builder msgMetadataBuilder = MessageMetadata.newBuilder();
-		private readonly ISchema<T> schema;
-		private ByteBuffer content;
+		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.allocate(0);
+
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+//ORIGINAL LINE: private final ProducerBase<?> producer;
+		private readonly ProducerBase<object> producer;
+		public virtual MetadataBuilder {get;} = MessageMetadata.newBuilder();
+		private readonly Schema<T> schema;
+		public virtual Content {get;}
 		private readonly TransactionImpl txn;
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema):this(producer, schema, null)
+		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> Producer, Schema<T> Schema) : this(Producer, Schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl txn)
+		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> Producer, Schema<T> Schema, TransactionImpl Txn)
 		{
-			this.producer = producer;
-			this.schema = schema;
-			this.content = EMPTY_CONTENT;
-			this.txn = txn;
+			this.producer = Producer;
+			this.schema = Schema;
+			this.Content = EMPTY_CONTENT;
+			this.txn = Txn;
 		}
+
 		private long BeforeSend()
 		{
 			if (txn == null)
 			{
 				return -1L;
 			}
-			msgMetadataBuilder.TxnidLeastBits = txn.TxnIdLeastBits;
-			msgMetadataBuilder.TxnidMostBits = txn.TxnIdMostBits;
-			long sequenceId = txn.nextSequenceId();
-			msgMetadataBuilder.SequenceId = sequenceId;
-			return sequenceId;
+			MetadataBuilder.TxnidLeastBits = txn.TxnIdLeastBits;
+			MetadataBuilder.TxnidMostBits = txn.TxnIdMostBits;
+			long SequenceId = txn.NextSequenceId();
+			MetadataBuilder.SequenceId = SequenceId;
+			return SequenceId;
 		}
-		public IMessageId Send()
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public SharpPulsar.api.MessageId send() throws SharpPulsar.api.PulsarClientException
+		public override MessageId Send()
 		{
 			if (null != txn)
 			{
@@ -81,10 +98,10 @@ namespace SharpPulsar.Impl
 			return producer.Send(Message);
 		}
 
-		public async ValueTask<IMessageId> SendAsync()
+		public override CompletableFuture<MessageId> SendAsync()
 		{
-			long sequenceId = BeforeSend();
-			var sendFuture = await producer.InternalSendAsync(Message);
+			long SequenceId = BeforeSend();
+			CompletableFuture<MessageId> SendFuture = producer.InternalSendAsync(Message);
 			if (txn != null)
 			{
 				// it is okay that we register produced topic after sending the messages. because
@@ -92,188 +109,183 @@ namespace SharpPulsar.Impl
 				// is committed.
 				txn.RegisterProducedTopic(producer.Topic);
 				// register the sendFuture as part of the transaction
-				return txn.RegisterSendOp(sequenceId, sendFuture);
+				return txn.RegisterSendOp(SequenceId, SendFuture);
 			}
 			else
 			{
-				return sendFuture;
+				return SendFuture;
 			}
 		}
 
-		public ITypedMessageBuilder<T> GetKey(string key)
+		public override TypedMessageBuilder<T> Key(string Key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema)schema;
-				checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				KeyValueSchema KvSchema = (KeyValueSchema) schema;
+				checkArgument(!(KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			msgMetadataBuilder.PartitionKey = key;
-			msgMetadataBuilder.PartitionKeyB64Encoded = false;
+			MetadataBuilder.setPartitionKey(Key);
+			MetadataBuilder.PartitionKeyB64Encoded = false;
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
+		public override TypedMessageBuilder<T> KeyBytes(sbyte[] Key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema)schema;
-				checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				KeyValueSchema KvSchema = (KeyValueSchema) schema;
+				checkArgument(!(KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			msgMetadataBuilder.PartitionKey = Base64.Encoder.encodeToString(key);
-			msgMetadataBuilder.PartitionKeyB64Encoded = true;
+			MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(Key));
+			MetadataBuilder.PartitionKeyB64Encoded = true;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> orderingKey(sbyte[] orderingKey)
+		public override TypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey)
 		{
-			msgMetadataBuilder.OrderingKey = ByteString.copyFrom(orderingKey);
+			MetadataBuilder.OrderingKey = ByteString.copyFrom(OrderingKey);
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> value(T value)
+		public override TypedMessageBuilder<T> Value(T Value)
 		{
 
-			checkArgument(value != null, "Need Non-Null content value");
+			checkArgument(Value != null, "Need Non-Null content value");
 			if (schema.SchemaInfo != null && schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema kvSchema = (KeyValueSchema)schema;
-				org.apache.pulsar.common.schema.KeyValue kv = (org.apache.pulsar.common.schema.KeyValue)value;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
+				KeyValueSchema KvSchema = (KeyValueSchema) schema;
+				KeyValue Kv = (KeyValue) Value;
+				if (KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
 					// set key as the message key
-					msgMetadataBuilder.PartitionKey = Base64.Encoder.encodeToString(kvSchema.KeySchema.encode(kv.Key));
-					msgMetadataBuilder.PartitionKeyB64Encoded = true;
+					MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(KvSchema.KeySchema.encode(Kv.Key)));
+					MetadataBuilder.PartitionKeyB64Encoded = true;
 					// set value as the payload
-					this.content = ByteBuffer.wrap(kvSchema.ValueSchema.encode(kv.Value));
+					this.Content = ByteBuffer.wrap(KvSchema.ValueSchema.encode(Kv.Value));
 					return this;
 				}
 			}
-			this.content = ByteBuffer.wrap(schema.encode(value));
+			this.Content = ByteBuffer.wrap(schema.Encode(Value));
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> property(string name, string value)
+		public override TypedMessageBuilder<T> Property(string Name, string Value)
 		{
-			checkArgument(!string.ReferenceEquals(name, null), "Need Non-Null name");
-			checkArgument(!string.ReferenceEquals(value, null), "Need Non-Null value for name: " + name);
-			msgMetadataBuilder.addProperties(KeyValue.newBuilder().setKey(name).setValue(value).build());
+			checkArgument(!string.ReferenceEquals(Name, null), "Need Non-Null name");
+			checkArgument(!string.ReferenceEquals(Value, null), "Need Non-Null value for name: " + Name);
+			MetadataBuilder.AddProperties(KeyValue.newBuilder().setKey(Name).setValue(Value).build());
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> properties(IDictionary<string, string> properties)
+		public override TypedMessageBuilder<T> Properties(IDictionary<string, string> Properties)
 		{
-			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
+			foreach (KeyValuePair<string, string> Entry in Properties.SetOfKeyValuePairs())
 			{
-				checkArgument(entry.Key != null, "Need Non-Null key");
-				checkArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);
-				msgMetadataBuilder.addProperties(KeyValue.newBuilder().setKey(entry.Key).setValue(entry.Value).build());
+				checkArgument(Entry.Key != null, "Need Non-Null key");
+				checkArgument(Entry.Value != null, "Need Non-Null value for key: " + Entry.Key);
+				MetadataBuilder.AddProperties(KeyValue.newBuilder().setKey(Entry.Key).setValue(Entry.Value).build());
 			}
 
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> eventTime(long timestamp)
+		public override TypedMessageBuilder<T> EventTime(long Timestamp)
 		{
-			checkArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
-			msgMetadataBuilder.EventTime = timestamp;
+			checkArgument(Timestamp > 0, "Invalid timestamp : '%s'", Timestamp);
+			MetadataBuilder.EventTime = Timestamp;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> sequenceId(long sequenceId)
+		public override TypedMessageBuilder<T> SequenceId(long SequenceId)
 		{
-			checkArgument(sequenceId >= 0);
-			msgMetadataBuilder.SequenceId = sequenceId;
+			checkArgument(SequenceId >= 0);
+			MetadataBuilder.SequenceId = SequenceId;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> replicationClusters(IList<string> clusters)
+		public override TypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters)
 		{
-			Preconditions.checkNotNull(clusters);
-			msgMetadataBuilder.clearReplicateTo();
-			msgMetadataBuilder.addAllReplicateTo(clusters);
+			Preconditions.checkNotNull(Clusters);
+			MetadataBuilder.ClearReplicateTo();
+			MetadataBuilder.AddAllReplicateTo(Clusters);
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> disableReplication()
+		public override TypedMessageBuilder<T> DisableReplication()
 		{
-			msgMetadataBuilder.clearReplicateTo();
-			msgMetadataBuilder.addReplicateTo("__local__");
+			MetadataBuilder.ClearReplicateTo();
+			MetadataBuilder.AddReplicateTo("__local__");
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public override TypedMessageBuilder<T> DeliverAfter(long Delay, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
-			return deliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMillis(delay));
+			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + Unit.toMillis(Delay));
 		}
 
-		public override TypedMessageBuilder<T> deliverAt(long timestamp)
+		public override TypedMessageBuilder<T> DeliverAt(long Timestamp)
 		{
-			msgMetadataBuilder.DeliverAtTime = timestamp;
+			MetadataBuilder.DeliverAtTime = Timestamp;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> loadConf(IDictionary<string, object> config)
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @SuppressWarnings("unchecked") @Override public SharpPulsar.api.TypedMessageBuilder<T> loadConf(java.util.Map<String, Object> config)
+		public override TypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config)
 		{
-			config.forEach((key, value) =>
+			Config.forEach((key, value) =>
 			{
-				if (key.Equals(CONF_KEY))
+			if (key.Equals(TypedMessageBuilderFields.ConfKey))
+			{
+				this.Key(checkType(value, typeof(string)));
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfProperties))
+			{
+				this.Properties(checkType(value, typeof(System.Collections.IDictionary)));
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfEventTime))
+			{
+				this.EventTime(checkType(value, typeof(Long)));
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfSequenceId))
+			{
+				this.SequenceId(checkType(value, typeof(Long)));
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfReplicationClusters))
+			{
+				this.ReplicationClusters(checkType(value, typeof(System.Collections.IList)));
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfDisableReplication))
+			{
+				bool DisableReplication = checkType(value, typeof(Boolean));
+				if (DisableReplication)
 				{
-					this.key(checkType(value, typeof(string)));
+					this.DisableReplication();
 				}
-				else if (key.Equals(CONF_PROPERTIES))
-				{
-					this.properties(checkType(value, typeof(System.Collections.IDictionary)));
-				}
-				else if (key.Equals(CONF_EVENT_TIME))
-				{
-					this.eventTime(checkType(value, typeof(Long)));
-				}
-				else if (key.Equals(CONF_SEQUENCE_ID))
-				{
-					this.sequenceId(checkType(value, typeof(Long)));
-				}
-				else if (key.Equals(CONF_REPLICATION_CLUSTERS))
-				{
-					this.replicationClusters(checkType(value, typeof(System.Collections.IList)));
-				}
-				else if (key.Equals(CONF_DISABLE_REPLICATION))
-				{
-					bool disableReplication = checkType(value, typeof(Boolean));
-					if (disableReplication)
-					{
-						this.disableReplication();
-					}
-				}
-				else if (key.Equals(CONF_DELIVERY_AFTER_SECONDS))
-				{
-					this.deliverAfter(checkType(value, typeof(Long)), TimeUnit.SECONDS);
-				}
-				else if (key.Equals(CONF_DELIVERY_AT))
-				{
-					this.deliverAt(checkType(value, typeof(Long)));
-				}
-				else
-				{
-					throw new Exception("Invalid message config key '" + key + "'");
-				}
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds))
+			{
+				this.DeliverAfter(checkType(value, typeof(Long)), BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+			}
+			else if (key.Equals(TypedMessageBuilderFields.ConfDeliveryAt))
+			{
+				this.DeliverAt(checkType(value, typeof(Long)));
+			}
+			else
+			{
+				throw new Exception("Invalid message config key '" + key + "'");
+			}
 			});
 			return this;
 		}
 
-		public virtual MessageMetadata.Builder MetadataBuilder
-		{
-			get
-			{
-				return msgMetadataBuilder;
-			}
-		}
 
 		public virtual Message<T> Message
 		{
 			get
 			{
-				beforeSend();
-				return MessageImpl.create(msgMetadataBuilder, content, schema);
+				BeforeSend();
+				return MessageImpl.Create(MetadataBuilder, Content, schema);
 			}
 		}
 
@@ -281,29 +293,23 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msgMetadataBuilder.PublishTime;
+				return MetadataBuilder.PublishTime;
 			}
 		}
 
-		public virtual bool hasKey()
+		public virtual bool HasKey()
 		{
-			return msgMetadataBuilder.hasPartitionKey();
+			return MetadataBuilder.HasPartitionKey();
 		}
 
 		public virtual string Key
 		{
 			get
 			{
-				return msgMetadataBuilder.PartitionKey;
+				return MetadataBuilder.getPartitionKey();
 			}
 		}
 
-		public virtual ByteBuffer Content
-		{
-			get
-			{
-				return content;
-			}
-		}
-}
+	}
+
 }

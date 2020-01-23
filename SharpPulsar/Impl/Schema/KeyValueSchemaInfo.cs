@@ -1,7 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Enum;
-using SharpPulsar.Interface.Schema;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,20 +20,34 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkArgument;
+//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+//	import static com.google.common.@base.Preconditions.checkNotNull;
+
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using StringUtils = org.apache.commons.lang3.StringUtils;
+	using SharpPulsar.Api;
+	using Org.Apache.Pulsar.Common.Schema;
+	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// Util class for processing key/value schema info.
 	/// </summary>
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @Slf4j public final class KeyValueSchemaInfo
 	public sealed class KeyValueSchemaInfo
 	{
 
-		private static readonly ISchema<SchemaInfo> SCHEMA_INFO_WRITER = new SchemaAnonymousInnerClass();
+		private static readonly Schema<SchemaInfo> SCHEMA_INFO_WRITER = new SchemaAnonymousInnerClass();
 
-		private class SchemaAnonymousInnerClass : ISchema<SchemaInfo>
+		public class SchemaAnonymousInnerClass : Schema<SchemaInfo>
 		{
-			public sbyte[] Encode(SchemaInfo si)
+			public sbyte[] encode(SchemaInfo Si)
 			{
-				return si.Schema;
+				return Si.Schema;
 			}
 
 			public SchemaInfo SchemaInfo
@@ -48,31 +59,31 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		private const string KEY_SCHEMA_NAME = "key.schema.name";
-		private const string KEY_SCHEMA_TYPE = "key.schema.type";
-		private const string KEY_SCHEMA_PROPS = "key.schema.properties";
-		private const string VALUE_SCHEMA_NAME = "value.schema.name";
-		private const string VALUE_SCHEMA_TYPE = "value.schema.type";
-		private const string VALUE_SCHEMA_PROPS = "value.schema.properties";
-		private const string KV_ENCODING_TYPE = "kv.encoding.type";
+		private const string KeySchemaName = "key.schema.name";
+		private const string KeySchemaType = "key.schema.type";
+		private const string KeySchemaProps = "key.schema.properties";
+		private const string ValueSchemaName = "value.schema.name";
+		private const string ValueSchemaType = "value.schema.type";
+		private const string ValueSchemaProps = "value.schema.properties";
+		private const string KvEncodingType = "kv.encoding.type";
 
 		/// <summary>
 		/// Decode the kv encoding type from the schema info.
 		/// </summary>
 		/// <param name="schemaInfo"> the schema info </param>
 		/// <returns> the kv encoding type </returns>
-		public static KeyValueEncodingType DecodeKeyValueEncodingType(SchemaInfo schemaInfo)
+		public static KeyValueEncodingType? DecodeKeyValueEncodingType(SchemaInfo SchemaInfo)
 		{
-			checkArgument(SchemaType.KEY_VALUE == schemaInfo.Type, "Not a KeyValue schema");
+			checkArgument(SchemaType.KEY_VALUE == SchemaInfo.Type, "Not a KeyValue schema");
 
-			string encodingTypeStr = schemaInfo.Properties[KV_ENCODING_TYPE];
-			if (string.IsNullOrWhiteSpace(encodingTypeStr))
+			string EncodingTypeStr = SchemaInfo.Properties.get(KvEncodingType);
+			if (StringUtils.isEmpty(EncodingTypeStr))
 			{
 				return KeyValueEncodingType.INLINE;
 			}
 			else
 			{
-				return KeyValueEncodingType.ValueOf(encodingTypeStr);
+				return Enum.Parse(typeof(KeyValueEncodingType), EncodingTypeStr);
 			}
 		}
 
@@ -83,9 +94,9 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="valueSchema"> the value schema </param>
 		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
 		/// <returns> the final schema info </returns>
-		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			return EncodeKeyValueSchemaInfo("KeyValue", keySchema, valueSchema, keyValueEncodingType);
+			return EncodeKeyValueSchemaInfo("KeyValue", KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
 		/// <summary>
@@ -96,9 +107,9 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="valueSchema"> the value schema </param>
 		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
 		/// <returns> the final schema info </returns>
-		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(string schemaName, ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(string SchemaName, Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			return EncodeKeyValueSchemaInfo(schemaName, keySchema.SchemaInfo, valueSchema.SchemaInfo, keyValueEncodingType);
+			return EncodeKeyValueSchemaInfo(SchemaName, KeySchema.SchemaInfo, ValueSchema.SchemaInfo, KeyValueEncodingType);
 		}
 
 		/// <summary>
@@ -109,35 +120,35 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="valueSchemaInfo"> the value schema info </param>
 		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
 		/// <returns> the final schema info </returns>
-		public static SchemaInfo EncodeKeyValueSchemaInfo(string schemaName, SchemaInfo keySchemaInfo, SchemaInfo valueSchemaInfo, KeyValueEncodingType keyValueEncodingType)
+		public static SchemaInfo EncodeKeyValueSchemaInfo(string SchemaName, SchemaInfo KeySchemaInfo, SchemaInfo ValueSchemaInfo, KeyValueEncodingType KeyValueEncodingType)
 		{
-			checkNotNull(keyValueEncodingType, "Null encoding type is provided");
+			checkNotNull(KeyValueEncodingType, "Null encoding type is provided");
 
-			if (keySchemaInfo == null || valueSchemaInfo == null)
+			if (KeySchemaInfo == null || ValueSchemaInfo == null)
 			{
 				// schema is not ready
 				return null;
 			}
 
 			// process key/value schema data
-			sbyte[] schemaData = KeyValue.Encode(keySchemaInfo, SCHEMA_INFO_WRITER, valueSchemaInfo, SCHEMA_INFO_WRITER);
+			sbyte[] SchemaData = KeyValue.encode(KeySchemaInfo, SCHEMA_INFO_WRITER, ValueSchemaInfo, SCHEMA_INFO_WRITER);
 
 			// process key/value schema properties
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			EncodeSubSchemaInfoToParentSchemaProperties(keySchemaInfo, KEY_SCHEMA_NAME, KEY_SCHEMA_TYPE, KEY_SCHEMA_PROPS, properties);
+			IDictionary<string, string> Properties = new Dictionary<string, string>();
+			EncodeSubSchemaInfoToParentSchemaProperties(KeySchemaInfo, KeySchemaName, KeySchemaType, KeySchemaProps, Properties);
 
-			EncodeSubSchemaInfoToParentSchemaProperties(valueSchemaInfo, VALUE_SCHEMA_NAME, VALUE_SCHEMA_TYPE, VALUE_SCHEMA_PROPS, properties);
-			properties[KV_ENCODING_TYPE] = keyValueEncodingType.ToString();
+			EncodeSubSchemaInfoToParentSchemaProperties(ValueSchemaInfo, ValueSchemaName, ValueSchemaType, ValueSchemaProps, Properties);
+			Properties[KvEncodingType] = KeyValueEncodingType.ToString();
 
 			// generate the final schema info
-			return (new SchemaInfo()).setName(schemaName).setType(SchemaType.KEY_VALUE).setSchema(schemaData).setProperties(properties);
+			return (new SchemaInfo()).setName(SchemaName).setType(SchemaType.KEY_VALUE).setSchema(SchemaData).setProperties(Properties);
 		}
 
-		private static void EncodeSubSchemaInfoToParentSchemaProperties(SchemaInfo schemaInfo, string schemaNameProperty, string schemaTypeProperty, string schemaPropsProperty, IDictionary<string, string> parentSchemaProperties)
+		private static void EncodeSubSchemaInfoToParentSchemaProperties(SchemaInfo SchemaInfo, string SchemaNameProperty, string SchemaTypeProperty, string SchemaPropsProperty, IDictionary<string, string> ParentSchemaProperties)
 		{
-			parentSchemaProperties[schemaNameProperty] = schemaInfo.Name;
-			parentSchemaProperties[schemaTypeProperty] = schemaInfo.Type.ToString();
-			parentSchemaProperties[schemaPropsProperty] = SchemaUtils.serializeSchemaProperties(schemaInfo.Properties);
+			ParentSchemaProperties[SchemaNameProperty] = SchemaInfo.Name;
+			ParentSchemaProperties[SchemaTypeProperty] = SchemaInfo.Type.ToString();
+			ParentSchemaProperties[SchemaPropsProperty] = SchemaUtils.SerializeSchemaProperties(SchemaInfo.Properties);
 		}
 
 		/// <summary>
@@ -145,34 +156,34 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaInfo"> key/value schema info. </param>
 		/// <returns> the pair of key schema info and value schema info </returns>
-		public static KeyValue<SchemaInfo, SchemaInfo> DecodeKeyValueSchemaInfo(SchemaInfo schemaInfo)
+		public static KeyValue<SchemaInfo, SchemaInfo> DecodeKeyValueSchemaInfo(SchemaInfo SchemaInfo)
 		{
-			checkArgument(SchemaType.KEY_VALUE == schemaInfo.Type, "Not a KeyValue schema");
+			checkArgument(SchemaType.KEY_VALUE == SchemaInfo.Type, "Not a KeyValue schema");
 
-			return KeyValue.decode(schemaInfo.Schema, (keyBytes, valueBytes) =>
+			return KeyValue.decode(SchemaInfo.Schema, (keyBytes, valueBytes) =>
 			{
-			SchemaInfo keySchemaInfo = decodeSubSchemaInfo(schemaInfo, KEY_SCHEMA_NAME, KEY_SCHEMA_TYPE, KEY_SCHEMA_PROPS, keyBytes);
-			SchemaInfo valueSchemaInfo = decodeSubSchemaInfo(schemaInfo, VALUE_SCHEMA_NAME, VALUE_SCHEMA_TYPE, VALUE_SCHEMA_PROPS, valueBytes);
-			return new KeyValue<org.apache.pulsar.common.schema.SchemaInfo, org.apache.pulsar.common.schema.SchemaInfo>(keySchemaInfo, valueSchemaInfo);
+			SchemaInfo KeySchemaInfo = DecodeSubSchemaInfo(SchemaInfo, KeySchemaName, KeySchemaType, KeySchemaProps, keyBytes);
+			SchemaInfo ValueSchemaInfo = DecodeSubSchemaInfo(SchemaInfo, ValueSchemaName, ValueSchemaType, ValueSchemaProps, valueBytes);
+			return new KeyValue<SchemaInfo, SchemaInfo>(KeySchemaInfo, ValueSchemaInfo);
 			});
 		}
 
-		private static SchemaInfo DecodeSubSchemaInfo(SchemaInfo parentSchemaInfo, string schemaNameProperty, string schemaTypeProperty, string schemaPropsProperty, sbyte[] schemaData)
+		private static SchemaInfo DecodeSubSchemaInfo(SchemaInfo ParentSchemaInfo, string SchemaNameProperty, string SchemaTypeProperty, string SchemaPropsProperty, sbyte[] SchemaData)
 		{
-			IDictionary<string, string> parentSchemaProps = parentSchemaInfo.Properties;
-			string schemaName = parentSchemaProps.getOrDefault(schemaNameProperty, "");
-			SchemaType schemaType = SchemaType.ValueOf(parentSchemaProps.getOrDefault(schemaTypeProperty, SchemaType.BYTES.name()));
-			IDictionary<string, string> schemaProps;
-			string schemaPropsStr = parentSchemaProps[schemaPropsProperty];
-			if (string.IsNullOrWhiteSpace(schemaPropsStr))
+			IDictionary<string, string> ParentSchemaProps = ParentSchemaInfo.Properties;
+			string SchemaName = ParentSchemaProps.getOrDefault(SchemaNameProperty, "");
+			SchemaType SchemaType = SchemaType.valueOf(ParentSchemaProps.getOrDefault(SchemaTypeProperty, SchemaType.BYTES.name()));
+			IDictionary<string, string> SchemaProps;
+			string SchemaPropsStr = ParentSchemaProps[SchemaPropsProperty];
+			if (StringUtils.isEmpty(SchemaPropsStr))
 			{
-				schemaProps = Collections.emptyMap();
+				SchemaProps = Collections.emptyMap();
 			}
 			else
 			{
-				schemaProps = SchemaUtils.deserializeSchemaProperties(schemaPropsStr);
+				SchemaProps = SchemaUtils.DeserializeSchemaProperties(SchemaPropsStr);
 			}
-			return SchemaInfo.Builder().name(schemaName).type(schemaType).schema(schemaData).properties(schemaProps).build();
+			return SchemaInfo.builder().name(SchemaName).type(SchemaType).schema(SchemaData).properties(SchemaProps).build();
 		}
 
 		private KeyValueSchemaInfo()

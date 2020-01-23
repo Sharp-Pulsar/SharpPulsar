@@ -59,7 +59,7 @@ namespace SharpPulsar.Api
 		/// <para>Since the consumer may run multiple interceptors, a particular
 		/// interceptor's
 		/// <tt>beforeConsume</tt> callback will be called in the order specified by
-		/// <seealso cref="ConsumerBuilder.intercept(ConsumerInterceptor[])"/>. The first
+		/// <seealso cref="IConsumerBuilder.intercept(ConsumerInterceptor[])"/>. The first
 		/// interceptor in the list gets the consumed message, the following
 		/// interceptor will be passed
 		/// the message returned by the previous interceptor, and so on. Since

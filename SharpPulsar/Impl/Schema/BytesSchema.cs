@@ -1,7 +1,4 @@
-﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Schema;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,6 +18,10 @@ using SharpPulsar.Impl.Schema;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
+	using ByteBuf = io.netty.buffer.ByteBuf;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+
 	/// <summary>
 	/// A schema for bytes array.
 	/// </summary>
@@ -28,11 +29,11 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly BytesSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		public virtual SchemaInfo {get;}
 
 		static BytesSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("Bytes").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
+			SchemaInfo = (new SchemaInfo()).setName("Bytes").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
 			INSTANCE = new BytesSchema();
 		}
 
@@ -41,37 +42,29 @@ namespace SharpPulsar.Impl.Schema
 			return INSTANCE;
 		}
 
-		public sbyte[] Encode(sbyte[] message)
+		public override sbyte[] Encode(sbyte[] Message)
 		{
-			return message;
+			return Message;
 		}
 
-		public sbyte[] Decode(sbyte[] bytes)
+		public override sbyte[] Decode(sbyte[] Bytes)
 		{
-			return bytes;
+			return Bytes;
 		}
 
-		public override sbyte[] Decode(IByteBuffer byteBuf)
+		public override sbyte[] Decode(ByteBuf ByteBuf)
 		{
-			if (byteBuf == null)
+			if (ByteBuf == null)
 			{
 				return null;
 			}
-			int size = byteBuf.ReadableBytes;
-			sbyte[] bytes = new sbyte[size];
+			int Size = ByteBuf.readableBytes();
+			sbyte[] Bytes = new sbyte[Size];
 
-			byteBuf.ReadBytes(bytes, 0, size);
-			return bytes;
+			ByteBuf.readBytes(Bytes, 0, Size);
+			return Bytes;
 		}
 
-
-		public SchemaInfo SchemaInfo
-		{
-			get
-			{
-				return SCHEMA_INFO;
-			}
-		}
 	}
 
 }

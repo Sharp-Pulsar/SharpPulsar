@@ -19,8 +19,8 @@
 namespace SharpPulsar.Impl.Schema
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `java.sql.Timestamp`.
@@ -29,59 +29,52 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 	   private static readonly TimestampSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   public virtual SchemaInfo {get;}
 
 	   static TimestampSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("Timestamp").setType(SchemaType.TIMESTAMP).setSchema(new sbyte[0]);
+		   SchemaInfo = (new SchemaInfo()).setName("Timestamp").setType(SchemaType.TIMESTAMP).setSchema(new sbyte[0]);
 		   INSTANCE = new TimestampSchema();
 	   }
 
-	   public static TimestampSchema of()
+	   public static TimestampSchema Of()
 	   {
 		  return INSTANCE;
 	   }
 
-	   public override sbyte[] encode(Timestamp message)
+	   public override sbyte[] Encode(Timestamp Message)
 	   {
-		  if (null == message)
+		  if (null == Message)
 		  {
 			 return null;
 		  }
 
-		  long? timestamp = message.Time;
-		  return LongSchema.of().encode(timestamp);
+		  long? Timestamp = Message.Time;
+		  return LongSchema.Of().encode(Timestamp);
 	   }
 
-	   public override Timestamp decode(sbyte[] bytes)
+	   public override Timestamp Decode(sbyte[] Bytes)
 	   {
-		  if (null == bytes)
+		  if (null == Bytes)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(bytes);
-		  return new Timestamp(decode);
+		  long? Decode = LongSchema.Of().decode(Bytes);
+		  return new Timestamp(Decode);
 	   }
 
-	   public override Timestamp decode(ByteBuf byteBuf)
+	   public override Timestamp Decode(ByteBuf ByteBuf)
 	   {
-		  if (null == byteBuf)
+		  if (null == ByteBuf)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(byteBuf);
-		  return new Timestamp(decode);
+		  long? Decode = LongSchema.Of().decode(ByteBuf);
+		  return new Timestamp(Decode);
 	   }
 
-	   public override SchemaInfo SchemaInfo
-	   {
-		   get
-		   {
-			  return SCHEMA_INFO;
-		   }
-	   }
 	}
 
 }

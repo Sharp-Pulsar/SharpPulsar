@@ -1,12 +1,6 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.Exception;
-using SharpPulsar.Util.Netty;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,69 +22,99 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {
+	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
-	public class ConnectionPool : IDisposable
+	using Bootstrap = io.netty.bootstrap.Bootstrap;
+	using Channel = io.netty.channel.Channel;
+	using ChannelException = io.netty.channel.ChannelException;
+	using ChannelFuture = io.netty.channel.ChannelFuture;
+	using ChannelOption = io.netty.channel.ChannelOption;
+	using EventLoopGroup = io.netty.channel.EventLoopGroup;
+	using DnsNameResolver = io.netty.resolver.dns.DnsNameResolver;
+	using DnsNameResolverBuilder = io.netty.resolver.dns.DnsNameResolverBuilder;
+	using Future = io.netty.util.concurrent.Future;
+
+
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
+	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
+	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
+
+	public class ConnectionPool : System.IDisposable
 	{
-		protected internal readonly ConcurrentDictionary<IPEndPoint, ConcurrentDictionary<int, ValueTask<ClientConnection>>> pool;
+		protected internal readonly ConcurrentDictionary<InetSocketAddress, ConcurrentMap<int, CompletableFuture<ClientCnx>>> Pool;
 
+		private readonly Bootstrap bootstrap;
+		private readonly EventLoopGroup eventLoopGroup;
 		private readonly int maxConnectionsPerHosts;
-		public ConnectionPool(ClientConfigurationData conf) : this(conf, () => new ClientConnection(conf))
+
+		protected internal readonly DnsNameResolver DnsResolver;
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: public ConnectionPool(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws SharpPulsar.api.PulsarClientException
+		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, () -> new ClientCnx(Conf, EventLoopGroup))
 		{
 		}
-		public ConnectionPool(ClientConfigurationData conf, Func<ClientConnection> clientCnxSupplier)
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: public ConnectionPool(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws SharpPulsar.api.PulsarClientException
+		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup, System.Func<ClientCnx> ClientCnxSupplier)
 		{
-			this.maxConnectionsPerHosts = conf.ConnectionsPerBroker;
+			this.eventLoopGroup = EventLoopGroup;
+			this.maxConnectionsPerHosts = Conf.ConnectionsPerBroker;
 
-			pool = new ConcurrentDictionary<IPEndPoint, ConcurrentDictionary<int, ValueTask<ClientConnection>>>();
+			Pool = new ConcurrentDictionary<InetSocketAddress, ConcurrentMap<int, CompletableFuture<ClientCnx>>>();
 			bootstrap = new Bootstrap();
-			bootstrap.Group(eventLoopGroup);
-			bootstrap.Channel(EventLoopUtil.GetClientSocketChannelClass(eventLoopGroup));
+			bootstrap.group(EventLoopGroup);
+			bootstrap.channel(EventLoopUtil.getClientSocketChannelClass(EventLoopGroup));
 
-			bootstrap.Option(ChannelOption.ConnectTimeout, conf.ConnectionTimeoutMs);
-			bootstrap.Option(ChannelOption.TcpNodelay, conf.UseTcpNoDelay);
-			bootstrap.Option(ChannelOption.Allocator, PulsarByteBufAllocator.DEFAULT);
+			bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Conf.ConnectionTimeoutMs);
+			bootstrap.option(ChannelOption.TCP_NODELAY, Conf.UseTcpNoDelay);
+			bootstrap.option(ChannelOption.ALLOCATOR, PulsarByteBufAllocator.DEFAULT);
 
 			try
 			{
-				bootstrap.Handler(new PulsarChannelInitializer(conf, clientCnxSupplier));
+				bootstrap.handler(new PulsarChannelInitializer(Conf, ClientCnxSupplier));
 			}
-			catch (System.Exception e)
+			catch (Exception E)
 			{
 				log.error("Failed to create channel initializer");
-				throw new PulsarClientException(e);
+				throw new PulsarClientException(E);
 			}
-			var dns = new DnsNameResolver();
-			dnsResolver = (new DnsNameResolverBuilder(eventLoopGroup.GetNext())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(eventLoopGroup)).build();
+
+			this.DnsResolver = (new DnsNameResolverBuilder(EventLoopGroup.next())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(EventLoopGroup)).build();
 		}
 
 		private static readonly Random random = new Random();
-		public virtual ValueTask<ClientConnection> GetConnection(IPEndPoint address)
+
+		public virtual CompletableFuture<ClientCnx> GetConnection(in InetSocketAddress Address)
 		{
-			return GetConnection(address, address);
+			return GetConnection(Address, Address);
 		}
 
-		internal virtual void CloseAllConnections()
+		public virtual void CloseAllConnections()
 		{
-			pool.Values.ToList().ForEach(map =>
+			Pool.Values.forEach(map =>
 			{
-				map.Values.ToList().ForEach(cnx =>
+			map.values().forEach(future =>
+			{
+				if (future.Done)
 				{
-					if (cnx.IsCompleted)
+					if (!future.CompletedExceptionally)
 					{
-						if (!cnx.IsFaulted)
-						{
-							cnx.Result.Close();
-						}
-						else
-						{
-						}
+						future.join().close();
 					}
 					else
 					{
-						cnx.AsTask().ContinueWith(x=> x.Result.Close());
-						//future.thenAccept(ClientCnx.close);
 					}
-				});
+				}
+				else
+				{
+					future.thenAccept(ClientCnx.close);
+				}
+			});
 			});
 		}
 
@@ -114,203 +138,209 @@ namespace SharpPulsar.Impl
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		public virtual ValueTask<ClientConnection> GetConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress)
+		public virtual CompletableFuture<ClientCnx> GetConnection(InetSocketAddress LogicalAddress, InetSocketAddress PhysicalAddress)
 		{
 			if (maxConnectionsPerHosts == 0)
 			{
 				// Disable pooling
-				return CreateConnection(logicalAddress, physicalAddress, -1);
+				return CreateConnection(LogicalAddress, PhysicalAddress, -1);
 			}
 
-			int randomKey = signSafeMod(random.Next(), maxConnectionsPerHosts);
+//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+//ORIGINAL LINE: final int randomKey = signSafeMod(random.nextInt(), maxConnectionsPerHosts);
+			int RandomKey = SignSafeMod(random.Next(), maxConnectionsPerHosts);
 
-			return pool.ComputeIfAbsent(logicalAddress, a => new ConcurrentDictionary<>()).computeIfAbsent(randomKey, k => createConnection(logicalAddress, physicalAddress, randomKey));
+			return Pool.computeIfAbsent(LogicalAddress, a => new ConcurrentDictionary<>()).computeIfAbsent(RandomKey, k => CreateConnection(LogicalAddress, PhysicalAddress, RandomKey));
 		}
 
-		private ValueTask<ClientConnection> CreateConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress, int connectionKey)
+		private CompletableFuture<ClientCnx> CreateConnection(InetSocketAddress LogicalAddress, InetSocketAddress PhysicalAddress, int ConnectionKey)
 		{
-			
 			if (log.DebugEnabled)
 			{
-				log.debug("Connection for {} not found in cache", logicalAddress);
+				log.debug("Connection for {} not found in cache", LogicalAddress);
 			}
 
-			ValueTask<ClientConnection> cnxFuture = new ValueTask<ClientConnection>();
+//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<ClientCnx> cnxFuture = new java.util.concurrent.CompletableFuture<ClientCnx>();
+			CompletableFuture<ClientCnx> CnxFuture = new CompletableFuture<ClientCnx>();
 
 			// Trigger async connect to broker
-			CreateConnection(physicalAddress).thenAccept(channel =>
+			CreateConnection(PhysicalAddress).thenAccept(channel =>
 			{
-				log.info("[{}] Connected to server", channel);
-				channel.closeFuture().addListener(v =>
+			log.info("[{}] Connected to server", channel);
+			channel.closeFuture().addListener(v =>
+			{
+				if (log.DebugEnabled)
 				{
-					if (log.DebugEnabled)
-					{
-						log.debug("Removing closed connection from pool: {}", v);
-					}
-					cleanupConnection(logicalAddress, connectionKey, cnxFuture);
-				});
-			ClientCnx cnx = (ClientCnx) channel.pipeline().get("handler");
-			if (!channel.Active || cnx == null)
+					log.debug("Removing closed connection from pool: {}", v);
+				}
+				CleanupConnection(LogicalAddress, ConnectionKey, CnxFuture);
+			});
+			ClientCnx Cnx = (ClientCnx) channel.pipeline().get("handler");
+			if (!channel.Active || Cnx == null)
 			{
 				if (log.DebugEnabled)
 				{
 					log.debug("[{}] Connection was already closed by the time we got notified", channel);
 				}
-				cnxFuture.completeExceptionally(new ChannelException("Connection already closed"));
+				CnxFuture.completeExceptionally(new ChannelException("Connection already closed"));
 				return;
 			}
-			if (!logicalAddress.Equals(physicalAddress))
+			if (!LogicalAddress.Equals(PhysicalAddress))
 			{
-				cnx.TargetBroker = logicalAddress;
+				Cnx.TargetBroker = LogicalAddress;
 			}
-			cnx.RemoteHostName = physicalAddress.HostName;
-			cnx.connectionFuture().thenRun(() =>
+			Cnx.RemoteHostName = PhysicalAddress.HostName;
+			Cnx.connectionFuture().thenRun(() =>
 			{
 				if (log.DebugEnabled)
 				{
-					log.debug("[{}] Connection handshake completed", cnx.channel());
+					log.debug("[{}] Connection handshake completed", Cnx.channel());
 				}
-				cnxFuture.complete(cnx);
+				CnxFuture.complete(Cnx);
 			}).exceptionally(exception =>
 			{
-				log.warn("[{}] Connection handshake failed: {}", cnx.channel(), exception.Message);
-				cnxFuture.completeExceptionally(exception);
-				cleanupConnection(logicalAddress, connectionKey, cnxFuture);
-				cnx.ctx().close();
+				log.warn("[{}] Connection handshake failed: {}", Cnx.channel(), exception.Message);
+				CnxFuture.completeExceptionally(exception);
+				CleanupConnection(LogicalAddress, ConnectionKey, CnxFuture);
+				Cnx.ctx().close();
 				return null;
 			});
 			}).exceptionally(exception =>
 			{
 			eventLoopGroup.execute(() =>
 			{
-				log.warn("Failed to open connection to {} : {}", physicalAddress, exception.Message);
-				cleanupConnection(logicalAddress, connectionKey, cnxFuture);
-				cnxFuture.completeExceptionally(new PulsarClientException(exception));
+				log.warn("Failed to open connection to {} : {}", PhysicalAddress, exception.Message);
+				CleanupConnection(LogicalAddress, ConnectionKey, CnxFuture);
+				CnxFuture.completeExceptionally(new PulsarClientException(exception));
 			});
 			return null;
 		});
 
-			return cnxFuture;
+			return CnxFuture;
 		}
 
 		/// <summary>
 		/// Resolve DNS asynchronously and attempt to connect to any IP address returned by DNS server
 		/// </summary>
-		private ValueTask<Channel> CreateConnection(SocketAddress unresolvedAddress)
+		private CompletableFuture<Channel> CreateConnection(InetSocketAddress UnresolvedAddress)
 		{
-			string hostname = unresolvedAddress.ToString();
-			int port = unresolvedAddress.Port;
+			string Hostname = UnresolvedAddress.HostString;
+			int Port = UnresolvedAddress.Port;
 
 			// Resolve DNS --> Attempt to connect to all IP addresses until once succeeds
-			return resolveName(hostname).thenCompose(inetAddresses => connectToResolvedAddresses(inetAddresses.GetEnumerator(), port));
+			return ResolveName(Hostname).thenCompose(inetAddresses => ConnectToResolvedAddresses(inetAddresses.GetEnumerator(), Port));
 		}
 
 		/// <summary>
 		/// Try to connect to a sequence of IP addresses until a successfull connection can be made, or fail if no address is
 		/// working
 		/// </summary>
-		private ValueTask<Channel> ConnectToResolvedAddresses(IEnumerator<IPAddress> unresolvedAddresses, int port)
+		private CompletableFuture<Channel> ConnectToResolvedAddresses(IEnumerator<InetAddress> UnresolvedAddresses, int Port)
 		{
-			CompletableFuture<Channel> future = new CompletableFuture<Channel>();
+			CompletableFuture<Channel> Future = new CompletableFuture<Channel>();
 
-			connectToAddress(unresolvedAddresses.next(), port).thenAccept(channel =>
+//JAVA TO C# CONVERTER TODO TASK: Java iterators are only converted within the context of 'while' and 'for' loops:
+			ConnectToAddress(UnresolvedAddresses.next(), Port).thenAccept(channel =>
 			{
-			future.complete(channel);
+			Future.complete(channel);
 			}).exceptionally(exception =>
 			{
-			if (unresolvedAddresses.hasNext())
+			if (UnresolvedAddresses.hasNext())
 			{
-				connectToResolvedAddresses(unresolvedAddresses, port).thenAccept(channel =>
+				ConnectToResolvedAddresses(UnresolvedAddresses, Port).thenAccept(channel =>
 				{
-					future.complete(channel);
+					Future.complete(channel);
 				}).exceptionally(ex =>
 				{
-					future.completeExceptionally(ex);
+					Future.completeExceptionally(ex);
 					return null;
 				});
 			}
 			else
 			{
-				future.completeExceptionally(exception);
+				Future.completeExceptionally(exception);
 			}
 			return null;
 		});
 
-			return future;
+			return Future;
 		}
 
-		internal virtual ValueTask<IList<IPAddress>> resolveName(string hostname)
+//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+//ORIGINAL LINE: @VisibleForTesting CompletableFuture<java.util.List<java.net.InetAddress>> resolveName(String hostname)
+		public virtual CompletableFuture<IList<InetAddress>> ResolveName(string Hostname)
 		{
-			CompletableFuture<IList<InetAddress>> future = new CompletableFuture<IList<InetAddress>>();
-			dnsResolver.resolveAll(hostname).addListener((Future<IList<InetAddress>> resolveFuture) =>
+			CompletableFuture<IList<InetAddress>> Future = new CompletableFuture<IList<InetAddress>>();
+			DnsResolver.resolveAll(Hostname).addListener((Future<IList<InetAddress>> ResolveFuture) =>
 			{
-			if (resolveFuture.Success)
+			if (ResolveFuture.Success)
 			{
-				future.complete(resolveFuture.get());
+				Future.complete(ResolveFuture.get());
 			}
 			else
 			{
-				future.completeExceptionally(resolveFuture.cause());
+				Future.completeExceptionally(ResolveFuture.cause());
 			}
 			});
-			return future;
+			return Future;
 		}
 
 		/// <summary>
 		/// Attempt to establish a TCP connection to an already resolved single IP address
 		/// </summary>
-		private CompletableFuture<Channel> connectToAddress(IPAddress ipAddress, int port)
+		private CompletableFuture<Channel> ConnectToAddress(InetAddress IpAddress, int Port)
 		{
-			CompletableFuture<Channel> future = new CompletableFuture<Channel>();
+			CompletableFuture<Channel> Future = new CompletableFuture<Channel>();
 
-			bootstrap.connect(ipAddress, port).addListener((ChannelFuture channelFuture) =>
+			bootstrap.connect(IpAddress, Port).addListener((ChannelFuture ChannelFuture) =>
 			{
-			if (channelFuture.Success)
+			if (ChannelFuture.Success)
 			{
-				future.complete(channelFuture.channel());
+				Future.complete(ChannelFuture.channel());
 			}
 			else
 			{
-				future.completeExceptionally(channelFuture.cause());
+				Future.completeExceptionally(ChannelFuture.cause());
 			}
 			});
 
-			return future;
+			return Future;
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public virtual void Dispose()
+		public override void Close()
 		{
 			try
 			{
-				eventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).await();
+				eventLoopGroup.shutdownGracefully(0, 1, BAMCIS.Util.Concurrent.TimeUnit.SECONDS).await();
 			}
-			catch (InterruptedException e)
+			catch (InterruptedException E)
 			{
-				log.warn("EventLoopGroup shutdown was interrupted", e);
+				log.warn("EventLoopGroup shutdown was interrupted", E);
 			}
 
-			dnsResolver.close();
+			DnsResolver.close();
 		}
 
-		private void cleanupConnection(InetSocketAddress address, int connectionKey, CompletableFuture<ClientCnx> connectionFuture)
+		private void CleanupConnection(InetSocketAddress Address, int ConnectionKey, CompletableFuture<ClientCnx> ConnectionFuture)
 		{
-			ConcurrentMap<int, CompletableFuture<ClientCnx>> map = pool[address];
-			if (map != null)
+			ConcurrentMap<int, CompletableFuture<ClientCnx>> Map = Pool[Address];
+			if (Map != null)
 			{
-				map.remove(connectionKey, connectionFuture);
+				Map.remove(ConnectionKey, ConnectionFuture);
 			}
 		}
 
-		public static int signSafeMod(long dividend, int divisor)
+		public static int SignSafeMod(long Dividend, int Divisor)
 		{
-			int mod = (int)(dividend % (long) divisor);
-			if (mod < 0)
+			int Mod = (int)(Dividend % (long) Divisor);
+			if (Mod < 0)
 			{
-				mod += divisor;
+				Mod += Divisor;
 			}
-			return mod;
+			return Mod;
 		}
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConnectionPool));

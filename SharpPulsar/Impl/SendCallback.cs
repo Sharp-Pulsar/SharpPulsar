@@ -21,7 +21,7 @@
 namespace SharpPulsar.Impl
 {
 
-	using MessageId = org.apache.pulsar.client.api.MessageId;
+	using MessageId = SharpPulsar.Api.MessageId;
 
 	/// 
 	public interface SendCallback
@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// invoked when send operation completes
 		/// </summary>
 		/// <param name="e"> </param>
-		void sendComplete(Exception e);
+		void SendComplete(Exception E);
 
 		/// <summary>
 		/// used to specify a callback to be invoked on completion of a send operation for individual messages sent in a
@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 		/// <param name="scb"> callback associated with the message </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void addCallback(MessageImpl<?> msg, SendCallback scb);
-		void addCallback<T1>(MessageImpl<T1> msg, SendCallback scb);
+		void addCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb);
 
 		/// 
 		/// <returns> next callback in chain </returns>

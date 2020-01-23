@@ -22,12 +22,12 @@ namespace SharpPulsar.Impl
 {
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
+	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 
 	/// <summary>
 	/// Provides lookup service to find broker which serves given topic. It helps to
@@ -47,8 +47,8 @@ namespace SharpPulsar.Impl
 		/// Instruct the LookupService to switch to a new service URL for all subsequent requests
 		/// </summary>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws org.apache.pulsar.client.api.PulsarClientException;
-		void updateServiceUrl(string serviceUrl);
+//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException;
+		void UpdateServiceUrl(string ServiceUrl);
 
 		/// <summary>
 		/// Calls broker lookup-api to get broker <seealso cref="InetSocketAddress"/> which serves namespace bundle that contains given
@@ -57,21 +57,21 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> a pair of addresses, representing the logical and physical address of the broker that serves given topic </returns>
-		CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> getBroker(TopicName topicName);
+		CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName TopicName);
 
 		/// <summary>
 		/// Returns <seealso cref="PartitionedTopicMetadata"/> for a given topic.
 		/// </summary>
 		/// <param name="topicName"> topic-name
 		/// @return </param>
-		CompletableFuture<PartitionedTopicMetadata> getPartitionedTopicMetadata(TopicName topicName);
+		CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName);
 
 		/// <summary>
 		/// Returns current SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
 		/// </summary>
 		/// <param name="topicName"> topic-name </param>
 		/// <returns> SchemaInfo </returns>
-		CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName);
+		CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName);
 
 		/// <summary>
 		/// Returns specific version SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
@@ -79,7 +79,7 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName"> topic-name </param>
 		/// <param name="version"> schema info version </param>
 		/// <returns> SchemaInfo </returns>
-		CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName, sbyte[] version);
+		CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName, sbyte[] Version);
 
 		/// <summary>
 		/// Returns broker-service lookup api url.
@@ -93,7 +93,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="namespace"> : namespace-name
 		/// @return </param>
-		CompletableFuture<IList<string>> getTopicsUnderNamespace(NamespaceName @namespace, Mode mode);
+		CompletableFuture<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode);
 
 	}
 

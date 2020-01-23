@@ -18,38 +18,37 @@
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using SharpPulsar.Interface;
-	using System.Threading.Tasks;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 
 	/// <summary>
 	/// The implementation of <seealso cref="TransactionBufferClient"/>.
 	/// </summary>
-	public class TransactionBufferClientImpl : ITransactionBufferClient
+	public class TransactionBufferClientImpl : TransactionBufferClient
 	{
 
 		private readonly PulsarClientImpl client;
 
-		public TransactionBufferClientImpl(PulsarClientImpl client)
+		public TransactionBufferClientImpl(PulsarClientImpl Client)
 		{
-			this.client = client;
+			this.client = Client;
 		}
 
-		public virtual ValueTask CommitTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
-		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
-		}
-
-		public virtual ValueTask AbortTxnOnTopic(string topic, long txnIdMostBits, long txnIdLeastBits)
+		public override CompletableFuture<Void> CommitTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public virtual ValueTask CommitTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
+		public override CompletableFuture<Void> AbortTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}
 
-		public virtual ValueTask AbortTxnOnSubscription(string topic, string subscription, long txnIdMostBits, long txnIdLeastBits)
+		public override CompletableFuture<Void> CommitTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
+		{
+			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+		}
+
+		public override CompletableFuture<Void> AbortTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
 		{
 			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
 		}

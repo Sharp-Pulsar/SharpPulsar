@@ -26,52 +26,53 @@ namespace SharpPulsar.Impl
 	using LengthFieldBasedFrameDecoder = io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 	using SslContext = io.netty.handler.ssl.SslContext;
 
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using org.apache.pulsar.client.util;
-	using ByteBufPair = org.apache.pulsar.common.protocol.ByteBufPair;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using SecurityUtility = org.apache.pulsar.common.util.SecurityUtility;
-    using SharpPulsar.Configuration;
-    using SharpPulsar.Util;
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
+	using SharpPulsar.Util;
+	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
+	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
+	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
 
-    public class PulsarChannelInitializer : ChannelInitializer<SocketChannel>
+	public class PulsarChannelInitializer : ChannelInitializer<SocketChannel>
 	{
 
-		public const string TLS_HANDLER = "tls";
+		public const string TlsHandler = "tls";
 
 		private readonly System.Func<ClientCnx> clientCnxSupplier;
 		private readonly bool tlsEnabled;
 
 		private readonly System.Func<SslContext> sslContextSupplier;
 
-		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = TimeUnit.MINUTES.toMillis(1);
+		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.toMillis(1);
 
-		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientConnection> clientCnxSupplier) : base()
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: public PulsarChannelInitializer(SharpPulsar.impl.conf.ClientConfigurationData conf, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws Exception
+		public PulsarChannelInitializer(ClientConfigurationData Conf, System.Func<ClientCnx> ClientCnxSupplier) : base()
 		{
-			this.clientCnxSupplier = clientCnxSupplier;
-			this.tlsEnabled = conf.UseTls;
+			this.clientCnxSupplier = ClientCnxSupplier;
+			this.tlsEnabled = Conf.UseTls;
 
-			if (conf.UseTls)
+			if (Conf.UseTls)
 			{
 				sslContextSupplier = new ObjectCache<SslContext>(() =>
 				{
 				try
 				{
-					AuthenticationDataProvider authData = conf.Authentication.AuthData;
-					if (authData.hasDataForTls())
+					AuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
+					if (AuthData.hasDataForTls())
 					{
-						return SecurityUtility.createNettySslContextForClient(conf.TlsAllowInsecureConnection, conf.TlsTrustCertsFilePath, (X509Certificate[]) authData.TlsCertificates, authData.TlsPrivateKey);
+						return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
 					}
 					else
 					{
-						return SecurityUtility.createNettySslContextForClient(conf.TlsAllowInsecureConnection, conf.TlsTrustCertsFilePath);
+						return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
 					}
 				}
-				catch (Exception e)
+				catch (Exception E)
 				{
-					throw new Exception("Failed to create TLS context", e);
+					throw new Exception("Failed to create TLS context", E);
 				}
-				}, TLS_CERTIFICATE_CACHE_MILLIS, TimeUnit.MILLISECONDS);
+				}, TLS_CERTIFICATE_CACHE_MILLIS, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			}
 			else
 			{
@@ -81,20 +82,20 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void initChannel(io.netty.channel.socket.SocketChannel ch) throws Exception
-		public override void initChannel(SocketChannel ch)
+		public override void InitChannel(SocketChannel Ch)
 		{
 			if (tlsEnabled)
 			{
-				ch.pipeline().addLast(TLS_HANDLER, sslContextSupplier.get().newHandler(ch.alloc()));
-				ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.COPYING_ENCODER);
+				Ch.pipeline().addLast(TlsHandler, sslContextSupplier.get().newHandler(Ch.alloc()));
+				Ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.COPYING_ENCODER);
 			}
 			else
 			{
-				ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.ENCODER);
+				Ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.ENCODER);
 			}
 
-			ch.pipeline().addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DEFAULT_MAX_MESSAGE_SIZE + Commands.MESSAGE_SIZE_FRAME_PADDING, 0, 4, 0, 4));
-			ch.pipeline().addLast("handler", clientCnxSupplier.get());
+			Ch.pipeline().addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DEFAULT_MAX_MESSAGE_SIZE + Commands.MESSAGE_SIZE_FRAME_PADDING, 0, 4, 0, 4));
+			Ch.pipeline().addLast("handler", clientCnxSupplier.get());
 		}
 	}
 

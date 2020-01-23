@@ -1,8 +1,5 @@
-﻿using Optional;
-using SharpPulsar.Common.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,16 +28,16 @@ namespace SharpPulsar.Impl
 
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using Mode = org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using CommandLookupTopicResponse = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse;
-	using LookupType = org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopicResponse.LookupType;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
+	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
+	using CommandLookupTopicResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandLookupTopicResponse;
+	using LookupType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandLookupTopicResponse.LookupType;
+	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -52,18 +49,22 @@ namespace SharpPulsar.Impl
 		private readonly bool useTls;
 		private readonly ExecutorService executor;
 
-		public BinaryProtoLookupService(PulsarClientImpl client, string serviceUrl, bool useTls, ExecutorService executor)
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: public BinaryProtoLookupService(PulsarClientImpl client, String serviceUrl, boolean useTls, java.util.concurrent.ExecutorService executor) throws SharpPulsar.api.PulsarClientException
+		public BinaryProtoLookupService(PulsarClientImpl Client, string ServiceUrl, bool UseTls, ExecutorService Executor)
 		{
-			this.client = client;
-			this.useTls = useTls;
-			this.executor = executor;
+			this.client = Client;
+			this.useTls = UseTls;
+			this.executor = Executor;
 			this.serviceNameResolver = new PulsarServiceNameResolver();
-			UdateServiceUrl(serviceUrl);
+			UpdateServiceUrl(ServiceUrl);
 		}
 
-		public virtual void UpdateServiceUrl(string serviceUrl)
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException
+		public override void UpdateServiceUrl(string ServiceUrl)
 		{
-			serviceNameResolver.updateServiceUrl(serviceUrl);
+			serviceNameResolver.UpdateServiceUrl(ServiceUrl);
 		}
 
 		/// <summary>
@@ -72,52 +73,52 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		public  ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName topicName)
+		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName TopicName)
 		{
-			return findBroker(serviceNameResolver.resolveHost(), false, topicName);
+			return FindBroker(serviceNameResolver.ResolveHost(), false, TopicName);
 		}
 
 		/// <summary>
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName)
+		public virtual CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName)
 		{
-			return getPartitionedTopicMetadata(serviceNameResolver.resolveHost(), topicName);
+			return GetPartitionedTopicMetadata(serviceNameResolver.ResolveHost(), TopicName);
 		}
 
-		private ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> FindBroker(InetSocketAddress socketAddress, bool authoritative, TopicName topicName)
+		private CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> FindBroker(InetSocketAddress SocketAddress, bool Authoritative, TopicName TopicName)
 		{
-			ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>> addressFuture = new ValueTask<KeyValuePair<InetSocketAddress, InetSocketAddress>>();
+			CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> AddressFuture = new CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>>();
 
-			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
+			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
 			{
-			long requestId = client.newRequestId();
-			ByteBuf request = Commands.newLookup(topicName.ToString(), authoritative, requestId);
-			clientCnx.newLookup(request, requestId).thenAccept(lookupDataResult =>
+			long RequestId = client.NewRequestId();
+			ByteBuf Request = Commands.newLookup(TopicName.ToString(), Authoritative, RequestId);
+			clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
 			{
-				URI uri = null;
+				URI Uri = null;
 				try
 				{
 					if (useTls)
 					{
-						uri = new URI(lookupDataResult.brokerUrlTls);
+						Uri = new URI(lookupDataResult.brokerUrlTls);
 					}
 					else
 					{
-						string serviceUrl = lookupDataResult.brokerUrl;
-						uri = new URI(serviceUrl);
+						string ServiceUrl = lookupDataResult.brokerUrl;
+						Uri = new URI(ServiceUrl);
 					}
-					InetSocketAddress responseBrokerAddress = InetSocketAddress.createUnresolved(uri.Host, uri.Port);
+					InetSocketAddress ResponseBrokerAddress = InetSocketAddress.createUnresolved(Uri.Host, Uri.Port);
 					if (lookupDataResult.redirect)
 					{
-						findBroker(responseBrokerAddress, lookupDataResult.authoritative, topicName).thenAccept(addressPair =>
+						FindBroker(ResponseBrokerAddress, lookupDataResult.authoritative, TopicName).thenAccept(addressPair =>
 						{
-							addressFuture.complete(addressPair);
+							AddressFuture.complete(addressPair);
 						}).exceptionally((lookupException) =>
 						{
-							log.warn("[{}] lookup failed : {}", topicName.ToString(), lookupException.Message, lookupException);
-							addressFuture.completeExceptionally(lookupException);
+							log.warn("[{}] lookup failed : {}", TopicName.ToString(), lookupException.Message, lookupException);
+							AddressFuture.completeExceptionally(lookupException);
 							return null;
 						});
 					}
@@ -125,84 +126,84 @@ namespace SharpPulsar.Impl
 					{
 						if (lookupDataResult.proxyThroughServiceUrl)
 						{
-							addressFuture.complete(Pair.of(responseBrokerAddress, socketAddress));
+							AddressFuture.complete(Pair.of(ResponseBrokerAddress, SocketAddress));
 						}
 						else
 						{
-							addressFuture.complete(Pair.of(responseBrokerAddress, responseBrokerAddress));
+							AddressFuture.complete(Pair.of(ResponseBrokerAddress, ResponseBrokerAddress));
 						}
 					}
 				}
-				catch (Exception parseUrlException)
+				catch (Exception ParseUrlException)
 				{
-					log.warn("[{}] invalid url {} : {}", topicName.ToString(), uri, parseUrlException.Message, parseUrlException);
-					addressFuture.completeExceptionally(parseUrlException);
+					log.warn("[{}] invalid url {} : {}", TopicName.ToString(), Uri, ParseUrlException.Message, ParseUrlException);
+					AddressFuture.completeExceptionally(ParseUrlException);
 				}
 			}).exceptionally((sendException) =>
 			{
-				log.warn("[{}] failed to send lookup request : {}", topicName.ToString(), sendException.Message);
+				log.warn("[{}] failed to send lookup request : {}", TopicName.ToString(), sendException.Message);
 				if (log.DebugEnabled)
 				{
-					log.warn("[{}] Lookup response exception: {}", topicName.ToString(), sendException);
+					log.warn("[{}] Lookup response exception: {}", TopicName.ToString(), sendException);
 				}
-				addressFuture.completeExceptionally(sendException);
+				AddressFuture.completeExceptionally(sendException);
 				return null;
 			});
 			}).exceptionally(connectionException =>
 			{
-			addressFuture.completeExceptionally(connectionException);
+			AddressFuture.completeExceptionally(connectionException);
 			return null;
 		});
-			return addressFuture;
+			return AddressFuture;
 		}
 
-		private ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(InetSocketAddress socketAddress, TopicName topicName)
+		private CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(InetSocketAddress SocketAddress, TopicName TopicName)
 		{
 
-			ValueTask<PartitionedTopicMetadata> partitionFuture = new ValueTask<PartitionedTopicMetadata>();
+			CompletableFuture<PartitionedTopicMetadata> PartitionFuture = new CompletableFuture<PartitionedTopicMetadata>();
 
-			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
+			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
 			{
-			long requestId = client.newRequestId();
-			ByteBuf request = Commands.newPartitionMetadataRequest(topicName.ToString(), requestId);
-			clientCnx.newLookup(request, requestId).thenAccept(lookupDataResult =>
+			long RequestId = client.NewRequestId();
+			ByteBuf Request = Commands.newPartitionMetadataRequest(TopicName.ToString(), RequestId);
+			clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
 			{
 				try
 				{
-					partitionFuture.complete(new PartitionedTopicMetadata(lookupDataResult.partitions));
+					PartitionFuture.complete(new PartitionedTopicMetadata(lookupDataResult.partitions));
 				}
-				catch (Exception e)
+				catch (Exception E)
 				{
-					partitionFuture.completeExceptionally(new PulsarClientException.LookupException(format("Failed to parse partition-response redirect=%s, topic=%s, partitions with %s", lookupDataResult.redirect, topicName.ToString(), lookupDataResult.partitions, e.Message)));
+					PartitionFuture.completeExceptionally(new PulsarClientException.LookupException(format("Failed to parse partition-response redirect=%s, topic=%s, partitions with %s", lookupDataResult.redirect, TopicName.ToString(), lookupDataResult.partitions, E.Message)));
 				}
 			}).exceptionally((e) =>
 			{
-				log.warn("[{}] failed to get Partitioned metadata : {}", topicName.ToString(), e.Cause.Message, e);
-				partitionFuture.completeExceptionally(e);
+				log.warn("[{}] failed to get Partitioned metadata : {}", TopicName.ToString(), e.Cause.Message, e);
+				PartitionFuture.completeExceptionally(e);
 				return null;
 			});
 			}).exceptionally(connectionException =>
 			{
-			partitionFuture.completeExceptionally(connectionException);
+			PartitionFuture.completeExceptionally(connectionException);
 			return null;
 		});
 
-			return partitionFuture;
+			return PartitionFuture;
 		}
 
-		public virtual ValueTask<Option<SchemaInfo>> GetSchema(TopicName topicName)
+		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName)
 		{
-			return GetSchema(topicName, null);
+			return GetSchema(TopicName, null);
 		}
 
 
-		public virtual ValueTask<Option<SchemaInfo>> GetSchema(TopicName topicName, sbyte[] version)
+		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName, sbyte[] Version)
 		{
-			return client.CnxPool.getConnection(serviceNameResolver.resolveHost()).thenCompose(clientCnx =>
+			return client.CnxPool.getConnection(serviceNameResolver.ResolveHost()).thenCompose(clientCnx =>
 			{
-			long requestId = client.newRequestId();
-			ByteBuf request = Commands.newGetSchema(requestId, topicName.ToString(), Optional.ofNullable(BytesSchemaVersion.of(version)));
-			return clientCnx.sendGetSchema(request, requestId);
+			long RequestId = client.NewRequestId();
+			ByteBuf Request = Commands.newGetSchema(RequestId, TopicName.ToString(), Optional.ofNullable(BytesSchemaVersion.of(Version)));
+			return clientCnx.sendGetSchema(Request, RequestId);
 			});
 		}
 
@@ -214,57 +215,57 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+		public override CompletableFuture<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode)
 		{
-			ValueTask<IList<string>> topicsFuture = new ValueTask<IList<string>>();
+			CompletableFuture<IList<string>> TopicsFuture = new CompletableFuture<IList<string>>();
 
-			AtomicLong opTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
-			Backoff backoff = (new BackoffBuilder()).setInitialTime(100, TimeUnit.MILLISECONDS).setMandatoryStop(opTimeoutMs.get() * 2, TimeUnit.MILLISECONDS).setMax(0, TimeUnit.MILLISECONDS).create();
-			getTopicsUnderNamespace(serviceNameResolver.resolveHost(), @namespace, backoff, opTimeoutMs, topicsFuture, mode);
-			return topicsFuture;
+			AtomicLong OpTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
+			Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMandatoryStop(OpTimeoutMs.get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create();
+			GetTopicsUnderNamespace(serviceNameResolver.ResolveHost(), Namespace, Backoff, OpTimeoutMs, TopicsFuture, Mode);
+			return TopicsFuture;
 		}
 
-		private void GetTopicsUnderNamespace(InetSocketAddress socketAddress, NamespaceName @namespace, Backoff backoff, AtomicLong remainingTime, CompletableFuture<IList<string>> topicsFuture, Mode mode)
+		private void GetTopicsUnderNamespace(InetSocketAddress SocketAddress, NamespaceName Namespace, Backoff Backoff, AtomicLong RemainingTime, CompletableFuture<IList<string>> TopicsFuture, Mode Mode)
 		{
-			client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
+			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
 			{
-			long requestId = client.newRequestId();
-			ByteBuf request = Commands.newGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
-			clientCnx.newGetTopicsOfNamespace(request, requestId).thenAccept(topicsList =>
+			long RequestId = client.NewRequestId();
+			ByteBuf Request = Commands.newGetTopicsOfNamespaceRequest(Namespace.ToString(), RequestId, Mode);
+			clientCnx.newGetTopicsOfNamespace(Request, RequestId).thenAccept(topicsList =>
 			{
 				if (log.DebugEnabled)
 				{
-					log.debug("[namespace: {}] Success get topics list in request: {}", @namespace.ToString(), requestId);
+					log.debug("[namespace: {}] Success get topics list in request: {}", Namespace.ToString(), RequestId);
 				}
-				IList<string> result = Lists.newArrayList();
+				IList<string> Result = Lists.newArrayList();
 				topicsList.forEach(topic =>
 				{
-					string filtered = TopicName.get(topic).PartitionedTopicName;
-					if (!result.contains(filtered))
+					string Filtered = TopicName.get(topic).PartitionedTopicName;
+					if (!Result.Contains(Filtered))
 					{
-						result.add(filtered);
+						Result.Add(Filtered);
 					}
 				});
-				topicsFuture.complete(result);
+				TopicsFuture.complete(Result);
 			}).exceptionally((e) =>
 			{
-				topicsFuture.completeExceptionally(e);
+				TopicsFuture.completeExceptionally(e);
 				return null;
 			});
 			}).exceptionally((e) =>
 			{
-			long nextDelay = Math.Min(backoff.next(), remainingTime.get());
-			if (nextDelay <= 0)
+			long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
+			if (NextDelay <= 0)
 			{
-				topicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", @namespace.ToString())));
+				TopicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", Namespace.ToString())));
 				return null;
 			}
 			((ScheduledExecutorService) executor).schedule(() =>
 			{
-				log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", @namespace, nextDelay);
-				remainingTime.addAndGet(-nextDelay);
-				getTopicsUnderNamespace(socketAddress, @namespace, backoff, remainingTime, topicsFuture, mode);
-			}, nextDelay, TimeUnit.MILLISECONDS);
+				log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", Namespace, NextDelay);
+				RemainingTime.addAndGet(-NextDelay);
+				GetTopicsUnderNamespace(SocketAddress, Namespace, Backoff, RemainingTime, TopicsFuture, Mode);
+			}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			return null;
 		});
 		}
@@ -272,7 +273,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void close() throws Exception
-		public void Close()
+		public override void Close()
 		{
 			// no-op
 		}
@@ -280,31 +281,31 @@ namespace SharpPulsar.Impl
 		public class LookupDataResult
 		{
 
-			public readonly string brokerUrl;
-			public readonly string brokerUrlTls;
-			public readonly int partitions;
-			public readonly bool authoritative;
-			public readonly bool proxyThroughServiceUrl;
-			public readonly bool redirect;
+			public readonly string BrokerUrl;
+			public readonly string BrokerUrlTls;
+			public readonly int Partitions;
+			public readonly bool Authoritative;
+			public readonly bool ProxyThroughServiceUrl;
+			public readonly bool Redirect;
 
-			public LookupDataResult(CommandLookupTopicResponse result)
+			public LookupDataResult(CommandLookupTopicResponse Result)
 			{
-				this.brokerUrl = result.BrokerServiceUrl;
-				this.brokerUrlTls = result.BrokerServiceUrlTls;
-				this.authoritative = result.Authoritative;
-				this.redirect = result.Response == CommandLookupTopicResponse.LookupType.Redirect;
-				this.proxyThroughServiceUrl = result.ProxyThroughServiceUrl;
-				this.partitions = -1;
+				this.BrokerUrl = Result.BrokerServiceUrl;
+				this.BrokerUrlTls = Result.BrokerServiceUrlTls;
+				this.Authoritative = Result.Authoritative;
+				this.Redirect = Result.Response == CommandLookupTopicResponse.LookupType.Redirect;
+				this.ProxyThroughServiceUrl = Result.ProxyThroughServiceUrl;
+				this.Partitions = -1;
 			}
 
-			public LookupDataResult(int partitions) : base()
+			public LookupDataResult(int Partitions) : base()
 			{
-				this.partitions = partitions;
-				this.brokerUrl = null;
-				this.brokerUrlTls = null;
-				this.authoritative = false;
-				this.proxyThroughServiceUrl = false;
-				this.redirect = false;
+				this.Partitions = Partitions;
+				this.BrokerUrl = null;
+				this.BrokerUrlTls = null;
+				this.Authoritative = false;
+				this.ProxyThroughServiceUrl = false;
+				this.Redirect = false;
 			}
 
 		}

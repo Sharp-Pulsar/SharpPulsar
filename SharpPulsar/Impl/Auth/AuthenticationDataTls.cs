@@ -1,6 +1,5 @@
-﻿using SharpPulsar.Interface.Auth;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+﻿using System;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -22,72 +21,83 @@ using System.Security.Cryptography.X509Certificates;
 namespace SharpPulsar.Impl.Auth
 {
 
+	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using FileModifiedTimeUpdater = Org.Apache.Pulsar.Common.Util.FileModifiedTimeUpdater;
+	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
 
-    public class AuthenticationDataTls : IAuthenticationDataProvider
+	[Serializable]
+	public class AuthenticationDataTls : AuthenticationDataProvider
 	{
-		protected internal X509Certificate2[] tlsCertificates;
-		protected internal AsymmetricAlgorithm tlsPrivateKey;
-		protected internal FileModifiedTimeUpdater certFile, keyFile;
-		public AuthenticationDataTls(string certFilePath, string keyFilePath)
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal X509Certificate[] TlsCertificatesConflict;
+//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal PrivateKey TlsPrivateKeyConflict;
+		protected internal FileModifiedTimeUpdater CertFile, KeyFile;
+
+//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+//ORIGINAL LINE: public AuthenticationDataTls(String certFilePath, String keyFilePath) throws java.security.KeyManagementException
+		public AuthenticationDataTls(string CertFilePath, string KeyFilePath)
 		{
-			if (string.ReferenceEquals(certFilePath, null))
+			if (string.ReferenceEquals(CertFilePath, null))
 			{
 				throw new System.ArgumentException("certFilePath must not be null");
 			}
-			if (string.ReferenceEquals(keyFilePath, null))
+			if (string.ReferenceEquals(KeyFilePath, null))
 			{
 				throw new System.ArgumentException("keyFilePath must not be null");
 			}
-			this.certFile = new FileModifiedTimeUpdater(certFilePath);
-			this.keyFile = new FileModifiedTimeUpdater(keyFilePath);
-			this.tlsCertificates = SecurityUtility.loadCertificatesFromPemFile(certFilePath);
-			this.tlsPrivateKey = SecurityUtility.loadPrivateKeyFromPemFile(keyFilePath);
+			this.CertFile = new FileModifiedTimeUpdater(CertFilePath);
+			this.KeyFile = new FileModifiedTimeUpdater(KeyFilePath);
+			this.TlsCertificatesConflict = SecurityUtility.loadCertificatesFromPemFile(CertFilePath);
+			this.TlsPrivateKeyConflict = SecurityUtility.loadPrivateKeyFromPemFile(KeyFilePath);
 		}
 
 		/*
 		 * TLS
 		 */
 
-		public bool HasDataForTls()
+		public override bool HasDataForTls()
 		{
 			return true;
 		}
 
-		public X509Certificate2[] TlsCertificates
+		public virtual Certificate[] TlsCertificates
 		{
 			get
 			{
-				if (this.certFile.checkAndRefresh())
+				if (this.CertFile.checkAndRefresh())
 				{
 					try
 					{
-						this.tlsCertificates = SecurityUtility.loadCertificatesFromPemFile(certFile.FileName);
+						this.TlsCertificatesConflict = SecurityUtility.loadCertificatesFromPemFile(CertFile.FileName);
 					}
-					catch (KeyManagementException e)
+					catch (KeyManagementException E)
 					{
-						LOG.error("Unable to refresh authData for cert {}: ", certFile.FileName, e);
+						LOG.error("Unable to refresh authData for cert {}: ", CertFile.FileName, E);
 					}
 				}
-				return this.tlsCertificates;
+				return this.TlsCertificatesConflict;
 			}
 		}
 
-		public AsymmetricAlgorithm TlsPrivateKey
+		public virtual PrivateKey TlsPrivateKey
 		{
 			get
 			{
-				if (this.keyFile.checkAndRefresh())
+				if (this.KeyFile.checkAndRefresh())
 				{
 					try
 					{
-						this.tlsPrivateKey = SecurityUtility.loadPrivateKeyFromPemFile(keyFile.FileName);
+						this.TlsPrivateKeyConflict = SecurityUtility.loadPrivateKeyFromPemFile(KeyFile.FileName);
 					}
-					catch (KeyManagementException e)
+					catch (KeyManagementException E)
 					{
-						LOG.error("Unable to refresh authData for cert {}: ", keyFile.FileName, e);
+						LOG.error("Unable to refresh authData for cert {}: ", KeyFile.FileName, E);
 					}
 				}
-				return this.tlsPrivateKey;
+				return this.TlsPrivateKeyConflict;
 			}
 		}
 

@@ -19,77 +19,78 @@
 namespace SharpPulsar.Impl.Schema.Generic
 {
 	using CacheBuilder = com.google.common.cache.CacheBuilder;
-	using SchemaInfoProvider = Api.Schema.SchemaInfoProvider;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using BytesSchemaVersion = org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using CacheLoader = com.google.common.cache.CacheLoader;
+	using LoadingCache = com.google.common.cache.LoadingCache;
+	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
+	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
+	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
-    using System.Threading.Tasks;
 
 
-    /// <summary>
-    /// Multi version generic schema provider by guava cache.
-    /// </summary>
-    public class MultiVersionSchemaInfoProvider : SchemaInfoProvider
+	/// <summary>
+	/// Multi version generic schema provider by guava cache.
+	/// </summary>
+	public class MultiVersionSchemaInfoProvider : SchemaInfoProvider
 	{
 
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(MultiVersionSchemaInfoProvider));
 
 		private readonly TopicName topicName;
-		private readonly PulsarClientImpl pulsarClient;
+		public virtual PulsarClient {get;}
 
-		private readonly LoadingCache<BytesSchemaVersion, ValueTask<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly LoadingCache<BytesSchemaVersion, CompletableFuture<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
-		private class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, ValueTask<SchemaInfo>>
+		public class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, CompletableFuture<SchemaInfo>>
 		{
-			public ValueTask<SchemaInfo> Load(BytesSchemaVersion schemaVersion)
+			public override CompletableFuture<SchemaInfo> load(BytesSchemaVersion SchemaVersion)
 			{
-				ValueTask<SchemaInfo> siFuture = outerInstance.loadSchema(schemaVersion.get());
-				siFuture.whenComplete((si, cause) =>
+				CompletableFuture<SchemaInfo> SiFuture = outerInstance.loadSchema(SchemaVersion.get());
+				SiFuture.whenComplete((si, cause) =>
 				{
 				if (null != cause)
 				{
-					cache.asMap().remove(schemaVersion, siFuture);
+					cache.asMap().remove(SchemaVersion, SiFuture);
 				}
 				});
-				return siFuture;
+				return SiFuture;
 			}
 		}
 
-		public MultiVersionSchemaInfoProvider(TopicName topicName, PulsarClientImpl pulsarClient)
+		public MultiVersionSchemaInfoProvider(TopicName TopicName, PulsarClientImpl PulsarClient)
 		{
-			this.topicName = topicName;
-			this.pulsarClient = pulsarClient;
+			this.topicName = TopicName;
+			this.PulsarClient = PulsarClient;
 		}
 
-		public ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
+		public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
 		{
 			try
 			{
-				if (null == schemaVersion)
+				if (null == SchemaVersion)
 				{
 					return CompletableFuture.completedFuture(null);
 				}
-				return cache.get(BytesSchemaVersion.of(schemaVersion));
+				return cache.get(BytesSchemaVersion.of(SchemaVersion));
 			}
-			catch (ExecutionException e)
+			catch (ExecutionException E)
 			{
-				LOG.error("Can't get schema for topic {} schema version {}", topicName.ToString(), StringHelper.NewString(schemaVersion, StandardCharsets.UTF_8), e);
-				return FutureUtil.failedFuture(e.InnerException);
+				LOG.error("Can't get schema for topic {} schema version {}", topicName.ToString(), StringHelper.NewString(SchemaVersion, StandardCharsets.UTF_8), E);
+				return FutureUtil.failedFuture(E.InnerException);
 			}
 		}
 
-		public ValueTask<SchemaInfo> LatestSchema
+		public virtual CompletableFuture<SchemaInfo> LatestSchema
 		{
 			get
 			{
-				return pulsarClient.Lookup.getSchema(topicName).thenApply(o => o.orElse(null));
+				return PulsarClient.Lookup.getSchema(topicName).thenApply(o => o.orElse(null));
 			}
 		}
 
-		public string TopicName
+		public virtual string TopicName
 		{
 			get
 			{
@@ -97,18 +98,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		private ValueTask<SchemaInfo> LoadSchema(sbyte[] schemaVersion)
+		private CompletableFuture<SchemaInfo> LoadSchema(sbyte[] SchemaVersion)
 		{
-			 return pulsarClient.Lookup.getSchema(topicName, schemaVersion).thenApply(o => o.orElse(null));
+			 return PulsarClient.Lookup.getSchema(topicName, SchemaVersion).thenApply(o => o.orElse(null));
 		}
 
-		public virtual PulsarClientImpl PulsarClient
-		{
-			get
-			{
-				return pulsarClient;
-			}
-		}
 	}
 
 }

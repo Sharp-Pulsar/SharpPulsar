@@ -20,44 +20,47 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
+	using MessageId = SharpPulsar.Api.MessageId;
+	using Org.Apache.Pulsar.Common.Util.Collections;
 
-	public class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker
+	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
 	{
 
-		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
+		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis) : base(Client, ConsumerBase, AckTimeoutMillis)
 		{
 		}
 
-		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
+		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis, long TickDurationMillis) : base(Client, ConsumerBase, AckTimeoutMillis, TickDurationMillis)
 		{
 		}
 
-		public virtual int RemoveTopicMessages(string topicName)
+		public virtual int RemoveTopicMessages(string TopicName)
 		{
-			writeLock.@lock();
+			WriteLock.@lock();
 			try
 			{
-				int removed = 0;
-				IEnumerator<IMessageId> iterator = messageIdPartitionMap.Keys.GetEnumerator();
-				while (iterator.MoveNext())
+				int Removed = 0;
+				IEnumerator<MessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
+				while (Iterator.MoveNext())
 				{
-					MessageId messageId = iterator.Current;
-					if (messageId is TopicMessageIdImpl && ((TopicMessageIdImpl)messageId).TopicPartitionName.Contains(topicName))
+					MessageId MessageId = Iterator.Current;
+					if (MessageId is TopicMessageIdImpl && ((TopicMessageIdImpl)MessageId).TopicPartitionName.Contains(TopicName))
 					{
-						ConcurrentOpenHashSet<MessageId> exist = messageIdPartitionMap[messageId];
-						if (exist != null)
+						ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap[MessageId];
+						if (Exist != null)
 						{
-							exist.remove(messageId);
+							Exist.remove(MessageId);
 						}
-						iterator.remove();
-						removed++;
+//JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
+						Iterator.remove();
+						Removed++;
 					}
 				}
-				return removed;
+				return Removed;
 			}
 			finally
 			{
-				writeLock.unlock();
+				WriteLock.unlock();
 			}
 		}
 
