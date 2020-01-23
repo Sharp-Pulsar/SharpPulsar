@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Exception;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -22,23 +24,14 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Impl.Auth
 {
-	using Gson = com.google.gson.Gson;
-	using JsonObject = com.google.gson.JsonObject;
-	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 
 
 	[Serializable]
-	public class AuthenticationBasic : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationBasic : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 		private string userId;
 		private string password;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
 			// noop
 		}
@@ -51,8 +44,6 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
 		public virtual AuthenticationDataProvider AuthData
 		{
 			get
@@ -61,32 +52,34 @@ namespace SharpPulsar.Impl.Auth
 				{
 					return new AuthenticationDataBasic(userId, password);
 				}
-				catch (Exception E)
+				catch (System.Exception E)
 				{
-					throw PulsarClientException.unwrap(E);
+					throw PulsarClientException.Unwrap(E);
 				}
 			}
 		}
 
-		public override void Configure(IDictionary<string, string> AuthParams)
+		public void Configure(IDictionary<string, string> AuthParams)
 		{
-			configure((new Gson()).toJson(AuthParams));
+			Configure((new Gson()).toJson(AuthParams));
 		}
 
-		public override void Configure(string EncodedAuthParamString)
+		public void Configure(string EncodedAuthParamString)
 		{
 			JsonObject Params = (new Gson()).fromJson(EncodedAuthParamString, typeof(JsonObject));
 			userId = Params.get("userId").AsString;
 			password = Params.get("password").AsString;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
-		public override void Start()
+		public void Start()
 		{
 			// noop
 		}
 
+		public void Dispose()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

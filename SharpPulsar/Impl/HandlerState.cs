@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Collections.Concurrent;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,15 +22,11 @@ namespace SharpPulsar.Impl
 
 	public abstract class HandlerState
 	{
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly PulsarClientImpl ClientConflict;
 		protected internal readonly string Topic;
 
-		private static readonly AtomicReferenceFieldUpdater<HandlerState, State> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(HandlerState), typeof(State), "state");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile State state = null;
-		private volatile State state = null;
-
+		private static readonly ConcurrentDictionary<HandlerState, State> StateUpdater = new ConcurrentDictionary<HandlerState, State>();
+		
 		public enum State
 		{
 			Uninitialized, // Not initialized
@@ -47,35 +44,39 @@ namespace SharpPulsar.Impl
 		{
 			this.ClientConflict = Client;
 			this.Topic = Topic;
-			STATE_UPDATER.set(this, State.Uninitialized);
+			StateUpdater[this] =  State.Uninitialized;
 		}
 
 		// moves the state to ready if it wasn't closed
 		public virtual bool ChangeToReadyState()
 		{
-			return (STATE_UPDATER.compareAndSet(this, State.Uninitialized, State.Ready) || STATE_UPDATER.compareAndSet(this, State.Connecting, State.Ready) || STATE_UPDATER.compareAndSet(this, State.RegisteringSchema, State.Ready));
+			return (StateUpdater.TryUpdate(this, State.Ready, State.Uninitialized) || StateUpdater.TryUpdate(this, State.Ready, State.Connecting) || StateUpdater.TryUpdate(this, State.Ready, State.RegisteringSchema));
 		}
 
 		public virtual bool ChangeToRegisteringSchemaState()
 		{
-			return STATE_UPDATER.compareAndSet(this, State.Ready, State.RegisteringSchema);
+			return StateUpdater.TryUpdate(this, State.RegisteringSchema, State.Ready);
 		}
 
 		public virtual State? GetState()
 		{
-			return STATE_UPDATER.get(this);
+			return StateUpdater[this];
 		}
 
 		public virtual void SetState(State S)
 		{
-			STATE_UPDATER.set(this, S);
+			StateUpdater[this] =  S;
 		}
 
 		public abstract string HandlerName {get;}
 
 		public virtual State? GetAndUpdateState(in System.Func<State, State> Updater)
 		{
-			return STATE_UPDATER.getAndUpdate(this, Updater);
+			var oldState = StateUpdater[this];
+			var newState = Updater.Invoke(oldState);
+			if (StateUpdater.TryUpdate(this, newState, oldState))
+				return newState;
+			return null;
 		}
 
 		public virtual PulsarClientImpl Client

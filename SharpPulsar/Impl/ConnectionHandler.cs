@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Exception;
+using System;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,30 +22,23 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using State = SharpPulsar.Impl.HandlerState.State;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+	public interface Connection
+	{
+		void ConnectionFailed(PulsarClientException Exception);
+		void ConnectionOpened(ClientCnx Cnx);
+	}
 
 	public class ConnectionHandler
 	{
-		private static readonly AtomicReferenceFieldUpdater<ConnectionHandler, ClientCnx> CLIENT_CNX_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(ConnectionHandler), typeof(ClientCnx), "clientCnx");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile ClientCnx clientCnx = null;
-		private volatile ClientCnx clientCnx = null;
+		private static readonly ConcurrentDictionary<ConnectionHandler, ClientCnx> ClientCnxUpdater = new ConcurrentDictionary<ConnectionHandler, ClientCnx>();
+
+		private volatile ClientCnx _clientCnx = null;
 
 		protected internal readonly HandlerState State;
 		protected internal readonly Backoff Backoff;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal long EpochConflict = 0L;
 
-		public interface Connection
-		{
-			void ConnectionFailed(PulsarClientException Exception);
-			void ConnectionOpened(ClientCnx Cnx);
-		}
+		
 
 		protected internal Connection Connection;
 
@@ -52,36 +47,41 @@ namespace SharpPulsar.Impl
 			this.State = State;
 			this.Connection = Connection;
 			this.Backoff = Backoff;
-			CLIENT_CNX_UPDATER.set(this, null);
+			ClientCnxUpdater.TryAdd(this, null);
 		}
 
 		public virtual void GrabCnx()
 		{
-			if (CLIENT_CNX_UPDATER.get(this) != null)
+			
+			if (ClientCnxUpdater.TryGetValue(this, out var clientCnx))
 			{
-				log.warn("[{}] [{}] Client cnx already set, ignoring reconnection request", State.topic, State.HandlerName);
-				return;
+				if(clientCnx != null)
+				{
+					log.warn("[{}] [{}] Client cnx already set, ignoring reconnection request", State.Topic, State.HandlerName);
+					return;
+				}
+				
 			}
 
 			if (!ValidStateForReconnection)
 			{
 				// Ignore connection closed when we are shutting down
-				log.info("[{}] [{}] Ignoring reconnection request (state: {})", State.topic, State.HandlerName, State.getState());
+				log.info("[{}] [{}] Ignoring reconnection request (state: {})", this.State.Topic, State.HandlerName, State.GetState());
 				return;
 			}
 
 			try
 			{
-				State.client.getConnection(State.topic).thenAccept(cnx => Connection.connectionOpened(cnx)).exceptionally(this.handleConnectionError);
+				State.Client.GetConnection(State.Topic).thenAccept(cnx => Connection.connectionOpened(cnx)).exceptionally(this.handleConnectionError);
 			}
-			catch (Exception T)
+			catch (System.Exception T)
 			{
-				log.warn("[{}] [{}] Exception thrown while getting connection: ", State.topic, State.HandlerName, T);
+				log.warn("[{}] [{}] Exception thrown while getting connection: ", State.Topic, State.HandlerName, T);
 				ReconnectLater(T);
 			}
 		}
 
-		private Void HandleConnectionError(Exception Exception)
+		private void HandleConnectionError(Exception Exception)
 		{
 			log.warn("[{}] [{}] Error connecting to broker: {}", State.topic, State.HandlerName, Exception.Message);
 			Connection.connectionFailed(new PulsarClientException(Exception));
