@@ -22,13 +22,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Common", "Sharp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Util", "SharpPulsar.Util\SharpPulsar.Util.csproj", "{83C831C9-42E1-4DA8-AA84-24A608632A28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Api", "SharpPulsar.Api\SharpPulsar.Api.csproj", "{9E623CAB-DE9A-4A4C-8488-5B2B760059DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Api", "SharpPulsar.Api\SharpPulsar.Api.csproj", "{9E623CAB-DE9A-4A4C-8488-5B2B760059DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Exception", "SharpPulsar.Exception\SharpPulsar.Exception.csproj", "{E9B236BA-3692-4E0B-8360-5DF4A30C9187}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Exception", "SharpPulsar.Exception\SharpPulsar.Exception.csproj", "{E9B236BA-3692-4E0B-8360-5DF4A30C9187}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Shared", "SharpPulsar.Shared\SharpPulsar.Shared.csproj", "{A6E586CB-C032-4527-B728-866A4716A50A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Shared", "SharpPulsar.Shared\SharpPulsar.Shared.csproj", "{A6E586CB-C032-4527-B728-866A4716A50A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{43E2BD05-1E73-4887-80E4-17FB49711AF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{43E2BD05-1E73-4887-80E4-17FB49711AF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Protocol", "SharpPulsar.Protocol\SharpPulsar.Protocol.csproj", "{862A2F8B-5F6E-4788-A9B0-6EF6C3F92C40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,6 +82,10 @@ Global
 		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{862A2F8B-5F6E-4788-A9B0-6EF6C3F92C40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{862A2F8B-5F6E-4788-A9B0-6EF6C3F92C40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{862A2F8B-5F6E-4788-A9B0-6EF6C3F92C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{862A2F8B-5F6E-4788-A9B0-6EF6C3F92C40}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

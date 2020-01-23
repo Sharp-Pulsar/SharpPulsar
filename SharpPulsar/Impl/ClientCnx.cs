@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Protocol;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,65 +22,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Queues = com.google.common.collect.Queues;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Channel = io.netty.channel.Channel;
-	using ChannelHandler = io.netty.channel.ChannelHandler;
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using NativeIoException = io.netty.channel.unix.Errors.NativeIoException;
-	using LengthFieldBasedFrameDecoder = io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-	using SslHandler = io.netty.handler.ssl.SslHandler;
-	using Promise = io.netty.util.concurrent.Promise;
-
-
-	using Getter = lombok.Getter;
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using DefaultHostnameVerifier = org.apache.http.conn.ssl.DefaultHostnameVerifier;
-	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using TimeoutException = SharpPulsar.Api.PulsarClientException.TimeoutException;
-	using LookupDataResult = SharpPulsar.Impl.BinaryProtoLookupService.LookupDataResult;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using AuthData = Org.Apache.Pulsar.Common.Api.AuthData;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using PulsarHandler = Org.Apache.Pulsar.Common.Protocol.PulsarHandler;
-	using CommandActiveConsumerChange = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandActiveConsumerChange;
-	using CommandAuthChallenge = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAuthChallenge;
-	using CommandCloseConsumer = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandCloseConsumer;
-	using CommandCloseProducer = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandCloseProducer;
-	using CommandConnected = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandConnected;
-	using CommandError = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandError;
-	using CommandGetLastMessageIdResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetLastMessageIdResponse;
-	using CommandGetSchemaResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetSchemaResponse;
-	using CommandGetOrCreateSchemaResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetOrCreateSchemaResponse;
-	using CommandGetTopicsOfNamespaceResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespaceResponse;
-	using CommandLookupTopicResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandLookupTopicResponse;
-	using CommandMessage = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandMessage;
-	using CommandPartitionedTopicMetadataResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandPartitionedTopicMetadataResponse;
-	using CommandProducerSuccess = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandProducerSuccess;
-	using CommandReachedEndOfTopic = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandReachedEndOfTopic;
-	using CommandSendError = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSendError;
-	using CommandSendReceipt = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSendReceipt;
-	using CommandSuccess = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSuccess;
-	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;
-	using ServerError = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.ServerError;
-	using SchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaVersion;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaInfoUtil = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaInfoUtil;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Org.Apache.Pulsar.Common.Util.Collections;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	public class ClientCnx : PulsarHandler
 	{
@@ -97,11 +39,8 @@ namespace SharpPulsar.Impl
 		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>> pendingGetSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>>(16, 1);
 		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>> pendingGetOrCreateSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>>(16, 1);
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<ProducerImpl<?>> producers = new org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<>(16, 1);
+
 		private readonly ConcurrentLongHashMap<ProducerImpl<object>> producers = new ConcurrentLongHashMap<ProducerImpl<object>>(16, 1);
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<ConsumerImpl<?>> consumers = new org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<>(16, 1);
 		private readonly ConcurrentLongHashMap<ConsumerImpl<object>> consumers = new ConcurrentLongHashMap<ConsumerImpl<object>>(16, 1);
 		private readonly ConcurrentLongHashMap<TransactionMetaStoreHandler> transactionMetaStoreHandlers = new ConcurrentLongHashMap<TransactionMetaStoreHandler>(16, 1);
 
@@ -112,12 +51,7 @@ namespace SharpPulsar.Impl
 		private readonly EventLoopGroup eventLoopGroup;
 
 		private static readonly AtomicIntegerFieldUpdater<ClientCnx> NUMBER_OF_REJECTED_REQUESTS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ClientCnx), "numberOfRejectRequests");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile int numberOfRejectRequests = 0;
 		private volatile int numberOfRejectRequests = 0;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private static int maxMessageSize = org.apache.pulsar.common.protocol.Commands.DEFAULT_MAX_MESSAGE_SIZE;
 		private static int maxMessageSize = Commands.DEFAULT_MAX_MESSAGE_SIZE;
 
 		private readonly int maxNumberOfRejectedRequestPerConnection;
@@ -180,8 +114,6 @@ namespace SharpPulsar.Impl
 			this.protocolVersion = ProtocolVersion;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelActive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
 		public override void ChannelActive(ChannelHandlerContext Ctx)
 		{
 			base.ChannelActive(Ctx);
@@ -217,8 +149,6 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected io.netty.buffer.ByteBuf newConnectCommand() throws Exception
 		public virtual ByteBuf NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
@@ -229,8 +159,6 @@ namespace SharpPulsar.Impl
 			return Commands.newConnect(Authentication.AuthMethodName, AuthData, this.protocolVersion, PulsarVersion.Version, ProxyToTargetBrokerAddress, null, null, null);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelInactive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
 		public override void ChannelInactive(ChannelHandlerContext Ctx)
 		{
 			base.ChannelInactive(Ctx);
