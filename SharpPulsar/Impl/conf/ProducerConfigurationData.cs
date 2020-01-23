@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Api;
-
+using SharpPulsar.Util;
 using System;
 using System.Collections.Generic;
 
@@ -23,29 +23,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
-	using CompressionType = SharpPulsar.Api.CompressionType;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using HashingScheme = SharpPulsar.Api.HashingScheme;
-	using MessageRouter = SharpPulsar.Api.MessageRouter;
-	using MessageRoutingMode = SharpPulsar.Api.MessageRoutingMode;
-	using ProducerCryptoFailureAction = SharpPulsar.Api.ProducerCryptoFailureAction;
-
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using Maps = com.google.common.collect.Maps;
-	using Sets = com.google.common.collect.Sets;
-
-	using Data = lombok.Data;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ProducerConfigurationData implements java.io.Serializable, Cloneable
 	[Serializable]
 	public class ProducerConfigurationData : ICloneable
 	{
@@ -56,61 +33,55 @@ namespace SharpPulsar.Impl.Conf
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
 
-		private string topicName = null;
-		private string producerName = null;
-		private long sendTimeoutMs = 30000;
-		private bool blockIfQueueFull = false;
-		private int maxPendingMessages = DefaultMaxPendingMessages;
-		private int maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
-		private MessageRoutingMode messageRoutingMode = null;
+		[NonSerialized]
+		private string _topicName = null;
+		[NonSerialized]
+		private string _producerName = null;
+		private long _sendTimeoutMs = 30000;
+		private bool _blockIfQueueFull = false;
+		private int _maxPendingMessages = DefaultMaxPendingMessages;
+		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
+		private MessageRoutingMode messageRoutingMode;
 		private HashingScheme hashingScheme = HashingScheme.JavaStringHash;
 
 		private ProducerCryptoFailureAction cryptoFailureAction = ProducerCryptoFailureAction.FAIL;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.MessageRouter customMessageRouter = null;
 		private MessageRouter customMessageRouter = null;
 
-		private long batchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toMicros(1);
-		private int batchingPartitionSwitchFrequencyByPublishDelay = 10;
-		private int batchingMaxMessages = DefaultBatchingMaxMessages;
-		private int batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-		private bool batchingEnabled = true; // enabled by default
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.BatcherBuilder batcherBuilder = SharpPulsar.api.BatcherBuilder_Fields.DEFAULT;
-		private BatcherBuilder batcherBuilder = BatcherBuilderFields.DEFAULT;
+		private long _batchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
+		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
+		private int _batchingMaxMessages = DefaultBatchingMaxMessages;
+		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
+		private bool _batchingEnabled = true; // enabled by default
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.CryptoKeyReader cryptoKeyReader;
-		private CryptoKeyReader cryptoKeyReader;
+		public BatcherBuilder BatcherBuilder = BatcherBuilderFields.DEFAULT;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private java.util.Set<String> encryptionKeys = new java.util.TreeSet<>();
-		private ISet<string> encryptionKeys = new SortedSet<string>();
+		public CryptoKeyReader CryptoKeyReader;
 
-		private CompressionType compressionType = CompressionType.NONE;
+		public ISet<string> EncryptionKeys = new SortedSet<string>();
 
-		// Cannot use Optional<Long> since it's not serializable
-		private long? initialSequenceId = null;
+		public CompressionType CompressionType = CompressionType.NONE;
 
-		private bool autoUpdatePartitions = true;
+		[NonSerialized]
+		public long?InitialSequenceId = null;
 
-		private bool multiSchema = true;
+		public bool AutoUpdatePartitions = true;
 
-		private SortedDictionary<string, string> properties = new SortedDictionary<string, string>();
+		public bool MultiSchema = true;
+
+		[NonSerialized]
+		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
 
 		/// 
 		/// <summary>
 		/// Returns true if encryption keys are added
 		/// 
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore public boolean isEncryptionEnabled()
+		/// 
 		public virtual bool EncryptionEnabled
 		{
 			get
 			{
-				return (this.encryptionKeys != null) && this.encryptionKeys.Count > 0 && (this.cryptoKeyReader != null);
+				return (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 			}
 		}
 
@@ -118,14 +89,14 @@ namespace SharpPulsar.Impl.Conf
 		{
 			try
 			{
-				ProducerConfigurationData C = (ProducerConfigurationData) base.Clone();
-				C.encryptionKeys = Sets.newTreeSet(this.encryptionKeys);
-				C.properties = Maps.newTreeMap(this.properties);
+				ProducerConfigurationData C = (ProducerConfigurationData) base.MemberwiseClone();
+				C.EncryptionKeys = new SortedSet<string>(EncryptionKeys);
+				C.Properties = new SortedDictionary<string, string>(Properties);
 				return C;
 			}
-			catch (CloneNotSupportedException E)
+			catch (System.Exception e)
 			{
-				throw new Exception("Failed to clone ProducerConfigurationData", E);
+				throw new System.Exception("Failed to clone ProducerConfigurationData", e);
 			}
 		}
 
@@ -133,8 +104,9 @@ namespace SharpPulsar.Impl.Conf
 		{
 			set
 			{
-				checkArgument(StringUtils.isNotBlank(value), "producerName cannot be blank");
-				this.producerName = value;
+				if (string.IsNullOrWhiteSpace(value))
+					throw new System.Exception("producerName cannot be blank");
+				_producerName = value;
 			}
 		}
 
@@ -142,8 +114,9 @@ namespace SharpPulsar.Impl.Conf
 		{
 			set
 			{
-				checkArgument(value > 0, "maxPendingMessages needs to be > 0");
-				this.maxPendingMessages = value;
+				if(value < 1)
+					throw new System.Exception("maxPendingMessages needs to be > 0");
+				_maxPendingMessages = value;
 			}
 		}
 
@@ -151,8 +124,8 @@ namespace SharpPulsar.Impl.Conf
 		{
 			set
 			{
-				checkArgument(value >= maxPendingMessages);
-				this.maxPendingMessagesAcrossPartitions = value;
+				if(value >= _maxPendingMessages)
+				 _maxPendingMessagesAcrossPartitions = value;
 			}
 		}
 
@@ -160,7 +133,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 			set
 			{
-				this.batchingMaxMessages = value;
+				_batchingMaxMessages = value;
 			}
 		}
 
@@ -168,37 +141,44 @@ namespace SharpPulsar.Impl.Conf
 		{
 			set
 			{
-				this.batchingMaxBytes = value;
+				_batchingMaxBytes = value;
 			}
 		}
 
-		public virtual void SetSendTimeoutMs(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit BAMCIS.Util.Concurrent.TimeUnit)
+		public virtual void SetSendTimeoutMs(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			checkArgument(SendTimeout >= 0, "sendTimeout needs to be >= 0");
-			this.sendTimeoutMs = BAMCIS.Util.Concurrent.TimeUnit.toMillis(SendTimeout);
+			if (SendTimeout < 1)
+				throw new System.Exception("sendTimeout needs to be >= 0");
+			_sendTimeoutMs = timeUnit.ToMillis(SendTimeout);
 		}
 
-		public virtual void SetBatchingMaxPublishDelayMicros(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit BAMCIS.Util.Concurrent.TimeUnit)
+		public virtual void SetBatchingMaxPublishDelayMicros(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			long DelayInMs = BAMCIS.Util.Concurrent.TimeUnit.toMillis(BatchDelay);
-			checkArgument(DelayInMs >= 1, "configured value for batch delay must be at least 1ms");
-			this.batchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.toMicros(BatchDelay);
+			long DelayInMs = timeUnit.ToMillis(BatchDelay);
+			if (DelayInMs < 1)
+				throw new System.Exception("configured value for batch delay must be at least 1ms");
+			_batchingMaxPublishDelayMicros = DelayInMs;
 		}
 
 		public virtual int BatchingPartitionSwitchFrequencyByPublishDelay
 		{
 			set
 			{
-				checkArgument(value >= 1, "configured value for partition switch frequency must be >= 1");
-				this.batchingPartitionSwitchFrequencyByPublishDelay = value;
+				if (value < 1)
+					throw new System.Exception("configured value for partition switch frequency must be >= 1");
+				_batchingPartitionSwitchFrequencyByPublishDelay = value;
 			}
 		}
 
 		public virtual long BatchingPartitionSwitchFrequencyIntervalMicros()
 		{
-			return this.batchingPartitionSwitchFrequencyByPublishDelay * batchingMaxPublishDelayMicros;
+			return _batchingPartitionSwitchFrequencyByPublishDelay * _batchingMaxPublishDelayMicros;
 		}
 
+		object ICloneable.Clone()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

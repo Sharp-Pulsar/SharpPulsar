@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Util;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,105 +24,82 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
 
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-	using Maps = com.google.common.collect.Maps;
-	using Sets = com.google.common.collect.Sets;
-
-
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using BatchReceivePolicy = SharpPulsar.Api.BatchReceivePolicy;
-	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
-	using ConsumerEventListener = SharpPulsar.Api.ConsumerEventListener;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using DeadLetterPolicy = SharpPulsar.Api.DeadLetterPolicy;
-	using KeySharedPolicy = SharpPulsar.Api.KeySharedPolicy;
-	using SharpPulsar.Api;
-	using RegexSubscriptionMode = SharpPulsar.Api.RegexSubscriptionMode;
-	using SubscriptionInitialPosition = SharpPulsar.Api.SubscriptionInitialPosition;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ConsumerConfigurationData<T> implements java.io.Serializable, Cloneable
 	[Serializable]
 	public class ConsumerConfigurationData<T> : ICloneable
 	{
 		private const long SerialVersionUID = 1L;
 
-		private ISet<string> topicNames = Sets.newTreeSet();
+		public ISet<string> TopicNames = new SortedSet<string>();
 
-		private Pattern topicsPattern;
+		[NonSerialized]
+		public Regex TopicsPattern;
 
+		[NonSerialized]
 		private string subscriptionName;
 
-		private SubscriptionType subscriptionType = SubscriptionType.Exclusive;
+		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
+		public MessageListener<T> MessageListener;
+		public ConsumerEventListener ConsumerEventListener;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.MessageListener<T> messageListener;
-		private MessageListener<T> messageListener;
+		public int ReceiverQueueSize = 1000;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.ConsumerEventListener consumerEventListener;
-		private ConsumerEventListener consumerEventListener;
+		public long AcknowledgementsGroupTimeMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(100);
 
-		private int receiverQueueSize = 1000;
+		public long NegativeAckRedeliveryDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMicros(1);
 
-		private long acknowledgementsGroupTimeMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toMicros(100);
+		public int MaxTotalReceiverQueueSizeAcrossPartitions = 50000;
 
-		private long negativeAckRedeliveryDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.toMicros(1);
+		[NonSerialized]
+		public string ConsumerName = null;
 
-		private int maxTotalReceiverQueueSizeAcrossPartitions = 50000;
+		public long AckTimeoutMillis = 0;
 
-		private string consumerName = null;
+		public long TickDurationMillis = 1000;
 
-		private long ackTimeoutMillis = 0;
+		public int PriorityLevel = 0;
 
-		private long tickDurationMillis = 1000;
+		public CryptoKeyReader CryptoKeyReader = null;
 
-		private int priorityLevel = 0;
+		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.CryptoKeyReader cryptoKeyReader = null;
-		private CryptoKeyReader cryptoKeyReader = null;
+		[NonSerialized]
+		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
 
-		private ConsumerCryptoFailureAction cryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
+		[NonSerialized]
+		public bool ReadCompacted = false;
 
-		private SortedDictionary<string, string> properties = new SortedDictionary<string, string>();
+		[NonSerialized]
+		public SubscriptionInitialPosition SubscriptionInitialPosition = SubscriptionInitialPosition.Latest;
 
-		private bool readCompacted = false;
+		public int PatternAutoDiscoveryPeriod = 1;
 
-		private SubscriptionInitialPosition subscriptionInitialPosition = SubscriptionInitialPosition.Latest;
+		public RegexSubscriptionMode RegexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
 
-		private int patternAutoDiscoveryPeriod = 1;
+		[NonSerialized]
+		public DeadLetterPolicy DeadLetterPolicy;
+		[NonSerialized]
+		public BatchReceivePolicy BatchReceivePolicy;
 
-		private RegexSubscriptionMode regexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
+		public bool AutoUpdatePartitions = true;
 
-		private DeadLetterPolicy deadLetterPolicy;
+		public bool ReplicateSubscriptionState = false;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.BatchReceivePolicy batchReceivePolicy;
-		private BatchReceivePolicy batchReceivePolicy;
+		public bool ResetIncludeHead = false;
 
-		private bool autoUpdatePartitions = true;
+		[NonSerialized]
+		public KeySharedPolicy KeySharedPolicy;
 
-		private bool replicateSubscriptionState = false;
-
-		private bool resetIncludeHead = false;
-
-		private KeySharedPolicy keySharedPolicy;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore public String getSingleTopic()
 		public virtual string SingleTopic
 		{
 			get
 			{
-				checkArgument(topicNames.Count == 1);
-				return topicNames.GetEnumerator().next();
+				if(TopicNames.Count == 1)
+				{
+					TopicNames.GetEnumerator().MoveNext();
+					return TopicNames.GetEnumerator().Current;
+				}
+				return string.Empty;
 			}
 		}
 
@@ -127,17 +107,21 @@ namespace SharpPulsar.Impl.Conf
 		{
 			try
 			{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") ConsumerConfigurationData<T> c = (ConsumerConfigurationData<T>) super.clone();
-				ConsumerConfigurationData<T> C = (ConsumerConfigurationData<T>) base.Clone();
-				C.topicNames = Sets.newTreeSet(this.topicNames);
-				C.properties = Maps.newTreeMap(this.properties);
+//JAVA 
+				ConsumerConfigurationData<T> C = (ConsumerConfigurationData<T>) base.MemberwiseClone();
+				C.TopicNames = new SortedSet<string>(TopicNames);
+				C.Properties = new SortedDictionary<string, string>(Properties);
 				return C;
 			}
-			catch (CloneNotSupportedException)
+			catch (System.Exception)
 			{
-				throw new Exception("Failed to clone ConsumerConfigurationData");
+				throw new System.Exception("Failed to clone ConsumerConfigurationData");
 			}
+		}
+
+		object ICloneable.Clone()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

@@ -28,55 +28,55 @@ namespace SharpPulsar.Impl.Conf
 	/// <summary>
 	/// This is a simple holder of the client configuration values.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @NoArgsConstructor @AllArgsConstructor public class ClientConfigurationData implements java.io.Serializable, Cloneable
 	[Serializable]
 	public class ClientConfigurationData : ICloneable
 	{
-		private const long SerialVersionUID = 1L;
-
-		private string serviceUrl;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private transient SharpPulsar.api.ServiceUrlProvider serviceUrlProvider;
+		public const long SerialVersionUID = 1L;
 		[NonSerialized]
-		private ServiceUrlProvider serviceUrlProvider;
+		public string ServiceUrl;
 		[NonSerialized]
-		private Authentication authentication = new AuthenticationDisabled();
-		private string authPluginClassName;
-		private string authParams;
+		public ServiceUrlProvider ServiceUrlProvider;
+		[NonSerialized]
+		private IAuthentication _authentication = new AuthenticationDisabled();
+		[NonSerialized]
+		public string AuthPluginClassName;
+		[NonSerialized]
+		public string AuthParams;
 
-		private long operationTimeoutMs = 30000;
-		private long statsIntervalSeconds = 60;
+		public long OperationTimeoutMs = 30000;
+		public long StatsIntervalSeconds = 60;
 
-		private int numIoThreads = 1;
-		private int numListenerThreads = 1;
-		private int connectionsPerBroker = 1;
+		public int NumIoThreads = 1;
+		public int NumListenerThreads = 1;
+		public int ConnectionsPerBroker = 1;
 
-		private bool useTcpNoDelay = true;
+		public bool UseTcpNoDelay = true;
 
-		private bool useTls = false;
-		private string tlsTrustCertsFilePath = "";
-		private bool tlsAllowInsecureConnection = false;
-		private bool tlsHostnameVerificationEnable = false;
-		private int concurrentLookupRequest = 5000;
-		private int maxLookupRequest = 50000;
-		private int maxNumberOfRejectedRequestPerConnection = 50;
-		private int keepAliveIntervalSeconds = 30;
-		private int connectionTimeoutMs = 10000;
-		private int requestTimeoutMs = 60000;
-		private long initialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
-		private long maxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
-		private DateTime clock = DateTime.Now;
+		private bool _useTls = false;
+		[NonSerialized]
+		public string TlsTrustCertsFilePath;
+		public bool TlsAllowInsecureConnection = false;
+		public bool TlsHostnameVerificationEnable = false;
+		public int ConcurrentLookupRequest = 5000;
+		public int MaxLookupRequest = 50000;
+		public int MaxNumberOfRejectedRequestPerConnection = 50;
+		public int KeepAliveIntervalSeconds = 30;
+		public int ConnectionTimeoutMs = 10000;
+		public int RequestTimeoutMs = 60000;
+		public long InitialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
+		public long MaxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
+		[NonSerialized]
+		public DateTime clock = DateTime.Now;
 
 		public virtual IAuthentication Authentication
 		{
 			get
 			{
-				if (authentication == null)
+				if (_authentication == null)
 				{
-					this.authentication = new AuthenticationDisabled();
+					_authentication = new AuthenticationDisabled();
 				}
-				return authentication;
+				return _authentication;
 			}
 		}
 
@@ -84,13 +84,13 @@ namespace SharpPulsar.Impl.Conf
 		{
 			get
 			{
-				if (useTls)
+				if (_useTls)
 				{
 					return true;
 				}
 				if (ServiceUrl != null && (this.ServiceUrl.StartsWith("pulsar+ssl") || this.ServiceUrl.StartsWith("https")))
 				{
-					this.useTls = true;
+					_useTls = true;
 					return true;
 				}
 				return false;
@@ -101,15 +101,18 @@ namespace SharpPulsar.Impl.Conf
 		{
 			try
 			{
-				return (ClientConfigurationData) base.Clone();
+				return (ClientConfigurationData) base.MemberwiseClone();
 			}
-			catch (CloneNotSupportedException)
+			catch (System.Exception ex)
 			{
 				throw new System.Exception("Failed to clone ClientConfigurationData");
 			}
 		}
 
-
+		object ICloneable.Clone()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

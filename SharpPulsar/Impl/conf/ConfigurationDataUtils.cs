@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 /// <summary>
@@ -62,13 +63,13 @@ namespace SharpPulsar.Impl.Conf
 			var Mapper = ThreadLocal;
 			try
 			{
-				string ExistingConfigJson = Mapper.WriteValueAsString(ExistingData);
-				IDictionary<string, object> existingConfig = Mapper.ReadValue<IDictionary<string, object>>(ExistingConfigJson);
+				string existingConfigJson = Mapper.WriteValueAsString(ExistingData);
+				IDictionary<string, object> existingConfig = (IDictionary<string, object>)Mapper.ReadValue(existingConfigJson, typeof(IDictionary<string, object>));
 				IDictionary<string, object> newConfig = new Dictionary<string, object>();
-				newConfig.Add(existingConfig);
-				newConfig.Add(Config);
+				existingConfig.ToList().ForEach(x=> newConfig.Add(x.Key, x.Value));
+				Config.ToList().ForEach(x => newConfig.Add(x.Key, x.Value));
 				string ConfigJson = Mapper.WriteValueAsString(newConfig);
-				return Mapper.ReadValue<DataCls>(ConfigJson);
+				return (T)Mapper.ReadValue(ConfigJson, DataCls);
 			}
 			catch (IOException E)
 			{
@@ -94,9 +95,10 @@ namespace SharpPulsar.Impl.Conf
 		{
 			return JsonSerializer.Serialize(@object, Options());
 		}
-		public T ReadValue<T>(string existingConfigJson)
+		public object ReadValue(string existingConfigJson, Type t)
 		{
-			return JsonSerializer.Deserialize<T>(existingConfigJson);
+			return JsonSerializer.Deserialize(existingConfigJson, t);
 		}
 	}
+	
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,57 +21,42 @@
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-	using JsonIgnore = com.fasterxml.jackson.annotation.JsonIgnore;
-
-	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using MessageId = SharpPulsar.Api.MessageId;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-
-	using Data = lombok.Data;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data public class ReaderConfigurationData<T> implements java.io.Serializable, Cloneable
 	[Serializable]
 	public class ReaderConfigurationData<T> : ICloneable
 	{
+		[NonSerialized]
+		public string TopicName;
+		public MessageId startMessageId;
+		public long StartMessageFromRollbackDurationInSec;
 
-		private string topicName;
+		public int ReceiverQueueSize = 1000;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private SharpPulsar.api.MessageId startMessageId;
-		private MessageId startMessageId;
+		public ReaderListener<T> ReaderListener;
+		[NonSerialized]
+		public string ReaderName = null;
+		[NonSerialized]
+		public string SubscriptionRolePrefix = null;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonIgnore private long startMessageFromRollbackDurationInSec;
-		private long startMessageFromRollbackDurationInSec;
+		public CryptoKeyReader CryptoKeyReader = null;
+		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
 
-		private int receiverQueueSize = 1000;
-
-		private ReaderListener<T> readerListener;
-
-		private string readerName = null;
-		private string subscriptionRolePrefix = null;
-
-		private CryptoKeyReader cryptoKeyReader = null;
-		private ConsumerCryptoFailureAction cryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
-
-		private bool readCompacted = false;
-		private bool resetIncludeHead = false;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") public ReaderConfigurationData<T> clone()
+		public bool ReadCompacted = false;
+		public bool ResetIncludeHead = false;
 		public virtual ReaderConfigurationData<T> Clone()
 		{
 			try
 			{
-				return (ReaderConfigurationData<T>) base.Clone();
+				return (ReaderConfigurationData<T>) base.MemberwiseClone();
 			}
-			catch (CloneNotSupportedException)
+			catch (System.Exception e)
 			{
-				throw new Exception("Failed to clone ReaderConfigurationData");
+				throw new System.Exception("Failed to clone ReaderConfigurationData", e);
 			}
+		}
+
+		object ICloneable.Clone()
+		{
+			throw new NotImplementedException();
 		}
 	}
 
