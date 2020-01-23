@@ -1,7 +1,20 @@
-﻿using SharpPulsar;
+﻿using DotNetty.Buffers;
+using DotNetty.Transport.Channels;
+using SharpPulsar;
+using SharpPulsar.Common.Protocol;
+using SharpPulsar.Common.PulsarApi;
+using SharpPulsar.Configuration;
+using SharpPulsar.Entity;
+using SharpPulsar.Exception;
+using SharpPulsar.Interface.Auth;
+using SharpPulsar.Util;
+using SharpPulsar.Util.Collections;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using static SharpPulsar.Impl.BinaryProtoLookupService;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,99 +36,52 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Queues = com.google.common.collect.Queues;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Channel = io.netty.channel.Channel;
-	using ChannelHandler = io.netty.channel.ChannelHandler;
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using NativeIoException = io.netty.channel.unix.Errors.NativeIoException;
-	using LengthFieldBasedFrameDecoder = io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-	using SslHandler = io.netty.handler.ssl.SslHandler;
-	using Promise = io.netty.util.concurrent.Promise;
-
-
-	using Getter = lombok.Getter;
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using DefaultHostnameVerifier = org.apache.http.conn.ssl.DefaultHostnameVerifier;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using TimeoutException = org.apache.pulsar.client.api.PulsarClientException.TimeoutException;
-	using LookupDataResult = SharpPulsar.Impl.BinaryProtoLookupService.LookupDataResult;
-	using ClientConfigurationData = SharpPulsar.Impl.conf.ClientConfigurationData;
-	using AuthData = org.apache.pulsar.common.api.AuthData;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using PulsarHandler = org.apache.pulsar.common.protocol.PulsarHandler;
-	using ServerError = SharpPulsar.ServerError;
-	using SchemaVersion = org.apache.pulsar.common.protocol.schema.SchemaVersion;
-	using SchemaInfo = Common.Schema.SchemaInfo;
-	using SchemaInfoUtil = org.apache.pulsar.common.protocol.schema.SchemaInfoUtil;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
-	using ConcurrentLongHashMap = org.apache.pulsar.common.util.collections.ConcurrentLongHashMap;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	public class ClientConnection : PulsarHandler
+	
+	public class ClientConnection
 	{
 
-		protected internal readonly Authentication authentication;
-		private State state;
+		protected internal readonly IAuthentication _authentication;
+		private State _state;
 
-		private readonly ConcurrentLongHashMap<CompletableFuture<ProducerResponse>> pendingRequests = new ConcurrentLongHashMap<CompletableFuture<ProducerResponse>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<LookupDataResult>> pendingLookupRequests = new ConcurrentLongHashMap<CompletableFuture<LookupDataResult>>(16, 1);
+		private readonly ConcurrentLongHashMap<ValueTask<ProducerResponse>> _pendingRequests = new ConcurrentLongHashMap<ValueTask<ProducerResponse>>(16, 1);
+		private readonly ConcurrentLongHashMap<ValueTask<LookupDataResult>> _pendingLookupRequests = new ConcurrentLongHashMap<ValueTask<LookupDataResult>>(16, 1);
 		// LookupRequests that waiting in client side.
-		private readonly LinkedList<Pair<long, Pair<ByteBuf, CompletableFuture<LookupDataResult>>>> waitingLookupRequests;
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>> pendingGetLastMessageIdRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<IList<string>>> pendingGetTopicsRequests = new ConcurrentLongHashMap<CompletableFuture<IList<string>>>(16, 1);
+		private readonly LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, ValueTask<LookupDataResult>>>> _waitingLookupRequests;
+		private readonly ConcurrentLongHashMap<ValueTask<MessageIdData>> _pendingGetLastMessageIdRequests = new ConcurrentLongHashMap<ValueTask<MessageIdData>>(16, 1);
+		private readonly ConcurrentLongHashMap<ValueTask<IList<string>>> _pendingGetTopicsRequests = new ConcurrentLongHashMap<ValueTask<IList<string>>>(16, 1);
 
-		private readonly ConcurrentLongHashMap<CompletableFuture<SharpPulsar.CommandGetSchemaResponse>> pendingGetSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>> pendingGetOrCreateSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>>(16, 1);
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<ProducerImpl<?>> producers = new org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<>(16, 1);
-		private readonly ConcurrentLongHashMap<ProducerImpl<object>> producers = new ConcurrentLongHashMap<ProducerImpl<object>>(16, 1);
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<ConsumerImpl<?>> consumers = new org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<>(16, 1);
+		private readonly ConcurrentLongHashMap<ValueTask<CommandGetSchemaResponse>> _pendingGetSchemaRequests = new ConcurrentLongHashMap<ValueTask<CommandGetSchemaResponse>>(16, 1);
+		private readonly ConcurrentLongHashMap<ValueTask<CommandGetOrCreateSchemaResponse>> _pendingGetOrCreateSchemaRequests = new ConcurrentLongHashMap<ValueTask<CommandGetOrCreateSchemaResponse>>(16, 1);
 		private readonly ConcurrentLongHashMap<ConsumerImpl<object>> consumers = new ConcurrentLongHashMap<ConsumerImpl<object>>(16, 1);
 		private readonly ConcurrentLongHashMap<TransactionMetaStoreHandler> transactionMetaStoreHandlers = new ConcurrentLongHashMap<TransactionMetaStoreHandler>(16, 1);
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private readonly CompletableFuture<Void> connectionFuture_Conflict = new CompletableFuture<Void>();
-		private readonly ConcurrentLinkedQueue<RequestTime> requestTimeoutQueue = new ConcurrentLinkedQueue<RequestTime>();
-		private readonly Semaphore pendingLookupRequestSemaphore;
-		private readonly Semaphore maxLookupRequestSemaphore;
-		private readonly EventLoopGroup eventLoopGroup;
+		private readonly ValueTask _connectionTask = new ValueTask();
+		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
+		private readonly Semaphore _pendingLookupRequestSemaphore;
+		private readonly Semaphore _maxLookupRequestSemaphore;
+		private readonly IEventLoopGroup _eventLoopGroup;
 
 		private static readonly AtomicIntegerFieldUpdater<ClientConnection> NUMBER_OF_REJECTED_REQUESTS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ClientConnection), "numberOfRejectRequests");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile int numberOfRejectRequests = 0;
-		private volatile int numberOfRejectRequests = 0;
+		private volatile int _numberOfRejectRequests = 0;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private static int maxMessageSize = org.apache.pulsar.common.protocol.Commands.DEFAULT_MAX_MESSAGE_SIZE;
-		private static int maxMessageSize = Commands.DEFAULT_MAX_MESSAGE_SIZE;
 
-		private readonly int maxNumberOfRejectedRequestPerConnection;
-		private readonly int rejectedRequestResetTimeSec = 60;
-		private readonly int protocolVersion;
-		private readonly long operationTimeoutMs;
+		private static int _maxMessageSize = Commands.DEFAULT_MAX_MESSAGE_SIZE;
 
-		protected internal string proxyToTargetBrokerAddress = null;
+		private readonly int _maxNumberOfRejectedRequestPerConnection;
+		private readonly int _rejectedRequestResetTimeSec = 60;
+		private readonly int _protocolVersion;
+		private readonly long _operationTimeoutMs;
+
+		protected internal string _proxyToTargetBrokerAddress = null;
 		// Remote hostName with which client is connected
-		protected internal string remoteHostName = null;
-		private bool isTlsHostnameVerificationEnable;
+		protected internal string _remoteHostName = null;
+		private bool _isTlsHostnameVerificationEnable;
 
 		private static readonly DefaultHostnameVerifier HOSTNAME_VERIFIER = new DefaultHostnameVerifier();
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private java.util.concurrent.ScheduledFuture<?> timeoutTask;
-		private ScheduledFuture<object> timeoutTask;
+		private TaskScheduler timeoutTask;
 
 		// Added for mutual authentication.
-		protected internal AuthenticationDataProvider authenticationDataProvider;
+		protected internal IAuthenticationDataProvider authenticationDataProvider;
 
 		internal enum State
 		{
@@ -138,113 +104,106 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientConnection(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, Commands.CurrentProtocolVersion)
+		public ClientConnection(ClientConfigurationData conf) : this(conf, Commands.CurrentProtocolVersion)
 		{
 		}
 
-		public ClientConnection(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, int protocolVersion) : base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
+		public ClientConnection(ClientConfigurationData conf, int protocolVersion) : base(conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
 		{
 			checkArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
-			this.pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, false);
-			this.maxLookupRequestSemaphore = new Semaphore(conf.MaxLookupRequest - conf.ConcurrentLookupRequest, false);
-			this.waitingLookupRequests = Queues.newConcurrentLinkedQueue();
-			this.authentication = conf.Authentication;
-			this.eventLoopGroup = eventLoopGroup;
-			this.maxNumberOfRejectedRequestPerConnection = conf.MaxNumberOfRejectedRequestPerConnection;
-			this.operationTimeoutMs = conf.OperationTimeoutMs;
-			this.state = State.None;
-			this.isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
-			this.protocolVersion = protocolVersion;
+			_pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
+			_maxLookupRequestSemaphore = new Semaphore(conf.MaxLookupRequest - conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
+			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, ValueTask<LookupDataResult>>>>();
+			_authentication = conf.Authentication;
+			_eventLoopGroup = eventLoopGroup;
+			_maxNumberOfRejectedRequestPerConnection = conf.MaxNumberOfRejectedRequestPerConnection;
+			_operationTimeoutMs = conf.OperationTimeoutMs;
+			_state = State.None;
+			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
+			_protocolVersion = protocolVersion;
 		}
-		public void ChannelActive(ChannelHandlerContext ctx)
+		public void ChannelActive(IChannelHandlerContext ctx)
 		{
-			base.channelActive(ctx);
-			this.timeoutTask = this.eventLoopGroup.scheduleAtFixedRate(() => checkRequestTimeout(), operationTimeoutMs, operationTimeoutMs, TimeUnit.MILLISECONDS);
+			base.ChannelActive(ctx);
+			this.timeoutTask = _eventLoopGroup.scheduleAtFixedRate(() => checkRequestTimeout(), operationTimeoutMs, operationTimeoutMs, TimeUnit.MILLISECONDS);
 
-			if (string.ReferenceEquals(proxyToTargetBrokerAddress, null))
+			if (string.ReferenceEquals(_proxyToTargetBrokerAddress, null))
 			{
 				if (log.DebugEnabled)
 				{
-					log.debug("{} Connected to broker", ctx.channel());
+					log.debug("{} Connected to broker", ctx.Channel);
 				}
 			}
 			else
 			{
-				log.info("{} Connected through proxy to target broker at {}", ctx.channel(), proxyToTargetBrokerAddress);
+				log.info("{} Connected through proxy to target broker at {}", ctx.Channel, _proxyToTargetBrokerAddress);
 			}
 			// Send CONNECT command
-			ctx.writeAndFlush(newConnectCommand()).addListener(future =>
+			ctx.WriteAndFlushAsync(NewConnectCommand()).addListener(future =>
 			{
-			if (future.Success)
-			{
-				if (log.DebugEnabled)
+				if (future.Success)
 				{
-					log.debug("Complete: {}", future.Success);
+					if (log.DebugEnabled)
+					{
+						log.debug("Complete: {}", future.Success);
+					}
+					state = State.SentConnectFrame;
 				}
-				state = State.SentConnectFrame;
-			}
-			else
-			{
-				log.warn("Error during handshake", future.cause());
-				ctx.close();
-			}
+				else
+				{
+					log.warn("Error during handshake", future.cause());
+					ctx.close();
+				}
 			});
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected io.netty.buffer.ByteBuf newConnectCommand() throws Exception
-		protected internal virtual ByteBuf newConnectCommand()
+		protected internal virtual IByteBuffer NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
-			authenticationDataProvider = authentication.getAuthData(remoteHostName);
-			AuthData authData = authenticationDataProvider.authenticate(AuthData.of(AuthData.INIT_AUTH_DATA));
-			return Commands.newConnect(authentication.AuthMethodName, authData, this.protocolVersion, PulsarVersion.Version, proxyToTargetBrokerAddress, null, null, null);
+			authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
+			AuthData authData = authenticationDataProvider.Authenticate(AuthData.of(AuthData.INIT_AUTH_DATA));
+			return Commands.NewConnect(_authentication.AuthMethodName, authData, _protocolVersion, PulsarVersion.Version, _proxyToTargetBrokerAddress, null, null, null);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void channelInactive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
-		public override void channelInactive(ChannelHandlerContext ctx)
+		public override void ChannelInactive(IChannelHandlerContext ctx)
 		{
-			base.channelInactive(ctx);
-			log.info("{} Disconnected", ctx.channel());
+			base.ChannelInactive(ctx);
+			log.info("{} Disconnected", ctx.Channel);
 			if (!connectionFuture_Conflict.Done)
 			{
-				connectionFuture_Conflict.completeExceptionally(new PulsarClientException("Connection already closed"));
+				_connectionTask.completeExceptionally(new PulsarClientException("Connection already closed"));
 			}
 
 			PulsarClientException e = new PulsarClientException("Disconnected from server at " + ctx.channel().remoteAddress());
 
 			// Fail out all the pending ops
-			pendingRequests.forEach((key, future) => future.completeExceptionally(e));
-			pendingLookupRequests.forEach((key, future) => future.completeExceptionally(e));
-			waitingLookupRequests.forEach(pair => pair.Right.Right.completeExceptionally(e));
-			pendingGetLastMessageIdRequests.forEach((key, future) => future.completeExceptionally(e));
-			pendingGetTopicsRequests.forEach((key, future) => future.completeExceptionally(e));
-			pendingGetSchemaRequests.forEach((key, future) => future.completeExceptionally(e));
+			_pendingRequests.forEach((key, future) => future.completeExceptionally(e));
+			_pendingLookupRequests.forEach((key, future) => future.completeExceptionally(e));
+			_waitingLookupRequests.forEach(pair => pair.Right.Right.completeExceptionally(e));
+			_pendingGetLastMessageIdRequests.forEach((key, future) => future.completeExceptionally(e));
+			_pendingGetTopicsRequests.forEach((key, future) => future.completeExceptionally(e));
+			_pendingGetSchemaRequests.forEach((key, future) => future.completeExceptionally(e));
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
-			producers.forEach((id, producer) => producer.connectionClosed(this));
+			_producers.forEach((id, producer) => producer.connectionClosed(this));
 			consumers.forEach((id, consumer) => consumer.connectionClosed(this));
 			transactionMetaStoreHandlers.forEach((id, handler) => handler.connectionClosed(this));
 
-			pendingRequests.clear();
-			pendingLookupRequests.clear();
-			waitingLookupRequests.Clear();
-			pendingGetLastMessageIdRequests.clear();
-			pendingGetTopicsRequests.clear();
+			_pendingRequests.clear();
+			_pendingLookupRequests.clear();
+			_waitingLookupRequests.Clear();
+			_pendingGetLastMessageIdRequests.clear();
+			_pendingGetTopicsRequests.clear();
 
-			producers.clear();
+			_producers.clear();
 			consumers.clear();
 
 			timeoutTask.cancel(true);
 		}
 
 		// Command Handlers
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void exceptionCaught(io.netty.channel.ChannelHandlerContext ctx, Throwable cause) throws Exception
 		public override void exceptionCaught(ChannelHandlerContext ctx, Exception cause)
 		{
 			if (state != State.Failed)
@@ -271,13 +230,13 @@ namespace SharpPulsar.Impl
 			return t is NativeIoException || t is ClosedChannelException;
 		}
 
-		protected internal override void handleConnected(PulsarApi.CommandConnected connected)
+		protected internal override void handleConnected(CommandConnected connected)
 		{
 
 			if (isTlsHostnameVerificationEnable && !string.ReferenceEquals(remoteHostName, null) && !verifyTlsHostName(remoteHostName, ctx))
 			{
 				// close the connection if host-verification failed with the broker
-				log.warn("[{}] Failed to verify hostname of {}", ctx.channel(), remoteHostName);
+				Log.Logger.warn("[{}] Failed to verify hostname of {}", ctx.channel(), remoteHostName);
 				ctx.close();
 				return;
 			}
@@ -302,7 +261,7 @@ namespace SharpPulsar.Impl
 			state = State.Ready;
 		}
 
-		protected internal override void handleAuthChallenge(PulsarApi.CommandAuthChallenge authChallenge)
+		protected internal void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
 			checkArgument(authChallenge.hasChallenge());
 			checkArgument(authChallenge.Challenge.hasAuthData());
@@ -310,7 +269,7 @@ namespace SharpPulsar.Impl
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				AuthData authData = authenticationDataProvider.authenticate(AuthData.of(authChallenge.Challenge.AuthData.toByteArray()));
+				var authData = authenticationDataProvider.Authenticate(AuthData.Of(authChallenge.Challenge.auth_data));
 
 				checkState(!authData.Complete);
 

@@ -28,29 +28,17 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Bootstrap = DotNetty.Transport.Bootstrapping.Bootstrap;
-	using Channel = DotNetty.Transport.Channels;
-	using ChannelException = DotNetty.Transport.Channels.ChannelException;
-	using ChannelOption = DotNetty.Transport.Channels.ChannelOption;
-	using EventLoopGroup = DotNetty.Transport.Channels.AffinitizedEventLoopGroup;
-	using DnsNameResolver = DotNetty.Transport.Bootstrapping.DefaultNameResolver;
-	//using DnsNameResolverBuilder = DotNetty.Transport.Bootstrapping.DnsNameResolverBuilder;
 
 	public class ConnectionPool : IDisposable
 	{
 		protected internal readonly ConcurrentDictionary<IPEndPoint, ConcurrentDictionary<int, ValueTask<ClientConnection>>> pool;
 
-		private readonly Bootstrap bootstrap;
-		private readonly EventLoopGroup eventLoopGroup;
 		private readonly int maxConnectionsPerHosts;
-
-		protected internal readonly DnsNameResolver dnsResolver;
-		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () => new ClientConnection(conf, eventLoopGroup))
+		public ConnectionPool(ClientConfigurationData conf) : this(conf, () => new ClientConnection(conf))
 		{
 		}
-		public ConnectionPool(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, Func<ClientConnection> clientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData conf, Func<ClientConnection> clientCnxSupplier)
 		{
-			this.eventLoopGroup = eventLoopGroup;
 			this.maxConnectionsPerHosts = conf.ConnectionsPerBroker;
 
 			pool = new ConcurrentDictionary<IPEndPoint, ConcurrentDictionary<int, ValueTask<ClientConnection>>>();

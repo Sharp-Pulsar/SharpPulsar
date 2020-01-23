@@ -49,11 +49,12 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Exception;
     using SharpPulsar.Impl.Schema;
     using SharpPulsar.Util.Atomic;
+    using Microsoft.Extensions.Logging;
 
     public class PulsarClientImpl : IPulsarClient
 	{
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarClientImpl));
+		//private static readonly Util.Log  log = LoggerFactory.Create(typeof(PulsarClientImpl));
 
 		private readonly ClientConfigurationData conf;
 		private LookupService lookup;
@@ -68,34 +69,16 @@ namespace SharpPulsar.Impl
 			Closed
 		}
 
-		private readonly AtomicReference<State> state = new AtomicReference<State>();
-		private readonly HashSet<ProducerBase<object>> producers;
-		private readonly HashSet<ConsumerBase<object>> consumers;
-
-		private readonly AtomicLong producerIdGenerator = new AtomicLong();
-		private readonly AtomicLong consumerIdGenerator = new AtomicLong();
-		private readonly AtomicLong requestIdGenerator = new AtomicLong();
-
-		private readonly EventLoopGroup eventLoopGroup_Conflict;
-
+		private readonly HashSet<ProducerBase<object>> _producers;
+		private readonly HashSet<ConsumerBase<object>> _consumers;
 		
 
-		private class CacheLoaderAnonymousInnerClass : CacheLoader<string, ISchemaInfoProvider>
-		{
-
-			public ISchemaInfoProvider Load(string topicName)
-			{
-				return outerInstance.newSchemaProvider(topicName);
-			}
-		}
-
+		
 		private readonly DateTime clientClock;
 		public PulsarClientImpl(ClientConfigurationData conf) : this(conf, getEventLoopGroup(conf))
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarClientImpl(SharpPulsar.Impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws org.apache.pulsar.client.api.PulsarClientException
 		public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup))
 		{
 		}
