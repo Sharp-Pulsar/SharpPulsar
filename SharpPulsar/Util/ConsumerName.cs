@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using System;
+using System.Security.Cryptography;
+using System.Text;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,13 +22,41 @@
 namespace SharpPulsar.Util
 {
 
-	using DigestUtils = org.apache.commons.codec.digest.DigestUtils;
-
-	public class ConsumerName
+	
+	public static class ConsumerName
 	{
 		public static string GenerateRandomName()
 		{
-			return DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 5);
+			return SHA1Hex(Guid.NewGuid().ToString()).Substring(0, 5);
+		}
+		/// <summary>
+		/// Compute hash for string encoded as UTF8
+		/// </summary>
+		/// <param name="s">String to be hashed</param>
+		/// <returns>40-character hex string</returns>
+		public static string SHA1Hex(string s)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(s);
+
+			var sha1 = SHA1.Create();
+			byte[] hashBytes = sha1.ComputeHash(bytes);
+
+			return HexStringFromBytes(hashBytes);
+		}
+		/// <summary>
+		/// Convert an array of bytes to a string of hex digits
+		/// </summary>
+		/// <param name="bytes">array of bytes</param>
+		/// <returns>String of hex digits</returns>
+		public static string HexStringFromBytes(byte[] bytes)
+		{
+			var sb = new StringBuilder();
+			foreach (byte b in bytes)
+			{
+				var hex = b.ToString("x2");
+				sb.Append(hex);
+			}
+			return sb.ToString();
 		}
 	}
 

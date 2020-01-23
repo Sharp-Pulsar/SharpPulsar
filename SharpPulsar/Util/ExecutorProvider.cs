@@ -40,7 +40,7 @@ namespace SharpPulsar.Util
 				throw new ArgumentException("Number of threads most be greater than 0");
 			this.numThreads = NumThreads;
 			if (taskFactory is null)
-				throw new NullReferenceException("ThreadFactory cannot be null");
+				throw new NullReferenceException("ActionFactory cannot be null");
 			_executors = new List<Task>(NumThreads);
 			for (int I = 0; I < NumThreads; I++)
 			{
