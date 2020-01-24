@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Protocol.Proto;
+using System.Collections.Generic;
 using System.Threading;
 
 /// <summary>
@@ -21,22 +22,6 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Recycler = io.netty.util.Recycler;
-	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using TransactionCoordinatorClientException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException;
-
-	using RequestTime = SharpPulsar.Impl.ClientCnx.RequestTime;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using Org.Apache.Pulsar.Common.Util.Collections;
-	using TxnID = Org.Apache.Pulsar.Transaction.Impl.Common.TxnID;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
 
 	/// <summary>
 	/// Handler for transaction meta store.
@@ -48,8 +33,6 @@ namespace SharpPulsar.Impl
 
 		private readonly long transactionCoordinatorId;
 		private ConnectionHandler connectionHandler;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<OpBase<?>> pendingRequests = new org.apache.pulsar.common.util.collections.ConcurrentLongHashMap<>(16, 1);
 		private readonly ConcurrentLongHashMap<OpBase<object>> pendingRequests = new ConcurrentLongHashMap<OpBase<object>>(16, 1);
 		private readonly ConcurrentLinkedQueue<RequestTime> timeoutQueue;
 
@@ -109,7 +92,7 @@ namespace SharpPulsar.Impl
 			return Callback;
 		}
 
-		public virtual void HandleNewTxnResponse(PulsarApi.CommandNewTxnResponse Response)
+		public virtual void HandleNewTxnResponse(CommandNewTxnResponse Response)
 		{
 			OpForTxnIdCallBack Op = (OpForTxnIdCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
@@ -160,7 +143,7 @@ namespace SharpPulsar.Impl
 			return Callback;
 		}
 
-		public virtual void HandleAddPublishPartitionToTxnResponse(PulsarApi.CommandAddPartitionToTxnResponse Response)
+		public virtual void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse Response)
 		{
 			OpForVoidCallBack Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
@@ -201,7 +184,7 @@ namespace SharpPulsar.Impl
 				return Callback;
 			}
 			long RequestId = ClientConflict.newRequestId();
-			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, PulsarApi.TxnAction.COMMIT);
+			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, TxnAction.COMMIT);
 			OpForVoidCallBack Op = OpForVoidCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
@@ -223,7 +206,7 @@ namespace SharpPulsar.Impl
 				return Callback;
 			}
 			long RequestId = ClientConflict.newRequestId();
-			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, PulsarApi.TxnAction.ABORT);
+			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, TxnAction.ABORT);
 			OpForVoidCallBack Op = OpForVoidCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
@@ -232,7 +215,7 @@ namespace SharpPulsar.Impl
 			return Callback;
 		}
 
-		public virtual void HandleEndTxnResponse(PulsarApi.CommandEndTxnResponse Response)
+		public virtual void HandleEndTxnResponse(CommandEndTxnResponse Response)
 		{
 			OpForVoidCallBack Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
@@ -333,13 +316,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private TransactionCoordinatorClientException GetExceptionByServerError(PulsarApi.ServerError ServerError, string Msg)
+		private TransactionCoordinatorClientException GetExceptionByServerError(ServerError ServerError, string Msg)
 		{
 			switch (ServerError.innerEnumValue)
 			{
-				case PulsarApi.ServerError.InnerEnum.TransactionCoordinatorNotFound:
+				case ServerError.InnerEnum.TransactionCoordinatorNotFound:
 					return new TransactionCoordinatorClientException.CoordinatorNotFoundException(Msg);
-				case PulsarApi.ServerError.InnerEnum.InvalidTxnStatus:
+				case ServerError.InnerEnum.InvalidTxnStatus:
 					return new TransactionCoordinatorClientException.InvalidTxnStatusException(Msg);
 				default:
 					return new TransactionCoordinatorClientException(Msg);

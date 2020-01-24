@@ -24,67 +24,6 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.computeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.resumeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.impl.MessageImpl.SchemaState.Broken;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.impl.MessageImpl.SchemaState.None;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.impl.ProducerBase.MultiSchemaMode.Auto;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.impl.ProducerBase.MultiSchemaMode.Enabled;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.hasChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.readChecksum;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Queues = com.google.common.collect.Queues;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Recycler = io.netty.util.Recycler;
-	using Handle = io.netty.util.Recycler.Handle;
-	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-	using ScheduledFuture = io.netty.util.concurrent.ScheduledFuture;
-
-
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
-	using CompressionType = SharpPulsar.Api.CompressionType;
-	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
-	using Producer = SharpPulsar.Api.Producer;
-	using ProducerCryptoFailureAction = SharpPulsar.Api.ProducerCryptoFailureAction;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using CryptoException = SharpPulsar.Api.PulsarClientException.CryptoException;
-	using SharpPulsar.Api;
-	using ProducerConfigurationData = SharpPulsar.Impl.Conf.ProducerConfigurationData;
-	using SharpPulsar.Impl.Schema;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using ProtocolVersion = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.ProtocolVersion;
-	using CompressionCodec = Org.Apache.Pulsar.Common.Compression.CompressionCodec;
-	using CompressionCodecProvider = Org.Apache.Pulsar.Common.Compression.CompressionCodecProvider;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using ChecksumType = Org.Apache.Pulsar.Common.Protocol.Commands.ChecksumType;
-	using SchemaHash = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaHash;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using DateFormatter = Org.Apache.Pulsar.Common.Util.DateFormatter;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	public class ProducerImpl<T> : ProducerBase<T>, TimerTask, ConnectionHandler.Connection
 	{
@@ -120,9 +59,6 @@ namespace SharpPulsar.Impl
 		protected internal volatile long LastSequenceIdPushed;
 
 		private MessageCrypto msgCrypto = null;
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private io.netty.util.concurrent.ScheduledFuture<?> keyGeneratorTask = null;
 		private ScheduledFuture<object> keyGeneratorTask = null;
 
 		private readonly IDictionary<string, string> metadata;
@@ -131,8 +67,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ConnectionHandler {get;}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("rawtypes") private static final java.util.concurrent.atomic.AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater(ProducerImpl.class, "msgIdGenerator");
+
 		private static readonly AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerImpl), "msgIdGenerator");
 
 		public ProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, CompletableFuture<Producer<T>> ProducerCreatedFuture, int PartitionIndex, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, ProducerCreatedFuture, Schema, Interceptors)
@@ -294,8 +229,6 @@ namespace SharpPulsar.Impl
 			}
 
 			internal SendCallback nextCallback;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> nextMsg;
 			internal MessageImpl<object> nextMsg;
 			internal long createdAt;
 
@@ -1324,85 +1257,86 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			Cnx.sendRequestWithId(Commands.newProducer(Topic, ProducerId, RequestId, HandlerName, Conf.EncryptionEnabled, metadata, SchemaInfo, ConnectionHandler.EpochConflict, userProvidedProducerName), RequestId).thenAccept(response =>
+			Cnx.sendRequestWithId(Commands.newProducer(Topic, ProducerId, RequestId, HandlerName, Conf.EncryptionEnabled, metadata, SchemaInfo, ConnectionHandler.EpochConflict, userProvidedProducerName), RequestId)
+		    .thenAccept(response =>
 			{
-			string ProducerName = response.ProducerName;
-			long LastSequenceId = response.LastSequenceId;
-			schemaVersion = Optional.ofNullable(response.SchemaVersion);
-			schemaVersion.ifPresent(v => SchemaCache.put(SchemaHash.of(Schema), v));
-			lock (ProducerImpl.this)
+				string ProducerName = response.ProducerName;
+				long LastSequenceId = response.LastSequenceId;
+				schemaVersion = Optional.ofNullable(response.SchemaVersion);
+				schemaVersion.ifPresent(v => SchemaCache.put(SchemaHash.of(Schema), v));
+				lock (ProducerImpl.this)
+				{
+					if (State == State.Closing || State == State.Closed)
+					{
+						Cnx.removeProducer(ProducerId);
+						Cnx.channel().close();
+						return;
+					}
+					ResetBackoff();
+					log.info("[{}] [{}] Created producer on cnx {}", Topic, ProducerName, Cnx.ctx().channel());
+					connectionId = Cnx.ctx().channel().ToString();
+					connectedSince = DateFormatter.now();
+					if (string.ReferenceEquals(this.HandlerName, null))
+					{
+						this.HandlerName = ProducerName;
+					}
+					if (this.msgIdGenerator == 0 && Conf.InitialSequenceId == null)
+					{
+						this.LastSequenceId = LastSequenceId;
+						this.msgIdGenerator = LastSequenceId + 1;
+					}
+					if (!ProducerCreatedFutureConflict.Done && BatchMessagingEnabled)
+					{
+						ClientConflict.timer().newTimeout(batchMessageAndSendTask, Conf.BatchingMaxPublishDelayMicros, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS);
+					}
+					ResendMessages(Cnx);
+				}
+			}).exceptionally(e =>
 			{
+				Exception Cause = e.Cause;
+				Cnx.removeProducer(ProducerId);
 				if (State == State.Closing || State == State.Closed)
 				{
-					Cnx.removeProducer(ProducerId);
 					Cnx.channel().close();
-					return;
+					return null;
 				}
-				ResetBackoff();
-				log.info("[{}] [{}] Created producer on cnx {}", Topic, ProducerName, Cnx.ctx().channel());
-				connectionId = Cnx.ctx().channel().ToString();
-				connectedSince = DateFormatter.now();
-				if (string.ReferenceEquals(this.HandlerName, null))
+				log.error("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, Cause.Message);
+				if (Cause is PulsarClientException.ProducerBlockedQuotaExceededException)
 				{
-					this.HandlerName = ProducerName;
-				}
-				if (this.msgIdGenerator == 0 && Conf.InitialSequenceId == null)
-				{
-					this.LastSequenceId = LastSequenceId;
-					this.msgIdGenerator = LastSequenceId + 1;
-				}
-				if (!ProducerCreatedFutureConflict.Done && BatchMessagingEnabled)
-				{
-					ClientConflict.timer().newTimeout(batchMessageAndSendTask, Conf.BatchingMaxPublishDelayMicros, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS);
-				}
-				ResendMessages(Cnx);
-			}
-			}).exceptionally((e) =>
-			{
-			Exception Cause = e.Cause;
-			Cnx.removeProducer(ProducerId);
-			if (State == State.Closing || State == State.Closed)
-			{
-				Cnx.channel().close();
-				return null;
-			}
-			log.error("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, Cause.Message);
-			if (Cause is PulsarClientException.ProducerBlockedQuotaExceededException)
-			{
-				lock (this)
-				{
-					log.warn("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
-					if (log.DebugEnabled)
+					lock (this)
 					{
-						log.debug("[{}] [{}] Pending messages: {}", Topic, HandlerName, pendingMessages.size());
+						log.warn("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
+						if (log.DebugEnabled)
+						{
+							log.debug("[{}] [{}] Pending messages: {}", Topic, HandlerName, pendingMessages.size());
+						}
+						PulsarClientException Bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
+						FailPendingMessages(cnx(), Bqe);
 					}
-					PulsarClientException Bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
-					FailPendingMessages(cnx(), Bqe);
 				}
-			}
-			else if (Cause is PulsarClientException.ProducerBlockedQuotaExceededError)
-			{
-				log.warn("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
-			}
-			if (Cause is PulsarClientException.TopicTerminatedException)
-			{
-				State = State.Terminated;
-				FailPendingMessages(cnx(), (PulsarClientException) Cause);
-				ProducerCreatedFutureConflict.completeExceptionally(Cause);
-				ClientConflict.cleanupProducer(this);
-			}
-			else if (ProducerCreatedFutureConflict.Done || (Cause is PulsarClientException && ConnectionHandler.IsRetriableError((PulsarClientException) Cause) && DateTimeHelper.CurrentUnixTimeMillis() < createProducerTimeout))
-			{
-				ReconnectLater(Cause);
-			}
-			else
-			{
-				State = State.Failed;
-				ProducerCreatedFutureConflict.completeExceptionally(Cause);
-				ClientConflict.cleanupProducer(this);
-			}
-			return null;
-		});
+				else if (Cause is PulsarClientException.ProducerBlockedQuotaExceededError)
+				{
+					log.warn("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
+				}
+				if (Cause is PulsarClientException.TopicTerminatedException)
+				{
+					State = State.Terminated;
+					FailPendingMessages(cnx(), (PulsarClientException) Cause);
+					ProducerCreatedFutureConflict.completeExceptionally(Cause);
+					ClientConflict.cleanupProducer(this);
+				}
+				else if (ProducerCreatedFutureConflict.Done || (Cause is PulsarClientException && ConnectionHandler.IsRetriableError((PulsarClientException) Cause) && DateTimeHelper.CurrentUnixTimeMillis() < createProducerTimeout))
+				{
+					ReconnectLater(Cause);
+				}
+				else
+				{
+					State = State.Failed;
+					ProducerCreatedFutureConflict.completeExceptionally(Cause);
+					ClientConflict.cleanupProducer(this);
+				}
+				return null;
+			});
 		}
 
 		public override void ConnectionFailed(PulsarClientException Exception)
@@ -1511,8 +1445,6 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Process sendTimeout events
 		/// </summary>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
 		public override void Run(Timeout Timeout)
 		{
 			if (Timeout.Cancelled)
@@ -1572,25 +1504,21 @@ namespace SharpPulsar.Impl
 		{
 			if (Cnx == null)
 			{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.atomic.AtomicInteger releaseCount = new java.util.concurrent.atomic.AtomicInteger();
 				AtomicInteger ReleaseCount = new AtomicInteger();
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final boolean batchMessagingEnabled = isBatchMessagingEnabled();
 				bool BatchMessagingEnabled = BatchMessagingEnabled;
 				pendingMessages.forEach(op =>
 				{
-				ReleaseCount.addAndGet(BatchMessagingEnabled ? op.numMessagesInBatch: 1);
-				try
-				{
-					op.callback.sendComplete(Ex);
-				}
-				catch (Exception T)
-				{
-					log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, op.sequenceId, T);
-				}
-				ReferenceCountUtil.safeRelease(op.cmd);
-				op.recycle();
+						ReleaseCount.addAndGet(BatchMessagingEnabled ? op.numMessagesInBatch: 1);
+						try
+						{
+							op.callback.sendComplete(Ex);
+						}
+						catch (Exception T)
+						{
+							log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, op.sequenceId, T);
+						}
+						ReferenceCountUtil.safeRelease(op.cmd);
+						op.recycle();
 				});
 
 				pendingMessages.clear();
@@ -1608,10 +1536,10 @@ namespace SharpPulsar.Impl
 				// race condition since we also write the message on the socket from this thread
 				Cnx.ctx().channel().eventLoop().execute(() =>
 				{
-				lock (ProducerImpl.this)
-				{
-					FailPendingMessages(null, Ex);
-				}
+					lock(ProducerImpl.this)
+					{
+						FailPendingMessages(null, Ex);
+					}
 				});
 			}
 		}
@@ -1791,8 +1719,6 @@ namespace SharpPulsar.Impl
 
 		private void RecoverProcessOpSendMsgFrom(ClientCnx Cnx, MessageImpl From)
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final boolean stripChecksum = cnx.getRemoteEndpointProtocolVersion() < brokerChecksumSupportedVersion();
 			bool StripChecksum = Cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
 			IEnumerator<OpSendMsg> MsgIterator = pendingMessages.GetEnumerator();
 			OpSendMsg PendingRegisteringOp = null;
@@ -1944,8 +1870,6 @@ namespace SharpPulsar.Impl
 			this.ConnectionHandler.GrabCnx();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting Semaphore getSemaphore()
 		public virtual Semaphore Semaphore
 		{
 			get

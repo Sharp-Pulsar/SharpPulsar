@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BAMCIS.Util.Concurrent.TimeUnit" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.1" />
+    <PackageReference Include="timeunit" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>

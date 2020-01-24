@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Protocol.Builder;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,27 +22,18 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using ToString = lombok.ToString;
-	using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
-	using SchemaType = SharpPulsar.Schema.SchemaType;
 
 	/// <summary>
 	/// Schema data.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Builder @Data @ToString public class SchemaData
 	public class SchemaData
 	{
-		private readonly SchemaType type;
-		private readonly bool isDeleted;
-		private readonly long timestamp;
-		private readonly string user;
-		private readonly sbyte[] data;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Builder.Default private java.util.Map<String, String> props = new java.util.HashMap<>();
-		private IDictionary<string, string> props = new Dictionary<string, string>();
+		public SchemaType Type { get; set; }
+		public  bool IsDeleted { get; set; }
+		public  long Timestamp { get; set; }
+		public  string User { get; set; }
+		public  sbyte[] Data { get; set; }
+		public IDictionary<string, string> Properties = new Dictionary<string, string>();
 
 		/// <summary>
 		/// Convert a schema data to a schema info.
@@ -48,7 +41,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// <returns> the converted schema info. </returns>
 		public virtual SchemaInfo ToSchemaInfo()
 		{
-			return SchemaInfo.builder().name("").type(type).schema(data).properties(props).build();
+			return new SchemaInfoBuilder().SetName("").SetType(Type).SetSchema(Data).SetProperties(Properties).Build();
 		}
 
 		/// <summary>
@@ -58,7 +51,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// <returns> the converted schema schema data </returns>
 		public static SchemaData FromSchemaInfo(SchemaInfo SchemaInfo)
 		{
-			return SchemaData.builder().type(SchemaInfo.Type).data(SchemaInfo.Schema).props(SchemaInfo.Properties).build();
+			return new SchemaDataBuilder().SetType(SchemaInfo.Type).SetData(SchemaInfo.Schema).SetProperties(SchemaInfo.Properties).Build();
 		}
 
 	}

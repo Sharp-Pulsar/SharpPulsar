@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,59 +23,55 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using UtilityClass = lombok.experimental.UtilityClass;
-	using PulsarApi = SharpPulsar.Api.Proto.PulsarApi;
-	using Schema = SharpPulsar.Api.Proto.PulsarApi.Schema;
-	using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
 
 	/// <summary>
 	/// Class helping to initialize schemas.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass public class SchemaInfoUtil
 	public class SchemaInfoUtil
 	{
 
-		public static SchemaInfo NewSchemaInfo(string Name, SchemaData Data)
+		public static SchemaInfo NewSchemaInfo(string name, SchemaData data)
 		{
-			SchemaInfo Si = new SchemaInfo();
-			Si.Name = Name;
-			Si.Schema = Data.Data;
-			Si.Type = Data.Type;
-			Si.Properties = Data.Props;
-			return Si;
+			return new SchemaInfo
+			{
+				Name = name,
+				Schema = data.Data,
+				Type = data.Type,
+				Properties = data.Properties
+			};
 		}
 
-		public static SchemaInfo NewSchemaInfo(PulsarApi.Schema Schema)
+		public static SchemaInfo NewSchemaInfo(Proto.Schema schema)
 		{
-			SchemaInfo Si = new SchemaInfo();
-			Si.Name = Schema.Name;
-			Si.Schema = Schema.SchemaData.toByteArray();
-			Si.Type = Commands.getSchemaType(Schema.getType());
-			if (Schema.PropertiesCount == 0)
+			var si = new SchemaInfo();
+			si.Name = schema.Name;
+			si.Schema = (sbyte[])(Array)schema.SchemaData;
+			si.Type = Commands.GetSchemaType(schema.type);
+			if (schema.Properties.Count == 0)
 			{
-				Si.Properties = Collections.emptyMap();
+				si.Properties = Array.Empty<IDictionary<string, string>>()[0];
 			}
 			else
 			{
-				Si.Properties = new SortedDictionary<>();
-				for (int I = 0; I < Schema.PropertiesCount; I++)
+				si.Properties = new SortedDictionary<string, string>();
+				for (int i = 0; i < schema.Properties.Count; i++)
 				{
-					PulsarApi.KeyValue Kv = Schema.getProperties(I);
-					Si.Properties.put(Kv.Key, Kv.Value);
+					Proto.KeyValue kv = schema.Properties[i];
+					si.Properties.Add(kv.Key, kv.Value);
 				}
 			}
-			return Si;
+			return si;
 		}
 
-		public static SchemaInfo NewSchemaInfo(string Name, GetSchemaResponse Schema)
+		public static SchemaInfo NewSchemaInfo(string name, GetSchemaResponse schema)
 		{
-			SchemaInfo Si = new SchemaInfo();
-			Si.Name = Name;
-			Si.Schema = Schema.Data.Bytes;
-			Si.Type = Schema.Type;
-			Si.Properties = Schema.Properties;
-			return Si;
+			return new SchemaInfo
+			{
+				Name = name,
+				Schema = (sbyte[])(object)Encoding.UTF8.GetBytes(schema.Data),
+				Type = schema.Type,
+				Properties = schema.Properties
+			};
 		}
 	}
 

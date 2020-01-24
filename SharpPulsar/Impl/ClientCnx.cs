@@ -1,6 +1,26 @@
-﻿using SharpPulsar.Protocol;
+﻿using DotNetty.Buffers;
+using SharpPulsar.Api;
+using SharpPulsar.Protocol;
+using SharpPulsar.Util.Collections;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using static SharpPulsar.Impl.BinaryProtoLookupService;
+using SharpPulsar.Protocol.Proto;
+using System.Collections.Concurrent;
+using System.Threading;
+using DotNetty.Transport.Channels;
+using SharpPulsar.Util.Atomic;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Exception;
+using System.Net;
+using System.Linq;
+using DotNetty.Codecs;
+using Optional;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Protocol.Schema;
+using Microsoft.Extensions.Logging;
+using DotNetty.Handlers.Tls;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,50 +46,45 @@ namespace SharpPulsar.Impl
 	public class ClientCnx : PulsarHandler
 	{
 
-		protected internal readonly Authentication Authentication;
+		protected internal readonly IAuthentication Authentication;
 		private State state;
 
-		private readonly ConcurrentLongHashMap<CompletableFuture<ProducerResponse>> pendingRequests = new ConcurrentLongHashMap<CompletableFuture<ProducerResponse>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<LookupDataResult>> pendingLookupRequests = new ConcurrentLongHashMap<CompletableFuture<LookupDataResult>>(16, 1);
+		private readonly ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>> _pendingRequests = new ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>>(1, 16);
+		private readonly ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>> _pendingLookupRequests = new ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>>(1, 16);
 		// LookupRequests that waiting in client side.
-		private readonly LinkedList<Pair<long, Pair<ByteBuf, CompletableFuture<LookupDataResult>>>> waitingLookupRequests;
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>> pendingGetLastMessageIdRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.MessageIdData>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<IList<string>>> pendingGetTopicsRequests = new ConcurrentLongHashMap<CompletableFuture<IList<string>>>(16, 1);
+		private readonly LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>> _waitingLookupRequests;
+		private readonly ConcurrentDictionary<long, TaskCompletionSource<MessageIdData>> _pendingGetLastMessageIdRequests = new ConcurrentDictionary<long, TaskCompletionSource<MessageIdData>>(1, 16);
+		private readonly ConcurrentQueue<Task<IList<string>>> _pendingGetTopicsRequests = new ConcurrentQueue<Task<IList<string>>>();
 
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>> pendingGetSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetSchemaResponse>>(16, 1);
-		private readonly ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>> pendingGetOrCreateSchemaRequests = new ConcurrentLongHashMap<CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>>(16, 1);
+		private readonly ConcurrentDictionary<long, TaskCompletionSource<CommandGetSchemaResponse>> _pendingGetSchemaRequests = new ConcurrentDictionary<long, TaskCompletionSource<CommandGetSchemaResponse>>(1, 16);
+		private readonly ConcurrentDictionary<long, TaskCompletionSource<CommandGetOrCreateSchemaResponse>> _pendingGetOrCreateSchemaRequests = new ConcurrentDictionary<long, TaskCompletionSource<CommandGetOrCreateSchemaResponse>>(1, 16);
 
 
-		private readonly ConcurrentLongHashMap<ProducerImpl<object>> producers = new ConcurrentLongHashMap<ProducerImpl<object>>(16, 1);
-		private readonly ConcurrentLongHashMap<ConsumerImpl<object>> consumers = new ConcurrentLongHashMap<ConsumerImpl<object>>(16, 1);
-		private readonly ConcurrentLongHashMap<TransactionMetaStoreHandler> transactionMetaStoreHandlers = new ConcurrentLongHashMap<TransactionMetaStoreHandler>(16, 1);
+		private readonly ConcurrentDictionary<long, ProducerImpl<object>> _producers = new ConcurrentDictionary<long, ProducerImpl<object>>(1, 16);
+		private readonly ConcurrentDictionary<long, ConsumerImpl<object>> _consumers = new ConcurrentDictionary<long, ConsumerImpl<object>>(1, 16);
+		private readonly ConcurrentDictionary<long, TransactionMetaStoreHandler> _transactionMetaStoreHandlers = new ConcurrentDictionary<long, TransactionMetaStoreHandler>(1, 16);
 
-		private readonly CompletableFuture<Void> connectionFuture = new CompletableFuture<Void>();
-		private readonly ConcurrentLinkedQueue<RequestTime> requestTimeoutQueue = new ConcurrentLinkedQueue<RequestTime>();
-		private readonly Semaphore pendingLookupRequestSemaphore;
-		private readonly Semaphore maxLookupRequestSemaphore;
-		private readonly EventLoopGroup eventLoopGroup;
+		private  ValueTask _connectionTask = new ValueTask();
+		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
+		private readonly Semaphore _pendingLookupRequestSemaphore;
+		private readonly Semaphore _maxLookupRequestSemaphore;
+		private readonly IEventLoopGroup _eventLoopGroup;
 
-		private static readonly AtomicIntegerFieldUpdater<ClientCnx> NUMBER_OF_REJECTED_REQUESTS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ClientCnx), "numberOfRejectRequests");
-		private volatile int numberOfRejectRequests = 0;
-		private static int maxMessageSize = Commands.DEFAULT_MAX_MESSAGE_SIZE;
+		private static readonly ConcurrentDictionary<ClientCnx, long> _numberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
+		private volatile int _numberOfRejectRequests = 0;
+		private static int _maxMessageSize = Commands.DefaultMaxMessageSize;
 
-		private readonly int maxNumberOfRejectedRequestPerConnection;
-		private readonly int rejectedRequestResetTimeSec = 60;
-		private readonly int protocolVersion;
-		private readonly long operationTimeoutMs;
+		private readonly int _maxNumberOfRejectedRequestPerConnection;
+		private readonly int _rejectedRequestResetTimeSec = 60;
+		private readonly int _protocolVersion;
+		private readonly long _operationTimeoutMs;
 
-		protected internal string ProxyToTargetBrokerAddress = null;
-		// Remote hostName with which client is connected
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal string RemoteHostNameConflict = null;
-		private bool isTlsHostnameVerificationEnable;
+		protected internal string _proxyToTargetBrokerAddress;
+		protected internal string _remoteHostName;
+		private bool _isTlsHostnameVerificationEnable;
 
-		private static readonly DefaultHostnameVerifier HOSTNAME_VERIFIER = new DefaultHostnameVerifier();
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private java.util.concurrent.ScheduledFuture<?> timeoutTask;
-		private ScheduledFuture<object> timeoutTask;
+		private static readonly DefaultHostnameVerifier _hostNameVerifier = new DefaultHostnameVerifier();
+		private TaskScheduler _timeoutTask;
 
 		// Added for mutual authentication.
 		protected internal AuthenticationDataProvider AuthenticationDataProvider;
@@ -88,360 +103,359 @@ namespace SharpPulsar.Impl
 			internal long CreationTimeMs;
 			internal long RequestId;
 
-			public RequestTime(long CreationTime, long RequestId) : base()
+			public RequestTime(long creationTime, long requestId) : base()
 			{
-				this.CreationTimeMs = CreationTime;
-				this.RequestId = RequestId;
+				CreationTimeMs = creationTime;
+				RequestId = requestId;
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, Commands.CurrentProtocolVersion)
+		public ClientCnx(ClientConfigurationData Conf, IEventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, Commands.CurrentProtocolVersion)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup, int ProtocolVersion) : base(Conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData Conf, IEventLoopGroup EventLoopGroup, int ProtocolVersion) : base(Conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
 		{
-			checkArgument(Conf.MaxLookupRequest > Conf.ConcurrentLookupRequest);
-			this.pendingLookupRequestSemaphore = new Semaphore(Conf.ConcurrentLookupRequest, false);
-			this.maxLookupRequestSemaphore = new Semaphore(Conf.MaxLookupRequest - Conf.ConcurrentLookupRequest, false);
-			this.waitingLookupRequests = Queues.newConcurrentLinkedQueue();
-			this.Authentication = Conf.Authentication;
-			this.eventLoopGroup = EventLoopGroup;
-			this.maxNumberOfRejectedRequestPerConnection = Conf.MaxNumberOfRejectedRequestPerConnection;
-			this.operationTimeoutMs = Conf.OperationTimeoutMs;
-			this.state = State.None;
-			this.isTlsHostnameVerificationEnable = Conf.TlsHostnameVerificationEnable;
-			this.protocolVersion = ProtocolVersion;
+			if (Conf.MaxLookupRequest < Conf.ConcurrentLookupRequest)
+				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
+			_pendingLookupRequestSemaphore = new Semaphore(Conf.ConcurrentLookupRequest, Conf.MaxLookupRequest);
+			_maxLookupRequestSemaphore = new Semaphore(Conf.MaxLookupRequest - Conf.ConcurrentLookupRequest, Conf.MaxLookupRequest);
+			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, Task<LookupDataResult>>>>();
+			Authentication = Conf.Authentication;
+			_eventLoopGroup = EventLoopGroup;
+			_maxNumberOfRejectedRequestPerConnection = Conf.MaxNumberOfRejectedRequestPerConnection;
+			_operationTimeoutMs = Conf.OperationTimeoutMs;
+			state = State.None;
+			_isTlsHostnameVerificationEnable = Conf.TlsHostnameVerificationEnable;
+			_protocolVersion = ProtocolVersion;
 		}
 
-		public override void ChannelActive(ChannelHandlerContext Ctx)
+		public void ChannelActive(IChannelHandlerContext Ctx)
 		{
 			base.ChannelActive(Ctx);
-			this.timeoutTask = this.eventLoopGroup.scheduleAtFixedRate(() => checkRequestTimeout(), operationTimeoutMs, operationTimeoutMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+			_timeoutTask = _eventLoopGroup.Schedule(() => CheckRequestTimeout(), _operationTimeoutMs);
 
-			if (string.ReferenceEquals(ProxyToTargetBrokerAddress, null))
+			if (_proxyToTargetBrokerAddress is null)
 			{
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("{} Connected to broker", Ctx.channel());
+					log.LogDebug("{} Connected to broker", Ctx.Channel);
 				}
 			}
 			else
 			{
-				log.info("{} Connected through proxy to target broker at {}", Ctx.channel(), ProxyToTargetBrokerAddress);
+				log.LogInformation("{} Connected through proxy to target broker at {}", Ctx.Channel, _proxyToTargetBrokerAddress);
 			}
 			// Send CONNECT command
-			Ctx.writeAndFlush(NewConnectCommand()).addListener(future =>
+			Ctx.WriteAndFlushAsync(NewConnectCommand()).ContinueWith(task =>
 			{
-			if (future.Success)
-			{
-				if (log.DebugEnabled)
+				if (task.IsCompleted)
 				{
-					log.debug("Complete: {}", future.Success);
+					if (log.IsEnabled(LogLevel.Debug))
+					{
+						log.LogDebug("Complete: {}", task.IsCompleted);
+					}
+					state = State.SentConnectFrame;
 				}
-				state = State.SentConnectFrame;
-			}
-			else
-			{
-				log.warn("Error during handshake", future.cause());
-				Ctx.close();
-			}
+				else
+				{
+					log.LogWarning("Error during handshake", task.Exception);
+					Ctx.CloseAsync();
+				}
 			});
 		}
 
-		public virtual ByteBuf NewConnectCommand()
+		public virtual IByteBuffer NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
-			AuthenticationDataProvider = Authentication.getAuthData(RemoteHostNameConflict);
-			AuthData AuthData = AuthenticationDataProvider.authenticate(AuthData.of(AuthData.INIT_AUTH_DATA));
-			return Commands.newConnect(Authentication.AuthMethodName, AuthData, this.protocolVersion, PulsarVersion.Version, ProxyToTargetBrokerAddress, null, null, null);
+			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
+			AuthData AuthData = AuthenticationDataProvider.Authenticate(AuthData.of(AuthData.auth_data));
+			return Commands.NewConnect(Authentication.AuthMethodName, AuthData, _protocolVersion, PulsarVersion.Version, _proxyToTargetBrokerAddress, null, null, null);
 		}
 
-		public override void ChannelInactive(ChannelHandlerContext Ctx)
+		public void ChannelInactive(IChannelHandlerContext Ctx)
 		{
 			base.ChannelInactive(Ctx);
-			log.info("{} Disconnected", Ctx.channel());
-			if (!connectionFuture.Done)
+			log.LogInformation("{} Disconnected", Ctx.Channel);
+			if (!_connectionTask.IsCompleted)
 			{
-				connectionFuture.completeExceptionally(new PulsarClientException("Connection already closed"));
+				_connectionTask = new ValueTask(Task.FromException(new PulsarClientException("Connection already closed")));
 			}
 
-			PulsarClientException E = new PulsarClientException("Disconnected from server at " + Ctx.channel().remoteAddress());
+			PulsarClientException E = new PulsarClientException("Disconnected from server at " + Ctx.Channel.RemoteAddress);
 
 			// Fail out all the pending ops
-			pendingRequests.ForEach((key, future) => future.completeExceptionally(E));
-			pendingLookupRequests.ForEach((key, future) => future.completeExceptionally(E));
-			waitingLookupRequests.forEach(pair => pair.Right.Right.completeExceptionally(E));
-			pendingGetLastMessageIdRequests.ForEach((key, future) => future.completeExceptionally(E));
-			pendingGetTopicsRequests.ForEach((key, future) => future.completeExceptionally(E));
-			pendingGetSchemaRequests.ForEach((key, future) => future.completeExceptionally(E));
+			_pendingRequests.ToList().ForEach(x => x.Value = new ValueTask(T));
+			_pendingLookupRequests.ForEach((key, future) => future.completeExceptionally(E));
+			_waitingLookupRequests.forEach(pair => pair.Right.Right.completeExceptionally(E));
+			_pendingGetLastMessageIdRequests.ForEach((key, future) => future.completeExceptionally(E));
+			_pendingGetTopicsRequests.ForEach((key, future) => future.completeExceptionally(E));
+			_pendingGetSchemaRequests.ForEach((key, future) => future.completeExceptionally(E));
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
-			producers.ForEach((id, producer) => producer.connectionClosed(this));
-			consumers.ForEach((id, consumer) => consumer.connectionClosed(this));
-			transactionMetaStoreHandlers.ForEach((id, handler) => handler.connectionClosed(this));
+			_producers.ForEach((id, producer) => producer.connectionClosed(this));
+			_consumers.ForEach((id, consumer) => consumer.connectionClosed(this));
+			_transactionMetaStoreHandlers.ForEach((id, handler) => handler.connectionClosed(this));
 
-			pendingRequests.Clear();
-			pendingLookupRequests.Clear();
-			waitingLookupRequests.Clear();
-			pendingGetLastMessageIdRequests.Clear();
-			pendingGetTopicsRequests.Clear();
+			_pendingRequests.Clear();
+			_pendingLookupRequests.Clear();
+			_waitingLookupRequests.Clear();
+			_pendingGetLastMessageIdRequests.Clear();
+			_pendingGetTopicsRequests.Clear();
 
-			producers.Clear();
-			consumers.Clear();
+			_producers.Clear();
+			_consumers.Clear();
 
-			timeoutTask.cancel(true);
+			_timeoutTask.cancel(true);
 		}
 
 		// Command Handlers
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void exceptionCaught(io.netty.channel.ChannelHandlerContext ctx, Throwable cause) throws Exception
-		public override void ExceptionCaught(ChannelHandlerContext Ctx, Exception Cause)
+		public void ExceptionCaught(IChannelHandlerContext ctx, System.Exception cause)
 		{
 			if (state != State.Failed)
 			{
 				// No need to report stack trace for known exceptions that happen in disconnections
-				log.warn("[{}] Got exception {} : {}", RemoteAddress, Cause.GetType().Name, Cause.Message, IsKnownException(Cause) ? null : Cause);
+				log.LogWarning("[{}] Got exception {} : {}", ctx.Channel.RemoteAddress, cause.GetType().Name, cause.Message, IsKnownException(Cause) ? null : Cause);
 				state = State.Failed;
 			}
 			else
 			{
 				// At default info level, suppress all subsequent exceptions that are thrown when the connection has already
 				// failed
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("[{}] Got exception: {}", RemoteAddress, Cause.Message, Cause);
+					log.LogDebug("[{}] Got exception: {}", ctx.Channel.RemoteAddress, cause.Message, cause);
 				}
 			}
 
-			Ctx.close();
+			Ctx().CloseAsync();
 		}
 
-		public static bool IsKnownException(Exception T)
+		public static bool IsKnownException(System.Exception T)
 		{
 			return T is NativeIoException || T is ClosedChannelException;
 		}
 
-		public override void HandleConnected(PulsarApi.CommandConnected Connected)
+		public  void HandleConnected(CommandConnected connected)
 		{
 
-			if (isTlsHostnameVerificationEnable && !string.ReferenceEquals(RemoteHostNameConflict, null) && !VerifyTlsHostName(RemoteHostNameConflict, Ctx))
+			if (_isTlsHostnameVerificationEnable && !string.IsNullOrWhiteSpace(_remoteHostName) && !VerifyTlsHostName(_remoteHostName, Ctx()))
 			{
 				// close the connection if host-verification failed with the broker
-				log.warn("[{}] Failed to verify hostname of {}", Ctx.channel(), RemoteHostNameConflict);
-				Ctx.close();
+				log.LogWarning("[{}] Failed to verify hostname of {}", Ctx().Channel, _remoteHostName);
+				Ctx().CloseAsync();
 				return;
 			}
 
-			checkArgument(state == State.SentConnectFrame || state == State.Connecting);
-			if (Connected.hasMaxMessageSize())
+			if(state == State.SentConnectFrame || state == State.Connecting)
+			if (connected.MaxMessageSize > 0)
 			{
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("{} Connection has max message size setting, replace old frameDecoder with " + "server frame size {}", Ctx.channel(), Connected.MaxMessageSize);
+					log.LogDebug("{} Connection has max message size setting, replace old frameDecoder with " + "server frame size {}", Ctx().Channel, connected.MaxMessageSize);
 				}
-				maxMessageSize = Connected.MaxMessageSize;
-				Ctx.pipeline().replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(Connected.MaxMessageSize + Commands.MESSAGE_SIZE_FRAME_PADDING, 0, 4, 0, 4));
+				_maxMessageSize = connected.MaxMessageSize;
+				Ctx().Channel.Pipeline.Replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
 			}
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Connection is ready", Ctx.channel());
+				log.LogDebug("{} Connection is ready", Ctx().Channel);
 			}
 			// set remote protocol version to the correct version before we complete the connection future
-			RemoteEndpointProtocolVersionConflict = Connected.ProtocolVersion;
+			RemoteEndpointProtocolVersion = connected.ProtocolVersion;
 			connectionFuture.complete(null);
 			state = State.Ready;
 		}
 
-		public override void HandleAuthChallenge(PulsarApi.CommandAuthChallenge AuthChallenge)
+		public void HandleAuthChallenge(CommandAuthChallenge AuthChallenge)
 		{
-			checkArgument(AuthChallenge.hasChallenge());
-			checkArgument(AuthChallenge.Challenge.hasAuthData());
-
+			if(AuthChallenge.Challenge != null)
+			if(AuthChallenge.Challenge.auth_data != null)
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				AuthData AuthData = AuthenticationDataProvider.authenticate(AuthData.of(AuthChallenge.Challenge.AuthData.toByteArray()));
+				AuthData authData = AuthenticationDataProvider.Authenticate(AuthData.of(AuthChallenge.Challenge.auth_data));
 
-				checkState(!AuthData.Complete);
+						if (!authData.Complete)
+							throw new System.Exception();
+					IByteBuffer request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, PulsarVersion.Version);
 
-				ByteBuf Request = Commands.newAuthResponse(Authentication.AuthMethodName, AuthData, this.protocolVersion, PulsarVersion.Version);
-
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("{} Mutual auth {}", Ctx.channel(), Authentication.AuthMethodName);
+					log.LogDebug("{} Mutual auth {}", Ctx().Channel, Authentication.AuthMethodName);
 				}
 
-				Ctx.writeAndFlush(Request).addListener(writeFuture =>
+				Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 				{
-				if (!writeFuture.Success)
-				{
-					log.warn("{} Failed to send request for mutual auth to broker: {}", Ctx.channel(), writeFuture.cause().Message);
-					connectionFuture.completeExceptionally(writeFuture.cause());
-				}
-				});
+					if (writeTask.IsFaulted)
+					{
+						log.LogWarning("{} Failed to send request for mutual auth to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+						connectionFuture.completeExceptionally(writeTask.Exception);
+					}
+					});
 				state = State.Connecting;
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				log.error("{} Error mutual verify: {}", Ctx.channel(), E);
+				log.LogError("{} Error mutual verify: {}", Ctx().Channel, E);
 				connectionFuture.completeExceptionally(E);
 				return;
 			}
 		}
 
-		public override void HandleSendReceipt(PulsarApi.CommandSendReceipt SendReceipt)
+		public void HandleSendReceipt(CommandSendReceipt sendReceipt)
 		{
-			checkArgument(state == State.Ready);
+			if (state != State.Ready)
+				return;
 
-			long ProducerId = SendReceipt.ProducerId;
-			long SequenceId = SendReceipt.SequenceId;
-			long HighestSequenceId = SendReceipt.HighestSequenceId;
+			long ProducerId = (long)sendReceipt.ProducerId;
+			long SequenceId = (long)sendReceipt.SequenceId;
+			long HighestSequenceId = (long)sendReceipt.HighestSequenceId;
 			long LedgerId = -1;
 			long EntryId = -1;
-			if (SendReceipt.hasMessageId())
+			if (sendReceipt.MessageId != null)
 			{
-				LedgerId = SendReceipt.MessageId.LedgerId;
-				EntryId = SendReceipt.MessageId.EntryId;
+				LedgerId = (long)sendReceipt.MessageId.ledgerId;
+				EntryId = (long)sendReceipt.MessageId.entryId;
 			}
 
 			if (LedgerId == -1 && EntryId == -1)
 			{
-				log.warn("[{}] Message has been dropped for non-persistent topic producer-id {}-{}", Ctx.channel(), ProducerId, SequenceId);
+				log.LogWarning("[{}] Message has been dropped for non-persistent topic producer-id {}-{}", Ctx().Channel, ProducerId, SequenceId);
 			}
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Got receipt for producer: {} -- msg: {} -- id: {}:{}", Ctx.channel(), ProducerId, SequenceId, LedgerId, EntryId);
+				log.LogDebug("{} Got receipt for producer: {} -- msg: {} -- id: {}:{}", Ctx().Channel, ProducerId, SequenceId, LedgerId, EntryId);
 			}
 
-			producers.Get(ProducerId).ackReceived(this, SequenceId, HighestSequenceId, LedgerId, EntryId);
+			_producers[ProducerId].AckReceived(this, SequenceId, HighestSequenceId, LedgerId, EntryId);
 		}
 
-		public override void HandleMessage(PulsarApi.CommandMessage CmdMessage, ByteBuf HeadersAndPayload)
+		public void HandleMessage(CommandMessage CmdMessage, IByteBuffer HeadersAndPayload)
 		{
-			checkArgument(state == State.Ready);
+			if(state != State.Ready)
+				return;
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Received a message from the server: {}", Ctx.channel(), CmdMessage);
+				log.LogDebug("{} Received a message from the server: {}", Ctx().Channel, CmdMessage);
 			}
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ConsumerImpl<?> consumer = consumers.get(cmdMessage.getConsumerId());
-			ConsumerImpl<object> Consumer = consumers.Get(CmdMessage.ConsumerId);
-			if (Consumer != null)
+			ConsumerImpl<object> consumer = _consumers[(long)CmdMessage.ConsumerId];
+			if (consumer != null)
 			{
-				Consumer.messageReceived(CmdMessage.MessageId, CmdMessage.RedeliveryCount, HeadersAndPayload, this);
-			}
-		}
-
-		public override void HandleActiveConsumerChange(PulsarApi.CommandActiveConsumerChange Change)
-		{
-			checkArgument(state == State.Ready);
-
-			if (log.DebugEnabled)
-			{
-				log.debug("{} Received a consumer group change message from the server : {}", Ctx.channel(), Change);
-			}
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ConsumerImpl<?> consumer = consumers.get(change.getConsumerId());
-			ConsumerImpl<object> Consumer = consumers.Get(Change.ConsumerId);
-			if (Consumer != null)
-			{
-				Consumer.activeConsumerChanged(Change.IsActive);
+				consumer.MessageReceived(CmdMessage.MessageId, CmdMessage.RedeliveryCount, HeadersAndPayload, this);
 			}
 		}
 
-		public override void HandleSuccess(PulsarApi.CommandSuccess Success)
+		public void HandleActiveConsumerChange(CommandActiveConsumerChange change)
 		{
-			checkArgument(state == State.Ready);
+			if (state != State.Ready)
+				return;
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Received success response from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogDebug("{} Received a consumer group change message from the server : {}", Ctx().Channel, change);
 			}
-			long RequestId = Success.RequestId;
-			CompletableFuture<ProducerResponse> RequestFuture = pendingRequests.Remove(RequestId);
-			if (RequestFuture != null)
+			ConsumerImpl<object> consumer = _consumers[(long)change.ConsumerId];
+			if (consumer != null)
 			{
-				RequestFuture.complete(null);
+				consumer.ActiveConsumerChanged(change.IsActive);
+			}
+		}
+
+		public void HandleSuccess(CommandSuccess success)
+		{
+			if (state != State.Ready)
+				return;
+
+			if (log.IsEnabled(LogLevel.Debug))
+			{
+				log.LogDebug("{} Received success response from server: {}", Ctx().Channel, success.RequestId);
+			}
+			long requestId = (long)success.RequestId;
+			_pendingRequests.Remove(requestId, out var requestTask);
+			if (requestTask != null)
+			{
+				requestTask.SetResult(null);
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public override void HandleGetLastMessageIdSuccess(PulsarApi.CommandGetLastMessageIdResponse Success)
+		public void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
 		{
-			checkArgument(state == State.Ready);
+			if (state != State.Ready)
+				return;
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Received success GetLastMessageId response from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogDebug("{} Received success GetLastMessageId response from server: {}", Ctx().Channel, success.RequestId);
 			}
-			long RequestId = Success.RequestId;
-			CompletableFuture<PulsarApi.MessageIdData> RequestFuture = pendingGetLastMessageIdRequests.Remove(RequestId);
-			if (RequestFuture != null)
+			long RequestId = (long)success.RequestId;
+			_pendingGetLastMessageIdRequests.Remove(RequestId, out var requestTask);
+			if (requestTask != null)
 			{
-				RequestFuture.complete(Success.LastMessageId);
+				requestTask.SetResult(success.LastMessageId);
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public override void HandleProducerSuccess(PulsarApi.CommandProducerSuccess Success)
+		public void HandleProducerSuccess(CommandProducerSuccess success)
 		{
-			checkArgument(state == State.Ready);
+			if (state != State.Ready)
+				return;
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Received producer success response from server: {} - producer-name: {}", Ctx.channel(), Success.RequestId, Success.ProducerName);
+				log.LogDebug("{} Received producer success response from server: {} - producer-name: {}", Ctx().Channel, success.RequestId, success.ProducerName);
 			}
-			long RequestId = Success.RequestId;
-			CompletableFuture<ProducerResponse> RequestFuture = pendingRequests.Remove(RequestId);
-			if (RequestFuture != null)
+			long requestId = (long)success.RequestId;
+			_pendingRequests.Remove(requestId, out var requestTask);
+			if (requestTask != null)
 			{
-				RequestFuture.complete(new ProducerResponse(Success.ProducerName, Success.LastSequenceId, Success.SchemaVersion.toByteArray()));
+				requestTask.SetResult(new ProducerResponse(success.ProducerName, success.LastSequenceId, (sbyte[])(object)success.SchemaVersion));
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public override void HandleLookupResponse(PulsarApi.CommandLookupTopicResponse LookupResult)
+		public void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
 		{
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("Received Broker lookup response: {}", LookupResult.Response);
+				log.LogDebug("Received Broker lookup response: {}", lookupResult.Response);
 			}
 
-			long RequestId = LookupResult.RequestId;
-			CompletableFuture<LookupDataResult> RequestFuture = GetAndRemovePendingLookupRequest(RequestId);
+			long requestId = (long)lookupResult.RequestId;
+			var requestTask = GetAndRemovePendingLookupRequest(requestId);
 
-			if (RequestFuture != null)
+			if (requestTask != null)
 			{
-				if (RequestFuture.CompletedExceptionally)
+				if (requestTask.IsFaulted)
 				{
-					if (log.DebugEnabled)
+					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.debug("{} Request {} already timed-out", Ctx.channel(), LookupResult.RequestId);
+						log.LogDebug("{} Request {} already timed-out", Ctx().Channel, lookupResult.RequestId);
 					}
 					return;
 				}
 				// Complete future with exception if : Result.response=fail/null
-				if (!LookupResult.hasResponse() || PulsarApi.CommandLookupTopicResponse.LookupType.Failed.Equals(LookupResult.Response))
+				if (lookupResult.Response != null || CommandLookupTopicResponse.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (LookupResult.hasError())
+					if (lookupResult.Error != null)
 					{
-						CheckServerError(LookupResult.Error, LookupResult.Message);
-						RequestFuture.completeExceptionally(GetPulsarClientException(LookupResult.Error, LookupResult.Message));
+						CheckServerError(lookupResult.Error, lookupResult.Message);
+						requestTask.se(GetPulsarClientException(LookupResult.Error, LookupResult.Message));
 					}
 					else
 					{
@@ -455,32 +469,32 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), LookupResult.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, LookupResult.RequestId);
 			}
 		}
 
-		public override void HandlePartitionResponse(PulsarApi.CommandPartitionedTopicMetadataResponse LookupResult)
+		public void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse LookupResult)
 		{
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("Received Broker Partition response: {}", LookupResult.Partitions);
+				log.LogDebug("Received Broker Partition response: {}", LookupResult.Partitions);
 			}
 
 			long RequestId = LookupResult.RequestId;
-			CompletableFuture<LookupDataResult> RequestFuture = GetAndRemovePendingLookupRequest(RequestId);
+			Task<LookupDataResult> RequestFuture = GetAndRemovePendingLookupRequest(RequestId);
 
 			if (RequestFuture != null)
 			{
 				if (RequestFuture.CompletedExceptionally)
 				{
-					if (log.DebugEnabled)
+					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.debug("{} Request {} already timed-out", Ctx.channel(), LookupResult.RequestId);
+						log.LogDebug("{} Request {} already timed-out", Ctx().Channel, LookupResult.RequestId);
 					}
 					return;
 				}
 				// Complete future with exception if : Result.response=fail/null
-				if (!LookupResult.hasResponse() || PulsarApi.CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(LookupResult.Response))
+				if (!LookupResult.hasResponse() || CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(LookupResult.Response))
 				{
 					if (LookupResult.hasError())
 					{
@@ -500,17 +514,17 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), LookupResult.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, LookupResult.RequestId);
 			}
 		}
 
-		public override void HandleReachedEndOfTopic(PulsarApi.CommandReachedEndOfTopic CommandReachedEndOfTopic)
+		public void HandleReachedEndOfTopic(CommandReachedEndOfTopic CommandReachedEndOfTopic)
 		{
 //JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
 //ORIGINAL LINE: final long consumerId = commandReachedEndOfTopic.getConsumerId();
 			long ConsumerId = CommandReachedEndOfTopic.ConsumerId;
 
-			log.info("[{}] Broker notification reached the end of topic: {}", RemoteAddress, ConsumerId);
+			log.LogInformation("[{}] Broker notification reached the end of topic: {}", RemoteAddress, ConsumerId);
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: ConsumerImpl<?> consumer = consumers.get(consumerId);
@@ -522,10 +536,10 @@ namespace SharpPulsar.Impl
 		}
 
 		// caller of this method needs to be protected under pendingLookupRequestSemaphore
-		private void AddPendingLookupRequests(long RequestId, CompletableFuture<LookupDataResult> Future)
+		private void AddPendingLookupRequests(long requestId, TaskCompletionSource<LookupDataResult> task)
 		{
-			pendingLookupRequests.Put(RequestId, Future);
-			eventLoopGroup.schedule(() =>
+			_pendingLookupRequests.TryAdd(requestId, task);
+			_eventLoopGroup.Schedule(() =>
 			{
 			if (!Future.Done)
 			{
@@ -534,121 +548,115 @@ namespace SharpPulsar.Impl
 			}, operationTimeoutMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		private CompletableFuture<LookupDataResult> GetAndRemovePendingLookupRequest(long RequestId)
+		private TaskCompletionSource<LookupDataResult> GetAndRemovePendingLookupRequest(long requestId)
 		{
-			CompletableFuture<LookupDataResult> Result = pendingLookupRequests.Remove(RequestId);
-			if (Result != null)
+			_pendingLookupRequests.Remove(requestId, out var requestTask);
+			if (requestTask != null)
 			{
-				Pair<long, Pair<ByteBuf, CompletableFuture<LookupDataResult>>> FirstOneWaiting = waitingLookupRequests.RemoveFirst();
-				if (FirstOneWaiting != null)
+				var firstOneWaiting = _waitingLookupRequests.First();
+				if (firstOneWaiting.Key > 1)
 				{
-					maxLookupRequestSemaphore.release();
+					_maxLookupRequestSemaphore.Release();
 					// schedule a new lookup in.
-					eventLoopGroup.submit(() =>
+					_eventLoopGroup.Execute(() =>
 					{
-					long NewId = FirstOneWaiting.Left;
-					CompletableFuture<LookupDataResult> NewFuture = FirstOneWaiting.Right.Right;
-					AddPendingLookupRequests(NewId, NewFuture);
-					Ctx.writeAndFlush(FirstOneWaiting.Right.Left).addListener(writeFuture =>
+					long newId = firstOneWaiting.Key;
+					var newTask = firstOneWaiting.Value.Value;
+					AddPendingLookupRequests(newId, newTask);
+					Ctx().WriteAndFlushAsync(firstOneWaiting.Value.Key).ContinueWith(writeTask =>
 					{
-						if (!writeFuture.Success)
+						if (writeTask.IsFaulted)
 						{
-							log.warn("{} Failed to send request {} to broker: {}", Ctx.channel(), NewId, writeFuture.cause().Message);
-							GetAndRemovePendingLookupRequest(NewId);
-							NewFuture.completeExceptionally(writeFuture.cause());
+							log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, newId, writeTask.Exception.Message);
+							GetAndRemovePendingLookupRequest(newId);
+							newTask.SetException(writeTask.Exception);
 						}
 					});
 					});
+					_waitingLookupRequests.RemoveFirst();
 				}
 				else
 				{
-					pendingLookupRequestSemaphore.release();
+					_pendingLookupRequestSemaphore.Release();
 				}
 			}
-			return Result;
+			return requestTask;
 		}
 
-		public override void HandleSendError(PulsarApi.CommandSendError SendError)
+		public void HandleSendError(CommandSendError sendError)
 		{
-			log.warn("{} Received send error from server: {} : {}", Ctx.channel(), SendError.Error, SendError.Message);
+			log.LogWarning("{} Received send error from server: {} : {}", Ctx().Channel, sendError.Error, sendError.Message);
 
-			long ProducerId = SendError.ProducerId;
-			long SequenceId = SendError.SequenceId;
+			long producerId = (long)sendError.ProducerId;
+			long sequenceId = (long)sendError.SequenceId;
 
-			switch (SendError.Error)
+			switch (sendError.Error)
 			{
-			case ChecksumError:
-				producers.Get(ProducerId).recoverChecksumError(this, SequenceId);
+			case ServerError.ChecksumError:
+				_producers[producerId].RecoverChecksumError(this, sequenceId);
 				break;
 
-			case TopicTerminatedError:
-				producers.Get(ProducerId).terminated(this);
+			case ServerError.TopicTerminatedError:
+					_producers[producerId].Terminated(this);
 				break;
 
 			default:
 				// By default, for transient error, let the reconnection logic
 				// to take place and re-establish the produce again
-				Ctx.close();
+				Ctx().CloseAsync();
 			break;
 			}
 		}
 
-		public override void HandleError(PulsarApi.CommandError Error)
+		public void HandleError(CommandError error)
 		{
-			checkArgument(state == State.SentConnectFrame || state == State.Ready);
+			if (state != State.SentConnectFrame || state != State.Ready)
+				return;
 
-			log.warn("{} Received error from server: {}", Ctx.channel(), Error.Message);
-			long RequestId = Error.RequestId;
-			if (Error.Error == PulsarApi.ServerError.ProducerBlockedQuotaExceededError)
+			log.LogWarning("{} Received error from server: {}", Ctx().Channel, error.Message);
+			long requestId = (long)error.RequestId;
+			if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
 			{
-				log.warn("{} Producer creation has been blocked because backlog quota exceeded for producer topic", Ctx.channel());
+				log.LogWarning("{} Producer creation has been blocked because backlog quota exceeded for producer topic", Ctx().Channel);
 			}
-			CompletableFuture<ProducerResponse> RequestFuture = pendingRequests.Remove(RequestId);
-			if (RequestFuture != null)
+			_pendingRequests.Remove(requestId, out var requestTask);
+			if (requestTask != null)
 			{
-				RequestFuture.completeExceptionally(GetPulsarClientException(Error.Error, Error.Message));
+				requestTask.SetException(GetPulsarClientException(error.Error, error.Message));
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), Error.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, error.RequestId);
 			}
 		}
 
-		public override void HandleCloseProducer(PulsarApi.CommandCloseProducer CloseProducer)
+		public void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
-			log.info("[{}] Broker notification of Closed producer: {}", RemoteAddress, CloseProducer.ProducerId);
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final long producerId = closeProducer.getProducerId();
-			long ProducerId = CloseProducer.ProducerId;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ProducerImpl<?> producer = producers.get(producerId);
-			ProducerImpl<object> Producer = producers.Get(ProducerId);
-			if (Producer != null)
+			log.LogInformation("[{}] Broker notification of Closed producer: {}", Ctx().Channel.RemoteAddress, closeProducer.ProducerId);
+			long ProducerId = (long)closeProducer.ProducerId;
+			ProducerImpl<object> producer = _producers[ProducerId];
+			if (producer != null)
 			{
-				Producer.connectionClosed(this);
+				producer.ConnectionClosed(this);
 			}
 			else
 			{
-				log.warn("Producer with id {} not found while closing producer ", ProducerId);
+				log.LogWarning("Producer with id {} not found while closing producer ", ProducerId);
 			}
 		}
 
-		public override void HandleCloseConsumer(PulsarApi.CommandCloseConsumer CloseConsumer)
+		public void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
-			log.info("[{}] Broker notification of Closed consumer: {}", RemoteAddress, CloseConsumer.ConsumerId);
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final long consumerId = closeConsumer.getConsumerId();
-			long ConsumerId = CloseConsumer.ConsumerId;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ConsumerImpl<?> consumer = consumers.get(consumerId);
-			ConsumerImpl<object> Consumer = consumers.Get(ConsumerId);
-			if (Consumer != null)
+			log.LogInformation("[{}] Broker notification of Closed consumer: {}", Ctx().Channel.RemoteAddress, closeConsumer.ConsumerId);
+			long consumerId = (long)closeConsumer.ConsumerId;
+			ConsumerImpl<object> consumer = _consumers[consumerId];
+			if (consumer != null)
 			{
-				Consumer.connectionClosed(this);
+				consumer.ConnectionClosed(this);
 			}
 			else
 			{
-				log.warn("Consumer with id {} not found while closing consumer ", ConsumerId);
+				log.LogWarning("Consumer with id {} not found while closing consumer ", consumerId);
 			}
 		}
 
@@ -660,110 +668,111 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<LookupDataResult> NewLookup(ByteBuf Request, long RequestId)
+		public virtual Task<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
 		{
-			CompletableFuture<LookupDataResult> Future = new CompletableFuture<LookupDataResult>();
+			TaskCompletionSource<LookupDataResult> task = new TaskCompletionSource<LookupDataResult>();
 
-			if (pendingLookupRequestSemaphore.tryAcquire())
+			if (_pendingLookupRequestSemaphore.WaitOne())
 			{
-				AddPendingLookupRequests(RequestId, Future);
-				Ctx.writeAndFlush(Request).addListener(writeFuture =>
+				AddPendingLookupRequests(requestId, task);
+				Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 				{
-				if (!writeFuture.Success)
+				if (writeTask.IsFaulted)
 				{
-					log.warn("{} Failed to send request {} to broker: {}", Ctx.channel(), RequestId, writeFuture.cause().Message);
-					GetAndRemovePendingLookupRequest(RequestId);
-					Future.completeExceptionally(writeFuture.cause());
+					log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
+					GetAndRemovePendingLookupRequest(requestId);
+					task.SetException(writeTask.Exception);
 				}
 				});
 			}
 			else
 			{
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("{} Failed to add lookup-request into pending queue", RequestId);
+					log.LogDebug("{} Failed to add lookup-request into pending queue", requestId);
 				}
 
-				if (maxLookupRequestSemaphore.tryAcquire())
+				if (_maxLookupRequestSemaphore.WaitOne())
 				{
-					waitingLookupRequests.AddLast(Pair.of(RequestId, Pair.of(Request, Future)));
+					
+					_waitingLookupRequests.AddLast(new LinkedListNode<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>> (requestId, new KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>(request, task)));
 				}
 				else
 				{
-					if (log.DebugEnabled)
+					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.debug("{} Failed to add lookup-request into waiting queue", RequestId);
+						log.LogDebug("{} Failed to add lookup-request into waiting queue", requestId);
 					}
-					Future.completeExceptionally(new PulsarClientException.TooManyRequestsException(string.Format("Requests number out of config: There are {{{0}}} lookup requests outstanding and {{{1}}} requests pending.", pendingLookupRequests.Size(), waitingLookupRequests.Count)));
+					task.SetException(new PulsarClientException.TooManyRequestsException(string.Format("Requests number out of config: There are {{{0}}} lookup requests outstanding and {{{1}}} requests pending.", _pendingLookupRequests.Count, _waitingLookupRequests.Count)));
 				}
 			}
-			return Future;
+			return task;
 		}
 
-		public virtual CompletableFuture<IList<string>> NewGetTopicsOfNamespace(ByteBuf Request, long RequestId)
+		public virtual Task<IList<string>> NewGetTopicsOfNamespace(ByteBuf Request, long requestId)
 		{
-			CompletableFuture<IList<string>> Future = new CompletableFuture<IList<string>>();
+			Task<IList<string>> Future = new Task<IList<string>>();
 
 			pendingGetTopicsRequests.Put(RequestId, Future);
-			Ctx.writeAndFlush(Request).addListener(writeFuture =>
+			Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 			{
-			if (!writeFuture.Success)
+			if (!writeTask.Success)
 			{
-				log.warn("{} Failed to send request {} to broker: {}", Ctx.channel(), RequestId, writeFuture.cause().Message);
+				log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, RequestId, writeTask.Exception.Message);
 				pendingGetTopicsRequests.Remove(RequestId);
-				Future.completeExceptionally(writeFuture.cause());
+				Future.completeExceptionally(writeTask.Exception);
 			}
 			});
 
 			return Future;
 		}
 
-		public override void HandleGetTopicsOfNamespaceSuccess(PulsarApi.CommandGetTopicsOfNamespaceResponse Success)
+		public void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse Success)
 		{
 			checkArgument(state == State.Ready);
 
 			long RequestId = Success.RequestId;
 			IList<string> Topics = Success.TopicsList;
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx.channel(), Success.RequestId, Topics.Count);
+				log.LogDebug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx().Channel, Success.RequestId, Topics.Count);
 			}
 
-			CompletableFuture<IList<string>> RequestFuture = pendingGetTopicsRequests.Remove(RequestId);
+			Task<IList<string>> RequestFuture = pendingGetTopicsRequests.Remove(RequestId);
 			if (RequestFuture != null)
 			{
 				RequestFuture.complete(Topics);
 			}
 			else
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), Success.RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, Success.RequestId);
 			}
 		}
 
-		public override void HandleGetSchemaResponse(PulsarApi.CommandGetSchemaResponse CommandGetSchemaResponse)
+		public void HandleGetSchemaResponse(CommandGetSchemaResponse CommandGetSchemaResponse)
 		{
 			checkArgument(state == State.Ready);
 
 			long RequestId = CommandGetSchemaResponse.RequestId;
 
-			CompletableFuture<PulsarApi.CommandGetSchemaResponse> Future = pendingGetSchemaRequests.Remove(RequestId);
+			Task<CommandGetSchemaResponse> Future = pendingGetSchemaRequests.Remove(RequestId);
 			if (Future == null)
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, RequestId);
 				return;
 			}
 			Future.complete(CommandGetSchemaResponse);
 		}
 
-		public override void HandleGetOrCreateSchemaResponse(PulsarApi.CommandGetOrCreateSchemaResponse CommandGetOrCreateSchemaResponse)
+		public void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse CommandGetOrCreateSchemaResponse)
 		{
 			checkArgument(state == State.Ready);
 			long RequestId = CommandGetOrCreateSchemaResponse.RequestId;
-			CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse> Future = pendingGetOrCreateSchemaRequests.Remove(RequestId);
+			Task<CommandGetOrCreateSchemaResponse> Future = pendingGetOrCreateSchemaRequests.Remove(RequestId);
 			if (Future == null)
 			{
-				log.warn("{} Received unknown request id from server: {}", Ctx.channel(), RequestId);
+				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, RequestId);
 				return;
 			}
 			Future.complete(CommandGetOrCreateSchemaResponse);
@@ -774,14 +783,14 @@ namespace SharpPulsar.Impl
 			return Ctx.newPromise();
 		}
 
-		public virtual ChannelHandlerContext Ctx()
+		public virtual IChannelHandlerContext Ctx()
 		{
 			return Ctx;
 		}
 
 		public virtual Channel Channel()
 		{
-			return Ctx.channel();
+			return Ctx().Channel;
 		}
 
 		public virtual SocketAddress ServerAddrees()
@@ -789,101 +798,98 @@ namespace SharpPulsar.Impl
 			return RemoteAddress;
 		}
 
-		public virtual CompletableFuture<Void> ConnectionFuture()
+		public virtual ValueTask ConnectionTask()
 		{
-			return connectionFuture;
+			return _connectionTask;
 		}
 
-		public virtual CompletableFuture<ProducerResponse> SendRequestWithId(ByteBuf Cmd, long RequestId)
+		public virtual async ValueTask<ProducerResponse> SendRequestWithId(IByteBuffer cmd, long requestId)
 		{
-			CompletableFuture<ProducerResponse> Future = new CompletableFuture<ProducerResponse>();
-			pendingRequests.Put(RequestId, Future);
-			Ctx.writeAndFlush(Cmd).addListener(writeFuture =>
+			ValueTask<ProducerResponse> task = new ValueTask<ProducerResponse>();
+			_pendingRequests.TryAdd(requestId, task);
+			await Ctx().WriteAndFlushAsync(cmd).ContinueWith(writeTask =>
 			{
-			if (!writeFuture.Success)
-			{
-				log.warn("{} Failed to send request to broker: {}", Ctx.channel(), writeFuture.cause().Message);
-				pendingRequests.Remove(RequestId);
-				Future.completeExceptionally(writeFuture.cause());
-			}
-			});
-			requestTimeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
-			return Future;
-		}
-
-		public virtual CompletableFuture<PulsarApi.MessageIdData> SendGetLastMessageId(ByteBuf Request, long RequestId)
-		{
-			CompletableFuture<PulsarApi.MessageIdData> Future = new CompletableFuture<PulsarApi.MessageIdData>();
-
-			pendingGetLastMessageIdRequests.Put(RequestId, Future);
-
-			Ctx.writeAndFlush(Request).addListener(writeFuture =>
-			{
-			if (!writeFuture.Success)
-			{
-				log.warn("{} Failed to send GetLastMessageId request to broker: {}", Ctx.channel(), writeFuture.cause().Message);
-				pendingGetLastMessageIdRequests.Remove(RequestId);
-				Future.completeExceptionally(writeFuture.cause());
-			}
-			});
-
-			return Future;
-		}
-
-		public virtual CompletableFuture<Optional<SchemaInfo>> SendGetSchema(ByteBuf Request, long RequestId)
-		{
-			return SendGetRawSchema(Request, RequestId).thenCompose(commandGetSchemaResponse =>
-			{
-			if (commandGetSchemaResponse.hasErrorCode())
-			{
-				ServerError Rc = commandGetSchemaResponse.ErrorCode;
-				if (Rc == ServerError.TopicNotFound)
+				if (writeTask.IsFaulted)
 				{
-					return CompletableFuture.completedFuture(null);
+					log.LogWarning("{} Failed to send request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					_pendingRequests.TryRemove(requestId, out task);
+				}
+			});
+			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
+			return task.Result;
+		}
+
+		public virtual async ValueTask<MessageIdData> SendGetLastMessageId(IByteBuffer request, long requestId)
+		{
+			ValueTask<MessageIdData> task = new ValueTask<MessageIdData>();
+
+			_pendingGetLastMessageIdRequests.TryAdd(requestId, task);
+
+			await Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
+			{
+				if (writeTask.IsFaulted)
+				{
+					log.LogWarning("{} Failed to send GetLastMessageId request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					_pendingGetLastMessageIdRequests.TryRemove(requestId, out task);
+					Future.completeExceptionally(writeTask.Exception);
+				}
+			});
+
+			return task.Result;
+		}
+
+		public virtual async ValueTask<SchemaInfo> SendGetSchema(IByteBuffer request, long requestId)
+		{
+			CommandGetSchemaResponse result = await SendGetRawSchema(request, requestId);
+			if(result.ErrorCode != null)
+			{
+				var rc = result.ErrorCode;
+				if(rc == ServerError.TopicNotFound)
+				{
+					throw new NullReferenceException("TopicNotFound");
 				}
 				else
 				{
-					return FutureUtil.failedFuture(GetPulsarClientException(Rc, commandGetSchemaResponse.ErrorMessage));
+					throw GetPulsarClientException(rc, result.ErrorMessage);
 				}
 			}
 			else
 			{
-				return CompletableFuture.completedFuture(SchemaInfoUtil.newSchemaInfo(commandGetSchemaResponse.Schema));
+				return SchemaInfoUtil.NewSchemaInfo(result.Schema);
 			}
-			});
 		}
 
-		public virtual CompletableFuture<PulsarApi.CommandGetSchemaResponse> SendGetRawSchema(ByteBuf Request, long RequestId)
+		public virtual ValueTask<CommandGetSchemaResponse> SendGetRawSchema(IByteBuffer request, long requestId)
 		{
-			CompletableFuture<PulsarApi.CommandGetSchemaResponse> Future = new CompletableFuture<PulsarApi.CommandGetSchemaResponse>();
+			ValueTask<CommandGetSchemaResponse> task = new ValueTask<CommandGetSchemaResponse>();
 
-			pendingGetSchemaRequests.Put(RequestId, Future);
+			_pendingGetSchemaRequests.GetOrAdd(requestId, task);
 
-			Ctx.writeAndFlush(Request).addListener(writeFuture =>
+			Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 			{
-			if (!writeFuture.Success)
+			if (writeTask.IsFaulted)
 			{
-				log.warn("{} Failed to send GetSchema request to broker: {}", Ctx.channel(), writeFuture.cause().Message);
-				pendingGetLastMessageIdRequests.Remove(RequestId);
-				Future.completeExceptionally(writeFuture.cause());
+				log.LogWarning("{} Failed to send GetSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+				_pendingGetLastMessageIdRequests.TryRemove(requestId, out var t);
+				Future.completeExceptionally(writeTask.Exception);
 			}
 			});
 
-			return Future;
+			return task;
 		}
 
-		public virtual CompletableFuture<sbyte[]> SendGetOrCreateSchema(ByteBuf Request, long RequestId)
+		public virtual Task<sbyte[]> SendGetOrCreateSchema(IByteBuffer request, long requestId)
 		{
-			CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse> Future = new CompletableFuture<PulsarApi.CommandGetOrCreateSchemaResponse>();
-			pendingGetOrCreateSchemaRequests.Put(RequestId, Future);
-			Ctx.writeAndFlush(Request).addListener(writeFuture =>
+			ValueTask<CommandGetOrCreateSchemaResponse> task = new ValueTask<CommandGetOrCreateSchemaResponse>();
+			_pendingGetOrCreateSchemaRequests.TryAdd(requestId, task);
+			Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 			{
-			if (!writeFuture.Success)
-			{
-				log.warn("{} Failed to send GetOrCreateSchema request to broker: {}", Ctx.channel(), writeFuture.cause().Message);
-				pendingGetOrCreateSchemaRequests.Remove(RequestId);
-				Future.completeExceptionally(writeFuture.cause());
-			}
+				if (writeTask.IsFaulted)
+				{
+					log.LogWarning("{} Failed to send GetOrCreateSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					_pendingGetOrCreateSchemaRequests.TryRemove(requestId, out var t);
+					Future.completeExceptionally(writeTask.Exception);
+				}
 			});
 			return Future.thenCompose(response =>
 			{
@@ -892,7 +898,7 @@ namespace SharpPulsar.Impl
 				ServerError Rc = response.ErrorCode;
 				if (Rc == ServerError.TopicNotFound)
 				{
-					return CompletableFuture.completedFuture(SchemaVersion.Empty.bytes());
+					return Task.completedFuture(SchemaVersion.Empty.bytes());
 				}
 				else
 				{
@@ -901,47 +907,47 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				return CompletableFuture.completedFuture(response.SchemaVersion.toByteArray());
+				return Task.completedFuture(response.SchemaVersion.toByteArray());
 			}
 			});
 		}
 
-		public override void HandleNewTxnResponse(PulsarApi.CommandNewTxnResponse Command)
+		public void HandleNewTxnResponse(CommandNewTxnResponse command)
 		{
-			TransactionMetaStoreHandler Handler = CheckAndGetTransactionMetaStoreHandler(Command.TxnidMostBits);
-			if (Handler != null)
+			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+			if (handler != null)
 			{
-				Handler.handleNewTxnResponse(Command);
+				handler.HandleNewTxnResponse(command);
 			}
 		}
 
-		public override void HandleAddPartitionToTxnResponse(PulsarApi.CommandAddPartitionToTxnResponse Command)
+		public void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
 		{
-			TransactionMetaStoreHandler Handler = CheckAndGetTransactionMetaStoreHandler(Command.TxnidMostBits);
-			if (Handler != null)
+			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+			if (handler != null)
 			{
-				Handler.handleAddPublishPartitionToTxnResponse(Command);
+				handler.HandleAddPublishPartitionToTxnResponse(command);
 			}
 		}
 
-		public override void HandleEndTxnResponse(PulsarApi.CommandEndTxnResponse Command)
+		public void HandleEndTxnResponse(CommandEndTxnResponse command)
 		{
-			TransactionMetaStoreHandler Handler = CheckAndGetTransactionMetaStoreHandler(Command.TxnidMostBits);
-			if (Handler != null)
+			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+			if (handler != null)
 			{
-				Handler.handleEndTxnResponse(Command);
+				handler.HandleEndTxnResponse(command);
 			}
 		}
 
 		private TransactionMetaStoreHandler CheckAndGetTransactionMetaStoreHandler(long TcId)
 		{
-			TransactionMetaStoreHandler Handler = transactionMetaStoreHandlers.Get(TcId);
-			if (Handler == null)
+			TransactionMetaStoreHandler handler = _transactionMetaStoreHandlers[TcId];
+			if (handler == null)
 			{
 				Channel().close();
-				log.warn("Close the channel since can't get the transaction meta store handler, will reconnect later.");
+				log.LogWarning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
 			}
-			return Handler;
+			return handler;
 		}
 
 		/// <summary>
@@ -954,25 +960,25 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="error"> </param>
 		/// <param name="errMsg"> </param>
-		private void CheckServerError(PulsarApi.ServerError Error, string ErrMsg)
+		private void CheckServerError(ServerError Error, string ErrMsg)
 		{
-			if (PulsarApi.ServerError.ServiceNotReady.Equals(Error))
+			if (ServerError.ServiceNotReady.Equals(Error))
 			{
-				log.error("{} Close connection because received internal-server error {}", Ctx.channel(), ErrMsg);
-				Ctx.close();
+				log.LogError("{} Close connection because received internal-server error {}", Ctx().Channel, ErrMsg);
+				Ctx().CloseAsync();
 			}
-			else if (PulsarApi.ServerError.TooManyRequests.Equals(Error))
+			else if (ServerError.TooManyRequests.Equals(Error))
 			{
-				long RejectedRequests = NUMBER_OF_REJECTED_REQUESTS_UPDATER.getAndIncrement(this);
-				if (RejectedRequests == 0)
+				long rejectedRequests = _numberOfRejectedrequestsUpdater[this];
+				if (rejectedRequests == 0)
 				{
 					// schedule timer
-					eventLoopGroup.schedule(() => NUMBER_OF_REJECTED_REQUESTS_UPDATER.set(ClientCnx.this, 0), rejectedRequestResetTimeSec, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+					_eventLoopGroup.Schedule(x => _numberOfRejectedrequestsUpdater.TryAdd(this, 0), _rejectedRequestResetTimeSec, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 				}
-				else if (RejectedRequests >= maxNumberOfRejectedRequestPerConnection)
+				else if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
 				{
-					log.error("{} Close connection because received {} rejected request in {} seconds ", Ctx.channel(), NUMBER_OF_REJECTED_REQUESTS_UPDATER.get(ClientCnx.this), rejectedRequestResetTimeSec);
-					Ctx.close();
+					log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,_numberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
+					Ctx().CloseAsync();
 				}
 			}
 		}
@@ -994,53 +1000,53 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="ctx"> </param>
 		/// <returns> true if hostname is verified else return false </returns>
-		private bool VerifyTlsHostName(string Hostname, ChannelHandlerContext Ctx)
+		private bool VerifyTlsHostName(string Hostname, IChannelHandlerContext Ctx)
 		{
-			ChannelHandler SslHandler = Ctx.channel().pipeline().get("tls");
+			IChannelHandler SslHandler = Ctx.Channel.Pipeline.Get("tls");
 
-			SSLSession SslSession = null;
+			TlsSession SslSession = null;
 			if (SslHandler != null)
 			{
-				SslSession = ((SslHandler) SslHandler).engine().Session;
-				if (log.DebugEnabled)
+				SslSession = ((TlsHandler) SslHandler);
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, SslSession.CipherSuite, SslSession.Protocol);
+					log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, SslSession.CipherSuite, SslSession.Protocol);
 				}
 				return HOSTNAME_VERIFIER.verify(Hostname, SslSession);
 			}
 			return false;
 		}
 
-		public virtual void RegisterConsumer<T1>(in long ConsumerId, in ConsumerImpl<T1> Consumer)
+		public virtual void RegisterConsumer(in long consumerId, in ConsumerImpl<object> consumer)
 		{
-			consumers.Put(ConsumerId, Consumer);
+			_consumers.TryAdd(consumerId, consumer);
 		}
 
-		public virtual void RegisterProducer<T1>(in long ProducerId, in ProducerImpl<T1> Producer)
+		public virtual void RegisterProducer(in long producerId, in ProducerImpl<object> producer)
 		{
-			producers.Put(ProducerId, Producer);
+			_producers.TryAdd(producerId, producer);
 		}
 
-		public virtual void RegisterTransactionMetaStoreHandler(in long TransactionMetaStoreId, in TransactionMetaStoreHandler Handler)
+		public virtual void RegisterTransactionMetaStoreHandler(in long transactionMetaStoreId, in TransactionMetaStoreHandler handler)
 		{
-			transactionMetaStoreHandlers.Put(TransactionMetaStoreId, Handler);
+			_transactionMetaStoreHandlers.TryAdd(transactionMetaStoreId, handler);
 		}
 
-		public virtual void RemoveProducer(in long ProducerId)
+		public virtual void RemoveProducer(in long producerId)
 		{
-			producers.Remove(ProducerId);
+			_producers.Remove(producerId, out var p);
 		}
 
-		public virtual void RemoveConsumer(in long ConsumerId)
+		public virtual void RemoveConsumer(in long consumerId)
 		{
-			consumers.Remove(ConsumerId);
+			_consumers.Remove(consumerId, out var c);
 		}
 
-		public virtual InetSocketAddress TargetBroker
+		public virtual IPEndPoint TargetBroker
 		{
 			set
 			{
-				this.ProxyToTargetBrokerAddress = string.Format("{0}:{1:D}", value.HostString, value.Port);
+				_proxyToTargetBrokerAddress = string.Format("{0}:{1:D}", value.Address.ToString(), value.Port);
 			}
 		}
 
@@ -1048,71 +1054,70 @@ namespace SharpPulsar.Impl
 		 {
 			 set
 			 {
-				this.RemoteHostNameConflict = value;
+				_remoteHostName = value;
 			 }
 		 }
 
-		private PulsarClientException GetPulsarClientException(PulsarApi.ServerError Error, string ErrorMsg)
+
+		private PulsarClientException GetPulsarClientException(ServerError error, string ErrorMsg)
 		{
-			switch (Error.innerEnumValue)
+			switch (error)
 			{
-			case PulsarApi.ServerError.InnerEnum.AuthenticationError:
-				return new PulsarClientException.AuthenticationException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.AuthorizationError:
-				return new PulsarClientException.AuthorizationException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.ProducerBusy:
-				return new PulsarClientException.ProducerBusyException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.ConsumerBusy:
-				return new PulsarClientException.ConsumerBusyException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.MetadataError:
-				return new PulsarClientException.BrokerMetadataException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.PersistenceError:
-				return new PulsarClientException.BrokerPersistenceException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.ServiceNotReady:
-				return new PulsarClientException.LookupException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.TooManyRequests:
-				return new PulsarClientException.TooManyRequestsException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.ProducerBlockedQuotaExceededError:
-				return new PulsarClientException.ProducerBlockedQuotaExceededError(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.ProducerBlockedQuotaExceededException:
-				return new PulsarClientException.ProducerBlockedQuotaExceededException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.TopicTerminatedError:
-				return new PulsarClientException.TopicTerminatedException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.IncompatibleSchema:
-				return new PulsarClientException.IncompatibleSchemaException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.TopicNotFound:
-				return new PulsarClientException.TopicDoesNotExistException(ErrorMsg);
-			case PulsarApi.ServerError.InnerEnum.UnknownError:
-			default:
-				return new PulsarClientException(ErrorMsg);
+				case ServerError.AuthenticationError:
+					return new PulsarClientException.AuthenticationException(ErrorMsg);
+				case ServerError.AuthorizationError:
+					return new PulsarClientException.AuthorizationException(ErrorMsg);
+				case ServerError.ProducerBusy:
+					return new PulsarClientException.ProducerBusyException(ErrorMsg);
+				case ServerError.ConsumerBusy:
+					return new PulsarClientException.ConsumerBusyException(ErrorMsg);
+				case ServerError.MetadataError:
+					return new PulsarClientException.BrokerMetadataException(ErrorMsg);
+				case ServerError.PersistenceError:
+					return new PulsarClientException.BrokerPersistenceException(ErrorMsg);
+				case ServerError.ServiceNotReady:
+					return new PulsarClientException.LookupException(ErrorMsg);
+				case ServerError.TooManyRequests:
+					return new PulsarClientException.TooManyRequestsException(ErrorMsg);
+				case ServerError.ProducerBlockedQuotaExceededError:
+					return new PulsarClientException.ProducerBlockedQuotaExceededError(ErrorMsg);
+				case ServerError.ProducerBlockedQuotaExceededException:
+					return new PulsarClientException.ProducerBlockedQuotaExceededException(ErrorMsg);
+				case ServerError.TopicTerminatedError:
+					return new PulsarClientException.TopicTerminatedException(ErrorMsg);
+				case ServerError.IncompatibleSchema:
+					return new PulsarClientException.IncompatibleSchemaException(ErrorMsg);
+				case ServerError.TopicNotFound:
+					return new PulsarClientException.TopicDoesNotExistException(ErrorMsg);
+				case ServerError.UnknownError:
+				default:
+					return new PulsarClientException(ErrorMsg);
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public void close()
 		public virtual void Close()
 		{
-		   if (Ctx != null)
+		   if (Ctx() != null)
 		   {
-			   Ctx.close();
+			   Ctx().CloseAsync();
 		   }
 		}
 
 		private void CheckRequestTimeout()
 		{
-			while (!requestTimeoutQueue.Empty)
+			while (!_requestTimeoutQueue.IsEmpty)
 			{
-				RequestTime Request = requestTimeoutQueue.peek();
-				if (Request == null || (DateTimeHelper.CurrentUnixTimeMillis() - Request.CreationTimeMs) < operationTimeoutMs)
+				_requestTimeoutQueue.TryPeek(out var request);
+				if (request == null || (DateTimeHelper.CurrentUnixTimeMillis() - request.CreationTimeMs) < _operationTimeoutMs)
 				{
 					// if there is no request that is timed out then exit the loop
 					break;
 				}
-				Request = requestTimeoutQueue.poll();
-				CompletableFuture<ProducerResponse> RequestFuture = pendingRequests.Remove(Request.RequestId);
-				if (RequestFuture != null && !RequestFuture.Done && RequestFuture.completeExceptionally(new PulsarClientException.TimeoutException(Request.RequestId + " lookup request timedout after ms " + operationTimeoutMs)))
+			    _requestTimeoutQueue.TryDequeue(out request);
+				_pendingRequests.Remove(request.RequestId, out var requestTask);
+				if (requestTask != null && !requestTask.IsCompleted && requestTask.IsFaulted)
 				{
-					log.warn("{} request {} timed out after {} ms", Ctx.channel(), Request.RequestId, operationTimeoutMs);
+					log.LogWarning("{} request {} timed out after {} ms", Ctx().Channel, request.RequestId, _operationTimeoutMs);
 				}
 				else
 				{
@@ -1121,7 +1126,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ClientCnx));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<ClientCnx>();
 	}
 
 }

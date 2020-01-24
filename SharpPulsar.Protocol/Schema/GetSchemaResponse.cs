@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,24 +21,17 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-	using SchemaType = SharpPulsar.Schema.SchemaType;
 
 	/// <summary>
 	/// Response containing information about a schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class GetSchemaResponse
 	public class GetSchemaResponse
 	{
-		private long version;
-		private SchemaType type;
-		private long timestamp;
-		private string data;
-		private IDictionary<string, string> properties;
+		public long Version { get; set; }
+		public SchemaType Type { get; set; }
+		public long Timestamp { get; set; }
+		public string Data { get; set; }
+		public IDictionary<string, string> Properties { get; set; }
 	}
 
 }
