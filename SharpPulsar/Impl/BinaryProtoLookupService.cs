@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using SharpPulsar.Protocol.Proto;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -20,37 +22,14 @@ using System.Collections.Generic;
 /// under the License.
 /// </summary>
 namespace SharpPulsar.Impl
-{
-
-	using Lists = com.google.common.collect.Lists;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-
-
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using CommandLookupTopicResponse = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandLookupTopicResponse;
-	using LookupType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandLookupTopicResponse.LookupType;
-	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
-	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
+{	
 	public class BinaryProtoLookupService : LookupService
 	{
 
 		private readonly PulsarClientImpl client;
 		private readonly ServiceNameResolver serviceNameResolver;
 		private readonly bool useTls;
-		private readonly ExecutorService executor;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public BinaryProtoLookupService(PulsarClientImpl client, String serviceUrl, boolean useTls, java.util.concurrent.ExecutorService executor) throws SharpPulsar.api.PulsarClientException
+		private readonly Executor executor;
 		public BinaryProtoLookupService(PulsarClientImpl Client, string ServiceUrl, bool UseTls, ExecutorService Executor)
 		{
 			this.client = Client;
@@ -270,9 +249,6 @@ namespace SharpPulsar.Impl
 		});
 		}
 
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws Exception
 		public override void Close()
 		{
 			// no-op
@@ -288,13 +264,13 @@ namespace SharpPulsar.Impl
 			public readonly bool ProxyThroughServiceUrl;
 			public readonly bool Redirect;
 
-			public LookupDataResult(CommandLookupTopicResponse Result)
+			public LookupDataResult(CommandLookupTopicResponse result)
 			{
-				this.BrokerUrl = Result.BrokerServiceUrl;
-				this.BrokerUrlTls = Result.BrokerServiceUrlTls;
-				this.Authoritative = Result.Authoritative;
-				this.Redirect = Result.Response == CommandLookupTopicResponse.LookupType.Redirect;
-				this.ProxyThroughServiceUrl = Result.ProxyThroughServiceUrl;
+				this.BrokerUrl = result.brokerServiceUrl;
+				this.BrokerUrlTls = result.brokerServiceUrlTls;
+				this.Authoritative = result.Authoritative;
+				this.Redirect = result.Response == CommandLookupTopicResponse.LookupType.Redirect;
+				this.ProxyThroughServiceUrl = result.ProxyThroughServiceUrl;
 				this.Partitions = -1;
 			}
 
@@ -309,8 +285,7 @@ namespace SharpPulsar.Impl
 			}
 
 		}
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(BinaryProtoLookupService));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<BinaryProtoLookupService>();
 	}
 
 }
