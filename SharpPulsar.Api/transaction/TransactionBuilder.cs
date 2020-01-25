@@ -44,7 +44,7 @@ namespace SharpPulsar.Api.Transaction
 		/// Build the transaction with the configured settings.
 		/// </summary>
 		/// <returns> a future represents the result of starting a new transaction </returns>
-		ValueTask<Transaction> Build();
+		ValueTask<ITransaction> Build();
 
 	}
 

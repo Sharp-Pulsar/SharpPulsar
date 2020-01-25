@@ -36,7 +36,7 @@ namespace SharpPulsar.Api.Interceptor
 	/// </para>
 	/// <para>Since the producer may run multiple interceptors, a particular
 	/// interceptor will be called in the order specified by
-	/// <seealso cref="ProducerBuilder.intercept(IProducerInterceptor...)"/>.
+	/// <seealso cref="IProducerBuilder.intercept(IProducerInterceptor...)"/>.
 	/// </para>
 	/// </summary>
 	public interface IProducerInterceptor : IDisposable

@@ -69,7 +69,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ProducerBuilder<sbyte[]> NewProducer();
+		IProducerBuilder<sbyte[]> NewProducer();
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -92,7 +92,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ProducerBuilder<T> NewProducer<T>(Schema<T> Schema);
+		IProducerBuilder<T> NewProducer<T>(Schema<T> Schema);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to

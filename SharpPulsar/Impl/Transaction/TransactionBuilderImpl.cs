@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using Transaction = SharpPulsar.Api.Transaction.Transaction;
+	using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
 	using TransactionBuilder = SharpPulsar.Api.Transaction.TransactionBuilder;
 
 	/// <summary>
@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl.Transaction
 			return this;
 		}
 
-		public override CompletableFuture<Transaction> Build()
+		public override CompletableFuture<ITransaction> Build()
 		{
 			// TODO: talk to TC to begin a transaction
 			//       the builder is responsible for locating the transaction coorindator (TC)

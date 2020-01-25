@@ -43,31 +43,31 @@ namespace SharpPulsar.Impl
 	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
+    using System.Threading.Tasks;
 
-	[Serializable]
+    [Serializable]
 	public class TypedMessageBuilderImpl<T> : TypedMessageBuilder<T>
 	{
 
 		private const long SerialVersionUID = 0L;
 
-		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.allocate(0);
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final ProducerBase<?> producer;
-		private readonly ProducerBase<object> producer;
-		public virtual MetadataBuilder {get;} = MessageMetadata.newBuilder();
+		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
+		[NonSerialized]
+		private readonly ProducerBase<T> _producer;
+		public virtual MetadataBuilder Builder  = MessageMetadata.newBuilder();
 		private readonly Schema<T> schema;
-		public virtual Content {get;}
+		[NonSerialized]
+		public  ByteBuffer Content;
 		private readonly TransactionImpl txn;
 
-		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> Producer, Schema<T> Schema) : this(Producer, Schema, null)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, Schema<T> schema) : this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl<T1>(ProducerBase<T1> Producer, Schema<T> Schema, TransactionImpl Txn)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, Schema<T> schema, TransactionImpl Txn)
 		{
-			this.producer = Producer;
-			this.schema = Schema;
+			_producer = producer;
+			this.schema = schema;
 			this.Content = EMPTY_CONTENT;
 			this.txn = Txn;
 		}
@@ -85,9 +85,7 @@ namespace SharpPulsar.Impl
 			return SequenceId;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.MessageId send() throws SharpPulsar.api.PulsarClientException
-		public override MessageId Send()
+		public MessageId Send()
 		{
 			if (null != txn)
 			{
@@ -95,29 +93,29 @@ namespace SharpPulsar.Impl
 				//       because #send only completes when a transaction is committed or aborted.
 				throw new System.InvalidOperationException("Use sendAsync to send a transactional message");
 			}
-			return producer.Send(Message);
+			return _producer.Send(Message);
 		}
 
-		public override CompletableFuture<MessageId> SendAsync()
+		public TaskCompletionSource<MessageId> SendAsync()
 		{
-			long SequenceId = BeforeSend();
-			CompletableFuture<MessageId> SendFuture = producer.InternalSendAsync(Message);
+			long sequenceId = BeforeSend();
+			TaskCompletionSource<MessageId> sendTask = _producer.InternalSendAsync(Message);
 			if (txn != null)
 			{
 				// it is okay that we register produced topic after sending the messages. because
 				// the transactional messages will not be visible for consumers until the transaction
 				// is committed.
-				txn.RegisterProducedTopic(producer.Topic);
+				txn.RegisterProducedTopic(_producer.Topic);
 				// register the sendFuture as part of the transaction
-				return txn.RegisterSendOp(SequenceId, SendFuture);
+				return txn.RegisterSendOp(sequenceId, sendTask);
 			}
 			else
 			{
-				return SendFuture;
+				return sendTask;
 			}
 		}
 
-		public override TypedMessageBuilder<T> Key(string Key)
+		public TypedMessageBuilder<T> Key(string Key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{

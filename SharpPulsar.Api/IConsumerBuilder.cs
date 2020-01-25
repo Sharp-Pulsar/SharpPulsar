@@ -91,9 +91,6 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> the consumer builder instance </returns>
 		/// <exception cref="PulsarClientException">
-		///             if the the subscribe operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Consumer<T> subscribe() throws PulsarClientException;
 		Consumer<T> Subscribe();
 
 		/// <summary>

@@ -1,4 +1,12 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Api.Transaction;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Transaction;
+using SharpPulsar.Protocol.Schema;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,154 +28,138 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using Producer = SharpPulsar.Api.Producer;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using SharpPulsar.Api;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using SharpPulsar.Api;
-	using Transaction = SharpPulsar.Api.Transaction.Transaction;
-	using ProducerConfigurationData = SharpPulsar.Impl.Conf.ProducerConfigurationData;
-	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
-	using SchemaHash = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaHash;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Org.Apache.Pulsar.Common.Util.Collections;
 
 	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
 		public abstract bool Connected { get; set; }
 		public abstract ProducerStats Stats { get; set; }
 		public abstract long LastSequenceId { get; set; }
-		public abstract CompletableFuture<Void> FlushAsync();
-		public abstract CompletableFuture<IMessageId> SendAsync(sbyte[] Message);
+		public abstract ValueTask FlushAsync();
+		public abstract TaskCompletionSource<IMessageId> SendAsync(sbyte[] Message);
 		public abstract IMessageId Send(sbyte[] Message);
 		public abstract string ProducerName { get; set; }
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly CompletableFuture<Producer<T>> ProducerCreatedFutureConflict;
+		protected internal readonly TaskCompletionSource<IProducer<T>> _producerCreatedTask;
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly Schema<T> Schema;
 		protected internal readonly ProducerInterceptors Interceptors;
-		protected internal readonly ConcurrentOpenHashMap<SchemaHash, sbyte[]> SchemaCache;
+		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> SchemaCache;
+		public MultiSchemaMode ProducerMultiSchemaMode;
 
-		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, CompletableFuture<Producer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
+
+		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
 		{
-			this.ProducerCreatedFutureConflict = ProducerCreatedFuture;
+			_producerCreatedTask = ProducerCreatedFuture;
 			this.Conf = Conf;
 			this.Schema = Schema;
 			this.Interceptors = Interceptors;
-			this.SchemaCache = new ConcurrentOpenHashMap<SchemaHash, sbyte[]>();
+			this.SchemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
 			if (!Conf.MultiSchema)
 			{
-				MultiSchemaMode = MultiSchemaMode.Disabled;
+				ProducerMultiSchemaMode = MultiSchemaMode.Disabled;
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.MessageId send(T message) throws SharpPulsar.api.PulsarClientException
-		public override IMessageId Send(T Message)
+		
+		public IMessageId Send(T Message)
 		{
-			return NewMessage().value(Message).send();
+			return NewMessage().Value(Message).Send();
 		}
 
-		public override CompletableFuture<IMessageId> SendAsync(T Message)
+		public async ValueTask<IMessageId> SendAsync(T Message)
 		{
 			try
 			{
-				return NewMessage().value(Message).sendAsync();
+				return await NewMessage().Value(Message).SendAsync();
 			}
-			catch (SchemaSerializationException E)
+			catch (SchemaSerializationException e)
 			{
-				return FutureUtil.failedFuture(E);
+				return Task.FromException<IMessageId>(e).Result;
 			}
 		}
 
-		public virtual CompletableFuture<IMessageId> SendAsync<T1>(Message<T1> Message)
+		public virtual TaskCompletionSource<IMessageId> SendAsync<T1>(Message<T1> Message)
 		{
 			return InternalSendAsync(Message);
 		}
 
-		public override TypedMessageBuilder<T> NewMessage()
+		public  TypedMessageBuilder<T> NewMessage()
 		{
 			return new TypedMessageBuilderImpl<T>(this, Schema);
 		}
 
-		public virtual TypedMessageBuilder<V> NewMessage<V>(Schema<V> Schema)
+		public virtual TypedMessageBuilder<T> NewMessage(Schema<T> schema)
 		{
-			checkArgument(Schema != null);
-			return new TypedMessageBuilderImpl<V>(this, Schema);
+			if (schema == null)
+				throw new  NullReferenceException("Schema is null");
+			return new TypedMessageBuilderImpl<T>(this, schema);
 		}
 
 		// TODO: add this method to the Producer interface
 		// @Override
-		public virtual TypedMessageBuilder<T> NewMessage(Transaction Txn)
+		public virtual TypedMessageBuilder<T> NewMessage(ITransaction txn)
 		{
-			checkArgument(Txn is TransactionImpl);
-
-			// check the producer has proper settings to send transactional messages
-			if (Conf.SendTimeoutMs > 0)
+			if(txn is TransactionImpl)
 			{
-				throw new System.ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
-			}
+				// check the producer has proper settings to send transactional messages
+				if (Conf.SendTimeoutMs > 0)
+				{
+					throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
+				}
 
-			return new TypedMessageBuilderImpl<T>(this, Schema, (TransactionImpl) Txn);
+				return new TypedMessageBuilderImpl<T>(this, Schema, (TransactionImpl)txn);
+			}
+			throw new ArgumentException("Only transactional messages supported");
+
 		}
 
-		public abstract CompletableFuture<IMessageId> internalSendAsync<T1>(Message<T1> Message);
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public SharpPulsar.api.MessageId send(SharpPulsar.api.Message<?> message) throws SharpPulsar.api.PulsarClientException
+		public abstract TaskCompletionSource<IMessageId> InternalSendAsync<T1>(Message<T1> Message);
 		public virtual IMessageId Send<T1>(Message<T1> Message)
 		{
 			try
 			{
 				// enqueue the message to the buffer
-				CompletableFuture<IMessageId> SendFuture = InternalSendAsync(Message);
+				TaskCompletionSource<IMessageId> sendTask = InternalSendAsync(Message);
 
-				if (!SendFuture.Done)
+				if (!sendTask.Task.IsCompleted)
 				{
 					// the send request wasn't completed yet (e.g. not failing at enqueuing), then attempt to triggerFlush it out
 					TriggerFlush();
 				}
 
-				return SendFuture.get();
+				return sendTask.Task.Result ;
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(E);
 			}
 		}
 
-		public override void Flush()
+		public void Flush()
 		{
 			try
 			{
-				FlushAsync().get();
+				FlushAsync();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(E);
 			}
 		}
 
 		public abstract void TriggerFlush();
-		public override void Close()
+		public void Close()
 		{
 			try
 			{
-				CloseAsync().get();
+				CloseAsync();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(E);
 			}
 		}
 
-		public override abstract CompletableFuture<Void> CloseAsync();
+		public abstract ValueTask CloseAsync();
 
 		public virtual string Topic
 		{
@@ -185,34 +177,39 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<Producer<T>> ProducerCreatedFuture()
+		public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
 		{
-			return ProducerCreatedFutureConflict;
+			return _producerCreatedTask;
 		}
 
-		public virtual Message<object> BeforeSend<T1>(Message<T1> Message)
+		public virtual Message<T> BeforeSend(Message<T> message)
 		{
 			if (Interceptors != null)
 			{
-				return Interceptors.beforeSend(this, Message);
+				return Interceptors.BeforeSend(this, message);
 			}
 			else
 			{
-				return Message;
+				return message;
 			}
 		}
 
-		public virtual void OnSendAcknowledgement<T1>(Message<T1> Message, IMessageId MsgId, Exception Exception)
+		public virtual void OnSendAcknowledgement(Message<T> message, IMessageId msgId, System.Exception exception)
 		{
 			if (Interceptors != null)
 			{
-				Interceptors.onSendAcknowledgement(this, Message, MsgId, Exception);
+				Interceptors.OnSendAcknowledgement(this, message, msgId,exception);
 			}
 		}
 
 		public override string ToString()
 		{
 			return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
+		}
+
+		public void Dispose()
+		{
+			throw new NotImplementedException();
 		}
 
 		public enum MultiSchemaMode

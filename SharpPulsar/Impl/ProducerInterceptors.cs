@@ -21,26 +21,23 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using Producer = SharpPulsar.Api.Producer;
-	using ProducerInterceptor = SharpPulsar.Api.Interceptor.ProducerInterceptor;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+    using Microsoft.Extensions.Logging;
+    using SharpPulsar.Api;
+    using SharpPulsar.Api.Interceptor;
+    using IMessageId = SharpPulsar.Api.IMessageId;
 
 
 	/// <summary>
 	/// A container that holds the list<seealso cref="ProducerInterceptor"/>
 	/// and wraps calls to the chain of custom interceptors.
 	/// </summary>
-	public class ProducerInterceptors : System.IDisposable
+	public class ProducerInterceptors : IDisposable
 	{
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<ProducerInterceptors>();
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ProducerInterceptors));
+		private readonly IList<IProducerInterceptor> interceptors;
 
-		private readonly IList<ProducerInterceptor> interceptors;
-
-		public ProducerInterceptors(IList<ProducerInterceptor> Interceptors)
+		public ProducerInterceptors(IList<IProducerInterceptor> Interceptors)
 		{
 			this.interceptors = Interceptors;
 		}
@@ -59,32 +56,32 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public virtual Message BeforeSend(Producer Producer, Message Message)
+		public virtual Message<T> BeforeSend<T>(IProducer<T> producer, Message<T> message)
 		{
-			Message InterceptorMessage = Message;
-			foreach (ProducerInterceptor Interceptor in interceptors)
+			var interceptorMessage = message;
+			foreach (IProducerInterceptor interceptor in interceptors)
 			{
-				if (!Interceptor.eligible(Message))
+				if (!interceptor.Eligible(message))
 				{
 					continue;
 				}
 				try
 				{
-					InterceptorMessage = Interceptor.beforeSend(Producer, InterceptorMessage);
+					interceptorMessage = interceptor.BeforeSend(producer, interceptorMessage);
 				}
-				catch (Exception E)
+				catch (System.Exception E)
 				{
-					if (Producer != null)
+					if (producer != null)
 					{
-						log.warn("Error executing interceptor beforeSend callback for topicName:{} ", Producer.Topic, E);
+						log.LogWarning("Error executing interceptor beforeSend callback for topicName:{} ", producer.Topic, E);
 					}
 					else
 					{
-						log.warn("Error Error executing interceptor beforeSend callback ", E);
+						log.LogWarning("Error Error executing interceptor beforeSend callback ", E);
 					}
 				}
 			}
-			return InterceptorMessage;
+			return interceptorMessage;
 		}
 
 		/// <summary>
@@ -99,40 +96,43 @@ namespace SharpPulsar.Impl
 		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, Message)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public virtual void OnSendAcknowledgement(Producer Producer, Message Message, IMessageId MsgId, Exception Exception)
+		public virtual void OnSendAcknowledgement<T>(IProducer<T> producer, Message<T> message, IMessageId msgId, System.Exception exception)
 		{
-			foreach (ProducerInterceptor Interceptor in interceptors)
+			foreach (IProducerInterceptor interceptor in interceptors)
 			{
-				if (!Interceptor.eligible(Message))
+				if (!interceptor.Eligible(message))
 				{
 					continue;
 				}
 				try
 				{
-					Interceptor.onSendAcknowledgement(Producer, Message, MsgId, Exception);
+					interceptor.OnSendAcknowledgement(producer, message, msgId, exception);
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					log.warn("Error executing interceptor onSendAcknowledgement callback ", E);
+					log.LogWarning("Error executing interceptor onSendAcknowledgement callback ", e);
 				}
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
-			foreach (ProducerInterceptor Interceptor in interceptors)
+			foreach (IProducerInterceptor interceptor in interceptors)
 			{
 				try
 				{
-					Interceptor.close();
+					interceptor.Close();
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					log.error("Fail to close producer interceptor ", E);
+					log.LogError("Fail to close producer interceptor ", e);
 				}
 			}
+		}
+
+		public void Dispose()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

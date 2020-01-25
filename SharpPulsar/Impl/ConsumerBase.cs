@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using SharpPulsar.Api;
 	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using Transaction = SharpPulsar.Api.Transaction.Transaction;
+	using Transaction = SharpPulsar.Api.Transaction.ITransaction;
 	using SharpPulsar.Impl.Conf;
 	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
 	using ConsumerName = SharpPulsar.Util.ConsumerName;

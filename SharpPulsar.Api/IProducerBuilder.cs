@@ -1,7 +1,9 @@
-﻿using SharpPulsar.Api.Interceptor;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Api.Interceptor;
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,14 +25,14 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Api
 {
-	using ProducerQueueIsFullError = SharpPulsar.Api.PulsarClientException.ProducerQueueIsFullError;
+	
 
 	/// <summary>
 	/// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
 	/// </summary>
 	/// <seealso cref= IPulsarClient#newProducer() </seealso>
 	/// <seealso cref= PulsarClient#newProducer(Schema) </seealso>
-	public interface ProducerBuilder<T> : ICloneable
+	public interface IProducerBuilder<T> : ICloneable
 	{
 
 		/// <summary>
@@ -45,8 +47,7 @@ namespace SharpPulsar.Api
 		///             if a producer with the same "producer name" is already connected to the topic </exception>
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Producer<T> create() throws PulsarClientException;
+		///             
 		IProducer<T> Create();
 
 		/// <summary>
@@ -82,7 +83,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="config"> configuration map to load </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> LoadConf(IDictionary<string, object> Config);
+		IProducerBuilder<T> LoadConf(IDictionary<string, object> Config);
 
 		/// <summary>
 		/// Create a copy of the current <seealso cref="ProducerBuilder"/>.
@@ -101,7 +102,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the producer builder instance </returns>
-		ProducerBuilder<T> Clone();
+		IProducerBuilder<T> Clone();
 
 		/// <summary>
 		/// Specify the topic this producer will be publishing on.
@@ -112,7 +113,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="topicName"> the name of the topic </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> Topic(string TopicName);
+		IProducerBuilder<T> Topic(string TopicName);
 
 		/// <summary>
 		/// Specify a name for the producer.
@@ -130,7 +131,7 @@ namespace SharpPulsar.Api
 		/// <param name="producerName">
 		///            the custom name to use for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> ProducerName(string ProducerName);
+		IProducerBuilder<T> ProducerName(string ProducerName);
 
 		/// <summary>
 		/// Set the send timeout <i>(default: 30 seconds)</i>.
@@ -149,7 +150,7 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            the time unit of the {@code sendTimeout} </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> SendTimeout(int SendTimeout, TimeUnit Unit);
+		IProducerBuilder<T> SendTimeout(int SendTimeout, TimeUnit Unit);
 
 		/// <summary>
 		/// Set the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
@@ -171,7 +172,7 @@ namespace SharpPulsar.Api
 		/// <param name="maxPendingMessages">
 		///            the max size of the pending messages queue for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> MaxPendingMessages(int MaxPendingMessages);
+		IProducerBuilder<T> MaxPendingMessages(int MaxPendingMessages);
 
 		/// <summary>
 		/// Set the number of max pending messages across all the partitions.
@@ -194,7 +195,7 @@ namespace SharpPulsar.Api
 		/// <param name="maxPendingMessagesAcrossPartitions">
 		///            max pending messages across all the partitions </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int MaxPendingMessagesAcrossPartitions);
+		IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int MaxPendingMessagesAcrossPartitions);
 
 		/// <summary>
 		/// Set whether the <seealso cref="IProducer.send"/> and <seealso cref="IProducer.sendAsync"/> operations should block when the outgoing
@@ -234,7 +235,7 @@ namespace SharpPulsar.Api
 		/// <param name="blockIfQueueFull">
 		///            whether to block <seealso cref="IProducer.send"/> and <seealso cref="IProducer.sendAsync"/> operations on queue full </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> BlockIfQueueFull(bool BlockIfQueueFull);
+		IProducerBuilder<T> BlockIfQueueFull(bool BlockIfQueueFull);
 
 		/// <summary>
 		/// Set the <seealso cref="MessageRoutingMode"/> for a partitioned producer.
@@ -252,7 +253,7 @@ namespace SharpPulsar.Api
 		///            the message routing mode </param>
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= MessageRoutingMode </seealso>
-		ProducerBuilder<T> MessageRoutingMode(MessageRoutingMode MessageRoutingMode);
+		IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode MessageRoutingMode);
 
 		/// <summary>
 		/// Change the <seealso cref="HashingScheme"/> used to chose the partition on where to publish a particular message.
@@ -269,7 +270,7 @@ namespace SharpPulsar.Api
 		/// <param name="hashingScheme">
 		///            the chosen <seealso cref="HashingScheme"/> </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> HashingScheme(HashingScheme HashingScheme);
+		IProducerBuilder<T> HashingScheme(HashingScheme HashingScheme);
 
 		/// <summary>
 		/// Set the compression type for the producer.
@@ -290,14 +291,14 @@ namespace SharpPulsar.Api
 		/// <param name="compressionType">
 		///            the selected compression type </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> CompressionType(ICompressionType CompressionType);
+		IProducerBuilder<T> CompressionType(ICompressionType CompressionType);
 
 		/// <summary>
 		/// Set a custom message routing policy by passing an implementation of MessageRouter.
 		/// </summary>
 		/// <param name="messageRouter"> </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> MessageRouter(MessageRouter MessageRouter);
+		IProducerBuilder<T> MessageRouter(MessageRouter MessageRouter);
 
 		/// <summary>
 		/// Control whether automatic batching of messages is enabled for the producer. <i>default: enabled</i>
@@ -318,7 +319,7 @@ namespace SharpPulsar.Api
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> EnableBatching(bool EnableBatching);
+		IProducerBuilder<T> EnableBatching(bool EnableBatching);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/>.
@@ -330,7 +331,7 @@ namespace SharpPulsar.Api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader);
+		IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader);
 
 		/// <summary>
 		/// Add public encryption key, used by producer to encrypt the data key.
@@ -346,7 +347,7 @@ namespace SharpPulsar.Api
 		/// <param name="key">
 		///            the name of the encryption key in the key store </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> AddEncryptionKey(string Key);
+		IProducerBuilder<T> AddEncryptionKey(string Key);
 
 		/// <summary>
 		/// Sets the ProducerCryptoFailureAction to the value specified.
@@ -354,7 +355,7 @@ namespace SharpPulsar.Api
 		/// <param name="action">
 		///            the action the producer will take in case of encryption failures </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction Action);
+		IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction Action);
 
 		/// <summary>
 		/// Set the time period within which the messages sent will be batched <i>default: 1 ms</i> if batch messages are
@@ -377,7 +378,7 @@ namespace SharpPulsar.Api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
 		/// <seealso cref= #batchingMaxBytes(int) </seealso>
-		ProducerBuilder<T> BatchingMaxPublishDelay(long BatchDelay, TimeUnit TimeUnit);
+		IProducerBuilder<T> BatchingMaxPublishDelay(long BatchDelay, TimeUnit TimeUnit);
 
 		/// <summary>
 		/// Set the partition switch frequency while batching of messages is enabled and
@@ -392,7 +393,7 @@ namespace SharpPulsar.Api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #messageRoutingMode(MessageRoutingMode) </seealso>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
-		ProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int Frequency);
+		IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int Frequency);
 
 		/// <summary>
 		/// Set the maximum number of messages permitted in a batch. <i>default: 1000</i> If set to a value greater than 1,
@@ -408,7 +409,7 @@ namespace SharpPulsar.Api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxBytes(int) </seealso>
-		ProducerBuilder<T> BatchingMaxMessages(int BatchMessagesMaxMessagesPerBatch);
+		IProducerBuilder<T> BatchingMaxMessages(int BatchMessagesMaxMessagesPerBatch);
 
 		/// <summary>
 		/// Set the maximum number of bytes permitted in a batch. <i>default: 128KB</i>
@@ -424,7 +425,7 @@ namespace SharpPulsar.Api
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxPublishDelay(long, TimeUnit) </seealso>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
-		ProducerBuilder<T> BatchingMaxBytes(int BatchingMaxBytes);
+		IProducerBuilder<T> BatchingMaxBytes(int BatchingMaxBytes);
 
 		/// <summary>
 		/// Set the batcher builder <seealso cref="BatcherBuilder"/> of the producer. Producer will use the batcher builder to
@@ -433,7 +434,7 @@ namespace SharpPulsar.Api
 		/// <param name="batcherBuilder">
 		///          batcher builder </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> BatcherBuilder(BatcherBuilder BatcherBuilder);
+		IProducerBuilder<T> BatcherBuilder(BatcherBuilder BatcherBuilder);
 
 		/// <summary>
 		/// Set the baseline for the sequence ids for messages published by the producer.
@@ -445,7 +446,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="initialSequenceId"> the initial sequence id for the producer </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> InitialSequenceId(long InitialSequenceId);
+		IProducerBuilder<T> InitialSequenceId(long InitialSequenceId);
 
 		/// <summary>
 		/// Set a name/value property with this producer.
@@ -461,7 +462,7 @@ namespace SharpPulsar.Api
 		/// <param name="value">
 		///            the property value </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> Property(string Key, string Value);
+		IProducerBuilder<T> Property(string Key, string Value);
 
 		/// <summary>
 		/// Add all the properties in the provided map to the producer.
@@ -474,21 +475,9 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="properties"> the map of properties </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> Properties(IDictionary<string, string> Properties);
+		IProducerBuilder<T> Properties(IDictionary<string, string> Properties);
 
-		/// <summary>
-		/// Add a set of <seealso cref="IProducerInterceptor"/> to the producer.
-		/// 
-		/// <para>Interceptors can be used to trace the publish and acknowledgments operation happening in a producer.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="interceptors">
-		///            the list of interceptors to intercept the producer created by this builder. </param>
-		/// <returns> the producer builder instance </returns>
-		[Obsolete]
-		ProducerBuilder<T> Intercept(params ProducerInterceptor<T> [] Interceptors);
-
+		
 		/// <summary>
 		/// Add a set of <seealso cref="SharpPulsar.Api.interceptor.ProducerInterceptor"/> to the producer.
 		/// 
@@ -499,7 +488,7 @@ namespace SharpPulsar.Api
 		/// <param name="interceptors">
 		///            the list of interceptors to intercept the producer created by this builder. </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors);
+		IProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors);
 
 		/// <summary>
 		/// If enabled, partitioned producer will automatically discover new partitions at runtime. This is only applied on
@@ -512,7 +501,7 @@ namespace SharpPulsar.Api
 		/// <param name="autoUpdate">
 		///            whether to auto discover the partition configuration changes </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> AutoUpdatePartitions(bool AutoUpdate);
+		IProducerBuilder<T> AutoUpdatePartitions(bool AutoUpdate);
 
 		/// <summary>
 		/// Control whether enable the multiple schema mode for producer.
@@ -528,7 +517,7 @@ namespace SharpPulsar.Api
 		///            indicates to enable or disable multiple schema mode </param>
 		/// <returns> the producer builder instance
 		/// @since 2.5.0 </returns>
-		ProducerBuilder<T> EnableMultiSchema(bool MultiSchema);
+		IProducerBuilder<T> EnableMultiSchema(bool MultiSchema);
 	}
 
 }

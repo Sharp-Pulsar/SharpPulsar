@@ -62,8 +62,8 @@ namespace SharpPulsar.Api
 		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
 		/// 
 		/// </para>
-		/// <para>See <seealso cref="ProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
-		/// <seealso cref="ProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
+		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
+		/// <seealso cref="IProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
 		/// 
 		/// </para>
 		/// <para>Use <seealso cref="newMessage()"/> to specify more properties than just the value on the message to be sent.
@@ -113,7 +113,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
 		/// <seealso cref= #newMessage() </seealso>
-		TypedMessageBuilder<V> NewMessage<V>(Schema<V> Schema);
+		TypedMessageBuilder<T> NewMessage(Schema<T> Schema);
 
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.

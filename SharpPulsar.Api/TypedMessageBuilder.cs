@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using BAMCIS.Util.Concurrent;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -82,8 +84,8 @@ namespace SharpPulsar.Api
 		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
 		/// 
 		/// </para>
-		/// <para>See <seealso cref="ProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
-		/// <seealso cref="ProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
+		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
+		/// <seealso cref="IProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
 		/// 
 		/// </para>
 		/// </summary>

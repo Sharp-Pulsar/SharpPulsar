@@ -1,4 +1,6 @@
-﻿using SharpPulsar.Api;
+﻿using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
+using SharpPulsar.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -27,12 +29,11 @@ namespace SharpPulsar.Impl
 
 	public class PulsarClientImpl : IPulsarClient
 	{
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarClientImpl));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<PulsarClientImpl>();
 
 		public virtual Configuration Configuration;
-		public virtual Lookup {get;}
-		public virtual CnxPool {get;}
+		public virtual string Lookup;
+		public virtual ConnectionPool CnxPool;
 		private readonly Timer timer;
 		private readonly ExecutorProvider externalExecutorProvider;
 
@@ -116,12 +117,12 @@ namespace SharpPulsar.Impl
 
 
 
-		public override ProducerBuilder<sbyte[]> NewProducer()
+		public override IProducerBuilder<sbyte[]> NewProducer()
 		{
 			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
 		}
 
-		public override ProducerBuilder<T> NewProducer<T>(Schema<T> Schema)
+		public override IProducerBuilder<T> NewProducer<T>(Schema<T> Schema)
 		{
 			return new ProducerBuilderImpl<T>(this, Schema);
 		}

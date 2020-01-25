@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,11 +24,11 @@ namespace SharpPulsar.Impl.Transaction
 	using Data = lombok.Data;
 	using Getter = lombok.Getter;
 	using IMessageId = SharpPulsar.Api.IMessageId;
-	using Transaction = SharpPulsar.Api.Transaction.Transaction;
+	using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 
 	/// <summary>
-	/// The default implementation of <seealso cref="Transaction"/>.
+	/// The default implementation of <seealso cref="ITransaction"/>.
 	/// 
 	/// <para>All the error handling and retry logic are handled by this class.
 	/// The original pulsar client doesn't handle any transaction logic. It is only responsible
@@ -38,7 +39,7 @@ namespace SharpPulsar.Impl.Transaction
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Getter public class TransactionImpl implements SharpPulsar.api.transaction.Transaction
-	public class TransactionImpl : Transaction
+	public class TransactionImpl : ITransaction
 	{
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Data private static class TransactionalSendOp
@@ -95,7 +96,7 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public virtual CompletableFuture<IMessageId> RegisterSendOp(long SequenceId, CompletableFuture<IMessageId> SendFuture)
+		public virtual CompletableFuture<IMessageId> RegisterSendOp(long sequenceId, TaskCompletionSource<IMessageId> sendFuture)
 		{
 			lock (this)
 			{
