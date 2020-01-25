@@ -24,7 +24,7 @@ namespace SharpPulsar.Impl
 	using Consumer = SharpPulsar.Api.Consumer;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Api;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -91,7 +91,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This is called when acknowledge request return from the broker.
 		/// <para>
-		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledge(Consumer, MessageId, System.Exception)"/> method for each interceptor.
+		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledge(Consumer, IMessageId, System.Exception)"/> method for each interceptor.
 		/// </para>
 		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
@@ -101,7 +101,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> message to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledge(Consumer<T> Consumer, MessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledge(Consumer<T> Consumer, IMessageId MessageId, Exception Exception)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{
@@ -119,7 +119,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This is called when acknowledge cumulative request return from the broker.
 		/// <para>
-		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledgeCumulative(Consumer, MessageId, System.Exception)"/> (Message, Throwable)} method for each interceptor.
+		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledgeCumulative(Consumer, IMessageId, System.Exception)"/> (Message, Throwable)} method for each interceptor.
 		/// </para>
 		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
@@ -129,7 +129,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> messages to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledgeCumulative(Consumer<T> Consumer, MessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledgeCumulative(Consumer<T> Consumer, IMessageId MessageId, Exception Exception)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{
@@ -157,7 +157,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due a negative acknowledge. </param>
-		public virtual void OnNegativeAcksSend(Consumer<T> Consumer, ISet<MessageId> MessageIds)
+		public virtual void OnNegativeAcksSend(Consumer<T> Consumer, ISet<IMessageId> MessageIds)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{
@@ -185,7 +185,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due an acknowledge timeout. </param>
-		public virtual void OnAckTimeoutSend(Consumer<T> Consumer, ISet<MessageId> MessageIds)
+		public virtual void OnAckTimeoutSend(Consumer<T> Consumer, ISet<IMessageId> MessageIds)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{

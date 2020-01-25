@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
 	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using Reader = SharpPulsar.Api.Reader;
 	using SharpPulsar.Api;
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 
 		public override ReaderBuilder<T> LoadConf(IDictionary<string, object> Config)
 		{
-			MessageId StartMessageId = conf.StartMessageId;
+			IMessageId StartMessageId = conf.StartMessageId;
 			conf = ConfigurationDataUtils.loadData(Config, conf, typeof(ReaderConfigurationData));
 			conf.StartMessageId = StartMessageId;
 			return this;
@@ -109,7 +109,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageId(MessageId StartMessageId)
+		public override ReaderBuilder<T> StartMessageId(IMessageId StartMessageId)
 		{
 			conf.StartMessageId = StartMessageId;
 			return this;

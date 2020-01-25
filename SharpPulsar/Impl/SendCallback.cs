@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +22,7 @@
 namespace SharpPulsar.Impl
 {
 
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 
 	/// 
 	public interface SendCallback
@@ -31,7 +32,7 @@ namespace SharpPulsar.Impl
 		/// invoked when send operation completes
 		/// </summary>
 		/// <param name="e"> </param>
-		void SendComplete(Exception E);
+		void SendComplete(System.Exception e);
 
 		/// <summary>
 		/// used to specify a callback to be invoked on completion of a send operation for individual messages sent in a
@@ -39,9 +40,8 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="msg"> message sent </param>
 		/// <param name="scb"> callback associated with the message </param>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void addCallback(MessageImpl<?> msg, SendCallback scb);
-		void addCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb);
+		/// 
+		void AddCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb);
 
 		/// 
 		/// <returns> next callback in chain </returns>
@@ -51,13 +51,11 @@ namespace SharpPulsar.Impl
 		/// Return next message in chain
 		/// </summary>
 		/// <returns> next message in chain </returns>
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> getNextMessage();
 		MessageImpl<object> NextMessage {get;}
 
 		/// 
 		/// <returns> future associated with callback </returns>
-		CompletableFuture<MessageId> Future {get;}
+		TaskCompletionSource<IMessageId> Task {get;}
 	}
 
 }

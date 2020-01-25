@@ -21,8 +21,6 @@
 namespace SharpPulsar.Api
 {
 
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-
 	/// <summary>
 	/// Opaque unique identifier of a single message
 	/// 
@@ -34,7 +32,7 @@ namespace SharpPulsar.Api
 	/// the other one.
 	/// </para>
 	/// </summary>
-	public interface MessageId : IComparable<MessageId>
+	public interface IMessageId : IComparable<IMessageId>
 	{
 
 		/// <summary>
@@ -53,9 +51,8 @@ namespace SharpPulsar.Api
 		///            byte array containing the serialized message id </param>
 		/// <returns> the de-serialized messageId object </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: static MessageId fromByteArray(byte[] data) throws java.io.IOException
-		static MessageId FromByteArray(sbyte[] Data)
+		/// 
+		static IMessageId FromByteArray(sbyte[] data)
 		{
 			return DefaultImplementation.newMessageIdFromByteArray(data);
 		}
@@ -64,18 +61,17 @@ namespace SharpPulsar.Api
 		/// De-serialize a message id from a byte array with its topic
 		/// information attached.
 		/// 
-		/// <para>The topic information is needed when acknowledging a <seealso cref="MessageId"/> on
+		/// <para>The topic information is needed when acknowledging a <seealso cref="IMessageId"/> on
 		/// a consumer that is consuming from multiple topics.
 		/// 
 		/// </para>
 		/// </summary>
 		/// <param name="data"> the byte array with the serialized message id </param>
 		/// <param name="topicName"> the topic name </param>
-		/// <returns> a <seealso cref="MessageId instance"/> </returns>
+		/// <returns> a <seealso cref="IMessageId instance"/> </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: static MessageId fromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException
-		static MessageId FromByteArrayWithTopic(sbyte[] Data, string TopicName)
+		/// 
+		static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
 			return DefaultImplementation.newMessageIdFromByteArrayWithTopic(data, topicName);
 		}
@@ -95,8 +91,8 @@ namespace SharpPulsar.Api
 
 	public static class MessageIdFields
 	{
-		public static readonly MessageId Earliest = DefaultImplementation.newMessageId(-1, -1, -1);
-		public static readonly MessageId Latest = DefaultImplementation.newMessageId(long.MaxValue, long.MaxValue, -1);
+		public static readonly IMessageId Earliest = DefaultImplementation.newMessageId(-1, -1, -1);
+		public static readonly IMessageId Latest = DefaultImplementation.newMessageId(long.MaxValue, long.MaxValue, -1);
 	}
 
 }

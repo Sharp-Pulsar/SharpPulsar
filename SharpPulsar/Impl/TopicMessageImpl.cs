@@ -22,7 +22,7 @@
 namespace SharpPulsar.Impl
 {
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using EncryptionContext = Org.Apache.Pulsar.Common.Api.EncryptionContext;
 
 	public class TopicMessageImpl<T> : Message<T>
@@ -58,7 +58,7 @@ namespace SharpPulsar.Impl
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
 
-		public virtual MessageId MessageId
+		public virtual IMessageId MessageId
 		{
 			get
 			{
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual MessageId InnerMessageId
+		public virtual IMessageId InnerMessageId
 		{
 			get
 			{

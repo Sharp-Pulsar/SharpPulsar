@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
 	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Impl.Conf;
 	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
 	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
@@ -91,7 +91,7 @@ namespace SharpPulsar.Impl
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
 		/// resent after a disconnection and for which the user has already sent an acknowledgement.
 		/// </summary>
-		public virtual bool IsDuplicate(MessageId MessageId)
+		public virtual bool IsDuplicate(IMessageId MessageId)
 		{
 			if (MessageId.CompareTo(lastCumulativeAck) <= 0)
 			{

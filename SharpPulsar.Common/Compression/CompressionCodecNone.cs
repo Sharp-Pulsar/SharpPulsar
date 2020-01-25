@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using DotNetty.Buffers;
+using SharpPulsar.Common.Compression;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,32 +18,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common.Compression
 {
+
 	/// <summary>
-	/// The compression type that can be specified on a <seealso cref="Producer"/>.
+	/// No compression.
 	/// </summary>
-	public enum CompressionType
+	public class CompressionCodecNone : CompressionCodec
 	{
-		/// <summary>
-		/// No compression. </summary>
-		NONE,
 
-		/// <summary>
-		/// Compress with LZ4 algorithm. Faster but lower compression than ZLib. </summary>
-		LZ4,
+		public IByteBuffer Encode(IByteBuffer raw)
+		{
+			// Provides an encoder that simply returns the same uncompressed buffer
+			raw.Retain();
+			return raw;
+		}
 
-		/// <summary>
-		/// Compress with ZLib. </summary>
-		ZLIB,
-
-		/// <summary>
-		/// Compress with Zstandard codec. </summary>
-		ZSTD,
-
-		/// <summary>
-		/// Compress with Snappy codec. </summary>
-		SNAPPY
+		public IByteBuffer Decode(IByteBuffer encoded, int UncompressedSize)
+		{
+			// No decompression is required for this codec
+			encoded.Retain();
+			return encoded;
+		}
 	}
 
 }

@@ -138,7 +138,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId"> the message id where to reposition the reader </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void Seek(MessageId MessageId);
+		void Seek(IMessageId MessageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -170,7 +170,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="messageId"> the message id where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(MessageId MessageId);
+		ValueTask<Void> SeekAsync(IMessageId MessageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.

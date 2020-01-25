@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 	using TimerTask = io.netty.util.TimerTask;
 	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
 
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using Org.Apache.Pulsar.Common.Util.Collections;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -39,8 +39,8 @@ namespace SharpPulsar.Impl
 	{
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
 
-		protected internal readonly ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>> MessageIdPartitionMap;
-		protected internal readonly LinkedList<ConcurrentOpenHashSet<MessageId>> TimePartitions;
+		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>> MessageIdPartitionMap;
+		protected internal readonly LinkedList<ConcurrentOpenHashSet<IMessageId>> TimePartitions;
 
 		protected internal readonly Lock ReadLock;
 		protected internal readonly Lock WriteLock;
@@ -60,17 +60,17 @@ namespace SharpPulsar.Impl
 				return 0;
 			}
 
-			public override bool Add(MessageId M)
+			public override bool Add(IMessageId M)
 			{
 				return true;
 			}
 
-			public override bool Remove(MessageId M)
+			public override bool Remove(IMessageId M)
 			{
 				return true;
 			}
 
-			public override int RemoveMessagesTill(MessageId MsgId)
+			public override int RemoveMessagesTill(IMessageId MsgId)
 			{
 				return 0;
 			}
@@ -96,15 +96,15 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		private static readonly FastThreadLocal<HashSet<MessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
+		private static readonly FastThreadLocal<HashSet<IMessageId>> TL_MESSAGE_IDS_SET = new FastThreadLocalAnonymousInnerClass();
 
-		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<MessageId>>
+		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<IMessageId>>
 		{
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override protected java.util.HashSet<SharpPulsar.api.MessageId> initialValue() throws Exception
-			public override HashSet<MessageId> initialValue()
+			public override HashSet<IMessageId> initialValue()
 			{
-				return new HashSet<MessageId>();
+				return new HashSet<IMessageId>();
 			}
 		}
 
@@ -116,8 +116,8 @@ namespace SharpPulsar.Impl
 			ReentrantReadWriteLock ReadWriteLock = new ReentrantReadWriteLock();
 			this.ReadLock = ReadWriteLock.readLock();
 			this.WriteLock = ReadWriteLock.writeLock();
-			this.MessageIdPartitionMap = new ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>>();
-			this.TimePartitions = new LinkedList<ConcurrentOpenHashSet<MessageId>>();
+			this.MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>>();
+			this.TimePartitions = new LinkedList<ConcurrentOpenHashSet<IMessageId>>();
 
 			int BlankPartitions = (int)Math.Ceiling((double)this.ackTimeoutMillis / this.tickDurationInMs);
 			for (int I = 0; I < BlankPartitions + 1; I++)
@@ -149,13 +149,13 @@ namespace SharpPulsar.Impl
 //ORIGINAL LINE: @Override public void run(io.netty.util.Timeout t) throws Exception
 			public override void run(Timeout T)
 			{
-				ISet<MessageId> MessageIds = TL_MESSAGE_IDS_SET.get();
+				ISet<IMessageId> MessageIds = TL_MESSAGE_IDS_SET.get();
 				MessageIds.Clear();
 
 				outerInstance.WriteLock.@lock();
 				try
 				{
-					ConcurrentOpenHashSet<MessageId> HeadPartition = outerInstance.TimePartitions.RemoveFirst();
+					ConcurrentOpenHashSet<IMessageId> HeadPartition = outerInstance.TimePartitions.RemoveFirst();
 					if (!HeadPartition.Empty)
 					{
 						log.warn("[{}] {} messages have timed-out", consumerBase, HeadPartition.size());
@@ -196,13 +196,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual bool Add(MessageId MessageId)
+		public virtual bool Add(IMessageId MessageId)
 		{
 			WriteLock.@lock();
 			try
 			{
-				ConcurrentOpenHashSet<MessageId> Partition = TimePartitions.peekLast();
-				ConcurrentOpenHashSet<MessageId> PreviousPartition = MessageIdPartitionMap.GetOrAdd(MessageId, Partition);
+				ConcurrentOpenHashSet<IMessageId> Partition = TimePartitions.peekLast();
+				ConcurrentOpenHashSet<IMessageId> PreviousPartition = MessageIdPartitionMap.GetOrAdd(MessageId, Partition);
 				if (PreviousPartition == null)
 				{
 					return Partition.add(MessageId);
@@ -234,13 +234,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual bool Remove(MessageId MessageId)
+		public virtual bool Remove(IMessageId MessageId)
 		{
 			WriteLock.@lock();
 			try
 			{
 				bool Removed = false;
-				ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap.Remove(MessageId);
+				ConcurrentOpenHashSet<IMessageId> Exist = MessageIdPartitionMap.Remove(MessageId);
 				if (Exist != null)
 				{
 					Removed = Exist.remove(MessageId);
@@ -266,19 +266,19 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual int RemoveMessagesTill(MessageId MsgId)
+		public virtual int RemoveMessagesTill(IMessageId MsgId)
 		{
 			WriteLock.@lock();
 			try
 			{
 				int Removed = 0;
-				IEnumerator<MessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
+				IEnumerator<IMessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
 				while (Iterator.MoveNext())
 				{
-					MessageId MessageId = Iterator.Current;
+					IMessageId MessageId = Iterator.Current;
 					if (MessageId.CompareTo(MsgId) <= 0)
 					{
-						ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap[MessageId];
+						ConcurrentOpenHashSet<IMessageId> Exist = MessageIdPartitionMap[MessageId];
 						if (Exist != null)
 						{
 							Exist.remove(MessageId);

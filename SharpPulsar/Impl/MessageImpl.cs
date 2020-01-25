@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
 
 
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Api;
 	using SharpPulsar.Impl.Schema;
 	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
@@ -43,22 +43,22 @@ namespace SharpPulsar.Impl
 	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
 	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
+    using DotNetty.Buffers;
 
-	public class MessageImpl<T> : Message<T>
+    public class MessageImpl<T> : Message<T>
 	{
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal MessageId MessageIdConflict;
-		public virtual MessageBuilder {get;}
-		public virtual Cnx {get;}
-		public virtual DataBuffer {get;}
+		protected internal IMessageId MessageId;
+		public MessageBuilder messageBuilder;
+		public ClientCnx Cnx;
+		public IByteBuffer DataBuffer;
 		private Schema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
 		private Optional<EncryptionContext> encryptionCtx = null;
 
-		public virtual TopicName {get;} // only set for incoming messages
+		public string TopicName {get;} // only set for incoming messages
 		[NonSerialized]
-		private IDictionary<string, string> properties;
+		public IDictionary<string, string> Properties { get; set; }
 		public virtual RedeliveryCount {get;}
 
 		// Constructor for out-going message

@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using Unpooled = io.netty.buffer.Unpooled;
 
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
 	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;
 	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 	using UninitializedMessageException = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.UninitializedMessageException;
 
 	[Serializable]
-	public class MessageIdImpl : MessageId
+	public class MessageIdImpl : IMessageId
 	{
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly long LedgerIdConflict;
@@ -113,7 +113,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArray(byte[] data) throws java.io.IOException
-		public static MessageId FromByteArray(sbyte[] Data)
+		public static IMessageId FromByteArray(sbyte[] Data)
 		{
 			checkNotNull(Data);
 			ByteBufCodedInputStream InputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(Data, 0, Data.Length));
@@ -147,14 +147,14 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException
-		public static MessageId FromByteArrayWithTopic(sbyte[] Data, string TopicName)
+		public static IMessageId FromByteArrayWithTopic(sbyte[] Data, string TopicName)
 		{
 			return fromByteArrayWithTopic(Data, TopicName.get(TopicName));
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArrayWithTopic(byte[] data, org.apache.pulsar.common.naming.TopicName topicName) throws java.io.IOException
-		public static MessageId FromByteArrayWithTopic(sbyte[] Data, TopicName TopicName)
+		public static IMessageId FromByteArrayWithTopic(sbyte[] Data, TopicName TopicName)
 		{
 			checkNotNull(Data);
 			ByteBufCodedInputStream InputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(Data, 0, Data.Length));
@@ -170,7 +170,7 @@ namespace SharpPulsar.Impl
 				throw new IOException(E);
 			}
 
-			MessageId MessageId;
+			IMessageId MessageId;
 			if (IdData.hasBatchIndex())
 			{
 				MessageId = new BatchMessageIdImpl(IdData.LedgerId, IdData.EntryId, IdData.Partition, IdData.BatchIndex);
@@ -232,7 +232,7 @@ namespace SharpPulsar.Impl
 			return ToByteArray(-1);
 		}
 
-		public override int CompareTo(MessageId O)
+		public override int CompareTo(IMessageId O)
 		{
 			if (O is MessageIdImpl)
 			{

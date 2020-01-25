@@ -35,14 +35,12 @@ namespace SharpPulsar.Impl
 	using TimerTask = io.netty.util.TimerTask;
 
 	[Serializable]
-	public class ProducerStatsRecorderImpl : ProducerStatsRecorder
+	public class ProducerStatsRecorderImpl<T> : ProducerStatsRecorder
 	{
 
 		private const long SerialVersionUID = 1L;
 		private TimerTask stat;
-		internal virtual StatTimeout {get;}
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ProducerImpl<?> producer;
+		internal virtual long StatTimeout { get; set; }
 		private ProducerImpl<object> producer;
 		private PulsarClientImpl pulsarClient;
 		private long oldTime;
@@ -59,8 +57,8 @@ namespace SharpPulsar.Impl
 		private static readonly DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat("0.00");
 		private readonly DoublesSketch ds;
 
-		public virtual SendMsgsRate {get;}
-		public virtual SendBytesRate {get;}
+		public long SendMsgsRate { get; set; }
+		public long SendBytesRate { get; set; }
 		private volatile double[] latencyPctValues;
 
 		private static readonly double[] PERCENTILES = new double[] {0.5, 0.75, 0.95, 0.99, 0.999, 1.0};
@@ -78,7 +76,7 @@ namespace SharpPulsar.Impl
 			ds = DoublesSketch.builder().build(256);
 		}
 
-		public ProducerStatsRecorderImpl<T1>(PulsarClientImpl PulsarClient, ProducerConfigurationData Conf, ProducerImpl<T1> Producer)
+		public ProducerStatsRecorderImpl(PulsarClientImpl PulsarClient, ProducerConfigurationData Conf, ProducerImpl<T> Producer)
 		{
 			this.pulsarClient = PulsarClient;
 			this.statsIntervalSeconds = PulsarClient.Configuration.StatsIntervalSeconds;

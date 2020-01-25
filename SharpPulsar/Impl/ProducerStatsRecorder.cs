@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Api;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,7 +19,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using ProducerStats = SharpPulsar.Api.ProducerStats;
 
 	public interface ProducerStatsRecorder : ProducerStats
 	{

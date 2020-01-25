@@ -22,7 +22,7 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
 	using Getter = lombok.Getter;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using NotImplementedException = sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 	/// <summary>
@@ -31,13 +31,13 @@ namespace SharpPulsar.Impl
 	/// e.g. seek(), ackCumulative(), getLastMessageId().
 	/// </summary>
 	[Serializable]
-	public class MultiMessageIdImpl : MessageId
+	public class MultiMessageIdImpl : IMessageId
 	{
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Getter private java.util.Map<String, SharpPulsar.api.MessageId> map;
-		private IDictionary<string, MessageId> map;
+		private IDictionary<string, IMessageId> map;
 
-		public MultiMessageIdImpl(IDictionary<string, MessageId> Map)
+		public MultiMessageIdImpl(IDictionary<string, IMessageId> Map)
 		{
 			this.map = Map;
 		}
@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl
 		}
 
 		// If all messageId in map are same size, and all bigger/smaller than the other, return valid value.
-		public override int CompareTo(MessageId O)
+		public override int CompareTo(IMessageId O)
 		{
 			if (!(O is MultiMessageIdImpl))
 			{
@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl
 			}
 
 			MultiMessageIdImpl Other = (MultiMessageIdImpl) O;
-			IDictionary<string, MessageId> OtherMap = Other.Map;
+			IDictionary<string, IMessageId> OtherMap = Other.Map;
 
 			if ((map == null || map.Count == 0) && (OtherMap == null || OtherMap.Count == 0))
 			{
@@ -77,9 +77,9 @@ namespace SharpPulsar.Impl
 			}
 
 			int Result = 0;
-			foreach (KeyValuePair<string, MessageId> Entry in map.SetOfKeyValuePairs())
+			foreach (KeyValuePair<string, IMessageId> Entry in map.SetOfKeyValuePairs())
 			{
-				MessageId OtherMessage = OtherMap[Entry.Key];
+				IMessageId OtherMessage = OtherMap[Entry.Key];
 				if (OtherMessage == null)
 				{
 					throw new System.ArgumentException("Other MessageId not have topic " + Entry.Key);

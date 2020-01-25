@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 
 	/// <summary>
@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public override bool IsDuplicate(MessageId MessageId)
+		public override bool IsDuplicate(IMessageId MessageId)
 		{
 			return false;
 		}

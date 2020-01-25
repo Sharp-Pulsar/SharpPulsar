@@ -93,7 +93,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledge(Consumer<T> Consumer, MessageId MessageId, Exception Exception);
+		void OnAcknowledge(Consumer<T> Consumer, IMessageId MessageId, Exception Exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -105,7 +105,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(Consumer<T> Consumer, MessageId MessageId, Exception Exception);
+		void OnAcknowledgeCumulative(Consumer<T> Consumer, IMessageId MessageId, Exception Exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.
@@ -116,7 +116,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnNegativeAcksSend(Consumer<T> Consumer, ISet<MessageId> MessageIds);
+		void OnNegativeAcksSend(Consumer<T> Consumer, ISet<IMessageId> MessageIds);
 
 		/// <summary>
 		/// This method will be called when a redelivery from an acknowledge timeout occurs.
@@ -127,7 +127,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnAckTimeoutSend(Consumer<T> Consumer, ISet<MessageId> MessageIds);
+		void OnAckTimeoutSend(Consumer<T> Consumer, ISet<IMessageId> MessageIds);
 	}
 
 }

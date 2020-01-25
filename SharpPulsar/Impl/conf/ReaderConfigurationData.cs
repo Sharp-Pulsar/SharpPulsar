@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl.Conf
 	{
 		[NonSerialized]
 		public string TopicName;
-		public MessageId startMessageId;
+		public IMessageId startMessageId;
 		public long StartMessageFromRollbackDurationInSec;
 
 		public int ReceiverQueueSize = 1000;

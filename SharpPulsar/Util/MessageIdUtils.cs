@@ -23,7 +23,7 @@ namespace SharpPulsar.Util
 
 	public class MessageIdUtils
 	{
-		public static long GetOffset(MessageId MessageId)
+		public static long GetOffset(IMessageId MessageId)
 		{
 			MessageIdImpl MsgId = (MessageIdImpl) MessageId;
 			long LedgerId = MsgId.LedgerId;
@@ -36,7 +36,7 @@ namespace SharpPulsar.Util
 			return Offset;
 		}
 
-		public static MessageId GetMessageId(long Offset)
+		public static IMessageId GetMessageId(long Offset)
 		{
 			// Demultiplex ledgerId and entryId from offset
 			long LedgerId = (long)((ulong)Offset >> 28);

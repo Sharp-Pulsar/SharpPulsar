@@ -1,8 +1,14 @@
-﻿using SharpPulsar.Impl;
-
+﻿using Optional;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Compression;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Util.Atomic.Collections.Concurrent;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,76 +31,72 @@ using System.Threading;
 namespace SharpPulsar.Impl
 {
 
-	public class ProducerImpl<T> : ProducerBase<T>, TimerTask, ConnectionHandler.Connection
+	public class ProducerImpl<T> : ProducerBase<T>, IConnection
 	{
 
 		// Producer id, used to identify a producer within a single connection
 		protected internal readonly long ProducerId;
 
 		// Variable is used through the atomic updater
-		private volatile long msgIdGenerator;
+		private long msgIdGenerator;
 
 		private readonly BlockingQueue<OpSendMsg> pendingMessages;
 		private readonly BlockingQueue<OpSendMsg> pendingCallbacks;
 		private readonly Semaphore semaphore;
-		private volatile Timeout sendTimeout = null;
+		private volatile Timeout sendTimeout;
 		private volatile Timeout batchMessageAndSendTimeout = null;
 		private long createProducerTimeout;
 		private readonly BatchMessageContainerBase batchMessageContainer;
-		private CompletableFuture<MessageId> lastSendFuture = CompletableFuture.completedFuture(null);
-
+		private TaskCompletionSource<IMessageId> lastSendFuture = new TaskCompletionSource<IMessageId>();
 		// Globally unique producer name
-		internal virtual HandlerName {get;}
-		private bool userProvidedProducerName = false;
+		internal string _handlerName;
+		private bool _userProvidedProducerName = false;
 
 		private string connectionId;
 		private string connectedSince;
 		private readonly int partitionIndex;
 
-		public virtual Stats {get;}
-
 		private readonly CompressionCodec compressor;
 
-		public virtual LastSequenceId {get;}
-		protected internal volatile long LastSequenceIdPushed;
+		protected internal long LastSequenceIdPushed;
 
 		private MessageCrypto msgCrypto = null;
 		private ScheduledFuture<object> keyGeneratorTask = null;
 
 		private readonly IDictionary<string, string> metadata;
 
-		private Optional<sbyte[]> schemaVersion = null;
+		private Option<sbyte[]> _schemaVersion;
 
-		public virtual ConnectionHandler {get;}
+		public  ConnectionHandler ConnectionHandler;
 
 
 		private static readonly AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerImpl), "msgIdGenerator");
 
-		public ProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, CompletableFuture<Producer<T>> ProducerCreatedFuture, int PartitionIndex, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, ProducerCreatedFuture, Schema, Interceptors)
+		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, int partitionIndex, Schema<T> schema, ProducerInterceptors Interceptors) : base(client, topic, conf, producerCreatedTask, schema, Interceptors)
 		{
-			this.ProducerId = Client.newProducerId();
-			this.HandlerName = Conf.ProducerName;
-			if (StringUtils.isNotBlank(HandlerName))
+			this.ProducerId = Client.NewProducerId();
+			_handlerName = conf.ProducerName;
+			if (!string.IsNullOrWhiteSpace(_handlerName))
 			{
-				this.userProvidedProducerName = true;
+				_userProvidedProducerName = true;
 			}
-			this.partitionIndex = PartitionIndex;
-			this.pendingMessages = Queues.newArrayBlockingQueue(Conf.MaxPendingMessages);
-			this.pendingCallbacks = Queues.newArrayBlockingQueue(Conf.MaxPendingMessages);
-			this.semaphore = new Semaphore(Conf.MaxPendingMessages, true);
+			this.partitionIndex = partitionIndex;
+			this.pendingMessages = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
+			this.pendingCallbacks = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
+			this.semaphore = new Semaphore(0, conf.MaxPendingMessages);
 
-			this.compressor = CompressionCodecProvider.getCompressionCodec(Conf.CompressionType);
+			this.compressor = CompressionCodecProvider.GetCompressionCodec(Conf.CompressionType);
 
 			if (Conf.InitialSequenceId != null)
 			{
-				long InitialSequenceId = Conf.InitialSequenceId;
-				this.LastSequenceId = InitialSequenceId;
+				long InitialSequenceId = (long)Conf.InitialSequenceId;
+				LastSequenceId = InitialSequenceId;
 				this.LastSequenceIdPushed = InitialSequenceId;
 				this.msgIdGenerator = InitialSequenceId + 1L;
 			}
 			else
 			{
-				this.LastSequenceId = -1L;
+				LastSequenceId = -1L;
 				this.LastSequenceIdPushed = -1L;
 				this.msgIdGenerator = 0L;
 			}
@@ -109,9 +111,9 @@ namespace SharpPulsar.Impl
 				{
 				try
 				{
-					msgCrypto.addPublicKeyCipher(Conf.EncryptionKeys, Conf.CryptoKeyReader);
+					msgCrypto.AddPublicKeyCipher(Conf.EncryptionKeys, Conf.CryptoKeyReader);
 				}
-				catch (CryptoException E)
+				catch (CryptoException e)
 				{
 					if (!ProducerCreatedFuture.Done)
 					{
@@ -136,7 +138,7 @@ namespace SharpPulsar.Impl
 				{
 					ContainerBuilder = BatcherBuilderFields.DEFAULT;
 				}
-				this.batchMessageContainer = (BatchMessageContainerBase)ContainerBuilder.build();
+				this.batchMessageContainer = (BatchMessageContainerBase)ContainerBuilder.Build();
 				this.batchMessageContainer.Producer = this;
 			}
 			else
@@ -145,24 +147,24 @@ namespace SharpPulsar.Impl
 			}
 			if (Client.Configuration.StatsIntervalSeconds > 0)
 			{
-				Stats = new ProducerStatsRecorderImpl(Client, Conf, this);
+				Stats = new ProducerStatsRecorderImpl<T>(Client, Conf, this);
 			}
 			else
 			{
 				Stats = ProducerStatsDisabled.INSTANCE;
 			}
 
-			if (Conf.Properties.Empty)
+			if (!Conf.Properties.Any())
 			{
-				metadata = Collections.emptyMap();
+				metadata = new Dictionary<string,string>();
 			}
 			else
 			{
-				metadata = Collections.unmodifiableMap(new Dictionary<>(Conf.Properties));
+				metadata = new SortedDictionary<string, string>(Conf.Properties);
 			}
 
 			this.ConnectionHandler = new ConnectionHandler(this, new BackoffBuilder()
-					.setInitialTime(Client.Configuration.InitialBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMax(Client.Configuration.MaxBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMandatoryStop(Math.Max(100, Conf.SendTimeoutMs - 100), BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create(), this);
+					.SetInitialTime(Client.Configuration.InitialBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMax(Client.Configuration.MaxBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMandatoryStop(Math.Max(100, Conf.SendTimeoutMs - 100), BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create(), this);
 
 			GrabCnx();
 		}
@@ -178,7 +180,7 @@ namespace SharpPulsar.Impl
 
 		private bool IsMultiSchemaEnabled(bool AutoEnable)
 		{
-			if (MultiSchemaMode != Auto)
+			if ((int)this.MultiSchemaMode != MultiSchemaMode.Auto)
 			{
 				return MultiSchemaMode == Enabled;
 			}
@@ -191,52 +193,47 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public override CompletableFuture<MessageId> InternalSendAsync<T1>(Message<T1> Message)
+		public Task<IMessageId> InternalSendAsync(Message<T> Message)
 		{
 
-			CompletableFuture<MessageId> Future = new CompletableFuture<MessageId>();
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> interceptorMessage = (MessageImpl) beforeSend(message);
-			MessageImpl<object> InterceptorMessage = (MessageImpl) BeforeSend(Message);
+			TaskCompletionSource<IMessageId> task = new TaskCompletionSource<IMessageId>();
+			MessageImpl<T> InterceptorMessage = (MessageImpl<T>) BeforeSend(Message);
 			//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
-			InterceptorMessage.DataBuffer.retain();
+			InterceptorMessage.DataBuffer.Retain();
 			if (Interceptors != null)
 			{
 				InterceptorMessage.Properties;
 			}
-			SendAsync(InterceptorMessage, new SendCallbackAnonymousInnerClass(this, Future, InterceptorMessage));
-			return Future;
+			SendAsync(InterceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, InterceptorMessage));
+			return task.Task;
 		}
 
-		public class SendCallbackAnonymousInnerClass : SendCallback
+		public class SendCallbackAnonymousInnerClass<S> : SendCallback
 		{
-			private readonly ProducerImpl<T> outerInstance;
+			private readonly ProducerImpl<S> outerInstance;
 
-			private CompletableFuture<MessageId> future;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private SharpPulsar.impl.MessageImpl<JavaToDotNetGenericWildcard> interceptorMessage;
-			private MessageImpl<object> interceptorMessage;
+			private TaskCompletionSource<IMessageId> task;
+			private MessageImpl<S> interceptorMessage;
 
-			public SendCallbackAnonymousInnerClass<T1>(ProducerImpl<T> OuterInstance, CompletableFuture<MessageId> Future, MessageImpl<T1> InterceptorMessage)
+			public SendCallbackAnonymousInnerClass(ProducerImpl<S> outerInstance, TaskCompletionSource<IMessageId> task, MessageImpl<S> interceptorMessage)
 			{
-				this.outerInstance = OuterInstance;
-				this.future = Future;
-				this.interceptorMessage = InterceptorMessage;
+				this.outerInstance = outerInstance;
+				this.task = task;
+				this.interceptorMessage = interceptorMessage;
 				nextCallback = null;
 				nextMsg = null;
-				createdAt = System.nanoTime();
+				createdAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
 			internal SendCallback nextCallback;
 			internal MessageImpl<object> nextMsg;
 			internal long createdAt;
 
-			public CompletableFuture<MessageId> Future
+			public TaskCompletionSource<IMessageId> Task
 			{
 				get
 				{
-					return future;
+					return task;
 				}
 			}
 
@@ -248,9 +245,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: public MessageImpl<?> getNextMessage()
-			public MessageImpl<object> NextMessage
+			public MessageImpl<S> NextMessage
 			{
 				get
 				{
@@ -258,7 +253,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			public void sendComplete(Exception E)
+			public void SendComplete(System.Exception e)
 			{
 				try
 				{
@@ -266,40 +261,38 @@ namespace SharpPulsar.Impl
 					{
 						outerInstance.Stats.IncrementSendFailed();
 						outerInstance.OnSendAcknowledgement(interceptorMessage, null, E);
-						future.completeExceptionally(E);
+						task.SetException(e);
 					}
 					else
 					{
 						outerInstance.OnSendAcknowledgement(interceptorMessage, interceptorMessage.getMessageId(), null);
-						future.complete(interceptorMessage.getMessageId());
+						task.SetResult(interceptorMessage.MessageId);
 						outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - createdAt);
 					}
 				}
 				finally
 				{
-					interceptorMessage.DataBuffer.release();
+					interceptorMessage.DataBuffer.Release();
 				}
 
 				while (nextCallback != null)
 				{
 					SendCallback SendCallback = nextCallback;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> msg = nextMsg;
 					MessageImpl<object> Msg = nextMsg;
 					//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
 					try
 					{
-						Msg.DataBuffer.retain();
-						if (E != null)
+						Msg.DataBuffer.Retain();
+						if (e != null)
 						{
 							outerInstance.Stats.IncrementSendFailed();
-							outerInstance.OnSendAcknowledgement(Msg, null, E);
-							SendCallback.Future.completeExceptionally(E);
+							outerInstance.OnSendAcknowledgement(Msg, null, e);
+							SendCallback.Task.SetException(e);
 						}
 						else
 						{
-							outerInstance.OnSendAcknowledgement(Msg, Msg.getMessageId(), null);
-							SendCallback.Future.complete(Msg.getMessageId());
+							outerInstance.OnSendAcknowledgement(Msg, Msg.MessageId, null);
+							SendCallback.Task.SetResult(Msg.MessageId);
 							outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - createdAt);
 						}
 						nextMsg = nextCallback.NextMessage;
@@ -307,21 +300,27 @@ namespace SharpPulsar.Impl
 					}
 					finally
 					{
-						Msg.DataBuffer.release();
+						Msg.DataBuffer.Release();
 					}
 				}
 			}
 
-			public void addCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb)
+			public void AddCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb)
 			{
-				nextMsg = Msg;
+				nextMsg = (MessageImpl<object>)Msg;
 				nextCallback = Scb;
 			}
+
+		public static implicit operator ProducerImpl<T>(ProducerImpl<T> v)
+		{
+			throw new NotImplementedException();
 		}
+	}
 
 		public virtual void SendAsync<T1>(Message<T1> Message, SendCallback Callback)
 		{
-			checkArgument(Message is MessageImpl);
+			if (Message is MessageImpl<T1>)
+				return;
 
 			if (!IsValidProducerState(Callback))
 			{
@@ -333,8 +332,6 @@ namespace SharpPulsar.Impl
 				return;
 			}
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> msg = (MessageImpl) message;
 			MessageImpl<object> Msg = (MessageImpl) Message;
 			MessageMetadata.Builder MsgMetadataBuilder = Msg.MessageBuilder;
 			ByteBuf Payload = Msg.DataBuffer;
@@ -354,7 +351,7 @@ namespace SharpPulsar.Impl
 				if (CompressedSize > ClientCnx.MaxMessageSize)
 				{
 					CompressedPayload.release();
-					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != CompressionType.NONE) ? "Compressed" : "";
+					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.NONE) ? "Compressed" : "";
 					PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, CompressedStr, CompressedSize, ClientCnx.MaxMessageSize));
 					Callback.sendComplete(InvalidMessageException);
 					return;
@@ -397,7 +394,7 @@ namespace SharpPulsar.Impl
 
 						MsgMetadataBuilder.setProducerName(HandlerName);
 
-						if (Conf.CompressionType != CompressionType.NONE)
+						if (Conf.CompressionType != ICompressionType.NONE)
 						{
 							MsgMetadataBuilder.Compression = CompressionCodecProvider.convertToWireProtocol(Conf.CompressionType);
 						}
@@ -1596,7 +1593,7 @@ namespace SharpPulsar.Impl
 
 		public override CompletableFuture<Void> FlushAsync()
 		{
-			CompletableFuture<MessageId> LastSendFuture;
+			CompletableFuture<IMessageId> LastSendFuture;
 			lock (ProducerImpl.this)
 			{
 				if (BatchMessagingEnabled)

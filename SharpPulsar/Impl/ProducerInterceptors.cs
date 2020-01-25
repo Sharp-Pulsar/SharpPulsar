@@ -22,7 +22,7 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using Producer = SharpPulsar.Api.Producer;
 	using ProducerInterceptor = SharpPulsar.Api.Interceptor.ProducerInterceptor;
 	using Logger = org.slf4j.Logger;
@@ -90,7 +90,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This method is called when the message send to the broker has been acknowledged, or when sending the record fails
 		/// before it gets send to the broker.
-		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, Message, MessageId, System.Exception)"/> method for
+		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, Message, IMessageId, System.Exception)"/> method for
 		/// each interceptor.
 		/// 
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptor methods are caught and ignored.
@@ -99,7 +99,7 @@ namespace SharpPulsar.Impl
 		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, Message)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public virtual void OnSendAcknowledgement(Producer Producer, Message Message, MessageId MsgId, Exception Exception)
+		public virtual void OnSendAcknowledgement(Producer Producer, Message Message, IMessageId MsgId, Exception Exception)
 		{
 			foreach (ProducerInterceptor Interceptor in interceptors)
 			{

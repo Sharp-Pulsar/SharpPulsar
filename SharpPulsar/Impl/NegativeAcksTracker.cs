@@ -25,13 +25,13 @@ namespace SharpPulsar.Impl
 	using Timer = io.netty.util.Timer;
 
 
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Impl.Conf;
 
 	public class NegativeAcksTracker
 	{
 
-		private Dictionary<MessageId, long> nackedMessages = null;
+		private Dictionary<IMessageId, long> nackedMessages = null;
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: private final ConsumerBase<?> consumer;
@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl
 				}
         
 				// Group all the nacked messages into one single re-delivery request
-				ISet<MessageId> MessagesToRedeliver = new HashSet<MessageId>();
+				ISet<IMessageId> MessagesToRedeliver = new HashSet<IMessageId>();
 				long Now = System.nanoTime();
 				nackedMessages.forEach((msgId, timestamp) =>
 				{
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void Add(MessageId MessageId)
+		public virtual void Add(IMessageId MessageId)
 		{
 			lock (this)
 			{
@@ -94,7 +94,7 @@ namespace SharpPulsar.Impl
         
 				if (nackedMessages == null)
 				{
-					nackedMessages = new Dictionary<MessageId, long>();
+					nackedMessages = new Dictionary<IMessageId, long>();
 				}
 				nackedMessages[MessageId] = System.nanoTime() + nackDelayNanos;
         

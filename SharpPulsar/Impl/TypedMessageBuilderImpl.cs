@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 
 
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageId = SharpPulsar.Api.IMessageId;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;

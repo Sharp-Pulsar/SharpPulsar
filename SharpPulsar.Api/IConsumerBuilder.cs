@@ -568,7 +568,7 @@ namespace SharpPulsar.Api
 
 		/// <summary>
 		/// Set the consumer to include the given position of any reset operation like {@link Consumer#seek(long) or
-		/// <seealso cref="Consumer.seek(MessageId)"/>}.
+		/// <seealso cref="Consumer.seek(IMessageId)"/>}.
 		/// </summary>
 		/// <returns> the consumer builder instance </returns>
 		IConsumerBuilder<T> StartMessageIdInclusive();

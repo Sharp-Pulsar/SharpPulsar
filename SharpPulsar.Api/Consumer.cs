@@ -158,15 +158,15 @@ namespace SharpPulsar.Api
 		void acknowledge<T1>(Message<T1> Message);
 
 		/// <summary>
-		/// Acknowledge the consumption of a single message, identified by its <seealso cref="MessageId"/>.
+		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
 		/// </summary>
 		/// <param name="messageId">
-		///            The <seealso cref="MessageId"/> to be acknowledged </param>
+		///            The <seealso cref="IMessageId"/> to be acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(MessageId messageId) throws PulsarClientException;
-		void Acknowledge(MessageId MessageId);
+		void Acknowledge(IMessageId MessageId);
 
 		/// <summary>
 		/// Acknowledge the consumption of <seealso cref="Messages"/>.
@@ -225,7 +225,7 @@ namespace SharpPulsar.Api
 		/// <para>This call is not blocking.
 		/// 
 		/// </para>
-		/// <para>This variation allows to pass a <seealso cref="MessageId"/> rather than a <seealso cref="Message"/>
+		/// <para>This variation allows to pass a <seealso cref="IMessageId"/> rather than a <seealso cref="Message"/>
 		/// object, in order to avoid keeping the payload in memory for extended amount
 		/// of time
 		/// 
@@ -235,7 +235,7 @@ namespace SharpPulsar.Api
 		/// </seealso>
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
-		void NegativeAcknowledge(MessageId MessageId);
+		void NegativeAcknowledge(IMessageId MessageId);
 
 		/// <summary>
 		/// Acknowledge the failure to process <seealso cref="Messages"/>.
@@ -315,7 +315,7 @@ namespace SharpPulsar.Api
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledgeCumulative(MessageId messageId) throws PulsarClientException;
-		void AcknowledgeCumulative(MessageId MessageId);
+		void AcknowledgeCumulative(IMessageId MessageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -333,7 +333,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask<Void> AcknowledgeAsync(MessageId MessageId);
+		ValueTask<Void> AcknowledgeAsync(IMessageId MessageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of <seealso cref="Messages"/>.
@@ -371,7 +371,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask<Void> AcknowledgeCumulativeAsync(MessageId MessageId);
+		ValueTask<Void> AcknowledgeCumulativeAsync(IMessageId MessageId);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -440,7 +440,7 @@ namespace SharpPulsar.Api
 		///            the message id where to reposition the subscription </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void Seek(MessageId MessageId);
+		void Seek(IMessageId MessageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -469,7 +469,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            the message id where to reposition the subscription </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(MessageId MessageId);
+		ValueTask<Void> SeekAsync(IMessageId MessageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -485,13 +485,13 @@ namespace SharpPulsar.Api
 		/// <returns> the last message id. </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: MessageId getLastMessageId() throws PulsarClientException;
-		MessageId LastMessageId {get;}
+		IMessageId LastMessageId {get;}
 
 		/// <summary>
 		/// Get the last message id available available for consume.
 		/// </summary>
 		/// <returns> a future that can be used to track the completion of the operation. </returns>
-		ValueTask<MessageId> LastMessageIdAsync {get;}
+		ValueTask<IMessageId> LastMessageIdAsync {get;}
 
 		/// <returns> Whether the consumer is connected to the broker </returns>
 		bool Connected {get;}

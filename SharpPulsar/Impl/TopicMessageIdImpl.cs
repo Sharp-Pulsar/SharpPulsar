@@ -20,10 +20,10 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 
 	[Serializable]
-	public class TopicMessageIdImpl : MessageId
+	public class TopicMessageIdImpl : IMessageId
 	{
 
 		/// <summary>
@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 		private readonly string topicName;
 		public virtual InnerMessageId {get;}
 
-		public TopicMessageIdImpl(string TopicPartitionName, string TopicName, MessageId MessageId)
+		public TopicMessageIdImpl(string TopicPartitionName, string TopicName, IMessageId MessageId)
 		{
 			this.InnerMessageId = MessageId;
 			this.topicPartitionName = TopicPartitionName;
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
 			return Objects.equals(topicPartitionName, Other.topicPartitionName) && Objects.equals(InnerMessageId, Other.InnerMessageId);
 		}
 
-		public override int CompareTo(MessageId O)
+		public override int CompareTo(IMessageId O)
 		{
 			return InnerMessageId.CompareTo(O);
 		}

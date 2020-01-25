@@ -24,7 +24,7 @@ namespace SharpPulsar.Impl
 //	import static com.google.common.@base.Preconditions.checkArgument;
 
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using Producer = SharpPulsar.Api.Producer;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using SharpPulsar.Api;
@@ -37,15 +37,15 @@ namespace SharpPulsar.Impl
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Org.Apache.Pulsar.Common.Util.Collections;
 
-	public abstract class ProducerBase<T> : HandlerState, Producer<T>
+	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
-		public abstract bool Connected {get;}
-		public abstract ProducerStats Stats {get;}
-		public abstract long LastSequenceId {get;}
+		public abstract bool Connected { get; set; }
+		public abstract ProducerStats Stats { get; set; }
+		public abstract long LastSequenceId { get; set; }
 		public abstract CompletableFuture<Void> FlushAsync();
-		public abstract CompletableFuture<MessageId> SendAsync(sbyte[] Message);
-		public abstract MessageId Send(sbyte[] Message);
-		public abstract string ProducerName {get;}
+		public abstract CompletableFuture<IMessageId> SendAsync(sbyte[] Message);
+		public abstract IMessageId Send(sbyte[] Message);
+		public abstract string ProducerName { get; set; }
 
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly CompletableFuture<Producer<T>> ProducerCreatedFutureConflict;
@@ -53,7 +53,6 @@ namespace SharpPulsar.Impl
 		protected internal readonly Schema<T> Schema;
 		protected internal readonly ProducerInterceptors Interceptors;
 		protected internal readonly ConcurrentOpenHashMap<SchemaHash, sbyte[]> SchemaCache;
-		protected internal volatile MultiSchemaMode MultiSchemaMode = MultiSchemaMode.Auto;
 
 		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, CompletableFuture<Producer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
 		{
@@ -70,12 +69,12 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.MessageId send(T message) throws SharpPulsar.api.PulsarClientException
-		public override MessageId Send(T Message)
+		public override IMessageId Send(T Message)
 		{
 			return NewMessage().value(Message).send();
 		}
 
-		public override CompletableFuture<MessageId> SendAsync(T Message)
+		public override CompletableFuture<IMessageId> SendAsync(T Message)
 		{
 			try
 			{
@@ -87,7 +86,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual CompletableFuture<MessageId> SendAsync<T1>(Message<T1> Message)
+		public virtual CompletableFuture<IMessageId> SendAsync<T1>(Message<T1> Message)
 		{
 			return InternalSendAsync(Message);
 		}
@@ -118,16 +117,16 @@ namespace SharpPulsar.Impl
 			return new TypedMessageBuilderImpl<T>(this, Schema, (TransactionImpl) Txn);
 		}
 
-		public abstract CompletableFuture<MessageId> internalSendAsync<T1>(Message<T1> Message);
+		public abstract CompletableFuture<IMessageId> internalSendAsync<T1>(Message<T1> Message);
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public SharpPulsar.api.MessageId send(SharpPulsar.api.Message<?> message) throws SharpPulsar.api.PulsarClientException
-		public virtual MessageId Send<T1>(Message<T1> Message)
+		public virtual IMessageId Send<T1>(Message<T1> Message)
 		{
 			try
 			{
 				// enqueue the message to the buffer
-				CompletableFuture<MessageId> SendFuture = InternalSendAsync(Message);
+				CompletableFuture<IMessageId> SendFuture = InternalSendAsync(Message);
 
 				if (!SendFuture.Done)
 				{
@@ -143,8 +142,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void flush() throws SharpPulsar.api.PulsarClientException
 		public override void Flush()
 		{
 			try
@@ -158,9 +155,6 @@ namespace SharpPulsar.Impl
 		}
 
 		public abstract void TriggerFlush();
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws SharpPulsar.api.PulsarClientException
 		public override void Close()
 		{
 			try
@@ -196,8 +190,6 @@ namespace SharpPulsar.Impl
 			return ProducerCreatedFutureConflict;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: protected SharpPulsar.api.Message<?> beforeSend(SharpPulsar.api.Message<?> message)
 		public virtual Message<object> BeforeSend<T1>(Message<T1> Message)
 		{
 			if (Interceptors != null)
@@ -210,7 +202,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnSendAcknowledgement<T1>(Message<T1> Message, MessageId MsgId, Exception Exception)
+		public virtual void OnSendAcknowledgement<T1>(Message<T1> Message, IMessageId MsgId, Exception Exception)
 		{
 			if (Interceptors != null)
 			{

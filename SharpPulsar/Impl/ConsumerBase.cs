@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 	using Consumer = SharpPulsar.Api.Consumer;
 	using ConsumerEventListener = SharpPulsar.Api.ConsumerEventListener;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
@@ -49,14 +49,14 @@ namespace SharpPulsar.Impl
 
 	public abstract class ConsumerBase<T> : HandlerState, TimerTask, Consumer<T>
 	{
-		public abstract void NegativeAcknowledge(MessageId MessageId);
+		public abstract void NegativeAcknowledge(IMessageId MessageId);
 		public abstract void Resume();
 		public abstract void Pause();
 		public abstract bool Connected {get;}
 		public abstract CompletableFuture<Void> SeekAsync(long Timestamp);
-		public abstract CompletableFuture<Void> SeekAsync(MessageId MessageId);
+		public abstract CompletableFuture<Void> SeekAsync(IMessageId MessageId);
 		public abstract void Seek(long Timestamp);
-		public abstract void Seek(MessageId MessageId);
+		public abstract void Seek(IMessageId MessageId);
 		public abstract void RedeliverUnacknowledgedMessages();
 		public abstract bool HasReachedEndOfTopic();
 		public abstract ConsumerStats Stats {get;}
@@ -220,7 +220,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void acknowledge(SharpPulsar.api.MessageId messageId) throws SharpPulsar.api.PulsarClientException
-		public override void Acknowledge(MessageId MessageId)
+		public override void Acknowledge(IMessageId MessageId)
 		{
 			try
 			{
@@ -262,7 +262,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void acknowledgeCumulative(SharpPulsar.api.MessageId messageId) throws SharpPulsar.api.PulsarClientException
-		public override void AcknowledgeCumulative(MessageId MessageId)
+		public override void AcknowledgeCumulative(IMessageId MessageId)
 		{
 			try
 			{
@@ -311,14 +311,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Void> AcknowledgeAsync(MessageId MessageId)
+		public override CompletableFuture<Void> AcknowledgeAsync(IMessageId MessageId)
 		{
 			return AcknowledgeAsync(MessageId, null);
 		}
 
 		// TODO: expose this method to consumer interface when the transaction feature is completed
 		// @Override
-		public virtual CompletableFuture<Void> AcknowledgeAsync(MessageId MessageId, Transaction Txn)
+		public virtual CompletableFuture<Void> AcknowledgeAsync(IMessageId MessageId, Transaction Txn)
 		{
 			TransactionImpl TxnImpl = null;
 			if (null != Txn)
@@ -329,14 +329,14 @@ namespace SharpPulsar.Impl
 			return DoAcknowledgeWithTxn(MessageId, AckType.Individual, Collections.emptyMap(), TxnImpl);
 		}
 
-		public override CompletableFuture<Void> AcknowledgeCumulativeAsync(MessageId MessageId)
+		public override CompletableFuture<Void> AcknowledgeCumulativeAsync(IMessageId MessageId)
 		{
 			return AcknowledgeCumulativeAsync(MessageId, null);
 		}
 
 		// TODO: expose this method to consumer interface when the transaction feature is completed
 		// @Override
-		public virtual CompletableFuture<Void> AcknowledgeCumulativeAsync(MessageId MessageId, Transaction Txn)
+		public virtual CompletableFuture<Void> AcknowledgeCumulativeAsync(IMessageId MessageId, Transaction Txn)
 		{
 			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
 			{
@@ -357,7 +357,7 @@ namespace SharpPulsar.Impl
 			NegativeAcknowledge(Message.MessageId);
 		}
 
-		public virtual CompletableFuture<Void> DoAcknowledgeWithTxn(MessageId MessageId, AckType AckType, IDictionary<string, long> Properties, TransactionImpl Txn)
+		public virtual CompletableFuture<Void> DoAcknowledgeWithTxn(IMessageId MessageId, AckType AckType, IDictionary<string, long> Properties, TransactionImpl Txn)
 		{
 			CompletableFuture<Void> AckFuture = DoAcknowledge(MessageId, AckType, Properties, Txn);
 			if (Txn != null)
@@ -375,7 +375,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public abstract CompletableFuture<Void> DoAcknowledge(MessageId MessageId, AckType AckType, IDictionary<string, long> Properties, TransactionImpl Txn);
+		public abstract CompletableFuture<Void> DoAcknowledge(IMessageId MessageId, AckType AckType, IDictionary<string, long> Properties, TransactionImpl Txn);
 		public override void NegativeAcknowledge<T1>(Messages<T1> Messages)
 		{
 			Messages.forEach(this.negativeAcknowledge);
@@ -417,7 +417,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.MessageId getLastMessageId() throws SharpPulsar.api.PulsarClientException
-		public virtual MessageId LastMessageId
+		public virtual IMessageId LastMessageId
 		{
 			get
 			{
@@ -432,7 +432,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override abstract CompletableFuture<MessageId> LastMessageIdAsync {get;}
+		public override abstract CompletableFuture<IMessageId> LastMessageIdAsync {get;}
 
 		private bool IsCumulativeAcknowledgementAllowed(SubscriptionType Type)
 		{
@@ -503,7 +503,7 @@ namespace SharpPulsar.Impl
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		public abstract void RedeliverUnacknowledgedMessages(ISet<MessageId> MessageIds);
+		public abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> MessageIds);
 
 		public override string ToString()
 		{
@@ -530,7 +530,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnAcknowledge(MessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledge(IMessageId MessageId, Exception Exception)
 		{
 			if (Interceptors != null)
 			{
@@ -538,7 +538,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnAcknowledgeCumulative(MessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledgeCumulative(IMessageId MessageId, Exception Exception)
 		{
 			if (Interceptors != null)
 			{
@@ -546,7 +546,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnNegativeAcksSend(ISet<MessageId> MessageIds)
+		public virtual void OnNegativeAcksSend(ISet<IMessageId> MessageIds)
 		{
 			if (Interceptors != null)
 			{
@@ -554,7 +554,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnAckTimeoutSend(ISet<MessageId> MessageIds)
+		public virtual void OnAckTimeoutSend(ISet<IMessageId> MessageIds)
 		{
 			if (Interceptors != null)
 			{

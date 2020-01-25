@@ -21,7 +21,7 @@
 namespace SharpPulsar.Impl
 {
 	using ComparisonChain = com.google.common.collect.ComparisonChain;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageId = SharpPulsar.Api.IMessageId;
 
 	[Serializable]
 	public class BatchMessageIdImpl : MessageIdImpl

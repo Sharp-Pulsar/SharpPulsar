@@ -53,7 +53,7 @@ namespace SharpPulsar.Api
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		MessageId Send(T Message);
+		IMessageId Send(T Message);
 
 		/// <summary>
 		/// Send a message asynchronously.
@@ -73,7 +73,7 @@ namespace SharpPulsar.Api
 		/// <param name="message">
 		///            a byte array with the payload of the message </param>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		ValueTask<MessageId> SendAsync(T Message);
+		ValueTask<IMessageId> SendAsync(T Message);
 
 		/// <summary>
 		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.

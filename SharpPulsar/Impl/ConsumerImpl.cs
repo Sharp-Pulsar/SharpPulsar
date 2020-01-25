@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
 	using DeadLetterPolicy = SharpPulsar.Api.DeadLetterPolicy;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Api;
 	using Producer = SharpPulsar.Api.Producer;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
@@ -93,8 +93,8 @@ namespace SharpPulsar.Impl
 //ORIGINAL LINE: @SuppressWarnings("unused") private volatile int availablePermits = 0;
 		private volatile int availablePermits = 0;
 
-		protected internal volatile MessageId LastDequeuedMessage = MessageIdFields.Earliest;
-		private volatile MessageId lastMessageIdInBroker = MessageIdFields.Earliest;
+		protected internal volatile IMessageId LastDequeuedMessage = MessageIdFields.Earliest;
+		private volatile IMessageId lastMessageIdInBroker = MessageIdFields.Earliest;
 
 		private long subscribeTimeout;
 		internal virtual PartitionIndex {get;}

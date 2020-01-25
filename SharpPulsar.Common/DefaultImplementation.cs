@@ -1,15 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl;
-using SharpPulsar.Impl.Auth;
-using SharpPulsar.Impl.Batch;
-using SharpPulsar.Impl.Message;
-using SharpPulsar.Impl.Schema;
-using SharpPulsar.Impl.Schema.Generic;
-using SharpPulsar.Interface;
-using SharpPulsar.Interface.Auth;
-using SharpPulsar.Interface.Batch;
-using SharpPulsar.Interface.Message;
-using SharpPulsar.Interface.Schema;
+﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

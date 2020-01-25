@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,26 +16,32 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Api
 {
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
-
 	/// <summary>
-	/// Acknowledgments grouping tracker.
+	/// The compression type that can be specified on a <seealso cref="Producer"/>.
 	/// </summary>
-	public interface AcknowledgmentsGroupingTracker : AutoCloseable
+	public enum ICompressionType
 	{
+		/// <summary>
+		/// No compression. </summary>
+		NONE,
 
-		bool IsDuplicate(IMessageId MessageId);
+		/// <summary>
+		/// Compress with LZ4 algorithm. Faster but lower compression than ZLib. </summary>
+		LZ4,
 
-		void AddAcknowledgment(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties);
+		/// <summary>
+		/// Compress with ZLib. </summary>
+		ZLIB,
 
-		void Flush();
+		/// <summary>
+		/// Compress with Zstandard codec. </summary>
+		ZSTD,
 
-		void Close();
-
-		void FlushAndClean();
+		/// <summary>
+		/// Compress with Snappy codec. </summary>
+		SNAPPY
 	}
 
 }

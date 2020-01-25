@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarClientImpl));
 
-		public virtual Configuration {get;}
+		public virtual Configuration Configuration;
 		public virtual Lookup {get;}
 		public virtual CnxPool {get;}
 		private readonly Timer timer;

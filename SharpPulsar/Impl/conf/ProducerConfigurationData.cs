@@ -37,21 +37,21 @@ namespace SharpPulsar.Impl.Conf
 		private string _topicName = null;
 		[NonSerialized]
 		private string _producerName = null;
-		private long _sendTimeoutMs = 30000;
+		public long SendTimeoutMs = 30000;
 		private bool _blockIfQueueFull = false;
 		private int _maxPendingMessages = DefaultMaxPendingMessages;
 		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
-		private MessageRoutingMode messageRoutingMode;
-		private HashingScheme hashingScheme = HashingScheme.JavaStringHash;
+		public MessageRoutingMode MessageRoutingMode;
+		public HashingScheme HashingScheme = HashingScheme.JavaStringHash;
 
-		private ProducerCryptoFailureAction cryptoFailureAction = ProducerCryptoFailureAction.FAIL;
-		private MessageRouter customMessageRouter = null;
+		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.FAIL;
+		public MessageRouter CustomMessageRouter = null;
 
 		private long _batchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
 		private int _batchingMaxMessages = DefaultBatchingMaxMessages;
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-		private bool _batchingEnabled = true; // enabled by default
+		public bool BatchingEnabled = true; // enabled by default
 
 		public BatcherBuilder BatcherBuilder = BatcherBuilderFields.DEFAULT;
 
@@ -59,7 +59,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public ISet<string> EncryptionKeys = new SortedSet<string>();
 
-		public CompressionType CompressionType = CompressionType.NONE;
+		public ICompressionType CompressionType = ICompressionType.NONE;
 
 		[NonSerialized]
 		public long?InitialSequenceId = null;
@@ -102,6 +102,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual string ProducerName
 		{
+			get
+			{
+				return _producerName;
+			}
 			set
 			{
 				if (string.IsNullOrWhiteSpace(value))
@@ -112,6 +116,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int MaxPendingMessages
 		{
+			get
+			{
+				return _maxPendingMessages;
+			}
 			set
 			{
 				if(value < 1)

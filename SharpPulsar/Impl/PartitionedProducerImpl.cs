@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using MessageRouter = SharpPulsar.Api.MessageRouter;
 	using MessageRoutingMode = SharpPulsar.Api.MessageRoutingMode;
 	using Producer = SharpPulsar.Api.Producer;
@@ -166,7 +166,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public override CompletableFuture<MessageId> InternalSendAsync<T1>(Message<T1> Message)
+		public override CompletableFuture<IMessageId> InternalSendAsync<T1>(Message<T1> Message)
 		{
 
 			switch (State)

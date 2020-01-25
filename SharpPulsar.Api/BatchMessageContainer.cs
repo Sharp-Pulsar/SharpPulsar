@@ -53,7 +53,7 @@ namespace SharpPulsar.Api
 		/// Release the payload and clear the container.
 		/// </summary>
 		/// <param name="ex"> cause </param>
-		void Discard(Exception Ex);
+		void Discard(System.Exception Ex);
 
 		/// <summary>
 		/// Return the batch container batch message in multiple batches.

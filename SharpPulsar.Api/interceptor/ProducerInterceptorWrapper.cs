@@ -53,7 +53,7 @@ namespace SharpPulsar.Api.Interceptor
 			return innerInterceptor.BeforeSend(Producer, Message);
 		}
 
-		public void OnSendAcknowledgement<T>(IProducer<T> Producer, Message<T> Message, MessageId MsgId, System.Exception Exception)
+		public void OnSendAcknowledgement<T>(IProducer<T> Producer, Message<T> Message, IMessageId MsgId, System.Exception Exception)
 		{
 			innerInterceptor.OnSendAcknowledgement(Producer, Message, MsgId, Exception);
 		}

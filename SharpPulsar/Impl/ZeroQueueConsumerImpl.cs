@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl
 
 	using Consumer = SharpPulsar.Api.Consumer;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using SharpPulsar.Api;
 	using SharpPulsar.Impl.Conf;
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 
 		private volatile bool waitingOnReceiveForZeroQueueSize = false;
 
-		public ZeroQueueConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, MessageId StartMessageId, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, 0, Schema, Interceptors, CreateTopicIfDoesNotExist)
+		public ZeroQueueConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, 0, Schema, Interceptors, CreateTopicIfDoesNotExist)
 		{
 		}
 

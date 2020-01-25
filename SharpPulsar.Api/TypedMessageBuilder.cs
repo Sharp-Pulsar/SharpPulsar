@@ -37,7 +37,7 @@ namespace SharpPulsar.Api
 		/// Send a message synchronously.
 		/// 
 		/// <para>This method will block until the message is successfully published and returns the
-		/// <seealso cref="MessageId"/> assigned by the broker to the published message.
+		/// <seealso cref="IMessageId"/> assigned by the broker to the published message.
 		/// 
 		/// </para>
 		/// <para>Example:
@@ -52,16 +52,16 @@ namespace SharpPulsar.Api
 		/// 
 		/// </para>
 		/// </summary>
-		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
+		/// <returns> the <seealso cref="IMessageId"/> assigned by the broker to the published message. </returns>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: MessageId send() throws PulsarClientException;
-		MessageId Send();
+		IMessageId Send();
 
 		/// <summary>
 		/// Send a message asynchronously
 		/// 
 		/// <para>This method returns a future that can be used to track the completion of the send operation and yields the
-		/// <seealso cref="MessageId"/> assigned by the broker to the published message.
+		/// <seealso cref="IMessageId"/> assigned by the broker to the published message.
 		/// 
 		/// </para>
 		/// <para>Example:
@@ -88,7 +88,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		ValueTask<MessageId> SendAsync();
+		ValueTask<IMessageId> SendAsync();
 
 		/// <summary>
 		/// Sets the key of the message for routing policy.

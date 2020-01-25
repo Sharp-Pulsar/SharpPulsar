@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageId = SharpPulsar.Api.IMessageId;
 	using Org.Apache.Pulsar.Common.Util.Collections;
 
 	public class UnAckedTopicMessageTracker : UnAckedMessageTracker

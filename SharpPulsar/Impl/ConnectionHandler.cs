@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public interface Connection
+	public interface IConnection
 	{
 		void ConnectionFailed(PulsarClientException Exception);
 		void ConnectionOpened(ClientCnx Cnx);
@@ -40,9 +40,9 @@ namespace SharpPulsar.Impl
 
 		
 
-		protected internal Connection Connection;
+		protected internal IConnection Connection;
 
-		public ConnectionHandler(HandlerState State, Backoff Backoff, Connection Connection)
+		public ConnectionHandler(HandlerState State, Backoff Backoff, IConnection Connection)
 		{
 			this.State = State;
 			this.Connection = Connection;
@@ -114,8 +114,6 @@ namespace SharpPulsar.Impl
 			}, DelayMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public void connectionClosed(ClientCnx cnx)
 		public virtual void ConnectionClosed(ClientCnx Cnx)
 		{
 			if (CLIENT_CNX_UPDATER.compareAndSet(this, Cnx, null))

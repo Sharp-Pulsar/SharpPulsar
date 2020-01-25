@@ -100,7 +100,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void OnSendAcknowledgement<T>(IProducer<T> Producer, Message<T> Message, MessageId MsgId, System.Exception Exception);
+		void OnSendAcknowledgement<T>(IProducer<T> Producer, Message<T> Message, IMessageId MsgId, System.Exception Exception);
 	}
 
 }

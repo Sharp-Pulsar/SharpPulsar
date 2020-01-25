@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public void seek(MessageId messageId) throws PulsarClientException
-		public override void Seek(MessageId MessageId)
+		public override void Seek(IMessageId MessageId)
 		{
 			consumer.Seek(MessageId);
 		}
@@ -203,7 +203,7 @@ namespace SharpPulsar.Impl
 			consumer.Seek(Timestamp);
 		}
 
-		public override CompletableFuture<Void> SeekAsync(MessageId MessageId)
+		public override CompletableFuture<Void> SeekAsync(IMessageId MessageId)
 		{
 			return consumer.SeekAsync(MessageId);
 		}

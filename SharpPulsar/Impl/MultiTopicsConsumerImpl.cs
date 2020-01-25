@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl
 	using Consumer = SharpPulsar.Api.Consumer;
 	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
 	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using MessageId = SharpPulsar.Api.IMessageId;
 	using SharpPulsar.Api;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using NotSupportedException = SharpPulsar.Api.PulsarClientException.NotSupportedException;

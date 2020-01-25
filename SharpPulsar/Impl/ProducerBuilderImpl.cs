@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl
 	using Getter = lombok.Getter;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
-	using CompressionType = SharpPulsar.Api.CompressionType;
+	using ICompressionType = SharpPulsar.Api.ICompressionType;
 	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
 	using HashingScheme = SharpPulsar.Api.HashingScheme;
 	using MessageRouter = SharpPulsar.Api.MessageRouter;
@@ -175,7 +175,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> compressionType(@NonNull CompressionType compressionType)
-		public override ProducerBuilder<T> CompressionType(CompressionType CompressionType)
+		public override ProducerBuilder<T> CompressionType(ICompressionType CompressionType)
 		{
 			conf.CompressionType = CompressionType;
 			return this;

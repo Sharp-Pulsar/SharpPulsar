@@ -22,7 +22,7 @@ namespace SharpPulsar.Impl.Transaction
 {
 	using Data = lombok.Data;
 	using Getter = lombok.Getter;
-	using MessageId = SharpPulsar.Api.MessageId;
+	using IMessageId = SharpPulsar.Api.IMessageId;
 	using Transaction = SharpPulsar.Api.Transaction.Transaction;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 
@@ -44,8 +44,8 @@ namespace SharpPulsar.Impl.Transaction
 //ORIGINAL LINE: @Data private static class TransactionalSendOp
 		public class TransactionalSendOp
 		{
-			internal readonly CompletableFuture<MessageId> SendFuture;
-			internal readonly CompletableFuture<MessageId> TransactionalSendFuture;
+			internal readonly CompletableFuture<IMessageId> SendFuture;
+			internal readonly CompletableFuture<IMessageId> TransactionalSendFuture;
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -95,11 +95,11 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public virtual CompletableFuture<MessageId> RegisterSendOp(long SequenceId, CompletableFuture<MessageId> SendFuture)
+		public virtual CompletableFuture<IMessageId> RegisterSendOp(long SequenceId, CompletableFuture<IMessageId> SendFuture)
 		{
 			lock (this)
 			{
-				CompletableFuture<MessageId> TransactionalSendFuture = new CompletableFuture<MessageId>();
+				CompletableFuture<IMessageId> TransactionalSendFuture = new CompletableFuture<IMessageId>();
 				TransactionalSendOp SendOp = new TransactionalSendOp(SendFuture, TransactionalSendFuture);
 				sendOps.put(SequenceId, SendOp);
 				return TransactionalSendFuture;

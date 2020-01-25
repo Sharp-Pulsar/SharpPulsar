@@ -115,10 +115,10 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// The initial reader positioning is done by specifying a message id. The options are:
 		/// <ul>
-		/// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
-		/// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
+		/// <li><seealso cref="IMessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
+		/// <li><seealso cref="IMessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
 		/// published <b>*after*</b> the creation of the builder</li>
-		/// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
+		/// <li><seealso cref="IMessageId"/>: Position the reader on a particular message. The first message read will be the one
 		/// immediately <b>*after*</b> the specified message</li>
 		/// </ul>
 		/// 
@@ -129,7 +129,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="startMessageId"> the message id where the reader will be initially positioned on </param>
 		/// <returns> the reader builder instance </returns>
-		ReaderBuilder<T> StartMessageId(MessageId StartMessageId);
+		ReaderBuilder<T> StartMessageId(IMessageId StartMessageId);
 
 		/// <summary>
 		/// The initial reader positioning can be set at specific timestamp by providing total rollback duration. so, broker
@@ -143,9 +143,9 @@ namespace SharpPulsar.Api
 		ReaderBuilder<T> StartMessageFromRollbackDuration(long RollbackDuration, TimeUnit Timeunit);
 
 		/// <summary>
-		/// Set the reader to include the given position of <seealso cref="ReaderBuilder.startMessageId(MessageId)"/>
+		/// Set the reader to include the given position of <seealso cref="ReaderBuilder.startMessageId(IMessageId)"/>
 		/// 
-		/// <para>This configuration option also applies for any cursor reset operation like <seealso cref="Reader.seek(MessageId)"/>.
+		/// <para>This configuration option also applies for any cursor reset operation like <seealso cref="Reader.seek(IMessageId)"/>.
 		/// 
 		/// </para>
 		/// </summary>

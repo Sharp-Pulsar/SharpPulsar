@@ -276,12 +276,12 @@ namespace SharpPulsar.Api
 		/// 
 		/// <para>By default, message payloads are not compressed. Supported compression types are:
 		/// <ul>
-		/// <li><seealso cref="CompressionType.NONE"/>: No compression (Default)</li>
-		/// <li><seealso cref="CompressionType.LZ4"/>: Compress with LZ4 algorithm. Faster but lower compression than ZLib</li>
-		/// <li><seealso cref="CompressionType.ZLIB"/>: Standard ZLib compression</li>
-		/// <li><seealso cref="CompressionType.ZSTD"/> Compress with Zstandard codec. Since Pulsar 2.3. Zstd cannot be used if consumer
+		/// <li><seealso cref="ICompressionType.NONE"/>: No compression (Default)</li>
+		/// <li><seealso cref="ICompressionType.LZ4"/>: Compress with LZ4 algorithm. Faster but lower compression than ZLib</li>
+		/// <li><seealso cref="ICompressionType.ZLIB"/>: Standard ZLib compression</li>
+		/// <li><seealso cref="ICompressionType.ZSTD"/> Compress with Zstandard codec. Since Pulsar 2.3. Zstd cannot be used if consumer
 		/// applications are not in version >= 2.3 as well</li>
-		/// <li><seealso cref="CompressionType.SNAPPY"/> Compress with Snappy codec. Since Pulsar 2.4. Snappy cannot be used if
+		/// <li><seealso cref="ICompressionType.SNAPPY"/> Compress with Snappy codec. Since Pulsar 2.4. Snappy cannot be used if
 		/// consumer applications are not in version >= 2.4 as well</li>
 		/// </ul>
 		/// 
@@ -290,7 +290,7 @@ namespace SharpPulsar.Api
 		/// <param name="compressionType">
 		///            the selected compression type </param>
 		/// <returns> the producer builder instance </returns>
-		ProducerBuilder<T> CompressionType(CompressionType CompressionType);
+		ProducerBuilder<T> CompressionType(ICompressionType CompressionType);
 
 		/// <summary>
 		/// Set a custom message routing policy by passing an implementation of MessageRouter.
