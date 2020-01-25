@@ -32,7 +32,7 @@ namespace SharpPulsar.Api
 	/// </code></pre>
 	/// </para>
 	/// </summary>
-	public interface TypedMessageBuilder<T>
+	public interface ITypedMessageBuilder<T>
 	{
 
 		/// <summary>
@@ -55,8 +55,6 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the <seealso cref="IMessageId"/> assigned by the broker to the published message. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: MessageId send() throws PulsarClientException;
 		IMessageId Send();
 
 		/// <summary>
@@ -97,7 +95,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="key"> the partitioning key for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> Key(string Key);
+		ITypedMessageBuilder<T> Key(string Key);
 
 		/// <summary>
 		/// Sets the bytes of the key of the message for routing policy.
@@ -105,7 +103,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="key"> routing key for message, in byte array form </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> KeyBytes(sbyte[] Key);
+		ITypedMessageBuilder<T> KeyBytes(sbyte[] Key);
 
 		/// <summary>
 		/// Sets the ordering key of the message for message dispatch in <seealso cref="SubscriptionType.Key_Shared"/> mode.
@@ -113,7 +111,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="orderingKey"> the ordering key for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey);
+		ITypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey);
 
 		/// <summary>
 		/// Set a domain object on the message.
@@ -121,7 +119,7 @@ namespace SharpPulsar.Api
 		/// <param name="value">
 		///            the domain object </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> Value(T Value);
+		ITypedMessageBuilder<T> Value(T Value);
 
 		/// <summary>
 		/// Sets a new property on a message.
@@ -131,12 +129,12 @@ namespace SharpPulsar.Api
 		/// <param name="value">
 		///            the associated value </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> Property(string Name, string Value);
+		ITypedMessageBuilder<T> Property(string Name, string Value);
 
 		/// <summary>
 		/// Add all the properties in the provided map. </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> Properties(IDictionary<string, string> Properties);
+		ITypedMessageBuilder<T> Properties(IDictionary<string, string> Properties);
 
 		/// <summary>
 		/// Set the event time for a given message.
@@ -149,7 +147,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> EventTime(long Timestamp);
+		ITypedMessageBuilder<T> EventTime(long Timestamp);
 
 		/// <summary>
 		/// Specify a custom sequence id for the message being published.
@@ -168,20 +166,20 @@ namespace SharpPulsar.Api
 		/// <param name="sequenceId">
 		///            the sequence id to assign to the current message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> SequenceId(long SequenceId);
+		ITypedMessageBuilder<T> SequenceId(long SequenceId);
 
 		/// <summary>
 		/// Override the geo-replication clusters for this message.
 		/// </summary>
 		/// <param name="clusters"> the list of clusters. </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters);
+		ITypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters);
 
 		/// <summary>
 		/// Disable geo-replication for this message.
 		/// </summary>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> DisableReplication();
+		ITypedMessageBuilder<T> DisableReplication();
 
 		/// <summary>
 		/// Deliver the message only at or after the specified absolute timestamp.
@@ -198,7 +196,7 @@ namespace SharpPulsar.Api
 		/// <param name="timestamp">
 		///            absolute timestamp indicating when the message should be delivered to consumers </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> DeliverAt(long Timestamp);
+		ITypedMessageBuilder<T> DeliverAt(long Timestamp);
 
 		/// <summary>
 		/// Request to deliver the message only after the specified relative delay.
@@ -214,7 +212,7 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> DeliverAfter(long Delay, TimeUnit Unit);
+		ITypedMessageBuilder<T> DeliverAfter(long Delay, TimeUnit Unit);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared
@@ -299,7 +297,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="config"> a map with the configuration options for the message </param>
 		/// <returns> the message builder instance </returns>
-		TypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config);
+		ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config);
 	}
 
 	public static class TypedMessageBuilderFields

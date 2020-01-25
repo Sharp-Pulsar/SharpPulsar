@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl.Auth
 	public class AuthenticationDisabled : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 
-		protected internal readonly AuthenticationDataProvider NullData = new AuthenticationDataNull();
+		protected internal readonly IAuthenticationDataProvider NullData = new AuthenticationDataNull();
 		/// 
 		private const long SerialVersionUID = 1L;
 
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public virtual AuthenticationDataProvider AuthData
+		public virtual IAuthenticationDataProvider AuthData
 		{
 			get
 			{

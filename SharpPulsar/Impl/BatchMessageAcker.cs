@@ -20,31 +20,28 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-
+	
 	public class BatchMessageAcker
 	{
 
-		internal static BatchMessageAcker NewAcker(int BatchSize)
+		internal static BatchMessageAcker NewAcker(int batchSize)
 		{
-			BitArray BitSet = new BitArray(BatchSize);
-			BitSet.Set(0, BatchSize);
-			return new BatchMessageAcker(BitSet, BatchSize);
+			BitArray bitSet = new BitArray(batchSize);
+			bitSet.Set(batchSize, true);
+			return new BatchMessageAcker(bitSet, batchSize);
 		}
 
 		// bitset shared across messages in the same batch.
-		public virtual BatchSize {get;}
+		private int _batchSize;
 		private readonly BitArray bitSet;
 		private bool prevBatchCumulativelyAcked = false;
 
-		public BatchMessageAcker(BitArray BitSet, int BatchSize)
+		public BatchMessageAcker(BitArray bitSet, int batchSize)
 		{
-			this.bitSet = BitSet;
-			this.BatchSize = BatchSize;
+			this.bitSet = bitSet;
+			_batchSize = batchSize;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting BitSet getBitSet()
 		public virtual BitArray BitSet
 		{
 			get
@@ -64,21 +61,21 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual bool AckIndividual(int BatchIndex)
+		public virtual bool AckIndividual(int batchIndex)
 		{
 			lock (this)
 			{
-				bitSet.Set(BatchIndex, false);
-				return bitSet.Empty;
+				bitSet.Set(batchIndex, false);
+				return bitSet.Get(batchIndex);
 			}
 		}
 
-		public virtual bool AckCumulative(int BatchIndex)
+		public virtual bool AckCumulative(int batchIndex)
 		{
 			lock (this)
 			{
 				// +1 since to argument is exclusive
-				bitSet.clear(0, BatchIndex + 1);
+				bitSet.Clear(0, BatchIndex + 1);
 				return bitSet.Empty;
 			}
 		}
@@ -90,7 +87,7 @@ namespace SharpPulsar.Impl
 			{
 				lock (this)
 				{
-					return bitSet.cardinality();
+					return bitSet.Count;
 				}
 			}
 		}

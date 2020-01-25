@@ -23,30 +23,13 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.util.TypeCheckUtil.checkType;
-
-	using Preconditions = com.google.common.@base.Preconditions;
-
-
-	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.IMessageId;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-	using SharpPulsar.Impl.Schema;
-	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
-	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
     using System.Threading.Tasks;
+    using SharpPulsar.Api;
+    using SharpPulsar.Impl.Transaction;
+    using SharpPulsar.Protocol.Builder;
 
     [Serializable]
-	public class TypedMessageBuilderImpl<T> : TypedMessageBuilder<T>
+	public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>
 	{
 
 		private const long SerialVersionUID = 0L;
@@ -54,7 +37,8 @@ namespace SharpPulsar.Impl
 		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
 		[NonSerialized]
 		private readonly ProducerBase<T> _producer;
-		public virtual MetadataBuilder Builder  = MessageMetadata.newBuilder();
+		[NonSerialized]
+		public MessageMetadataBuilder Builder  = new MessageMetadataBuilder();
 		private readonly Schema<T> schema;
 		[NonSerialized]
 		public  ByteBuffer Content;
@@ -78,7 +62,7 @@ namespace SharpPulsar.Impl
 			{
 				return -1L;
 			}
-			MetadataBuilder.TxnidLeastBits = txn.TxnIdLeastBits;
+			Builder.SetTxnidLeastBits(txn.TxnIdLeastBits);
 			MetadataBuilder.TxnidMostBits = txn.TxnIdMostBits;
 			long SequenceId = txn.NextSequenceId();
 			MetadataBuilder.SequenceId = SequenceId;
@@ -115,7 +99,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public TypedMessageBuilder<T> Key(string Key)
+		public ITypedMessageBuilder<T> Key(string Key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
@@ -127,7 +111,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> KeyBytes(sbyte[] Key)
+		public override ITypedMessageBuilder<T> KeyBytes(sbyte[] Key)
 		{
 			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
@@ -139,13 +123,13 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey)
+		public override ITypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey)
 		{
 			MetadataBuilder.OrderingKey = ByteString.copyFrom(OrderingKey);
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> Value(T Value)
+		public override ITypedMessageBuilder<T> Value(T Value)
 		{
 
 			checkArgument(Value != null, "Need Non-Null content value");
@@ -167,7 +151,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> Property(string Name, string Value)
+		public override ITypedMessageBuilder<T> Property(string Name, string Value)
 		{
 			checkArgument(!string.ReferenceEquals(Name, null), "Need Non-Null name");
 			checkArgument(!string.ReferenceEquals(Value, null), "Need Non-Null value for name: " + Name);
@@ -175,7 +159,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> Properties(IDictionary<string, string> Properties)
+		public override ITypedMessageBuilder<T> Properties(IDictionary<string, string> Properties)
 		{
 			foreach (KeyValuePair<string, string> Entry in Properties.SetOfKeyValuePairs())
 			{
@@ -187,21 +171,21 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> EventTime(long Timestamp)
+		public override ITypedMessageBuilder<T> EventTime(long Timestamp)
 		{
 			checkArgument(Timestamp > 0, "Invalid timestamp : '%s'", Timestamp);
 			MetadataBuilder.EventTime = Timestamp;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> SequenceId(long SequenceId)
+		public override ITypedMessageBuilder<T> SequenceId(long SequenceId)
 		{
 			checkArgument(SequenceId >= 0);
 			MetadataBuilder.SequenceId = SequenceId;
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters)
+		public override ITypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters)
 		{
 			Preconditions.checkNotNull(Clusters);
 			MetadataBuilder.ClearReplicateTo();
@@ -209,19 +193,19 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> DisableReplication()
+		public override ITypedMessageBuilder<T> DisableReplication()
 		{
 			MetadataBuilder.ClearReplicateTo();
 			MetadataBuilder.AddReplicateTo("__local__");
 			return this;
 		}
 
-		public override TypedMessageBuilder<T> DeliverAfter(long Delay, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public override ITypedMessageBuilder<T> DeliverAfter(long Delay, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
 			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + Unit.toMillis(Delay));
 		}
 
-		public override TypedMessageBuilder<T> DeliverAt(long Timestamp)
+		public override ITypedMessageBuilder<T> DeliverAt(long Timestamp)
 		{
 			MetadataBuilder.DeliverAtTime = Timestamp;
 			return this;
@@ -229,7 +213,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("unchecked") @Override public SharpPulsar.api.TypedMessageBuilder<T> loadConf(java.util.Map<String, Object> config)
-		public override TypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config)
+		public override ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config)
 		{
 			Config.forEach((key, value) =>
 			{

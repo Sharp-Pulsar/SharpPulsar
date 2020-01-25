@@ -526,36 +526,35 @@ namespace SharpPulsar.Impl
 			{
 				return;
 			}
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			SchemaInfo SchemaInfo = Optional.ofNullable(Msg.Schema).map(Schema::getSchemaInfo).filter(si => si.Type.Value > 0).orElse(SchemaFields.BYTES.SchemaInfo);
+			SchemaInfo SchemaInfo = Optional.ofNullable(Msg.Schema).map(Schema.getSchemaInfo).filter(si => si.Type.Value > 0).orElse(SchemaFields.BYTES.SchemaInfo);
 			GetOrCreateSchemaAsync(Cnx, SchemaInfo).handle((v, ex) =>
 			{
-			if (ex != null)
-			{
-				Exception T = FutureUtil.unwrapCompletionException(ex);
-				log.warn("[{}] [{}] GetOrCreateSchema error", Topic, HandlerName, T);
-				if (T is PulsarClientException.IncompatibleSchemaException)
+				if (ex != null)
 				{
-					Msg.setSchemaState(MessageImpl.SchemaState.Broken);
-					Callback.sendComplete((PulsarClientException.IncompatibleSchemaException) T);
+					Exception T = FutureUtil.unwrapCompletionException(ex);
+					log.warn("[{}] [{}] GetOrCreateSchema error", Topic, HandlerName, T);
+					if (T is PulsarClientException.IncompatibleSchemaException)
+					{
+						Msg.setSchemaState(MessageImpl.SchemaState.Broken);
+						Callback.sendComplete((PulsarClientException.IncompatibleSchemaException)T);
+					}
 				}
-			}
-			else
-			{
-				log.warn("[{}] [{}] GetOrCreateSchema succeed", Topic, HandlerName);
-				SchemaHash SchemaHash = SchemaHash.of(Msg.Schema);
-				SchemaCache.putIfAbsent(SchemaHash, v);
-				Msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(v);
-				Msg.setSchemaState(MessageImpl.SchemaState.Ready);
-			}
+				else
+				{
+					log.warn("[{}] [{}] GetOrCreateSchema succeed", Topic, HandlerName);
+					SchemaHash SchemaHash = SchemaHash.of(Msg.Schema);
+					SchemaCache.putIfAbsent(SchemaHash, v);
+					Msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(v);
+					Msg.setSchemaState(MessageImpl.SchemaState.Ready);
+				}
+			});
 			Cnx.ctx().channel().eventLoop().execute(() =>
 			{
-				lock (ProducerImpl.this)
+				lock (this)
 				{
 					RecoverProcessOpSendMsgFrom(Cnx, Msg);
 				}
-			});
-			return null;
+				return null;
 			});
 		}
 
@@ -767,17 +766,15 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Void> CloseAsync()
+		public ValueTask CloseAsync()
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final State currentState = getAndUpdateState(state ->
-			State CurrentState = GetAndUpdateState(state =>
+			State? CurrentState = GetAndUpdateState(state =>
 			{
-			if (state == State.Closed)
-			{
-				return state;
-			}
-			return State.Closing;
+				if (state == State.Closed)
+				{
+					return state;
+				}
+				return State.Closing;
 			});
 
 			if (CurrentState == State.Closed || CurrentState == State.Closing)
@@ -833,22 +830,22 @@ namespace SharpPulsar.Impl
 			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
 			Cnx.sendRequestWithId(Cmd, RequestId).handle((v, exception) =>
 			{
-			Cnx.removeProducer(ProducerId);
-			if (exception == null || !Cnx.ctx().channel().Active)
-			{
-				lock (ProducerImpl.this)
+				Cnx.removeProducer(ProducerId);
+				if (exception == null || !Cnx.ctx().channel().Active)
 				{
-					log.info("[{}] [{}] Closed Producer", Topic, HandlerName);
-					State = State.Closed;
-					pendingMessages.forEach(msg =>
+					lock (this)
 					{
-						msg.cmd.release();
-						msg.recycle();
-					});
-					pendingMessages.clear();
-				}
-				CloseFuture.complete(null);
-				ClientConflict.cleanupProducer(this);
+						log.info("[{}] [{}] Closed Producer", Topic, HandlerName);
+						State = State.Closed;
+						pendingMessages.forEach(msg =>
+						{
+							msg.cmd.release();
+							msg.recycle();
+						});
+						pendingMessages.clear();
+					}
+					CloseFuture.complete(null);
+					ClientConflict.cleanupProducer(this);
 			}
 			else
 			{
@@ -1095,11 +1092,7 @@ namespace SharpPulsar.Impl
 
 		public sealed class OpSendMsg
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: MessageImpl<?> msg;
 			internal MessageImpl<object> Msg;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.List<MessageImpl<?>> msgs;
 			internal IList<MessageImpl<object>> Msgs;
 			internal ByteBufPair Cmd;
 			internal SendCallback Callback;

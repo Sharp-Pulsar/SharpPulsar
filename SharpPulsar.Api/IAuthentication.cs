@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,7 +42,7 @@ namespace SharpPulsar.Api
 		///             if there was error getting the authentication data to use </exception>
 		/// <exception cref="PulsarClientException">
 		///             any other error </exception>
-		virtual AuthenticationDataProvider AuthData
+		virtual IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -57,11 +58,22 @@ namespace SharpPulsar.Api
 		///          target broker host name
 		/// </param>
 		/// <returns> The authentication data provider </returns>
-		virtual AuthenticationDataProvider GetAuthData(string BrokerHostName)
+		virtual IAuthenticationDataProvider GetAuthData(string brokerHostName)
 		{
-			return this.GetAuthData();
+			if (string.IsNullOrWhiteSpace(brokerHostName))
+				throw new PulsarClientException("Broker Host Name Cannot be Empty");
+			return this.AuthData;
 		}
+		
+		/// <summary>
+		/// Configure the authentication plugins with the supplied parameters.
+		/// </summary>
+		/// <param name="authParams"> </param>
+		/// @deprecated This method will be deleted on version 2.0, instead please use configure(String
+		///             encodedAuthParamString) which is in EncodedAuthenticationParameterSupport for now and will be
+		///             integrated into this interface. 
 
+		void Configure(string authParams);
 		/// <summary>
 		/// Configure the authentication plugins with the supplied parameters.
 		/// </summary>
@@ -81,17 +93,17 @@ namespace SharpPulsar.Api
 		/// An authentication Stage.
 		/// when authentication complete, passed-in authFuture will contains authentication related http request headers.
 		/// </summary>
-		virtual void AuthenticationStage(string RequestUrl, AuthenticationDataProvider AuthData, IDictionary<string, string> PreviousResHeaders, CancellationTokenSource token)
+		virtual void AuthenticationStage(string RequestUrl, IAuthenticationDataProvider AuthData, IDictionary<string, string> PreviousResHeaders, TaskCompletionSource<object> task)
 		{
-			token.Cancel();
+			task.SetResult(null);
 		}
 
 		/// <summary>
 		/// Add an authenticationStage that will complete along with authFuture.
 		/// </summary>
-		virtual ISet<KeyValuePair<string, string>> NewRequestHeader(string HostName, AuthenticationDataProvider AuthData, IDictionary<string, string> PreviousResHeaders)
+		virtual ISet<KeyValuePair<string, string>> NewRequestHeader(string HostName, IAuthenticationDataProvider authData, IDictionary<string, string> previousResHeaders)
 		{
-			return AuthData.GetHttpHeaders();
+			return authData.HttpHeaders;
 		}
 
 	}

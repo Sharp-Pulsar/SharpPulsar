@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Api;
+using System;
+using System.Collections.Generic;
+using static SharpPulsar.Protocol.Proto.CommandAck;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,13 +23,11 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 
 	/// <summary>
 	/// Acknowledgments grouping tracker.
 	/// </summary>
-	public interface AcknowledgmentsGroupingTracker : AutoCloseable
+	public interface AcknowledgmentsGroupingTracker : IDisposable
 	{
 
 		bool IsDuplicate(IMessageId MessageId);

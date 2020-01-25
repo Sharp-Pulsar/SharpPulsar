@@ -1,4 +1,5 @@
 ﻿using Optional;
+using Pulsar.Common.Auth;
 using System.Collections.Generic;
 
 /// <summary>

@@ -82,12 +82,12 @@ namespace SharpPulsar.Impl
 			return InternalSendAsync(Message);
 		}
 
-		public  TypedMessageBuilder<T> NewMessage()
+		public  ITypedMessageBuilder<T> NewMessage()
 		{
 			return new TypedMessageBuilderImpl<T>(this, Schema);
 		}
 
-		public virtual TypedMessageBuilder<T> NewMessage(Schema<T> schema)
+		public virtual ITypedMessageBuilder<T> NewMessage(Schema<T> schema)
 		{
 			if (schema == null)
 				throw new  NullReferenceException("Schema is null");
@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 
 		// TODO: add this method to the Producer interface
 		// @Override
-		public virtual TypedMessageBuilder<T> NewMessage(ITransaction txn)
+		public virtual ITypedMessageBuilder<T> NewMessage(ITransaction txn)
 		{
 			if(txn is TransactionImpl)
 			{

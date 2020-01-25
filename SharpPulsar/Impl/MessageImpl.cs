@@ -21,89 +21,65 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
-
-	using Maps = com.google.common.collect.Maps;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Unpooled = io.netty.buffer.Unpooled;
-	using Recycler = io.netty.util.Recycler;
-	using Handle = io.netty.util.Recycler.Handle;
-
-
-	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using SharpPulsar.Api;
-	using SharpPulsar.Impl.Schema;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using EncryptionContext = Org.Apache.Pulsar.Common.Api.EncryptionContext;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
     using DotNetty.Buffers;
+    using Optional;
+    using DotNetty.Common;
+    using SharpPulsar.Protocol.Builder;
+    using SharpPulsar.Api;
+    using Pulsar.Common.Auth;
+    using SharpPulsar.Protocol.Proto;
+    using System.Linq;
 
     public class MessageImpl<T> : Message<T>
 	{
 
 		protected internal IMessageId MessageId;
-		public MessageBuilder messageBuilder;
+		public ITypedMessageBuilder<T> MessageBuilder;
 		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
 		private Schema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
-		private Optional<EncryptionContext> encryptionCtx = null;
+		private Option<EncryptionContext> encryptionCtx;
 
 		public string TopicName {get;} // only set for incoming messages
-		[NonSerialized]
-		public IDictionary<string, string> Properties { get; set; }
-		public virtual RedeliveryCount {get;}
+		public long RedeliveryCount;
 
 		// Constructor for out-going message
-		internal static MessageImpl<T> Create<T>(PulsarApi.MessageMetadata.Builder MsgMetadataBuilder, ByteBuffer Payload, Schema<T> Schema)
+		internal static MessageImpl<T> Create(MessageMetadataBuilder msgMetadataBuilder, IByteBuffer payload, Schema<T> schema)
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") MessageImpl<T> msg = (MessageImpl<T>) RECYCLER.get();
-			MessageImpl<T> Msg = (MessageImpl<T>) RECYCLER.get();
-			Msg.MessageBuilder = MsgMetadataBuilder;
-			Msg.MessageIdConflict = null;
-			Msg.TopicName = null;
-			Msg.Cnx = null;
-			Msg.DataBuffer = Unpooled.wrappedBuffer(Payload);
-			Msg.properties = null;
-			Msg.schema = Schema;
-			return Msg;
+			MessageImpl<T> msg = _pool.Take();
+			msg.MessageBuilder = msgMetadataBuilder;
+			msg.DataBuffer = Unpooled.WrappedBuffer(payload);
+			msg.schema = schema;
+			return msg;
 		}
 
 		// Constructor for incoming message
-		public MessageImpl(string Topic, MessageIdImpl MessageId, PulsarApi.MessageMetadata MsgMetadata, ByteBuf Payload, ClientCnx Cnx, Schema<T> Schema) : this(Topic, MessageId, MsgMetadata, Payload, null, Cnx, Schema)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
 		{
 		}
 
-		public MessageImpl(string Topic, MessageIdImpl MessageId, PulsarApi.MessageMetadata MsgMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, Schema<T> Schema) : this(Topic, MessageId, MsgMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
 		}
 
-		public MessageImpl(string Topic, MessageIdImpl MessageId, PulsarApi.MessageMetadata MsgMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, Schema<T> Schema, int RedeliveryCount)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema, int rredeliveryCount)
 		{
-			this.MessageBuilder = PulsarApi.MessageMetadata.newBuilder(MsgMetadata);
-			this.MessageIdConflict = MessageId;
-			this.TopicName = Topic;
+			this.MessageBuilder = new MessageMetadataBuilder(MsgMetadata);
+			this.MessageId = MessageId;
+			this.TopicName = topic;
 			this.Cnx = Cnx;
 			this.RedeliveryCount = RedeliveryCount;
 
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			this.DataBuffer = Unpooled.copiedBuffer(Payload);
+			this.DataBuffer = Unpooled.CopiedBuffer(payload);
 			this.encryptionCtx = EncryptionCtx;
 
-			if (MsgMetadata.PropertiesCount > 0)
+			if (msgMetadata.Properties.Count > 0)
 			{
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-				this.properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(PulsarApi.KeyValue::getKey, PulsarApi.KeyValue::getValue));
+				Properties = msgMetadata.Properties.ToDictionary(x => x.Key, x=> x.Value);
 			}
 			else
 			{
@@ -185,12 +161,8 @@ namespace SharpPulsar.Impl
 			this.RedeliveryCount = 0;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static MessageImpl<byte[]> deserialize(io.netty.buffer.ByteBuf headersAndPayload) throws java.io.IOException
 		public static MessageImpl<sbyte[]> Deserialize(ByteBuf HeadersAndPayload)
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") MessageImpl<byte[]> msg = (MessageImpl<byte[]>) RECYCLER.get();
 			MessageImpl<sbyte[]> Msg = (MessageImpl<sbyte[]>) RECYCLER.get();
 			PulsarApi.MessageMetadata MsgMetadata = Commands.parseMessageMetadata(HeadersAndPayload);
 
@@ -411,7 +383,6 @@ namespace SharpPulsar.Impl
 					{
 						if (MessageBuilder.PropertiesCount > 0)
 						{
-	//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
 							this.properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(PulsarApi.KeyValue::getKey, PulsarApi.KeyValue::getValue));
 						}
 						else
@@ -499,38 +470,19 @@ namespace SharpPulsar.Impl
 			schema = null;
 			schemaState = SchemaState.None;
 
-			if (recyclerHandle != null)
+			if (_handle != null)
 			{
-				recyclerHandle.recycle(this);
+				_handle.Release(this);
 			}
 		}
-
-		private MessageImpl<T1>(Recycler.Handle<T1> RecyclerHandle)
+		private static ThreadLocalPool<MessageImpl<T>> _pool = 	new ThreadLocalPool<MessageImpl<T>>(handle => new MessageImpl<T>(handle), 1, true);
+		private ThreadLocalPool.Handle _handle;
+		private MessageImpl(ThreadLocalPool.Handle handle)
 		{
-			this.recyclerHandle = RecyclerHandle;
+			_handle = handle;
 			this.RedeliveryCount = 0;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private io.netty.util.Recycler.Handle<MessageImpl<?>> recyclerHandle;
-		private Recycler.Handle<MessageImpl<object>> recyclerHandle;
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final static io.netty.util.Recycler<MessageImpl<?>> RECYCLER = new io.netty.util.Recycler<MessageImpl<?>>()
-		private static readonly Recycler<MessageImpl<object>> RECYCLER = new RecyclerAnonymousInnerClass();
-
-		public class RecyclerAnonymousInnerClass : Recycler<MessageImpl<JavaToDotNetGenericWildcard>>
-		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: @Override protected MessageImpl<?> newObject(io.netty.util.Recycler.Handle<MessageImpl<?>> handle)
-			public override MessageImpl<object> newObject<T1>(Recycler.Handle<T1> Handle)
-			{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: return new MessageImpl<>(handle);
-				return new MessageImpl<object>(Handle);
-			}
-		}
-
+		
 		public virtual bool HasReplicateTo()
 		{
 			checkNotNull(MessageBuilder);
@@ -551,7 +503,7 @@ namespace SharpPulsar.Impl
 			this.MessageIdConflict = MessageId;
 		}
 
-		public virtual Optional<EncryptionContext> EncryptionCtx
+		public virtual Option<EncryptionContext> EncryptionCtx
 		{
 			get
 			{

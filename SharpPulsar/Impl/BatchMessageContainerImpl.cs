@@ -1,5 +1,11 @@
-﻿using System;
+﻿using DotNetty.Buffers;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Command.Builder;
+using SharpPulsar.Common;
+using SharpPulsar.Protocol;
+using System;
 using System.Collections.Generic;
+using static SharpPulsar.Impl.ProducerImpl<object>;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,21 +27,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Lists = com.google.common.collect.Lists;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-
-
-	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using OpSendMsg = SharpPulsar.Impl.ProducerImpl.OpSendMsg;
-	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
-
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	/// <summary>
 	/// Default batch message container
@@ -48,42 +39,38 @@ namespace SharpPulsar.Impl
 	/// </summary>
 	public class BatchMessageContainerImpl : AbstractBatchMessageContainer
 	{
-
-		private PulsarApi.MessageMetadata.Builder messageMetadata = PulsarApi.MessageMetadata.newBuilder();
 		// sequence id for this batch which will be persisted as a single entry by broker
 		private long lowestSequenceId = -1L;
 		private long highestSequenceId = -1L;
-		private ByteBuf batchedMessageMetadataAndPayload;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private java.util.List<MessageImpl<?>> messages = com.google.common.collect.Lists.newArrayList();
-		private IList<MessageImpl<object>> messages = Lists.newArrayList();
+		private IByteBuffer batchedMessageMetadataAndPayload;
+		private IList<MessageImpl<object>> messages = new List<MessageImpl<object>>();
 		protected internal SendCallback PreviousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		protected internal SendCallback FirstCallback;
 
-		public override bool Add<T1>(MessageImpl<T1> Msg, SendCallback Callback)
+		public override bool Add(MessageImpl<object> msg, SendCallback callback)
 		{
 
-			if (log.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatchConflict);
+				log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatchConflict);
 			}
 
 			if (++NumMessagesInBatchConflict == 1)
 			{
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
-				lowestSequenceId = Commands.initBatchMessageMetadata(messageMetadata, Msg.MessageBuilder);
-				this.FirstCallback = Callback;
-				batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
+				lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadataBuilder(), msg.MessageBuilder);
+				this.FirstCallback = callback;
+				batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
 			}
 
 			if (PreviousCallback != null)
 			{
-				PreviousCallback.addCallback(Msg, Callback);
+				PreviousCallback.AddCallback(Msg, callback);
 			}
-			PreviousCallback = Callback;
-			CurrentBatchSizeBytes += Msg.DataBuffer.readableBytes();
+			PreviousCallback = callback;
+			CurrentBatchSizeBytes += Msg.DataBuffer.ReadableBytes;
 			messages.Add(Msg);
 
 			if (lowestSequenceId == -1L)
@@ -97,7 +84,7 @@ namespace SharpPulsar.Impl
 			return BatchFull;
 		}
 
-		private ByteBuf CompressedBatchMetadataAndPayload
+		private IByteBuffer CompressedBatchMetadataAndPayload
 		{
 			get
 			{
@@ -106,8 +93,6 @@ namespace SharpPulsar.Impl
     
 				for (int I = 0, n = messages.Count; I < n; I++)
 				{
-	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-	//ORIGINAL LINE: MessageImpl<?> msg = messages.get(i);
 					MessageImpl<object> Msg = messages[I];
 					PulsarApi.MessageMetadata.Builder MsgBuilder = Msg.MessageBuilder;
 					Msg.DataBuffer.markReaderIndex();
@@ -121,8 +106,6 @@ namespace SharpPulsar.Impl
 						// next iteration doesn't send corrupt message to broker.
 						for (int J = 0; J <= i; J++)
 						{
-	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-	//ORIGINAL LINE: MessageImpl<?> previousMsg = messages.get(j);
 							MessageImpl<object> PreviousMsg = messages[J];
 							PreviousMsg.DataBuffer.resetReaderIndex();
 						}
@@ -132,14 +115,12 @@ namespace SharpPulsar.Impl
 					}
 				}
 				// Recycle messages only once they serialized successfully in batch
-	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-	//ORIGINAL LINE: for (MessageImpl<?> msg : messages)
 				foreach (MessageImpl<object> Msg in messages)
 				{
 					Msg.MessageBuilder.recycle();
 				}
 				int UncompressedSize = batchedMessageMetadataAndPayload.readableBytes();
-				ByteBuf CompressedPayload = Compressor.encode(batchedMessageMetadataAndPayload);
+				IByteBuffer CompressedPayload = Compressor.encode(batchedMessageMetadataAndPayload);
 				batchedMessageMetadataAndPayload.release();
 				if (CompressionType != PulsarApi.CompressionType.NONE)
 				{
@@ -175,7 +156,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void Discard(Exception Ex)
+		public override void Discard(System.Exception ex)
 		{
 			try
 			{
@@ -199,12 +180,9 @@ namespace SharpPulsar.Impl
 				return false;
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.impl.ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException
-		public override OpSendMsg CreateOpSendMsg()
+		public OpSendMsg CreateOpSendMsg()
 		{
-			ByteBuf EncryptedPayload = ProducerConflict.encryptMessage(messageMetadata, CompressedBatchMetadataAndPayload);
+			IByteBuffer EncryptedPayload = ProducerConflict.encryptMessage(messageMetadata, CompressedBatchMetadataAndPayload);
 			if (EncryptedPayload.readableBytes() > ClientCnx.MaxMessageSize)
 			{
 				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
@@ -212,7 +190,7 @@ namespace SharpPulsar.Impl
 			}
 			messageMetadata.NumMessagesInBatch = NumMessagesInBatchConflict;
 			messageMetadata.HighestSequenceId = highestSequenceId;
-			ByteBufPair Cmd = ProducerConflict.sendMessage(ProducerConflict.producerId, messageMetadata.SequenceId, messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, messageMetadata.Build(), EncryptedPayload);
+			IByteBufferPair Cmd = ProducerConflict.sendMessage(ProducerConflict.producerId, messageMetadata.SequenceId, messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, messageMetadata.Build(), EncryptedPayload);
 
 			OpSendMsg Op = OpSendMsg.create(messages, Cmd, messageMetadata.SequenceId, messageMetadata.HighestSequenceId, FirstCallback);
 
@@ -234,8 +212,7 @@ namespace SharpPulsar.Impl
 			}
 			return Arrays.equals(Msg.SchemaVersion, messageMetadata.SchemaVersion.toByteArray());
 		}
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(BatchMessageContainerImpl));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl>();
 	}
 
 }

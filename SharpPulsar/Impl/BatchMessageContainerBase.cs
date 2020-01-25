@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Api;
 using System.Collections.Generic;
+using static SharpPulsar.Impl.ProducerImpl<object>;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add<T>(MessageImpl<T> Msg, SendCallback Callback);
+		bool Add(MessageImpl<object> Msg, SendCallback Callback);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -38,7 +39,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container have enough space for the specific message,
 		///         otherwise return false. </returns>
-		bool HaveEnoughSpace<T>(MessageImpl<T> Msg);
+		bool HaveEnoughSpace(MessageImpl<object> Msg);
 
 		/// <summary>
 		/// Check the batch message container has same schema with the message want to add.
@@ -47,14 +48,14 @@ namespace SharpPulsar.Impl
 		/// <returns> return true if the container has same schema with the specific message,
 		///         otherwise return false. </returns>
 		///         
-		bool HasSameSchema<T>(MessageImpl<T> Msg);
+		bool HasSameSchema(MessageImpl<object> Msg);
 
 		/// <summary>
 		/// Set producer of the message batch container.
 		/// </summary>
 		/// <param name="producer"> producer </param>
 		/// 
-		ProducerImpl<T> Producer {set;}
+		ProducerImpl<object> Producer {set;}
 
 		/// <summary>
 		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.

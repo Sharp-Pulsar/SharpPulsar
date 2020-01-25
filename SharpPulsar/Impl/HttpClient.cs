@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl
 	using SslContext = io.netty.handler.ssl.SslContext;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 	using NotFoundException = SharpPulsar.Api.PulsarClientException.NotFoundException;
 	using ObjectMapperFactory = Org.Apache.Pulsar.Common.Util.ObjectMapperFactory;
@@ -83,7 +83,7 @@ namespace SharpPulsar.Impl
 					SslContext SslCtx = null;
 
 					// Set client key and certificate if available
-					AuthenticationDataProvider AuthData = Authentication.AuthData;
+					IAuthenticationDataProvider AuthData = Authentication.AuthData;
 					if (AuthData.hasDataForTls())
 					{
 						SslCtx = SecurityUtility.createNettySslContextForClient(TlsAllowInsecureConnection, TlsTrustCertsFilePath, AuthData.TlsCertificates, AuthData.TlsPrivateKey);
@@ -154,7 +154,7 @@ namespace SharpPulsar.Impl
 				URI HostUri = ServiceNameResolver.resolveHostUri();
 				string RequestUrl = (new URL(HostUri.toURL(), Path)).ToString();
 				string RemoteHostName = HostUri.Host;
-				AuthenticationDataProvider AuthData = Authentication.getAuthData(RemoteHostName);
+				IAuthenticationDataProvider AuthData = Authentication.getAuthData(RemoteHostName);
 
 				CompletableFuture<IDictionary<string, string>> AuthFuture = new CompletableFuture<IDictionary<string, string>>();
 

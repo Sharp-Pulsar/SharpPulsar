@@ -139,6 +139,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int BatchingMaxMessages
 		{
+			get
+			{
+				return _batchingMaxMessages;
+			}
 			set
 			{
 				_batchingMaxMessages = value;
@@ -147,6 +151,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int BatchingMaxBytes
 		{
+			get
+			{
+				return _batchingMaxBytes;
+			}
 			set
 			{
 				_batchingMaxBytes = value;

@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl
 	using LengthFieldBasedFrameDecoder = io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 	using SslContext = io.netty.handler.ssl.SslContext;
 
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
 	using SharpPulsar.Util;
 	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
@@ -58,7 +58,7 @@ namespace SharpPulsar.Impl
 				{
 				try
 				{
-					AuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
+					IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
 					if (AuthData.hasDataForTls())
 					{
 						return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);

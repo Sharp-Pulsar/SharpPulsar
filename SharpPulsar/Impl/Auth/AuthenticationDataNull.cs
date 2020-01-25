@@ -20,10 +20,10 @@
 /// </summary>
 namespace SharpPulsar.Impl.Auth
 {
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 
 	[Serializable]
-	public class AuthenticationDataNull : AuthenticationDataProvider
+	public class AuthenticationDataNull : IAuthenticationDataProvider
 	{
 
 	}

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Common.Compression;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,33 +23,29 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using CompressionCodec = Org.Apache.Pulsar.Common.Compression.CompressionCodec;
-	using CompressionCodecProvider = Org.Apache.Pulsar.Common.Compression.CompressionCodecProvider;
-
-
+	
 	/// <summary>
 	/// Batch message container framework.
 	/// </summary>
 	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase
 	{
 		public abstract bool MultiBatches {get;}
-		public abstract void Discard(Exception Ex);
+		public abstract void Discard(System.Exception Ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool hasSameSchema<T1>(MessageImpl<T1> Msg);
-		public abstract bool add<T1>(MessageImpl<T1> Msg, SendCallback Callback);
+		public abstract bool HasSameSchema(MessageImpl<object> Msg);
+		public abstract bool Add(MessageImpl<object> Msg, SendCallback Callback);
 
-		protected internal PulsarApi.CompressionType CompressionType;
+		protected internal ICompressionType CompressionType;
 		protected internal CompressionCodec Compressor;
 		protected internal string TopicName;
 		protected internal string ProducerName;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal ProducerImpl ProducerConflict;
+
+		protected internal ProducerImpl<object> producer;
 
 		protected internal int MaxNumMessagesInBatch;
 		protected internal int MaxBytesInBatch;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+
 		protected internal int NumMessagesInBatchConflict = 0;
 		protected internal long CurrentBatchSizeBytes = 0;
 
@@ -57,9 +55,9 @@ namespace SharpPulsar.Impl
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		protected internal int MaxBatchSize = InitialBatchBufferSize;
 
-		public override bool HaveEnoughSpace<T1>(MessageImpl<T1> Msg)
+		public bool HaveEnoughSpace(MessageImpl<object> Msg)
 		{
-			int MessageSize = Msg.DataBuffer.readableBytes();
+			int MessageSize = Msg.DataBuffer.ReadableBytes;
 			return ((MaxBytesInBatch <= 0 && (MessageSize + CurrentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (MaxBytesInBatch > 0 && (MessageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || NumMessagesInBatchConflict < MaxNumMessagesInBatch);
 		}
 
@@ -86,30 +84,29 @@ namespace SharpPulsar.Impl
 				return CurrentBatchSizeBytes;
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public java.util.List<ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException
-		public override IList<ProducerImpl.OpSendMsg> CreateOpSendMsgs()
+		public IList<ProducerImpl<object>.OpSendMsg> CreateOpSendMsgs()
 		{
 			throw new System.NotSupportedException();
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public ProducerImpl.OpSendMsg createOpSendMsg() throws java.io.IOException
-		public override ProducerImpl.OpSendMsg CreateOpSendMsg()
+		public ProducerImpl<object>.OpSendMsg CreateOpSendMsg()
 		{
 			throw new System.NotSupportedException();
 		}
 
-		public virtual ProducerImpl<T1> Producer<T1>
+		public virtual ProducerImpl<object> Producer
 		{
+			get
+			{
+				return producer;
+			}
 			set
 			{
-				this.ProducerConflict = value;
+				this.producer = value;
 				this.TopicName = value.Topic;
 				this.ProducerName = value.ProducerName;
-				this.CompressionType = CompressionCodecProvider.convertToWireProtocol(value.Configuration.CompressionType);
-				this.Compressor = CompressionCodecProvider.getCompressionCodec(CompressionType);
+				this.CompressionType = (ICompressionType)CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
+				this.Compressor = CompressionCodecProvider.GetCompressionCodec(CompressionType);
 				this.MaxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
 				this.MaxBytesInBatch = value.Configuration.BatchingMaxBytes;
 			}

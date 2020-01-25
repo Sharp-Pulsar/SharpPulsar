@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public virtual AuthenticationDataProvider AuthData
+		public virtual IAuthenticationDataProvider AuthData
 		{
 			get
 			{

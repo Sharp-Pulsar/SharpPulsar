@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Api.Transaction;
+using SharpPulsar.Util.Atomic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -21,12 +24,6 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using Data = lombok.Data;
-	using Getter = lombok.Getter;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-
 	/// <summary>
 	/// The default implementation of <seealso cref="ITransaction"/>.
 	/// 
@@ -37,51 +34,55 @@ namespace SharpPulsar.Impl.Transaction
 	/// much as possible.
 	/// </para>
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter public class TransactionImpl implements SharpPulsar.api.transaction.Transaction
 	public class TransactionImpl : ITransaction
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data private static class TransactionalSendOp
 		public class TransactionalSendOp
 		{
-			internal readonly CompletableFuture<IMessageId> SendFuture;
-			internal readonly CompletableFuture<IMessageId> TransactionalSendFuture;
+			internal readonly TaskCompletionSource<IMessageId> SendSource;
+			internal readonly TaskCompletionSource<IMessageId> TransactionalSendSource;
+			public TransactionalSendOp(TaskCompletionSource<IMessageId> sendSource, TaskCompletionSource<IMessageId> transactionalSendSource)
+			{
+				SendSource = sendSource;
+				TransactionalSendSource = transactionalSendSource;
+			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data private static class TransactionalAckOp
 		public class TransactionalAckOp
 		{
-			internal readonly CompletableFuture<Void> AckFuture;
-			internal readonly CompletableFuture<Void> TransactionalAckFuture;
+			internal readonly TaskCompletionSource<Task> AckTask;
+			internal readonly TaskCompletionSource<Task> TransactionalAck;
+			public TransactionalAckOp(TaskCompletionSource<Task> ack, TaskCompletionSource<Task> trans)
+			{
+				AckTask = ack;
+				TransactionalAck = trans;
+			}
 		}
 
-		private readonly PulsarClientImpl client;
-		private readonly long transactionTimeoutMs;
-		private readonly long txnIdLeastBits;
-		private readonly long txnIdMostBits;
-		private readonly AtomicLong sequenceId = new AtomicLong(0L);
-		private readonly LinkedHashMap<long, TransactionalSendOp> sendOps;
-		private readonly ISet<string> producedTopics;
-		private readonly ISet<TransactionalAckOp> ackOps;
-		private readonly ISet<string> ackedTopics;
+		public readonly PulsarClientImpl Client;
+		public readonly long TransactionTimeoutMs;
+		public readonly long TxnIdLeastBits;
+		public readonly long TxnIdMostBits;
+		public readonly AtomicLong SequenceId = new AtomicLong(0L);
+		public readonly Dictionary<long, TransactionalSendOp> SendOps;
+		public readonly ISet<string> ProducedTopics;
+		public readonly ISet<TransactionalAckOp> AckOps;
+		public readonly ISet<string> AckedTopics;
 
-		public TransactionImpl(PulsarClientImpl Client, long TransactionTimeoutMs, long TxnIdLeastBits, long TxnIdMostBits)
+		public TransactionImpl(PulsarClientImpl client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
-			this.client = Client;
-			this.transactionTimeoutMs = TransactionTimeoutMs;
-			this.txnIdLeastBits = TxnIdLeastBits;
-			this.txnIdMostBits = TxnIdMostBits;
-			this.sendOps = new LinkedHashMap<long, TransactionalSendOp>();
-			this.producedTopics = new HashSet<string>();
-			this.ackOps = new HashSet<TransactionalAckOp>();
-			this.ackedTopics = new HashSet<string>();
+			Client = client;
+			TransactionTimeoutMs = transactionTimeoutMs;
+			TxnIdLeastBits = txnIdLeastBits;
+			TxnIdMostBits = txnIdMostBits;
+			SendOps = new Dictionary<long, TransactionalSendOp>();
+			ProducedTopics = new HashSet<string>();
+			AckOps = new HashSet<TransactionalAckOp>();
+			AckedTopics = new HashSet<string>();
 		}
 
 		public virtual long NextSequenceId()
 		{
-			return sequenceId.AndIncrement;
+			return SequenceId.Increment();
 		}
 
 		// register the topics that will be modified by this transaction
@@ -89,21 +90,21 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			lock (this)
 			{
-				if (producedTopics.Add(Topic))
+				if (ProducedTopics.Add(Topic))
 				{
 					// TODO: we need to issue the request to TC to register the produced topic
 				}
 			}
 		}
 
-		public virtual CompletableFuture<IMessageId> RegisterSendOp(long sequenceId, TaskCompletionSource<IMessageId> sendFuture)
+		public virtual TaskCompletionSource<IMessageId> RegisterSendOp(long sequenceId, TaskCompletionSource<IMessageId> send)
 		{
 			lock (this)
 			{
-				CompletableFuture<IMessageId> TransactionalSendFuture = new CompletableFuture<IMessageId>();
-				TransactionalSendOp SendOp = new TransactionalSendOp(SendFuture, TransactionalSendFuture);
-				sendOps.put(SequenceId, SendOp);
-				return TransactionalSendFuture;
+				TaskCompletionSource<IMessageId> transactional = new TaskCompletionSource<IMessageId>();
+				TransactionalSendOp SendOp = new TransactionalSendOp(send, transactional);
+				SendOps.Add(SequenceId, SendOp);
+				return transactional;
 			}
 		}
 
@@ -112,32 +113,32 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			lock (this)
 			{
-				if (ackedTopics.Add(Topic))
+				if (AckedTopics.Add(Topic))
 				{
 					// TODO: we need to issue the request to TC to register the acked topic
 				}
 			}
 		}
 
-		public virtual CompletableFuture<Void> RegisterAckOp(CompletableFuture<Void> AckFuture)
+		public virtual TaskCompletionSource<Task> RegisterAckOp(TaskCompletionSource<Task> ack)
 		{
 			lock (this)
 			{
-				CompletableFuture<Void> TransactionalAckFuture = new CompletableFuture<Void>();
-				TransactionalAckOp AckOp = new TransactionalAckOp(AckFuture, TransactionalAckFuture);
-				ackOps.Add(AckOp);
-				return TransactionalAckFuture;
+				TaskCompletionSource<Task> transactional = new TaskCompletionSource<Task>();
+				TransactionalAckOp AckOp = new TransactionalAckOp(ack, transactional);
+				AckOps.Add(AckOp);
+				return transactional;
 			}
 		}
 
-		public override CompletableFuture<Void> Commit()
+		public ValueTask Commit()
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 
-		public override CompletableFuture<Void> Abort()
+		public ValueTask Abort()
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 	}
 

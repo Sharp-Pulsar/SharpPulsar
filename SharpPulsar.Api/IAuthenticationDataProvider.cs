@@ -28,7 +28,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Interface for accessing data which are used in variety of authentication schemes on client side.
 	/// </summary>
-	public interface AuthenticationDataProvider
+	public interface IAuthenticationDataProvider
 	{
 		/*
 		 * TLS

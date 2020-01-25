@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 
 		private static readonly ConcurrentDictionary<ClientCnx, long> _numberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
 		private volatile int _numberOfRejectRequests = 0;
-		private static int _maxMessageSize = Commands.DefaultMaxMessageSize;
+		public static int MaxMessageSize = Commands.DefaultMaxMessageSize;
 
 		private readonly int _maxNumberOfRejectedRequestPerConnection;
 		private readonly int _rejectedRequestResetTimeSec = 60;
@@ -88,7 +88,7 @@ namespace SharpPulsar.Impl
 		private CancellationTokenSource _timeoutTask;
 
 		// Added for mutual authentication.
-		protected internal AuthenticationDataProvider AuthenticationDataProvider;
+		protected internal IAuthenticationDataProvider AuthenticationDataProvider;
 
 		public enum State
 		{
@@ -258,7 +258,7 @@ namespace SharpPulsar.Impl
 				{
 					log.LogDebug("{} Connection has max message size setting, replace old frameDecoder with " + "server frame size {}", Ctx().Channel, connected.MaxMessageSize);
 				}
-				_maxMessageSize = connected.MaxMessageSize;
+				MaxMessageSize = connected.MaxMessageSize;
 				Ctx().Channel.Pipeline.Replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
 			}
 			if (log.IsEnabled(LogLevel.Debug))

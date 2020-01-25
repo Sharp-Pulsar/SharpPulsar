@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -78,27 +77,6 @@ namespace SharpPulsar.Impl.Conf
 
 		}
 
-	}
-
-	public class ObjectMapper
-	{
-		public  JsonSerializerOptions Options()
-		{
-			var jsonObject = new JsonSerializerOptions
-			{
-				IgnoreNullValues = true,
-				WriteIndented = true
-			};
-			return jsonObject;
-		}
-		public string WriteValueAsString<T>(T @object)
-		{
-			return JsonSerializer.Serialize(@object, Options());
-		}
-		public object ReadValue(string existingConfigJson, Type t)
-		{
-			return JsonSerializer.Deserialize(existingConfigJson, t);
-		}
 	}
 	
 }

@@ -21,14 +21,14 @@
 namespace SharpPulsar.Impl.Auth
 {
 
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 	using FileModifiedTimeUpdater = Org.Apache.Pulsar.Common.Util.FileModifiedTimeUpdater;
 	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	[Serializable]
-	public class AuthenticationDataTls : AuthenticationDataProvider
+	public class AuthenticationDataTls : IAuthenticationDataProvider
 	{
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal X509Certificate[] TlsCertificatesConflict;

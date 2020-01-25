@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Protocol.Extension;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,8 +24,6 @@
 /// </summary>
 namespace SharpPulsar.Protocol
 {
-	using PulsarApi = SharpPulsar.Api.Proto.PulsarApi;
-
 	/// <summary>
 	/// Helper class to work with commands.
 	/// </summary>
@@ -32,35 +34,34 @@ namespace SharpPulsar.Protocol
 		{
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(PulsarApi.CommandProducer CommandProducer)
+		public static IDictionary<string, string> MetadataFromCommand(CommandProducer CommandProducer)
 		{
-			return ToMap(CommandProducer.MetadataList);
+			return ToMap(CommandProducer.Metadatas);
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(PulsarApi.CommandSubscribe CommandSubscribe)
+		public static IDictionary<string, string> MetadataFromCommand(CommandSubscribe CommandSubscribe)
 		{
-			return ToMap(CommandSubscribe.MetadataList);
+			return ToMap(CommandSubscribe.Metadatas);
 		}
 
-		internal static IList<PulsarApi.KeyValue> ToKeyValueList(IDictionary<string, string> Metadata)
+		internal static IList<KeyValue> ToKeyValueList(IDictionary<string, string> metadata)
 		{
-			if (Metadata == null || Metadata.Count == 0)
+			if (metadata == null || metadata.Count == 0)
 			{
-				return Collections.emptyList();
+				return Array.Empty<KeyValue>();
 			}
 
-			return Metadata.SetOfKeyValuePairs().Select(e => PulsarApi.KeyValue.newBuilder().setKey(e.Key).setValue(e.Value).build()).ToList();
+			return metadata.SetOfKeyValuePairs().Select(e => new KeyValueBuilder().SetKey(e.Key).SetValue(e.Value).Build()).ToList();
 		}
 
-		private static IDictionary<string, string> ToMap(IList<PulsarApi.KeyValue> KeyValues)
+		private static IDictionary<string, string> ToMap(IList<KeyValue> KeyValues)
 		{
 			if (KeyValues == null || KeyValues.Count == 0)
 			{
-				return Collections.emptyMap();
+				return new Dictionary<string,string>();
 			}
 
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			return KeyValues.ToDictionary(PulsarApi.KeyValue::getKey, PulsarApi.KeyValue::getValue);
+			return KeyValues.ToDictionary(k => k.Key, k => k.Value);
 		}
 	}
 

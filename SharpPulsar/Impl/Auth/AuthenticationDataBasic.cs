@@ -22,11 +22,11 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Impl.Auth
 {
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 
 
 	[Serializable]
-	public class AuthenticationDataBasic : AuthenticationDataProvider
+	public class AuthenticationDataBasic : IAuthenticationDataProvider
 	{
 		private const string HttpHeaderName = "Authorization";
 		private string httpAuthToken;

@@ -23,7 +23,7 @@ namespace SharpPulsar.Impl.Auth
 {
 
 	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using AuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 

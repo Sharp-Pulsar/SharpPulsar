@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl.Auth
 
 
 	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.AuthenticationDataProvider;
+	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 
@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl.Auth
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
-		public virtual AuthenticationDataProvider AuthData
+		public virtual IAuthenticationDataProvider AuthData
 		{
 			get
 			{

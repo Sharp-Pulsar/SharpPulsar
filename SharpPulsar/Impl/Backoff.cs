@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Util;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,41 +21,31 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Data = lombok.Data;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
-
-	// All variables are in BAMCIS.Util.Concurrent.TimeUnit millis by default
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data public class Backoff
 	public class Backoff
 	{
-		public static readonly long DefaultIntervalInNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toNanos(100);
-		public static readonly long MaxBackoffIntervalNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.toNanos(30);
+		public static readonly long DefaultIntervalInNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
+		public static readonly long MaxBackoffIntervalNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(30);
 		private readonly long initial;
 		private readonly long max;
-		private readonly Clock clock;
+		private readonly DateTime clock;
 		private long next;
 		private long mandatoryStop;
 
-		internal virtual FirstBackoffTimeInMillis {get;}
+		internal  long firstBackoffTimeInMillis;
 		private bool mandatoryStopMade = false;
 
 		private static readonly Random random = new Random();
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting Backoff(long initial, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unitInitial, long max, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop, java.time.Clock clock)
-		public Backoff(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax, long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop, Clock Clock)
+		public Backoff(long initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long max, BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop, DateTime clock)
 		{
-			this.initial = UnitInitial.toMillis(Initial);
-			this.max = UnitMax.toMillis(Max);
+			this.initial = UnitInitial.ToMillis(initial);
+			this.max = unitMax.ToMillis(max);
 			this.next = this.initial;
-			this.mandatoryStop = UnitMandatoryStop.toMillis(MandatoryStop);
-			this.clock = Clock;
+			this.mandatoryStop = unitMandatoryStop.ToMillis(mandatoryStop);
+			this.clock = clock;
 		}
 
-		public Backoff(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax, long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop) : this(Initial, UnitInitial, Max, UnitMax, MandatoryStop, UnitMandatoryStop, Clock.systemDefaultZone())
+		public Backoff(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax, long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop) : this(Initial, UnitInitial, Max, UnitMax, MandatoryStop, UnitMandatoryStop, DateTime.Now)
 		{
 		}
 
@@ -69,20 +60,20 @@ namespace SharpPulsar.Impl
 			// Check for mandatory stop
 			if (!mandatoryStopMade)
 			{
-				long Now = clock.millis();
-				long TimeElapsedSinceFirstBackoff = 0;
+				long now = clock.Millisecond;
+				long timeElapsedSinceFirstBackoff = 0;
 				if (initial == Current)
 				{
-					FirstBackoffTimeInMillis = Now;
+					firstBackoffTimeInMillis = now;
 				}
 				else
 				{
-					TimeElapsedSinceFirstBackoff = Now - FirstBackoffTimeInMillis;
+					timeElapsedSinceFirstBackoff = now - firstBackoffTimeInMillis;
 				}
 
-				if (TimeElapsedSinceFirstBackoff + Current > mandatoryStop)
+				if (timeElapsedSinceFirstBackoff + Current > mandatoryStop)
 				{
-					Current = Math.Max(initial, mandatoryStop - TimeElapsedSinceFirstBackoff);
+					Current = Math.Max(initial, mandatoryStop - timeElapsedSinceFirstBackoff);
 					mandatoryStopMade = true;
 				}
 			}
@@ -110,31 +101,29 @@ namespace SharpPulsar.Impl
 			this.mandatoryStopMade = false;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting long getFirstBackoffTimeInMillis()
 
-		public static bool ShouldBackoff(long InitialTimestamp, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, int FailedAttempts, long DefaultInterval, long MaxBackoffInterval)
+		public static bool ShouldBackoff(long initialTimestamp, BAMCIS.Util.Concurrent.TimeUnit unitInitial, int failedAttempts, long defaultInterval, long maxBackoffInterval)
 		{
-			long InitialTimestampInNano = UnitInitial.toNanos(InitialTimestamp);
-			long CurrentTime = System.nanoTime();
-			long Interval = DefaultInterval;
-			for (int I = 1; I < FailedAttempts; I++)
+			long initialTimestampInNano = unitInitial.ToNanos(initialTimestamp);
+			long currentTime = DateTime.Now.Millisecond;
+			long Interval = defaultInterval;
+			for (int I = 1; I < failedAttempts; I++)
 			{
 				Interval = Interval * 2;
-				if (Interval > MaxBackoffInterval)
+				if (Interval > maxBackoffInterval)
 				{
-					Interval = MaxBackoffInterval;
+					Interval = maxBackoffInterval;
 					break;
 				}
 			}
 
 			// if the current time is less than the time at which next retry should occur, we should backoff
-			return CurrentTime < (InitialTimestampInNano + Interval);
+			return currentTime < (initialTimestampInNano + Interval);
 		}
 
 		public static bool ShouldBackoff(long InitialTimestamp, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, int FailedAttempts)
 		{
-			return Backoff.ShouldBackoff(InitialTimestamp, UnitInitial, FailedAttempts, DefaultIntervalInNanoseconds, MaxBackoffIntervalNanoseconds);
+			return ShouldBackoff(InitialTimestamp, UnitInitial, FailedAttempts, DefaultIntervalInNanoseconds, MaxBackoffIntervalNanoseconds);
 		}
 	}
 

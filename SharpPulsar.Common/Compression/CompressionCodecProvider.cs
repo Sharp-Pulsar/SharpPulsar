@@ -1,7 +1,5 @@
 ﻿using SharpPulsar.Api;
-using SharpPulsar.Common.Compression;
-using SharpPulsar.Common.PulsarApi;
-using System;
+using SharpPulsar.Common.Enum;
 using System.Collections.Generic;
 
 /// <summary>
@@ -42,11 +40,11 @@ namespace SharpPulsar.Common.Compression
 		{
 			codecs = new Dictionary<CompressionType, CompressionCodec>
 			{
-				[CompressionType.None] = new CompressionCodecNone(),
-				[CompressionType.Lz4] = new CompressionCodecLZ4(),
-				[CompressionType.Zlib] = new CompressionCodecZLib(),
-				[CompressionType.Zstd] = new CompressionCodecZstd(),
-				[CompressionType.Snappy] = new CompressionCodecSnappy()
+				[CompressionType.NONE] = new CompressionCodecNone(),
+				[CompressionType.LZ4] = new CompressionCodecLZ4(),
+				[CompressionType.ZLIB] = new CompressionCodecZLib(),
+				[CompressionType.ZSTD] = new CompressionCodecZstd(),
+				[CompressionType.SNAPPY] = new CompressionCodecSnappy()
 			};
 		}
 
@@ -66,18 +64,18 @@ namespace SharpPulsar.Common.Compression
 			switch (compressionType)
 			{
 			case ICompressionType.NONE:
-				return CompressionType.None;
+				return CompressionType.NONE;
 			case ICompressionType.LZ4:
-				return CompressionType.Lz4;
+				return CompressionType.LZ4;
 			case ICompressionType.ZLIB:
-				return CompressionType.Zlib;
+				return CompressionType.ZLIB;
 			case ICompressionType.ZSTD:
-				return CompressionType.Zstd;
+				return CompressionType.ZSTD;
 			case ICompressionType.SNAPPY:
-				return CompressionType.Snappy;
+				return CompressionType.SNAPPY;
 
 			default:
-				throw new Exception("Invalid compression type");
+				throw new System.Exception("Invalid compression type");
 			}
 		}
 
@@ -85,19 +83,19 @@ namespace SharpPulsar.Common.Compression
 		{
 			switch (compressionType)
 			{
-			case CompressionType.None:
-				return CompressionType.None;
-			case CompressionType.Lz4:
-				return CompressionType.Lz4;
-			case CompressionType.Zlib:
-				return CompressionType.Zlib;
-			case CompressionType.Zstd:
-				return CompressionType.Zstd;
-			case CompressionType.Snappy:
-				return CompressionType.Snappy;
+				case CompressionType.NONE:
+					return CompressionType.NONE;
+				case CompressionType.LZ4:
+					return CompressionType.LZ4;
+				case CompressionType.ZLIB:
+					return CompressionType.ZLIB;
+				case CompressionType.ZSTD:
+					return CompressionType.ZSTD;
+				case CompressionType.SNAPPY:
+					return CompressionType.SNAPPY;
 
-			default:
-				throw new Exception("Invalid compression type");
+				default:
+					throw new System.Exception("Invalid compression type");
 			}
 		}
 	}

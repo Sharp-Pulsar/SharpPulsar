@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,9 +19,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-
+	
 	public class BackoffBuilder
 	{
 		private long backoffIntervalNanos;
@@ -29,18 +28,15 @@ namespace SharpPulsar.Impl
 		private BAMCIS.Util.Concurrent.TimeUnit unitInitial;
 		private long max;
 		private BAMCIS.Util.Concurrent.TimeUnit unitMax;
-		private Clock clock;
+		private DateTime clock;
 		private long mandatoryStop;
 		private BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting BackoffBuilder()
 		public BackoffBuilder()
 		{
 			this.initial = 0;
 			this.max = 0;
 			this.mandatoryStop = 0;
-			this.clock = Clock.systemDefaultZone();
+			this.clock = DateTime.Now;
 			this.backoffIntervalNanos = 0;
 			this.maxBackoffIntervalNanos = 0;
 		}
