@@ -1,4 +1,6 @@
-﻿using System;
+﻿using DotNetty.Transport.Libuv;
+using SharpPulsar.Impl.Conf;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,26 +23,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Lists = com.google.common.collect.Lists;
-
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-
-
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using NotFoundException = SharpPulsar.Api.PulsarClientException.NotFoundException;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using LookupData = Org.Apache.Pulsar.Common.Lookup.Data.LookupData;
-	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
-	using GetSchemaResponse = Org.Apache.Pulsar.Common.Protocol.Schema.GetSchemaResponse;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaInfoUtil = Org.Apache.Pulsar.Common.Protocol.Schema.SchemaInfoUtil;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.yahoo.sketches.Util.bytesToLong;
@@ -183,8 +165,6 @@ namespace SharpPulsar.Impl
 			return Future;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws Exception
 		public override void Close()
 		{
 			httpClient.Dispose();

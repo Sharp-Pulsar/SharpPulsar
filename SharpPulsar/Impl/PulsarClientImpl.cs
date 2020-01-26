@@ -1,6 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DotNetty.Transport.Channels;
+using DotNetty.Transport.Libuv;
+using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Util;
+using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -65,7 +69,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual ClientClock {get;}
+		public virtual DateTime ClientClock {get;}
 		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, GetEventLoopGroup(Conf))
 		{
 		}
