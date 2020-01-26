@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
 		// Use MessageIdData.newBuilder() to construct.
 		internal static ThreadLocalPool<MessageIdData> _pool = new ThreadLocalPool<MessageIdData>(handle => new MessageIdData(handle), 1, true);
 		internal ThreadLocalPool.Handle _handle;
-		public MessageIdData(ThreadLocalPool.Handle handle)
+		private MessageIdData(ThreadLocalPool.Handle handle)
 		{
 			_handle = handle;
 		}

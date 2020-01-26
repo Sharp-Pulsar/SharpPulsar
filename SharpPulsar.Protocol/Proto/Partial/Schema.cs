@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 	{
 		// Use Schema.newBuilder() to construct.
 		internal ThreadLocalPool.Handle _handle;
-		public Schema(ThreadLocalPool.Handle handle)
+		private Schema(ThreadLocalPool.Handle handle)
 		{
 			_handle = handle;
 		}
