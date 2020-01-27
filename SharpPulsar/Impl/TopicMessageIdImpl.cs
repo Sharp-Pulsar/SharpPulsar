@@ -28,48 +28,48 @@ namespace SharpPulsar.Impl
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
-		private readonly string topicPartitionName;
-		private readonly string topicName;
-		public virtual InnerMessageId {get;}
+		private string _topicPartitionName;
+		private string _topicName;
+		public IMessageId InnerMessageId;
 
 		public TopicMessageIdImpl(string TopicPartitionName, string TopicName, IMessageId MessageId)
 		{
 			this.InnerMessageId = MessageId;
-			this.topicPartitionName = TopicPartitionName;
-			this.topicName = TopicName;
+			_topicPartitionName = TopicPartitionName;
+			_topicName = TopicName;
 		}
 
 		/// <summary>
 		/// Get the topic name without partition part of this message. </summary>
 		/// <returns> the name of the topic on which this message was published </returns>
-		public virtual string TopicName
+		public string TopicName
 		{
 			get
 			{
-				return this.topicName;
+				return _topicName;
 			}
 		}
 
 		/// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
-		public virtual string TopicPartitionName
+		public  string TopicPartitionName
 		{
 			get
 			{
-				return this.topicPartitionName;
+				return _topicPartitionName;
 			}
 		}
 
 
-		public override sbyte[] ToByteArray()
+		public sbyte[] ToByteArray()
 		{
 			return InnerMessageId.ToByteArray();
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(topicPartitionName, InnerMessageId);
+			return object.hash(topicPartitionName, InnerMessageId);
 		}
 
 		public override bool Equals(object Obj)
@@ -79,10 +79,10 @@ namespace SharpPulsar.Impl
 				return false;
 			}
 			TopicMessageIdImpl Other = (TopicMessageIdImpl) Obj;
-			return Objects.equals(topicPartitionName, Other.topicPartitionName) && Objects.equals(InnerMessageId, Other.InnerMessageId);
+			return object.Equals(TopicPartitionName, Other.TopicPartitionName) && object.Equals(InnerMessageId, Other.InnerMessageId);
 		}
 
-		public override int CompareTo(IMessageId O)
+		public int CompareTo(IMessageId O)
 		{
 			return InnerMessageId.CompareTo(O);
 		}

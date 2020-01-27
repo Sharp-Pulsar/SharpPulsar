@@ -23,60 +23,8 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.scurrilous.circe.checksum.Crc32cIntChecksum.computeChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.hasChecksum;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.common.protocol.Commands.readChecksum;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Iterables = com.google.common.collect.Iterables;
-
-	using Queues = com.google.common.collect.Queues;
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Timeout = io.netty.util.Timeout;
-
-
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Consumer = SharpPulsar.Api.IConsumer;
-	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
-	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
-	using DeadLetterPolicy = SharpPulsar.Api.DeadLetterPolicy;
-	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using SharpPulsar.Api;
-	using Producer = SharpPulsar.Api.Producer;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using SharpPulsar.Api;
-	using SubscriptionInitialPosition = SharpPulsar.Api.SubscriptionInitialPosition;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using TopicDoesNotExistException = SharpPulsar.Api.PulsarClientException.TopicDoesNotExistException;
-	using SharpPulsar.Impl.Conf;
-	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using EncryptionContext = Org.Apache.Pulsar.Common.Api.EncryptionContext;
-	using EncryptionKey = Org.Apache.Pulsar.Common.Api.EncryptionContext.EncryptionKey;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
-	using ValidationError = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.ValidationError;
-	using InitialPosition = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSubscribe.InitialPosition;
-	using CompressionType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CompressionType;
-	using EncryptionKeys = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.EncryptionKeys;
-	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
-	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using ProtocolVersion = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.ProtocolVersion;
-	using CompressionCodec = Org.Apache.Pulsar.Common.Compression.CompressionCodec;
-	using CompressionCodecProvider = Org.Apache.Pulsar.Common.Compression.CompressionCodecProvider;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Api;
+    using SharpPulsar.Common.Naming;
     using System.Threading.Tasks;
 
     public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
@@ -124,10 +72,10 @@ namespace SharpPulsar.Impl
 		private readonly bool resetIncludeHead;
 
 		private readonly SubscriptionInitialPosition subscriptionInitialPosition;
-		public  ConnectionHandler handler;
+		public  ConnectionHandler Handler;
 
 		private readonly TopicName topicName;
-		public virtual TopicNameWithoutPartition topic;
+		public string TopicNameWithoutPartition;
 
 		private readonly IDictionary<MessageIdImpl, IList<MessageImpl<T>>> possibleSendToDeadLetterTopicMessages;
 
@@ -161,7 +109,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, MessageId StartMessageId, long StartMessageRollbackDurationInSec, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, Conf.ReceiverQueueSize, ListenerExecutor, SubscribeFuture, Schema, Interceptors)
+		public ConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, MessageId StartMessageId, long StartMessageRollbackDurationInSec, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, Conf.ReceiverQueueSize, ListenerExecutor, SubscribeFuture, Schema, Interceptors)
 		{
 			this.ConsumerId = Client.newConsumerId();
 			this.subscriptionMode = SubscriptionMode;
@@ -640,7 +588,7 @@ namespace SharpPulsar.Impl
 
 			Cnx.sendRequestWithId(Request, RequestId).thenRun(() =>
 			{
-			lock (ConsumerImpl.this)
+			lock (this)
 			{
 				if (ChangeToReadyState())
 				{

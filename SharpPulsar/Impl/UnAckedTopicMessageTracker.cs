@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Api;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,17 +21,15 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using MessageId = SharpPulsar.Api.IMessageId;
-	using Org.Apache.Pulsar.Common.Util.Collections;
 
-	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
+	public class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker<T>
 	{
 
-		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis) : base(Client, ConsumerBase, AckTimeoutMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl Client, ConsumerBase<T> consumerBase, long AckTimeoutMillis) : base(Client, consumerBase, AckTimeoutMillis)
 		{
 		}
 
-		public UnAckedTopicMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis, long TickDurationMillis) : base(Client, ConsumerBase, AckTimeoutMillis, TickDurationMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl Client, ConsumerBase<T> consumerBase, long AckTimeoutMillis, long TickDurationMillis) : base(Client, consumerBase, AckTimeoutMillis, TickDurationMillis)
 		{
 		}
 
@@ -40,19 +39,18 @@ namespace SharpPulsar.Impl
 			try
 			{
 				int Removed = 0;
-				IEnumerator<MessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
+				IEnumerator<IMessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
 				while (Iterator.MoveNext())
 				{
-					MessageId MessageId = Iterator.Current;
+					IMessageId MessageId = Iterator.Current;
 					if (MessageId is TopicMessageIdImpl && ((TopicMessageIdImpl)MessageId).TopicPartitionName.Contains(TopicName))
 					{
-						ConcurrentOpenHashSet<MessageId> Exist = MessageIdPartitionMap[MessageId];
-						if (Exist != null)
+						var exist = MessageIdPartitionMap[MessageId];
+						if (exist != null)
 						{
-							Exist.remove(MessageId);
+							exist.remove(MessageId);
 						}
-//JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
-						Iterator.remove();
+						//Iterator.Remove();
 						Removed++;
 					}
 				}

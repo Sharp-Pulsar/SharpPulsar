@@ -47,6 +47,7 @@ namespace SharpPulsar.Impl
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Org.Apache.Pulsar.Common.Util.Collections;
     using System.Threading.Tasks;
+    using System.Collections.Concurrent;
 
     public abstract class ConsumerBase<T> : HandlerState, TimerTask, IConsumer<T>
 	{
@@ -67,21 +68,16 @@ namespace SharpPulsar.Impl
 			PARTITIONED,
 			NonPartitioned
 		}
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly string SubscriptionConflict;
+		protected internal readonly string _subscription;
 		protected internal readonly ConsumerConfigurationData<T> Conf;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly string ConsumerNameConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly CompletableFuture<IConsumer<T>> SubscribeFutureConflict;
 		protected internal readonly MessageListener<T> Listener;
 		protected internal readonly ConsumerEventListener ConsumerEventListener;
 		protected internal readonly ExecutorService ListenerExecutor;
 		internal readonly BlockingQueue<Message<T>> IncomingMessages;
-		protected internal readonly ConcurrentLinkedQueue<CompletableFuture<Message<T>>> PendingReceives;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal int MaxReceiverQueueSizeConflict;
+		protected internal readonly ConcurrentQueue<ValueTask<Message<T>>> PendingReceives;
+		protected internal int _maxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
@@ -132,7 +128,7 @@ namespace SharpPulsar.Impl
 			return InternalReceive();
 		}
 
-		public override CompletableFuture<Message<T>> ReceiveAsync()
+		public ValueTask<Message<T>> ReceiveAsync()
 		{
 			if (Listener != null)
 			{
@@ -513,9 +509,13 @@ namespace SharpPulsar.Impl
 
 		public virtual int MaxReceiverQueueSize
 		{
+			get
+			{
+				return _maxReceiverQueueSize;
+			}
 			set
 			{
-				this.MaxReceiverQueueSizeConflict = value;
+				_maxReceiverQueueSize = value;
 			}
 		}
 

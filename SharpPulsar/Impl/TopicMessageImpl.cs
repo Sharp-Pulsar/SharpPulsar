@@ -21,16 +21,16 @@
 
 namespace SharpPulsar.Impl
 {
-	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using EncryptionContext = Org.Apache.Pulsar.Common.Api.EncryptionContext;
+    using Optional;
+    using Pulsar.Common.Auth;
+    using SharpPulsar.Api;
 
 	public class TopicMessageImpl<T> : Message<T>
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
-		public virtual TopicPartitionName {get;}
+		public string TopicPartitionName;
 
 		private readonly Message<T> msg;
 		private readonly TopicMessageIdImpl messageId;
@@ -82,12 +82,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HasProperty(string Name)
+		public bool HasProperty(string Name)
 		{
 			return msg.HasProperty(Name);
 		}
 
-		public override string GetProperty(string Name)
+		public string GetProperty(string Name)
 		{
 			return msg.GetProperty(Name);
 		}
@@ -132,7 +132,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HasKey()
+		public bool HasKey()
 		{
 			return msg.HasKey();
 		}
@@ -145,7 +145,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HasBase64EncodedKey()
+		public bool HasBase64EncodedKey()
 		{
 			return msg.HasBase64EncodedKey();
 		}
@@ -158,7 +158,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HasOrderingKey()
+		public bool HasOrderingKey()
 		{
 			return msg.HasOrderingKey();
 		}
@@ -179,7 +179,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual Optional<EncryptionContext> EncryptionCtx
+		public virtual Option<EncryptionContext> EncryptionCtx
 		{
 			get
 			{

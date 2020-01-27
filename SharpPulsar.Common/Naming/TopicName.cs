@@ -60,7 +60,7 @@ namespace SharpPulsar.Common.Naming
 			}
 		}
 
-		public static readonly TopicName TRANSACTION_COORDINATOR_ASSIGN = TopicName.get(TopicDomain.persistent.value(), NamespaceName.SYSTEM_NAMESPACE, "transaction_coordinator_assign");
+		public static readonly TopicName TRANSACTION_COORDINATOR_ASSIGN = TopicName.Get(TopicDomain.persistent.value(), NamespaceName.SYSTEM_NAMESPACE, "transaction_coordinator_assign");
 
 		public static TopicName Get(string domain, NamespaceName namespaceName, string topic)
 		{
