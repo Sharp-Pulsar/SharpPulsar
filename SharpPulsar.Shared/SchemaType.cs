@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Schema
+namespace SharpPulsar.Shared
 {
 	/// <summary>
 	/// Types of supported schema for Pulsar messages.

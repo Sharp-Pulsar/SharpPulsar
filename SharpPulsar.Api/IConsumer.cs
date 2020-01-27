@@ -25,7 +25,7 @@ namespace SharpPulsar.Api
 	/// <para>All the operations on the consumer instance are thread safe.
 	/// </para>
 	/// </summary>
-	public interface Consumer<T> : System.IDisposable
+	public interface IConsumer<T> : System.IDisposable
 	{
 
 		/// <summary>

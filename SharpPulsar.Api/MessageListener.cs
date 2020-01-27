@@ -44,14 +44,14 @@ namespace SharpPulsar.Api
 		///            the consumer that received the message </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(Consumer<T> Consumer, Message<T> Msg);
+		void Received(IConsumer<T> Consumer, Message<T> Msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.
 		/// </summary>
 		/// <param name="consumer">
 		///            the Consumer object associated with the terminated topic </param>
-		virtual void ReachedEndOfTopic(Consumer<T> Consumer)
+		virtual void ReachedEndOfTopic(IConsumer<T> Consumer)
 		{
 			// By default ignore the notification
 		}

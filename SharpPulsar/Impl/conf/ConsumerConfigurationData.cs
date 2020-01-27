@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl.Conf
 		public Regex TopicsPattern;
 
 		[NonSerialized]
-		private string subscriptionName;
+		public string SubscriptionName;
 
 		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
 		public MessageListener<T> MessageListener;

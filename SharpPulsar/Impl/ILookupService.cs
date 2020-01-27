@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl
 	/// </ul>
 	/// 
 	/// </summary>
-	public interface LookupService : IDisposable
+	public interface ILookupService : IDisposable
 	{
 
 		/// <summary>
@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="topicName"> topic-name </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<Option<SchemaInfo>> GetSchema(TopicName TopicName);
+		ValueTask<SchemaInfo> GetSchema(TopicName TopicName);
 
 		/// <summary>
 		/// Returns specific version SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
@@ -92,6 +92,7 @@ namespace SharpPulsar.Impl
 		/// <param name="namespace"> : namespace-name
 		/// @return </param>
 		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode);
+		void Close();
 
 	}
 

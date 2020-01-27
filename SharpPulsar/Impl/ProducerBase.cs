@@ -41,13 +41,13 @@ namespace SharpPulsar.Impl
 
 		protected internal readonly TaskCompletionSource<IProducer<T>> _producerCreatedTask;
 		protected internal readonly ProducerConfigurationData Conf;
-		protected internal readonly Schema<T> Schema;
+		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ProducerInterceptors Interceptors;
 		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> SchemaCache;
 		public MultiSchemaMode ProducerMultiSchemaMode;
 
 
-		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
+		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, ISchema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
 		{
 			_producerCreatedTask = ProducerCreatedFuture;
 			this.Conf = Conf;
@@ -87,7 +87,7 @@ namespace SharpPulsar.Impl
 			return new TypedMessageBuilderImpl<T>(this, Schema);
 		}
 
-		public virtual ITypedMessageBuilder<T> NewMessage(Schema<T> schema)
+		public virtual ITypedMessageBuilder<T> NewMessage(ISchema<T> schema)
 		{
 			if (schema == null)
 				throw new  NullReferenceException("Schema is null");
@@ -218,6 +218,21 @@ namespace SharpPulsar.Impl
 			Enabled,
 			Disabled
 		}
-	}
+
+        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 }

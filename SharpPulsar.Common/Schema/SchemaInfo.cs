@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,7 +30,7 @@ namespace SharpPulsar.Common.Schema
 	/// <summary>
 	/// Information about the schema.
 	/// </summary>
-	public class SchemaInfo
+	public class SchemaInfo : ISchemaInfo
 	{
 		public string Name { get; set; }
 
@@ -55,7 +57,7 @@ namespace SharpPulsar.Common.Schema
 				{
 					return "";
 				}
-    
+
 				switch (Type.InnerEnumValue)
 				{
 					case SchemaType.InnerEnum.AVRO:

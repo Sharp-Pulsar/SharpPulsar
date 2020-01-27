@@ -27,27 +27,27 @@ namespace SharpPulsar.Impl.Schema
 	using SharpPulsar.Api;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 
-	public abstract class AbstractSchema<T> : Schema<T>
+	public abstract class AbstractSchema<T> : ISchema<T>
 	{
 		public abstract GenericSchema<GenericRecord> Generic(SchemaInfo SchemaInfo);
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: public abstract SharpPulsar.api.Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
-		public abstract Schema<object> GetSchema(SchemaInfo SchemaInfo);
-		public abstract Schema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(Schema<T1> Schema);
-		public abstract Schema<sbyte[]> AutoProduceBytes();
-		public abstract Schema<GenericRecord> AutoConsume();
-		public abstract Schema<GenericRecord> AUTO();
-		public abstract Schema<KeyValue<K, V>> KeyValue(Schema<K> Key, Schema<V> Value, KeyValueEncodingType KeyValueEncodingType);
-		public abstract Schema<KeyValue<K, V>> KeyValue(Schema<K> Key, Schema<V> Value);
-		public abstract Schema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
-		public abstract Schema<KeyValue<sbyte[], sbyte[]>> KvBytes();
-		public abstract Schema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
-		public abstract Schema<T> JSON(SchemaDefinition SchemaDefinition);
-		public abstract Schema<T> JSON(Type Pojo);
-		public abstract Schema<T> AVRO(SchemaDefinition<T> SchemaDefinition);
-		public abstract Schema<T> AVRO(Type Pojo);
-		public abstract Schema<T> PROTOBUF(SchemaDefinition<T> SchemaDefinition);
-		public abstract Schema<T> PROTOBUF(Type Clazz);
+		public abstract ISchema<object> GetSchema(SchemaInfo SchemaInfo);
+		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> Schema);
+		public abstract ISchema<sbyte[]> AutoProduceBytes();
+		public abstract ISchema<GenericRecord> AutoConsume();
+		public abstract ISchema<GenericRecord> AUTO();
+		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType);
+		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value);
+		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
+		public abstract ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes();
+		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
+		public abstract ISchema<T> JSON(SchemaDefinition SchemaDefinition);
+		public abstract ISchema<T> JSON(Type Pojo);
+		public abstract ISchema<T> AVRO(SchemaDefinition<T> SchemaDefinition);
+		public abstract ISchema<T> AVRO(Type Pojo);
+		public abstract ISchema<T> PROTOBUF(SchemaDefinition<T> SchemaDefinition);
+		public abstract ISchema<T> PROTOBUF(Type Clazz);
 		public abstract void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();
 		public abstract SchemaInfo SchemaInfo {get;}

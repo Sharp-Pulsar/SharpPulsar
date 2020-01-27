@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
+    using System.Threading.Tasks;
 
 	/// <summary>
 	/// Schema Provider.
@@ -31,13 +31,13 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> schema version </param>
 		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion);
+		ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion);
 
 		/// <summary>
 		/// Retrieve the latest schema info.
 		/// </summary>
 		/// <returns> the latest schema </returns>
-		ValueTask<SchemaInfo> LatestSchema {get;}
+		ValueTask<ISchemaInfo> LatestSchema {get;}
 
 		/// <summary>
 		/// Retrieve the topic name.

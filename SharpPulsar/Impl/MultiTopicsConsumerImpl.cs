@@ -24,42 +24,13 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
+    using SharpPulsar.Api;
+    using SharpPulsar.Common.Naming;
+    using SharpPulsar.Impl.Conf;
+    using SharpPulsar.Util.Atomic;
+    using System.Threading.Tasks;
 
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using ImmutableMap = com.google.common.collect.ImmutableMap;
-	using Builder = com.google.common.collect.ImmutableMap.Builder;
-	using Lists = com.google.common.collect.Lists;
-
-	using Queues = com.google.common.collect.Queues;
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-
-	using Pair = org.apache.commons.lang3.tuple.Pair;
-	using Consumer = SharpPulsar.Api.Consumer;
-	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
-	using SharpPulsar.Api;
-	using MessageId = SharpPulsar.Api.IMessageId;
-	using SharpPulsar.Api;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using NotSupportedException = SharpPulsar.Api.PulsarClientException.NotSupportedException;
-	using SharpPulsar.Api;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
-	using SharpPulsar.Impl.Conf;
-	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
-	using ConsumerName = SharpPulsar.Util.ConsumerName;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
-	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
+    public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
 	{
 
 		public const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
@@ -76,26 +47,26 @@ namespace SharpPulsar.Impl
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
-		private readonly ConcurrentLinkedQueue<ConsumerImpl<T>> pausedConsumers;
+		private readonly ConcurrentQueue<ConsumerImpl<T>> pausedConsumers;
 
 		// Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
 		// resume receiving from the paused consumer partitions
 		private readonly int sharedQueueResumeThreshold;
 
 		// sum of topicPartitions, simple topic has 1, partitioned topic equals to partition number.
-		internal AtomicInteger AllTopicPartitionsNumber;
+		internal AtomicInt AllTopicPartitionsNumber;
 
 		// timeout related to auto check and subscribe partition increasement
-		public virtual PartitionsAutoUpdateTimeout {get;} = null;
+		public  long PartitionsAutoUpdateTimeout;
 		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
-		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
+		internal TaskCompletionSource<T> partitionsAutoUpdateTask;
 
 		private readonly ReadWriteLock @lock = new ReentrantReadWriteLock();
 		private readonly ConsumerStatsRecorder stats;
-		public virtual UnAckedMessageTracker {get;}
+		public virtual UnAckedMessageTracker unack;
 		private readonly ConsumerConfigurationData<T> internalConfig;
 
-		public MultiTopicsConsumerImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : this(Client, DummyTopicNamePrefix + ConsumerName.generateRandomName(), Conf, ListenerExecutor, SubscribeFuture, Schema, Interceptors, CreateTopicIfDoesNotExist)
+		public MultiTopicsConsumerImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, Task ListenerExecutor, TaskCompletionSource<IConsumer<T>> SubscribeFuture, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : this(Client, DummyTopicNamePrefix + Util.ConsumerName.GenerateRandomName(), Conf, ListenerExecutor, SubscribeFuture, Schema, Interceptors, CreateTopicIfDoesNotExist)
 		{
 		}
 
@@ -864,7 +835,7 @@ namespace SharpPulsar.Impl
 
 		// create consumer for a single topic with already known partitions.
 		// first create a consumer with no topic, then do subscription for already know partitionedTopic.
-		public static MultiTopicsConsumerImpl<T> CreatePartitionedConsumer<T>(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, int NumPartitions, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		public static MultiTopicsConsumerImpl<T> CreatePartitionedConsumer<T>(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, TaskCompletionSource<IConsumer<T>> subscribeTask, int NumPartitions, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
 			checkArgument(Conf.TopicNames.size() == 1, "Should have only 1 topic for partitioned consumer");
 

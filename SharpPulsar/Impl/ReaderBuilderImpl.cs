@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
 	using IMessageId = SharpPulsar.Api.IMessageId;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using Reader = SharpPulsar.Api.Reader;
+	using Reader = SharpPulsar.Api.IReader;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
@@ -46,13 +46,13 @@ namespace SharpPulsar.Impl
 
 		private ReaderConfigurationData<T> conf;
 
-		private readonly Schema<T> schema;
+		private readonly ISchema<T> schema;
 
-		public ReaderBuilderImpl(PulsarClientImpl Client, Schema<T> Schema) : this(Client, new ReaderConfigurationData<T>(), Schema)
+		public ReaderBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ReaderConfigurationData<T>(), Schema)
 		{
 		}
 
-		private ReaderBuilderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> Conf, Schema<T> Schema)
+		private ReaderBuilderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> Conf, ISchema<T> Schema)
 		{
 			this.client = Client;
 			this.conf = Conf;
@@ -68,7 +68,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.Reader<T> create() throws SharpPulsar.api.PulsarClientException
-		public override Reader<T> Create()
+		public override IReader<T> Create()
 		{
 			try
 			{
@@ -80,7 +80,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Reader<T>> CreateAsync()
+		public override CompletableFuture<IReader<T>> CreateAsync()
 		{
 			if (conf.TopicName == null)
 			{

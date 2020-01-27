@@ -48,7 +48,10 @@ namespace SharpPulsar.Common.Naming
 		private readonly int partitionIndex;
 
 		//private static readonly LoadingCache<string, TopicName> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		public TopicName()
+		{
 
+		}
 		private class CacheLoaderAnonymousInnerClass //: CacheLoader<string, TopicName>
 		{
 			public TopicName Load(string name)
@@ -281,7 +284,7 @@ namespace SharpPulsar.Common.Naming
 			}
 		}
 
-		public virtual TopicName getPartition(int index)
+		public TopicName GetPartition(int index)
 		{
 			if (index == -1 || this.ToString().Contains(PARTITIONED_TOPIC_SUFFIX))
 			{
@@ -335,7 +338,7 @@ namespace SharpPulsar.Common.Naming
 
 		/// <returns> partition index of the completeTopicName.
 		/// It returns -1 if the completeTopicName (topic) is not partitioned. </returns>
-		public static int getPartitionIndex(string topic)
+		public static int GetPartitionIndex(string topic)
 		{
 			int partitionIndex = -1;
 			if (topic.Contains(PARTITIONED_TOPIC_SUFFIX))

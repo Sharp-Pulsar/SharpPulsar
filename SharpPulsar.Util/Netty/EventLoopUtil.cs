@@ -1,6 +1,5 @@
 ﻿using System;
 using ServerBootstrap = DotNetty.Transport.Bootstrapping.ServerBootstrap;
-using EventLoopGroup = DotNetty.Transport.Channels.IEventLoopGroup;
 //using Epoll = DotNetty.Transport.Channels.Embedded..epoll.Epoll;
 //using EpollChannelOption = io.netty.channel.epoll.EpollChannelOption;
 //using EpollDatagramChannel = io.netty.channel.epoll.EpollDatagramChannel;
@@ -8,11 +7,11 @@ using EventLoopGroup = DotNetty.Transport.Channels.IEventLoopGroup;
 //using EpollMode = io.netty.channel.epoll.EpollMode;
 //using EpollServerSocketChannel = io.netty.channel.epoll.EpollServerSocketChannel;
 //using EpollSocketChannel = DotNetty.Transport.Channels.Pool. io.netty.channel.epoll.EpollSocketChannel;
-using NioEventLoopGroup = DotNetty.Transport.Channels.IEventLoopGroup;
 using NioDatagramChannel = DotNetty.Transport.Channels.Sockets.SocketDatagramChannel;
 using NioServerSocketChannel = DotNetty.Transport.Channels.Sockets.TcpServerSocketChannel;
 using NioSocketChannel = DotNetty.Transport.Channels.Sockets.TcpSocketChannel;
 using DotNetty.Transport.Channels;
+using DotNetty.Transport.Libuv;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,7 +43,7 @@ namespace SharpPulsar.Util.Netty
 		{
 			if (Epoll.Available)
 			{
-				return new EpollEventLoopGroup(nThreads, threadFactory);
+				return new EventLoopGroup(nThreads, threadFactory);
 			}
 			else
 			{

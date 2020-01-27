@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,7 +44,7 @@ namespace SharpPulsar.Impl
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
-	public class ConnectionPool : System.IDisposable
+	public class ConnectionPool : IDisposable
 	{
 		protected internal readonly ConcurrentDictionary<InetSocketAddress, ConcurrentMap<int, CompletableFuture<ClientCnx>>> Pool;
 
@@ -52,15 +54,14 @@ namespace SharpPulsar.Impl
 
 		protected internal readonly DnsNameResolver DnsResolver;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public ConnectionPool(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws SharpPulsar.api.PulsarClientException
-		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, () -> new ClientCnx(Conf, EventLoopGroup))
+
+		public ConnectionPool(ClientConfigurationData Conf) : this(Conf, () => new ClientCnx(Conf, EventLoopGroup))
 		{
 		}
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public ConnectionPool(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws SharpPulsar.api.PulsarClientException
-		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup, System.Func<ClientCnx> ClientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData Conf, Func<ClientCnx> ClientCnxSupplier)
 		{
 			this.eventLoopGroup = EventLoopGroup;
 			this.maxConnectionsPerHosts = Conf.ConnectionsPerBroker;
@@ -89,9 +90,9 @@ namespace SharpPulsar.Impl
 
 		private static readonly Random random = new Random();
 
-		public virtual CompletableFuture<ClientCnx> GetConnection(in InetSocketAddress Address)
+		public virtual ValueTask<ClientCnx> GetConnection(in EndPoint address)
 		{
-			return GetConnection(Address, Address);
+			return GetConnection(address, address);
 		}
 
 		public virtual void CloseAllConnections()
@@ -138,34 +139,30 @@ namespace SharpPulsar.Impl
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		public virtual CompletableFuture<ClientCnx> GetConnection(InetSocketAddress LogicalAddress, InetSocketAddress PhysicalAddress)
+		public virtual ValueTask<ClientCnx> GetConnection(EndPoint logicalAddress, EndPoint physicalAddress)
 		{
 			if (maxConnectionsPerHosts == 0)
 			{
 				// Disable pooling
-				return CreateConnection(LogicalAddress, PhysicalAddress, -1);
+				return CreateConnection(logicalAddress, physicalAddress, -1);
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final int randomKey = signSafeMod(random.nextInt(), maxConnectionsPerHosts);
 			int RandomKey = SignSafeMod(random.Next(), maxConnectionsPerHosts);
 
 			return Pool.computeIfAbsent(LogicalAddress, a => new ConcurrentDictionary<>()).computeIfAbsent(RandomKey, k => CreateConnection(LogicalAddress, PhysicalAddress, RandomKey));
 		}
 
-		private CompletableFuture<ClientCnx> CreateConnection(InetSocketAddress LogicalAddress, InetSocketAddress PhysicalAddress, int ConnectionKey)
+		private ValueTask<ClientCnx> CreateConnection(EndPoint logicalAddress, EndPoint physicalAddress, int ConnectionKey)
 		{
 			if (log.DebugEnabled)
 			{
-				log.debug("Connection for {} not found in cache", LogicalAddress);
+				log.debug("Connection for {} not found in cache", logicalAddress);
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<ClientCnx> cnxFuture = new java.util.concurrent.CompletableFuture<ClientCnx>();
-			CompletableFuture<ClientCnx> CnxFuture = new CompletableFuture<ClientCnx>();
+			TaskCompletionSource<ClientCnx> cxnTask = new TaskCompletionSource<ClientCnx>();
 
 			// Trigger async connect to broker
-			CreateConnection(PhysicalAddress).thenAccept(channel =>
+			CreateConnection(physicalAddress).thenAccept(channel =>
 			{
 			log.info("[{}] Connected to server", channel);
 			channel.closeFuture().addListener(v =>
@@ -308,9 +305,7 @@ namespace SharpPulsar.Impl
 			return Future;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
 			try
 			{

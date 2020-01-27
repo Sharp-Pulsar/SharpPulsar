@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 
 		public PersistentAcknowledgmentsGroupingTracker<T1, T2>(ConsumerImpl<T1> Consumer, ConsumerConfigurationData<T2> Conf, EventLoopGroup EventLoopGroup)
 		{
-			this.consumer = Consumer;
+			this.consumer = IConsumer;
 			this.pendingIndividualAcks = new ConcurrentSkipListSet<MessageIdImpl>();
 			this.acknowledgementGroupTimeMicros = Conf.AcknowledgementsGroupTimeMicros;
 

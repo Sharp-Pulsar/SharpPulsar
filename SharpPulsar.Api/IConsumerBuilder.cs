@@ -91,7 +91,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> the consumer builder instance </returns>
 		/// <exception cref="PulsarClientException">
-		Consumer<T> Subscribe();
+		IConsumer<T> Subscribe();
 
 		/// <summary>
 		/// Finalize the <seealso cref="Consumer"/> creation by subscribing to the topic in asynchronous mode.
@@ -109,7 +109,7 @@ namespace SharpPulsar.Api
 		/// <returns> a future that will yield a <seealso cref="Consumer"/> instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the the subscribe operation fails </exception>
-		ValueTask<Consumer<T>> SubscribeAsync();
+		ValueTask<IConsumer<T>> SubscribeAsync();
 
 		/// <summary>
 		/// Specify the topics this consumer will subscribe on.
@@ -213,7 +213,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Set the delay to wait before re-delivering messages that have failed to be process.
 		/// 
-		/// <para>When application uses <seealso cref="Consumer.negativeAcknowledge(Message)"/>, the failed message
+		/// <para>When application uses <seealso cref="IConsumer.negativeAcknowledge(Message)"/>, the failed message
 		/// will be redelivered after a fixed timeout. The default is 1 min.
 		/// 
 		/// </para>
@@ -247,7 +247,7 @@ namespace SharpPulsar.Api
 		/// Sets a <seealso cref="MessageListener"/> for the consumer
 		/// 
 		/// <para>When a <seealso cref="MessageListener"/> is set, application will receive messages through it. Calls to
-		/// <seealso cref="Consumer.receive()"/> will not be allowed.
+		/// <seealso cref="IConsumer.receive()"/> will not be allowed.
 		/// 
 		/// </para>
 		/// </summary>
@@ -280,7 +280,7 @@ namespace SharpPulsar.Api
 		/// Sets the size of the consumer receive queue.
 		/// 
 		/// <para>The consumer receive queue controls how many messages can be accumulated by the <seealso cref="Consumer"/> before the
-		/// application calls <seealso cref="Consumer.receive()"/>. Using a higher value could potentially increase the consumer
+		/// application calls <seealso cref="IConsumer.receive()"/>. Using a higher value could potentially increase the consumer
 		/// throughput at the expense of bigger memory utilization.
 		/// 
 		/// </para>
@@ -288,11 +288,11 @@ namespace SharpPulsar.Api
 		/// <ul>
 		/// <li>Decreases the throughput of the consumer, by disabling pre-fetching of messages. This approach improves the
 		/// message distribution on shared subscription, by pushing messages only to the consumers that are ready to process
-		/// them. Neither <seealso cref="Consumer.receive(int, TimeUnit)"/> nor Partitioned Topics can be used if the consumer queue
-		/// size is zero. <seealso cref="Consumer.receive()"/> function call should not be interrupted when the consumer queue size is
+		/// them. Neither <seealso cref="IConsumer.receive(int, TimeUnit)"/> nor Partitioned Topics can be used if the consumer queue
+		/// size is zero. <seealso cref="IConsumer.receive()"/> function call should not be interrupted when the consumer queue size is
 		/// zero.</li>
 		/// <li>Doesn't support Batch-Message: if consumer receives any batch-message then it closes consumer connection with
-		/// broker and <seealso cref="Consumer.receive()"/> call will remain blocked while <seealso cref="Consumer.receiveAsync()"/> receives
+		/// broker and <seealso cref="IConsumer.receive()"/> call will remain blocked while <seealso cref="IConsumer.receiveAsync()"/> receives
 		/// exception in callback. <b> consumer will not be able receive any further message unless batch-message in pipeline
 		/// is removed</b></li>
 		/// </ul>
@@ -565,7 +565,7 @@ namespace SharpPulsar.Api
 
 		/// <summary>
 		/// Set the consumer to include the given position of any reset operation like {@link Consumer#seek(long) or
-		/// <seealso cref="Consumer.seek(IMessageId)"/>}.
+		/// <seealso cref="IConsumer.seek(IMessageId)"/>}.
 		/// </summary>
 		/// <returns> the consumer builder instance </returns>
 		IConsumerBuilder<T> StartMessageIdInclusive();

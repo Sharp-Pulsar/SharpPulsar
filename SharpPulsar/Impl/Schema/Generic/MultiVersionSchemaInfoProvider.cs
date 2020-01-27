@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Naming;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,16 +21,6 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using CacheBuilder = com.google.common.cache.CacheBuilder;
-	using CacheLoader = com.google.common.cache.CacheLoader;
-	using LoadingCache = com.google.common.cache.LoadingCache;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
 	/// <summary>
@@ -39,7 +32,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(MultiVersionSchemaInfoProvider));
 
 		private readonly TopicName topicName;
-		public virtual PulsarClient {get;}
+		public virtual IPulsarClient PulsarClient { get;}
 
 		private readonly LoadingCache<BytesSchemaVersion, CompletableFuture<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
@@ -59,9 +52,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public MultiVersionSchemaInfoProvider(TopicName TopicName, PulsarClientImpl PulsarClient)
+		public MultiVersionSchemaInfoProvider(TopicName topicName, PulsarClientImpl PulsarClient)
 		{
-			this.topicName = TopicName;
+			this.topicName = topicName;
 			this.PulsarClient = PulsarClient;
 		}
 

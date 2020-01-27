@@ -41,9 +41,9 @@ namespace SharpPulsar.Impl.Schema
 	public sealed class KeyValueSchemaInfo
 	{
 
-		private static readonly Schema<SchemaInfo> SCHEMA_INFO_WRITER = new SchemaAnonymousInnerClass();
+		private static readonly ISchema<SchemaInfo> SCHEMA_INFO_WRITER = new SchemaAnonymousInnerClass();
 
-		public class SchemaAnonymousInnerClass : Schema<SchemaInfo>
+		public class SchemaAnonymousInnerClass : ISchema<SchemaInfo>
 		{
 			public sbyte[] encode(SchemaInfo Si)
 			{
@@ -94,7 +94,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="valueSchema"> the value schema </param>
 		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
 		/// <returns> the final schema info </returns>
-		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return EncodeKeyValueSchemaInfo("KeyValue", KeySchema, ValueSchema, KeyValueEncodingType);
 		}
@@ -107,7 +107,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="valueSchema"> the value schema </param>
 		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
 		/// <returns> the final schema info </returns>
-		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(string SchemaName, Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static SchemaInfo EncodeKeyValueSchemaInfo<K, V>(string SchemaName, ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return EncodeKeyValueSchemaInfo(SchemaName, KeySchema.SchemaInfo, ValueSchema.SchemaInfo, KeyValueEncodingType);
 		}

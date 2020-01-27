@@ -56,16 +56,16 @@ namespace SharpPulsar.Impl
 
 		private readonly PulsarClientImpl client;
 		private ProducerConfigurationData conf;
-		private Schema<T> schema;
+		private ISchema<T> schema;
 		private IList<ProducerInterceptor> interceptorList;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @VisibleForTesting public ProducerBuilderImpl(PulsarClientImpl client, SharpPulsar.api.Schema<T> schema)
-		public ProducerBuilderImpl(PulsarClientImpl Client, Schema<T> Schema) : this(Client, new ProducerConfigurationData(), Schema)
+		public ProducerBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ProducerConfigurationData(), Schema)
 		{
 		}
 
-		private ProducerBuilderImpl(PulsarClientImpl Client, ProducerConfigurationData Conf, Schema<T> Schema)
+		private ProducerBuilderImpl(PulsarClientImpl Client, ProducerConfigurationData Conf, ISchema<T> Schema)
 		{
 			this.client = Client;
 			this.conf = Conf;
@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl
 		/// Allow to override schema in builder implementation
 		/// @return
 		/// </summary>
-		public virtual IProducerBuilder<T> Schema(Schema<T> Schema)
+		public virtual IProducerBuilder<T> Schema(ISchema<T> Schema)
 		{
 			this.schema = Schema;
 			return this;

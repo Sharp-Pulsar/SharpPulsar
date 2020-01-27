@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
-	using Consumer = SharpPulsar.Api.Consumer;
+	using Consumer = SharpPulsar.Api.IConsumer;
 	using SharpPulsar.Api;
 	using IMessageId = SharpPulsar.Api.IMessageId;
 	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 
 		private volatile bool waitingOnReceiveForZeroQueueSize = false;
 
-		public ZeroQueueConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, 0, Schema, Interceptors, CreateTopicIfDoesNotExist)
+		public ZeroQueueConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, 0, Schema, Interceptors, CreateTopicIfDoesNotExist)
 		{
 		}
 

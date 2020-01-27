@@ -44,7 +44,7 @@ namespace SharpPulsar.Util
 			_executors = new List<Task>(NumThreads);
 			for (int I = 0; I < NumThreads; I++)
 			{
-				_executors.Add(Task.Factory.StartNew(taskFactory, _cancellationToken.Token));
+				_executors.Add(Task.Run(taskFactory, _cancellationToken.Token));
 			}
 		}
 

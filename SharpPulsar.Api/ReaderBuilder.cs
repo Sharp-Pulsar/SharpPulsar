@@ -43,7 +43,7 @@ namespace SharpPulsar.Api
 		///             if the reader creation fails </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Reader<T> create() throws PulsarClientException;
-		Reader<T> Create();
+		IReader<T> Create();
 
 		/// <summary>
 		/// Finalize the creation of the <seealso cref="Reader"/> instance in asynchronous mode.
@@ -55,7 +55,7 @@ namespace SharpPulsar.Api
 		/// <returns> the reader instance </returns>
 		/// <exception cref="PulsarClientException">
 		///             if the reader creation fails </exception>
-		ValueTask<Reader<T>> CreateAsync();
+		ValueTask<IReader<T>> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -145,7 +145,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Set the reader to include the given position of <seealso cref="ReaderBuilder.startMessageId(IMessageId)"/>
 		/// 
-		/// <para>This configuration option also applies for any cursor reset operation like <seealso cref="Reader.seek(IMessageId)"/>.
+		/// <para>This configuration option also applies for any cursor reset operation like <seealso cref="IReader.seek(IMessageId)"/>.
 		/// 
 		/// </para>
 		/// </summary>
@@ -156,7 +156,7 @@ namespace SharpPulsar.Api
 		/// Sets a <seealso cref="ReaderListener"/> for the reader.
 		/// 
 		/// <para>When a <seealso cref="ReaderListener"/> is set, application will receive messages through it. Calls to
-		/// <seealso cref="Reader.readNext()"/> will not be allowed.
+		/// <seealso cref="IReader.readNext()"/> will not be allowed.
 		/// 
 		/// </para>
 		/// </summary>
@@ -185,7 +185,7 @@ namespace SharpPulsar.Api
 		/// Sets the size of the consumer receive queue.
 		/// 
 		/// <para>The consumer receive queue controls how many messages can be accumulated by the <seealso cref="Consumer"/> before the
-		/// application calls <seealso cref="Consumer.receive()"/>. Using a higher value could potentially increase the consumer
+		/// application calls <seealso cref="IConsumer.receive()"/>. Using a higher value could potentially increase the consumer
 		/// throughput at the expense of bigger memory utilization.
 		/// 
 		/// </para>

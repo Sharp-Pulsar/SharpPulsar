@@ -22,7 +22,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// A Reader can be used to scan through all the messages currently available in a topic.
 	/// </summary>
-	public interface Reader<T> : System.IDisposable
+	public interface IReader<T> : System.IDisposable
 	{
 
 		/// <returns> the topic from which this reader is reading from </returns>

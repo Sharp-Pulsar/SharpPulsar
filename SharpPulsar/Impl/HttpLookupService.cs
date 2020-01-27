@@ -1,7 +1,10 @@
 ﻿using DotNetty.Transport.Libuv;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,7 +30,7 @@ namespace SharpPulsar.Impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static com.yahoo.sketches.Util.bytesToLong;
 
-	public class HttpLookupService : LookupService
+	public class HttpLookupService : ILookupService
 	{
 
 		private readonly HttpClient httpClient;
@@ -36,17 +39,13 @@ namespace SharpPulsar.Impl
 		private const string BasePathV1 = "lookup/v2/destination/";
 		private const string BasePathV2 = "lookup/v2/topic/";
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public HttpLookupService(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup) throws SharpPulsar.api.PulsarClientException
-		public HttpLookupService(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup)
+		public HttpLookupService(ClientConfigurationData Conf)
 		{
-			this.httpClient = new HttpClient(Conf.ServiceUrl, Conf.Authentication, EventLoopGroup, Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
+			this.httpClient = new HttpClient(Conf.ServiceUrl, Conf.Authentication, Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
 			this.useTls = Conf.UseTls;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException
-		public override void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string ServiceUrl)
 		{
 			httpClient.ServiceUrl = ServiceUrl;
 		}
@@ -56,9 +55,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="topicName"> topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("deprecation") public java.util.concurrent.CompletableFuture<org.apache.commons.lang3.tuple.Pair<java.net.InetSocketAddress, java.net.InetSocketAddress>> getBroker(org.apache.pulsar.common.naming.TopicName topicName)
-		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName TopicName)
+		public virtual ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName TopicName)
 		{
 			string BasePath = TopicName.V2 ? BasePathV2 : BasePathV1;
 

@@ -21,31 +21,20 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
+    using SharpPulsar.Api;
+    using SharpPulsar.Impl.Conf;
+    using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
+    using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using Lists = com.google.common.collect.Lists;
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-	using Consumer = SharpPulsar.Api.Consumer;
-	using SharpPulsar.Api;
-	using SharpPulsar.Impl.Conf;
-	using Mode = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandGetTopicsOfNamespace.Mode;
-	using NamespaceName = Org.Apache.Pulsar.Common.Naming.NamespaceName;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, TimerTask
+    public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, TimerTask
 	{
 		private readonly Pattern topicsPattern;
 		private readonly TopicsChangedListener topicsChangeListener;
 		private readonly Mode subscriptionMode;
 		private volatile Timeout recheckPatternTimeout = null;
 
-		public PatternMultiTopicsConsumerImpl(Pattern TopicsPattern, PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, Mode SubscriptionMode, ConsumerInterceptors<T> Interceptors) : base(Client, Conf, ListenerExecutor, SubscribeFuture, Schema, Interceptors, false)
+		public PatternMultiTopicsConsumerImpl(Regex TopicsPattern, PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, TaskCompletionSource<IConsumer<T>> SubscribeFuture, ISchema<T> Schema, Mode SubscriptionMode, ConsumerInterceptors<T> Interceptors) : base(Client, Conf, SubscribeFuture, Schema, Interceptors, false)
 		{
 			this.topicsPattern = TopicsPattern;
 			this.subscriptionMode = SubscriptionMode;
@@ -65,9 +54,6 @@ namespace SharpPulsar.Impl
 			return TopicName.get(Pattern.pattern()).NamespaceObject;
 		}
 
-		// TimerTask to recheck topics change, and trigger subscribe/unsubscribe based on the change.
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
 		public override void Run(Timeout Timeout)
 		{
 			if (Timeout.Cancelled)

@@ -40,10 +40,10 @@ namespace SharpPulsar.Impl.Schema
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class AutoConsumeSchema implements SharpPulsar.api.Schema<SharpPulsar.api.schema.GenericRecord>
-	public class AutoConsumeSchema : Schema<GenericRecord>
+	public class AutoConsumeSchema : ISchema<GenericRecord>
 	{
 
-		private Schema<GenericRecord> schema;
+		private ISchema<GenericRecord> schema;
 
 		private string topicName;
 
@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private SchemaInfoProvider schemaInfoProvider;
 
-		public virtual Schema<GenericRecord> Schema
+		public virtual ISchema<GenericRecord> Schema
 		{
 			set
 			{
@@ -166,7 +166,7 @@ namespace SharpPulsar.Impl.Schema
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: public static SharpPulsar.api.Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-		public static Schema<object> GetSchema(SchemaInfo SchemaInfo)
+		public static ISchema<object> GetSchema(SchemaInfo SchemaInfo)
 		{
 			switch (SchemaInfo.Type)
 			{
@@ -201,10 +201,10 @@ namespace SharpPulsar.Impl.Schema
 					KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(SchemaInfo);
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: SharpPulsar.api.Schema<?> keySchema = getSchema(kvSchemaInfo.getKey());
-					Schema<object> KeySchema = GetSchema(KvSchemaInfo.Key);
+					ISchema<object> KeySchema = GetSchema(KvSchemaInfo.Key);
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: SharpPulsar.api.Schema<?> valueSchema = getSchema(kvSchemaInfo.getValue());
-					Schema<object> ValueSchema = GetSchema(KvSchemaInfo.Value);
+					ISchema<object> ValueSchema = GetSchema(KvSchemaInfo.Value);
 					return KeyValueSchema.Of(KeySchema, ValueSchema);
 				default:
 					throw new System.ArgumentException("Retrieve schema instance from schema info for type '" + SchemaInfo.Type + "' is not supported yet");

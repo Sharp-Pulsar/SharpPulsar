@@ -39,16 +39,16 @@ namespace SharpPulsar.Impl
 		private readonly ProducerBase<T> _producer;
 		[NonSerialized]
 		public MessageMetadataBuilder Builder  = new MessageMetadataBuilder();
-		private readonly Schema<T> schema;
+		private readonly ISchema<T> schema;
 		[NonSerialized]
 		public  ByteBuffer Content;
 		private readonly TransactionImpl txn;
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, Schema<T> schema) : this(producer, schema, null)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema) : this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, Schema<T> schema, TransactionImpl Txn)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl Txn)
 		{
 			_producer = producer;
 			this.schema = schema;

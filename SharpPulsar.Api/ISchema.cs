@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,20 +22,10 @@
 /// </summary>
 namespace SharpPulsar.Api
 {
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
-	using SharpPulsar.Api.Schema;
-	using SharpPulsar.Api.Schema;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-
 	/// <summary>
 	/// Message schema definition.
 	/// </summary>
-	public interface Schema<T>
+	public interface ISchema<T>
 	{
 
 		/// <summary>
@@ -50,7 +42,7 @@ namespace SharpPulsar.Api
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
 		virtual void Validate(sbyte[] Message)
 		{
-			decode(message);
+			Decode(message);
 		}
 
 		/// <summary>
@@ -96,10 +88,10 @@ namespace SharpPulsar.Api
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] Bytes)
+		virtual T Decode(sbyte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
-			return decode(bytes, null);
+			return Decode(bytes, null);
 		}
 
 		/// <summary>
@@ -110,14 +102,14 @@ namespace SharpPulsar.Api
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		virtual T Decode(sbyte[] bytes, sbyte[] SchemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return decode(bytes);
+			return Decode(bytes);
 		}
 
 		/// <returns> an object that represents the Schema associated metadata </returns>
-		SchemaInfo SchemaInfo {get;}
+		ISchemaInfo SchemaInfo {get;}
 
 		/// <summary>
 		/// Check if this schema requires fetching schema info to configure the schema.
@@ -135,7 +127,7 @@ namespace SharpPulsar.Api
 		/// <param name="topic"> topic name </param>
 		/// <param name="componentName"> component name </param>
 		/// <param name="schemaInfo"> schema info </param>
-		virtual void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo)
+		virtual void ConfigureSchemaInfo(string Topic, string ComponentName, ISchemaInfo SchemaInfo)
 		{
 			// no-op
 		}
@@ -199,7 +191,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="clazz"> the Protobuf generated class to be used to extract the schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> PROTOBUF<T>(Type Clazz) where T : com.google.protobuf.GeneratedMessageV3
+		static ISchema<T> PROTOBUF(Type Clazz) where T : com.google.protobuf.GeneratedMessageV3
 		{
 			return DefaultImplementation.newProtobufSchema(SchemaDefinition.builder().withPojo(clazz).build());
 		}
@@ -209,7 +201,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> schemaDefinition the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> PROTOBUF<T>(SchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
+		static ISchema<T> PROTOBUF<T>(SchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
 		{
 			return DefaultImplementation.newProtobufSchema(schemaDefinition);
 		}
@@ -219,7 +211,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the Avro schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> AVRO<T>(Type Pojo)
+		static ISchema<T> AVRO(Type Pojo)
 		{
 			return DefaultImplementation.newAvroSchema(SchemaDefinition.builder().withPojo(pojo).build());
 		}
@@ -229,7 +221,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> AVRO<T>(SchemaDefinition<T> SchemaDefinition)
+		static ISchema<T> AVRO(SchemaDefinition<T> SchemaDefinition)
 		{
 			return DefaultImplementation.newAvroSchema(schemaDefinition);
 		}
@@ -239,7 +231,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> JSON<T>(Type Pojo)
+		static ISchema<T> JSON(Type Pojo)
 		{
 			return DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(pojo).build());
 		}
@@ -249,7 +241,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static Schema<T> JSON<T>(SchemaDefinition SchemaDefinition)
+		static ISchema<T> JSON<T>(SchemaDefinition SchemaDefinition)
 		{
 			return DefaultImplementation.newJSONSchema(schemaDefinition);
 		}
@@ -257,7 +249,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		static Schema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value, SchemaType Type)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value, SchemaType Type)
 		{
 			return DefaultImplementation.newKeyValueSchema(key, value, type);
 		}
@@ -265,7 +257,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Schema that can be used to encode/decode KeyValue.
 		/// </summary>
-		static Schema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
 			return DefaultImplementation.newKeyValueBytesSchema();
 		}
@@ -273,7 +265,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Key Value Schema whose underneath key and value schemas are JSONSchema.
 		/// </summary>
-		static Schema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value)
 		{
 			return DefaultImplementation.newKeyValueSchema(key, value, SchemaType.JSON);
 		}
@@ -281,7 +273,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Key Value Schema using passed in key and value schemas.
 		/// </summary>
-		static Schema<KeyValue<K, V>> KeyValue<K, V>(Schema<K> Key, Schema<V> Value)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> Key, ISchema<V> Value)
 		{
 			return DefaultImplementation.newKeyValueSchema(key, value);
 		}
@@ -289,13 +281,13 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Key Value Schema using passed in key, value and encoding type schemas.
 		/// </summary>
-		static Schema<KeyValue<K, V>> KeyValue<K, V>(Schema<K> Key, Schema<V> Value, KeyValueEncodingType KeyValueEncodingType)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return DefaultImplementation.newKeyValueSchema(key, value, keyValueEncodingType);
 		}
 
 		[Obsolete]
-		static Schema<GenericRecord> AUTO()
+		static ISchema<GenericRecord> AUTO()
 		{
 			return AUTO_CONSUME();
 		}
@@ -312,7 +304,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-		static Schema<GenericRecord> AutoConsume()
+		static ISchema<GenericRecord> AutoConsume()
 		{
 			return DefaultImplementation.newAutoConsumeSchema();
 		}
@@ -330,7 +322,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-		static Schema<sbyte[]> AutoProduceBytes()
+		static ISchema<sbyte[]> AutoProduceBytes()
 		{
 			return DefaultImplementation.newAutoProduceSchema();
 		}
@@ -342,16 +334,12 @@ namespace SharpPulsar.Api
 		/// <returns> the auto schema instance
 		/// @since 2.5.0 </returns>
 		/// <seealso cref= #AUTO_PRODUCE_BYTES() </seealso>
-		static Schema<sbyte[]> AutoProduceBytes<T1>(Schema<T1> Schema)
+		static ISchema<sbyte[]> AutoProduceBytes<T1>(ISchema<T1> Schema)
 		{
 			return DefaultImplementation.newAutoProduceSchema(schema);
 		}
 
-		// CHECKSTYLE.ON: MethodName
-
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: static Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-		static Schema<object> GetSchema(SchemaInfo SchemaInfo)
+		static ISchema<T> GetSchema(ISchemaInfo SchemaInfo)
 		{
 			return DefaultImplementation.getSchema(schemaInfo);
 		}
@@ -373,19 +361,19 @@ namespace SharpPulsar.Api
 
 	public static class SchemaFields
 	{
-		public static readonly Schema<sbyte[]> BYTES = DefaultImplementation.newBytesSchema();
-		public static readonly Schema<ByteBuffer> BYTEBUFFER = DefaultImplementation.newByteBufferSchema();
-		public static readonly Schema<string> STRING = DefaultImplementation.newStringSchema();
-		public static readonly Schema<sbyte> INT8 = DefaultImplementation.newByteSchema();
-		public static readonly Schema<short> INT16 = DefaultImplementation.newShortSchema();
-		public static readonly Schema<int> INT32 = DefaultImplementation.newIntSchema();
-		public static readonly Schema<long> INT64 = DefaultImplementation.newLongSchema();
-		public static readonly Schema<bool> BOOL = DefaultImplementation.newBooleanSchema();
-		public static readonly Schema<float> FLOAT = DefaultImplementation.newFloatSchema();
-		public static readonly Schema<double> DOUBLE = DefaultImplementation.newDoubleSchema();
-		public static readonly Schema<DateTime> DATE = DefaultImplementation.newDateSchema();
-		public static readonly Schema<Time> TIME = DefaultImplementation.newTimeSchema();
-		public static readonly Schema<Timestamp> TIMESTAMP = DefaultImplementation.newTimestampSchema();
+		public static readonly ISchema<sbyte[]> BYTES = DefaultImplementation.newBytesSchema();
+		public static readonly ISchema<IByteBuffer> BYTEBUFFER = DefaultImplementation.newByteBufferSchema();
+		public static readonly ISchema<string> STRING = DefaultImplementation.newStringSchema();
+		public static readonly ISchema<sbyte> INT8 = DefaultImplementation.newByteSchema();
+		public static readonly ISchema<short> INT16 = DefaultImplementation.newShortSchema();
+		public static readonly ISchema<int> INT32 = DefaultImplementation.newIntSchema();
+		public static readonly ISchema<long> INT64 = DefaultImplementation.newLongSchema();
+		public static readonly ISchema<bool> BOOL = DefaultImplementation.newBooleanSchema();
+		public static readonly ISchema<float> FLOAT = DefaultImplementation.newFloatSchema();
+		public static readonly ISchema<double> DOUBLE = DefaultImplementation.newDoubleSchema();
+		public static readonly ISchema<DateTime> DATE = DefaultImplementation.newDateSchema();
+		public static readonly ISchema<Time> TIME = DefaultImplementation.newTimeSchema();
+		public static readonly ISchema<Timestamp> TIMESTAMP = DefaultImplementation.newTimestampSchema();
 	}
 
 }

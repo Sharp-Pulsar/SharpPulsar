@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,25 +26,22 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {	
-	public class BinaryProtoLookupService : LookupService
+	public class BinaryProtoLookupService : ILookupService
 	{
 
 		private readonly PulsarClientImpl client;
 		private readonly ServiceNameResolver serviceNameResolver;
 		private readonly bool useTls;
-		private readonly Executor executor;
-		public BinaryProtoLookupService(PulsarClientImpl Client, string ServiceUrl, bool UseTls, ExecutorService Executor)
+		private readonly Task executor;
+		public BinaryProtoLookupService(PulsarClientImpl Client, string ServiceUrl, bool UseTls)
 		{
 			this.client = Client;
 			this.useTls = UseTls;
-			this.executor = Executor;
 			this.serviceNameResolver = new PulsarServiceNameResolver();
 			UpdateServiceUrl(ServiceUrl);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException
-		public override void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string ServiceUrl)
 		{
 			serviceNameResolver.UpdateServiceUrl(ServiceUrl);
 		}
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl
 		{
 			CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> AddressFuture = new CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>>();
 
-			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
+			client.CnxPool.GetConnection(SocketAddress).thenAccept(clientCnx =>
 			{
 			long RequestId = client.NewRequestId();
 			ByteBuf Request = Commands.newLookup(TopicName.ToString(), Authoritative, RequestId);
@@ -233,19 +233,19 @@ namespace SharpPulsar.Impl
 			});
 			}).exceptionally((e) =>
 			{
-			long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
-			if (NextDelay <= 0)
-			{
-				TopicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", Namespace.ToString())));
+				long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
+				if (NextDelay <= 0)
+				{
+					TopicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", Namespace.ToString())));
+					return null;
+				}
+				((ScheduledExecutorService) executor).schedule(() =>
+				{
+					log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", Namespace, NextDelay);
+					RemainingTime.addAndGet(-NextDelay);
+					GetTopicsUnderNamespace(SocketAddress, Namespace, Backoff, RemainingTime, TopicsFuture, Mode);
+				}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 				return null;
-			}
-			((ScheduledExecutorService) executor).schedule(() =>
-			{
-				log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", Namespace, NextDelay);
-				RemainingTime.addAndGet(-NextDelay);
-				GetTopicsUnderNamespace(SocketAddress, Namespace, Backoff, RemainingTime, TopicsFuture, Mode);
-			}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-			return null;
 		});
 		}
 

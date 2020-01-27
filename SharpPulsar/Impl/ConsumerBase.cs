@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
 	using BatchReceivePolicy = SharpPulsar.Api.BatchReceivePolicy;
-	using Consumer = SharpPulsar.Api.Consumer;
+	using Consumer = SharpPulsar.Api.IConsumer;
 	using ConsumerEventListener = SharpPulsar.Api.ConsumerEventListener;
 	using SharpPulsar.Api;
 	using IMessageId = SharpPulsar.Api.IMessageId;
@@ -46,8 +46,9 @@ namespace SharpPulsar.Impl
 	using SubType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSubscribe.SubType;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Org.Apache.Pulsar.Common.Util.Collections;
+    using System.Threading.Tasks;
 
-	public abstract class ConsumerBase<T> : HandlerState, TimerTask, Consumer<T>
+    public abstract class ConsumerBase<T> : HandlerState, TimerTask, IConsumer<T>
 	{
 		public abstract void NegativeAcknowledge(IMessageId MessageId);
 		public abstract void Resume();
@@ -73,7 +74,7 @@ namespace SharpPulsar.Impl
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly string ConsumerNameConflict;
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly CompletableFuture<Consumer<T>> SubscribeFutureConflict;
+		protected internal readonly CompletableFuture<IConsumer<T>> SubscribeFutureConflict;
 		protected internal readonly MessageListener<T> Listener;
 		protected internal readonly ConsumerEventListener ConsumerEventListener;
 		protected internal readonly ExecutorService ListenerExecutor;
@@ -81,7 +82,7 @@ namespace SharpPulsar.Impl
 		protected internal readonly ConcurrentLinkedQueue<CompletableFuture<Message<T>>> PendingReceives;
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal int MaxReceiverQueueSizeConflict;
-		protected internal readonly Schema<T> Schema;
+		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
 		protected internal ConcurrentLinkedQueue<OpBatchReceive<T>> PendingBatchReceives;
@@ -89,12 +90,12 @@ namespace SharpPulsar.Impl
 		protected internal volatile long IncomingMessagesSize = 0;
 		protected internal volatile Timeout BatchReceiveTimeout = null;
 
-		public ConsumerBase(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, int ReceiverQueueSize, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> SubscribeFuture, Schema<T> Schema, ConsumerInterceptors Interceptors) : base(Client, Topic)
+		public ConsumerBase(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, int ReceiverQueueSize, ExecutorService ListenerExecutor, CompletableFuture<IConsumer<T>> SubscribeFuture, ISchema<T> Schema, ConsumerInterceptors Interceptors) : base(Client, Topic)
 		{
 			this.MaxReceiverQueueSizeConflict = ReceiverQueueSize;
 			this.SubscriptionConflict = Conf.SubscriptionName;
 			this.Conf = Conf;
-			this.ConsumerNameConflict = Conf.ConsumerName == null ? ConsumerName.generateRandomName() : Conf.ConsumerName;
+			this.ConsumerNameConflict = Conf.ConsumerName == null ? Util.ConsumerName.GenerateRandomName() : Conf.ConsumerName;
 			this.SubscribeFutureConflict = SubscribeFuture;
 			this.Listener = Conf.MessageListener;
 			this.ConsumerEventListener = Conf.ConsumerEventListener;
@@ -412,7 +413,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override abstract CompletableFuture<Void> CloseAsync();
+		public abstract ValueTask CloseAsync();
 
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
@@ -468,7 +469,7 @@ namespace SharpPulsar.Impl
 
 		public abstract int NumMessagesInQueue();
 
-		public virtual CompletableFuture<Consumer<T>> SubscribeFuture()
+		public virtual CompletableFuture<IConsumer<T>> SubscribeFuture()
 		{
 			return SubscribeFutureConflict;
 		}

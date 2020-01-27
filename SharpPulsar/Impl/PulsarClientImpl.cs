@@ -1,14 +1,26 @@
-﻿using DotNetty.Transport.Channels;
-using DotNetty.Transport.Libuv;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Optional;
 using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Api.Transaction;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
+using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Util;
 using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using static SharpPulsar.Impl.ConsumerImpl<object>;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,123 +42,93 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
+	public enum State
+	{
+		Open,
+		Closing,
+		Closed
+	}
 	public class PulsarClientImpl : IPulsarClient
 	{
 		private static readonly ILogger log = new LoggerFactory().CreateLogger<PulsarClientImpl>();
 
-		public virtual Configuration Configuration;
-		public virtual string Lookup;
-		public virtual ConnectionPool CnxPool;
-		private readonly Timer timer;
+		public ClientConfigurationData Configuration;
+		public ILookupService Lookup;
+		public  ConnectionPool CnxPool;
+		private Timer timer;
 		private readonly ExecutorProvider externalExecutorProvider;
+		private State state;
+		private readonly HashSet<ProducerBase<object>> _producers;
+		private readonly HashSet<ConsumerBase<object>> _consumers;
 
-		public enum State
-		{
-			Open,
-			Closing,
-			Closed
-		}
+		private readonly AtomicLong _producerIdGenerator = new AtomicLong();
+		private readonly AtomicLong _consumerIdGenerator = new AtomicLong();
+		private readonly AtomicLong _requestIdGenerator = new AtomicLong();
 
-		private AtomicReference<State> state = new AtomicReference<State>();
-		private readonly IdentityHashMap<ProducerBase<object>, bool> producers;
-		private readonly IdentityHashMap<ConsumerBase<object>, bool> consumers;
-
-		private readonly AtomicLong producerIdGenerator = new AtomicLong();
-		private readonly AtomicLong consumerIdGenerator = new AtomicLong();
-		private readonly AtomicLong requestIdGenerator = new AtomicLong();
-
-		private readonly EventLoopGroup eventLoopGroup;
-
-		private readonly LoadingCache<string, SchemaInfoProvider> schemaProviderLoadingCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
-
-		public class CacheLoaderAnonymousInnerClass : CacheLoader<string, SchemaInfoProvider>
-		{
-
-			public override SchemaInfoProvider load(string TopicName)
-			{
-				return outerInstance.newSchemaProvider(TopicName);
-			}
-		}
 
 		public virtual DateTime ClientClock {get;}
-		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, GetEventLoopGroup(Conf))
+		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, new ConnectionPool(Conf))
 		{
 		}
 
-
-		public PulsarClientImpl(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, new ConnectionPool(Conf, EventLoopGroup))
+		public PulsarClientImpl(ClientConfigurationData Conf, ConnectionPool CnxPool)
 		{
-		}
-
-		public PulsarClientImpl(ClientConfigurationData Conf, EventLoopGroup EventLoopGroup, ConnectionPool CnxPool)
-		{
-			if (Conf == null || isBlank(Conf.ServiceUrl) || EventLoopGroup == null)
+			if (Conf == null || string.IsNullOrWhiteSpace(Conf.ServiceUrl) )
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
-			this.eventLoopGroup = EventLoopGroup;
 			Auth = Conf;
 			this.Configuration = Conf;
-			this.ClientClock = Conf.Clock;
-			Conf.Authentication.start();
+			this.ClientClock = Conf.clock;
+			Conf.Authentication.Start();
 			this.CnxPool = CnxPool;
-			externalExecutorProvider = new ExecutorProvider(Conf.NumListenerThreads, GetThreadFactory("pulsar-external-listener"));
-			if (Conf.ServiceUrl.StartsWith("http"))
-			{
-				Lookup = new HttpLookupService(Conf, EventLoopGroup);
-			}
-			else
-			{
-				Lookup = new BinaryProtoLookupService(this, Conf.ServiceUrl, Conf.UseTls, externalExecutorProvider.Executor);
-			}
-			timer = new HashedWheelTimer(GetThreadFactory("pulsar-timer"), 1, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-			producers = Maps.newIdentityHashMap();
-			consumers = Maps.newIdentityHashMap();
-			state.set(State.Open);
+			Lookup = new BinaryProtoLookupService(this, Conf.ServiceUrl, Conf.UseTls);
+			_producers = new HashSet<ProducerBase<object>>();
+			_consumers = new HashSet<ConsumerBase<object>>();
+			state = State.Open;
 		}
 
 		private ClientConfigurationData Auth
 		{
 			set
 			{
-				if (StringUtils.isBlank(value.AuthPluginClassName) || StringUtils.isBlank(value.AuthParams))
+				if (string.IsNullOrWhiteSpace(value.AuthPluginClassName) || string.IsNullOrWhiteSpace(value.AuthParams))
 				{
 					return;
 				}
     
-				value.Authentication = AuthenticationFactory.create(value.AuthPluginClassName, value.AuthParams);
+				value.Authentication = AuthenticationFactory.Create(value.AuthPluginClassName, value.AuthParams);
 			}
 		}
 
 
 
-		public override IProducerBuilder<sbyte[]> NewProducer()
+		public IProducerBuilder<sbyte[]> NewProducer()
 		{
 			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
 		}
 
-		public override IProducerBuilder<T> NewProducer<T>(Schema<T> Schema)
+		public IProducerBuilder<T> NewProducer<T>(ISchema<T> Schema)
 		{
 			return new ProducerBuilderImpl<T>(this, Schema);
 		}
 
-		public override ConsumerBuilder<sbyte[]> NewConsumer()
+		public IConsumerBuilder<sbyte[]> NewConsumer()
 		{
 			return new ConsumerBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
 		}
 
-		public override ConsumerBuilder<T> NewConsumer<T>(Schema<T> Schema)
+		public IConsumerBuilder<T> NewConsumer<T>(ISchema<T> Schema)
 		{
 			return new ConsumerBuilderImpl<T>(this, Schema);
 		}
 
-		public override ReaderBuilder<sbyte[]> NewReader()
+		public ReaderBuilder<sbyte[]> NewReader()
 		{
 			return new ReaderBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
 		}
 
-		public override ReaderBuilder<T> NewReader<T>(Schema<T> Schema)
+		public ReaderBuilder<T> NewReader<T>(ISchema<T> Schema)
 		{
 			return new ReaderBuilderImpl<T>(this, Schema);
 		}
@@ -156,142 +138,144 @@ namespace SharpPulsar.Impl
 			return CreateProducerAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, ISchema<T> Schema)
 		{
 			return CreateProducerAsync(Conf, Schema, null);
 		}
 
-		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, ISchema<T> Schema, ProducerInterceptors Interceptors)
 		{
 			if (Conf == null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined"));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined")));
 			}
 
 			if (Schema is AutoConsumeSchema)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically"));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically")));
 			}
 
-			if (state.get() != State.Open)
+			if (state != State.Open)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Client already closed : state = " + state.get()));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.AlreadyClosedException("Client already closed : state = " + state)));
 			}
 
-			string Topic = Conf.TopicName;
+			string topic = Conf.TopicName;
 
-			if (!TopicName.isValid(Topic))
+			if (!TopicName.IsValid(topic))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + Topic + "'"));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'")));
 			}
 
-			if (Schema is AutoProduceBytesSchema)
+			if (Schema is AutoProduceBytesSchema<T>)
 			{
-				AutoProduceBytesSchema AutoProduceBytesSchema = (AutoProduceBytesSchema) Schema;
-				if (AutoProduceBytesSchema.schemaInitialized())
+				var autoProduceBytesSchema = (AutoProduceBytesSchema<T>) Schema;
+				if (autoProduceBytesSchema.SchemaInitialized())
 				{
-					return CreateProducerAsync(Topic, Conf, Schema, Interceptors);
+					return CreateProducerAsync(topic, Conf, Schema, Interceptors);
 				}
-				return Lookup.GetSchema(TopicName.get(Conf.TopicName)).thenCompose(schemaInfoOptional =>
+				var lkup = Lookup.GetSchema(TopicName.Get(Conf.TopicName));
+				var schemaInfoOptional = lkup.Result;
+				if (schemaInfoOptional != null)
 				{
-				if (schemaInfoOptional.Present)
-				{
-					AutoProduceBytesSchema.Schema = Schema.getSchema(schemaInfoOptional.get());
+					autoProduceBytesSchema.Schema = ISchema<T>.GetSchema(schemaInfoOptional);
 				}
 				else
 				{
-					AutoProduceBytesSchema.Schema = Schema.BYTES;
+					autoProduceBytesSchema.Schema = Schema;
 				}
-				return CreateProducerAsync(Topic, Conf, Schema, Interceptors);
-				});
+				return CreateProducerAsync(topic, Conf, Schema, Interceptors);
 			}
 			else
 			{
-				return CreateProducerAsync(Topic, Conf, Schema, Interceptors);
+				return CreateProducerAsync(topic, Conf, Schema, Interceptors);
 			}
 
 		}
 
-		private ValueTask<Producer<T>> CreateProducerAsync<T>(string Topic, ProducerConfigurationData Conf, Schema<T> Schema, ProducerInterceptors Interceptors)
+		private ValueTask<IProducer<T>> CreateProducerAsync<T>(string Topic, ProducerConfigurationData Conf, ISchema<T> Schema, ProducerInterceptors Interceptors)
 		{
-			ValueTask<Producer<T>> ProducerCreatedFuture = new ValueTask<Producer<T>>();
+			var producerCreated = new TaskCompletionSource<IProducer<T>>();
 
-			GetPartitionedTopicMetadata(Topic).thenAccept(metadata =>
+			GetPartitionedTopicMetadata(Topic).AsTask().ContinueWith(metadataTask => 
 			{
-			if (log.DebugEnabled)
-			{
-				log.debug("[{}] Received topic metadata. partitions: {}", Topic, metadata.partitions);
-			}
-			ProducerBase<T> Producer;
-			if (metadata.partitions > 0)
-			{
-				Producer = new PartitionedProducerImpl<T>(PulsarClientImpl.this, Topic, Conf, metadata.partitions, ProducerCreatedFuture, Schema, Interceptors);
-			}
-			else
-			{
-				Producer = new ProducerImpl<T>(PulsarClientImpl.this, Topic, Conf, ProducerCreatedFuture, -1, Schema, Interceptors);
-			}
-			lock (producers)
-			{
-				producers.put(Producer, true);
-			}
-			}).exceptionally(ex =>
-			{
-			log.warn("[{}] Failed to get partitioned topic metadata: {}", Topic, ex.Message);
-			ProducerCreatedFuture.completeExceptionally(ex);
-			return null;
-		});
+				var metadata = metadataTask.Result;
+				if (metadataTask.IsFaulted){
+					log.LogWarning("[{}] Failed to get partitioned topic metadata: {}", Topic, metadataTask.Exception.Message);
+					producerCreated.SetException(metadataTask.Exception);
+					return;
+				}
+				if (log.IsEnabled(LogLevel.Debug))
+				{
+					log.LogDebug("[{}] Received topic metadata. partitions: {}", Topic, metadata.partitions);
+				}
+				ProducerBase<T> producer;
+				if (metadata.partitions > 0)
+				{
+					producer = new PartitionedProducerImpl<T>(this, Topic, Conf, metadata.partitions, producerCreated, Schema, Interceptors);
+				}
+				else
+				{
+					producer = new ProducerImpl<T>(this, Topic, Conf, producerCreated, -1, Schema, Interceptors);
+				}
+				lock (_producers)
+				{
+					var p = (ProducerBase<object>)Convert.ChangeType(producer, typeof(IProducer<object>));
+					_producers.Add(p);//pend
+				}
+				producerCreated.SetResult(producer);
+			});
 
-			return ProducerCreatedFuture;
+			return new ValueTask<IProducer<T>>(producerCreated.Task.Result);
 		}
 
-		public virtual ValueTask<Consumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<IConsumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
 			return SubscribeAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		public virtual ValueTask<Consumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		public virtual ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			if (state.get() != State.Open)
+			if (state != State.Open)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Client already closed"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.AlreadyClosedException("Client already closed")));
 			}
 
 			if (Conf == null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
 			}
 
-			if (!Conf.TopicNames.All(TopicName.isValid))
+			if (Conf.TopicNames.All(TopicName.IsValid))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidTopicNameException("Invalid topic name"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
 			}
 
-			if (isBlank(Conf.SubscriptionName))
+			if (string.IsNullOrWhiteSpace(Conf.SubscriptionName))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Empty subscription name"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Empty subscription name")));
 			}
 
-			if (Conf.ReadCompacted && (!Conf.TopicNames.All(topic => TopicName.get(topic).Domain == TopicDomain.persistent) || (Conf.SubscriptionType != SubscriptionType.Exclusive && Conf.SubscriptionType != SubscriptionType.Failover)))
+			if (Conf.ReadCompacted && (!Conf.TopicNames.All(topic => TopicName.Get(topic).Domain == TopicDomain.persistent) || (Conf.SubscriptionType != SubscriptionType.Exclusive && Conf.SubscriptionType != SubscriptionType.Failover)))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive of failover persistent subscriptions"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive of failover persistent subscriptions")));
 			}
 
 			if (Conf.ConsumerEventListener != null && Conf.SubscriptionType != SubscriptionType.Failover)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Active consumer listener is only supported for failover subscription"));
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Active consumer listener is only supported for failover subscription")));
 			}
 
 			if (Conf.TopicsPattern != null)
 			{
 				// If use topicsPattern, we should not use topic(), and topics() method.
-				if (!Conf.TopicNames.Empty)
+				if (!Conf.TopicNames.Any())
 				{
-					return FutureUtil.failedFuture(new System.ArgumentException("Topic names list must be null when use topicsPattern"));
+					return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new ArgumentException("Topic names list must be null when use topicsPattern")));
 				}
 				return PatternTopicSubscribeAsync(Conf, Schema, Interceptors);
 			}
-			else if (Conf.TopicNames.size() == 1)
+			else if (Conf.TopicNames.Count == 1)
 			{
 				return SingleTopicSubscribeAsync(Conf, Schema, Interceptors);
 			}
@@ -301,182 +285,183 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private ValueTask<Consumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<IConsumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			return PreProcessSchemaBeforeSubscribe(this, Schema, Conf.SingleTopic).thenCompose(ignored => DoSingleTopicSubscribeAsync(Conf, Schema, Interceptors));
+			 PreProcessSchemaBeforeSubscribe(this, Schema, Conf.SingleTopic);
+			return DoSingleTopicSubscribeAsync(Conf, Schema, Interceptors);
 		}
 
-		private ValueTask<Consumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<IConsumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
 
 			string Topic = Conf.SingleTopic;
 
-			GetPartitionedTopicMetadata(Topic).thenAccept(metadata =>
+			GetPartitionedTopicMetadata(Topic).AsTask().ContinueWith(task =>
 			{
-			if (log.DebugEnabled)
-			{
-				log.debug("[{}] Received topic metadata. partitions: {}", Topic, metadata.partitions);
-			}
-			ConsumerBase<T> Consumer;
-			ExecutorService ListenerThread = externalExecutorProvider.Executor;
-			if (metadata.partitions > 0)
-			{
-				Consumer = MultiTopicsConsumerImpl.CreatePartitionedConsumer(PulsarClientImpl.this, Conf, ListenerThread, ConsumerSubscribedFuture, metadata.partitions, Schema, Interceptors);
-			}
-			else
-			{
-				int PartitionIndex = TopicName.getPartitionIndex(Topic);
-				Consumer = ConsumerImpl.NewConsumerImpl(PulsarClientImpl.this, Topic, Conf, ListenerThread, PartitionIndex, false, ConsumerSubscribedFuture, SubscriptionMode.Durable, null, Schema, Interceptors, true);
-			}
-			lock (consumers)
-			{
-				consumers.put(Consumer, true);
-			}
-			}).exceptionally(ex =>
-			{
-			log.warn("[{}] Failed to get partitioned topic metadata", Topic, ex);
-			ConsumerSubscribedFuture.completeExceptionally(ex);
-			return null;
-		});
+				if (task.IsFaulted)
+				{
+					log.LogWarning("[{}] Failed to get partitioned topic metadata", Topic, task.Exception);
+					consumerSubscribedTask.SetException(task.Exception);
+					return;
+				}
+				var metadata = task.Result;
+				if (log.IsEnabled(LogLevel.Debug))
+				{
+					log.LogDebug("[{}] Received topic metadata. partitions: {}", Topic, metadata.partitions);
+				}
+				ConsumerBase<T> consumer;
+				var ListenerThread = externalExecutorProvider.Executor;
+				if (metadata.partitions > 0)
+				{
+					consumer = MultiTopicsConsumerImpl<T>.CreatePartitionedConsumer(this, Conf, consumerSubscribedTask, metadata.partitions, Schema, Interceptors);
+				}
+				else
+				{
+					var durable = (ConsumerImpl<T>.SubscriptionMode)Convert.ChangeType(SubscriptionMode.Durable, typeof(ConsumerImpl<T>.SubscriptionMode));
+					int PartitionIndex = TopicName.GetPartitionIndex(Topic);
+					consumer = ConsumerImpl<T>.NewConsumerImpl(this, Topic, Conf, ListenerThread, PartitionIndex, false, consumerSubscribedTask, durable, null, Schema, Interceptors, true);
+				}
+				lock (_consumers)
+				{
+					var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
+					_consumers.Add(c);
+				}
+				consumerSubscribedTask.SetResult(consumer);
+			});
 
-			return ConsumerSubscribedFuture;
+			return new ValueTask<IConsumer<T>>(consumerSubscribedTask.Task.Result);
 		}
 
-		private ValueTask<Consumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<IConsumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
 
-			ConsumerBase<T> Consumer = new MultiTopicsConsumerImpl<T>(PulsarClientImpl.this, Conf, externalExecutorProvider.Executor, ConsumerSubscribedFuture, Schema, Interceptors, true);
+			var consumer = new MultiTopicsConsumerImpl<T>(this, Conf, externalExecutorProvider.Executor, consumerSubscribedTask, Schema, Interceptors, true);
 
-			lock (consumers)
+			lock (_consumers)
 			{
-				consumers.put(Consumer, true);
+				var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
+				_consumers.Add(c);
 			}
 
-			return ConsumerSubscribedFuture;
+			return new ValueTask<IConsumer<T>>(consumerSubscribedTask.Task.Result);
 		}
 
-		public virtual ValueTask<Consumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<IConsumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
 			return PatternTopicSubscribeAsync(Conf, SchemaFields.BYTES, null);
 		}
 
-		private ValueTask<Consumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, Schema<T> Schema, ConsumerInterceptors<T> Interceptors)
+		private ValueTask<IConsumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
 		{
-			string Regex = Conf.TopicsPattern.pattern();
+			string regex = Conf.TopicsPattern.ToString();
 			Mode SubscriptionMode = ConvertRegexSubscriptionMode(Conf.RegexSubscriptionMode);
-			TopicName Destination = TopicName.get(Regex);
+			TopicName Destination = TopicName.Get(regex);
 			NamespaceName NamespaceName = Destination.NamespaceObject;
 
-			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
-			Lookup.GetTopicsUnderNamespace(NamespaceName, SubscriptionMode).thenAccept(topics =>
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
+			var lkup = Lookup.GetTopicsUnderNamespace(NamespaceName, SubscriptionMode);
+			if(lkup.IsFaulted)
 			{
-			if (log.DebugEnabled)
-			{
-				log.debug("Get topics under namespace {}, topics.size: {}", NamespaceName.ToString(), topics.size());
-				topics.forEach(topicName => log.debug("Get topics under namespace {}, topic: {}", NamespaceName.ToString(), topicName));
+				log.LogWarning("[{}] Failed to get topics under namespace", NamespaceName);
+				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(lkup.AsTask().Exception));
 			}
-			IList<string> TopicsList = TopicsPatternFilter(topics, Conf.TopicsPattern);
-			Conf.TopicNames.addAll(TopicsList);
-			ConsumerBase<T> Consumer = new PatternMultiTopicsConsumerImpl<T>(Conf.TopicsPattern, PulsarClientImpl.this, Conf, externalExecutorProvider.Executor, ConsumerSubscribedFuture, Schema, SubscriptionMode, Interceptors);
-			lock (consumers)
+			var topics = lkup.Result.ToList();
+			if(log.IsEnabled(LogLevel.Debug))
 			{
-				consumers.put(Consumer, true);
+				log.LogDebug("Get topics under namespace {}, topics.size: {}", NamespaceName.ToString(), topics.Count);
+				topics.ForEach(topicName => log.LogDebug("Get topics under namespace {}, topic: {}", NamespaceName.ToString(), topicName));
 			}
-			}).exceptionally(ex =>
+			var TopicsList = TopicsPatternFilter(topics, Conf.TopicsPattern).ToList();
+			TopicsList.ForEach(x => Conf.TopicNames.Add(x));
+			var consumer = new PatternMultiTopicsConsumerImpl<T>(Conf.TopicsPattern, this, Conf, consumerSubscribedTask, Schema, SubscriptionMode, Interceptors);
+			lock (_consumers)
 			{
-			log.warn("[{}] Failed to get topics under namespace", NamespaceName);
-			ConsumerSubscribedFuture.completeExceptionally(ex);
-			return null;
-		});
-
-			return ConsumerSubscribedFuture;
+				var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
+				_consumers.Add(c);
+			}
+			
+			return new ValueTask<IConsumer<T>>(consumer);
 		}
 
 		// get topics that match 'topicsPattern' from original topics list
 		// return result should contain only topic names, without partition part
-		public static IList<string> TopicsPatternFilter(IList<string> Original, Pattern TopicsPattern)
+		public static IList<string> TopicsPatternFilter(IList<string> Original, Regex TopicsPattern)
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.regex.Pattern shortenedTopicsPattern = topicsPattern.toString().contains("://") ? java.util.regex.Pattern.compile(topicsPattern.toString().split("\\:\\/\\/")[1]) : topicsPattern;
-			Pattern ShortenedTopicsPattern = TopicsPattern.ToString().Contains("://") ? Pattern.compile(TopicsPattern.ToString().Split(@"\:\/\/", true)[1]) : TopicsPattern;
+			var pattern = TopicsPattern.ToString().Contains("://") ? new Regex(TopicsPattern.ToString().Split(@"\:\/\/")[1]) : TopicsPattern;
 
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			return Original.Select(TopicName.get).Select(TopicName::toString).Where(topic => ShortenedTopicsPattern.matcher(topic.Split(@"\:\/\/")[1]).matches()).ToList();
+
+			return Original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(topic.Split(@"\:\/\/")[1]).Success).ToList();
 		}
 
-		public virtual ValueTask<Reader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> Conf)
+		public virtual ValueTask<IReader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> Conf)
 		{
 			return CreateReaderAsync(Conf, SchemaFields.BYTES);
 		}
 
-		public virtual ValueTask<Reader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
+		public virtual ValueTask<IReader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> Conf, ISchema<T> Schema)
 		{
-			return PreProcessSchemaBeforeSubscribe(this, Schema, Conf.TopicName).thenCompose(ignored => DoCreateReaderAsync(Conf, Schema));
+			PreProcessSchemaBeforeSubscribe(this, Schema, Conf.TopicName);
+			return DoCreateReaderAsync(Conf, Schema);
 		}
 
-		public virtual ValueTask<Reader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> Conf, Schema<T> Schema)
+		public virtual ValueTask<IReader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> Conf, ISchema<T> Schema)
 		{
-			if (state.get() != State.Open)
+			if (state != State.Open)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Client already closed"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.AlreadyClosedException("Client already closed")));
 			}
 
 			if (Conf == null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
 			}
 
-			string Topic = Conf.TopicName;
+			string topic = Conf.TopicName;
 
-			if (!TopicName.isValid(Topic))
+			if (!TopicName.IsValid(topic))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidTopicNameException("Invalid topic name"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
 			}
 
 			if (Conf.StartMessageId == null)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Invalid startMessageId"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidConfigurationException("Invalid startMessageId")));
 			}
 
-			ValueTask<Reader<T>> ReaderFuture = new ValueTask<Reader<T>>();
+			TaskCompletionSource<IReader<T>> readerTask = new TaskCompletionSource<IReader<T>>();
 
-			GetPartitionedTopicMetadata(Topic).thenAccept(metadata =>
+			var topicRe = GetPartitionedTopicMetadata(topic);
+			var astask = topicRe.AsTask();
+			if(astask.IsFaulted)
 			{
-			if (log.DebugEnabled)
+				log.LogWarning("[{}] Failed to get partitioned topic metadata", topic, astask.Exception);
+				readerTask.SetException(astask.Exception);
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(astask.Exception));
+			}
+			var metadata = topicRe.Result;
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.debug("[{}] Received topic metadata. partitions: {}", Topic, metadata.partitions);
+				log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
 			}
 			if (metadata.partitions > 0)
 			{
-				ReaderFuture.completeExceptionally(new PulsarClientException("Topic reader cannot be created on a partitioned topic"));
-				return;
+				readerTask.SetException(new PulsarClientException("Topic reader cannot be created on a partitioned topic"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(readerTask.Task.Exception));
 			}
-			ValueTask<Consumer<T>> ConsumerSubscribedFuture = new ValueTask<Consumer<T>>();
-			ExecutorService ListenerThread = externalExecutorProvider.Executor;
-			ReaderImpl<T> Reader = new ReaderImpl<T>(PulsarClientImpl.this, Conf, ListenerThread, ConsumerSubscribedFuture, Schema);
-			lock (consumers)
-			{
-				consumers.put(Reader.Consumer, true);
-			}
-			ConsumerSubscribedFuture.thenRun(() =>
-			{
-				ReaderFuture.complete(Reader);
-			}).exceptionally(ex =>
-			{
-				log.warn("[{}] Failed to get create topic reader", Topic, ex);
-				ReaderFuture.completeExceptionally(ex);
-				return null;
-			});
-			}).exceptionally(ex =>
-			{
-			log.warn("[{}] Failed to get partitioned topic metadata", Topic, ex);
-			ReaderFuture.completeExceptionally(ex);
-			return null;
-		});
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
 
-			return ReaderFuture;
+			var reader = new ReaderImpl<T>(this, Conf, consumerSubscribedTask, Schema);
+			lock (_consumers)
+			{
+				var c = (ConsumerBase<object>)Convert.ChangeType(reader.Consumer, typeof(IConsumer<object>));
+				_consumers.Add(c);
+			}
+			consumerSubscribedTask.Task.ContinueWith(task=> {
+				readerTask.SetResult(reader);
+			});
+			return new ValueTask<IReader<T>>(reader);
 		}
 
 		/// <summary>
@@ -484,117 +469,111 @@ namespace SharpPulsar.Impl
 		/// 
 		/// If the topic does not exist or it has no schema associated, it will return an empty response
 		/// </summary>
-		public virtual ValueTask<Optional<SchemaInfo>> GetSchema(string Topic)
+		public virtual ValueTask<SchemaInfo> GetSchema(string topic)
 		{
 			TopicName TopicName;
 			try
 			{
-				TopicName = TopicName.get(Topic);
+				TopicName = TopicName.Get(topic);
 			}
-			catch (Exception)
+			catch (System.Exception ex)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidTopicNameException("Invalid topic name: " + Topic));
+				return new ValueTask<SchemaInfo>(Task.FromException<SchemaInfo>(new PulsarClientException.InvalidTopicNameException("Invalid topic name: " + topic)));
 			}
 
 			return Lookup.GetSchema(TopicName);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws SharpPulsar.api.PulsarClientException
-		public override void Close()
+		public void Close()
 		{
 			try
 			{
-				CloseAsync().get();
+				CloseAsync();
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override ValueTask<Void> CloseAsync()
+		public ValueTask CloseAsync()
 		{
-			log.info("Client closing. URL: {}", Lookup.ServiceUrl);
-			if (!state.compareAndSet(State.Open, State.Closing))
+			log.LogInformation("Client closing. URL: {}", Lookup.ServiceUrl);
+			if (state != State.Open)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Client already closed"));
+				return new ValueTask(Task.FromException(new PulsarClientException.AlreadyClosedException("Client already closed")));
+
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.ValueTask<Void> closeFuture = new java.util.concurrent.ValueTask<>();
-			ValueTask<Void> CloseFuture = new ValueTask<Void>();
-			IList<ValueTask<Void>> Futures = Lists.newArrayList();
+			var closeTask = new TaskCompletionSource<Task>();
+			IList<Task> tasks = new List<Task>();
 
-			lock (producers)
+			lock (_producers)
 			{
 				// Copy to a new list, because the closing will trigger a removal from the map
 				// and invalidate the iterator
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.List<ProducerBase<?>> producersToClose = com.google.common.collect.Lists.newArrayList(producers.keySet());
-				IList<ProducerBase<object>> ProducersToClose = Lists.newArrayList(producers.keySet());
-				ProducersToClose.ForEach(p => Futures.Add(p.closeAsync()));
+
+				var producersToClose = new List<ProducerBase<object>>(_producers).ToList();
+				producersToClose.ForEach(p => tasks.Add(p.CloseAsync().AsTask()));
 			}
 
-			lock (consumers)
+			lock (_consumers)
 			{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.List<ConsumerBase<?>> consumersToClose = com.google.common.collect.Lists.newArrayList(consumers.keySet());
-				IList<ConsumerBase<object>> ConsumersToClose = Lists.newArrayList(consumers.keySet());
-				ConsumersToClose.ForEach(c => Futures.Add(c.closeAsync()));
+				var consumersToClose = new List<ConsumerBase<object>>(_consumers);
+				consumersToClose.ForEach(c => tasks.Add(c.CloseAsync().AsTask()));
 			}
 
 			// Need to run the shutdown sequence in a separate thread to prevent deadlocks
 			// If there are consumers or producers that need to be shutdown we cannot use the same thread
 			// to shutdown the EventLoopGroup as well as that would be trying to shutdown itself thus a deadlock
 			// would happen
-			FutureUtil.waitForAll(Futures).thenRun(() => (new Thread(() =>
-			{
+			Task.WhenAll(tasks.ToArray()).ContinueWith(t => {
+				var rt = Task.Run(()=>
+				{
+					ContinueWithShutDown(closeTask);
+				});
+				if (rt.IsFaulted)
+				{
+					closeTask.SetException(rt.Exception);
+				}
+			});
+			return new ValueTask(closeTask.Task);
+		}
+		public void ContinueWithShutDown(TaskCompletionSource<Task> task)
+		{
 			try
 			{
+
 				Shutdown();
-				CloseFuture.complete(null);
-				state.set(State.Closed);
+				task.SetResult(null);
+				state = State.Closed;
 			}
 			catch (PulsarClientException E)
 			{
-				CloseFuture.completeExceptionally(E);
+				task.SetException(E);
 			}
-			}, "pulsar-client-shutdown-thread")).Start()).exceptionally(exception =>
-			{
-			CloseFuture.completeExceptionally(exception);
-			return null;
-		});
-
-			return CloseFuture;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void shutdown() throws SharpPulsar.api.PulsarClientException
-		public override void Shutdown()
+		public void Shutdown()
 		{
 			try
 			{
-				Lookup.close();
+				Lookup.Close();
 				CnxPool.Dispose();
-				timer.stop();
-				externalExecutorProvider.ShutdownNow();
+				timer.Dispose();
 				Configuration.Authentication.Dispose();
 			}
-			catch (Exception T)
+			catch (System.Exception t)
 			{
-				log.warn("Failed to shutdown Pulsar client", T);
-				throw PulsarClientException.unwrap(T);
+				log.LogWarning("Failed to shutdown Pulsar client", t);
+				throw PulsarClientException.Unwrap(t);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public synchronized void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException
-		public override void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string ServiceUrl)
 		{
 			lock (this)
 			{
-				log.info("Updating service URL to {}", ServiceUrl);
+				log.LogInformation("Updating service URL to {}", ServiceUrl);
         
 				Configuration.ServiceUrl = ServiceUrl;
 				Lookup.UpdateServiceUrl(ServiceUrl);
@@ -602,10 +581,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual ValueTask<ClientCnx> GetConnection(in string Topic)
+		public virtual ValueTask<ClientCnx> GetConnection(in string topic)
 		{
-			TopicName TopicName = TopicName.get(Topic);
-			return Lookup.GetBroker(TopicName).thenCompose(pair => CnxPool.GetConnection(pair.Left, pair.Right));
+			TopicName topicName = TopicName.Get(topic);
+			var lkup = Lookup.GetBroker(topicName).Result;
+			return CnxPool.GetConnection(lkup.Key, lkup.Value);
 		}
 
 		/// <summary>
@@ -622,150 +602,129 @@ namespace SharpPulsar.Impl
 
 		public virtual long NewProducerId()
 		{
-			return producerIdGenerator.AndIncrement;
+			return _producerIdGenerator.Increment();
 		}
 
 		public virtual long NewConsumerId()
 		{
-			return consumerIdGenerator.AndIncrement;
+			return _consumerIdGenerator.Increment();
 		}
 
 		public virtual long NewRequestId()
 		{
-			return requestIdGenerator.AndIncrement;
+			return _requestIdGenerator.Increment();
 		}
 
 
-		public virtual EventLoopGroup EventLoopGroup()
-		{
-			return eventLoopGroup;
-		}
-
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public void reloadLookUp() throws SharpPulsar.api.PulsarClientException
 		public virtual void ReloadLookUp()
 		{
-			if (Configuration.ServiceUrl.StartsWith("http"))
-			{
-				Lookup = new HttpLookupService(Configuration, eventLoopGroup);
-			}
-			else
-			{
-				Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls, externalExecutorProvider.Executor);
-			}
+			Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls);
 		}
 
-		public virtual ValueTask<int> GetNumberOfPartitions(string Topic)
+		public virtual ValueTask<int> GetNumberOfPartitions(string topic)
 		{
-			return GetPartitionedTopicMetadata(Topic).thenApply(metadata => metadata.partitions);
+			return new ValueTask<int>(GetPartitionedTopicMetadata(topic).Result.partitions);
 		}
 
 		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string Topic)
 		{
 
-			ValueTask<PartitionedTopicMetadata> MetadataFuture = new ValueTask<PartitionedTopicMetadata>();
+			var metadataTask = new TaskCompletionSource<PartitionedTopicMetadata>();
 
 			try
 			{
-				TopicName TopicName = TopicName.get(Topic);
+				TopicName TopicName = TopicName.Get(Topic);
 				AtomicLong OpTimeoutMs = new AtomicLong(Configuration.OperationTimeoutMs);
-				Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMandatoryStop(OpTimeoutMs.get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create();
-				GetPartitionedTopicMetadata(TopicName, Backoff, OpTimeoutMs, MetadataFuture);
+				Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMandatoryStop(OpTimeoutMs.Get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).Create();
+				GetPartitionedTopicMetadata(TopicName, Backoff, OpTimeoutMs, metadataTask);
 			}
-			catch (System.ArgumentException E)
+			catch (System.ArgumentException e)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException(E.Message));
+				return new ValueTask<PartitionedTopicMetadata>(Task.FromException<PartitionedTopicMetadata>(new PulsarClientException.InvalidConfigurationException(e.Message)));
 			}
-			return MetadataFuture;
+			return new ValueTask<PartitionedTopicMetadata>(metadataTask.Task);
 		}
 
-		private void GetPartitionedTopicMetadata(TopicName TopicName, Backoff Backoff, AtomicLong RemainingTime, ValueTask<PartitionedTopicMetadata> Future)
+		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff Backoff, AtomicLong RemainingTime, TaskCompletionSource<PartitionedTopicMetadata> task)
 		{
-			Lookup.GetPartitionedTopicMetadata(TopicName).thenAccept(Future.complete).exceptionally(e =>
+			var lkup = Lookup.GetPartitionedTopicMetadata(topicName);
+			if(lkup.IsCompletedSuccessfully)
 			{
-			long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
-			bool IsLookupThrottling = e.Cause is PulsarClientException.TooManyRequestsException;
-			if (NextDelay <= 0 || IsLookupThrottling)
-			{
-				Future.completeExceptionally(e);
-				return null;
+				task.SetResult(lkup.Result);
 			}
-			((ScheduledExecutorService) externalExecutorProvider.Executor).schedule(() =>
+			if(lkup.IsFaulted)
 			{
-				log.warn("[topic: {}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {} ms", TopicName, NextDelay);
-				RemainingTime.addAndGet(-NextDelay);
-				GetPartitionedTopicMetadata(TopicName, Backoff, RemainingTime, Future);
-			}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-			return null;
-			});
+				var ex = lkup.AsTask().Exception;
+				long nextDelay = Math.Min(Backoff.Next(), RemainingTime.Get());
+				bool IsLookupThrottling = ex is PulsarClientException.TooManyRequestsException;
+				if (nextDelay <= 0 || IsLookupThrottling)
+				{
+					task.SetException(ex);
+					return;
+				}
+				timer = new Timer(_=> {
+					log.LogWarning("[topic: {}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {} ms", topicName, nextDelay);
+					RemainingTime.AddAndGet(-nextDelay);
+					GetPartitionedTopicMetadata(topicName, Backoff, RemainingTime, task);
+				}, null, (int)nextDelay, Timeout.Infinite);
+			}
+			
+			return;
 		}
 
-		public override ValueTask<IList<string>> GetPartitionsForTopic(string Topic)
+		public ValueTask<IList<string>> GetPartitionsForTopic(string topic)
 		{
-			return GetPartitionedTopicMetadata(Topic).thenApply(metadata =>
-			{
+			var lkup = GetPartitionedTopicMetadata(topic);
+			var metadata = lkup.Result;
 			if (metadata.partitions > 0)
 			{
-				TopicName TopicName = TopicName.get(Topic);
-				IList<string> Partitions = new List<string>(metadata.partitions);
-				for (int I = 0; I < metadata.partitions; I++)
+				var topicName = TopicName.Get(topic);
+				IList<string> partitions = new List<string>(metadata.partitions);
+				var topName = new TopicName();
+				for (int i = 0; i < metadata.partitions; i++)
 				{
-					Partitions.Add(TopicName.getPartition(I).ToString());
+					var prt = topName.GetPartition(i).ToString();
+					partitions.Add(prt);
 				}
-				return Partitions;
+				return new ValueTask<IList<string>>(partitions);
 			}
 			else
 			{
-				return Collections.singletonList(Topic);
+				return new ValueTask<IList<string>>(new List<string>() { topic });
 			}
-			});
 		}
 
-		private static EventLoopGroup GetEventLoopGroup(ClientConfigurationData Conf)
+		public virtual void CleanupProducer<T1>(ProducerBase<T1> producer)
 		{
-			ThreadFactory ThreadFactory = GetThreadFactory("pulsar-client-io");
-			return EventLoopUtil.newEventLoopGroup(Conf.NumIoThreads, ThreadFactory);
-		}
-
-		private static ThreadFactory GetThreadFactory(string PoolName)
-		{
-			return new DefaultThreadFactory(PoolName, Thread.CurrentThread.Daemon);
-		}
-
-		public virtual void CleanupProducer<T1>(ProducerBase<T1> Producer)
-		{
-			lock (producers)
+			lock (_producers)
 			{
-				producers.remove(Producer);
+				var p = (ProducerBase<object>)Convert.ChangeType(producer, typeof(IProducer<object>));
+				_producers.Remove(p);
 			}
 		}
 
-		public virtual void CleanupConsumer<T1>(ConsumerBase<T1> Consumer)
+		public virtual void CleanupConsumer<T1>(ConsumerBase<T1> consumer)
 		{
-			lock (consumers)
+			lock (_consumers)
 			{
-				consumers.remove(Consumer);
+				var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
+				_consumers.Remove(c);
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting int producersCount()
 		public virtual int ProducersCount()
 		{
-			lock (producers)
+			lock (_producers)
 			{
-				return producers.size();
+				return _producers.Count;
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting int consumersCount()
 		public virtual int ConsumersCount()
 		{
-			lock (consumers)
+			lock (_consumers)
 			{
-				return consumers.size();
+				return _consumers.Count;
 			}
 		}
 
@@ -773,79 +732,72 @@ namespace SharpPulsar.Impl
 		{
 			switch (RegexSubscriptionMode)
 			{
-			case RegexSubscriptionMode.PersistentOnly:
-				return Mode.PERSISTENT;
-			case RegexSubscriptionMode.NonPersistentOnly:
-				return Mode.NON_PERSISTENT;
-			case RegexSubscriptionMode.AllTopics:
-				return Mode.ALL;
-			default:
-				return null;
+				case RegexSubscriptionMode.PersistentOnly:
+					return Mode.Persistent;
+				case RegexSubscriptionMode.NonPersistentOnly:
+					return Mode.NonPersistent;
+				case RegexSubscriptionMode.AllTopics:
+				default:
+					return Mode.All;
 			}
 		}
 
-		private SchemaInfoProvider NewSchemaProvider(string TopicName)
+		private SchemaInfoProvider NewSchemaProvider(string topicName)
 		{
-			return new MultiVersionSchemaInfoProvider(TopicName.get(TopicName), this);
+			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), this);
 		}
 
-		private LoadingCache<string, SchemaInfoProvider> SchemaProviderLoadingCache
+		/*private LoadingCache<string, SchemaInfoProvider> SchemaProviderLoadingCache
 		{
 			get
 			{
 				return schemaProviderLoadingCache;
 			}
-		}
+		}*/
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") protected java.util.concurrent.ValueTask<Void> preProcessSchemaBeforeSubscribe(PulsarClientImpl pulsarClientImpl, SharpPulsar.api.Schema schema, String topicName)
-		public virtual ValueTask<Void> PreProcessSchemaBeforeSubscribe(PulsarClientImpl PulsarClientImpl, Schema Schema, string TopicName)
+		public virtual ValueTask PreProcessSchemaBeforeSubscribe<T>(PulsarClientImpl PulsarClientImpl, ISchema<T> Schema, string TopicName)
 		{
-			if (Schema != null && Schema.supportSchemaVersioning())
+			if (Schema != null && Schema.SupportSchemaVersioning())
 			{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final SharpPulsar.api.schema.SchemaInfoProvider schemaInfoProvider;
 				SchemaInfoProvider SchemaInfoProvider;
 				try
 				{
 					SchemaInfoProvider = PulsarClientImpl.SchemaProviderLoadingCache.get(TopicName);
 				}
-				catch (ExecutionException E)
+				catch (System.Exception e)
 				{
-					log.error("Failed to load schema info provider for topic {}", TopicName, E);
-					return FutureUtil.failedFuture(E.InnerException);
+					log.LogError("Failed to load schema info provider for topic {}", TopicName, e);
+					return new ValueTask(Task.FromException(e.InnerException));
 				}
 
-				if (Schema.requireFetchingSchemaInfo())
+				if (Schema.RequireFetchingSchemaInfo())
 				{
-					return SchemaInfoProvider.LatestSchema.thenCompose(schemaInfo =>
-					{
-					if (null == schemaInfo)
+					var schemaProv = SchemaInfoProvider.LatestSchema;
+					var schemaInfo = schemaProv.Result;
+					if (schemaInfo == null)
 					{
 						if (!(Schema is AutoConsumeSchema))
 						{
-							return FutureUtil.failedFuture(new PulsarClientException.NotFoundException("No latest schema found for topic " + TopicName));
+							throw new PulsarClientException.NotFoundException("No latest schema found for topic " + TopicName);
 						}
 					}
 					try
 					{
-						log.info("Configuring schema for topic {} : {}", TopicName, schemaInfo);
-						Schema.configureSchemaInfo(TopicName, "topic", schemaInfo);
+						log.LogInformation("Configuring schema for topic {} : {}", TopicName, schemaInfo);
+						Schema.ConfigureSchemaInfo(TopicName, "topic", schemaInfo);
 					}
-					catch (Exception Re)
+					catch (System.Exception re)
 					{
-						return FutureUtil.failedFuture(Re);
+						return new ValueTask(Task.FromException(re));
 					}
 					Schema.SchemaInfoProvider = SchemaInfoProvider;
-					return ValueTask.completedFuture(null);
-					});
 				}
 				else
 				{
 					Schema.SchemaInfoProvider = SchemaInfoProvider;
 				}
 			}
-			return ValueTask.completedFuture(null);
+			return new ValueTask();
 		}
 
 		//
@@ -860,6 +812,15 @@ namespace SharpPulsar.Impl
 			return new TransactionBuilderImpl(this);
 		}
 
+		ValueTask IPulsarClient.CloseAsync()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Dispose()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

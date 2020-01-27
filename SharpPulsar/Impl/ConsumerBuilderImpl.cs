@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,44 +23,12 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-
-	using AccessLevel = lombok.AccessLevel;
-	using Getter = lombok.Getter;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatchReceivePolicy = SharpPulsar.Api.BatchReceivePolicy;
-	using Consumer = SharpPulsar.Api.Consumer;
-	using SharpPulsar.Api;
-	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
-	using ConsumerEventListener = SharpPulsar.Api.ConsumerEventListener;
-	using SharpPulsar.Api;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using DeadLetterPolicy = SharpPulsar.Api.DeadLetterPolicy;
-	using KeySharedPolicy = SharpPulsar.Api.KeySharedPolicy;
-	using SharpPulsar.Api;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using RegexSubscriptionMode = SharpPulsar.Api.RegexSubscriptionMode;
-	using InvalidConfigurationException = SharpPulsar.Api.PulsarClientException.InvalidConfigurationException;
-	using SharpPulsar.Api;
-	using SubscriptionInitialPosition = SharpPulsar.Api.SubscriptionInitialPosition;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using ConfigurationDataUtils = SharpPulsar.Impl.Conf.ConfigurationDataUtils;
-	using SharpPulsar.Impl.Conf;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-
-	using Lists = com.google.common.collect.Lists;
-	using NonNull = lombok.NonNull;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter(AccessLevel.PUBLIC) public class ConsumerBuilderImpl<T> implements SharpPulsar.api.ConsumerBuilder<T>
-	public class ConsumerBuilderImpl<T> : ConsumerBuilder<T>
+	public class ConsumerBuilderImpl<T> : IConsumerBuilder<T>
 	{
 
 		private readonly PulsarClientImpl client;
 		private ConsumerConfigurationData<T> conf;
-		private readonly Schema<T> schema;
+		private readonly ISchema<T> schema;
 		private IList<ConsumerInterceptor<T>> interceptorList;
 
 		private static long MIN_ACK_TIMEOUT_MILLIS = 1000;
@@ -66,18 +36,18 @@ namespace SharpPulsar.Impl
 		private static long DEFAULT_ACK_TIMEOUT_MILLIS_FOR_DEAD_LETTER = 30000L;
 
 
-		public ConsumerBuilderImpl(PulsarClientImpl Client, Schema<T> Schema) : this(Client, new ConsumerConfigurationData<T>(), Schema)
+		public ConsumerBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ConsumerConfigurationData<T>(), Schema)
 		{
 		}
 
-		public ConsumerBuilderImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, Schema<T> Schema)
+		public ConsumerBuilderImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, ISchema<T> Schema)
 		{
 			this.client = Client;
 			this.conf = Conf;
 			this.schema = Schema;
 		}
 
-		public override ConsumerBuilder<T> LoadConf(IDictionary<string, object> Config)
+		public IConsumerBuilder<T> LoadConf(IDictionary<string, object> Config)
 		{
 			this.conf = ConfigurationDataUtils.loadData(Config, conf, typeof(ConsumerConfigurationData));
 			return this;
@@ -90,7 +60,7 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public SharpPulsar.api.Consumer<T> subscribe() throws SharpPulsar.api.PulsarClientException
-		public override Consumer<T> Subscribe()
+		public override IConsumer<T> Subscribe()
 		{
 			try
 			{
@@ -102,7 +72,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Consumer<T>> SubscribeAsync()
+		public override CompletableFuture<IConsumer<T>> SubscribeAsync()
 		{
 			if (conf.TopicNames.Empty && conf.TopicsPattern == null)
 			{

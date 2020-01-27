@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 		public ITypedMessageBuilder<T> MessageBuilder;
 		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
-		private Schema<T> schema;
+		private ISchema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
 		private Option<EncryptionContext> encryptionCtx;
 
@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl
 		public long RedeliveryCount;
 
 		// Constructor for out-going message
-		internal static MessageImpl<T> Create(MessageMetadataBuilder msgMetadataBuilder, IByteBuffer payload, Schema<T> schema)
+		internal static MessageImpl<T> Create(MessageMetadataBuilder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
 		{
 			MessageImpl<T> msg = _pool.Take();
 			msg.MessageBuilder = msgMetadataBuilder;
@@ -55,15 +55,15 @@ namespace SharpPulsar.Impl
 		}
 
 		// Constructor for incoming message
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, Schema<T> schema, int rredeliveryCount)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema, int rredeliveryCount)
 		{
 			this.MessageBuilder = new MessageMetadataBuilder(MsgMetadata);
 			this.MessageId = MessageId;
@@ -88,11 +88,11 @@ namespace SharpPulsar.Impl
 			this.schema = Schema;
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, Schema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
 		{
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, Schema<T> Schema, int RedeliveryCount)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema, int RedeliveryCount)
 		{
 			this.MessageBuilder = PulsarApi.MessageMetadata.newBuilder(MsgMetadata);
 			this.MessageIdConflict = BatchMessageIdImpl;
@@ -136,11 +136,11 @@ namespace SharpPulsar.Impl
 			this.schema = Schema;
 		}
 
-		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, sbyte[] Payload, Schema<T> Schema) : this(Topic, MsgId, Properties, Unpooled.wrappedBuffer(Payload), Schema)
+		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, sbyte[] Payload, ISchema<T> Schema) : this(Topic, MsgId, Properties, Unpooled.wrappedBuffer(Payload), Schema)
 		{
 		}
 
-		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, ByteBuf Payload, Schema<T> Schema)
+		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, ByteBuf Payload, ISchema<T> Schema)
 		{
 			string[] Data = MsgId.Split(":", true);
 			long LedgerId = long.Parse(Data[0]);

@@ -45,8 +45,9 @@ namespace SharpPulsar.Impl
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using System.Threading.Tasks;
 
-	public class PartitionedProducerImpl<T> : ProducerBase<T>
+    public class PartitionedProducerImpl<T> : ProducerBase<T>
 	{
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(PartitionedProducerImpl));
@@ -57,16 +58,16 @@ namespace SharpPulsar.Impl
 		private TopicMetadata topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
-		public virtual PartitionsAutoUpdateTimeout {get;} = null;
+		public virtual long PartitionsAutoUpdateTimeout {get;} = null;
 		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
 		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
 
-		public PartitionedProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, int NumPartitions, CompletableFuture<Producer<T>> ProducerCreatedFuture, Schema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, ProducerCreatedFuture, Schema, Interceptors)
+		public PartitionedProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, int NumPartitions, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, producerCreatedTask, Schema, Interceptors)
 		{
 			this.producers = Lists.newArrayListWithCapacity(NumPartitions);
 			this.topicMetadata = new TopicMetadataImpl(NumPartitions);
 			this.routerPolicy = MessageRouter;
-			stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl() : null;
+			stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>() : null;
 
 			int MaxPendingMessages = Math.Min(Conf.MaxPendingMessages, Conf.MaxPendingMessagesAcrossPartitions / NumPartitions);
 			Conf.MaxPendingMessages = MaxPendingMessages;

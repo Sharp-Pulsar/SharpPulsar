@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl.Conf
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
 
 		[NonSerialized]
-		private string _topicName = null;
+		public string TopicName = null;
 		[NonSerialized]
 		private string _producerName = null;
 		public long SendTimeoutMs = 30000;
@@ -130,6 +130,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int MaxPendingMessagesAcrossPartitions
 		{
+			get
+			{
+				return _maxPendingMessagesAcrossPartitions;
+			}
 			set
 			{
 				if(value >= _maxPendingMessages)

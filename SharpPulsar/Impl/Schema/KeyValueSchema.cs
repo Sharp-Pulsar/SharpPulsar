@@ -20,47 +20,32 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
+    using SharpPulsar.Api;
+    using SharpPulsar.Api.Schema;
+    using SharpPulsar.Common.Enum;
+    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Shared;
+    using System.Threading.Tasks;
 
-	using Getter = lombok.Getter;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using SharpPulsar.Api;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-
-	/// <summary>
-	/// [Key, Value] pair schema definition
-	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class KeyValueSchema<K, V> implements SharpPulsar.api.Schema<org.apache.pulsar.common.schema.KeyValue<K, V>>
-	public class KeyValueSchema<K, V> : Schema<KeyValue<K, V>>
+    /// <summary>
+    /// [Key, Value] pair schema definition
+    /// </summary>
+    public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final SharpPulsar.api.Schema<K> keySchema;
-		private readonly Schema<K> keySchema;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final SharpPulsar.api.Schema<V> valueSchema;
-		private readonly Schema<V> valueSchema;
+		private readonly ISchema<K> keySchema;
+		private readonly ISchema<V> valueSchema;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private final org.apache.pulsar.common.schema.KeyValueEncodingType keyValueEncodingType;
 		private readonly KeyValueEncodingType keyValueEncodingType;
 
 		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
 		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
 		private SchemaInfo schemaInfo;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		public static Schema<KeyValue<K, V>> Of<K, V>(Type Key, Type Value, SchemaType Type)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(Type Key, Type Value, SchemaType Type)
 		{
 			checkArgument(SchemaType.JSON == Type || SchemaType.AVRO == Type);
 			if (SchemaType.JSON == Type)
@@ -75,19 +60,19 @@ namespace SharpPulsar.Impl.Schema
 		}
 
 
-		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema)
 		{
 			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
-		private static readonly Schema<KeyValue<sbyte[], sbyte[]>> KV_BYTES = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.Of(), BytesSchema.Of());
+		private static readonly ISchema<KeyValue<sbyte[], sbyte[]>> KV_BYTES = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.Of(), BytesSchema.Of());
 
-		public static Schema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		public static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
 			return KV_BYTES;
 		}
@@ -97,11 +82,11 @@ namespace SharpPulsar.Impl.Schema
 			return keySchema.SupportSchemaVersioning() || valueSchema.SupportSchemaVersioning();
 		}
 
-		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema) : this(KeySchema, ValueSchema, KeyValueEncodingType.INLINE)
+		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema) : this(KeySchema, ValueSchema, KeyValueEncodingType.INLINE)
 		{
 		}
 
-		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			this.keySchema = KeySchema;
 			this.valueSchema = ValueSchema;
@@ -118,23 +103,23 @@ namespace SharpPulsar.Impl.Schema
 
 		public class SchemaInfoProviderAnonymousInnerClass : SchemaInfoProvider
 		{
-			private readonly KeyValueSchema<K, V> outerInstance;
+			public readonly KeyValueSchema<K, V> OuterInstance;
 
 			public SchemaInfoProviderAnonymousInnerClass(KeyValueSchema<K, V> OuterInstance)
 			{
-				this.outerInstance = OuterInstance;
+				this.OuterInstance = OuterInstance;
 			}
 
-			public CompletableFuture<SchemaInfo> getSchemaByVersion(sbyte[] SchemaVersion)
+			public async ValueTask<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				return CompletableFuture.completedFuture(outerInstance.schemaInfo);
+				return await Task.FromResult(OuterInstance.schemaInfo);
 			}
 
-			public CompletableFuture<SchemaInfo> LatestSchema
+			public SchemaInfo LatestSchema
 			{
 				get
 				{
-					return CompletableFuture.completedFuture(outerInstance.schemaInfo);
+					return OuterInstance.schemaInfo;
 				}
 			}
 

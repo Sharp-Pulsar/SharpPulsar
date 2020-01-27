@@ -78,6 +78,10 @@ namespace SharpPulsar.Impl.Conf
 				}
 				return _authentication;
 			}
+			set
+			{
+				_authentication = value;
+			}
 		}
 
 		public virtual bool UseTls

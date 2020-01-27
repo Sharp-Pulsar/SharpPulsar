@@ -28,24 +28,24 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoProduceBytesSchema<T> : Schema<sbyte[]>
+	public class AutoProduceBytesSchema<T> : ISchema<sbyte[]>
 	{
 
 		private bool requireSchemaValidation = true;
-		private Schema<T> schema;
+		private ISchema<T> schema;
 
 		public AutoProduceBytesSchema()
 		{
 		}
 
-		public AutoProduceBytesSchema(Schema<T> Schema)
+		public AutoProduceBytesSchema(ISchema<T> Schema)
 		{
 			this.schema = Schema;
 			SchemaInfo SchemaInfo = Schema.SchemaInfo;
 			this.requireSchemaValidation = SchemaInfo != null && SchemaInfo.Type != SchemaType.BYTES && SchemaInfo.Type != SchemaType.NONE;
 		}
 
-		public virtual Schema<T> Schema
+		public virtual ISchema<T> Schema
 		{
 			set
 			{

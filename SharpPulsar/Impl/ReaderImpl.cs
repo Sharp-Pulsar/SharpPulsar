@@ -25,13 +25,14 @@ namespace SharpPulsar.Impl
 	using SharpPulsar.Impl.Conf;
 	using SharpPulsar.Impl.Conf;
 	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+    using System.Threading.Tasks;
 
-	public class ReaderImpl<T> : Reader<T>
+    public class ReaderImpl<T> : IReader<T>
 	{
 
 		private readonly ConsumerImpl<T> consumer;
 
-		public ReaderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> ReaderConfiguration, ExecutorService ListenerExecutor, CompletableFuture<Consumer<T>> ConsumerFuture, Schema<T> Schema)
+		public ReaderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> ReaderConfiguration, TaskCompletionSource<IConsumer<T>> ConsumerFuture, ISchema<T> Schema)
 		{
 
 			string Subscription = "reader-" + DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 10);
@@ -90,13 +91,13 @@ namespace SharpPulsar.Impl
 
 			private static readonly long serialVersionUID;
 
-			public void received(Consumer<T> Consumer, Message<T> Msg)
+			public void received(IConsumer<T> Consumer, Message<T> Msg)
 			{
 				readerListener.Received(outerInstance, Msg);
 				Consumer.acknowledgeCumulativeAsync(Msg);
 			}
 
-			public void reachedEndOfTopic(Consumer<T> Consumer)
+			public void reachedEndOfTopic(IConsumer<T> Consumer)
 			{
 				readerListener.ReachedEndOfTopic(outerInstance);
 			}

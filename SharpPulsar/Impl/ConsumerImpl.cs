@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 
 
 	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Consumer = SharpPulsar.Api.Consumer;
+	using Consumer = SharpPulsar.Api.IConsumer;
 	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
 	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
 	using DeadLetterPolicy = SharpPulsar.Api.DeadLetterPolicy;
@@ -77,17 +77,14 @@ namespace SharpPulsar.Impl
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
+    using System.Threading.Tasks;
 
-	public class ConsumerImpl<T> : ConsumerBase<T>, ConnectionHandler.Connection
+    public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
 		internal readonly long ConsumerId;
 
-		// Number of messages that have delivered to the application. Every once in a while, this number will be sent to the
-		// broker to notify that we are ready to get (and store in the incoming messages queue) more messages
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("rawtypes") private static final java.util.concurrent.atomic.AtomicIntegerFieldUpdater<ConsumerImpl> AVAILABLE_PERMITS_UPDATER = java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater(ConsumerImpl.class, "availablePermits");
 		private static readonly AtomicIntegerFieldUpdater<ConsumerImpl> AVAILABLE_PERMITS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ConsumerImpl), "availablePermits");
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("unused") private volatile int availablePermits = 0;
@@ -97,14 +94,14 @@ namespace SharpPulsar.Impl
 		private volatile IMessageId lastMessageIdInBroker = MessageIdFields.Earliest;
 
 		private long subscribeTimeout;
-		internal virtual PartitionIndex {get;}
+		internal int PartitionIndex;
 		private readonly bool hasParentConsumer;
 
 		private readonly int receiverQueueRefillThreshold;
 
 		private readonly ReadWriteLock @lock = new ReentrantReadWriteLock();
 
-		public virtual UnAckedMessageTracker {get;}
+		public virtual UnAckedMessageTracker unack;
 		private readonly AcknowledgmentsGroupingTracker acknowledgmentsGroupingTracker;
 		private readonly NegativeAcksTracker negativeAcksTracker;
 
@@ -127,16 +124,16 @@ namespace SharpPulsar.Impl
 		private readonly bool resetIncludeHead;
 
 		private readonly SubscriptionInitialPosition subscriptionInitialPosition;
-		public virtual ConnectionHandler {get;}
+		public  ConnectionHandler handler;
 
 		private readonly TopicName topicName;
-		public virtual TopicNameWithoutPartition {get;}
+		public virtual TopicNameWithoutPartition topic;
 
 		private readonly IDictionary<MessageIdImpl, IList<MessageImpl<T>>> possibleSendToDeadLetterTopicMessages;
 
 		private readonly DeadLetterPolicy deadLetterPolicy;
 
-		private Producer<T> deadLetterProducer;
+		private IProducer<T> deadLetterProducer;
 
 		protected internal volatile bool Paused;
 
@@ -152,7 +149,7 @@ namespace SharpPulsar.Impl
 			NonDurable
 		}
 
-		internal static ConsumerImpl<T> NewConsumerImpl<T>(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ExecutorService ListenerExecutor, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, MessageId StartMessageId, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
+		internal static ConsumerImpl<T> NewConsumerImpl<T>(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, Task ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{
