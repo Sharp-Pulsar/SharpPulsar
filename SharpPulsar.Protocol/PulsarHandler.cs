@@ -2,8 +2,10 @@
 using DotNetty.Common.Concurrency;
 using DotNetty.Transport.Channels;
 using Microsoft.Extensions.Logging;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Util;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Common.Proto.Api.PulsarApi;
 /// <summary>
@@ -34,10 +36,10 @@ namespace SharpPulsar.Protocol
 	{
 		private IChannelHandlerContext _ctx;
 		private EndPoint _remoteAddress;
-		private int _remoteEndpointProtocolVersion = ProtocolVersion.v0.Number;
+		private int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
 		private readonly long keepAliveIntervalSeconds;
 		private bool waitingForPingResponse = false;
-		private IScheduledTask _keepAliveTask;
+		private Timer _keepAliveTask;
 
 		public virtual int RemoteEndpointProtocolVersion
 		{
@@ -61,18 +63,17 @@ namespace SharpPulsar.Protocol
 			waitingForPingResponse = false;
 		}
 
-		public void ChannelActive(IChannelHandlerContext Ctx)
+		public void ChannelActive(EndPoint ctx)
 		{
-			_remoteAddress = Ctx.Channel.RemoteAddress;
-			_ctx = Ctx;
+			_remoteAddress = ctx;
 
 			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("[{}] Scheduling keep-alive task every {} s", Ctx.Channel, keepAliveIntervalSeconds);
+				log.LogDebug("[{}] Scheduling keep-alive task every {} s", ctx, keepAliveIntervalSeconds);
 			}
 			if (keepAliveIntervalSeconds > 0)
 			{
-				//_keepAliveTask = Ctx.Executor....scheduleAtFixedRate(this.handleKeepAliveTimeout, keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.SECONDS);
+				_keepAliveTask = new Timer(this.HandleKeepAliveTimeout, keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.SECONDS);
 			}
 		}
 
@@ -97,7 +98,7 @@ namespace SharpPulsar.Protocol
 
 		private void HandleKeepAliveTimeout()
 		{
-			if (!_ctx.Channel.Open)
+			if (!_ctx.)
 			{
 				return;
 			}

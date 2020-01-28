@@ -1261,7 +1261,7 @@ namespace SharpPulsar.Impl
 			return Future;
 		}
 
-		private TimerTask partitionsAutoUpdateTimerTask = new TimerTaskAnonymousInnerClass();
+		private Timer partitionsAutoUpdateTimerTask = new TimerTaskAnonymousInnerClass();
 
 		public class TimerTaskAnonymousInnerClass
 		{

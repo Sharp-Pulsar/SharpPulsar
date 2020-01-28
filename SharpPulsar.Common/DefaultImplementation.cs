@@ -36,7 +36,7 @@ namespace SharpPulsar.Common
 			return new SchemaDefinitionBuilderImpl<T>();
 		}
 
-		public static IClientBuilder NewClientBuilder()
+		public static IPulsarClientBuilder NewClientBuilder()
 		{
 			return new ClientBuilderImpl();
 		}

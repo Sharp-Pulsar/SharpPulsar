@@ -43,10 +43,10 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Get a new builder instance that can used to configure and build a <seealso cref="IPulsarClient"/> instance.
 		/// </summary>
-		/// <returns> the <seealso cref="IClientBuilder"/>
+		/// <returns> the <seealso cref="IPulsarClientBuilder"/>
 		/// 
 		/// @since 2.0.0 </returns>
-		static IClientBuilder Builder()
+		static IPulsarClientBuilder Builder()
 		{
 			return DefaultImplementation.newClientBuilder();
 		}

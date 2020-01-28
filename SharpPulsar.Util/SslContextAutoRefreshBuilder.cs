@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
 	using Logger = org.slf4j.Logger;
@@ -40,8 +40,6 @@ namespace org.apache.pulsar.common.util
 		protected internal readonly long refreshTime;
 		protected internal long lastRefreshTime;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public SslContextAutoRefreshBuilder(boolean allowInsecure, String trustCertsFilePath, String certificateFilePath, String keyFilePath, java.util.Set<String> ciphers, java.util.Set<String> protocols, boolean requireTrustedClientCertOnConnect, long certRefreshInSec) throws javax.net.ssl.SSLException, java.io.FileNotFoundException, java.security.GeneralSecurityException, java.io.IOException
 		public SslContextAutoRefreshBuilder(bool allowInsecure, string trustCertsFilePath, string certificateFilePath, string keyFilePath, ISet<string> ciphers, ISet<string> protocols, bool requireTrustedClientCertOnConnect, long certRefreshInSec)
 		{
 			this.tlsAllowInsecureConnection = allowInsecure;
@@ -66,8 +64,6 @@ namespace org.apache.pulsar.common.util
 		/// @return </summary>
 		/// <exception cref="GeneralSecurityException"> </exception>
 		/// <exception cref="IOException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected abstract T update() throws java.security.GeneralSecurityException, java.io.IOException;
 		protected internal abstract T update();
 
 		/// <summary>

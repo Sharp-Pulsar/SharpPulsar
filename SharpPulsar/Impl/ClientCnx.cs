@@ -21,6 +21,8 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 using Microsoft.Extensions.Logging;
 using DotNetty.Handlers.Tls;
+using System.IO;
+using DotNetty.Transport.Libuv;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,12 +45,11 @@ using DotNetty.Handlers.Tls;
 namespace SharpPulsar.Impl
 {
 
-	public class ClientCnx : PulsarHandler
+	public class ClientCnx 
 	{
 
 		protected internal readonly IAuthentication Authentication;
 		private State state;
-		private IChannelHandlerContext _ctx;
 
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>> _pendingRequests = new ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>>(1, 16);
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>> _pendingLookupRequests = new ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>>(1, 16);
@@ -84,7 +85,6 @@ namespace SharpPulsar.Impl
 		protected internal string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
 
-		private static readonly DefaultHostnameVerifier _hostNameVerifier = new DefaultHostnameVerifier();
 		private CancellationTokenSource _timeoutTask;
 
 		// Added for mutual authentication.
@@ -111,11 +111,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, IEventLoopGroup EventLoopGroup) : this(Conf, EventLoopGroup, Commands.CurrentProtocolVersion)
+		public ClientCnx(ClientConfigurationData Conf, EventLoopGroup eventLoop) : this(Conf, Commands.CurrentProtocolVersion, eventLoop)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, IEventLoopGroup EventLoopGroup, int ProtocolVersion) : base(Conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, EventLoopGroup eventLoop)
 		{
 			if (Conf.MaxLookupRequest < Conf.ConcurrentLookupRequest)
 				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
@@ -123,7 +123,7 @@ namespace SharpPulsar.Impl
 			_maxLookupRequestSemaphore = new Semaphore(Conf.MaxLookupRequest - Conf.ConcurrentLookupRequest, Conf.MaxLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>>();
 			Authentication = Conf.Authentication;
-			_eventLoopGroup = EventLoopGroup;
+
 			_maxNumberOfRejectedRequestPerConnection = Conf.MaxNumberOfRejectedRequestPerConnection;
 			_operationTimeoutMs = Conf.OperationTimeoutMs;
 			state = State.None;
@@ -131,43 +131,7 @@ namespace SharpPulsar.Impl
 			_protocolVersion = ProtocolVersion;
 		}
 
-		public void ChannelActive(IChannelHandlerContext ctx)
-		{
-			base.ChannelActive(ctx);
-			_timeoutTask = _eventLoopGroup.Schedule(()=> CheckRequestTimeout(), _operationTimeoutMs);
-
-			if (_proxyToTargetBrokerAddress is null)
-			{
-				if (log.IsEnabled(LogLevel.Debug))
-				{
-					log.LogDebug("{} Connected to broker", ctx.Channel);
-				}
-			}
-			else
-			{
-				log.LogInformation("{} Connected through proxy to target broker at {}", ctx.Channel, _proxyToTargetBrokerAddress);
-			}
-			// Send CONNECT command
-			ctx.WriteAndFlushAsync(NewConnectCommand()).ContinueWith(task =>
-			{
-				if (task.IsCompleted)
-				{
-					if (log.IsEnabled(LogLevel.Debug))
-					{
-						log.LogDebug("Complete: {}", task.IsCompleted);
-					}
-					_ctx = ctx;
-					state = State.SentConnectFrame;
-				}
-				else
-				{
-					log.LogWarning("Error during handshake", task.Exception);
-					ctx.CloseAsync();
-				}
-			});
-		}
-
-		public virtual IByteBuffer NewConnectCommand()
+		public Task<BaseCommand> NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
@@ -237,7 +201,7 @@ namespace SharpPulsar.Impl
 
 		public static bool IsKnownException(System.Exception T)
 		{
-			return T is NativeIoException || T is ClosedChannelException;
+			return T is IOException || T is ClosedChannelException;
 		}
 
 		public  void HandleConnected(CommandConnected connected)

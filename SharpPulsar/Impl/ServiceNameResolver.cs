@@ -18,8 +18,8 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using InvalidServiceURL = SharpPulsar.Api.PulsarClientException.InvalidServiceURL;
-	using ServiceURI = Org.Apache.Pulsar.Common.Net.ServiceURI;
+    using System;
+    using System.Net;
 
 	/// <summary>
 	/// A service name resolver to resolve real socket address.
@@ -31,13 +31,13 @@ namespace SharpPulsar.Impl
 		/// Resolve pulsar service url.
 		/// </summary>
 		/// <returns> resolve the service url to return a socket address </returns>
-		InetSocketAddress ResolveHost();
+		EndPoint ResolveHost();
 
 		/// <summary>
 		/// Resolve pulsar service url
 		/// @return
 		/// </summary>
-		URI ResolveHostUri();
+		Uri ResolveHostUri();
 
 		/// <summary>
 		/// Get service url.
@@ -55,8 +55,6 @@ namespace SharpPulsar.Impl
 		/// Update service url.
 		/// </summary>
 		/// <param name="serviceUrl"> service url </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException.InvalidServiceURL;
 		void UpdateServiceUrl(string ServiceUrl);
 
 	}

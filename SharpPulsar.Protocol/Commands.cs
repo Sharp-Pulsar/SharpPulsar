@@ -2,8 +2,13 @@
 using SharpPulsar.Common.Auth;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Builder;
+using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
+using Microsoft.IO;
+using ProtoBuf;
+using System.IO;
+using System.Net;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -1259,8 +1264,95 @@ namespace SharpPulsar.Protocol
 			Response.recycle();
 			return Res;
 		}
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public static io.netty.buffer.IByteBuffer serializeWithSize(SharpPulsar.api.proto.Proto.BaseCommand.Builder cmdBuilder)
+
+		public static Stream SerializePayloadCommand(BaseCommand command)
+		{
+			Stream output = null;
+			using var stream = new RecyclableMemoryStreamManager().GetStream();
+			// write fake totalLength
+			for (var i = 0; i < 5; i++)
+				stream.WriteByte(0);
+
+			// write commandPayload
+			Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
+
+			var frameSize = stream.Length;
+
+			var totalSize = frameSize - 4;
+
+			//write total size and command size
+			stream.Seek(0L, SeekOrigin.Begin);
+
+			using var binaryWriter = new BinaryWriter(stream);
+			var int32ToBigEndian = IPAddress.HostToNetworkOrder(totalSize);
+			binaryWriter.Write(int32ToBigEndian);
+			stream.Seek(0L, SeekOrigin.Begin);
+			//Log.Logger.LogDebug("Sending message of type {0}", command.``type``);
+
+			stream.CopyToAsync(output);
+			return output;
+
+
+		}
+		public static Stream SerializePayloadCommand(BaseCommand command, MessageMetadata metadata, byte[] payload)
+		{
+			Stream output = null;
+			using var stream = new RecyclableMemoryStreamManager().GetStream();
+			// write fake totalLength
+			for (var i = 0; i < 5; i++)
+				stream.WriteByte(0);
+
+			// write commandPayload
+			Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
+
+			var stream1Size = stream.Length;
+
+			// write magic number 0x0e01
+			stream.WriteByte(14);
+			stream.WriteByte(1);
+
+			// write fake CRC sum and fake metadata length
+			for (var i = 0; i < 5; i++)
+				stream.WriteByte(0);
+
+			// write metadata
+			Serializer.SerializeWithLengthPrefix(stream, metadata, PrefixStyle.Fixed32BigEndian);
+
+			var stream2Size = stream.Length;
+			var totalMetadataSize = stream2Size - stream1Size - 6;
+
+			// write payload
+			stream.Write(payload, 0, payload.Length);
+
+
+			var frameSize = stream.Length;
+			var totalSize = frameSize - 4;
+			var payloadSize = frameSize - stream2Size;
+			var crcStart = stream1Size + 2;
+			var crcPayloadStart = crcStart + 4;
+
+			// write missing sizes
+			using var binaryWriter = new BinaryWriter(stream);
+
+			//write CRC
+			stream.Seek(crcPayloadStart, SeekOrigin.Begin);
+			var crc = CRC32C.Get(0u, stream.ToArray(), (int)(totalMetadataSize + payloadSize));
+			stream.Seek(crcStart, SeekOrigin.Begin);
+			var int32ToBigEndian = IPAddress.HostToNetworkOrder(crc);
+			binaryWriter.Write(int32ToBigEndian);
+
+			//write total size and command size
+			stream.Seek(0L, SeekOrigin.Begin);
+			int32ToBigEndian = IPAddress.HostToNetworkOrder(totalSize);
+			binaryWriter.Write(int32ToBigEndian);
+
+			//Log.Logger.LogDebug("Sending message of type {0}", command.``type``);
+
+			stream.CopyToAsync(output);
+			return output;
+
+
+		}
 		public static IByteBuffer SerializeWithSize(Proto.BaseCommand.Builder CmdBuilder)
 		{
 			// / Wire format

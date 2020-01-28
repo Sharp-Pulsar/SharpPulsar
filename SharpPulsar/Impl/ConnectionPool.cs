@@ -1,6 +1,15 @@
-﻿using System;
+﻿using DotNetty.Transport.Bootstrapping;
+using DotNetty.Transport.Channels;
+using DotNetty.Transport.Channels.Sockets;
+using DotNetty.Transport.Libuv;
+using SharpPulsar.Common.Allocator;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Util.Netty;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -24,68 +33,45 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-
-	using Bootstrap = io.netty.bootstrap.Bootstrap;
-	using Channel = io.netty.channel.Channel;
-	using ChannelException = io.netty.channel.ChannelException;
-	using ChannelFuture = io.netty.channel.ChannelFuture;
-	using ChannelOption = io.netty.channel.ChannelOption;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using DnsNameResolver = io.netty.resolver.dns.DnsNameResolver;
-	using DnsNameResolverBuilder = io.netty.resolver.dns.DnsNameResolverBuilder;
-	using Future = io.netty.util.concurrent.Future;
-
-
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	public class ConnectionPool : IDisposable
 	{
-		protected internal readonly ConcurrentDictionary<InetSocketAddress, ConcurrentMap<int, CompletableFuture<ClientCnx>>> Pool;
+		protected internal readonly ConcurrentDictionary<DnsEndPoint, ConcurrentDictionary<int, Task<ClientCnx>>> Pool;
 
 		private readonly Bootstrap bootstrap;
 		private readonly EventLoopGroup eventLoopGroup;
 		private readonly int maxConnectionsPerHosts;
 
-		protected internal readonly DnsNameResolver DnsResolver;
 
-
-		public ConnectionPool(ClientConfigurationData Conf) : this(Conf, () => new ClientCnx(Conf, EventLoopGroup))
+		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup eventLoopGroup) : this(Conf, eventLoopGroup, () => new ClientCnx(Conf, eventLoopGroup))
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public ConnectionPool(SharpPulsar.impl.conf.ClientConfigurationData conf, io.netty.channel.EventLoopGroup eventLoopGroup, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws SharpPulsar.api.PulsarClientException
-		public ConnectionPool(ClientConfigurationData Conf, Func<ClientCnx> ClientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup eventLoopGroup, Func<ClientCnx> ClientCnxSupplier)
 		{
-			this.eventLoopGroup = EventLoopGroup;
+			this.eventLoopGroup = eventLoopGroup;
 			this.maxConnectionsPerHosts = Conf.ConnectionsPerBroker;
 
-			Pool = new ConcurrentDictionary<InetSocketAddress, ConcurrentMap<int, CompletableFuture<ClientCnx>>>();
+			Pool = new ConcurrentDictionary<DnsEndPoint, ConcurrentDictionary<int, Task<ClientCnx>>>();
 			bootstrap = new Bootstrap();
-			bootstrap.group(EventLoopGroup);
-			bootstrap.channel(EventLoopUtil.getClientSocketChannelClass(EventLoopGroup));
+			bootstrap.Group(eventLoopGroup);
+			bootstrap.Channel<TcpSocketChannel>();
 
-			bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Conf.ConnectionTimeoutMs);
-			bootstrap.option(ChannelOption.TCP_NODELAY, Conf.UseTcpNoDelay);
-			bootstrap.option(ChannelOption.ALLOCATOR, PulsarByteBufAllocator.DEFAULT);
+			bootstrap.Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(Conf.ConnectionTimeoutMs));
+			bootstrap.Option(ChannelOption.TcpNodelay, Conf.UseTcpNoDelay);
+			bootstrap.Option(ChannelOption.Allocator, PulsarByteBufAllocator.DEFAULT);
 
 			try
 			{
-				bootstrap.handler(new PulsarChannelInitializer(Conf, ClientCnxSupplier));
+				bootstrap.Handler(new PulsarChannelInitializer(Conf, ClientCnxSupplier));
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
 				log.error("Failed to create channel initializer");
-				throw new PulsarClientException(E);
+				throw new PulsarClientException(e.Message);
 			}
 
-			this.DnsResolver = (new DnsNameResolverBuilder(EventLoopGroup.next())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(EventLoopGroup)).build();
+			//this.DnsResolver = (new DnsNameResolverBuilder(eEventLoopGroup. .next())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(EventLoopGroup)).build();
 		}
 
 		private static readonly Random random = new Random();
@@ -97,15 +83,15 @@ namespace SharpPulsar.Impl
 
 		public virtual void CloseAllConnections()
 		{
-			Pool.Values.forEach(map =>
+			Pool.Values.ToList().ForEach(map =>
 			{
-			map.values().forEach(future =>
+				map.Values.ToList().ForEach(task =>
 			{
-				if (future.Done)
+				if (task.IsCompleted)
 				{
-					if (!future.CompletedExceptionally)
+					if (task.IsCompletedSuccessfully)
 					{
-						future.join().close();
+						task.Result.Close();
 					}
 					else
 					{
@@ -113,7 +99,7 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					future.thenAccept(ClientCnx.close);
+					task.ContinueWith(x => x.Result.Close()/*ClientCnx.Close()*/);
 				}
 			});
 			});

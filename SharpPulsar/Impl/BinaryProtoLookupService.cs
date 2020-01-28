@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Protocol;
 using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -52,30 +55,30 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		public virtual CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> GetBroker(TopicName TopicName)
+		public virtual ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName topicName)
 		{
-			return FindBroker(serviceNameResolver.ResolveHost(), false, TopicName);
+			return FindBroker(serviceNameResolver.ResolveHost(), false, topicName);
 		}
 
 		/// <summary>
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		public virtual CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName)
+		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName)
 		{
 			return GetPartitionedTopicMetadata(serviceNameResolver.ResolveHost(), TopicName);
 		}
 
-		private CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> FindBroker(InetSocketAddress SocketAddress, bool Authoritative, TopicName TopicName)
+		private ValueTask<ValueTask<KeyValuePair<EndPoint, EndPoint>>> FindBroker(EndPoint socketAddress, bool authoritative, TopicName topicName)
 		{
-			CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>> AddressFuture = new CompletableFuture<Pair<InetSocketAddress, InetSocketAddress>>();
+			TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>> addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
 
-			client.CnxPool.GetConnection(SocketAddress).thenAccept(clientCnx =>
+			client.CnxPool.GetConnection(socketAddress).thenAccept(clientCnx =>
 			{
-			long RequestId = client.NewRequestId();
-			ByteBuf Request = Commands.newLookup(TopicName.ToString(), Authoritative, RequestId);
-			clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
-			{
+				long requestId = client.NewRequestId();
+				var request = Commands.NewLookup(topicName.ToString(), authoritative, requestId);
+				clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
+				{
 				URI Uri = null;
 				try
 				{
@@ -178,7 +181,7 @@ namespace SharpPulsar.Impl
 
 		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName, sbyte[] Version)
 		{
-			return client.CnxPool.getConnection(serviceNameResolver.ResolveHost()).thenCompose(clientCnx =>
+			return client.CnxPool.GetConnection(serviceNameResolver.ResolveHost()).thenCompose(clientCnx =>
 			{
 			long RequestId = client.NewRequestId();
 			ByteBuf Request = Commands.newGetSchema(RequestId, TopicName.ToString(), Optional.ofNullable(BytesSchemaVersion.of(Version)));

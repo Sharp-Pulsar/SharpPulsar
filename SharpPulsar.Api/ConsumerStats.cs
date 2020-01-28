@@ -23,7 +23,7 @@ namespace SharpPulsar.Api
 	/// Consumer statistics recorded by client.
 	/// 
 	/// <para>All the stats are relative to the last recording period. The interval of the stats refreshes is configured with
-	/// <seealso cref="IClientBuilder.statsInterval(long, java.util.concurrent.TimeUnit)"/> with a default of 1 minute.
+	/// <seealso cref="IPulsarClientBuilder.statsInterval(long, java.util.concurrent.TimeUnit)"/> with a default of 1 minute.
 	/// </para>
 	/// </summary>
 	public interface ConsumerStats

@@ -86,12 +86,12 @@ namespace SharpPulsar.Impl
 		}
 		public IList<ProducerImpl<object>.OpSendMsg> CreateOpSendMsgs()
 		{
-			throw new System.NotSupportedException();
+			throw new NotSupportedException();
 		}
 
 		public ProducerImpl<object>.OpSendMsg CreateOpSendMsg()
 		{
-			throw new System.NotSupportedException();
+			throw new NotSupportedException();
 		}
 
 		public virtual ProducerImpl<object> Producer
@@ -102,13 +102,13 @@ namespace SharpPulsar.Impl
 			}
 			set
 			{
-				this.producer = value;
-				this.TopicName = value.Topic;
-				this.ProducerName = value.ProducerName;
-				this.CompressionType = (ICompressionType)CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
-				this.Compressor = CompressionCodecProvider.GetCompressionCodec(CompressionType);
-				this.MaxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
-				this.MaxBytesInBatch = value.Configuration.BatchingMaxBytes;
+				producer = value;
+				TopicName = value.Topic;
+				ProducerName = value.ProducerName;
+				CompressionType = (ICompressionType)CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
+				Compressor = CompressionCodecProvider.GetCompressionCodec(CompressionType);
+				MaxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
+				MaxBytesInBatch = value.Configuration.BatchingMaxBytes;
 			}
 		}
 	}

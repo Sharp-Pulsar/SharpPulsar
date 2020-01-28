@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using DotNetty.Handlers.Tls;
+using System.Security.Cryptography.X509Certificates;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,7 +24,7 @@ using System.Linq;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 	using ClientAuth = io.netty.handler.ssl.ClientAuth;
 	using SslContext = io.netty.handler.ssl.SslContext;
@@ -42,22 +44,16 @@ namespace org.apache.pulsar.common.util
 			java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static javax.net.ssl.SSLContext createSslContext(boolean allowInsecureConnection, java.security.cert.Certificate[] trustCertificates) throws java.security.GeneralSecurityException
-		public static SSLContext createSslContext(bool allowInsecureConnection, Certificate[] trustCertificates)
+		public static TlsHandler CreateSslContext(bool allowInsecureConnection, X509Certificate[] trustCertificates)
 		{
-			return createSslContext(allowInsecureConnection, trustCertificates, (Certificate[]) null, (PrivateKey) null);
+			return CreateSslContext(allowInsecureConnection, trustCertificates, (X509Certificate[]) null, (Ass) null);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.handler.ssl.SslContext createNettySslContextForClient(boolean allowInsecureConnection, String trustCertsFilePath) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
-		public static SslContext createNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath)
+		public static TlsHandler CreateNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath)
 		{
 			return createNettySslContextForClient(allowInsecureConnection, trustCertsFilePath, (Certificate[]) null, (PrivateKey) null);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static javax.net.ssl.SSLContext createSslContext(boolean allowInsecureConnection, String trustCertsFilePath, String certFilePath, String keyFilePath) throws java.security.GeneralSecurityException
 		public static SSLContext createSslContext(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
 		{
 			X509Certificate[] trustCertificates = loadCertificatesFromPemFile(trustCertsFilePath);
@@ -66,12 +62,10 @@ namespace org.apache.pulsar.common.util
 			return createSslContext(allowInsecureConnection, trustCertificates, certificates, privateKey);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.handler.ssl.SslContext createNettySslContextForClient(boolean allowInsecureConnection, String trustCertsFilePath, String certFilePath, String keyFilePath) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
-		public static SslContext createNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
+		public static TlsHandler CreateNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
 		{
 			X509Certificate[] certificates = loadCertificatesFromPemFile(certFilePath);
-			PrivateKey privateKey = loadPrivateKeyFromPemFile(keyFilePath);
+			Assymtric privateKey = loadPrivateKeyFromPemFile(keyFilePath);
 			return createNettySslContextForClient(allowInsecureConnection, trustCertsFilePath, certificates, privateKey);
 		}
 
@@ -192,13 +186,11 @@ namespace org.apache.pulsar.common.util
 			return certificates;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static java.security.PrivateKey loadPrivateKeyFromPemFile(String keyFilePath) throws java.security.KeyManagementException
 		public static PrivateKey loadPrivateKeyFromPemFile(string keyFilePath)
 		{
 			PrivateKey privateKey = null;
 
-			if (string.ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
+			if (keyFilePath is null || keyFilePath.Length == 0)
 			{
 				return privateKey;
 			}
@@ -207,22 +199,22 @@ namespace org.apache.pulsar.common.util
 			{
 					using (StreamReader reader = new StreamReader(keyFilePath))
 					{
-					StringBuilder sb = new StringBuilder();
-					string previousLine = "";
-					string currentLine = null;
+						StringBuilder sb = new StringBuilder();
+						string previousLine = "";
+						string currentLine = null;
         
-					// Skip the first line (-----BEGIN RSA PRIVATE KEY-----)
-					reader.ReadLine();
-					while (!string.ReferenceEquals((currentLine = reader.ReadLine()), null))
-					{
-						sb.Append(previousLine);
-						previousLine = currentLine;
-					}
-					// Skip the last line (-----END RSA PRIVATE KEY-----)
+						// Skip the first line (-----BEGIN RSA PRIVATE KEY-----)
+						reader.ReadLine();
+						while (!ReferenceEquals((currentLine = reader.ReadLine()), null))
+						{
+							sb.Append(previousLine);
+							previousLine = currentLine;
+						}
+						// Skip the last line (-----END RSA PRIVATE KEY-----)
         
-					KeyFactory kf = KeyFactory.getInstance("RSA");
-					KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.Decoder.decode(sb.ToString()));
-					privateKey = kf.generatePrivate(keySpec);
+						KeyFactory kf = KeyFactory.getInstance("RSA");
+						KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.Decoder.decode(sb.ToString()));
+						privateKey = kf.generatePrivate(keySpec);
 					}
 			}
 			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
@@ -233,9 +225,7 @@ namespace org.apache.pulsar.common.util
 			return privateKey;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private static void setupTrustCerts(io.netty.handler.ssl.SslContextBuilder builder, boolean allowInsecureConnection, String trustCertsFilePath) throws java.io.IOException, java.io.FileNotFoundException
-		private static void setupTrustCerts(SslContextBuilder builder, bool allowInsecureConnection, string trustCertsFilePath)
+		private static void SetupTrustCerts(TlsHandler builder, bool allowInsecureConnection, string trustCertsFilePath)
 		{
 			if (allowInsecureConnection)
 			{
@@ -290,8 +280,6 @@ namespace org.apache.pulsar.common.util
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static org.eclipse.jetty.util.ssl.SslContextFactory createSslContextFactory(boolean tlsAllowInsecureConnection, String tlsTrustCertsFilePath, String tlsCertificateFilePath, String tlsKeyFilePath, boolean tlsRequireTrustedClientCertOnConnect, boolean autoRefresh, long certRefreshInSec) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
 		public static SslContextFactory createSslContextFactory(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, bool autoRefresh, long certRefreshInSec)
 		{
 			SslContextFactory sslCtxFactory = null;
@@ -324,9 +312,6 @@ namespace org.apache.pulsar.common.util
 		{
 
 			internal readonly DefaultSslContextBuilder sslCtxRefresher;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public SslContextFactoryWithAutoRefresh(boolean tlsAllowInsecureConnection, String tlsTrustCertsFilePath, String tlsCertificateFilePath, String tlsKeyFilePath, boolean tlsRequireTrustedClientCertOnConnect, long certRefreshInSec) throws javax.net.ssl.SSLException, java.io.FileNotFoundException, java.security.GeneralSecurityException, java.io.IOException
 			public SslContextFactoryWithAutoRefresh(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, long certRefreshInSec) : base()
 			{
 				sslCtxRefresher = new DefaultSslContextBuilder(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath, tlsRequireTrustedClientCertOnConnect, certRefreshInSec);

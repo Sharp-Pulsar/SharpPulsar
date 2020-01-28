@@ -16,18 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("checkstyle:JavadocType") public class DefaultSslContextBuilder extends SslContextAutoRefreshBuilder<javax.net.ssl.SSLContext>
 	public class DefaultSslContextBuilder : SslContextAutoRefreshBuilder<SSLContext>
 	{
 		private volatile SSLContext sslContext;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public DefaultSslContextBuilder(boolean allowInsecure, String trustCertsFilePath, String certificateFilePath, String keyFilePath, boolean requireTrustedClientCertOnConnect, long certRefreshInSec) throws javax.net.ssl.SSLException, java.io.FileNotFoundException, java.security.GeneralSecurityException, java.io.IOException
 		public DefaultSslContextBuilder(bool allowInsecure, string trustCertsFilePath, string certificateFilePath, string keyFilePath, bool requireTrustedClientCertOnConnect, long certRefreshInSec) : base(allowInsecure, trustCertsFilePath, certificateFilePath, keyFilePath, null, null, requireTrustedClientCertOnConnect, certRefreshInSec)
 		{
 		}

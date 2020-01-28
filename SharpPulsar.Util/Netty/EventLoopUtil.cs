@@ -59,14 +59,7 @@ namespace SharpPulsar.Util.Netty
 		/// @return </param>
 		public static Type GetClientSocketChannelClass(EventLoopGroup eventLoopGroup)
 		{
-			if (eventLoopGroup is EpollEventLoopGroup)
-			{
-				return typeof(EpollSocketChannel);
-			}
-			else
-			{
-				return typeof(NioSocketChannel);
-			}
+			return typeof(NioSocketChannel);
 		}
 
 		public static Type getServerSocketChannelClass(EventLoopGroup eventLoopGroup)

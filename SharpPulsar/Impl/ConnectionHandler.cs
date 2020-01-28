@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Exception;
+﻿using Microsoft.Extensions.Logging;
+using SharpPulsar.Exception;
 using System;
 using System.Collections.Concurrent;
 
@@ -114,53 +115,51 @@ namespace SharpPulsar.Impl
 			}, DelayMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		public virtual void ConnectionClosed(ClientCnx Cnx)
+		public virtual void ConnectionClosed(ClientCnx cnx)
 		{
-			if (CLIENT_CNX_UPDATER.compareAndSet(this, Cnx, null))
+			if (ClientCnxUpdater.TryUpdate(this, cnx, null))
 			{
 				if (!ValidStateForReconnection)
 				{
-					log.info("[{}] [{}] Ignoring reconnection request (state: {})", State.topic, State.HandlerName, State.getState());
+					log.LogInformation("[{}] [{}] Ignoring reconnection request (state: {})", State.Topic, State.HandlerName, State.GetState());
 					return;
 				}
-				long DelayMs = Backoff.next();
-				State.setState(State.Connecting);
-				log.info("[{}] [{}] Closed connection {} -- Will try again in {} s", State.topic, State.HandlerName, Cnx.channel(), DelayMs / 1000.0);
-				State.client.timer().newTimeout(timeout =>
+				long DelayMs = Backoff.Next();
+				State.SetState(HandlerState.State.Connecting);
+				log.LogInformation("[{}] [{}] Closed connection {} -- Will try again in {} s", State.Topic, State.HandlerName, cnx.channel(), DelayMs / 1000.0);
+				State.Client.Timer().Change(timeout =>
 				{
-				log.info("[{}] [{}] Reconnecting after timeout", State.topic, State.HandlerName);
-				++EpochConflict;
-				GrabCnx();
+					log.info("[{}] [{}] Reconnecting after timeout", State.topic, State.HandlerName);
+					++EpochConflict;
+					GrabCnx();
 				}, DelayMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			}
 		}
 
 		public virtual void ResetBackoff()
 		{
-			Backoff.reset();
+			Backoff.Reset();
 		}
 
 		public virtual ClientCnx Cnx()
 		{
-			return CLIENT_CNX_UPDATER.get(this);
+			return ClientCnxUpdater[this];
 		}
 
-		public virtual bool IsRetriableError(PulsarClientException E)
+		public virtual bool IsRetriableError(PulsarClientException e)
 		{
-			return E is PulsarClientException.LookupException;
+			return e is PulsarClientException.LookupException;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public ClientCnx getClientCnx()
 		public virtual ClientCnx ClientCnx
 		{
 			get
 			{
-				return CLIENT_CNX_UPDATER.get(this);
+				return ClientCnxUpdater[this];
 			}
 			set
 			{
-				CLIENT_CNX_UPDATER.set(this, value);
+				ClientCnxUpdater[this] =  value;
 			}
 		}
 
@@ -169,27 +168,25 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				State State = this.State.getState();
-				switch (State)
+				var state = State.GetState();
+				switch (state)
 				{
-					case State.Uninitialized:
-					case State.Connecting:
-					case State.Ready:
+					case HandlerState.State.Uninitialized:
+					case HandlerState.State.Connecting:
+					case HandlerState.State.Ready:
 						// Ok
 						return true;
     
-					case State.Closing:
-					case State.Closed:
-					case State.Failed:
-					case State.Terminated:
+					case HandlerState.State.Closing:
+					case HandlerState.State.Closed:
+					case HandlerState.State.Failed:
+					case HandlerState.State.Terminated:
 						return false;
 				}
 				return false;
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public long getEpoch()
 		public virtual long Epoch
 		{
 			get
@@ -197,8 +194,7 @@ namespace SharpPulsar.Impl
 				return EpochConflict;
 			}
 		}
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConnectionHandler));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<ConnectionHandler>();
 	}
 
 }

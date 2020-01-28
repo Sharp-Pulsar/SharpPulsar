@@ -32,8 +32,10 @@ namespace SharpPulsar.Impl
 	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
 	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
 	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
+    using DotNetty.Transport.Channels;
+    using System.Security.Cryptography.X509Certificates;
 
-	public class PulsarChannelInitializer : ChannelInitializer<SocketChannel>
+    public class PulsarChannelInitializer : ChannelInitializer<IChannel>
 	{
 
 		public const string TlsHandler = "tls";
@@ -45,8 +47,6 @@ namespace SharpPulsar.Impl
 
 		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.toMillis(1);
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public PulsarChannelInitializer(SharpPulsar.impl.conf.ClientConfigurationData conf, java.util.function.Supplier<ClientCnx> clientCnxSupplier) throws Exception
 		public PulsarChannelInitializer(ClientConfigurationData Conf, System.Func<ClientCnx> ClientCnxSupplier) : base()
 		{
 			this.clientCnxSupplier = ClientCnxSupplier;
@@ -54,24 +54,24 @@ namespace SharpPulsar.Impl
 
 			if (Conf.UseTls)
 			{
-				sslContextSupplier = new ObjectCache<SslContext>(() =>
+				sslContextSupplier = new ObjectCache<DotNetty.Handlers.Tls.TlsHandler>(() =>
 				{
-				try
-				{
-					IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
-					if (AuthData.hasDataForTls())
-					{
-						return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
-					}
-					else
-					{
-						return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
-					}
-				}
-				catch (Exception E)
-				{
-					throw new Exception("Failed to create TLS context", E);
-				}
+						try
+						{
+							IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
+							if (AuthData.HasDataForTls())
+							{
+								return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
+							}
+							else
+							{
+								return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
+							}
+						}
+						catch (System.Exception E)
+						{
+							throw new System.Exception("Failed to create TLS context", E);
+						}
 				}, TLS_CERTIFICATE_CACHE_MILLIS, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			}
 			else
@@ -80,8 +80,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void initChannel(io.netty.channel.socket.SocketChannel ch) throws Exception
 		public override void InitChannel(SocketChannel Ch)
 		{
 			if (tlsEnabled)

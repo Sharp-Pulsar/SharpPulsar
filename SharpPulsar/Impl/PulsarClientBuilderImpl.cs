@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -22,33 +24,20 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
 
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationFactory = SharpPulsar.Api.AuthenticationFactory;
-	using ClientBuilder = SharpPulsar.Api.ClientBuilder;
-	using IPulsarClient = SharpPulsar.Api.IPulsarClient;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using UnsupportedAuthenticationException = SharpPulsar.Api.PulsarClientException.UnsupportedAuthenticationException;
-	using ServiceUrlProvider = SharpPulsar.Api.ServiceUrlProvider;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using ConfigurationDataUtils = SharpPulsar.Impl.Conf.ConfigurationDataUtils;
-
-	public class ClientBuilderImpl : ClientBuilder
+	public class PulsarClientBuilderImpl : IPulsarClientBuilder
 	{
 		internal ClientConfigurationData Conf;
 
-		public ClientBuilderImpl() : this(new ClientConfigurationData())
+		public PulsarClientBuilderImpl() : this(new ClientConfigurationData())
 		{
 		}
 
-		public ClientBuilderImpl(ClientConfigurationData Conf)
+		public PulsarClientBuilderImpl(ClientConfigurationData Conf)
 		{
 			this.Conf = Conf;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.PulsarClient build() throws SharpPulsar.api.PulsarClientException
-		public override IPulsarClient Build()
+		public IPulsarClient Build()
 		{
 			if (StringUtils.isBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
 			{
@@ -72,14 +61,14 @@ namespace SharpPulsar.Impl
 			IPulsarClient Client = new PulsarClientImpl(Conf);
 			if (Conf.ServiceUrlProvider != null)
 			{
-				Conf.ServiceUrlProvider.initialize(Client);
+				Conf.ServiceUrlProvider.Initialize(Client);
 			}
 			return Client;
 		}
 
-		public override ClientBuilder Clone()
+		public override IPulsarClientBuilder Clone()
 		{
-			return new ClientBuilderImpl(Conf.clone());
+			return new PulsarClientBuilderImpl(Conf.clone());
 		}
 
 		public override ClientBuilder LoadConf(IDictionary<string, object> Config)
@@ -88,7 +77,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ClientBuilder ServiceUrl(string ServiceUrl)
+		public override IPulsarClientBuilder ServiceUrl(string ServiceUrl)
 		{
 			if (StringUtils.isBlank(ServiceUrl))
 			{
@@ -102,7 +91,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ClientBuilder ServiceUrlProvider(ServiceUrlProvider ServiceUrlProvider)
+		public IPulsarClientBuilder ServiceUrlProvider(ServiceUrlProvider ServiceUrlProvider)
 		{
 			if (ServiceUrlProvider == null)
 			{
@@ -112,7 +101,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override ClientBuilder Authentication(Authentication Authentication)
+		public IPulsarClientBuilder Authentication(IAuthentication authentication)
 		{
 			Conf.Authentication = Authentication;
 			return this;
