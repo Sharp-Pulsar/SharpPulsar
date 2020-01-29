@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
 	/// <summary>

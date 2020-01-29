@@ -3,8 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
-using DotNetty.Handlers.Tls;
 using System.Security.Cryptography.X509Certificates;
+using System.Security;
+using System.Security.Cryptography;
+using DotNetty.Handlers.Tls;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,8 +32,8 @@ using System.Security.Cryptography.X509Certificates;
 /// </summary>
 namespace SharpPulsar.Util
 {
-	using ClientAuth = io.netty.handler.ssl.ClientAuth;
-	using SslContext = io.netty.handler.ssl.SslContext;
+	using ClientAuth =  io.netty.handler.ssl.ClientAuth;
+	using SslContext = DotNetty.Handlers.Tls.TlsHandler io.netty.handler.ssl.SslContext;
 	using SslContextBuilder = io.netty.handler.ssl.SslContextBuilder;
 	using InsecureTrustManagerFactory = io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 	using SslContextFactory = org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -37,294 +43,266 @@ namespace SharpPulsar.Util
 	/// </summary>
 	public class SecurityUtility
 	{
-
+		
 		static SecurityUtility()
 		{
 			// Fixes loading PKCS8Key file: https://stackoverflow.com/a/18912362
-			java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+			//java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		}
 
-		public static TlsHandler CreateSslContext(bool allowInsecureConnection, X509Certificate[] trustCertificates)
+		public static SslContext CreateSslContext(bool AllowInsecureConnection, X509Certificate[] TrustCertificates)
 		{
-			return CreateSslContext(allowInsecureConnection, trustCertificates, (X509Certificate[]) null, (Ass) null);
+			return CreateSslContext(AllowInsecureConnection, TrustCertificates, (X509Certificate[])null, (AsymmetricAlgorithm)null);
 		}
 
-		public static TlsHandler CreateNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath)
+		
+		public static SslContext CreateNettySslContextForClient(bool AllowInsecureConnection, string TrustCertsFilePath)
 		{
-			return createNettySslContextForClient(allowInsecureConnection, trustCertsFilePath, (Certificate[]) null, (PrivateKey) null);
+			return CreateNettySslContextForClient(AllowInsecureConnection, TrustCertsFilePath, (X509Certificate[])null, (PrivateKey)null);
 		}
 
-		public static SSLContext createSslContext(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
+		
+		public static SslContext CreateSslContext(bool AllowInsecureConnection, string TrustCertsFilePath, string CertFilePath, string KeyFilePath)
 		{
-			X509Certificate[] trustCertificates = loadCertificatesFromPemFile(trustCertsFilePath);
-			X509Certificate[] certificates = loadCertificatesFromPemFile(certFilePath);
-			PrivateKey privateKey = loadPrivateKeyFromPemFile(keyFilePath);
-			return createSslContext(allowInsecureConnection, trustCertificates, certificates, privateKey);
+			X509Certificate[] TrustCertificates = LoadCertificatesFromPemFile(TrustCertsFilePath);
+			X509Certificate[] Certificates = LoadCertificatesFromPemFile(CertFilePath);
+			var pri = LoadPrivateKeyFromPemFile(KeyFilePath);
+			_publicKey = pub.ExportParameters(false);
+			_privateKey = pri.ExportParameters(true);
+			PrivateKey PrivateKey = LoadPrivateKeyFromPemFile(KeyFilePath);
+			return CreateSslContext(AllowInsecureConnection, TrustCertificates, Certificates, PrivateKey);
 		}
 
-		public static TlsHandler CreateNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
+		
+		public static SslContext CreateNettySslContextForClient(bool AllowInsecureConnection, string TrustCertsFilePath, string CertFilePath, string KeyFilePath)
 		{
-			X509Certificate[] certificates = loadCertificatesFromPemFile(certFilePath);
-			Assymtric privateKey = loadPrivateKeyFromPemFile(keyFilePath);
-			return createNettySslContextForClient(allowInsecureConnection, trustCertsFilePath, certificates, privateKey);
+			X509Certificate[] Certificates = LoadCertificatesFromPemFile(CertFilePath);
+			PrivateKey PrivateKey = LoadPrivateKeyFromPemFile(KeyFilePath);
+			return CreateNettySslContextForClient(AllowInsecureConnection, TrustCertsFilePath, Certificates, PrivateKey);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.handler.ssl.SslContext createNettySslContextForClient(boolean allowInsecureConnection, String trustCertsFilePath, java.security.cert.Certificate[] certificates, java.security.PrivateKey privateKey) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
-		public static SslContext createNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath, Certificate[] certificates, PrivateKey privateKey)
+		
+		private static SslContext CreateNettySslContextForClient(bool AllowInsecureConnection, string TrustCertsFilePath, X509Certificate[] Certificates, PrivateKey PrivateKey)
 		{
-			SslContextBuilder builder = SslContextBuilder.forClient();
-			setupTrustCerts(builder, allowInsecureConnection, trustCertsFilePath);
-			setupKeyManager(builder, privateKey, (X509Certificate[]) certificates);
-			return builder.build();
+			SslContextBuilder Builder = SslContextBuilder.forClient();
+			SetupTrustCerts(Builder, AllowInsecureConnection, TrustCertsFilePath);
+			SetupKeyManager(Builder, PrivateKey, (X509Certificate[])Certificates);
+			return Builder.build();
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.handler.ssl.SslContext createNettySslContextForServer(boolean allowInsecureConnection, String trustCertsFilePath, String certFilePath, String keyFilePath, java.util.Set<String> ciphers, java.util.Set<String> protocols, boolean requireTrustedClientCertOnConnect) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
-		public static SslContext createNettySslContextForServer(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath, ISet<string> ciphers, ISet<string> protocols, bool requireTrustedClientCertOnConnect)
+		
+		public static SslContext CreateSslContext(bool AllowInsecureConnection, X509Certificate[] TrustCertficates, X509Certificate[] Certificates, PrivateKey PrivateKey)
 		{
-			X509Certificate[] certificates = loadCertificatesFromPemFile(certFilePath);
-			PrivateKey privateKey = loadPrivateKeyFromPemFile(keyFilePath);
+			KeyStoreHolder Ksh = new KeyStoreHolder();
+			TrustManager[] TrustManagers = null;
+			KeyManager[] KeyManagers = null;
 
-			SslContextBuilder builder = SslContextBuilder.forServer(privateKey, (X509Certificate[]) certificates);
-			setupCiphers(builder, ciphers);
-			setupProtocols(builder, protocols);
-			setupTrustCerts(builder, allowInsecureConnection, trustCertsFilePath);
-			setupKeyManager(builder, privateKey, certificates);
-			setupClientAuthentication(builder, requireTrustedClientCertOnConnect);
-			return builder.build();
+			TrustManagers = SetupTrustCerts(Ksh, AllowInsecureConnection, TrustCertficates);
+			KeyManagers = SetupKeyManager(Ksh, PrivateKey, Certificates);
+
+			SSLContext SslCtx = SSLContext.getInstance("TLS");
+			SslCtx.init(KeyManagers, TrustManagers, new SecureRandom());
+			SslCtx.DefaultSSLParameters;
+			return SslCtx;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static javax.net.ssl.SSLContext createSslContext(boolean allowInsecureConnection, java.security.cert.Certificate[] trustCertficates, java.security.cert.Certificate[] certificates, java.security.PrivateKey privateKey) throws java.security.GeneralSecurityException
-		public static SSLContext createSslContext(bool allowInsecureConnection, Certificate[] trustCertficates, Certificate[] certificates, PrivateKey privateKey)
+		
+		private static KeyManager[] SetupKeyManager(KeyStoreHolder Ksh, PrivateKey PrivateKey, X509Certificate[] Certificates)
 		{
-			KeyStoreHolder ksh = new KeyStoreHolder();
-			TrustManager[] trustManagers = null;
-			KeyManager[] keyManagers = null;
-
-			trustManagers = setupTrustCerts(ksh, allowInsecureConnection, trustCertficates);
-			keyManagers = setupKeyManager(ksh, privateKey, certificates);
-
-			SSLContext sslCtx = SSLContext.getInstance("TLS");
-			sslCtx.init(keyManagers, trustManagers, new SecureRandom());
-			sslCtx.DefaultSSLParameters;
-			return sslCtx;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private static javax.net.ssl.KeyManager[] setupKeyManager(KeyStoreHolder ksh, java.security.PrivateKey privateKey, java.security.cert.Certificate[] certificates) throws java.security.KeyStoreException, java.security.NoSuchAlgorithmException, java.security.UnrecoverableKeyException
-		private static KeyManager[] setupKeyManager(KeyStoreHolder ksh, PrivateKey privateKey, Certificate[] certificates)
-		{
-			KeyManager[] keyManagers = null;
-			if (certificates != null && privateKey != null)
+			KeyManager[] KeyManagers = null;
+			if (Certificates != null && PrivateKey != null)
 			{
-				ksh.setPrivateKey("private", privateKey, certificates);
-				KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.DefaultAlgorithm);
-				kmf.init(ksh.KeyStore, "".ToCharArray());
-				keyManagers = kmf.KeyManagers;
+				Ksh.setPrivateKey("private", PrivateKey, Certificates);
+				KeyManagerFactory Kmf = KeyManagerFactory.getInstance(KeyManagerFactory.DefaultAlgorithm);
+				Kmf.init(Ksh.KeyStore, "".ToCharArray());
+				KeyManagers = Kmf.KeyManagers;
 			}
-			return keyManagers;
+			return KeyManagers;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private static javax.net.ssl.TrustManager[] setupTrustCerts(KeyStoreHolder ksh, boolean allowInsecureConnection, java.security.cert.Certificate[] trustCertficates) throws java.security.NoSuchAlgorithmException, java.security.KeyStoreException
-		private static TrustManager[] setupTrustCerts(KeyStoreHolder ksh, bool allowInsecureConnection, Certificate[] trustCertficates)
+		private static TrustManager[] SetupTrustCerts(KeyStoreHolder Ksh, bool AllowInsecureConnection, X509Certificate[] TrustCertficates)
 		{
-			TrustManager[] trustManagers;
-			if (allowInsecureConnection)
+			TrustManager[] TrustManagers;
+			if (AllowInsecureConnection)
 			{
-				trustManagers = InsecureTrustManagerFactory.INSTANCE.TrustManagers;
+				TrustManagers = InsecureTrustManagerFactory.INSTANCE.TrustManagers;
 			}
 			else
 			{
-				TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.DefaultAlgorithm);
+				TrustManagerFactory Tmf = TrustManagerFactory.getInstance(TrustManagerFactory.DefaultAlgorithm);
 
-				if (trustCertficates == null || trustCertficates.Length == 0)
+				if (TrustCertficates == null || TrustCertficates.Length == 0)
 				{
-					tmf.init((KeyStore) null);
+					Tmf.init((KeyStore)null);
 				}
 				else
 				{
-					for (int i = 0; i < trustCertficates.Length; i++)
+					for (int I = 0; I < TrustCertficates.Length; I++)
 					{
-						ksh.setCertificate("trust" + i, trustCertficates[i]);
+						Ksh.setCertificate("trust" + I, TrustCertficates[I]);
 					}
-					tmf.init(ksh.KeyStore);
+					Tmf.init(Ksh.KeyStore);
 				}
 
-				trustManagers = tmf.TrustManagers;
+				TrustManagers = Tmf.TrustManagers;
 			}
-			return trustManagers;
+			return TrustManagers;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static java.security.cert.X509Certificate[] loadCertificatesFromPemFile(String certFilePath) throws java.security.KeyManagementException
-		public static X509Certificate[] loadCertificatesFromPemFile(string certFilePath)
+		public static X509Certificate[] LoadCertificatesFromPemFile(string CertFilePath)
 		{
-			X509Certificate[] certificates = null;
+			X509Certificate[] Certificates = null;
 
-			if (string.ReferenceEquals(certFilePath, null) || certFilePath.Length == 0)
+			if (string.ReferenceEquals(CertFilePath, null) || CertFilePath.Length == 0)
 			{
-				return certificates;
+				return Certificates;
 			}
 
 			try
 			{
-					using (FileStream input = new FileStream(certFilePath, FileMode.Open, FileAccess.Read))
-					{
-					CertificateFactory cf = CertificateFactory.getInstance("X.509");
-					ICollection<X509Certificate> collection = (ICollection<X509Certificate>) cf.generateCertificates(input);
-					certificates = collection.ToArray();
-					}
+				using (FileStream Input = new FileStream(CertFilePath, FileMode.Open, FileAccess.Read))
+				{
+					Pkcs12Store store = new Pkcs12Store();
+					CertificateFactory Cf = CertificateFactory.getInstance("X.509");
+					ICollection<X509Certificate> Collection = (ICollection<X509Certificate>)Cf.generateCertificates(Input);
+					Certificates = Collection.ToArray();
+				}
 			}
 			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
 			{
 				throw new KeyManagementException("Certificate loading error", e);
 			}
 
-			return certificates;
+			return Certificates;
 		}
 
-		public static PrivateKey loadPrivateKeyFromPemFile(string keyFilePath)
+		public static RSAParameters LoadPrivateKeyFromPemFile(string KeyFilePath)
 		{
-			PrivateKey privateKey = null;
-
-			if (keyFilePath is null || keyFilePath.Length == 0)
+			if (string.ReferenceEquals(KeyFilePath, null) || KeyFilePath.Length == 0)
 			{
-				return privateKey;
+				throw new Exception("File path cannot be empty");
 			}
 
 			try
 			{
-					using (StreamReader reader = new StreamReader(keyFilePath))
-					{
-						StringBuilder sb = new StringBuilder();
-						string previousLine = "";
-						string currentLine = null;
-        
-						// Skip the first line (-----BEGIN RSA PRIVATE KEY-----)
-						reader.ReadLine();
-						while (!ReferenceEquals((currentLine = reader.ReadLine()), null))
-						{
-							sb.Append(previousLine);
-							previousLine = currentLine;
-						}
-						// Skip the last line (-----END RSA PRIVATE KEY-----)
-        
-						KeyFactory kf = KeyFactory.getInstance("RSA");
-						KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.Decoder.decode(sb.ToString()));
-						privateKey = kf.generatePrivate(keySpec);
-					}
+				var p = GetPrivateKeyFromPemFile(KeyFilePath);
+				return p.ExportParameters(true);
 			}
-			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
+			catch (Exception e) when (e is SecurityException || e is IOException)
 			{
-				throw new KeyManagementException("Private key loading error", e);
+				throw new Exception("Private key loading error", e);
 			}
+		}
+		private static RSACryptoServiceProvider GetPrivateKeyFromPemFile(string KeyFilePath)
+		{
+			using (TextReader privateKeyTextReader = new StringReader(File.ReadAllText(KeyFilePath)))
+			{
+				AsymmetricCipherKeyPair readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
 
-			return privateKey;
+				RSAParameters rsaParams = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)readKeyPair.Private);
+				RSACryptoServiceProvider csp = new RSACryptoServiceProvider();// cspParams);
+				csp.ImportParameters(rsaParams);
+				return csp;
+			}
 		}
 
-		private static void SetupTrustCerts(TlsHandler builder, bool allowInsecureConnection, string trustCertsFilePath)
+		public static RSACryptoServiceProvider GetPublicKeyFromPemFile(String filePath)
 		{
-			if (allowInsecureConnection)
+			using (TextReader publicKeyTextReader = new StringReader(File.ReadAllText(filePath)))
 			{
-				builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
+				RsaKeyParameters publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
+
+				RSAParameters rsaParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)publicKeyParam);
+
+				RSACryptoServiceProvider csp = new RSACryptoServiceProvider();// cspParams);
+				csp.ImportParameters(rsaParams);
+				return csp;
+			}
+		}
+		
+		private static void SetupTrustCerts(SslContextBuilder Builder, bool AllowInsecureConnection, string TrustCertsFilePath)
+		{
+			if (AllowInsecureConnection)
+			{
+				Builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
 			}
 			else
 			{
-				if (!string.ReferenceEquals(trustCertsFilePath, null) && trustCertsFilePath.Length != 0)
+				if (!string.ReferenceEquals(TrustCertsFilePath, null) && TrustCertsFilePath.Length != 0)
 				{
-					using (FileStream input = new FileStream(trustCertsFilePath, FileMode.Open, FileAccess.Read))
+					using (FileStream Input = new FileStream(TrustCertsFilePath, FileMode.Open, FileAccess.Read))
 					{
-						builder.trustManager(input);
+						Builder.trustManager(Input);
 					}
 				}
 				else
 				{
-					builder.trustManager((File) null);
+					Builder.trustManager((File)null);
 				}
 			}
 		}
 
-		private static void setupKeyManager(SslContextBuilder builder, PrivateKey privateKey, X509Certificate[] certificates)
+		private static void SetupKeyManager(SslContextBuilder Builder, PrivateKey PrivateKey, X509Certificate[] Certificates)
 		{
-			builder.keyManager(privateKey, (X509Certificate[]) certificates);
+			Builder.keyManager(PrivateKey, (X509Certificate[])Certificates);
 		}
 
-		private static void setupCiphers(SslContextBuilder builder, ISet<string> ciphers)
+		private static void SetupCiphers(SslContextBuilder Builder, ISet<string> Ciphers)
 		{
-			if (ciphers != null && ciphers.Count > 0)
+			if (Ciphers != null && Ciphers.Count > 0)
 			{
-				builder.ciphers(ciphers);
+				Builder.ciphers(Ciphers);
 			}
 		}
 
-		private static void setupProtocols(SslContextBuilder builder, ISet<string> protocols)
+		private static void SetupProtocols(SslContextBuilder Builder, ISet<string> Protocols)
 		{
-			if (protocols != null && protocols.Count > 0)
+			if (Protocols != null && Protocols.Count > 0)
 			{
-				builder.protocols(protocols.ToArray());
+				Builder.protocols(Protocols.ToArray());
 			}
 		}
 
-		private static void setupClientAuthentication(SslContextBuilder builder, bool requireTrustedClientCertOnConnect)
+		private static void SetupClientAuthentication(SslContextBuilder Builder, bool RequireTrustedClientCertOnConnect)
 		{
-			if (requireTrustedClientCertOnConnect)
+			if (RequireTrustedClientCertOnConnect)
 			{
-				builder.clientAuth(ClientAuth.REQUIRE);
+				Builder.clientAuth(ClientAuth.REQUIRE);
 			}
 			else
 			{
-				builder.clientAuth(ClientAuth.OPTIONAL);
+				Builder.clientAuth(ClientAuth.OPTIONAL);
 			}
 		}
 
-		public static SslContextFactory createSslContextFactory(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, bool autoRefresh, long certRefreshInSec)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: public static org.eclipse.jetty.util.ssl.SslContextFactory createSslContextFactory(boolean tlsAllowInsecureConnection, String tlsTrustCertsFilePath, String tlsCertificateFilePath, String tlsKeyFilePath, boolean tlsRequireTrustedClientCertOnConnect, boolean autoRefresh, long certRefreshInSec) throws java.security.GeneralSecurityException, javax.net.ssl.SSLException, java.io.FileNotFoundException, java.io.IOException
+		public static SslContextFactory CreateSslContextFactory(bool TlsAllowInsecureConnection, string TlsTrustCertsFilePath, string TlsCertificateFilePath, string TlsKeyFilePath, bool TlsRequireTrustedClientCertOnConnect, bool AutoRefresh, long CertRefreshInSec)
 		{
-			SslContextFactory sslCtxFactory = null;
-			if (autoRefresh)
+			SslContextFactory SslCtxFactory = null;
+			if (AutoRefresh)
 			{
-				sslCtxFactory = new SslContextFactoryWithAutoRefresh(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath, tlsRequireTrustedClientCertOnConnect, 0);
+				SslCtxFactory = new SslContextFactoryWithAutoRefresh(TlsAllowInsecureConnection, TlsTrustCertsFilePath, TlsCertificateFilePath, TlsKeyFilePath, TlsRequireTrustedClientCertOnConnect, 0);
 			}
 			else
 			{
-				sslCtxFactory = new SslContextFactory();
-				SSLContext sslCtx = createSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath);
-				sslCtxFactory.SslContext = sslCtx;
+				SslCtxFactory = new SslContextFactory();
+				SSLContext SslCtx = CreateSslContext(TlsAllowInsecureConnection, TlsTrustCertsFilePath, TlsCertificateFilePath, TlsKeyFilePath);
+				SslCtxFactory.SslContext = SslCtx;
 			}
-			if (tlsRequireTrustedClientCertOnConnect)
+			if (TlsRequireTrustedClientCertOnConnect)
 			{
-				sslCtxFactory.NeedClientAuth = true;
+				SslCtxFactory.NeedClientAuth = true;
 			}
 			else
 			{
-				sslCtxFactory.WantClientAuth = true;
+				SslCtxFactory.WantClientAuth = true;
 			}
-			sslCtxFactory.TrustAll = true;
-			return sslCtxFactory;
+			SslCtxFactory.TrustAll = true;
+			return SslCtxFactory;
 		}
 
-		/// <summary>
-		/// <seealso cref="SslContextFactory"/> that auto-refresh SSLContext.
-		/// </summary>
-		internal class SslContextFactoryWithAutoRefresh : SslContextFactory
-		{
-
-			internal readonly DefaultSslContextBuilder sslCtxRefresher;
-			public SslContextFactoryWithAutoRefresh(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, long certRefreshInSec) : base()
-			{
-				sslCtxRefresher = new DefaultSslContextBuilder(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath, tlsRequireTrustedClientCertOnConnect, certRefreshInSec);
-			}
-
-			public override SSLContext SslContext
-			{
-				get
-				{
-					return sslCtxRefresher.get();
-				}
-			}
-		}
+		
 	}
 
 }

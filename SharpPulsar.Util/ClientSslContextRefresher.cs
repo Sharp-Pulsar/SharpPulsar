@@ -18,15 +18,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 	using SslContext = io.netty.handler.ssl.SslContext;
 	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("checkstyle:JavadocType") public class ClientSslContextRefresher
 	public class ClientSslContextRefresher
 	{
 		private volatile SslContext sslContext;
@@ -34,8 +31,6 @@ namespace org.apache.pulsar.common.util
 		private string tlsTrustCertsFilePath;
 		private AuthenticationDataProvider authData;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public ClientSslContextRefresher(boolean allowInsecure, String trustCertsFilePath, org.apache.pulsar.client.api.AuthenticationDataProvider authData) throws java.io.IOException, java.security.GeneralSecurityException
 		public ClientSslContextRefresher(bool allowInsecure, string trustCertsFilePath, AuthenticationDataProvider authData)
 		{
 			this.tlsAllowInsecureConnection = allowInsecure;

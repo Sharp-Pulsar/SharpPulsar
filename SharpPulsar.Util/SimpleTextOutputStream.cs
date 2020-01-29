@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DotNetty.Buffers;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,43 +19,42 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-
+	
 	/// <summary>
 	/// Format strings and numbers into a ByteBuf without any memory allocation.
 	/// 
 	/// </summary>
 	public class SimpleTextOutputStream
 	{
-		private readonly ByteBuf buffer;
+		private readonly IByteBuffer buffer;
 		private static readonly char[] hexChars = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-		public SimpleTextOutputStream(ByteBuf buffer)
+		public SimpleTextOutputStream(IByteBuffer buffer)
 		{
 			this.buffer = buffer;
 		}
 
-		public virtual SimpleTextOutputStream write(sbyte[] a)
+		public virtual SimpleTextOutputStream Write(sbyte[] a)
 		{
-			buffer.writeBytes(a, 0, a.Length);
+			buffer.WriteBytes(a, 0, a.Length);
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(sbyte[] a, int offset, int len)
+		public virtual SimpleTextOutputStream Write(sbyte[] a, int offset, int len)
 		{
-			buffer.writeBytes(a, offset, len);
+			buffer.WriteBytes(a, offset, len);
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(char c)
+		public virtual SimpleTextOutputStream Write(char c)
 		{
-			buffer.writeByte((sbyte) c);
+			buffer.WriteByte((sbyte) c);
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(string s)
+		public virtual SimpleTextOutputStream Write(string s)
 		{
 			if (string.ReferenceEquals(s, null))
 			{
@@ -63,33 +63,33 @@ namespace org.apache.pulsar.common.util
 			int len = s.Length;
 			for (int i = 0; i < len; i++)
 			{
-				buffer.writeByte((sbyte) s[i]);
+				buffer.WriteByte((sbyte) s[i]);
 			}
 
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(Number n)
+		public virtual SimpleTextOutputStream Write(object n)
 		{
 			if (n is int?)
 			{
-				return write(n.intValue());
+				return Write((int)n);
 			}
 			else if (n is long?)
 			{
-				return write(n.longValue());
+				return Write((long)n);
 			}
 			else if (n is double?)
 			{
-				return write(n.doubleValue());
+				return Write((double)n);
 			}
 			else
 			{
-				return write(n.ToString());
+				return Write((string)n);
 			}
 		}
 
-		public virtual SimpleTextOutputStream writeEncoded(string s)
+		public virtual SimpleTextOutputStream WriteEncoded(string s)
 		{
 			if (string.ReferenceEquals(s, null))
 			{
@@ -103,60 +103,60 @@ namespace org.apache.pulsar.common.util
 				char c = s[i];
 				if (c < (char)32 || c > (char)126)
 				{ // below 32 and above 126 in ascii table
-					buffer.writeByte((sbyte) '\\');
-					buffer.writeByte((sbyte) 'u');
-					buffer.writeByte(hexChars[(c & 0xf000) >> 12]);
-					buffer.writeByte(hexChars[(c & 0x0f00) >> 8]);
-					buffer.writeByte(hexChars[(c & 0x00f0) >> 4]);
-					buffer.writeByte(hexChars[c & 0x000f]);
+					buffer.WriteByte((sbyte) '\\');
+					buffer.WriteByte((sbyte) 'u');
+					buffer.WriteByte(hexChars[(c & 0xf000) >> 12]);
+					buffer.WriteByte(hexChars[(c & 0x0f00) >> 8]);
+					buffer.WriteByte(hexChars[(c & 0x00f0) >> 4]);
+					buffer.WriteByte(hexChars[c & 0x000f]);
 					continue;
 				}
 
 				if (c == '\\' || c == '"')
 				{
-					buffer.writeByte((sbyte) '\\');
+					buffer.WriteByte((sbyte) '\\');
 				}
-				buffer.writeByte((sbyte) c);
+				buffer.WriteByte((sbyte) c);
 			}
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(bool b)
+		public virtual SimpleTextOutputStream Write(bool b)
 		{
-			write(b ? "true" : "false");
+			Write(b ? "true" : "false");
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(long n)
+		public virtual SimpleTextOutputStream Write(long n)
 		{
-			NumberFormat.format(this.buffer, n);
+			NumberFormat.Format(this.buffer, n);
 			return this;
 		}
 
-		public virtual SimpleTextOutputStream write(double d)
+		public virtual SimpleTextOutputStream Write(double d)
 		{
 			long i = (long) d;
-			write(i);
+			Write(i);
 
 			long r = Math.Abs((long)(1000 * (d - i)));
-			write('.');
+			Write('.');
 			if (r == 0)
 			{
-				write('0');
+				Write('0');
 				return this;
 			}
 
 			if (r < 100)
 			{
-				write('0');
+				Write('0');
 			}
 
 			if (r < 10)
 			{
-				write('0');
+				Write('0');
 			}
 
-			write(r);
+			Write(r);
 			return this;
 		}
 	}

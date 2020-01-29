@@ -39,15 +39,15 @@ namespace SharpPulsar.Impl
 		protected internal readonly ConcurrentDictionary<DnsEndPoint, ConcurrentDictionary<int, Task<ClientCnx>>> Pool;
 
 		private readonly Bootstrap bootstrap;
-		private readonly EventLoopGroup eventLoopGroup;
+		private readonly MultithreadEventLoopGroup eventLoopGroup;
 		private readonly int maxConnectionsPerHosts;
 
 
-		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup eventLoopGroup) : this(Conf, eventLoopGroup, () => new ClientCnx(Conf, eventLoopGroup))
+		public ConnectionPool(ClientConfigurationData Conf, MultithreadEventLoopGroup eventLoopGroup) : this(Conf, eventLoopGroup, () => new ClientCnx(Conf, eventLoopGroup))
 		{
 		}
 
-		public ConnectionPool(ClientConfigurationData Conf, EventLoopGroup eventLoopGroup, Func<ClientCnx> ClientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData Conf, MultithreadEventLoopGroup eventLoopGroup, Func<ClientCnx> ClientCnxSupplier)
 		{
 			this.eventLoopGroup = eventLoopGroup;
 			this.maxConnectionsPerHosts = Conf.ConnectionsPerBroker;

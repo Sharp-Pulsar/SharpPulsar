@@ -20,25 +20,25 @@
 namespace SharpPulsar.Util
 {
 
-	public class ObjectCache<T> : Func<T>
+	public class ObjectCache<T>
 	{
 
-		private readonly System.Func<T> supplier;
+		private readonly Func<T> supplier;
 		private T cachedInstance;
 
 		private readonly long cacheDurationMillis;
 		private long lastRefreshTimestamp;
-		private readonly Clock clock;
+		private readonly DateTimeOffset clock;
 
-		public ObjectCache(System.Func<T> supplier, long cacheDuration, TimeUnit unit) : this(supplier, cacheDuration, unit, Clock.systemUTC())
+		public ObjectCache(Func<T> supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit) : this(supplier, cacheDuration, unit, DateTime.UtcNow)
 		{
 		}
 
-		internal ObjectCache(System.Func<T> supplier, long cacheDuration, TimeUnit unit, Clock clock)
+		internal ObjectCache(System.Func<T> supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit, DateTime clock)
 		{
 			this.supplier = supplier;
 			this.cachedInstance = default(T);
-			this.cacheDurationMillis = unit.toMillis(cacheDuration);
+			this.cacheDurationMillis = unit.ToMillis(cacheDuration);
 			this.clock = clock;
 		}
 
@@ -46,10 +46,10 @@ namespace SharpPulsar.Util
 		{
 			lock (this)
 			{
-				long now = clock.millis();
+				long now = clock.ToUnixTimeSeconds();
 				if (cachedInstance == null || (now - lastRefreshTimestamp) >= cacheDurationMillis)
 				{
-					cachedInstance = supplier.get();
+					cachedInstance = supplier.Invoke();
 					lastRefreshTimestamp = now;
 				}
         

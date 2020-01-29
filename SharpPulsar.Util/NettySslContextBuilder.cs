@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 	using SslContext = io.netty.handler.ssl.SslContext;
 
@@ -29,15 +29,11 @@ namespace org.apache.pulsar.common.util
 	{
 		private volatile SslContext sslNettyContext;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public NettySslContextBuilder(boolean allowInsecure, String trustCertsFilePath, String certificateFilePath, String keyFilePath, java.util.Set<String> ciphers, java.util.Set<String> protocols, boolean requireTrustedClientCertOnConnect, long delayInSeconds) throws javax.net.ssl.SSLException, java.io.FileNotFoundException, java.security.GeneralSecurityException, java.io.IOException
 		public NettySslContextBuilder(bool allowInsecure, string trustCertsFilePath, string certificateFilePath, string keyFilePath, ISet<string> ciphers, ISet<string> protocols, bool requireTrustedClientCertOnConnect, long delayInSeconds) : base(allowInsecure, trustCertsFilePath, certificateFilePath, keyFilePath, ciphers, protocols, requireTrustedClientCertOnConnect, delayInSeconds)
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public synchronized io.netty.handler.ssl.SslContext update() throws javax.net.ssl.SSLException, java.io.FileNotFoundException, java.security.GeneralSecurityException, java.io.IOException
-		public override SslContext update()
+		public override SslContext Update()
 		{
 			lock (this)
 			{

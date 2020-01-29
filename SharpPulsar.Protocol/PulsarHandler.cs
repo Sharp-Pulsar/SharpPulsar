@@ -1,14 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using DotNetty.Common.Concurrency;
-using DotNetty.Transport.Channels;
-using Microsoft.Extensions.Logging;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Util;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using static SharpPulsar.Common.Proto.Api.PulsarApi;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -28,126 +18,138 @@ using static SharpPulsar.Common.Proto.Api.PulsarApi;
 /// </summary>
 namespace SharpPulsar.Protocol
 {
+	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
+	using ScheduledFuture = io.netty.util.concurrent.ScheduledFuture;
+	using CommandPing = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandPing;
+	using CommandPong = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandPong;
+	using ProtocolVersion = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.ProtocolVersion;
+	using Logger = org.slf4j.Logger;
+	using LoggerFactory = org.slf4j.LoggerFactory;
+    using SharpPulsar.Protocol;
 
-	/// <summary>
-	/// Implementation of the channel handler to process inbound Pulsar data.
-	/// </summary>
-	public abstract class PulsarHandler
+    /// <summary>
+    /// Implementation of the channel handler to process inbound Pulsar data.
+    /// </summary>
+    public abstract class PulsarHandler : PulsarDecoder
 	{
-		private IChannelHandlerContext _ctx;
-		private EndPoint _remoteAddress;
-		private int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
+		protected internal ChannelHandlerContext Ctx;
+		protected internal SocketAddress RemoteAddress;
+		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		protected internal int RemoteEndpointProtocolVersionConflict = ProtocolVersion.v0.Number;
 		private readonly long keepAliveIntervalSeconds;
 		private bool waitingForPingResponse = false;
-		private Timer _keepAliveTask;
+		//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
+		//ORIGINAL LINE: private io.netty.util.concurrent.ScheduledFuture<?> keepAliveTask;
+		private ScheduledFuture<object> keepAliveTask;
 
 		public virtual int RemoteEndpointProtocolVersion
 		{
 			get
 			{
-				return _remoteEndpointProtocolVersion;
-			}
-			set
-			{
-				_remoteEndpointProtocolVersion = value;
+				return RemoteEndpointProtocolVersionConflict;
 			}
 		}
 
-		public PulsarHandler(int KeepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public PulsarHandler(int KeepAliveInterval, TimeUnit Unit)
 		{
-			this.keepAliveIntervalSeconds = Unit.ToSecs(KeepAliveInterval);
+			this.keepAliveIntervalSeconds = Unit.toSeconds(KeepAliveInterval);
 		}
 
-		public void MessageReceived()
+		public override void MessageReceived()
 		{
 			waitingForPingResponse = false;
 		}
 
-		public void ChannelActive(EndPoint ctx)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: @Override public void channelActive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
+		public override void ChannelActive(ChannelHandlerContext Ctx)
 		{
-			_remoteAddress = ctx;
+			this.RemoteAddress = Ctx.channel().remoteAddress();
+			this.Ctx = Ctx;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (log.DebugEnabled)
 			{
-				log.LogDebug("[{}] Scheduling keep-alive task every {} s", ctx, keepAliveIntervalSeconds);
+				log.debug("[{}] Scheduling keep-alive task every {} s", Ctx.channel(), keepAliveIntervalSeconds);
 			}
 			if (keepAliveIntervalSeconds > 0)
 			{
-				_keepAliveTask = new Timer(this.HandleKeepAliveTimeout, keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.SECONDS);
+				this.keepAliveTask = Ctx.executor().scheduleAtFixedRate(this.handleKeepAliveTimeout, keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.SECONDS);
 			}
 		}
 
-		public void ChannelInactive(IChannelHandlerContext Ctx)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: @Override public void channelInactive(io.netty.channel.ChannelHandlerContext ctx) throws Exception
+		public override void ChannelInactive(ChannelHandlerContext Ctx)
 		{
 			CancelKeepAliveTask();
 		}
 
-		public void HandlePing(CommandPing Ping)
+		public override void HandlePing(CommandPing Ping)
 		{
 			// Immediately reply success to ping requests
-			if (log.IsEnabled(LogLevel.Debug))
+			if (log.DebugEnabled)
 			{
-				log.LogDebug("[{}] Replying back to ping message", _ctx.Channel);
+				log.debug("[{}] Replying back to ping message", Ctx.channel());
 			}
-			_ctx.WriteAndFlushAsync(Commands.NewPong());
+			Ctx.writeAndFlush(Commands.NewPong());
 		}
 
-		public void HandlePong(CommandPong Pong)
+		public override void HandlePong(CommandPong Pong)
 		{
 		}
 
 		private void HandleKeepAliveTimeout()
 		{
-			if (!_ctx.)
+			if (!Ctx.channel().Open)
 			{
 				return;
 			}
 
 			if (!HandshakeCompleted)
 			{
-				log.LogWarning("[{}] Pulsar Handshake was not completed within timeout, closing connection", _ctx.Channel);
-				_ctx.CloseAsync();
+				log.warn("[{}] Pulsar Handshake was not completed within timeout, closing connection", Ctx.channel());
+				Ctx.close();
 			}
-			else if (waitingForPingResponse && _ctx.Channel.Configuration.AutoRead)
+			else if (waitingForPingResponse && Ctx.channel().config().AutoRead)
 			{
 				// We were waiting for a response and another keep-alive just completed.
 				// If auto-read was disabled, it means we stopped reading from the connection, so we might receive the Ping
 				// response later and thus not enforce the strict timeout here.
-				log.LogWarning("[{}] Forcing connection to close after keep-alive timeout", _ctx.Channel);
-				_ctx.CloseAsync();
+				log.warn("[{}] Forcing connection to close after keep-alive timeout", Ctx.channel());
+				Ctx.close();
 			}
-			else if (_remoteEndpointProtocolVersion >= ProtocolVersion.v1.Number)
+			else if (RemoteEndpointProtocolVersionConflict >= ProtocolVersion.v1.Number)
 			{
 				// Send keep alive probe to peer only if it supports the ping/pong commands, added in v1
-				if (log.IsEnabled(LogLevel.Debug))
+				if (log.DebugEnabled)
 				{
-					log.LogDebug("[{}] Sending ping message", _ctx.Channel);
+					log.debug("[{}] Sending ping message", Ctx.channel());
 				}
 				waitingForPingResponse = true;
-				_ctx.WriteAndFlushAsync(Commands.NewPing());
+				Ctx.writeAndFlush(Commands.NewPing());
 			}
 			else
 			{
-				if (log.IsEnabled(LogLevel.Debug))
+				if (log.DebugEnabled)
 				{
-					log.LogDebug("[{}] Peer doesn't support keep-alive", _ctx.Channel);
+					log.debug("[{}] Peer doesn't support keep-alive", Ctx.channel());
 				}
 			}
 		}
 
 		public virtual void CancelKeepAliveTask()
 		{
-			if (_keepAliveTask != null)
+			if (keepAliveTask != null)
 			{
-				_keepAliveTask.Cancel();
-				_keepAliveTask = null;
+				keepAliveTask.cancel(false);
+				keepAliveTask = null;
 			}
 		}
 
 		/// <returns> true if the connection is ready to use, meaning the Pulsar handshake was already completed </returns>
-		public abstract bool HandshakeCompleted {get;}
+		public abstract bool HandshakeCompleted { get; }
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<PulsarHandler>();
+		private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarHandler));
 	}
 
 }

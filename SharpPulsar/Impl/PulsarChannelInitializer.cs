@@ -20,19 +20,15 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using ChannelInitializer = io.netty.channel.ChannelInitializer;
-	using SocketChannel = io.netty.channel.socket.SocketChannel;
-	using LengthFieldBasedFrameDecoder = io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-	using SslContext = io.netty.handler.ssl.SslContext;
-
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-	using ClientConfigurationData = SharpPulsar.Impl.Conf.ClientConfigurationData;
-	using SharpPulsar.Util;
-	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
+    using DotNetty.Codecs;
+    using DotNetty.Handlers.Tls;
     using DotNetty.Transport.Channels;
+    using DotNetty.Transport.Channels.Sockets;
+    using SharpPulsar.Api;
+    using SharpPulsar.Impl.Conf;
+    using SharpPulsar.Protocol;
+    using SharpPulsar.Shared;
+    using SharpPulsar.Util;
     using System.Security.Cryptography.X509Certificates;
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>
@@ -40,32 +36,32 @@ namespace SharpPulsar.Impl
 
 		public const string TlsHandler = "tls";
 
-		private readonly System.Func<ClientCnx> clientCnxSupplier;
+		private readonly Func<ClientCnx> clientCnxSupplier;
 		private readonly bool tlsEnabled;
 
-		private readonly System.Func<SslContext> sslContextSupplier;
+		private readonly Func<TlsHandler> sslContextSupplier;
 
-		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.toMillis(1);
+		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMillis(1);
 
-		public PulsarChannelInitializer(ClientConfigurationData Conf, System.Func<ClientCnx> ClientCnxSupplier) : base()
+		public PulsarChannelInitializer(ClientConfigurationData Conf, Func<ClientCnx> ClientCnxSupplier) : base()
 		{
 			this.clientCnxSupplier = ClientCnxSupplier;
 			this.tlsEnabled = Conf.UseTls;
 
 			if (Conf.UseTls)
 			{
-				sslContextSupplier = new ObjectCache<DotNetty.Handlers.Tls.TlsHandler>(() =>
+				sslContextSupplier = new ObjectCache<TlsHandler>(() =>
 				{
 						try
 						{
 							IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
 							if (AuthData.HasDataForTls())
 							{
-								return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
+								return SecurityUtility.CreateNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate2[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
 							}
 							else
 							{
-								return SecurityUtility.createNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
+								return SecurityUtility.CreateNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
 							}
 						}
 						catch (System.Exception E)
@@ -80,20 +76,20 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void InitChannel(SocketChannel Ch)
+		public void InitChannel(ISocketChannel ch)
 		{
 			if (tlsEnabled)
 			{
-				Ch.pipeline().addLast(TlsHandler, sslContextSupplier.get().newHandler(Ch.alloc()));
-				Ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.COPYING_ENCODER);
+				ch.Pipeline.AddLast(TlsHandler, sslContextSupplier.get().newHandler(ch.Allocator));
+				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.COPYINGENCODER);
 			}
 			else
 			{
-				Ch.pipeline().addLast("ByteBufPairEncoder", ByteBufPair.ENCODER);
+				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.ENCODER);
 			}
 
-			Ch.pipeline().addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DEFAULT_MAX_MESSAGE_SIZE + Commands.MESSAGE_SIZE_FRAME_PADDING, 0, 4, 0, 4));
-			Ch.pipeline().addLast("handler", clientCnxSupplier.get());
+			ch.Pipeline.AddLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DefaultMaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
+			ch.Pipeline.AddLast("handler", clientCnxSupplier.Invoke());
 		}
 	}
 

@@ -16,9 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
+    using DotNetty.Buffers;
 
 	/// <summary>
 	/// Custom number formatter for {@code io.netty.buffer.ByteBuf}.
@@ -26,11 +26,11 @@ namespace org.apache.pulsar.common.util
 	public class NumberFormat
 	{
 
-		internal static void format(ByteBuf @out, long num)
+		internal static void Format(IByteBuffer @out, long num)
 		{
 			if (num == 0)
 			{
-				@out.writeByte('0');
+				@out.WriteByte('0');
 				return;
 			}
 
@@ -38,36 +38,36 @@ namespace org.apache.pulsar.common.util
 			bool encounteredMinValue = (num == long.MinValue);
 			if (num < 0)
 			{
-				@out.writeByte('-');
+				@out.WriteByte('-');
 				num += encounteredMinValue ? 1 : 0;
 				num *= -1;
 			}
 
 			// Putting the number in bytebuf in reverse order
-			int start = @out.writerIndex();
+			int start = @out.WriterIndex;
 			formatHelper(@out, num);
-			int end = @out.writerIndex();
+			int end = @out.WriterIndex;
 
 			if (encounteredMinValue)
 			{
-				@out.setByte(start, @out.getByte(start) + 1);
+				@out.SetByte(start, @out.GetByte(start) + 1);
 			}
 
 			// Reversing the digits
 			end--;
 			for (int i = 0; i <= (end - start) / 2; i++)
 			{
-				sbyte tmp = @out.getByte(end - i);
-				@out.setByte(end - i, @out.getByte(start + i));
-				@out.setByte(start + i, tmp);
+				sbyte tmp = @out.GetByte(end - i);
+				@out.GetByte(end - i, @out.GetByte(start + i));
+				@out.SetByte(start + i, tmp);
 			}
 		}
 
-		internal static void formatHelper(ByteBuf @out, long num)
+		internal static void formatHelper(IByteBuffer @out, long num)
 		{
 			while (num != 0)
 			{
-				@out.writeByte((int)('0' + num % 10));
+				@out.WriteByte((int)('0' + num % 10));
 				num /= 10;
 			}
 		}

@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using DotNetty.Handlers.Tls;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,25 +20,23 @@
 namespace SharpPulsar.Util
 {
 
-	public class DefaultSslContextBuilder : SslContextAutoRefreshBuilder<SSLContext>
+	public class DefaultSslContextBuilder : SslContextAutoRefreshBuilder<TlsHandler>
 	{
-		private volatile SSLContext sslContext;
+		private volatile TlsHandler sslContext;
 		public DefaultSslContextBuilder(bool allowInsecure, string trustCertsFilePath, string certificateFilePath, string keyFilePath, bool requireTrustedClientCertOnConnect, long certRefreshInSec) : base(allowInsecure, trustCertsFilePath, certificateFilePath, keyFilePath, null, null, requireTrustedClientCertOnConnect, certRefreshInSec)
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public synchronized javax.net.ssl.SSLContext update() throws java.security.GeneralSecurityException
-		public override SSLContext update()
+		protected internal override TlsHandler Update()
 		{
 			lock (this)
 			{
-				this.sslContext = SecurityUtility.createSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.FileName, tlsCertificateFilePath.FileName, tlsKeyFilePath.FileName);
+				this.sslContext = SecurityUtility.CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.fileName, tlsCertificateFilePath.fileName, tlsKeyFilePath.fileName);
 				return this.sslContext;
 			}
 		}
 
-		public override SSLContext SslContext
+		protected internal override TlsHandler SslContext
 		{
 			get
 			{
@@ -45,6 +44,7 @@ namespace SharpPulsar.Util
 			}
 		}
 
+		//protected internal override TlsHandler SslContext => throw new System.NotImplementedException();
 	}
 
 }

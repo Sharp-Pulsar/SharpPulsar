@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,9 +24,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Util
 {
-
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	/// <summary>
 	/// Auto refresher and builder of SSLContext.
@@ -49,12 +49,12 @@ namespace SharpPulsar.Util
 			this.tlsCiphers = ciphers;
 			this.tlsProtocols = protocols;
 			this.tlsRequireTrustedClientCertOnConnect = requireTrustedClientCertOnConnect;
-			this.refreshTime = TimeUnit.SECONDS.toMillis(certRefreshInSec);
+			this.refreshTime = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToMillis(certRefreshInSec);
 			this.lastRefreshTime = -1;
 
-			if (LOG.DebugEnabled)
+			if (log.IsEnabled(LogLevel.Debug))
 			{
-				LOG.debug("Certs will be refreshed every {} seconds", certRefreshInSec);
+				log.LogDebug("Certs will be refreshed every {} seconds", certRefreshInSec);
 			}
 		}
 
@@ -64,7 +64,7 @@ namespace SharpPulsar.Util
 		/// @return </summary>
 		/// <exception cref="GeneralSecurityException"> </exception>
 		/// <exception cref="IOException"> </exception>
-		protected internal abstract T update();
+		protected internal abstract T Update();
 
 		/// <summary>
 		/// Returns cached SSLContext.
@@ -78,37 +78,37 @@ namespace SharpPulsar.Util
 		/// 
 		/// @return
 		/// </summary>
-		public virtual T get()
+		public virtual T Get()
 		{
 			T ctx = SslContext;
 			if (ctx == null)
 			{
 				try
 				{
-					update();
-					lastRefreshTime = DateTimeHelper.CurrentUnixTimeMillis();
+					Update();
+					lastRefreshTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 					return SslContext;
 				}
-				catch (Exception e) when (e is GeneralSecurityException || e is IOException)
+				catch (Exception e) when (e is SecurityException || e is IOException)
 				{
-					LOG.error("Execption while trying to refresh ssl Context {}", e.Message, e);
+					log.LogError("Execption while trying to refresh ssl Context {}", e.Message, e);
 				}
 			}
 			else
 			{
-				long now = DateTimeHelper.CurrentUnixTimeMillis();
+				long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 				if (refreshTime <= 0 || now > (lastRefreshTime + refreshTime))
 				{
-					if (tlsTrustCertsFilePath.checkAndRefresh() || tlsCertificateFilePath.checkAndRefresh() || tlsKeyFilePath.checkAndRefresh())
+					if (tlsTrustCertsFilePath.CheckAndRefresh() || tlsCertificateFilePath.CheckAndRefresh() || tlsKeyFilePath.CheckAndRefresh())
 					{
 						try
 						{
-							ctx = update();
+							ctx = Update();
 							lastRefreshTime = now;
 						}
-						catch (Exception e) when (e is GeneralSecurityException || e is IOException)
+						catch (Exception e) when (e is SecurityException || e is IOException)
 						{
-							LOG.error("Execption while trying to refresh ssl Context {} ", e.Message, e);
+							log.LogError("Execption while trying to refresh ssl Context {} ", e.Message, e);
 						}
 					}
 				}
@@ -116,7 +116,7 @@ namespace SharpPulsar.Util
 			return ctx;
 		}
 
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(SslContextAutoRefreshBuilder));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<SslContextAutoRefreshBuilder<T>>();
 	}
 
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
 	/// <summary>
@@ -29,9 +30,6 @@ namespace org.apache.pulsar.common.util
 	{
 
 		private KeyStore keyStore = null;
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public KeyStoreHolder() throws java.security.KeyStoreException
 		public KeyStoreHolder()
 		{
 			try
@@ -39,7 +37,7 @@ namespace org.apache.pulsar.common.util
 				keyStore = KeyStore.getInstance(KeyStore.DefaultType);
 				keyStore.load(null, null);
 			}
-			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
+			catch (Exception e) when (e is SecurityException || e is IOException)
 			{
 				throw new KeyStoreException("KeyStore creation error", e);
 			}
@@ -53,9 +51,7 @@ namespace org.apache.pulsar.common.util
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public void setCertificate(String alias, java.security.cert.Certificate certificate) throws java.security.KeyStoreException
-		public virtual void setCertificate(string alias, Certificate certificate)
+		public virtual void SetCertificate(string alias, Certificate certificate)
 		{
 			try
 			{
@@ -67,9 +63,7 @@ namespace org.apache.pulsar.common.util
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public void setPrivateKey(String alias, java.security.PrivateKey privateKey, java.security.cert.Certificate[] certChain) throws java.security.KeyStoreException
-		public virtual void setPrivateKey(string alias, PrivateKey privateKey, Certificate[] certChain)
+		public virtual void SetPrivateKey(string alias, PrivateKey privateKey, Certificate[] certChain)
 		{
 			try
 			{

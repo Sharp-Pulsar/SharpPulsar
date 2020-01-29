@@ -45,7 +45,7 @@ using DotNetty.Transport.Libuv;
 namespace SharpPulsar.Impl
 {
 
-	public class ClientCnx 
+	public class ClientCnx:PulsarHandler
 	{
 
 		protected internal readonly IAuthentication Authentication;
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
 		private readonly Semaphore _pendingLookupRequestSemaphore;
 		private readonly Semaphore _maxLookupRequestSemaphore;
-		private readonly IEventLoopGroup _eventLoopGroup;
+		private readonly MultithreadEventLoopGroup _eventLoopGroup;
 
 		private static readonly ConcurrentDictionary<ClientCnx, long> _numberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
 		private volatile int _numberOfRejectRequests = 0;
@@ -111,11 +111,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, EventLoopGroup eventLoop) : this(Conf, Commands.CurrentProtocolVersion, eventLoop)
+		public ClientCnx(ClientConfigurationData Conf, MultithreadEventLoopGroup eventLoop) : this(Conf, Commands.CurrentProtocolVersion, eventLoop)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, EventLoopGroup eventLoop)
+		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, MultithreadEventLoopGroup eventLoop)
 		{
 			if (Conf.MaxLookupRequest < Conf.ConcurrentLookupRequest)
 				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");

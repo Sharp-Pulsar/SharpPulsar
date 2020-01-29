@@ -16,19 +16,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
-	using UtilityClass = lombok.experimental.UtilityClass;
 
 	/// <summary>
 	/// Parser for relative time.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @UtilityClass public class RelativeTimeUtil
 	public class RelativeTimeUtil
 	{
-		public static long parseRelativeTimeInSeconds(string relativeTime)
+		public static long ParseRelativeTimeInSeconds(string relativeTime)
 		{
 			if (relativeTime.Length == 0)
 			{
@@ -37,8 +34,6 @@ namespace org.apache.pulsar.common.util
 
 			int lastIndex = relativeTime.Length - 1;
 			char lastChar = relativeTime[lastIndex];
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final char timeUnit;
 			char timeUnit;
 
 			if (!Character.isAlphabetic(lastChar))
@@ -59,16 +54,16 @@ namespace org.apache.pulsar.common.util
 			case 's':
 				return duration;
 			case 'm':
-				return TimeUnit.MINUTES.toSeconds(duration);
+				return BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToSeconds(duration);
 			case 'h':
-				return TimeUnit.HOURS.toSeconds(duration);
+				return BAMCIS.Util.Concurrent.TimeUnit.HOURS.ToSeconds(duration);
 			case 'd':
-				return TimeUnit.DAYS.toSeconds(duration);
+				return BAMCIS.Util.Concurrent.TimeUnit.DAYS.ToSeconds(duration);
 			case 'w':
-				return 7 * TimeUnit.DAYS.toSeconds(duration);
+				return 7 * BAMCIS.Util.Concurrent.TimeUnit.DAYS.ToSeconds(duration);
 			// No unit for months
 			case 'y':
-				return 365 * TimeUnit.DAYS.toSeconds(duration);
+				return 365 * BAMCIS.Util.Concurrent.TimeUnit.DAYS.ToSeconds(duration);
 			default:
 				throw new System.ArgumentException("Invalid time unit '" + lastChar + "'");
 			}

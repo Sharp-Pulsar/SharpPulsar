@@ -4,4 +4,11 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="dotnetty.buffers" Version="0.6.0" />
+    <PackageReference Include="dotnetty.common" Version="0.6.0" />
+    <PackageReference Include="dotnetty.handlers" Version="0.6.0" />
+    <PackageReference Include="dotnetty.transport.libuv" Version="0.6.0" />
+  </ItemGroup>
+
 </Project>

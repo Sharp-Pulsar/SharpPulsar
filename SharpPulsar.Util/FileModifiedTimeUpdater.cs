@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Runtime.InteropServices.ComTypes;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,50 +20,43 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
-	using Getter = lombok.Getter;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 	/// <summary>
 	/// Class working with file's modified time.
 	/// </summary>
 	public class FileModifiedTimeUpdater
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter String fileName;
 		internal string fileName;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter FileTime lastModifiedTime;
-		internal FileTime lastModifiedTime;
+		internal DateTime lastModifiedTime;
 
 		public FileModifiedTimeUpdater(string fileName)
 		{
 			this.fileName = fileName;
-			this.lastModifiedTime = updateLastModifiedTime();
+			this.lastModifiedTime = UpdateLastModifiedTime();
 		}
 
-		private FileTime updateLastModifiedTime()
+		private DateTime UpdateLastModifiedTime()
 		{
-			if (!string.ReferenceEquals(fileName, null))
+			if (!string.IsNullOrWhiteSpace(fileName))
 			{
-				Path p = Paths.get(fileName);
+				FileInfo p = new FileInfo(fileName);
 				try
 				{
-					return Files.getLastModifiedTime(p);
+					return p.LastWriteTimeUtc;
 				}
 				catch (IOException e)
 				{
-					LOG.error("Unable to fetch lastModified time for file {}: ", fileName, e);
+					log.LogError("Unable to fetch lastModified time for file {}: ", fileName, e);
 				}
 			}
-			return null;
+			throw new System.Exception("Invalid file name");
 		}
 
-		public virtual bool checkAndRefresh()
+		public virtual bool CheckAndRefresh()
 		{
-			FileTime newLastModifiedTime = updateLastModifiedTime();
+			DateTime newLastModifiedTime = UpdateLastModifiedTime();
 			if (newLastModifiedTime != null && !newLastModifiedTime.Equals(lastModifiedTime))
 			{
 				this.lastModifiedTime = newLastModifiedTime;
@@ -68,7 +65,7 @@ namespace org.apache.pulsar.common.util
 			return false;
 		}
 
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(FileModifiedTimeUpdater));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger<FileModifiedTimeUpdater>();
 	}
 
 }

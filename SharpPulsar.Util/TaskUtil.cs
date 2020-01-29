@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 
 	/// <summary>
@@ -42,7 +42,7 @@ namespace org.apache.pulsar.common.util
 
 		public static ValueTask<T> FailedTask<T>(Exception t)
 		{
-			return new ValueTask<T>(Task.FromException(t));
+			return new ValueTask<T>(Task.FromException<T>(t));
 		}
 
 		public static Exception UnwrapCompletionException(Exception t)

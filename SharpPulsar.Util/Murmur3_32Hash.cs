@@ -21,7 +21,7 @@
  * public domain. This source code, implemented by Licht Takeuchi, is based on
  * the orignal MurmurHash3 source code.
  */
-namespace org.apache.pulsar.common.util
+namespace SharpPulsar.Util
 {
 	using UnsignedBytes = com.google.common.primitives.UnsignedBytes;
 

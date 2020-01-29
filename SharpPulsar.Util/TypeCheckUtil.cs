@@ -22,11 +22,11 @@ namespace SharpPulsar.Util
 {
 	public class TypeCheckUtil
 	{
-		public static T checkType<T>(object o, Type clazz)
+		public static T CheckType<T>(object o, Type clazz)
 		{
 			if (!clazz.IsInstanceOfType(o))
 			{
-				throw new System.Exception(string.Format("Invalid object type '{0}' when exepcting '{1}'", o.GetType().FullName, clazz.FullName));
+				throw new Exception(string.Format("Invalid object type '{0}' when exepcting '{1}'", o.GetType().FullName, clazz.FullName));
 			}
 			return (T) o;
 		}
