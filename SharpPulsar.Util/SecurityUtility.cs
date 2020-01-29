@@ -82,11 +82,25 @@ namespace SharpPulsar.Util
 		}
 
 		
-		private static SslContext CreateNettySslContextForClient(bool AllowInsecureConnection, string TrustCertsFilePath, X509Certificate[] Certificates, PrivateKey PrivateKey)
+		public static SslContext CreateNettySslContextForClient(bool AllowInsecureConnection, string TrustCertsFilePath, X509Certificate[] Certificates, PrivateKey PrivateKey)
 		{
 			SslContextBuilder Builder = SslContextBuilder.forClient();
 			SetupTrustCerts(Builder, AllowInsecureConnection, TrustCertsFilePath);
 			SetupKeyManager(Builder, PrivateKey, (X509Certificate[])Certificates);
+			return Builder.build();
+		}
+
+		public static SslContext CreateNettySslContextForServer(bool AllowInsecureConnection, string TrustCertsFilePath, string CertFilePath, string KeyFilePath, ISet<string> Ciphers, ISet<string> Protocols, bool RequireTrustedClientCertOnConnect)
+		{
+			X509Certificate[] Certificates = LoadCertificatesFromPemFile(CertFilePath);
+			PrivateKey PrivateKey = LoadPrivateKeyFromPemFile(KeyFilePath).ex;
+
+			SslContextBuilder Builder = SslContextBuilder.forServer(PrivateKey, (X509Certificate[])Certificates);
+			SetupCiphers(Builder, Ciphers);
+			SetupProtocols(Builder, Protocols);
+			SetupTrustCerts(Builder, AllowInsecureConnection, TrustCertsFilePath);
+			SetupKeyManager(Builder, PrivateKey, Certificates);
+			SetupClientAuthentication(Builder, RequireTrustedClientCertOnConnect);
 			return Builder.build();
 		}
 
@@ -302,7 +316,27 @@ namespace SharpPulsar.Util
 			return SslCtxFactory;
 		}
 
-		
+		/// <summary>
+		/// <seealso cref="SslContextFactory"/> that auto-refresh SSLContext.
+		/// </summary>
+		public class SslContextFactoryWithAutoRefresh : SslContextFactory
+		{
+
+			internal readonly DefaultSslContextBuilder SslCtxRefresher;
+			public SslContextFactoryWithAutoRefresh(bool TlsAllowInsecureConnection, string TlsTrustCertsFilePath, string TlsCertificateFilePath, string TlsKeyFilePath, bool TlsRequireTrustedClientCertOnConnect, long CertRefreshInSec) : base()
+			{
+				SslCtxRefresher = new DefaultSslContextBuilder(TlsAllowInsecureConnection, TlsTrustCertsFilePath, TlsCertificateFilePath, TlsKeyFilePath, TlsRequireTrustedClientCertOnConnect, CertRefreshInSec);
+			}
+
+			public override TlsHandler SslContext
+			{
+				get
+				{
+					return SslCtxRefresher.Get();
+
+				}
+			}
+		}
 	}
 
 }

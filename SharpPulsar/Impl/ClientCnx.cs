@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 		private readonly ConcurrentDictionary<long, ConsumerImpl<object>> _consumers = new ConcurrentDictionary<long, ConsumerImpl<object>>(1, 16);
 		private readonly ConcurrentDictionary<long, TransactionMetaStoreHandler> _transactionMetaStoreHandlers = new ConcurrentDictionary<long, TransactionMetaStoreHandler>(1, 16);
 
-		private  TaskCompletionSource<Task> _connectionTask = new TaskCompletionSource<Task>();
+		private  TaskCompletionSource<ClientCnx> _connectionTask = new TaskCompletionSource<ClientCnx>();
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
 		private readonly Semaphore _pendingLookupRequestSemaphore;
 		private readonly Semaphore _maxLookupRequestSemaphore;
@@ -161,9 +161,9 @@ namespace SharpPulsar.Impl
 			_pendingGetSchemaRequests.ToList().ForEach(x => x.Value.SetException(e));
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
-			_producers.ToList().ForEach(p => p.ConnectionClosed(this));
-			_consumers.ToList().ForEach(c => c.ConnectionClosed(this));
-			_transactionMetaStoreHandlers.ToList().ForEach(h => h.ConnectionClosed(this));
+			_producers.ToList().ForEach(p => p.Value.ConnectionClosed(this));
+			_consumers.ToList().ForEach(c => c.Value.ConnectionClosed(this));
+			_transactionMetaStoreHandlers.ToList().ForEach(h => h.Value.ConnectionClosed(this));
 
 			_pendingRequests.Clear();
 			_pendingLookupRequests.Clear();
@@ -742,7 +742,7 @@ namespace SharpPulsar.Impl
 			requestTask.SetResult(commandGetOrCreateSchemaResponse);
 		}
 
-		public virtual Promise<Void> NewPromise()
+		public virtual Task NewPromise()
 		{
 			return Ctx().NewPromise();
 		}
@@ -762,7 +762,7 @@ namespace SharpPulsar.Impl
 			return Ctx().Channel.RemoteAddress;
 		}
 
-		public virtual TaskCompletionSource<Task> ConnectionTask()
+		public virtual TaskCompletionSource<ClientCnx> ConnectionTask()
 		{
 			return _connectionTask;
 		}
@@ -1014,6 +1014,10 @@ namespace SharpPulsar.Impl
 
 		 public virtual string RemoteHostName
 		 {
+			get
+			{
+				return _remoteHostName;
+			}
 			 set
 			 {
 				_remoteHostName = value;

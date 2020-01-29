@@ -33,8 +33,7 @@ namespace SharpPulsar.Impl
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>
 	{
-
-		public const string TlsHandler = "tls";
+		public ClientConfigurationData _conf;
 
 		private readonly Func<ClientCnx> clientCnxSupplier;
 		private readonly bool tlsEnabled;
@@ -43,17 +42,18 @@ namespace SharpPulsar.Impl
 
 		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMillis(1);
 
-		public PulsarChannelInitializer(ClientConfigurationData Conf, Func<ClientCnx> ClientCnxSupplier) : base()
+		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientCnx> ClientCnxSupplier) : base()
 		{
-			this.clientCnxSupplier = ClientCnxSupplier;
-			this.tlsEnabled = Conf.UseTls;
-
-			if (Conf.UseTls)
+			clientCnxSupplier = ClientCnxSupplier;
+			tlsEnabled = conf.UseTls;
+			_conf = conf;
+			/*if (Conf.UseTls)
 			{
 				sslContextSupplier = new ObjectCache<TlsHandler>(() =>
 				{
 						try
 						{
+						
 							IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
 							if (AuthData.HasDataForTls())
 							{
@@ -73,14 +73,14 @@ namespace SharpPulsar.Impl
 			else
 			{
 				sslContextSupplier = null;
-			}
+			}*/
 		}
 
-		public void InitChannel(ISocketChannel ch)
+		protected override void InitChannel(IChannel ch)
 		{
 			if (tlsEnabled)
 			{
-				ch.Pipeline.AddLast(TlsHandler, sslContextSupplier.get().newHandler(ch.Allocator));
+				ch.Pipeline.AddLast(TlsHandler.Client(_conf.ServiceUrl, _conf.Authentication.AuthData.TlsCertificates[0]));
 				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.COPYINGENCODER);
 			}
 			else
@@ -91,6 +91,7 @@ namespace SharpPulsar.Impl
 			ch.Pipeline.AddLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DefaultMaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
 			ch.Pipeline.AddLast("handler", clientCnxSupplier.Invoke());
 		}
+
 	}
 
 }

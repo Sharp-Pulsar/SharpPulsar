@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
 			return GetPartitionedTopicMetadata(serviceNameResolver.ResolveHost(), TopicName);
 		}
 
-		private ValueTask<ValueTask<KeyValuePair<EndPoint, EndPoint>>> FindBroker(EndPoint socketAddress, bool authoritative, TopicName topicName)
+		private ValueTask<ValueTask<KeyValuePair<EndPoint, EndPoint>>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
 		{
 			TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>> addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
 

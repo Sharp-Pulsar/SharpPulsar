@@ -570,8 +570,6 @@ namespace SharpPulsar.Impl
 			return Cnx.sendGetOrCreateSchema(Request, RequestId);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: protected io.netty.buffer.ByteBuf encryptMessage(org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata.Builder msgMetadata, io.netty.buffer.ByteBuf compressedPayload) throws SharpPulsar.api.PulsarClientException
 		public virtual ByteBuf EncryptMessage(MessageMetadata.Builder MsgMetadata, ByteBuf CompressedPayload)
 		{
 
@@ -705,8 +703,6 @@ namespace SharpPulsar.Impl
 
 		public sealed class WriteInEventLoopCallback : ThreadStart
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ProducerImpl<?> producer;
 			internal ProducerImpl<object> Producer;
 			internal ByteBufPair Cmd;
 			internal long SequenceId;
@@ -1530,7 +1526,7 @@ namespace SharpPulsar.Impl
 					{
 						FailPendingMessages(null, Ex);
 					}
-				});
+				}});
 			}
 		}
 
