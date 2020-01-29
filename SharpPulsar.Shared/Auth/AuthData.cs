@@ -18,7 +18,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Auth
+namespace SharpPulsar.Shared
 {
 	/// <summary>
 	/// Authentication data.
@@ -28,13 +28,13 @@ namespace SharpPulsar.Common.Auth
 		
 		public static sbyte[] InitAuthData = (sbyte[])(object)Encoding.UTF8.GetBytes("PulsarAuthInit");
 
-		private readonly sbyte[] bytes;
+		public readonly sbyte[] Bytes;
 
 		public bool Complete
 		{
 			get
 			{
-				return bytes == null;
+				return Bytes == null;
 			}
 		}
 	}

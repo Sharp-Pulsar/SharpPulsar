@@ -80,7 +80,7 @@ namespace SharpPulsar.Impl
 		{
 			if (tlsEnabled)
 			{
-				ch.Pipeline.AddLast(TlsHandler.Client(_conf.ServiceUrl, _conf.Authentication.AuthData.TlsCertificates[0]));
+				ch.Pipeline.AddLast("tls", TlsHandler.Client(_conf.ServiceUrl, _conf.Authentication.AuthData.TlsCertificates[0]));
 				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.COPYINGENCODER);
 			}
 			else

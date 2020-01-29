@@ -23,8 +23,11 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl
 {
+    using DotNetty.Buffers;
     using SharpPulsar.Api;
     using SharpPulsar.Common.Naming;
+    using SharpPulsar.Protocol;
+    using SharpPulsar.Protocol.Proto;
     using System.Threading.Tasks;
 
     public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
@@ -837,7 +840,7 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		public virtual void MessageReceived(PulsarApi.MessageIdData MessageId, int RedeliveryCount, ByteBuf HeadersAndPayload, ClientCnx Cnx)
+		public virtual void MessageReceived(MessageIdData MessageId, int RedeliveryCount, IByteBuffer HeadersAndPayload, ClientCnx Cnx)
 		{
 			if (log.DebugEnabled)
 			{
@@ -847,7 +850,7 @@ namespace SharpPulsar.Impl
 			if (!VerifyChecksum(HeadersAndPayload, MessageId))
 			{
 				// discard message with checksum error
-				DiscardCorruptedMessage(MessageId, Cnx, PulsarApi.CommandAck.ValidationError.ChecksumMismatch);
+				DiscardCorruptedMessage(MessageId, Cnx, CommandAck.ValidationError.ChecksumMismatch);
 				return;
 			}
 
@@ -1366,18 +1369,18 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private void DiscardCorruptedMessage(PulsarApi.MessageIdData MessageId, ClientCnx CurrentCnx, PulsarApi.CommandAck.ValidationError ValidationError)
+		private void DiscardCorruptedMessage(MessageIdData MessageId, ClientCnx CurrentCnx, CommandAck.ValidationError ValidationError)
 		{
 			log.error("[{}][{}] Discarding corrupted message at {}:{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
 			DiscardMessage(MessageId, CurrentCnx, ValidationError);
 		}
 
-		private void DiscardMessage(PulsarApi.MessageIdData MessageId, ClientCnx CurrentCnx, PulsarApi.CommandAck.ValidationError ValidationError)
+		private void DiscardMessage(MessageIdData MessageId, ClientCnx currentCnx, CommandAck.ValidationError ValidationError)
 		{
-			ByteBuf Cmd = Commands.newAck(ConsumerId, MessageId.LedgerId, MessageId.EntryId, PulsarApi.CommandAck.AckType.Individual, ValidationError, Collections.emptyMap());
-			CurrentCnx.ctx().writeAndFlush(Cmd, CurrentCnx.ctx().voidPromise());
-			IncreaseAvailablePermits(CurrentCnx);
-			StatsConflict.incrementNumReceiveFailed();
+			IByteBuffer cmd = Commands.NewAck(ConsumerId, (long)MessageId.ledgerId, (long)MessageId.entryId, CommandAck.AckType.Individual, ValidationError, new Dictionary<string,long>());
+			currentCnx.Ctx().WriteAndFlushAsync(cmd);
+			IncreaseAvailablePermits(currentCnx);
+			StatsConflict.IncrementNumReceiveFailed();
 		}
 
 		public override string HandlerName
@@ -1392,7 +1395,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return ClientCnx != null && (State == State.Ready);
+				return ClientCnx != null && (this.State == State.Ready);
 			}
 		}
 
@@ -1412,8 +1415,8 @@ namespace SharpPulsar.Impl
 
 		public override void RedeliverUnacknowledgedMessages()
 		{
-			ClientCnx Cnx = cnx();
-			if (Connected && Cnx.RemoteEndpointProtocolVersion >= PulsarApi.ProtocolVersion.v2.Number)
+			ClientCnx Cnx = Cnx();
+			if (Connected && Cnx.RemoteEndpointProtocolVersion >= (int)ProtocolVersion.v2)
 			{
 				int CurrentSize = 0;
 				lock (this)
@@ -1421,7 +1424,7 @@ namespace SharpPulsar.Impl
 					CurrentSize = IncomingMessages.size();
 					IncomingMessages.clear();
 					IncomingMessagesSizeUpdater.set(this, 0);
-					UnAckedMessageTracker.Clear();
+					UnAckedMessageTracker<T>.Clear();
 				}
 				Cnx.ctx().writeAndFlush(Commands.newRedeliverUnacknowledgedMessages(ConsumerId), Cnx.ctx().voidPromise());
 				if (CurrentSize > 0)

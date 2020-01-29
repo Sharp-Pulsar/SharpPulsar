@@ -9,6 +9,11 @@ using Microsoft.IO;
 using ProtoBuf;
 using System.IO;
 using System.Net;
+using Google.Protobuf;
+using System.Text;
+using SharpPulsar.Protocol.Extension;
+using SharpPulsar.Common;
+using SharpPulsar.Util.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,7 +61,7 @@ namespace SharpPulsar.Protocol
 			return NewConnect(AuthMethodName, AuthData, CurrentProtocolVersion, LibVersion, TargetBroker, OriginalPrincipal, ClientAuthData, ClientAuthMethod);
 		}
 
-		public static IByteBuffer NewConnect(string AuthMethodName, string AuthData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, string OriginalAuthData, string OriginalAuthMethod)
+		public static IByteBuffer NewConnect(string AuthMethodName, string authData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, string OriginalAuthData, string OriginalAuthMethod)
 		{
 			Proto.CommandConnect.Builder ConnectBuilder = Proto.CommandConnect.newBuilder();
 			ConnectBuilder.setClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
@@ -76,7 +81,7 @@ namespace SharpPulsar.Protocol
 				ConnectBuilder.setProxyToBrokerUrl(TargetBroker);
 			}
 
-			if (!string.ReferenceEquals(AuthData, null))
+			if (!string.ReferenceEquals(authData, null))
 			{
 				ConnectBuilder.AuthData = copyFromUtf8(AuthData);
 			}
@@ -103,42 +108,43 @@ namespace SharpPulsar.Protocol
 			return Res;
 		}
 
-		public static IByteBuffer NewConnect(string AuthMethodName, AuthData AuthData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, AuthData OriginalAuthData, string OriginalAuthMethod)
+		public static IByteBuffer NewConnect(string authMethodName, Shared.AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
 		{
-			Proto.CommandConnect.Builder ConnectBuilder = Proto.CommandConnect.newBuilder();
-			ConnectBuilder.setClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
-			ConnectBuilder.setAuthMethodName(AuthMethodName);
+			CommandConnect.Builder connectBuilder = CommandConnect.NewBuilder();
+			connectBuilder.SetClientVersion(!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client");
+			connectBuilder.SetAuthMethodName(authMethodName);
 
-			if (!string.ReferenceEquals(TargetBroker, null))
+			if (!string.ReferenceEquals(targetBroker, null))
 			{
 				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				ConnectBuilder.setProxyToBrokerUrl(TargetBroker);
+				connectBuilder.SetProxyToBrokerUrl(targetBroker);
 			}
 
-			if (AuthData != null)
+			if (authData != null)
 			{
-				ConnectBuilder.AuthData = ByteString.copyFrom(AuthData.Bytes);
+				connectBuilder.SetAuthData((byte[])(Array)authData.Bytes);
 			}
 
-			if (!string.ReferenceEquals(OriginalPrincipal, null))
+			if (!string.ReferenceEquals(originalPrincipal, null))
 			{
-				ConnectBuilder.setOriginalPrincipal(OriginalPrincipal);
+				connectBuilder.SetOriginalPrincipal(originalPrincipal);
 			}
 
-			if (OriginalAuthData != null)
+			if (originalAuthData != null)
 			{
-				ConnectBuilder.setOriginalAuthData(new string(OriginalAuthData.Bytes, UTF_8));
+				connectBuilder.SetOriginalAuthData(Encoding.UTF8.GetString(originalAuthData.auth_data));
 			}
 
-			if (!string.ReferenceEquals(OriginalAuthMethod, null))
+			if (!string.ReferenceEquals(originalAuthMethod, null))
 			{
-				ConnectBuilder.setOriginalAuthMethod(OriginalAuthMethod);
+				connectBuilder.SetOriginalAuthMethod(originalAuthMethod);
 			}
-			ConnectBuilder.ProtocolVersion = ProtocolVersion;
-			Proto.CommandConnect Connect = ConnectBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CONNECT).setConnect(Connect));
-			Connect.recycle();
-			ConnectBuilder.recycle();
+			connectBuilder.SetProtocolVersion(protocolVersion);
+			BaseCommand baseCmd = connectBuilder.Build().ToBaseCommand();
+			
+			IByteBuffer Res = SerializeWithSize(baseCmd);
+			connect.Recycle();
+			connectBuilder.Recycle();
 			return Res;
 		}
 
@@ -189,7 +195,7 @@ namespace SharpPulsar.Protocol
 			return Res;
 		}
 
-		public static IIByteBufferfer NewAuthResponse(string AuthMethod, AuthData ClientData, int ClientProtocolVersion, string ClientVersion)
+		public static IByteBuffer NewAuthResponse(string AuthMethod, AuthData ClientData, int ClientProtocolVersion, string ClientVersion)
 		{
 			Proto.CommandAuthResponse.Builder ResponseBuilder = Proto.CommandAuthResponse.newBuilder();
 
@@ -1353,41 +1359,41 @@ namespace SharpPulsar.Protocol
 
 
 		}
-		public static IByteBuffer SerializeWithSize(Proto.BaseCommand.Builder CmdBuilder)
+		public static IByteBuffer SerializeWithSize(BaseCommand.Builder CmdBuilder)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD]
-			Proto.BaseCommand Cmd = CmdBuilder.build();
+			BaseCommand cmd = CmdBuilder.build();
 
-			int CmdSize = Cmd.SerializedSize;
-			int TotalSize = CmdSize + 4;
-			int FrameSize = TotalSize + 4;
+			int cmdSize = cmd.SerializedSize;
+			int totalSize = cmdSize + 4;
+			int frameSize = totalSize + 4;
 
-			IByteBuffer Buf = PulsarIByteBufferAllocator.DEFAULT.buffer(FrameSize, FrameSize);
+			IByteBuffer buf = PulsarByteBufAllocator.DEFAULT.Buffer(frameSize, frameSize);
 
 			// Prepend 2 lengths to the buffer
-			Buf.writeInt(TotalSize);
-			Buf.writeInt(CmdSize);
+			buf.WriteInt(totalSize);
+			buf.WriteInt(cmdSize);
 
-			IByteBufferCodedOutputStream OutStream = IByteBufferCodedOutputStream.get(Buf);
+			ByteBufCodedOutputStream outStream = ByteBufCodedOutputStream.Get(buf);
 
 			try
 			{
-				Cmd.writeTo(OutStream);
+				cmd.WriteTo(outStream);
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// This is in-memory serialization, should not fail
-				throw new Exception(E);
+				throw new System.Exception(e.Message, e);
 			}
 			finally
 			{
 				Cmd.recycle();
 				CmdBuilder.recycle();
-				OutStream.recycle();
+				outStream.Recycle();
 			}
 
-			return Buf;
+			return buf;
 		}
 
 		private static IByteBufferPair SerializeCommandSendWithSize(Proto.BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, Proto.MessageMetadata MsgMetadata, IByteBuffer Payload)

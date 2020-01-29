@@ -23,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using DotNetty.Handlers.Tls;
 using System.IO;
 using DotNetty.Transport.Libuv;
+using DotNetty.Transport.Bootstrapping;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -115,7 +116,7 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, MultithreadEventLoopGroup eventLoop)
+		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, MultithreadEventLoopGroup eventLoop) : base(Conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
 		{
 			if (Conf.MaxLookupRequest < Conf.ConcurrentLookupRequest)
 				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
@@ -137,8 +138,8 @@ namespace SharpPulsar.Impl
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
-			AuthData AuthData = AuthenticationDataProvider.Authenticate(AuthData.of(AuthData.auth_data));
-			return Commands.NewConnect(Authentication.AuthMethodName, AuthData, _protocolVersion, PulsarVersion.Version, _proxyToTargetBrokerAddress, null, null, null);
+			var authData = AuthenticationDataProvider.Authenticate(AuthData.of(AuthData.auth_data));
+			return Commands.NewConnect(Authentication.AuthMethodName, authData, _protocolVersion, null, _proxyToTargetBrokerAddress, null, null, null);
 		}
 
 		public void ChannelInactive(IChannelHandlerContext Ctx)
@@ -147,7 +148,7 @@ namespace SharpPulsar.Impl
 			log.LogInformation("{} Disconnected", Ctx.Channel);
 			if (_connectionTask.Task.IsFaulted)
 			{
-				_connectionTask.SetException(new PulsarClientException("Connection already closed");
+				_connectionTask.SetException(new PulsarClientException("Connection already closed"));
 			}
 
 			PulsarClientException e = new PulsarClientException("Disconnected from server at " + Ctx.Channel.RemoteAddress);
@@ -242,11 +243,11 @@ namespace SharpPulsar.Impl
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				AuthData authData = AuthenticationDataProvider.Authenticate(AuthData.of(authChallenge.Challenge.auth_data));
+				var authData = AuthenticationDataProvider.Authenticate(AuthData.of(authChallenge.Challenge.auth_data));
 
 						if (!authData.Complete)
 							throw new System.Exception();
-					IByteBuffer request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, PulsarVersion.Version);
+					IByteBuffer request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, string.Empty);
 
 				if (log.IsEnabled(LogLevel.Debug))
 				{
@@ -300,19 +301,19 @@ namespace SharpPulsar.Impl
 			_producers[ProducerId].AckReceived(this, SequenceId, HighestSequenceId, LedgerId, EntryId);
 		}
 
-		public void HandleMessage(CommandMessage CmdMessage, IByteBuffer HeadersAndPayload)
+		public void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
 		{
 			if(state != State.Ready)
 				return;
 
 			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received a message from the server: {}", Ctx().Channel, CmdMessage);
+				log.LogDebug("{} Received a message from the server: {}", Ctx().Channel, cmdMessage);
 			}
-			ConsumerImpl<object> consumer = _consumers[(long)CmdMessage.ConsumerId];
+			ConsumerImpl<object> consumer = _consumers[(long)cmdMessage.ConsumerId];
 			if (consumer != null)
 			{
-				consumer.MessageReceived(CmdMessage.MessageId, CmdMessage.RedeliveryCount, HeadersAndPayload, this);
+				consumer.MessageReceived(cmdMessage.MessageId, (int)cmdMessage.RedeliveryCount, headersAndPayload, this);
 			}
 		}
 
@@ -655,7 +656,6 @@ namespace SharpPulsar.Impl
 
 				if (_maxLookupRequestSemaphore.WaitOne())
 				{
-					
 					_waitingLookupRequests.AddLast(new LinkedListNode<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>> (requestId, new KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>(request, task)));
 				}
 				else
@@ -744,7 +744,8 @@ namespace SharpPulsar.Impl
 
 		public virtual Task NewPromise()
 		{
-			return Ctx().NewPromise();
+			//return Ctx().NewPromise();
+			return null;
 		}
 
 		public virtual IChannelHandlerContext Ctx()
@@ -964,17 +965,18 @@ namespace SharpPulsar.Impl
 		/// <returns> true if hostname is verified else return false </returns>
 		private bool VerifyTlsHostName(string Hostname, IChannelHandlerContext Ctx)
 		{
-			IChannelHandler SslHandler = Ctx.Channel.Pipeline.Get("tls");
+			IChannelHandler sslHandler = Ctx.Channel.Pipeline.Get("tls");
 
-			TlsSession SslSession = null;
-			if (SslHandler != null)
+			if (sslHandler != null)
 			{
-				SslSession = ((TlsHandler) SslHandler);
+				var sslSession = ((TlsHandler) sslHandler);
 				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, SslSession.CipherSuite, SslSession.Protocol);
+					log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, sslSession.CipherSuite, SslSession.Protocol);
 				}
-				return HOSTNAME_VERIFIER.verify(Hostname, SslSession);
+				DefaultNameResolver y = new DefaultNameResolver();
+
+				return new  HOSTNAME_VERIFIER.verify(Hostname, SslSession);
 			}
 			return false;
 		}
