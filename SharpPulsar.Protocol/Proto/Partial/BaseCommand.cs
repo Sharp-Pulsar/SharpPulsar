@@ -1449,7 +1449,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000002) == 0x00000002) && _connect != CommandConnect.DefaultInstance)
 				{
-					_connect = CommandConnect.NewBuilder(_connect).MergeFrom(value).buildPartial();
+					_connect = CommandConnect.NewBuilder(_connect).MergeFrom(value).BuildPartial();
 				}
 				else
 				{

@@ -1,12 +1,9 @@
 ﻿using DotNetty.Buffers;
-using SharpPulsar.Common.Auth;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
 using Microsoft.IO;
-using ProtoBuf;
 using System.IO;
 using System.Net;
 using Google.Protobuf;
@@ -64,48 +61,48 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewConnect(string AuthMethodName, string authData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, string OriginalAuthData, string OriginalAuthMethod)
 		{
-			Proto.CommandConnect.Builder ConnectBuilder = Proto.CommandConnect.newBuilder();
-			ConnectBuilder.setClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
-			ConnectBuilder.setAuthMethodName(AuthMethodName);
+			Proto.CommandConnect.Builder ConnectBuilder = CommandConnect.NewBuilder();
+			ConnectBuilder.SetClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
+			ConnectBuilder.SetAuthMethodName(AuthMethodName);
 
 			if ("ycav1".Equals(AuthMethodName))
 			{
 				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
 				// name. An example would be in broker-to-broker replication. We need to make sure the clients are still
 				// passing both the enum and the string until all brokers are upgraded.
-				ConnectBuilder.AuthMethod = Proto.AuthMethod.AuthMethodYcaV1;
+				ConnectBuilder.SetAuthMethod(AuthMethod.YcaV1);
 			}
 
 			if (!string.ReferenceEquals(TargetBroker, null))
 			{
 				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				ConnectBuilder.setProxyToBrokerUrl(TargetBroker);
+				ConnectBuilder.SetProxyToBrokerUrl(TargetBroker);
 			}
 
 			if (!string.ReferenceEquals(authData, null))
 			{
-				ConnectBuilder.AuthData = copyFromUtf8(AuthData);
+				ConnectBuilder.SetAuthData(ByteString.CopyFromUtf8(authData));
 			}
 
 			if (!string.ReferenceEquals(OriginalPrincipal, null))
 			{
-				ConnectBuilder.setOriginalPrincipal(OriginalPrincipal);
+				ConnectBuilder.SetOriginalPrincipal(OriginalPrincipal);
 			}
 
 			if (!string.ReferenceEquals(OriginalAuthData, null))
 			{
-				ConnectBuilder.setOriginalAuthData(OriginalAuthData);
+				ConnectBuilder.SetOriginalAuthData(OriginalAuthData);
 			}
 
 			if (!string.ReferenceEquals(OriginalAuthMethod, null))
 			{
-				ConnectBuilder.setOriginalAuthMethod(OriginalAuthMethod);
+				ConnectBuilder.SetOriginalAuthMethod(OriginalAuthMethod);
 			}
-			ConnectBuilder.ProtocolVersion = ProtocolVersion;
-			Proto.CommandConnect Connect = ConnectBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CONNECT).setConnect(Connect));
-			Connect.recycle();
-			ConnectBuilder.recycle();
+			ConnectBuilder.SetProtocolVersion(ProtocolVersion);
+			CommandConnect Connect = ConnectBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(Connect));
+			Connect.Recycle();
+			ConnectBuilder.Recycle();
 			return Res;
 		}
 
