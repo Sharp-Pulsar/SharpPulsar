@@ -1,4 +1,5 @@
 ﻿using DotNetty.Buffers;
+using DotNetty.Common;
 using Google.Protobuf;
 using System;
 
@@ -49,36 +50,30 @@ namespace SharpPulsar.Util.Protobuf
 		private IByteBuffer buf;
 		private int lastTag;
 
-		private readonly Recycler.Handle<ByteBufCodedInputStream> recyclerHandle;
+		internal static ThreadLocalPool<ByteBufCodedInputStream> _pool = new ThreadLocalPool<ByteBufCodedInputStream>(handle => new ByteBufCodedInputStream(handle), 1, true);
+
+		internal ThreadLocalPool.Handle _handle;
+		private ByteBufCodedInputStream(ThreadLocalPool.Handle handle)
+		{
+			_handle = handle;
+		}
+
 
 		public static ByteBufCodedInputStream Get(IByteBuffer buf)
 		{
-			ByteBufCodedInputStream stream = RECYCLER.get();
+			ByteBufCodedInputStream stream = _pool.Take();
 			stream.buf = buf;
 			stream.lastTag = 0;
 			return stream;
 		}
-		private ByteBufCodedInputStream(Recycler.Handle<ByteBufCodedInputStream> handle)
-		{
-			this.recyclerHandle = handle;
-		}
-
-		private static readonly Recycler<ByteBufCodedInputStream> RECYCLER = new RecyclerAnonymousInnerClass();
-
-		private class RecyclerAnonymousInnerClass : Recycler<ByteBufCodedInputStream>
-		{
-			protected internal ByteBufCodedInputStream NewObject(Recycler.Handle<ByteBufCodedInputStream> handle)
-			{
-				return new ByteBufCodedInputStream(handle);
-			}
-		}
+		
 
 		public virtual void Recycle()
 		{
 			this.buf = null;
-			if (recyclerHandle != null)
+			if (_handle != null)
 			{
-				recyclerHandle.recycle(this);
+				_handle.Release(this);
 			}
 		}
 
@@ -95,7 +90,7 @@ namespace SharpPulsar.Util.Protobuf
 			{
 				// If we actually read zero (or any tag number corresponding to field
 				// number zero), that's not a valid tag.
-				throw new InvalidProtocolBufferException("CodedInputStream encountered a malformed varint.");
+				throw new Exception("CodedInputStream encountered a malformed varint.");
 			}
 			return lastTag;
 		}
@@ -131,10 +126,10 @@ namespace SharpPulsar.Util.Protobuf
 			int length = ReadRawVarint32();
 
 			int writerIdx = buf.WriterIndex;
-			buf.WriterIndex = (buf.ReaderIndex + length);
+			buf.SetWriterIndex(buf.ReaderIndex + length);
 			builder.MergeFrom(this, extensionRegistry);
-			checkLastTagWas(0);
-			buf.writerIndex(writerIdx);
+			CheckLastTagWas(0);
+			buf.SetWriterIndex(writerIdx);
 		}
 
 		private static readonly FastThreadLocal<sbyte[]> localByteArray = new FastThreadLocal<sbyte[]>();
@@ -150,11 +145,11 @@ namespace SharpPulsar.Util.Protobuf
 			}
 			else
 			{
-				sbyte[] localBuf = localByteArray.get();
+				sbyte[] localBuf = localByteArray.Value;
 				if (localBuf == null || localBuf.Length < size)
 				{
 					localBuf = new sbyte[Math.Max(size, 1024)];
-					localByteArray.set(localBuf);
+					localByteArray.Set(localBuf);
 				}
 
 				buf.ReadBytes(localBuf, 0, size);
@@ -190,7 +185,7 @@ namespace SharpPulsar.Util.Protobuf
 			switch (GetTagWireType(tag))
 			{
 			case (int)WireFormat.WireType.Varint:
-				readInt32();
+				ReadInt32();
 				return true;
 			case (int)WireFormat.WireType.Fixed64:
 				ReadRawLittleEndian64();
@@ -208,7 +203,7 @@ namespace SharpPulsar.Util.Protobuf
 				ReadRawLittleEndian32();
 				return true;
 			default:
-				throw new InvalidProtocolBufferException("Protocol message tag had invalid wire type.");
+				throw new Exception("Protocol message tag had invalid wire type.");
 			}
 		}
 
@@ -222,7 +217,7 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			if (lastTag != value)
 			{
-				throw new InvalidProtocolBufferException("Protocol message end-group tag did not match expected tag.");
+				throw new Exception("Protocol message end-group tag did not match expected tag.");
 			}
 		}
 
@@ -290,7 +285,7 @@ namespace SharpPulsar.Util.Protobuf
 			long result = 0;
 			while (shift < 64)
 			{
-				sbyte b = buf.ReadByte();
+				sbyte b = (sbyte)(object)buf.ReadByte();
 				result |= (long)(b & 0x7F) << shift;
 				if ((b & 0x80) == 0)
 				{
@@ -298,7 +293,7 @@ namespace SharpPulsar.Util.Protobuf
 				}
 				shift += 7;
 			}
-			throw new InvalidProtocolBufferException("CodedInputStream encountered a malformed varint.");
+			throw new Exception("CodedInputStream encountered a malformed varint.");
 		}
 
 		/// <summary>
@@ -306,34 +301,34 @@ namespace SharpPulsar.Util.Protobuf
 		/// </summary>
 		public virtual int ReadRawVarint32()
 		{
-			sbyte tmp = buf.ReadByte();
+			sbyte tmp = (sbyte)(object)buf.ReadByte();
 			if (tmp >= 0)
 			{
 				return tmp;
 			}
 			int result = tmp & 0x7f;
-			if ((tmp = buf.ReadByte()) >= 0)
+			if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
 			{
 				result |= tmp << 7;
 			}
 			else
 			{
 				result |= (tmp & 0x7f) << 7;
-				if ((tmp = buf.ReadByte()) >= 0)
+				if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
 				{
 					result |= tmp << 14;
 				}
 				else
 				{
 					result |= (tmp & 0x7f) << 14;
-					if ((tmp = buf.ReadByte()) >= 0)
+					if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
 					{
 						result |= tmp << 21;
 					}
 					else
 					{
 						result |= (tmp & 0x7f) << 21;
-						result |= (tmp = buf.ReadByte()) << 28;
+						result |= (tmp = (sbyte)(object)buf.ReadByte()) << 28;
 						if (tmp < 0)
 						{
 							// Discard upper 32 bits.
@@ -344,7 +339,7 @@ namespace SharpPulsar.Util.Protobuf
 									return result;
 								}
 							}
-							throw new InvalidProtocolBufferException("CodedInputStream encountered a malformed varint.");
+							throw new Exception("CodedInputStream encountered a malformed varint.");
 						}
 					}
 				}
@@ -396,15 +391,15 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			if (size < 0)
 			{
-				throw new InvalidProtocolBufferException("CodedInputStream encountered an embedded string or message " + "which claimed to have negative size.");
+				throw new Exception("CodedInputStream encountered an embedded string or message " + "which claimed to have negative size.");
 			}
 
 			if (size > buf.ReadableBytes)
 			{
-				throw new InvalidProtocolBufferException("While parsing a protocol message, the input ended unexpectedly " + "in the middle of a field.  This could mean either than the " + "input has been truncated or that an embedded message " + "misreported its own length.");
+				throw new Exception("While parsing a protocol message, the input ended unexpectedly " + "in the middle of a field.  This could mean either than the " + "input has been truncated or that an embedded message " + "misreported its own length.");
 			}
 
-			buf.readerIndex(buf.readerIndex() + size);
+			buf.SetReaderIndex(buf.ReaderIndex + size);
 		}
 	}
 

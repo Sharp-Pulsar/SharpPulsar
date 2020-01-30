@@ -1483,7 +1483,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetConnected(CommandConnected.Builder BuilderForValue)
 			{
-				_connected = BuilderForValue.build();
+				_connected = BuilderForValue.Build();
 				_bitField |= 0x00000004;
 				return this;
 			}
@@ -1491,7 +1491,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000004) == 0x00000004) && _connected != CommandConnected.DefaultInstance)
 				{
-					_connected = CommandConnected.NewBuilder(_connected).mergeFrom(Value).buildPartial();
+					_connected = CommandConnected.NewBuilder(_connected).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{

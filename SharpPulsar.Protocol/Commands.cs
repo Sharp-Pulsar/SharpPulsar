@@ -12,6 +12,7 @@ using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Common;
 using SharpPulsar.Util.Protobuf;
 using SharpPulsar.Shared;
+using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -106,7 +107,7 @@ namespace SharpPulsar.Protocol
 			return Res;
 		}
 
-		public static IByteBuffer NewConnect(string authMethodName, Shared.AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
+		public static IByteBuffer NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
 		{
 			CommandConnect.Builder connectBuilder = CommandConnect.NewBuilder();
 			connectBuilder.SetClientVersion(!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client");
@@ -120,7 +121,7 @@ namespace SharpPulsar.Protocol
 
 			if (authData != null)
 			{
-				connectBuilder.SetAuthData((byte[])(Array)authData.Bytes);
+				connectBuilder.SetAuthData(authData.AuthData_);
 			}
 
 			if (!string.ReferenceEquals(originalPrincipal, null))
@@ -130,7 +131,7 @@ namespace SharpPulsar.Protocol
 
 			if (originalAuthData != null)
 			{
-				connectBuilder.SetOriginalAuthData(Encoding.UTF8.GetString(originalAuthData.auth_data));
+				connectBuilder.SetOriginalAuthData(originalAuthData.AuthData_.ToStringUtf8());
 			}
 
 			if (!string.ReferenceEquals(originalAuthMethod, null))
@@ -138,9 +139,9 @@ namespace SharpPulsar.Protocol
 				connectBuilder.SetOriginalAuthMethod(originalAuthMethod);
 			}
 			connectBuilder.SetProtocolVersion(protocolVersion);
-			BaseCommand baseCmd = connectBuilder.Build().ToBaseCommand();
+			CommandConnect connect = connectBuilder.Build();
 			
-			IByteBuffer Res = SerializeWithSize(baseCmd);
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
 			connect.Recycle();
 			connectBuilder.Recycle();
 			return Res;
