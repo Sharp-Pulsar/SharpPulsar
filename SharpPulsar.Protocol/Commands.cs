@@ -154,24 +154,22 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewConnected(int ClientProtocolVersion, int MaxMessageSize)
 		{
-			Proto.CommandConnected.Builder ConnectedBuilder = Proto.CommandConnected.newBuilder();
-			ConnectedBuilder.setServerVersion("Pulsar Server");
+			CommandConnected.Builder ConnectedBuilder = CommandConnected.NewBuilder();
+			ConnectedBuilder.SetServerVersion("Pulsar Server");
 			if (InvalidMaxMessageSize != MaxMessageSize)
 			{
-				ConnectedBuilder.MaxMessageSize = MaxMessageSize;
+				ConnectedBuilder.SetMaxMessageSize(MaxMessageSize);
 			}
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
-			int CurrentProtocolVersion = CurrentProtocolVersion;
+			int currentProtocolVersion = CurrentProtocolVersion;
 			int VersionToAdvertise = Math.Min(CurrentProtocolVersion, ClientProtocolVersion);
 
-			ConnectedBuilder.ProtocolVersion = VersionToAdvertise;
-
-			Proto.CommandConnected Connected = ConnectedBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CONNECTED).setConnected(Connected));
-			Connected.recycle();
-			ConnectedBuilder.recycle();
+			CommandConnected Connected = ConnectedBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connected).SetConnected(ConnectedBuilder));
+			Connected.Recycle();
+			ConnectedBuilder.Recycle();
 			return Res;
 		}
 
