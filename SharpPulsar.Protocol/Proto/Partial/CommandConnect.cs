@@ -1,12 +1,12 @@
 ﻿using DotNetty.Common;
+using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
-using System.Text;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class CommandConnect : ByteBufGeneratedMessage
+	public partial class CommandConnect: ByteBufGeneratedMessage
 	{
 		// Use CommandConnect.newBuilder() to construct.
 		internal static ThreadLocalPool<CommandConnect> _pool = new ThreadLocalPool<CommandConnect>(handle => new CommandConnect(handle), 1, true);
@@ -22,7 +22,7 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			InitFields();
 			MemoizedIsInitialized = -1;
-			_bitField = 0;
+			_hasBits0 = 0;
 			MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
@@ -52,78 +52,12 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		internal int _bitField;
-		// required string client_version = 1;
-		public const int ClientVersionFieldNumber = 1;
-
-		public bool HasClientVersion()
-		{
-			return ((_bitField & 0x00000001) == 0x00000001);
-		}
-		
-		// optional .pulsar.proto.AuthMethod auth_method = 2;
-		public const int AuthMethodFieldNumber = 2;
-
-		public bool HasAuthMethod()
-		{
-			return ((_bitField & 0x00000002) == 0x00000002);
-		}
-		
-		// optional string auth_method_name = 5;
-		public const int AuthMethodNameFieldNumber = 5;
-		public bool HasAuthMethodName()
-		{
-			return ((_bitField & 0x00000004) == 0x00000004);
-		}
-		
-		// optional bytes auth_data = 3;
-		public const int AuthDataFieldNumber = 3;
-		public bool HasAuthData()
-		{
-			return ((_bitField & 0x00000008) == 0x00000008);
-		}
-		
-		// optional int32 protocol_version = 4 [default = 0];
-		public const int ProtocolVersionFieldNumber = 4;
-		public bool HasProtocolVersion()
-		{
-			return ((_bitField & 0x00000010) == 0x00000010);
-		}
-		
-		// optional string proxy_to_broker_url = 6;
-		public const int ProxyToBrokerUrlFieldNumber = 6;
-		public bool HasProxyToBrokerUrl()
-		{
-			return ((_bitField & 0x00000020) == 0x00000020);
-		}
-		
-		// optional string original_principal = 7;
-		public const int OriginalPrincipalFieldNumber = 7;
-		public bool HasOriginalPrincipal()
-		{
-			return ((_bitField & 0x00000040) == 0x00000040);
-		}
-		
-		// optional string original_auth_data = 8;
-		public const int OriginalAuthDataFieldNumber = 8;
-		public bool HasOriginalAuthData()
-		{
-			return ((_bitField & 0x00000080) == 0x00000080);
-		}
-		
-		// optional string original_auth_method = 9;
-		public const int OriginalAuthMethodFieldNumber = 9;
-		public bool HasOriginalAuthMethod()
-		{
-			return ((_bitField & 0x00000100) == 0x00000100);
-		}
-		
 		public void InitFields()
 		{
 			ClientVersion = "";
-			AuthMethod = AuthMethod.AuthMethodNone;
+			AuthMethod = AuthMethod.None;
 			AuthMethodName = "";
-			AuthData = Encoding.UTF8.GetBytes(string.Empty);
+			AuthData =  ByteString.Empty;
 			ProtocolVersion= 0;
 			ProxyToBrokerUrl = "";
 			OriginalPrincipal = "";
@@ -141,7 +75,7 @@ namespace SharpPulsar.Protocol.Proto
 					return IsInitialized == 1;
 				}
 
-				if (!HasClientVersion())
+				if (!HasClientVersion)
 				{
 					MemoizedIsInitialized = 0;
 					return false;
@@ -165,10 +99,53 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-
+		public static Builder NewBuilder(CommandConnect prototype)
+		{
+			return NewBuilder().MergeFrom(prototype);
+		}
+		public Builder ToBuilder()
+		{
+			return NewBuilder(this);
+		}
 		public void WriteTo(ByteBufCodedOutputStream output)
 		{
-			throw new NotImplementedException();
+			var _ = SerializedSize;
+			if (((_hasBits0 & 0x00000001) == 0x00000001))
+			{
+				output.WriteBytes(1, ByteString.CopyFromUtf8(ClientVersion));
+			}
+			if (((_hasBits0 & 0x00000002) == 0x00000002))
+			{
+				output.WriteEnum(2, (int)AuthMethod);
+			}
+			if (((_hasBits0 & 0x00000008) == 0x00000008))
+			{
+				output.WriteBytes(3, authData_);
+			}
+			if (((_hasBits0 & 0x00000010) == 0x00000010))
+			{
+				output.WriteInt32(4, ProtocolVersion);
+			}
+			if (((_hasBits0 & 0x00000004) == 0x00000004))
+			{
+				output.WriteBytes(5, ByteString.CopyFromUtf8(AuthMethodName));
+			}
+			if (((_hasBits0 & 0x00000020) == 0x00000020))
+			{
+				output.WriteBytes(6, ByteString.CopyFromUtf8(ProxyToBrokerUrl));
+			}
+			if (((_hasBits0 & 0x00000040) == 0x00000040))
+			{
+				output.WriteBytes(7, ByteString.CopyFromUtf8(OriginalPrincipal));
+			}
+			if (((_hasBits0 & 0x00000080) == 0x00000080))
+			{
+				output.WriteBytes(8, ByteString.CopyFromUtf8(OriginalAuthData));
+			}
+			if (((_hasBits0 & 0x00000100) == 0x00000100))
+			{
+				output.WriteBytes(9, ByteString.CopyFromUtf8(OriginalAuthMethod));
+			}
 		}
 
 		public sealed class Builder
@@ -201,11 +178,11 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				_clientVersion = "";
 				_bitField = (_bitField & ~0x00000001);
-				_authMethod = AuthMethod.AuthMethodNone;
+				_authMethod = AuthMethod.None;
 				_bitField = (_bitField & ~0x00000002);
 				_authMethodName = "";
 				_bitField = (_bitField & ~0x00000004);
-				_authData = Encoding.UTF8.GetBytes(string.Empty);
+				_authData = ByteString.Empty;
 				_bitField = (_bitField & ~0x00000008);
 				_protocolVersion = 0;
 				_bitField = (_bitField & ~0x00000010);
@@ -291,49 +268,49 @@ namespace SharpPulsar.Protocol.Proto
 					tobitField |= 0x00000100;
 				}
 				result.OriginalAuthMethod = Original_authMethod;
-				result._bitField = tobitField;
+				result._hasBits0 = tobitField;
 				return result;
 			}
 
 			public Builder MergeFrom(CommandConnect Other)
 			{
-				if (Other == CommandConnect.DefaultInstance)
+				if (Other ==  DefaultInstance)
 				{
 					return this;
 				}
-				if (Other.HasClientVersion())
+				if (Other.HasClientVersion)
 				{
 					SetClientVersion(Other.ClientVersion);
 				}
-				if (Other.HasAuthMethod())
+				if (Other.HasAuthMethod)
 				{
 					SetAuthMethod(Other.AuthMethod);
 				}
-				if (Other.HasAuthMethodName())
+				if (Other.HasAuthMethodName)
 				{
 					SetAuthMethodName(Other.AuthMethodName);
 				}
-				if (Other.HasAuthData())
+				if (Other.HasAuthData)
 				{
 					SetAuthData(Other.AuthData);
 				}
-				if (Other.HasProtocolVersion())
+				if (Other.HasProtocolVersion)
 				{
 					SetProtocolVersion(Other.ProtocolVersion);
 				}
-				if (Other.HasProxyToBrokerUrl())
+				if (Other.HasProxyToBrokerUrl)
 				{
 					SetProxyToBrokerUrl(Other.ProxyToBrokerUrl);
 				}
-				if (Other.HasOriginalPrincipal())
+				if (Other.HasOriginalPrincipal)
 				{
 					SetOriginalPrincipal(Other.OriginalPrincipal);
 				}
-				if (Other.HasOriginalAuthData())
+				if (Other.HasOriginalAuthData)
 				{
 					SetOriginalAuthData(Other.OriginalAuthData);
 				}
-				if (Other.HasOriginalAuthMethod())
+				if (Other.HasOriginalAuthMethod)
 				{
 					SetOriginalAuthMethod(Other.OriginalAuthMethod);
 				}
@@ -386,7 +363,7 @@ namespace SharpPulsar.Protocol.Proto
 			
 
 			// optional .pulsar.proto.AuthMethod auth_method = 2;
-			internal AuthMethod _authMethod = AuthMethod.AuthMethodNone;
+			internal AuthMethod _authMethod = AuthMethod.None;
 			public bool HasAuthMethod()
 			{
 				return ((_bitField & 0x00000002) == 0x00000002);
@@ -406,7 +383,7 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder ClearAuthMethod()
 			{
 				_bitField = (_bitField & ~0x00000002);
-				_authMethod = AuthMethod.AuthMethodNone;
+				_authMethod = AuthMethod.None;
 
 				return this;
 			}
@@ -442,20 +419,20 @@ namespace SharpPulsar.Protocol.Proto
 			
 
 			// optional bytes auth_data = 3;
-			internal byte[] _authData = Encoding.UTF8.GetBytes(string.Empty);
+			internal ByteString _authData = ByteString.Empty;
 			public bool HasAuthData()
 			{
 				return ((_bitField & 0x00000008) == 0x00000008);
 			}
 			
-			public Builder SetAuthData(byte[] Value)
+			public Builder SetAuthData(ByteString value)
 			{
-				if (Value == null)
+				if (value == null)
 				{
 					throw new System.NullReferenceException();
 				}
 				_bitField |= 0x00000008;
-				_authData = Value;
+				_authData = value;
 
 				return this;
 			}

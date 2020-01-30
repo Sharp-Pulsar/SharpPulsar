@@ -14,6 +14,7 @@ using System.Text;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Common;
 using SharpPulsar.Util.Protobuf;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -1359,13 +1360,13 @@ namespace SharpPulsar.Protocol
 
 
 		}
-		public static IByteBuffer SerializeWithSize(BaseCommand.Builder CmdBuilder)
+		public static IByteBuffer SerializeWithSize(BaseCommand.Builder cmdBuilder)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD]
-			BaseCommand cmd = CmdBuilder.build();
+			var cmd = cmdBuilder.Build();
 
-			int cmdSize = cmd.SerializedSize;
+			int cmdSize = cmd.CalculateSize();
 			int totalSize = cmdSize + 4;
 			int frameSize = totalSize + 4;
 
@@ -1388,15 +1389,15 @@ namespace SharpPulsar.Protocol
 			}
 			finally
 			{
-				Cmd.recycle();
-				CmdBuilder.recycle();
+				cmd.Recycle();
+				cmdBuilder.Recycle();
 				outStream.Recycle();
 			}
 
 			return buf;
 		}
 
-		private static IByteBufferPair SerializeCommandSendWithSize(Proto.BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, Proto.MessageMetadata MsgMetadata, IByteBuffer Payload)
+		private static ByteBufPair SerializeCommandSendWithSize(Proto.BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, Proto.MessageMetadata MsgMetadata, IByteBuffer Payload)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]

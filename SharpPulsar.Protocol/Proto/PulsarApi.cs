@@ -9,7 +9,8 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Pulsar.Proto {
+namespace SharpPulsar.Protocol.Proto
+{
 
   /// <summary>Holder for reflection information generated from PulsarApi.proto</summary>
   public static partial class PulsarApiReflection {
@@ -365,70 +366,70 @@ namespace Pulsar.Proto {
             "LnB1bHNhci5jb21tb24uYXBpLnByb3RvSAM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Pulsar.Proto.CompressionType), typeof(global::Pulsar.Proto.ServerError), typeof(global::Pulsar.Proto.AuthMethod), typeof(global::Pulsar.Proto.ProtocolVersion), typeof(global::Pulsar.Proto.KeySharedMode), typeof(global::Pulsar.Proto.TxnAction), }, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.Schema), global::Pulsar.Proto.Schema.Parser, new[]{ "Name", "SchemaData", "Type", "Properties" }, null, new[]{ typeof(global::Pulsar.Proto.Schema.Types.Type) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.MessageIdData), global::Pulsar.Proto.MessageIdData.Parser, new[]{ "LedgerId", "EntryId", "Partition", "BatchIndex" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.KeyValue), global::Pulsar.Proto.KeyValue.Parser, new[]{ "Key", "Value" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.KeyLongValue), global::Pulsar.Proto.KeyLongValue.Parser, new[]{ "Key", "Value" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.IntRange), global::Pulsar.Proto.IntRange.Parser, new[]{ "Start", "End" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.EncryptionKeys), global::Pulsar.Proto.EncryptionKeys.Parser, new[]{ "Key", "Value", "Metadata" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.MessageMetadata), global::Pulsar.Proto.MessageMetadata.Parser, new[]{ "ProducerName", "SequenceId", "PublishTime", "Properties", "ReplicatedFrom", "PartitionKey", "ReplicateTo", "Compression", "UncompressedSize", "NumMessagesInBatch", "EventTime", "EncryptionKeys", "EncryptionAlgo", "EncryptionParam", "SchemaVersion", "PartitionKeyB64Encoded", "OrderingKey", "DeliverAtTime", "MarkerType", "TxnidLeastBits", "TxnidMostBits", "HighestSequenceId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.SingleMessageMetadata), global::Pulsar.Proto.SingleMessageMetadata.Parser, new[]{ "Properties", "PartitionKey", "PayloadSize", "CompactedOut", "EventTime", "PartitionKeyB64Encoded", "OrderingKey", "SequenceId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandConnect), global::Pulsar.Proto.CommandConnect.Parser, new[]{ "ClientVersion", "AuthMethod", "AuthMethodName", "AuthData", "ProtocolVersion", "ProxyToBrokerUrl", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandConnected), global::Pulsar.Proto.CommandConnected.Parser, new[]{ "ServerVersion", "ProtocolVersion", "MaxMessageSize" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAuthResponse), global::Pulsar.Proto.CommandAuthResponse.Parser, new[]{ "ClientVersion", "Response", "ProtocolVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAuthChallenge), global::Pulsar.Proto.CommandAuthChallenge.Parser, new[]{ "ServerVersion", "Challenge", "ProtocolVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.AuthData), global::Pulsar.Proto.AuthData.Parser, new[]{ "AuthMethodName", "AuthData_" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.KeySharedMeta), global::Pulsar.Proto.KeySharedMeta.Parser, new[]{ "KeySharedMode", "HashRanges" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSubscribe), global::Pulsar.Proto.CommandSubscribe.Parser, new[]{ "Topic", "Subscription", "SubType", "ConsumerId", "RequestId", "ConsumerName", "PriorityLevel", "Durable", "StartMessageId", "Metadata", "ReadCompacted", "Schema", "InitialPosition", "ReplicateSubscriptionState", "ForceTopicCreation", "StartMessageRollbackDurationSec", "KeySharedMeta" }, null, new[]{ typeof(global::Pulsar.Proto.CommandSubscribe.Types.SubType), typeof(global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandPartitionedTopicMetadata), global::Pulsar.Proto.CommandPartitionedTopicMetadata.Parser, new[]{ "Topic", "RequestId", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse), global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Parser, new[]{ "Partitions", "RequestId", "Response", "Error", "Message" }, null, new[]{ typeof(global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandLookupTopic), global::Pulsar.Proto.CommandLookupTopic.Parser, new[]{ "Topic", "RequestId", "Authoritative", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandLookupTopicResponse), global::Pulsar.Proto.CommandLookupTopicResponse.Parser, new[]{ "BrokerServiceUrl", "BrokerServiceUrlTls", "Response", "RequestId", "Authoritative", "Error", "Message", "ProxyThroughServiceUrl" }, null, new[]{ typeof(global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandProducer), global::Pulsar.Proto.CommandProducer.Parser, new[]{ "Topic", "ProducerId", "RequestId", "ProducerName", "Encrypted", "Metadata", "Schema", "Epoch", "UserProvidedProducerName" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSend), global::Pulsar.Proto.CommandSend.Parser, new[]{ "ProducerId", "SequenceId", "NumMessages", "TxnidLeastBits", "TxnidMostBits", "HighestSequenceId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSendReceipt), global::Pulsar.Proto.CommandSendReceipt.Parser, new[]{ "ProducerId", "SequenceId", "MessageId", "HighestSequenceId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSendError), global::Pulsar.Proto.CommandSendError.Parser, new[]{ "ProducerId", "SequenceId", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandMessage), global::Pulsar.Proto.CommandMessage.Parser, new[]{ "ConsumerId", "MessageId", "RedeliveryCount" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAck), global::Pulsar.Proto.CommandAck.Parser, new[]{ "ConsumerId", "AckType", "MessageId", "ValidationError", "Properties", "TxnidLeastBits", "TxnidMostBits" }, null, new[]{ typeof(global::Pulsar.Proto.CommandAck.Types.AckType), typeof(global::Pulsar.Proto.CommandAck.Types.ValidationError) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAckResponse), global::Pulsar.Proto.CommandAckResponse.Parser, new[]{ "ConsumerId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandActiveConsumerChange), global::Pulsar.Proto.CommandActiveConsumerChange.Parser, new[]{ "ConsumerId", "IsActive" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandFlow), global::Pulsar.Proto.CommandFlow.Parser, new[]{ "ConsumerId", "MessagePermits" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandUnsubscribe), global::Pulsar.Proto.CommandUnsubscribe.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSeek), global::Pulsar.Proto.CommandSeek.Parser, new[]{ "ConsumerId", "RequestId", "MessageId", "MessagePublishTime" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandReachedEndOfTopic), global::Pulsar.Proto.CommandReachedEndOfTopic.Parser, new[]{ "ConsumerId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandCloseProducer), global::Pulsar.Proto.CommandCloseProducer.Parser, new[]{ "ProducerId", "RequestId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandCloseConsumer), global::Pulsar.Proto.CommandCloseConsumer.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages), global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages.Parser, new[]{ "ConsumerId", "MessageIds" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandSuccess), global::Pulsar.Proto.CommandSuccess.Parser, new[]{ "RequestId", "Schema" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandProducerSuccess), global::Pulsar.Proto.CommandProducerSuccess.Parser, new[]{ "RequestId", "ProducerName", "LastSequenceId", "SchemaVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandError), global::Pulsar.Proto.CommandError.Parser, new[]{ "RequestId", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandPing), global::Pulsar.Proto.CommandPing.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandPong), global::Pulsar.Proto.CommandPong.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandConsumerStats), global::Pulsar.Proto.CommandConsumerStats.Parser, new[]{ "RequestId", "ConsumerId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandConsumerStatsResponse), global::Pulsar.Proto.CommandConsumerStatsResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "MsgRateOut", "MsgThroughputOut", "MsgRateRedeliver", "ConsumerName", "AvailablePermits", "UnackedMessages", "BlockedConsumerOnUnackedMsgs", "Address", "ConnectedSince", "Type", "MsgRateExpired", "MsgBacklog" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetLastMessageId), global::Pulsar.Proto.CommandGetLastMessageId.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetLastMessageIdResponse), global::Pulsar.Proto.CommandGetLastMessageIdResponse.Parser, new[]{ "LastMessageId", "RequestId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetTopicsOfNamespace), global::Pulsar.Proto.CommandGetTopicsOfNamespace.Parser, new[]{ "RequestId", "Namespace", "Mode" }, null, new[]{ typeof(global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse), global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse.Parser, new[]{ "RequestId", "Topics" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetSchema), global::Pulsar.Proto.CommandGetSchema.Parser, new[]{ "RequestId", "Topic", "SchemaVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetSchemaResponse), global::Pulsar.Proto.CommandGetSchemaResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "Schema", "SchemaVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetOrCreateSchema), global::Pulsar.Proto.CommandGetOrCreateSchema.Parser, new[]{ "RequestId", "Topic", "Schema" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandGetOrCreateSchemaResponse), global::Pulsar.Proto.CommandGetOrCreateSchemaResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "SchemaVersion" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandNewTxn), global::Pulsar.Proto.CommandNewTxn.Parser, new[]{ "RequestId", "TxnTtlSeconds", "TcId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandNewTxnResponse), global::Pulsar.Proto.CommandNewTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAddPartitionToTxn), global::Pulsar.Proto.CommandAddPartitionToTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Partitions" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAddPartitionToTxnResponse), global::Pulsar.Proto.CommandAddPartitionToTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.Subscription), global::Pulsar.Proto.Subscription.Parser, new[]{ "Topic", "Subscription_" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAddSubscriptionToTxn), global::Pulsar.Proto.CommandAddSubscriptionToTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Subscription" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse), global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxn), global::Pulsar.Proto.CommandEndTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "TxnAction" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxnResponse), global::Pulsar.Proto.CommandEndTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxnOnPartition), global::Pulsar.Proto.CommandEndTxnOnPartition.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Topic", "TxnAction" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxnOnPartitionResponse), global::Pulsar.Proto.CommandEndTxnOnPartitionResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxnOnSubscription), global::Pulsar.Proto.CommandEndTxnOnSubscription.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Subscription", "TxnAction" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse), global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Pulsar.Proto.BaseCommand), global::Pulsar.Proto.BaseCommand.Parser, new[]{ "Type", "Connect", "Connected", "Subscribe", "Producer", "Send", "SendReceipt", "SendError", "Message", "Ack", "Flow", "Unsubscribe", "Success", "Error", "CloseProducer", "CloseConsumer", "ProducerSuccess", "Ping", "Pong", "RedeliverUnacknowledgedMessages", "PartitionMetadata", "PartitionMetadataResponse", "LookupTopic", "LookupTopicResponse", "ConsumerStats", "ConsumerStatsResponse", "ReachedEndOfTopic", "Seek", "GetLastMessageId", "GetLastMessageIdResponse", "ActiveConsumerChange", "GetTopicsOfNamespace", "GetTopicsOfNamespaceResponse", "GetSchema", "GetSchemaResponse", "AuthChallenge", "AuthResponse", "AckResponse", "GetOrCreateSchema", "GetOrCreateSchemaResponse", "NewTxn", "NewTxnResponse", "AddPartitionToTxn", "AddPartitionToTxnResponse", "AddSubscriptionToTxn", "AddSubscriptionToTxnResponse", "EndTxn", "EndTxnResponse", "EndTxnOnPartition", "EndTxnOnPartitionResponse", "EndTxnOnSubscription", "EndTxnOnSubscriptionResponse" }, null, new[]{ typeof(global::Pulsar.Proto.BaseCommand.Types.Type) }, null, null)
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::SharpPulsar.Protocol.Proto.CompressionType), typeof(global::SharpPulsar.Protocol.Proto.ServerError), typeof(global::SharpPulsar.Protocol.Proto.AuthMethod), typeof(global::SharpPulsar.Protocol.Proto.ProtocolVersion), typeof(global::SharpPulsar.Protocol.Proto.KeySharedMode), typeof(global::SharpPulsar.Protocol.Proto.TxnAction), }, null, new pbr::GeneratedClrTypeInfo[] {
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.Schema), global::SharpPulsar.Protocol.Proto.Schema.Parser, new[]{ "Name", "SchemaData", "Type", "Properties" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.Schema.Types.Type) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.MessageIdData), global::SharpPulsar.Protocol.Proto.MessageIdData.Parser, new[]{ "LedgerId", "EntryId", "Partition", "BatchIndex" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.KeyValue), global::SharpPulsar.Protocol.Proto.KeyValue.Parser, new[]{ "Key", "Value" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.KeyLongValue), global::SharpPulsar.Protocol.Proto.KeyLongValue.Parser, new[]{ "Key", "Value" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.IntRange), global::SharpPulsar.Protocol.Proto.IntRange.Parser, new[]{ "Start", "End" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.EncryptionKeys), global::SharpPulsar.Protocol.Proto.EncryptionKeys.Parser, new[]{ "Key", "Value", "Metadata" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.MessageMetadata), global::SharpPulsar.Protocol.Proto.MessageMetadata.Parser, new[]{ "ProducerName", "SequenceId", "PublishTime", "Properties", "ReplicatedFrom", "PartitionKey", "ReplicateTo", "Compression", "UncompressedSize", "NumMessagesInBatch", "EventTime", "EncryptionKeys", "EncryptionAlgo", "EncryptionParam", "SchemaVersion", "PartitionKeyB64Encoded", "OrderingKey", "DeliverAtTime", "MarkerType", "TxnidLeastBits", "TxnidMostBits", "HighestSequenceId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.SingleMessageMetadata), global::SharpPulsar.Protocol.Proto.SingleMessageMetadata.Parser, new[]{ "Properties", "PartitionKey", "PayloadSize", "CompactedOut", "EventTime", "PartitionKeyB64Encoded", "OrderingKey", "SequenceId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandConnect), global::SharpPulsar.Protocol.Proto.CommandConnect.Parser, new[]{ "ClientVersion", "AuthMethod", "AuthMethodName", "AuthData", "ProtocolVersion", "ProxyToBrokerUrl", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandConnected), global::SharpPulsar.Protocol.Proto.CommandConnected.Parser, new[]{ "ServerVersion", "ProtocolVersion", "MaxMessageSize" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAuthResponse), global::SharpPulsar.Protocol.Proto.CommandAuthResponse.Parser, new[]{ "ClientVersion", "Response", "ProtocolVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAuthChallenge), global::SharpPulsar.Protocol.Proto.CommandAuthChallenge.Parser, new[]{ "ServerVersion", "Challenge", "ProtocolVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.AuthData), global::SharpPulsar.Protocol.Proto.AuthData.Parser, new[]{ "AuthMethodName", "AuthData_" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.KeySharedMeta), global::SharpPulsar.Protocol.Proto.KeySharedMeta.Parser, new[]{ "KeySharedMode", "HashRanges" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSubscribe), global::SharpPulsar.Protocol.Proto.CommandSubscribe.Parser, new[]{ "Topic", "Subscription", "SubType", "ConsumerId", "RequestId", "ConsumerName", "PriorityLevel", "Durable", "StartMessageId", "Metadata", "ReadCompacted", "Schema", "InitialPosition", "ReplicateSubscriptionState", "ForceTopicCreation", "StartMessageRollbackDurationSec", "KeySharedMeta" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType), typeof(global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata), global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata.Parser, new[]{ "Topic", "RequestId", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse), global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Parser, new[]{ "Partitions", "RequestId", "Response", "Error", "Message" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandLookupTopic), global::SharpPulsar.Protocol.Proto.CommandLookupTopic.Parser, new[]{ "Topic", "RequestId", "Authoritative", "OriginalPrincipal", "OriginalAuthData", "OriginalAuthMethod" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse), global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Parser, new[]{ "BrokerServiceUrl", "BrokerServiceUrlTls", "Response", "RequestId", "Authoritative", "Error", "Message", "ProxyThroughServiceUrl" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandProducer), global::SharpPulsar.Protocol.Proto.CommandProducer.Parser, new[]{ "Topic", "ProducerId", "RequestId", "ProducerName", "Encrypted", "Metadata", "Schema", "Epoch", "UserProvidedProducerName" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSend), global::SharpPulsar.Protocol.Proto.CommandSend.Parser, new[]{ "ProducerId", "SequenceId", "NumMessages", "TxnidLeastBits", "TxnidMostBits", "HighestSequenceId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSendReceipt), global::SharpPulsar.Protocol.Proto.CommandSendReceipt.Parser, new[]{ "ProducerId", "SequenceId", "MessageId", "HighestSequenceId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSendError), global::SharpPulsar.Protocol.Proto.CommandSendError.Parser, new[]{ "ProducerId", "SequenceId", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandMessage), global::SharpPulsar.Protocol.Proto.CommandMessage.Parser, new[]{ "ConsumerId", "MessageId", "RedeliveryCount" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAck), global::SharpPulsar.Protocol.Proto.CommandAck.Parser, new[]{ "ConsumerId", "AckType", "MessageId", "ValidationError", "Properties", "TxnidLeastBits", "TxnidMostBits" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType), typeof(global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAckResponse), global::SharpPulsar.Protocol.Proto.CommandAckResponse.Parser, new[]{ "ConsumerId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange), global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange.Parser, new[]{ "ConsumerId", "IsActive" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandFlow), global::SharpPulsar.Protocol.Proto.CommandFlow.Parser, new[]{ "ConsumerId", "MessagePermits" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandUnsubscribe), global::SharpPulsar.Protocol.Proto.CommandUnsubscribe.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSeek), global::SharpPulsar.Protocol.Proto.CommandSeek.Parser, new[]{ "ConsumerId", "RequestId", "MessageId", "MessagePublishTime" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic), global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic.Parser, new[]{ "ConsumerId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandCloseProducer), global::SharpPulsar.Protocol.Proto.CommandCloseProducer.Parser, new[]{ "ProducerId", "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandCloseConsumer), global::SharpPulsar.Protocol.Proto.CommandCloseConsumer.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages), global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages.Parser, new[]{ "ConsumerId", "MessageIds" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandSuccess), global::SharpPulsar.Protocol.Proto.CommandSuccess.Parser, new[]{ "RequestId", "Schema" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandProducerSuccess), global::SharpPulsar.Protocol.Proto.CommandProducerSuccess.Parser, new[]{ "RequestId", "ProducerName", "LastSequenceId", "SchemaVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandError), global::SharpPulsar.Protocol.Proto.CommandError.Parser, new[]{ "RequestId", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandPing), global::SharpPulsar.Protocol.Proto.CommandPing.Parser, null, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandPong), global::SharpPulsar.Protocol.Proto.CommandPong.Parser, null, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandConsumerStats), global::SharpPulsar.Protocol.Proto.CommandConsumerStats.Parser, new[]{ "RequestId", "ConsumerId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse), global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "MsgRateOut", "MsgThroughputOut", "MsgRateRedeliver", "ConsumerName", "AvailablePermits", "UnackedMessages", "BlockedConsumerOnUnackedMsgs", "Address", "ConnectedSince", "Type", "MsgRateExpired", "MsgBacklog" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId), global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId.Parser, new[]{ "ConsumerId", "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse), global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse.Parser, new[]{ "LastMessageId", "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace), global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Parser, new[]{ "RequestId", "Namespace", "Mode" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse), global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse.Parser, new[]{ "RequestId", "Topics" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetSchema), global::SharpPulsar.Protocol.Proto.CommandGetSchema.Parser, new[]{ "RequestId", "Topic", "SchemaVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse), global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "Schema", "SchemaVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema), global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema.Parser, new[]{ "RequestId", "Topic", "Schema" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse), global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse.Parser, new[]{ "RequestId", "ErrorCode", "ErrorMessage", "SchemaVersion" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandNewTxn), global::SharpPulsar.Protocol.Proto.CommandNewTxn.Parser, new[]{ "RequestId", "TxnTtlSeconds", "TcId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse), global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn), global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Partitions" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse), global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.Subscription), global::SharpPulsar.Protocol.Proto.Subscription.Parser, new[]{ "Topic", "Subscription_" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn), global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Subscription" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse), global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxn), global::SharpPulsar.Protocol.Proto.CommandEndTxn.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "TxnAction" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse), global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition), global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Topic", "TxnAction" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse), global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription), global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Subscription", "TxnAction" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse), global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse.Parser, new[]{ "RequestId", "TxnidLeastBits", "TxnidMostBits", "Error", "Message" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SharpPulsar.Protocol.Proto.BaseCommand), global::SharpPulsar.Protocol.Proto.BaseCommand.Parser, new[]{ "Type", "Connect", "Connected", "Subscribe", "Producer", "Send", "SendReceipt", "SendError", "Message", "Ack", "Flow", "Unsubscribe", "Success", "Error", "CloseProducer", "CloseConsumer", "ProducerSuccess", "Ping", "Pong", "RedeliverUnacknowledgedMessages", "PartitionMetadata", "PartitionMetadataResponse", "LookupTopic", "LookupTopicResponse", "ConsumerStats", "ConsumerStatsResponse", "ReachedEndOfTopic", "Seek", "GetLastMessageId", "GetLastMessageIdResponse", "ActiveConsumerChange", "GetTopicsOfNamespace", "GetTopicsOfNamespaceResponse", "GetSchema", "GetSchemaResponse", "AuthChallenge", "AuthResponse", "AckResponse", "GetOrCreateSchema", "GetOrCreateSchemaResponse", "NewTxn", "NewTxnResponse", "AddPartitionToTxn", "AddPartitionToTxnResponse", "AddSubscriptionToTxn", "AddSubscriptionToTxnResponse", "EndTxn", "EndTxnResponse", "EndTxnOnPartition", "EndTxnOnPartitionResponse", "EndTxnOnSubscription", "EndTxnOnSubscriptionResponse" }, null, new[]{ typeof(global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type) }, null, null)
           }));
     }
     #endregion
@@ -631,7 +632,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[0]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -709,11 +710,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "type" field.</summary>
     public const int TypeFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.Schema.Types.Type TypeDefaultValue = global::Pulsar.Proto.Schema.Types.Type.None;
+    private readonly static global::SharpPulsar.Protocol.Proto.Schema.Types.Type TypeDefaultValue = global::SharpPulsar.Protocol.Proto.Schema.Types.Type.None;
 
-    private global::Pulsar.Proto.Schema.Types.Type type_;
+    private global::SharpPulsar.Protocol.Proto.Schema.Types.Type type_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema.Types.Type Type {
+    public global::SharpPulsar.Protocol.Proto.Schema.Types.Type Type {
       get { if ((_hasBits0 & 1) != 0) { return type_; } else { return TypeDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -733,11 +734,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "properties" field.</summary>
     public const int PropertiesFieldNumber = 5;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_properties_codec
-        = pb::FieldCodec.ForMessage(42, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_properties_codec
+        = pb::FieldCodec.ForMessage(42, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Properties {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Properties {
       get { return properties_; }
     }
 
@@ -853,7 +854,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Type = (global::Pulsar.Proto.Schema.Types.Type) input.ReadEnum();
+            Type = (global::SharpPulsar.Protocol.Proto.Schema.Types.Type) input.ReadEnum();
             break;
           }
           case 42: {
@@ -901,7 +902,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[1]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1167,7 +1168,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[2]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1349,7 +1350,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[3]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1533,7 +1534,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[4]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1717,7 +1718,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[5]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1793,11 +1794,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "metadata" field.</summary>
     public const int MetadataFieldNumber = 3;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_metadata_codec
-        = pb::FieldCodec.ForMessage(26, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_metadata_codec
+        = pb::FieldCodec.ForMessage(26, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Metadata {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Metadata {
       get { return metadata_; }
     }
 
@@ -1919,7 +1920,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[6]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2040,11 +2041,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "properties" field.</summary>
     public const int PropertiesFieldNumber = 4;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_properties_codec
-        = pb::FieldCodec.ForMessage(34, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_properties_codec
+        = pb::FieldCodec.ForMessage(34, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Properties {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Properties {
       get { return properties_; }
     }
 
@@ -2116,11 +2117,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "compression" field.</summary>
     public const int CompressionFieldNumber = 8;
-    private readonly static global::Pulsar.Proto.CompressionType CompressionDefaultValue = global::Pulsar.Proto.CompressionType.None;
+    private readonly static global::SharpPulsar.Protocol.Proto.CompressionType CompressionDefaultValue = global::SharpPulsar.Protocol.Proto.CompressionType.None;
 
-    private global::Pulsar.Proto.CompressionType compression_;
+    private global::SharpPulsar.Protocol.Proto.CompressionType compression_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CompressionType Compression {
+    public global::SharpPulsar.Protocol.Proto.CompressionType Compression {
       get { if ((_hasBits0 & 4) != 0) { return compression_; } else { return CompressionDefaultValue; } }
       set {
         _hasBits0 |= 4;
@@ -2222,14 +2223,14 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "encryption_keys" field.</summary>
     public const int EncryptionKeysFieldNumber = 13;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.EncryptionKeys> _repeated_encryptionKeys_codec
-        = pb::FieldCodec.ForMessage(106, global::Pulsar.Proto.EncryptionKeys.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.EncryptionKeys> encryptionKeys_ = new pbc::RepeatedField<global::Pulsar.Proto.EncryptionKeys>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.EncryptionKeys> _repeated_encryptionKeys_codec
+        = pb::FieldCodec.ForMessage(106, global::SharpPulsar.Protocol.Proto.EncryptionKeys.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.EncryptionKeys> encryptionKeys_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.EncryptionKeys>();
     /// <summary>
     /// Contains encryption key name, encrypted key and metadata to describe the key
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.EncryptionKeys> EncryptionKeys {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.EncryptionKeys> EncryptionKeys {
       get { return encryptionKeys_; }
     }
 
@@ -2826,7 +2827,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 64: {
-            Compression = (global::Pulsar.Proto.CompressionType) input.ReadEnum();
+            Compression = (global::SharpPulsar.Protocol.Proto.CompressionType) input.ReadEnum();
             break;
           }
           case 72: {
@@ -2900,7 +2901,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[7]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2936,11 +2937,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "properties" field.</summary>
     public const int PropertiesFieldNumber = 1;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_properties_codec
-        = pb::FieldCodec.ForMessage(10, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_properties_codec
+        = pb::FieldCodec.ForMessage(10, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> properties_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Properties {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Properties {
       get { return properties_; }
     }
 
@@ -3318,7 +3319,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[8]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3378,14 +3379,14 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "auth_method" field.</summary>
     public const int AuthMethodFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.AuthMethod AuthMethodDefaultValue = global::Pulsar.Proto.AuthMethod.None;
+    private readonly static global::SharpPulsar.Protocol.Proto.AuthMethod AuthMethodDefaultValue = global::SharpPulsar.Protocol.Proto.AuthMethod.None;
 
-    private global::Pulsar.Proto.AuthMethod authMethod_;
+    private global::SharpPulsar.Protocol.Proto.AuthMethod authMethod_;
     /// <summary>
     /// Deprecated. Use "auth_method_name" instead.
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.AuthMethod AuthMethod {
+    public global::SharpPulsar.Protocol.Proto.AuthMethod AuthMethod {
       get { if ((_hasBits0 & 1) != 0) { return authMethod_; } else { return AuthMethodDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -3754,7 +3755,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            AuthMethod = (global::Pulsar.Proto.AuthMethod) input.ReadEnum();
+            AuthMethod = (global::SharpPulsar.Protocol.Proto.AuthMethod) input.ReadEnum();
             break;
           }
           case 26: {
@@ -3800,7 +3801,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[9]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4025,7 +4026,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[10]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4079,9 +4080,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "response" field.</summary>
     public const int ResponseFieldNumber = 2;
-    private global::Pulsar.Proto.AuthData response_;
+    private global::SharpPulsar.Protocol.Proto.AuthData response_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.AuthData Response {
+    public global::SharpPulsar.Protocol.Proto.AuthData Response {
       get { return response_; }
       set {
         response_ = value;
@@ -4205,7 +4206,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasResponse) {
         if (!HasResponse) {
-          Response = new global::Pulsar.Proto.AuthData();
+          Response = new global::SharpPulsar.Protocol.Proto.AuthData();
         }
         Response.MergeFrom(other.Response);
       }
@@ -4229,7 +4230,7 @@ namespace Pulsar.Proto {
           }
           case 18: {
             if (!HasResponse) {
-              Response = new global::Pulsar.Proto.AuthData();
+              Response = new global::SharpPulsar.Protocol.Proto.AuthData();
             }
             input.ReadMessage(Response);
             break;
@@ -4253,7 +4254,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[11]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[11]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4307,9 +4308,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "challenge" field.</summary>
     public const int ChallengeFieldNumber = 2;
-    private global::Pulsar.Proto.AuthData challenge_;
+    private global::SharpPulsar.Protocol.Proto.AuthData challenge_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.AuthData Challenge {
+    public global::SharpPulsar.Protocol.Proto.AuthData Challenge {
       get { return challenge_; }
       set {
         challenge_ = value;
@@ -4433,7 +4434,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasChallenge) {
         if (!HasChallenge) {
-          Challenge = new global::Pulsar.Proto.AuthData();
+          Challenge = new global::SharpPulsar.Protocol.Proto.AuthData();
         }
         Challenge.MergeFrom(other.Challenge);
       }
@@ -4457,7 +4458,7 @@ namespace Pulsar.Proto {
           }
           case 18: {
             if (!HasChallenge) {
-              Challenge = new global::Pulsar.Proto.AuthData();
+              Challenge = new global::SharpPulsar.Protocol.Proto.AuthData();
             }
             input.ReadMessage(Challenge);
             break;
@@ -4483,7 +4484,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[12]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[12]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4665,7 +4666,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[13]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[13]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4695,11 +4696,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "keySharedMode" field.</summary>
     public const int KeySharedModeFieldNumber = 1;
-    private readonly static global::Pulsar.Proto.KeySharedMode KeySharedModeDefaultValue = global::Pulsar.Proto.KeySharedMode.AutoSplit;
+    private readonly static global::SharpPulsar.Protocol.Proto.KeySharedMode KeySharedModeDefaultValue = global::SharpPulsar.Protocol.Proto.KeySharedMode.AutoSplit;
 
-    private global::Pulsar.Proto.KeySharedMode keySharedMode_;
+    private global::SharpPulsar.Protocol.Proto.KeySharedMode keySharedMode_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.KeySharedMode KeySharedMode {
+    public global::SharpPulsar.Protocol.Proto.KeySharedMode KeySharedMode {
       get { if ((_hasBits0 & 1) != 0) { return keySharedMode_; } else { return KeySharedModeDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -4719,11 +4720,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "hashRanges" field.</summary>
     public const int HashRangesFieldNumber = 3;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.IntRange> _repeated_hashRanges_codec
-        = pb::FieldCodec.ForMessage(26, global::Pulsar.Proto.IntRange.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.IntRange> hashRanges_ = new pbc::RepeatedField<global::Pulsar.Proto.IntRange>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.IntRange> _repeated_hashRanges_codec
+        = pb::FieldCodec.ForMessage(26, global::SharpPulsar.Protocol.Proto.IntRange.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.IntRange> hashRanges_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.IntRange>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.IntRange> HashRanges {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.IntRange> HashRanges {
       get { return hashRanges_; }
     }
 
@@ -4807,7 +4808,7 @@ namespace Pulsar.Proto {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 8: {
-            KeySharedMode = (global::Pulsar.Proto.KeySharedMode) input.ReadEnum();
+            KeySharedMode = (global::SharpPulsar.Protocol.Proto.KeySharedMode) input.ReadEnum();
             break;
           }
           case 26: {
@@ -4829,7 +4830,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[14]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[14]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4920,11 +4921,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "subType" field.</summary>
     public const int SubTypeFieldNumber = 3;
-    private readonly static global::Pulsar.Proto.CommandSubscribe.Types.SubType SubTypeDefaultValue = global::Pulsar.Proto.CommandSubscribe.Types.SubType.Exclusive;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType SubTypeDefaultValue = global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType.Exclusive;
 
-    private global::Pulsar.Proto.CommandSubscribe.Types.SubType subType_;
+    private global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType subType_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSubscribe.Types.SubType SubType {
+    public global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType SubType {
       get { if ((_hasBits0 & 1) != 0) { return subType_; } else { return SubTypeDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -5067,14 +5068,14 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "start_message_id" field.</summary>
     public const int StartMessageIdFieldNumber = 9;
-    private global::Pulsar.Proto.MessageIdData startMessageId_;
+    private global::SharpPulsar.Protocol.Proto.MessageIdData startMessageId_;
     /// <summary>
     /// If specified, the subscription will position the cursor
     /// markd-delete position  on the particular message id and
     /// will send messages from that point
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.MessageIdData StartMessageId {
+    public global::SharpPulsar.Protocol.Proto.MessageIdData StartMessageId {
       get { return startMessageId_; }
       set {
         startMessageId_ = value;
@@ -5093,14 +5094,14 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "metadata" field.</summary>
     public const int MetadataFieldNumber = 10;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_metadata_codec
-        = pb::FieldCodec.ForMessage(82, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_metadata_codec
+        = pb::FieldCodec.ForMessage(82, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     /// <summary>
     //// Add optional metadata key=value to this consumer
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Metadata {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Metadata {
       get { return metadata_; }
     }
 
@@ -5130,9 +5131,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "schema" field.</summary>
     public const int SchemaFieldNumber = 12;
-    private global::Pulsar.Proto.Schema schema_;
+    private global::SharpPulsar.Protocol.Proto.Schema schema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema Schema {
+    public global::SharpPulsar.Protocol.Proto.Schema Schema {
       get { return schema_; }
       set {
         schema_ = value;
@@ -5151,15 +5152,15 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "initialPosition" field.</summary>
     public const int InitialPositionFieldNumber = 13;
-    private readonly static global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition InitialPositionDefaultValue = global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition.Latest;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition InitialPositionDefaultValue = global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition.Latest;
 
-    private global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition initialPosition_;
+    private global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition initialPosition_;
     /// <summary>
     /// Signal whether the subscription will initialize on latest
     /// or not -- earliest
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition InitialPosition {
+    public global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition InitialPosition {
       get { if ((_hasBits0 & 64) != 0) { return initialPosition_; } else { return InitialPositionDefaultValue; } }
       set {
         _hasBits0 |= 64;
@@ -5267,9 +5268,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "keySharedMeta" field.</summary>
     public const int KeySharedMetaFieldNumber = 17;
-    private global::Pulsar.Proto.KeySharedMeta keySharedMeta_;
+    private global::SharpPulsar.Protocol.Proto.KeySharedMeta keySharedMeta_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.KeySharedMeta KeySharedMeta {
+    public global::SharpPulsar.Protocol.Proto.KeySharedMeta KeySharedMeta {
       get { return keySharedMeta_; }
       set {
         keySharedMeta_ = value;
@@ -5511,7 +5512,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasStartMessageId) {
         if (!HasStartMessageId) {
-          StartMessageId = new global::Pulsar.Proto.MessageIdData();
+          StartMessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
         }
         StartMessageId.MergeFrom(other.StartMessageId);
       }
@@ -5521,7 +5522,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasSchema) {
         if (!HasSchema) {
-          Schema = new global::Pulsar.Proto.Schema();
+          Schema = new global::SharpPulsar.Protocol.Proto.Schema();
         }
         Schema.MergeFrom(other.Schema);
       }
@@ -5539,7 +5540,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasKeySharedMeta) {
         if (!HasKeySharedMeta) {
-          KeySharedMeta = new global::Pulsar.Proto.KeySharedMeta();
+          KeySharedMeta = new global::SharpPulsar.Protocol.Proto.KeySharedMeta();
         }
         KeySharedMeta.MergeFrom(other.KeySharedMeta);
       }
@@ -5563,7 +5564,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 24: {
-            SubType = (global::Pulsar.Proto.CommandSubscribe.Types.SubType) input.ReadEnum();
+            SubType = (global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.SubType) input.ReadEnum();
             break;
           }
           case 32: {
@@ -5588,7 +5589,7 @@ namespace Pulsar.Proto {
           }
           case 74: {
             if (!HasStartMessageId) {
-              StartMessageId = new global::Pulsar.Proto.MessageIdData();
+              StartMessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
             }
             input.ReadMessage(StartMessageId);
             break;
@@ -5603,13 +5604,13 @@ namespace Pulsar.Proto {
           }
           case 98: {
             if (!HasSchema) {
-              Schema = new global::Pulsar.Proto.Schema();
+              Schema = new global::SharpPulsar.Protocol.Proto.Schema();
             }
             input.ReadMessage(Schema);
             break;
           }
           case 104: {
-            InitialPosition = (global::Pulsar.Proto.CommandSubscribe.Types.InitialPosition) input.ReadEnum();
+            InitialPosition = (global::SharpPulsar.Protocol.Proto.CommandSubscribe.Types.InitialPosition) input.ReadEnum();
             break;
           }
           case 112: {
@@ -5626,7 +5627,7 @@ namespace Pulsar.Proto {
           }
           case 138: {
             if (!HasKeySharedMeta) {
-              KeySharedMeta = new global::Pulsar.Proto.KeySharedMeta();
+              KeySharedMeta = new global::SharpPulsar.Protocol.Proto.KeySharedMeta();
             }
             input.ReadMessage(KeySharedMeta);
             break;
@@ -5665,7 +5666,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[15]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5978,7 +5979,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[16]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6062,11 +6063,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "response" field.</summary>
     public const int ResponseFieldNumber = 3;
-    private readonly static global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType ResponseDefaultValue = global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType.Success;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType ResponseDefaultValue = global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType.Success;
 
-    private global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType response_;
+    private global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType response_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType Response {
+    public global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType Response {
       get { if ((_hasBits0 & 4) != 0) { return response_; } else { return ResponseDefaultValue; } }
       set {
         _hasBits0 |= 4;
@@ -6086,11 +6087,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -6262,11 +6263,11 @@ namespace Pulsar.Proto {
             break;
           }
           case 24: {
-            Response = (global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType) input.ReadEnum();
+            Response = (global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse.Types.LookupType) input.ReadEnum();
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -6300,7 +6301,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[17]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[17]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6654,7 +6655,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[18]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[18]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6739,11 +6740,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "response" field.</summary>
     public const int ResponseFieldNumber = 3;
-    private readonly static global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType ResponseDefaultValue = global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType.Redirect;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType ResponseDefaultValue = global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType.Redirect;
 
-    private global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType response_;
+    private global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType response_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType Response {
+    public global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType Response {
       get { if ((_hasBits0 & 1) != 0) { return response_; } else { return ResponseDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -6811,11 +6812,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 6;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -7052,7 +7053,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 24: {
-            Response = (global::Pulsar.Proto.CommandLookupTopicResponse.Types.LookupType) input.ReadEnum();
+            Response = (global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse.Types.LookupType) input.ReadEnum();
             break;
           }
           case 32: {
@@ -7064,7 +7065,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 48: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 58: {
@@ -7107,7 +7108,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[19]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[19]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -7266,22 +7267,22 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "metadata" field.</summary>
     public const int MetadataFieldNumber = 6;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyValue> _repeated_metadata_codec
-        = pb::FieldCodec.ForMessage(50, global::Pulsar.Proto.KeyValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyValue> _repeated_metadata_codec
+        = pb::FieldCodec.ForMessage(50, global::SharpPulsar.Protocol.Proto.KeyValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> metadata_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue>();
     /// <summary>
     //// Add optional metadata key=value to this producer
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyValue> Metadata {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyValue> Metadata {
       get { return metadata_; }
     }
 
     /// <summary>Field number for the "schema" field.</summary>
     public const int SchemaFieldNumber = 7;
-    private global::Pulsar.Proto.Schema schema_;
+    private global::SharpPulsar.Protocol.Proto.Schema schema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema Schema {
+    public global::SharpPulsar.Protocol.Proto.Schema Schema {
       get { return schema_; }
       set {
         schema_ = value;
@@ -7498,7 +7499,7 @@ namespace Pulsar.Proto {
       metadata_.Add(other.metadata_);
       if (other.HasSchema) {
         if (!HasSchema) {
-          Schema = new global::Pulsar.Proto.Schema();
+          Schema = new global::SharpPulsar.Protocol.Proto.Schema();
         }
         Schema.MergeFrom(other.Schema);
       }
@@ -7545,7 +7546,7 @@ namespace Pulsar.Proto {
           }
           case 58: {
             if (!HasSchema) {
-              Schema = new global::Pulsar.Proto.Schema();
+              Schema = new global::SharpPulsar.Protocol.Proto.Schema();
             }
             input.ReadMessage(Schema);
             break;
@@ -7573,7 +7574,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[20]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[20]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -7925,7 +7926,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[21]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[21]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8005,9 +8006,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message_id" field.</summary>
     public const int MessageIdFieldNumber = 3;
-    private global::Pulsar.Proto.MessageIdData messageId_;
+    private global::SharpPulsar.Protocol.Proto.MessageIdData messageId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.MessageIdData MessageId {
+    public global::SharpPulsar.Protocol.Proto.MessageIdData MessageId {
       get { return messageId_; }
       set {
         messageId_ = value;
@@ -8143,7 +8144,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasMessageId) {
         if (!HasMessageId) {
-          MessageId = new global::Pulsar.Proto.MessageIdData();
+          MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
         }
         MessageId.MergeFrom(other.MessageId);
       }
@@ -8171,7 +8172,7 @@ namespace Pulsar.Proto {
           }
           case 26: {
             if (!HasMessageId) {
-              MessageId = new global::Pulsar.Proto.MessageIdData();
+              MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
             }
             input.ReadMessage(MessageId);
             break;
@@ -8195,7 +8196,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[22]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[22]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8275,11 +8276,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 3;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 4) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 4;
@@ -8439,7 +8440,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 24: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 34: {
@@ -8461,7 +8462,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[23]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[23]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8516,9 +8517,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message_id" field.</summary>
     public const int MessageIdFieldNumber = 2;
-    private global::Pulsar.Proto.MessageIdData messageId_;
+    private global::SharpPulsar.Protocol.Proto.MessageIdData messageId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.MessageIdData MessageId {
+    public global::SharpPulsar.Protocol.Proto.MessageIdData MessageId {
       get { return messageId_; }
       set {
         messageId_ = value;
@@ -8642,7 +8643,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasMessageId) {
         if (!HasMessageId) {
-          MessageId = new global::Pulsar.Proto.MessageIdData();
+          MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
         }
         MessageId.MergeFrom(other.MessageId);
       }
@@ -8666,7 +8667,7 @@ namespace Pulsar.Proto {
           }
           case 18: {
             if (!HasMessageId) {
-              MessageId = new global::Pulsar.Proto.MessageIdData();
+              MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
             }
             input.ReadMessage(MessageId);
             break;
@@ -8690,7 +8691,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[24]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[24]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8749,11 +8750,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "ack_type" field.</summary>
     public const int AckTypeFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.CommandAck.Types.AckType AckTypeDefaultValue = global::Pulsar.Proto.CommandAck.Types.AckType.Individual;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType AckTypeDefaultValue = global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType.Individual;
 
-    private global::Pulsar.Proto.CommandAck.Types.AckType ackType_;
+    private global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType ackType_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAck.Types.AckType AckType {
+    public global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType AckType {
       get { if ((_hasBits0 & 2) != 0) { return ackType_; } else { return AckTypeDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -8773,24 +8774,24 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message_id" field.</summary>
     public const int MessageIdFieldNumber = 3;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.MessageIdData> _repeated_messageId_codec
-        = pb::FieldCodec.ForMessage(26, global::Pulsar.Proto.MessageIdData.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.MessageIdData> messageId_ = new pbc::RepeatedField<global::Pulsar.Proto.MessageIdData>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.MessageIdData> _repeated_messageId_codec
+        = pb::FieldCodec.ForMessage(26, global::SharpPulsar.Protocol.Proto.MessageIdData.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData> messageId_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData>();
     /// <summary>
     /// In case of individual acks, the client can pass a list of message ids
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.MessageIdData> MessageId {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData> MessageId {
       get { return messageId_; }
     }
 
     /// <summary>Field number for the "validation_error" field.</summary>
     public const int ValidationErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.CommandAck.Types.ValidationError ValidationErrorDefaultValue = global::Pulsar.Proto.CommandAck.Types.ValidationError.UncompressedSizeCorruption;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError ValidationErrorDefaultValue = global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError.UncompressedSizeCorruption;
 
-    private global::Pulsar.Proto.CommandAck.Types.ValidationError validationError_;
+    private global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError validationError_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAck.Types.ValidationError ValidationError {
+    public global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError ValidationError {
       get { if ((_hasBits0 & 4) != 0) { return validationError_; } else { return ValidationErrorDefaultValue; } }
       set {
         _hasBits0 |= 4;
@@ -8810,11 +8811,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "properties" field.</summary>
     public const int PropertiesFieldNumber = 5;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.KeyLongValue> _repeated_properties_codec
-        = pb::FieldCodec.ForMessage(42, global::Pulsar.Proto.KeyLongValue.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.KeyLongValue> properties_ = new pbc::RepeatedField<global::Pulsar.Proto.KeyLongValue>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.KeyLongValue> _repeated_properties_codec
+        = pb::FieldCodec.ForMessage(42, global::SharpPulsar.Protocol.Proto.KeyLongValue.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyLongValue> properties_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyLongValue>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.KeyLongValue> Properties {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.KeyLongValue> Properties {
       get { return properties_; }
     }
 
@@ -9003,7 +9004,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            AckType = (global::Pulsar.Proto.CommandAck.Types.AckType) input.ReadEnum();
+            AckType = (global::SharpPulsar.Protocol.Proto.CommandAck.Types.AckType) input.ReadEnum();
             break;
           }
           case 26: {
@@ -9011,7 +9012,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            ValidationError = (global::Pulsar.Proto.CommandAck.Types.ValidationError) input.ReadEnum();
+            ValidationError = (global::SharpPulsar.Protocol.Proto.CommandAck.Types.ValidationError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -9066,7 +9067,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[25]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[25]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9171,11 +9172,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -9351,7 +9352,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -9376,7 +9377,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[26]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[26]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9561,7 +9562,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[27]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[27]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9750,7 +9751,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[28]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[28]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9938,7 +9939,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[29]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[29]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10018,9 +10019,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message_id" field.</summary>
     public const int MessageIdFieldNumber = 3;
-    private global::Pulsar.Proto.MessageIdData messageId_;
+    private global::SharpPulsar.Protocol.Proto.MessageIdData messageId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.MessageIdData MessageId {
+    public global::SharpPulsar.Protocol.Proto.MessageIdData MessageId {
       get { return messageId_; }
       set {
         messageId_ = value;
@@ -10156,7 +10157,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasMessageId) {
         if (!HasMessageId) {
-          MessageId = new global::Pulsar.Proto.MessageIdData();
+          MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
         }
         MessageId.MergeFrom(other.MessageId);
       }
@@ -10184,7 +10185,7 @@ namespace Pulsar.Proto {
           }
           case 26: {
             if (!HasMessageId) {
-              MessageId = new global::Pulsar.Proto.MessageIdData();
+              MessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
             }
             input.ReadMessage(MessageId);
             break;
@@ -10213,7 +10214,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[30]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[30]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10357,7 +10358,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[31]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[31]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10542,7 +10543,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[32]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[32]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10727,7 +10728,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[33]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[33]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10781,11 +10782,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message_ids" field.</summary>
     public const int MessageIdsFieldNumber = 2;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.MessageIdData> _repeated_messageIds_codec
-        = pb::FieldCodec.ForMessage(18, global::Pulsar.Proto.MessageIdData.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.MessageIdData> messageIds_ = new pbc::RepeatedField<global::Pulsar.Proto.MessageIdData>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.MessageIdData> _repeated_messageIds_codec
+        = pb::FieldCodec.ForMessage(18, global::SharpPulsar.Protocol.Proto.MessageIdData.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData> messageIds_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.MessageIdData> MessageIds {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.MessageIdData> MessageIds {
       get { return messageIds_; }
     }
 
@@ -10891,7 +10892,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[34]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[34]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10945,9 +10946,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "schema" field.</summary>
     public const int SchemaFieldNumber = 2;
-    private global::Pulsar.Proto.Schema schema_;
+    private global::SharpPulsar.Protocol.Proto.Schema schema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema Schema {
+    public global::SharpPulsar.Protocol.Proto.Schema Schema {
       get { return schema_; }
       set {
         schema_ = value;
@@ -11038,7 +11039,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasSchema) {
         if (!HasSchema) {
-          Schema = new global::Pulsar.Proto.Schema();
+          Schema = new global::SharpPulsar.Protocol.Proto.Schema();
         }
         Schema.MergeFrom(other.Schema);
       }
@@ -11059,7 +11060,7 @@ namespace Pulsar.Proto {
           }
           case 18: {
             if (!HasSchema) {
-              Schema = new global::Pulsar.Proto.Schema();
+              Schema = new global::SharpPulsar.Protocol.Proto.Schema();
             }
             input.ReadMessage(Schema);
             break;
@@ -11082,7 +11083,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[35]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[35]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11351,7 +11352,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[36]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[36]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11406,11 +11407,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 2) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -11554,7 +11555,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 26: {
@@ -11580,7 +11581,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[37]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[37]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11681,7 +11682,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[38]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[38]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11783,7 +11784,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[39]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[39]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11972,7 +11973,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[40]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[40]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12039,11 +12040,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error_code" field.</summary>
     public const int ErrorCodeFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.ServerError ErrorCodeDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorCodeDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError errorCode_;
+    private global::SharpPulsar.Protocol.Proto.ServerError errorCode_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError ErrorCode {
+    public global::SharpPulsar.Protocol.Proto.ServerError ErrorCode {
       get { if ((_hasBits0 & 2) != 0) { return errorCode_; } else { return ErrorCodeDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -12651,7 +12652,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            ErrorCode = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            ErrorCode = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 26: {
@@ -12721,7 +12722,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[41]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[41]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12906,7 +12907,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[42]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[42]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12936,9 +12937,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "last_message_id" field.</summary>
     public const int LastMessageIdFieldNumber = 1;
-    private global::Pulsar.Proto.MessageIdData lastMessageId_;
+    private global::SharpPulsar.Protocol.Proto.MessageIdData lastMessageId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.MessageIdData LastMessageId {
+    public global::SharpPulsar.Protocol.Proto.MessageIdData LastMessageId {
       get { return lastMessageId_; }
       set {
         lastMessageId_ = value;
@@ -13050,7 +13051,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasLastMessageId) {
         if (!HasLastMessageId) {
-          LastMessageId = new global::Pulsar.Proto.MessageIdData();
+          LastMessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
         }
         LastMessageId.MergeFrom(other.LastMessageId);
       }
@@ -13070,7 +13071,7 @@ namespace Pulsar.Proto {
             break;
           case 10: {
             if (!HasLastMessageId) {
-              LastMessageId = new global::Pulsar.Proto.MessageIdData();
+              LastMessageId = new global::SharpPulsar.Protocol.Proto.MessageIdData();
             }
             input.ReadMessage(LastMessageId);
             break;
@@ -13094,7 +13095,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[43]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[43]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13172,11 +13173,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "mode" field.</summary>
     public const int ModeFieldNumber = 3;
-    private readonly static global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode ModeDefaultValue = global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode.Persistent;
+    private readonly static global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode ModeDefaultValue = global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode.Persistent;
 
-    private global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode mode_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode mode_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode Mode {
+    public global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode Mode {
       get { if ((_hasBits0 & 2) != 0) { return mode_; } else { return ModeDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -13301,7 +13302,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 24: {
-            Mode = (global::Pulsar.Proto.CommandGetTopicsOfNamespace.Types.Mode) input.ReadEnum();
+            Mode = (global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types.Mode) input.ReadEnum();
             break;
           }
         }
@@ -13332,7 +13333,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[44]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[44]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13496,7 +13497,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[45]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[45]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13720,7 +13721,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[46]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[46]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13777,11 +13778,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error_code" field.</summary>
     public const int ErrorCodeFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.ServerError ErrorCodeDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorCodeDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError errorCode_;
+    private global::SharpPulsar.Protocol.Proto.ServerError errorCode_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError ErrorCode {
+    public global::SharpPulsar.Protocol.Proto.ServerError ErrorCode {
       get { if ((_hasBits0 & 2) != 0) { return errorCode_; } else { return ErrorCodeDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -13824,9 +13825,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "schema" field.</summary>
     public const int SchemaFieldNumber = 4;
-    private global::Pulsar.Proto.Schema schema_;
+    private global::SharpPulsar.Protocol.Proto.Schema schema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema Schema {
+    public global::SharpPulsar.Protocol.Proto.Schema Schema {
       get { return schema_; }
       set {
         schema_ = value;
@@ -13973,7 +13974,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasSchema) {
         if (!HasSchema) {
-          Schema = new global::Pulsar.Proto.Schema();
+          Schema = new global::SharpPulsar.Protocol.Proto.Schema();
         }
         Schema.MergeFrom(other.Schema);
       }
@@ -13996,7 +13997,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            ErrorCode = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            ErrorCode = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 26: {
@@ -14005,7 +14006,7 @@ namespace Pulsar.Proto {
           }
           case 34: {
             if (!HasSchema) {
-              Schema = new global::Pulsar.Proto.Schema();
+              Schema = new global::SharpPulsar.Protocol.Proto.Schema();
             }
             input.ReadMessage(Schema);
             break;
@@ -14029,7 +14030,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[47]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[47]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14107,9 +14108,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "schema" field.</summary>
     public const int SchemaFieldNumber = 3;
-    private global::Pulsar.Proto.Schema schema_;
+    private global::SharpPulsar.Protocol.Proto.Schema schema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Schema Schema {
+    public global::SharpPulsar.Protocol.Proto.Schema Schema {
       get { return schema_; }
       set {
         schema_ = value;
@@ -14212,7 +14213,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasSchema) {
         if (!HasSchema) {
-          Schema = new global::Pulsar.Proto.Schema();
+          Schema = new global::SharpPulsar.Protocol.Proto.Schema();
         }
         Schema.MergeFrom(other.Schema);
       }
@@ -14237,7 +14238,7 @@ namespace Pulsar.Proto {
           }
           case 26: {
             if (!HasSchema) {
-              Schema = new global::Pulsar.Proto.Schema();
+              Schema = new global::SharpPulsar.Protocol.Proto.Schema();
             }
             input.ReadMessage(Schema);
             break;
@@ -14257,7 +14258,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[48]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[48]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14313,11 +14314,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error_code" field.</summary>
     public const int ErrorCodeFieldNumber = 2;
-    private readonly static global::Pulsar.Proto.ServerError ErrorCodeDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorCodeDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError errorCode_;
+    private global::SharpPulsar.Protocol.Proto.ServerError errorCode_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError ErrorCode {
+    public global::SharpPulsar.Protocol.Proto.ServerError ErrorCode {
       get { if ((_hasBits0 & 2) != 0) { return errorCode_; } else { return ErrorCodeDefaultValue; } }
       set {
         _hasBits0 |= 2;
@@ -14496,7 +14497,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 16: {
-            ErrorCode = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            ErrorCode = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 26: {
@@ -14522,7 +14523,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[49]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[49]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14748,7 +14749,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[50]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[50]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14853,11 +14854,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -15033,7 +15034,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -15055,7 +15056,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[51]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[51]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15301,7 +15302,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[52]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[52]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15406,11 +15407,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -15586,7 +15587,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -15607,7 +15608,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[53]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[53]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15789,7 +15790,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[54]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[54]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15893,11 +15894,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "subscription" field.</summary>
     public const int SubscriptionFieldNumber = 4;
-    private static readonly pb::FieldCodec<global::Pulsar.Proto.Subscription> _repeated_subscription_codec
-        = pb::FieldCodec.ForMessage(34, global::Pulsar.Proto.Subscription.Parser);
-    private readonly pbc::RepeatedField<global::Pulsar.Proto.Subscription> subscription_ = new pbc::RepeatedField<global::Pulsar.Proto.Subscription>();
+    private static readonly pb::FieldCodec<global::SharpPulsar.Protocol.Proto.Subscription> _repeated_subscription_codec
+        = pb::FieldCodec.ForMessage(34, global::SharpPulsar.Protocol.Proto.Subscription.Parser);
+    private readonly pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.Subscription> subscription_ = new pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.Subscription>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::Pulsar.Proto.Subscription> Subscription {
+    public pbc::RepeatedField<global::SharpPulsar.Protocol.Proto.Subscription> Subscription {
       get { return subscription_; }
     }
 
@@ -16035,7 +16036,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[55]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[55]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16140,11 +16141,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -16320,7 +16321,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -16342,7 +16343,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[56]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[56]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16446,11 +16447,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "txn_action" field.</summary>
     public const int TxnActionFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.TxnAction TxnActionDefaultValue = global::Pulsar.Proto.TxnAction.Commit;
+    private readonly static global::SharpPulsar.Protocol.Proto.TxnAction TxnActionDefaultValue = global::SharpPulsar.Protocol.Proto.TxnAction.Commit;
 
-    private global::Pulsar.Proto.TxnAction txnAction_;
+    private global::SharpPulsar.Protocol.Proto.TxnAction txnAction_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.TxnAction TxnAction {
+    public global::SharpPulsar.Protocol.Proto.TxnAction TxnAction {
       get { if ((_hasBits0 & 8) != 0) { return txnAction_; } else { return TxnActionDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -16591,7 +16592,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            TxnAction = (global::Pulsar.Proto.TxnAction) input.ReadEnum();
+            TxnAction = (global::SharpPulsar.Protocol.Proto.TxnAction) input.ReadEnum();
             break;
           }
         }
@@ -16609,7 +16610,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[57]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[57]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16714,11 +16715,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -16894,7 +16895,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -16916,7 +16917,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[58]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[58]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17044,11 +17045,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "txn_action" field.</summary>
     public const int TxnActionFieldNumber = 5;
-    private readonly static global::Pulsar.Proto.TxnAction TxnActionDefaultValue = global::Pulsar.Proto.TxnAction.Commit;
+    private readonly static global::SharpPulsar.Protocol.Proto.TxnAction TxnActionDefaultValue = global::SharpPulsar.Protocol.Proto.TxnAction.Commit;
 
-    private global::Pulsar.Proto.TxnAction txnAction_;
+    private global::SharpPulsar.Protocol.Proto.TxnAction txnAction_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.TxnAction TxnAction {
+    public global::SharpPulsar.Protocol.Proto.TxnAction TxnAction {
       get { if ((_hasBits0 & 8) != 0) { return txnAction_; } else { return TxnActionDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -17205,7 +17206,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 40: {
-            TxnAction = (global::Pulsar.Proto.TxnAction) input.ReadEnum();
+            TxnAction = (global::SharpPulsar.Protocol.Proto.TxnAction) input.ReadEnum();
             break;
           }
         }
@@ -17223,7 +17224,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[59]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[59]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17328,11 +17329,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -17508,7 +17509,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -17530,7 +17531,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[60]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[60]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17635,9 +17636,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "subscription" field.</summary>
     public const int SubscriptionFieldNumber = 4;
-    private global::Pulsar.Proto.Subscription subscription_;
+    private global::SharpPulsar.Protocol.Proto.Subscription subscription_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.Subscription Subscription {
+    public global::SharpPulsar.Protocol.Proto.Subscription Subscription {
       get { return subscription_; }
       set {
         subscription_ = value;
@@ -17656,11 +17657,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "txn_action" field.</summary>
     public const int TxnActionFieldNumber = 5;
-    private readonly static global::Pulsar.Proto.TxnAction TxnActionDefaultValue = global::Pulsar.Proto.TxnAction.Commit;
+    private readonly static global::SharpPulsar.Protocol.Proto.TxnAction TxnActionDefaultValue = global::SharpPulsar.Protocol.Proto.TxnAction.Commit;
 
-    private global::Pulsar.Proto.TxnAction txnAction_;
+    private global::SharpPulsar.Protocol.Proto.TxnAction txnAction_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.TxnAction TxnAction {
+    public global::SharpPulsar.Protocol.Proto.TxnAction TxnAction {
       get { if ((_hasBits0 & 8) != 0) { return txnAction_; } else { return TxnActionDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -17785,7 +17786,7 @@ namespace Pulsar.Proto {
       }
       if (other.HasSubscription) {
         if (!HasSubscription) {
-          Subscription = new global::Pulsar.Proto.Subscription();
+          Subscription = new global::SharpPulsar.Protocol.Proto.Subscription();
         }
         Subscription.MergeFrom(other.Subscription);
       }
@@ -17817,13 +17818,13 @@ namespace Pulsar.Proto {
           }
           case 34: {
             if (!HasSubscription) {
-              Subscription = new global::Pulsar.Proto.Subscription();
+              Subscription = new global::SharpPulsar.Protocol.Proto.Subscription();
             }
             input.ReadMessage(Subscription);
             break;
           }
           case 40: {
-            TxnAction = (global::Pulsar.Proto.TxnAction) input.ReadEnum();
+            TxnAction = (global::SharpPulsar.Protocol.Proto.TxnAction) input.ReadEnum();
             break;
           }
         }
@@ -17841,7 +17842,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[61]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[61]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17946,11 +17947,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 4;
-    private readonly static global::Pulsar.Proto.ServerError ErrorDefaultValue = global::Pulsar.Proto.ServerError.UnknownError;
+    private readonly static global::SharpPulsar.Protocol.Proto.ServerError ErrorDefaultValue = global::SharpPulsar.Protocol.Proto.ServerError.UnknownError;
 
-    private global::Pulsar.Proto.ServerError error_;
+    private global::SharpPulsar.Protocol.Proto.ServerError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.ServerError Error {
+    public global::SharpPulsar.Protocol.Proto.ServerError Error {
       get { if ((_hasBits0 & 8) != 0) { return error_; } else { return ErrorDefaultValue; } }
       set {
         _hasBits0 |= 8;
@@ -18126,7 +18127,7 @@ namespace Pulsar.Proto {
             break;
           }
           case 32: {
-            Error = (global::Pulsar.Proto.ServerError) input.ReadEnum();
+            Error = (global::SharpPulsar.Protocol.Proto.ServerError) input.ReadEnum();
             break;
           }
           case 42: {
@@ -18148,7 +18149,7 @@ namespace Pulsar.Proto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Pulsar.Proto.PulsarApiReflection.Descriptor.MessageTypes[62]; }
+      get { return global::SharpPulsar.Protocol.Proto.PulsarApiReflection.Descriptor.MessageTypes[62]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -18228,11 +18229,11 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "type" field.</summary>
     public const int TypeFieldNumber = 1;
-    private readonly static global::Pulsar.Proto.BaseCommand.Types.Type TypeDefaultValue = global::Pulsar.Proto.BaseCommand.Types.Type.Connect;
+    private readonly static global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type TypeDefaultValue = global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type.Connect;
 
-    private global::Pulsar.Proto.BaseCommand.Types.Type type_;
+    private global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type type_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.BaseCommand.Types.Type Type {
+    public global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type Type {
       get { if ((_hasBits0 & 1) != 0) { return type_; } else { return TypeDefaultValue; } }
       set {
         _hasBits0 |= 1;
@@ -18252,9 +18253,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "connect" field.</summary>
     public const int ConnectFieldNumber = 2;
-    private global::Pulsar.Proto.CommandConnect connect_;
+    private global::SharpPulsar.Protocol.Proto.CommandConnect connect_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandConnect Connect {
+    public global::SharpPulsar.Protocol.Proto.CommandConnect Connect {
       get { return connect_; }
       set {
         connect_ = value;
@@ -18273,9 +18274,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "connected" field.</summary>
     public const int ConnectedFieldNumber = 3;
-    private global::Pulsar.Proto.CommandConnected connected_;
+    private global::SharpPulsar.Protocol.Proto.CommandConnected connected_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandConnected Connected {
+    public global::SharpPulsar.Protocol.Proto.CommandConnected Connected {
       get { return connected_; }
       set {
         connected_ = value;
@@ -18294,9 +18295,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "subscribe" field.</summary>
     public const int SubscribeFieldNumber = 4;
-    private global::Pulsar.Proto.CommandSubscribe subscribe_;
+    private global::SharpPulsar.Protocol.Proto.CommandSubscribe subscribe_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSubscribe Subscribe {
+    public global::SharpPulsar.Protocol.Proto.CommandSubscribe Subscribe {
       get { return subscribe_; }
       set {
         subscribe_ = value;
@@ -18315,9 +18316,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "producer" field.</summary>
     public const int ProducerFieldNumber = 5;
-    private global::Pulsar.Proto.CommandProducer producer_;
+    private global::SharpPulsar.Protocol.Proto.CommandProducer producer_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandProducer Producer {
+    public global::SharpPulsar.Protocol.Proto.CommandProducer Producer {
       get { return producer_; }
       set {
         producer_ = value;
@@ -18336,9 +18337,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "send" field.</summary>
     public const int SendFieldNumber = 6;
-    private global::Pulsar.Proto.CommandSend send_;
+    private global::SharpPulsar.Protocol.Proto.CommandSend send_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSend Send {
+    public global::SharpPulsar.Protocol.Proto.CommandSend Send {
       get { return send_; }
       set {
         send_ = value;
@@ -18357,9 +18358,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "send_receipt" field.</summary>
     public const int SendReceiptFieldNumber = 7;
-    private global::Pulsar.Proto.CommandSendReceipt sendReceipt_;
+    private global::SharpPulsar.Protocol.Proto.CommandSendReceipt sendReceipt_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSendReceipt SendReceipt {
+    public global::SharpPulsar.Protocol.Proto.CommandSendReceipt SendReceipt {
       get { return sendReceipt_; }
       set {
         sendReceipt_ = value;
@@ -18378,9 +18379,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "send_error" field.</summary>
     public const int SendErrorFieldNumber = 8;
-    private global::Pulsar.Proto.CommandSendError sendError_;
+    private global::SharpPulsar.Protocol.Proto.CommandSendError sendError_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSendError SendError {
+    public global::SharpPulsar.Protocol.Proto.CommandSendError SendError {
       get { return sendError_; }
       set {
         sendError_ = value;
@@ -18399,9 +18400,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "message" field.</summary>
     public const int MessageFieldNumber = 9;
-    private global::Pulsar.Proto.CommandMessage message_;
+    private global::SharpPulsar.Protocol.Proto.CommandMessage message_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandMessage Message {
+    public global::SharpPulsar.Protocol.Proto.CommandMessage Message {
       get { return message_; }
       set {
         message_ = value;
@@ -18420,9 +18421,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "ack" field.</summary>
     public const int AckFieldNumber = 10;
-    private global::Pulsar.Proto.CommandAck ack_;
+    private global::SharpPulsar.Protocol.Proto.CommandAck ack_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAck Ack {
+    public global::SharpPulsar.Protocol.Proto.CommandAck Ack {
       get { return ack_; }
       set {
         ack_ = value;
@@ -18441,9 +18442,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "flow" field.</summary>
     public const int FlowFieldNumber = 11;
-    private global::Pulsar.Proto.CommandFlow flow_;
+    private global::SharpPulsar.Protocol.Proto.CommandFlow flow_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandFlow Flow {
+    public global::SharpPulsar.Protocol.Proto.CommandFlow Flow {
       get { return flow_; }
       set {
         flow_ = value;
@@ -18462,9 +18463,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "unsubscribe" field.</summary>
     public const int UnsubscribeFieldNumber = 12;
-    private global::Pulsar.Proto.CommandUnsubscribe unsubscribe_;
+    private global::SharpPulsar.Protocol.Proto.CommandUnsubscribe unsubscribe_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandUnsubscribe Unsubscribe {
+    public global::SharpPulsar.Protocol.Proto.CommandUnsubscribe Unsubscribe {
       get { return unsubscribe_; }
       set {
         unsubscribe_ = value;
@@ -18483,9 +18484,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "success" field.</summary>
     public const int SuccessFieldNumber = 13;
-    private global::Pulsar.Proto.CommandSuccess success_;
+    private global::SharpPulsar.Protocol.Proto.CommandSuccess success_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSuccess Success {
+    public global::SharpPulsar.Protocol.Proto.CommandSuccess Success {
       get { return success_; }
       set {
         success_ = value;
@@ -18504,9 +18505,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "error" field.</summary>
     public const int ErrorFieldNumber = 14;
-    private global::Pulsar.Proto.CommandError error_;
+    private global::SharpPulsar.Protocol.Proto.CommandError error_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandError Error {
+    public global::SharpPulsar.Protocol.Proto.CommandError Error {
       get { return error_; }
       set {
         error_ = value;
@@ -18525,9 +18526,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "close_producer" field.</summary>
     public const int CloseProducerFieldNumber = 15;
-    private global::Pulsar.Proto.CommandCloseProducer closeProducer_;
+    private global::SharpPulsar.Protocol.Proto.CommandCloseProducer closeProducer_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandCloseProducer CloseProducer {
+    public global::SharpPulsar.Protocol.Proto.CommandCloseProducer CloseProducer {
       get { return closeProducer_; }
       set {
         closeProducer_ = value;
@@ -18546,9 +18547,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "close_consumer" field.</summary>
     public const int CloseConsumerFieldNumber = 16;
-    private global::Pulsar.Proto.CommandCloseConsumer closeConsumer_;
+    private global::SharpPulsar.Protocol.Proto.CommandCloseConsumer closeConsumer_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandCloseConsumer CloseConsumer {
+    public global::SharpPulsar.Protocol.Proto.CommandCloseConsumer CloseConsumer {
       get { return closeConsumer_; }
       set {
         closeConsumer_ = value;
@@ -18567,9 +18568,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "producer_success" field.</summary>
     public const int ProducerSuccessFieldNumber = 17;
-    private global::Pulsar.Proto.CommandProducerSuccess producerSuccess_;
+    private global::SharpPulsar.Protocol.Proto.CommandProducerSuccess producerSuccess_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandProducerSuccess ProducerSuccess {
+    public global::SharpPulsar.Protocol.Proto.CommandProducerSuccess ProducerSuccess {
       get { return producerSuccess_; }
       set {
         producerSuccess_ = value;
@@ -18588,9 +18589,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "ping" field.</summary>
     public const int PingFieldNumber = 18;
-    private global::Pulsar.Proto.CommandPing ping_;
+    private global::SharpPulsar.Protocol.Proto.CommandPing ping_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandPing Ping {
+    public global::SharpPulsar.Protocol.Proto.CommandPing Ping {
       get { return ping_; }
       set {
         ping_ = value;
@@ -18609,9 +18610,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "pong" field.</summary>
     public const int PongFieldNumber = 19;
-    private global::Pulsar.Proto.CommandPong pong_;
+    private global::SharpPulsar.Protocol.Proto.CommandPong pong_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandPong Pong {
+    public global::SharpPulsar.Protocol.Proto.CommandPong Pong {
       get { return pong_; }
       set {
         pong_ = value;
@@ -18630,9 +18631,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "redeliverUnacknowledgedMessages" field.</summary>
     public const int RedeliverUnacknowledgedMessagesFieldNumber = 20;
-    private global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages redeliverUnacknowledgedMessages_;
+    private global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages redeliverUnacknowledgedMessages_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages RedeliverUnacknowledgedMessages {
+    public global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages RedeliverUnacknowledgedMessages {
       get { return redeliverUnacknowledgedMessages_; }
       set {
         redeliverUnacknowledgedMessages_ = value;
@@ -18651,9 +18652,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "partitionMetadata" field.</summary>
     public const int PartitionMetadataFieldNumber = 21;
-    private global::Pulsar.Proto.CommandPartitionedTopicMetadata partitionMetadata_;
+    private global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata partitionMetadata_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandPartitionedTopicMetadata PartitionMetadata {
+    public global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata PartitionMetadata {
       get { return partitionMetadata_; }
       set {
         partitionMetadata_ = value;
@@ -18672,9 +18673,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "partitionMetadataResponse" field.</summary>
     public const int PartitionMetadataResponseFieldNumber = 22;
-    private global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse partitionMetadataResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse partitionMetadataResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse PartitionMetadataResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse PartitionMetadataResponse {
       get { return partitionMetadataResponse_; }
       set {
         partitionMetadataResponse_ = value;
@@ -18693,9 +18694,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "lookupTopic" field.</summary>
     public const int LookupTopicFieldNumber = 23;
-    private global::Pulsar.Proto.CommandLookupTopic lookupTopic_;
+    private global::SharpPulsar.Protocol.Proto.CommandLookupTopic lookupTopic_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandLookupTopic LookupTopic {
+    public global::SharpPulsar.Protocol.Proto.CommandLookupTopic LookupTopic {
       get { return lookupTopic_; }
       set {
         lookupTopic_ = value;
@@ -18714,9 +18715,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "lookupTopicResponse" field.</summary>
     public const int LookupTopicResponseFieldNumber = 24;
-    private global::Pulsar.Proto.CommandLookupTopicResponse lookupTopicResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse lookupTopicResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandLookupTopicResponse LookupTopicResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse LookupTopicResponse {
       get { return lookupTopicResponse_; }
       set {
         lookupTopicResponse_ = value;
@@ -18735,9 +18736,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "consumerStats" field.</summary>
     public const int ConsumerStatsFieldNumber = 25;
-    private global::Pulsar.Proto.CommandConsumerStats consumerStats_;
+    private global::SharpPulsar.Protocol.Proto.CommandConsumerStats consumerStats_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandConsumerStats ConsumerStats {
+    public global::SharpPulsar.Protocol.Proto.CommandConsumerStats ConsumerStats {
       get { return consumerStats_; }
       set {
         consumerStats_ = value;
@@ -18756,9 +18757,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "consumerStatsResponse" field.</summary>
     public const int ConsumerStatsResponseFieldNumber = 26;
-    private global::Pulsar.Proto.CommandConsumerStatsResponse consumerStatsResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse consumerStatsResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandConsumerStatsResponse ConsumerStatsResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse ConsumerStatsResponse {
       get { return consumerStatsResponse_; }
       set {
         consumerStatsResponse_ = value;
@@ -18777,9 +18778,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "reachedEndOfTopic" field.</summary>
     public const int ReachedEndOfTopicFieldNumber = 27;
-    private global::Pulsar.Proto.CommandReachedEndOfTopic reachedEndOfTopic_;
+    private global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic reachedEndOfTopic_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandReachedEndOfTopic ReachedEndOfTopic {
+    public global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic ReachedEndOfTopic {
       get { return reachedEndOfTopic_; }
       set {
         reachedEndOfTopic_ = value;
@@ -18798,9 +18799,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "seek" field.</summary>
     public const int SeekFieldNumber = 28;
-    private global::Pulsar.Proto.CommandSeek seek_;
+    private global::SharpPulsar.Protocol.Proto.CommandSeek seek_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandSeek Seek {
+    public global::SharpPulsar.Protocol.Proto.CommandSeek Seek {
       get { return seek_; }
       set {
         seek_ = value;
@@ -18819,9 +18820,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getLastMessageId" field.</summary>
     public const int GetLastMessageIdFieldNumber = 29;
-    private global::Pulsar.Proto.CommandGetLastMessageId getLastMessageId_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId getLastMessageId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetLastMessageId GetLastMessageId {
+    public global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId GetLastMessageId {
       get { return getLastMessageId_; }
       set {
         getLastMessageId_ = value;
@@ -18840,9 +18841,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getLastMessageIdResponse" field.</summary>
     public const int GetLastMessageIdResponseFieldNumber = 30;
-    private global::Pulsar.Proto.CommandGetLastMessageIdResponse getLastMessageIdResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse getLastMessageIdResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetLastMessageIdResponse GetLastMessageIdResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse GetLastMessageIdResponse {
       get { return getLastMessageIdResponse_; }
       set {
         getLastMessageIdResponse_ = value;
@@ -18861,9 +18862,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "active_consumer_change" field.</summary>
     public const int ActiveConsumerChangeFieldNumber = 31;
-    private global::Pulsar.Proto.CommandActiveConsumerChange activeConsumerChange_;
+    private global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange activeConsumerChange_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandActiveConsumerChange ActiveConsumerChange {
+    public global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange ActiveConsumerChange {
       get { return activeConsumerChange_; }
       set {
         activeConsumerChange_ = value;
@@ -18882,9 +18883,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getTopicsOfNamespace" field.</summary>
     public const int GetTopicsOfNamespaceFieldNumber = 32;
-    private global::Pulsar.Proto.CommandGetTopicsOfNamespace getTopicsOfNamespace_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace getTopicsOfNamespace_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetTopicsOfNamespace GetTopicsOfNamespace {
+    public global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace GetTopicsOfNamespace {
       get { return getTopicsOfNamespace_; }
       set {
         getTopicsOfNamespace_ = value;
@@ -18903,9 +18904,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getTopicsOfNamespaceResponse" field.</summary>
     public const int GetTopicsOfNamespaceResponseFieldNumber = 33;
-    private global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse getTopicsOfNamespaceResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse getTopicsOfNamespaceResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse {
       get { return getTopicsOfNamespaceResponse_; }
       set {
         getTopicsOfNamespaceResponse_ = value;
@@ -18924,9 +18925,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getSchema" field.</summary>
     public const int GetSchemaFieldNumber = 34;
-    private global::Pulsar.Proto.CommandGetSchema getSchema_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetSchema getSchema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetSchema GetSchema {
+    public global::SharpPulsar.Protocol.Proto.CommandGetSchema GetSchema {
       get { return getSchema_; }
       set {
         getSchema_ = value;
@@ -18945,9 +18946,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getSchemaResponse" field.</summary>
     public const int GetSchemaResponseFieldNumber = 35;
-    private global::Pulsar.Proto.CommandGetSchemaResponse getSchemaResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse getSchemaResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetSchemaResponse GetSchemaResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse GetSchemaResponse {
       get { return getSchemaResponse_; }
       set {
         getSchemaResponse_ = value;
@@ -18966,9 +18967,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "authChallenge" field.</summary>
     public const int AuthChallengeFieldNumber = 36;
-    private global::Pulsar.Proto.CommandAuthChallenge authChallenge_;
+    private global::SharpPulsar.Protocol.Proto.CommandAuthChallenge authChallenge_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAuthChallenge AuthChallenge {
+    public global::SharpPulsar.Protocol.Proto.CommandAuthChallenge AuthChallenge {
       get { return authChallenge_; }
       set {
         authChallenge_ = value;
@@ -18987,9 +18988,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "authResponse" field.</summary>
     public const int AuthResponseFieldNumber = 37;
-    private global::Pulsar.Proto.CommandAuthResponse authResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandAuthResponse authResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAuthResponse AuthResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandAuthResponse AuthResponse {
       get { return authResponse_; }
       set {
         authResponse_ = value;
@@ -19008,9 +19009,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "ackResponse" field.</summary>
     public const int AckResponseFieldNumber = 38;
-    private global::Pulsar.Proto.CommandAckResponse ackResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandAckResponse ackResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAckResponse AckResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandAckResponse AckResponse {
       get { return ackResponse_; }
       set {
         ackResponse_ = value;
@@ -19029,9 +19030,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getOrCreateSchema" field.</summary>
     public const int GetOrCreateSchemaFieldNumber = 39;
-    private global::Pulsar.Proto.CommandGetOrCreateSchema getOrCreateSchema_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema getOrCreateSchema_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetOrCreateSchema GetOrCreateSchema {
+    public global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema GetOrCreateSchema {
       get { return getOrCreateSchema_; }
       set {
         getOrCreateSchema_ = value;
@@ -19050,9 +19051,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "getOrCreateSchemaResponse" field.</summary>
     public const int GetOrCreateSchemaResponseFieldNumber = 40;
-    private global::Pulsar.Proto.CommandGetOrCreateSchemaResponse getOrCreateSchemaResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse getOrCreateSchemaResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse {
       get { return getOrCreateSchemaResponse_; }
       set {
         getOrCreateSchemaResponse_ = value;
@@ -19071,12 +19072,12 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "newTxn" field.</summary>
     public const int NewTxnFieldNumber = 50;
-    private global::Pulsar.Proto.CommandNewTxn newTxn_;
+    private global::SharpPulsar.Protocol.Proto.CommandNewTxn newTxn_;
     /// <summary>
     /// transaction related
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandNewTxn NewTxn {
+    public global::SharpPulsar.Protocol.Proto.CommandNewTxn NewTxn {
       get { return newTxn_; }
       set {
         newTxn_ = value;
@@ -19095,9 +19096,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "newTxnResponse" field.</summary>
     public const int NewTxnResponseFieldNumber = 51;
-    private global::Pulsar.Proto.CommandNewTxnResponse newTxnResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse newTxnResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandNewTxnResponse NewTxnResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse NewTxnResponse {
       get { return newTxnResponse_; }
       set {
         newTxnResponse_ = value;
@@ -19116,9 +19117,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "addPartitionToTxn" field.</summary>
     public const int AddPartitionToTxnFieldNumber = 52;
-    private global::Pulsar.Proto.CommandAddPartitionToTxn addPartitionToTxn_;
+    private global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn addPartitionToTxn_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAddPartitionToTxn AddPartitionToTxn {
+    public global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn AddPartitionToTxn {
       get { return addPartitionToTxn_; }
       set {
         addPartitionToTxn_ = value;
@@ -19137,9 +19138,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "addPartitionToTxnResponse" field.</summary>
     public const int AddPartitionToTxnResponseFieldNumber = 53;
-    private global::Pulsar.Proto.CommandAddPartitionToTxnResponse addPartitionToTxnResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse addPartitionToTxnResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAddPartitionToTxnResponse AddPartitionToTxnResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse AddPartitionToTxnResponse {
       get { return addPartitionToTxnResponse_; }
       set {
         addPartitionToTxnResponse_ = value;
@@ -19158,9 +19159,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "addSubscriptionToTxn" field.</summary>
     public const int AddSubscriptionToTxnFieldNumber = 54;
-    private global::Pulsar.Proto.CommandAddSubscriptionToTxn addSubscriptionToTxn_;
+    private global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn addSubscriptionToTxn_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAddSubscriptionToTxn AddSubscriptionToTxn {
+    public global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn AddSubscriptionToTxn {
       get { return addSubscriptionToTxn_; }
       set {
         addSubscriptionToTxn_ = value;
@@ -19179,9 +19180,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "addSubscriptionToTxnResponse" field.</summary>
     public const int AddSubscriptionToTxnResponseFieldNumber = 55;
-    private global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse addSubscriptionToTxnResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse addSubscriptionToTxnResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse AddSubscriptionToTxnResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse AddSubscriptionToTxnResponse {
       get { return addSubscriptionToTxnResponse_; }
       set {
         addSubscriptionToTxnResponse_ = value;
@@ -19200,9 +19201,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxn" field.</summary>
     public const int EndTxnFieldNumber = 56;
-    private global::Pulsar.Proto.CommandEndTxn endTxn_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxn endTxn_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxn EndTxn {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxn EndTxn {
       get { return endTxn_; }
       set {
         endTxn_ = value;
@@ -19221,9 +19222,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxnResponse" field.</summary>
     public const int EndTxnResponseFieldNumber = 57;
-    private global::Pulsar.Proto.CommandEndTxnResponse endTxnResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse endTxnResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxnResponse EndTxnResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse EndTxnResponse {
       get { return endTxnResponse_; }
       set {
         endTxnResponse_ = value;
@@ -19242,9 +19243,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxnOnPartition" field.</summary>
     public const int EndTxnOnPartitionFieldNumber = 58;
-    private global::Pulsar.Proto.CommandEndTxnOnPartition endTxnOnPartition_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition endTxnOnPartition_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxnOnPartition EndTxnOnPartition {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition EndTxnOnPartition {
       get { return endTxnOnPartition_; }
       set {
         endTxnOnPartition_ = value;
@@ -19263,9 +19264,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxnOnPartitionResponse" field.</summary>
     public const int EndTxnOnPartitionResponseFieldNumber = 59;
-    private global::Pulsar.Proto.CommandEndTxnOnPartitionResponse endTxnOnPartitionResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse endTxnOnPartitionResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxnOnPartitionResponse EndTxnOnPartitionResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse EndTxnOnPartitionResponse {
       get { return endTxnOnPartitionResponse_; }
       set {
         endTxnOnPartitionResponse_ = value;
@@ -19284,9 +19285,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxnOnSubscription" field.</summary>
     public const int EndTxnOnSubscriptionFieldNumber = 60;
-    private global::Pulsar.Proto.CommandEndTxnOnSubscription endTxnOnSubscription_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription endTxnOnSubscription_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxnOnSubscription EndTxnOnSubscription {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription EndTxnOnSubscription {
       get { return endTxnOnSubscription_; }
       set {
         endTxnOnSubscription_ = value;
@@ -19305,9 +19306,9 @@ namespace Pulsar.Proto {
 
     /// <summary>Field number for the "endTxnOnSubscriptionResponse" field.</summary>
     public const int EndTxnOnSubscriptionResponseFieldNumber = 61;
-    private global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse endTxnOnSubscriptionResponse_;
+    private global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse endTxnOnSubscriptionResponse_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse EndTxnOnSubscriptionResponse {
+    public global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse EndTxnOnSubscriptionResponse {
       get { return endTxnOnSubscriptionResponse_; }
       set {
         endTxnOnSubscriptionResponse_ = value;
@@ -19848,307 +19849,307 @@ namespace Pulsar.Proto {
       }
       if (other.HasConnect) {
         if (!HasConnect) {
-          Connect = new global::Pulsar.Proto.CommandConnect();
+          Connect = new global::SharpPulsar.Protocol.Proto.CommandConnect();
         }
         Connect.MergeFrom(other.Connect);
       }
       if (other.HasConnected) {
         if (!HasConnected) {
-          Connected = new global::Pulsar.Proto.CommandConnected();
+          Connected = new global::SharpPulsar.Protocol.Proto.CommandConnected();
         }
         Connected.MergeFrom(other.Connected);
       }
       if (other.HasSubscribe) {
         if (!HasSubscribe) {
-          Subscribe = new global::Pulsar.Proto.CommandSubscribe();
+          Subscribe = new global::SharpPulsar.Protocol.Proto.CommandSubscribe();
         }
         Subscribe.MergeFrom(other.Subscribe);
       }
       if (other.HasProducer) {
         if (!HasProducer) {
-          Producer = new global::Pulsar.Proto.CommandProducer();
+          Producer = new global::SharpPulsar.Protocol.Proto.CommandProducer();
         }
         Producer.MergeFrom(other.Producer);
       }
       if (other.HasSend) {
         if (!HasSend) {
-          Send = new global::Pulsar.Proto.CommandSend();
+          Send = new global::SharpPulsar.Protocol.Proto.CommandSend();
         }
         Send.MergeFrom(other.Send);
       }
       if (other.HasSendReceipt) {
         if (!HasSendReceipt) {
-          SendReceipt = new global::Pulsar.Proto.CommandSendReceipt();
+          SendReceipt = new global::SharpPulsar.Protocol.Proto.CommandSendReceipt();
         }
         SendReceipt.MergeFrom(other.SendReceipt);
       }
       if (other.HasSendError) {
         if (!HasSendError) {
-          SendError = new global::Pulsar.Proto.CommandSendError();
+          SendError = new global::SharpPulsar.Protocol.Proto.CommandSendError();
         }
         SendError.MergeFrom(other.SendError);
       }
       if (other.HasMessage) {
         if (!HasMessage) {
-          Message = new global::Pulsar.Proto.CommandMessage();
+          Message = new global::SharpPulsar.Protocol.Proto.CommandMessage();
         }
         Message.MergeFrom(other.Message);
       }
       if (other.HasAck) {
         if (!HasAck) {
-          Ack = new global::Pulsar.Proto.CommandAck();
+          Ack = new global::SharpPulsar.Protocol.Proto.CommandAck();
         }
         Ack.MergeFrom(other.Ack);
       }
       if (other.HasFlow) {
         if (!HasFlow) {
-          Flow = new global::Pulsar.Proto.CommandFlow();
+          Flow = new global::SharpPulsar.Protocol.Proto.CommandFlow();
         }
         Flow.MergeFrom(other.Flow);
       }
       if (other.HasUnsubscribe) {
         if (!HasUnsubscribe) {
-          Unsubscribe = new global::Pulsar.Proto.CommandUnsubscribe();
+          Unsubscribe = new global::SharpPulsar.Protocol.Proto.CommandUnsubscribe();
         }
         Unsubscribe.MergeFrom(other.Unsubscribe);
       }
       if (other.HasSuccess) {
         if (!HasSuccess) {
-          Success = new global::Pulsar.Proto.CommandSuccess();
+          Success = new global::SharpPulsar.Protocol.Proto.CommandSuccess();
         }
         Success.MergeFrom(other.Success);
       }
       if (other.HasError) {
         if (!HasError) {
-          Error = new global::Pulsar.Proto.CommandError();
+          Error = new global::SharpPulsar.Protocol.Proto.CommandError();
         }
         Error.MergeFrom(other.Error);
       }
       if (other.HasCloseProducer) {
         if (!HasCloseProducer) {
-          CloseProducer = new global::Pulsar.Proto.CommandCloseProducer();
+          CloseProducer = new global::SharpPulsar.Protocol.Proto.CommandCloseProducer();
         }
         CloseProducer.MergeFrom(other.CloseProducer);
       }
       if (other.HasCloseConsumer) {
         if (!HasCloseConsumer) {
-          CloseConsumer = new global::Pulsar.Proto.CommandCloseConsumer();
+          CloseConsumer = new global::SharpPulsar.Protocol.Proto.CommandCloseConsumer();
         }
         CloseConsumer.MergeFrom(other.CloseConsumer);
       }
       if (other.HasProducerSuccess) {
         if (!HasProducerSuccess) {
-          ProducerSuccess = new global::Pulsar.Proto.CommandProducerSuccess();
+          ProducerSuccess = new global::SharpPulsar.Protocol.Proto.CommandProducerSuccess();
         }
         ProducerSuccess.MergeFrom(other.ProducerSuccess);
       }
       if (other.HasPing) {
         if (!HasPing) {
-          Ping = new global::Pulsar.Proto.CommandPing();
+          Ping = new global::SharpPulsar.Protocol.Proto.CommandPing();
         }
         Ping.MergeFrom(other.Ping);
       }
       if (other.HasPong) {
         if (!HasPong) {
-          Pong = new global::Pulsar.Proto.CommandPong();
+          Pong = new global::SharpPulsar.Protocol.Proto.CommandPong();
         }
         Pong.MergeFrom(other.Pong);
       }
       if (other.HasRedeliverUnacknowledgedMessages) {
         if (!HasRedeliverUnacknowledgedMessages) {
-          RedeliverUnacknowledgedMessages = new global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages();
+          RedeliverUnacknowledgedMessages = new global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages();
         }
         RedeliverUnacknowledgedMessages.MergeFrom(other.RedeliverUnacknowledgedMessages);
       }
       if (other.HasPartitionMetadata) {
         if (!HasPartitionMetadata) {
-          PartitionMetadata = new global::Pulsar.Proto.CommandPartitionedTopicMetadata();
+          PartitionMetadata = new global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata();
         }
         PartitionMetadata.MergeFrom(other.PartitionMetadata);
       }
       if (other.HasPartitionMetadataResponse) {
         if (!HasPartitionMetadataResponse) {
-          PartitionMetadataResponse = new global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse();
+          PartitionMetadataResponse = new global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse();
         }
         PartitionMetadataResponse.MergeFrom(other.PartitionMetadataResponse);
       }
       if (other.HasLookupTopic) {
         if (!HasLookupTopic) {
-          LookupTopic = new global::Pulsar.Proto.CommandLookupTopic();
+          LookupTopic = new global::SharpPulsar.Protocol.Proto.CommandLookupTopic();
         }
         LookupTopic.MergeFrom(other.LookupTopic);
       }
       if (other.HasLookupTopicResponse) {
         if (!HasLookupTopicResponse) {
-          LookupTopicResponse = new global::Pulsar.Proto.CommandLookupTopicResponse();
+          LookupTopicResponse = new global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse();
         }
         LookupTopicResponse.MergeFrom(other.LookupTopicResponse);
       }
       if (other.HasConsumerStats) {
         if (!HasConsumerStats) {
-          ConsumerStats = new global::Pulsar.Proto.CommandConsumerStats();
+          ConsumerStats = new global::SharpPulsar.Protocol.Proto.CommandConsumerStats();
         }
         ConsumerStats.MergeFrom(other.ConsumerStats);
       }
       if (other.HasConsumerStatsResponse) {
         if (!HasConsumerStatsResponse) {
-          ConsumerStatsResponse = new global::Pulsar.Proto.CommandConsumerStatsResponse();
+          ConsumerStatsResponse = new global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse();
         }
         ConsumerStatsResponse.MergeFrom(other.ConsumerStatsResponse);
       }
       if (other.HasReachedEndOfTopic) {
         if (!HasReachedEndOfTopic) {
-          ReachedEndOfTopic = new global::Pulsar.Proto.CommandReachedEndOfTopic();
+          ReachedEndOfTopic = new global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic();
         }
         ReachedEndOfTopic.MergeFrom(other.ReachedEndOfTopic);
       }
       if (other.HasSeek) {
         if (!HasSeek) {
-          Seek = new global::Pulsar.Proto.CommandSeek();
+          Seek = new global::SharpPulsar.Protocol.Proto.CommandSeek();
         }
         Seek.MergeFrom(other.Seek);
       }
       if (other.HasGetLastMessageId) {
         if (!HasGetLastMessageId) {
-          GetLastMessageId = new global::Pulsar.Proto.CommandGetLastMessageId();
+          GetLastMessageId = new global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId();
         }
         GetLastMessageId.MergeFrom(other.GetLastMessageId);
       }
       if (other.HasGetLastMessageIdResponse) {
         if (!HasGetLastMessageIdResponse) {
-          GetLastMessageIdResponse = new global::Pulsar.Proto.CommandGetLastMessageIdResponse();
+          GetLastMessageIdResponse = new global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse();
         }
         GetLastMessageIdResponse.MergeFrom(other.GetLastMessageIdResponse);
       }
       if (other.HasActiveConsumerChange) {
         if (!HasActiveConsumerChange) {
-          ActiveConsumerChange = new global::Pulsar.Proto.CommandActiveConsumerChange();
+          ActiveConsumerChange = new global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange();
         }
         ActiveConsumerChange.MergeFrom(other.ActiveConsumerChange);
       }
       if (other.HasGetTopicsOfNamespace) {
         if (!HasGetTopicsOfNamespace) {
-          GetTopicsOfNamespace = new global::Pulsar.Proto.CommandGetTopicsOfNamespace();
+          GetTopicsOfNamespace = new global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace();
         }
         GetTopicsOfNamespace.MergeFrom(other.GetTopicsOfNamespace);
       }
       if (other.HasGetTopicsOfNamespaceResponse) {
         if (!HasGetTopicsOfNamespaceResponse) {
-          GetTopicsOfNamespaceResponse = new global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse();
+          GetTopicsOfNamespaceResponse = new global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse();
         }
         GetTopicsOfNamespaceResponse.MergeFrom(other.GetTopicsOfNamespaceResponse);
       }
       if (other.HasGetSchema) {
         if (!HasGetSchema) {
-          GetSchema = new global::Pulsar.Proto.CommandGetSchema();
+          GetSchema = new global::SharpPulsar.Protocol.Proto.CommandGetSchema();
         }
         GetSchema.MergeFrom(other.GetSchema);
       }
       if (other.HasGetSchemaResponse) {
         if (!HasGetSchemaResponse) {
-          GetSchemaResponse = new global::Pulsar.Proto.CommandGetSchemaResponse();
+          GetSchemaResponse = new global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse();
         }
         GetSchemaResponse.MergeFrom(other.GetSchemaResponse);
       }
       if (other.HasAuthChallenge) {
         if (!HasAuthChallenge) {
-          AuthChallenge = new global::Pulsar.Proto.CommandAuthChallenge();
+          AuthChallenge = new global::SharpPulsar.Protocol.Proto.CommandAuthChallenge();
         }
         AuthChallenge.MergeFrom(other.AuthChallenge);
       }
       if (other.HasAuthResponse) {
         if (!HasAuthResponse) {
-          AuthResponse = new global::Pulsar.Proto.CommandAuthResponse();
+          AuthResponse = new global::SharpPulsar.Protocol.Proto.CommandAuthResponse();
         }
         AuthResponse.MergeFrom(other.AuthResponse);
       }
       if (other.HasAckResponse) {
         if (!HasAckResponse) {
-          AckResponse = new global::Pulsar.Proto.CommandAckResponse();
+          AckResponse = new global::SharpPulsar.Protocol.Proto.CommandAckResponse();
         }
         AckResponse.MergeFrom(other.AckResponse);
       }
       if (other.HasGetOrCreateSchema) {
         if (!HasGetOrCreateSchema) {
-          GetOrCreateSchema = new global::Pulsar.Proto.CommandGetOrCreateSchema();
+          GetOrCreateSchema = new global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema();
         }
         GetOrCreateSchema.MergeFrom(other.GetOrCreateSchema);
       }
       if (other.HasGetOrCreateSchemaResponse) {
         if (!HasGetOrCreateSchemaResponse) {
-          GetOrCreateSchemaResponse = new global::Pulsar.Proto.CommandGetOrCreateSchemaResponse();
+          GetOrCreateSchemaResponse = new global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse();
         }
         GetOrCreateSchemaResponse.MergeFrom(other.GetOrCreateSchemaResponse);
       }
       if (other.HasNewTxn) {
         if (!HasNewTxn) {
-          NewTxn = new global::Pulsar.Proto.CommandNewTxn();
+          NewTxn = new global::SharpPulsar.Protocol.Proto.CommandNewTxn();
         }
         NewTxn.MergeFrom(other.NewTxn);
       }
       if (other.HasNewTxnResponse) {
         if (!HasNewTxnResponse) {
-          NewTxnResponse = new global::Pulsar.Proto.CommandNewTxnResponse();
+          NewTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse();
         }
         NewTxnResponse.MergeFrom(other.NewTxnResponse);
       }
       if (other.HasAddPartitionToTxn) {
         if (!HasAddPartitionToTxn) {
-          AddPartitionToTxn = new global::Pulsar.Proto.CommandAddPartitionToTxn();
+          AddPartitionToTxn = new global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn();
         }
         AddPartitionToTxn.MergeFrom(other.AddPartitionToTxn);
       }
       if (other.HasAddPartitionToTxnResponse) {
         if (!HasAddPartitionToTxnResponse) {
-          AddPartitionToTxnResponse = new global::Pulsar.Proto.CommandAddPartitionToTxnResponse();
+          AddPartitionToTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse();
         }
         AddPartitionToTxnResponse.MergeFrom(other.AddPartitionToTxnResponse);
       }
       if (other.HasAddSubscriptionToTxn) {
         if (!HasAddSubscriptionToTxn) {
-          AddSubscriptionToTxn = new global::Pulsar.Proto.CommandAddSubscriptionToTxn();
+          AddSubscriptionToTxn = new global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn();
         }
         AddSubscriptionToTxn.MergeFrom(other.AddSubscriptionToTxn);
       }
       if (other.HasAddSubscriptionToTxnResponse) {
         if (!HasAddSubscriptionToTxnResponse) {
-          AddSubscriptionToTxnResponse = new global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse();
+          AddSubscriptionToTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse();
         }
         AddSubscriptionToTxnResponse.MergeFrom(other.AddSubscriptionToTxnResponse);
       }
       if (other.HasEndTxn) {
         if (!HasEndTxn) {
-          EndTxn = new global::Pulsar.Proto.CommandEndTxn();
+          EndTxn = new global::SharpPulsar.Protocol.Proto.CommandEndTxn();
         }
         EndTxn.MergeFrom(other.EndTxn);
       }
       if (other.HasEndTxnResponse) {
         if (!HasEndTxnResponse) {
-          EndTxnResponse = new global::Pulsar.Proto.CommandEndTxnResponse();
+          EndTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse();
         }
         EndTxnResponse.MergeFrom(other.EndTxnResponse);
       }
       if (other.HasEndTxnOnPartition) {
         if (!HasEndTxnOnPartition) {
-          EndTxnOnPartition = new global::Pulsar.Proto.CommandEndTxnOnPartition();
+          EndTxnOnPartition = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition();
         }
         EndTxnOnPartition.MergeFrom(other.EndTxnOnPartition);
       }
       if (other.HasEndTxnOnPartitionResponse) {
         if (!HasEndTxnOnPartitionResponse) {
-          EndTxnOnPartitionResponse = new global::Pulsar.Proto.CommandEndTxnOnPartitionResponse();
+          EndTxnOnPartitionResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse();
         }
         EndTxnOnPartitionResponse.MergeFrom(other.EndTxnOnPartitionResponse);
       }
       if (other.HasEndTxnOnSubscription) {
         if (!HasEndTxnOnSubscription) {
-          EndTxnOnSubscription = new global::Pulsar.Proto.CommandEndTxnOnSubscription();
+          EndTxnOnSubscription = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription();
         }
         EndTxnOnSubscription.MergeFrom(other.EndTxnOnSubscription);
       }
       if (other.HasEndTxnOnSubscriptionResponse) {
         if (!HasEndTxnOnSubscriptionResponse) {
-          EndTxnOnSubscriptionResponse = new global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse();
+          EndTxnOnSubscriptionResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse();
         }
         EndTxnOnSubscriptionResponse.MergeFrom(other.EndTxnOnSubscriptionResponse);
       }
@@ -20164,362 +20165,362 @@ namespace Pulsar.Proto {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 8: {
-            Type = (global::Pulsar.Proto.BaseCommand.Types.Type) input.ReadEnum();
+            Type = (global::SharpPulsar.Protocol.Proto.BaseCommand.Types.Type) input.ReadEnum();
             break;
           }
           case 18: {
             if (!HasConnect) {
-              Connect = new global::Pulsar.Proto.CommandConnect();
+              Connect = new global::SharpPulsar.Protocol.Proto.CommandConnect();
             }
             input.ReadMessage(Connect);
             break;
           }
           case 26: {
             if (!HasConnected) {
-              Connected = new global::Pulsar.Proto.CommandConnected();
+              Connected = new global::SharpPulsar.Protocol.Proto.CommandConnected();
             }
             input.ReadMessage(Connected);
             break;
           }
           case 34: {
             if (!HasSubscribe) {
-              Subscribe = new global::Pulsar.Proto.CommandSubscribe();
+              Subscribe = new global::SharpPulsar.Protocol.Proto.CommandSubscribe();
             }
             input.ReadMessage(Subscribe);
             break;
           }
           case 42: {
             if (!HasProducer) {
-              Producer = new global::Pulsar.Proto.CommandProducer();
+              Producer = new global::SharpPulsar.Protocol.Proto.CommandProducer();
             }
             input.ReadMessage(Producer);
             break;
           }
           case 50: {
             if (!HasSend) {
-              Send = new global::Pulsar.Proto.CommandSend();
+              Send = new global::SharpPulsar.Protocol.Proto.CommandSend();
             }
             input.ReadMessage(Send);
             break;
           }
           case 58: {
             if (!HasSendReceipt) {
-              SendReceipt = new global::Pulsar.Proto.CommandSendReceipt();
+              SendReceipt = new global::SharpPulsar.Protocol.Proto.CommandSendReceipt();
             }
             input.ReadMessage(SendReceipt);
             break;
           }
           case 66: {
             if (!HasSendError) {
-              SendError = new global::Pulsar.Proto.CommandSendError();
+              SendError = new global::SharpPulsar.Protocol.Proto.CommandSendError();
             }
             input.ReadMessage(SendError);
             break;
           }
           case 74: {
             if (!HasMessage) {
-              Message = new global::Pulsar.Proto.CommandMessage();
+              Message = new global::SharpPulsar.Protocol.Proto.CommandMessage();
             }
             input.ReadMessage(Message);
             break;
           }
           case 82: {
             if (!HasAck) {
-              Ack = new global::Pulsar.Proto.CommandAck();
+              Ack = new global::SharpPulsar.Protocol.Proto.CommandAck();
             }
             input.ReadMessage(Ack);
             break;
           }
           case 90: {
             if (!HasFlow) {
-              Flow = new global::Pulsar.Proto.CommandFlow();
+              Flow = new global::SharpPulsar.Protocol.Proto.CommandFlow();
             }
             input.ReadMessage(Flow);
             break;
           }
           case 98: {
             if (!HasUnsubscribe) {
-              Unsubscribe = new global::Pulsar.Proto.CommandUnsubscribe();
+              Unsubscribe = new global::SharpPulsar.Protocol.Proto.CommandUnsubscribe();
             }
             input.ReadMessage(Unsubscribe);
             break;
           }
           case 106: {
             if (!HasSuccess) {
-              Success = new global::Pulsar.Proto.CommandSuccess();
+              Success = new global::SharpPulsar.Protocol.Proto.CommandSuccess();
             }
             input.ReadMessage(Success);
             break;
           }
           case 114: {
             if (!HasError) {
-              Error = new global::Pulsar.Proto.CommandError();
+              Error = new global::SharpPulsar.Protocol.Proto.CommandError();
             }
             input.ReadMessage(Error);
             break;
           }
           case 122: {
             if (!HasCloseProducer) {
-              CloseProducer = new global::Pulsar.Proto.CommandCloseProducer();
+              CloseProducer = new global::SharpPulsar.Protocol.Proto.CommandCloseProducer();
             }
             input.ReadMessage(CloseProducer);
             break;
           }
           case 130: {
             if (!HasCloseConsumer) {
-              CloseConsumer = new global::Pulsar.Proto.CommandCloseConsumer();
+              CloseConsumer = new global::SharpPulsar.Protocol.Proto.CommandCloseConsumer();
             }
             input.ReadMessage(CloseConsumer);
             break;
           }
           case 138: {
             if (!HasProducerSuccess) {
-              ProducerSuccess = new global::Pulsar.Proto.CommandProducerSuccess();
+              ProducerSuccess = new global::SharpPulsar.Protocol.Proto.CommandProducerSuccess();
             }
             input.ReadMessage(ProducerSuccess);
             break;
           }
           case 146: {
             if (!HasPing) {
-              Ping = new global::Pulsar.Proto.CommandPing();
+              Ping = new global::SharpPulsar.Protocol.Proto.CommandPing();
             }
             input.ReadMessage(Ping);
             break;
           }
           case 154: {
             if (!HasPong) {
-              Pong = new global::Pulsar.Proto.CommandPong();
+              Pong = new global::SharpPulsar.Protocol.Proto.CommandPong();
             }
             input.ReadMessage(Pong);
             break;
           }
           case 162: {
             if (!HasRedeliverUnacknowledgedMessages) {
-              RedeliverUnacknowledgedMessages = new global::Pulsar.Proto.CommandRedeliverUnacknowledgedMessages();
+              RedeliverUnacknowledgedMessages = new global::SharpPulsar.Protocol.Proto.CommandRedeliverUnacknowledgedMessages();
             }
             input.ReadMessage(RedeliverUnacknowledgedMessages);
             break;
           }
           case 170: {
             if (!HasPartitionMetadata) {
-              PartitionMetadata = new global::Pulsar.Proto.CommandPartitionedTopicMetadata();
+              PartitionMetadata = new global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadata();
             }
             input.ReadMessage(PartitionMetadata);
             break;
           }
           case 178: {
             if (!HasPartitionMetadataResponse) {
-              PartitionMetadataResponse = new global::Pulsar.Proto.CommandPartitionedTopicMetadataResponse();
+              PartitionMetadataResponse = new global::SharpPulsar.Protocol.Proto.CommandPartitionedTopicMetadataResponse();
             }
             input.ReadMessage(PartitionMetadataResponse);
             break;
           }
           case 186: {
             if (!HasLookupTopic) {
-              LookupTopic = new global::Pulsar.Proto.CommandLookupTopic();
+              LookupTopic = new global::SharpPulsar.Protocol.Proto.CommandLookupTopic();
             }
             input.ReadMessage(LookupTopic);
             break;
           }
           case 194: {
             if (!HasLookupTopicResponse) {
-              LookupTopicResponse = new global::Pulsar.Proto.CommandLookupTopicResponse();
+              LookupTopicResponse = new global::SharpPulsar.Protocol.Proto.CommandLookupTopicResponse();
             }
             input.ReadMessage(LookupTopicResponse);
             break;
           }
           case 202: {
             if (!HasConsumerStats) {
-              ConsumerStats = new global::Pulsar.Proto.CommandConsumerStats();
+              ConsumerStats = new global::SharpPulsar.Protocol.Proto.CommandConsumerStats();
             }
             input.ReadMessage(ConsumerStats);
             break;
           }
           case 210: {
             if (!HasConsumerStatsResponse) {
-              ConsumerStatsResponse = new global::Pulsar.Proto.CommandConsumerStatsResponse();
+              ConsumerStatsResponse = new global::SharpPulsar.Protocol.Proto.CommandConsumerStatsResponse();
             }
             input.ReadMessage(ConsumerStatsResponse);
             break;
           }
           case 218: {
             if (!HasReachedEndOfTopic) {
-              ReachedEndOfTopic = new global::Pulsar.Proto.CommandReachedEndOfTopic();
+              ReachedEndOfTopic = new global::SharpPulsar.Protocol.Proto.CommandReachedEndOfTopic();
             }
             input.ReadMessage(ReachedEndOfTopic);
             break;
           }
           case 226: {
             if (!HasSeek) {
-              Seek = new global::Pulsar.Proto.CommandSeek();
+              Seek = new global::SharpPulsar.Protocol.Proto.CommandSeek();
             }
             input.ReadMessage(Seek);
             break;
           }
           case 234: {
             if (!HasGetLastMessageId) {
-              GetLastMessageId = new global::Pulsar.Proto.CommandGetLastMessageId();
+              GetLastMessageId = new global::SharpPulsar.Protocol.Proto.CommandGetLastMessageId();
             }
             input.ReadMessage(GetLastMessageId);
             break;
           }
           case 242: {
             if (!HasGetLastMessageIdResponse) {
-              GetLastMessageIdResponse = new global::Pulsar.Proto.CommandGetLastMessageIdResponse();
+              GetLastMessageIdResponse = new global::SharpPulsar.Protocol.Proto.CommandGetLastMessageIdResponse();
             }
             input.ReadMessage(GetLastMessageIdResponse);
             break;
           }
           case 250: {
             if (!HasActiveConsumerChange) {
-              ActiveConsumerChange = new global::Pulsar.Proto.CommandActiveConsumerChange();
+              ActiveConsumerChange = new global::SharpPulsar.Protocol.Proto.CommandActiveConsumerChange();
             }
             input.ReadMessage(ActiveConsumerChange);
             break;
           }
           case 258: {
             if (!HasGetTopicsOfNamespace) {
-              GetTopicsOfNamespace = new global::Pulsar.Proto.CommandGetTopicsOfNamespace();
+              GetTopicsOfNamespace = new global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace();
             }
             input.ReadMessage(GetTopicsOfNamespace);
             break;
           }
           case 266: {
             if (!HasGetTopicsOfNamespaceResponse) {
-              GetTopicsOfNamespaceResponse = new global::Pulsar.Proto.CommandGetTopicsOfNamespaceResponse();
+              GetTopicsOfNamespaceResponse = new global::SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespaceResponse();
             }
             input.ReadMessage(GetTopicsOfNamespaceResponse);
             break;
           }
           case 274: {
             if (!HasGetSchema) {
-              GetSchema = new global::Pulsar.Proto.CommandGetSchema();
+              GetSchema = new global::SharpPulsar.Protocol.Proto.CommandGetSchema();
             }
             input.ReadMessage(GetSchema);
             break;
           }
           case 282: {
             if (!HasGetSchemaResponse) {
-              GetSchemaResponse = new global::Pulsar.Proto.CommandGetSchemaResponse();
+              GetSchemaResponse = new global::SharpPulsar.Protocol.Proto.CommandGetSchemaResponse();
             }
             input.ReadMessage(GetSchemaResponse);
             break;
           }
           case 290: {
             if (!HasAuthChallenge) {
-              AuthChallenge = new global::Pulsar.Proto.CommandAuthChallenge();
+              AuthChallenge = new global::SharpPulsar.Protocol.Proto.CommandAuthChallenge();
             }
             input.ReadMessage(AuthChallenge);
             break;
           }
           case 298: {
             if (!HasAuthResponse) {
-              AuthResponse = new global::Pulsar.Proto.CommandAuthResponse();
+              AuthResponse = new global::SharpPulsar.Protocol.Proto.CommandAuthResponse();
             }
             input.ReadMessage(AuthResponse);
             break;
           }
           case 306: {
             if (!HasAckResponse) {
-              AckResponse = new global::Pulsar.Proto.CommandAckResponse();
+              AckResponse = new global::SharpPulsar.Protocol.Proto.CommandAckResponse();
             }
             input.ReadMessage(AckResponse);
             break;
           }
           case 314: {
             if (!HasGetOrCreateSchema) {
-              GetOrCreateSchema = new global::Pulsar.Proto.CommandGetOrCreateSchema();
+              GetOrCreateSchema = new global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchema();
             }
             input.ReadMessage(GetOrCreateSchema);
             break;
           }
           case 322: {
             if (!HasGetOrCreateSchemaResponse) {
-              GetOrCreateSchemaResponse = new global::Pulsar.Proto.CommandGetOrCreateSchemaResponse();
+              GetOrCreateSchemaResponse = new global::SharpPulsar.Protocol.Proto.CommandGetOrCreateSchemaResponse();
             }
             input.ReadMessage(GetOrCreateSchemaResponse);
             break;
           }
           case 402: {
             if (!HasNewTxn) {
-              NewTxn = new global::Pulsar.Proto.CommandNewTxn();
+              NewTxn = new global::SharpPulsar.Protocol.Proto.CommandNewTxn();
             }
             input.ReadMessage(NewTxn);
             break;
           }
           case 410: {
             if (!HasNewTxnResponse) {
-              NewTxnResponse = new global::Pulsar.Proto.CommandNewTxnResponse();
+              NewTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandNewTxnResponse();
             }
             input.ReadMessage(NewTxnResponse);
             break;
           }
           case 418: {
             if (!HasAddPartitionToTxn) {
-              AddPartitionToTxn = new global::Pulsar.Proto.CommandAddPartitionToTxn();
+              AddPartitionToTxn = new global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxn();
             }
             input.ReadMessage(AddPartitionToTxn);
             break;
           }
           case 426: {
             if (!HasAddPartitionToTxnResponse) {
-              AddPartitionToTxnResponse = new global::Pulsar.Proto.CommandAddPartitionToTxnResponse();
+              AddPartitionToTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandAddPartitionToTxnResponse();
             }
             input.ReadMessage(AddPartitionToTxnResponse);
             break;
           }
           case 434: {
             if (!HasAddSubscriptionToTxn) {
-              AddSubscriptionToTxn = new global::Pulsar.Proto.CommandAddSubscriptionToTxn();
+              AddSubscriptionToTxn = new global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxn();
             }
             input.ReadMessage(AddSubscriptionToTxn);
             break;
           }
           case 442: {
             if (!HasAddSubscriptionToTxnResponse) {
-              AddSubscriptionToTxnResponse = new global::Pulsar.Proto.CommandAddSubscriptionToTxnResponse();
+              AddSubscriptionToTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandAddSubscriptionToTxnResponse();
             }
             input.ReadMessage(AddSubscriptionToTxnResponse);
             break;
           }
           case 450: {
             if (!HasEndTxn) {
-              EndTxn = new global::Pulsar.Proto.CommandEndTxn();
+              EndTxn = new global::SharpPulsar.Protocol.Proto.CommandEndTxn();
             }
             input.ReadMessage(EndTxn);
             break;
           }
           case 458: {
             if (!HasEndTxnResponse) {
-              EndTxnResponse = new global::Pulsar.Proto.CommandEndTxnResponse();
+              EndTxnResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnResponse();
             }
             input.ReadMessage(EndTxnResponse);
             break;
           }
           case 466: {
             if (!HasEndTxnOnPartition) {
-              EndTxnOnPartition = new global::Pulsar.Proto.CommandEndTxnOnPartition();
+              EndTxnOnPartition = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartition();
             }
             input.ReadMessage(EndTxnOnPartition);
             break;
           }
           case 474: {
             if (!HasEndTxnOnPartitionResponse) {
-              EndTxnOnPartitionResponse = new global::Pulsar.Proto.CommandEndTxnOnPartitionResponse();
+              EndTxnOnPartitionResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnPartitionResponse();
             }
             input.ReadMessage(EndTxnOnPartitionResponse);
             break;
           }
           case 482: {
             if (!HasEndTxnOnSubscription) {
-              EndTxnOnSubscription = new global::Pulsar.Proto.CommandEndTxnOnSubscription();
+              EndTxnOnSubscription = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscription();
             }
             input.ReadMessage(EndTxnOnSubscription);
             break;
           }
           case 490: {
             if (!HasEndTxnOnSubscriptionResponse) {
-              EndTxnOnSubscriptionResponse = new global::Pulsar.Proto.CommandEndTxnOnSubscriptionResponse();
+              EndTxnOnSubscriptionResponse = new global::SharpPulsar.Protocol.Proto.CommandEndTxnOnSubscriptionResponse();
             }
             input.ReadMessage(EndTxnOnSubscriptionResponse);
             break;
