@@ -49,12 +49,18 @@ namespace SharpPulsar.Util.Protobuf
 		}
 
 		private IByteBuffer _buf;
+		internal static ThreadLocalPool<ByteBufCodedOutputStream> _pool = new ThreadLocalPool<ByteBufCodedOutputStream>(handle => new ByteBufCodedOutputStream(handle), 1, true);
 
-		private readonly Recycler.Handle<ByteBufCodedOutputStream> recyclerHandle;
+		internal ThreadLocalPool.Handle _handle;
+		private ByteBufCodedOutputStream(ThreadLocalPool.Handle handle)
+		{
+			_handle = handle;
+		}
 
+		
 		public static ByteBufCodedOutputStream Get(IByteBuffer buf)
 		{
-			ByteBufCodedOutputStream stream = RECYCLER.get();
+			ByteBufCodedOutputStream stream =_pool.Take();
 			stream._buf = buf;
 			return stream;
 		}
@@ -62,23 +68,9 @@ namespace SharpPulsar.Util.Protobuf
 		public virtual void Recycle()
 		{
 			_buf = null;
-			recyclerHandle.recycle(this);
+			_handle.Release(this);
 		}
 
-		private ByteBufCodedOutputStream(Recycler.Handle<ByteBufCodedOutputStream> handle)
-		{
-			this.recyclerHandle = handle;
-		}
-
-		private static readonly Recycler<ByteBufCodedOutputStream> RECYCLER = new RecyclerAnonymousInnerClass();
-
-		private class RecyclerAnonymousInnerClass : Recycler<ByteBufCodedOutputStream>
-		{
-			protected internal ByteBufCodedOutputStream NewObject(Recycler.Handle<ByteBufCodedOutputStream> handle)
-			{
-				return new ByteBufCodedOutputStream(handle);
-			}
-		}
 
 		/// <summary>
 		/// Write a single byte. </summary>
@@ -211,8 +203,8 @@ namespace SharpPulsar.Util.Protobuf
 				localByteArray.Set(localBuf);
 			}
 
-			value.CopyTo(localBuf, 0);
-			_buf.WriteBytes(localBuf, 0, value.Length);
+			value.CopyTo((byte[])(object)localBuf, 0);
+			_buf.WriteBytes((byte[])(object)localBuf, 0, value.Length);
 		}
 
 		public virtual void WriteEnum(int fieldNumber, int value)

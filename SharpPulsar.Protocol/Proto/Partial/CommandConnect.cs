@@ -1,10 +1,12 @@
 ﻿using DotNetty.Common;
+using SharpPulsar.Util.Protobuf;
 using System;
 using System.Text;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class CommandConnect 
+	public partial class CommandConnect : ByteBufGeneratedMessage
 	{
 		// Use CommandConnect.newBuilder() to construct.
 		internal static ThreadLocalPool<CommandConnect> _pool = new ThreadLocalPool<CommandConnect>(handle => new CommandConnect(handle), 1, true);
@@ -149,6 +151,8 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
+		public int SerializedSize => throw new NotImplementedException();
+
 		internal int MemoizedSerializedSize = -1;
 		
 		internal const long SerialVersionUID = 0L;
@@ -161,7 +165,11 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		
+
+		public void WriteTo(ByteBufCodedOutputStream output)
+		{
+			throw new NotImplementedException();
+		}
 
 		public sealed class Builder
 		{
