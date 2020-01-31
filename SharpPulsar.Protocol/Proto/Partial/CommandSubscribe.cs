@@ -18,24 +18,25 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			_handle = handle;
 		}
-
+		
 		public void Recycle()
 		{
-			this.InitFields();
-			this.MemoizedIsInitialized = -1;
-			this._hasBits0 = 0;
-			this.MemoizedSerializedSize = -1;
+			InitFields();
+			MemoizedIsInitialized = -1;
+			_hasBits0 = 0;
+			MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
 				_handle.Release(this);
 			}
+			
 		}
 
 		public CommandSubscribe(bool NoInit)
 		{
 		}
 
-		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		
 		internal static readonly CommandSubscribe _defaultInstance;
 		public static CommandSubscribe DefaultInstance
 		{
@@ -52,7 +53,18 @@ namespace SharpPulsar.Protocol.Proto
 				return _defaultInstance;
 			}
 		}
-		
+		public static Types.InitialPosition ValueOf(int Value)
+		{
+			switch (Value)
+			{
+				case 0:
+					return Types.InitialPosition.Latest;
+				case 1:
+					return Types.InitialPosition.Earliest;
+				default:
+					return Types.InitialPosition.Latest;
+			}
+		}
 		public void InitFields()
 		{
 			Topic = "";
@@ -72,6 +84,10 @@ namespace SharpPulsar.Protocol.Proto
 			ForceTopicCreation = true;
 			StartMessageRollbackDurationSec = 0L;
 			KeySharedMeta = KeySharedMeta.DefaultInstance;
+		}
+		public KeyValue GetMetadata(int Index)
+		{
+			return Metadata[Index];
 		}
 		internal sbyte MemoizedIsInitialized = -1;
 		public bool Initialized
@@ -119,6 +135,7 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				for (int I = 0; I < Metadata.Count; I++)
 				{
+					 
 					if (!GetMetadata(I).Initialized)
 					{
 						MemoizedIsInitialized = 0;
@@ -241,7 +258,7 @@ namespace SharpPulsar.Protocol.Proto
 			return NewBuilder(this);
 		}
 
-		public sealed class Builder : ByteBufCodedInputStream.ByteBufMessageBuilder
+		public sealed class Builder : ByteBufMessageBuilder
 		{
 			// Construct using org.apache.pulsar.common.api.proto.CommandSubscribe.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
@@ -395,7 +412,7 @@ namespace SharpPulsar.Protocol.Proto
 				Result.StartMessageId = StartMessageId_;
 				if (((_hasBits0 & 0x00000200) == 0x00000200))
 				{
-					//Metadata_ = java.util.Collections.unmodifiableList(Metadata_);
+					Metadata_ = new List<KeyValue>(Metadata_);
 					_hasBits0 = (_hasBits0 & ~0x00000200);
 				}
 				Metadata_.ToList().ForEach(Result.Metadata.Add);
@@ -589,7 +606,7 @@ namespace SharpPulsar.Protocol.Proto
 					return true;
 				}
 			}
-			public Builder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
 			{
 				while (true)
 				{
@@ -701,7 +718,7 @@ namespace SharpPulsar.Protocol.Proto
 						case 104:
 							{
 								int RawValue = input.ReadEnum();
-								Types.InitialPosition Value = Types.InitialPosition.ValueOf(RawValue);
+								Types.InitialPosition Value = Enum.GetValues(typeof(Types.InitialPosition)).Cast<Types.InitialPosition>().ToList()[RawValue];
 								if (Value != null)
 								{
 									_hasBits0 |= 0x00001000;
@@ -735,8 +752,8 @@ namespace SharpPulsar.Protocol.Proto
 									SubBuilder.MergeFrom(GetKeySharedMeta());
 								}
 								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetKeySharedMeta(SubBuilder.buildPartial());
-								SubBuilder.recycle();
+								SetKeySharedMeta(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
 								break;
 							}
 					}
@@ -1056,7 +1073,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_hasBits0 & 0x00000100) == 0x00000100) && StartMessageId_ != MessageIdData.DefaultInstance)
 				{
-					StartMessageId_ = MessageIdData.NewBuilder(StartMessageId_).mergeFrom(Value).buildPartial();
+					StartMessageId_ = MessageIdData.NewBuilder(StartMessageId_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1132,7 +1149,7 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder SetMetadata(int Index, KeyValue.Builder BuilderForValue)
 			{
 				EnsureMetadataIsMutable();
-				Metadata_[Index] = BuilderForValue.build();
+				Metadata_[Index] = BuilderForValue.Build();
 
 				return this;
 			}
@@ -1161,21 +1178,21 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder AddMetadata(KeyValue.Builder BuilderForValue)
 			{
 				EnsureMetadataIsMutable();
-				Metadata_.Add(BuilderForValue.build());
+				Metadata_.Add(BuilderForValue.Build());
 
 				return this;
 			}
 			public Builder AddMetadata(int Index, KeyValue.Builder BuilderForValue)
 			{
 				EnsureMetadataIsMutable();
-				Metadata_.Insert(Index, BuilderForValue.build());
+				Metadata_.Insert(Index, BuilderForValue.Build());
 
 				return this;
 			}
-			public Builder AddAllMetadata<T1>(IEnumerable<T1> Values) where T1 : KeyValue
+			public Builder AddAllMetadata(IEnumerable<KeyValue> Values)
 			{
 				EnsureMetadataIsMutable();
-				base.AddAll(Values, Metadata_);
+				Values.ToList().ForEach(Metadata_.Add);
 
 				return this;
 			}
@@ -1254,7 +1271,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_hasBits0 & 0x00000800) == 0x00000800) && Schema_ != Schema.DefaultInstance)
 				{
-					Schema_ = Schema.NewBuilder(Schema_).mergeFrom(Value).buildPartial();
+					Schema_ = Schema.NewBuilder(Schema_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1411,7 +1428,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetKeySharedMeta(KeySharedMeta.Builder BuilderForValue)
 			{
-				KeySharedMeta_ = BuilderForValue.build();
+				KeySharedMeta_ = BuilderForValue.Build();
 
 				_hasBits0 |= 0x00010000;
 				return this;
@@ -1420,7 +1437,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_hasBits0 & 0x00010000) == 0x00010000) && KeySharedMeta_ != KeySharedMeta.DefaultInstance)
 				{
-					KeySharedMeta_ = KeySharedMeta.NewBuilder(KeySharedMeta_).mergeFrom(Value).buildPartial();
+					KeySharedMeta_ = KeySharedMeta.NewBuilder(KeySharedMeta_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1438,17 +1455,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry ext)
-			{
-				throw new NotImplementedException();
-			}
-
-			ByteBufMessageBuilder ByteBufMessageBuilder.MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry ext)
-			{
-				throw new NotImplementedException();
-			}
-
-			// @@protoc_insertion_point(builder_scope:pulsar.proto.CommandSubscribe)
 		}
 
 		static CommandSubscribe()

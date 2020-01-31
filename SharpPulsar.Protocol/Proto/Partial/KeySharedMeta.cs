@@ -3,7 +3,9 @@ using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
@@ -282,7 +284,7 @@ namespace SharpPulsar.Protocol.Proto
 					return true;
 				}
 			}
-			public Builder MergeFrom(ByteBufCodedInputStream Input, ExtensionRegistry ExtensionRegistry)
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream Input, ExtensionRegistry ExtensionRegistry)
 			{
 				while (true)
 				{
@@ -304,7 +306,7 @@ namespace SharpPulsar.Protocol.Proto
 						case 8:
 							{
 								int RawValue = Input.ReadEnum();
-								KeySharedMode Value =KeySharedMode.ValueOf(RawValue);
+								KeySharedMode Value = Enum.GetValues(typeof(KeySharedMode)).Cast<KeySharedMode>().ToList()[RawValue];
 								if (Value != null)
 								{
 									BitField0_ |= 0x00000001;
@@ -316,7 +318,7 @@ namespace SharpPulsar.Protocol.Proto
 							{
 								IntRange.Builder SubBuilder =IntRange.NewBuilder();
 								Input.ReadMessage(SubBuilder, ExtensionRegistry);
-								AddHashRanges(SubBuilder.buildPartial());
+								AddHashRanges(SubBuilder.BuildPartial());
 								break;
 							}
 					}
@@ -400,7 +402,7 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder SetHashRanges(int Index, IntRange.Builder BuilderForValue)
 			{
 				EnsureHashRangesIsMutable();
-				HashRanges_[Index] = BuilderForValue.build();
+				HashRanges_[Index] = BuilderForValue.Build();
 
 				return this;
 			}
@@ -429,21 +431,21 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder AddHashRanges(IntRange.Builder BuilderForValue)
 			{
 				EnsureHashRangesIsMutable();
-				HashRanges_.Add(BuilderForValue.build());
+				HashRanges_.Add(BuilderForValue.Build());
 
 				return this;
 			}
 			public Builder AddHashRanges(int Index,IntRange.Builder BuilderForValue)
 			{
 				EnsureHashRangesIsMutable();
-				HashRanges_.Insert(Index, BuilderForValue.build());
+				HashRanges_.Insert(Index, BuilderForValue.Build());
 
 				return this;
 			}
-			public Builder AddAllHashRanges<T1>(IEnumerable<T1> Values) where T1 :IntRange
+			public Builder AddAllHashRanges(IEnumerable<IntRange> Values)
 			{
 				EnsureHashRangesIsMutable();
-				base.addAll(Values, HashRanges_);
+				Values.ToList().ForEach(x => HashRanges_.Add(x));
 
 				return this;
 			}
@@ -462,10 +464,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			ByteBufCodedInputStream.ByteBufMessageBuilder ByteBufCodedInputStream.ByteBufMessageBuilder.MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry ext)
-			{
-				throw new NotImplementedException();
-			}
 
 			// @@protoc_insertion_point(builder_scope:pulsar.proto.KeySharedMeta)
 		}

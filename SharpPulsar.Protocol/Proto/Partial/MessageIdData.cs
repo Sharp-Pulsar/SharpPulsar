@@ -1,8 +1,10 @@
 ﻿using DotNetty.Common;
+using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
@@ -100,13 +102,20 @@ namespace SharpPulsar.Protocol.Proto
         {
             return NewBuilder();
         }
-
+        public static Builder NewBuilder(MessageIdData Prototype)
+        {
+            return NewBuilder().MergeFrom(Prototype);
+        }
+        public Builder ToBuilder()
+        {
+            return NewBuilder(this);
+        }
         public void WriteTo(ByteBufCodedOutputStream output)
         {
             throw new NotImplementedException();
         }
 
-        public sealed class Builder
+        public sealed class Builder: ByteBufMessageBuilder
         {
             internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
             internal ThreadLocalPool.Handle _handle;
@@ -193,10 +202,55 @@ namespace SharpPulsar.Protocol.Proto
                 result._hasBits0 = To_bitField;
                 return result;
             }
+            public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+            {
+                while (true)
+                {
+                    int Tag = input.ReadTag();
+                    switch (Tag)
+                    {
+                        case 0:
 
+                            return this;
+                        default:
+                            {
+                                if (!input.SkipField(Tag))
+                                {
+
+                                    return this;
+                                }
+                                break;
+                            }
+                        case 8:
+                            {
+                                _bitField |= 0x00000001;
+                                LedgerId = input.ReadUInt64();
+                                break;
+                            }
+                        case 16:
+                            {
+                                _bitField |= 0x00000002;
+                                EntryId_ = input.ReadUInt64();
+                                break;
+                            }
+                        case 24:
+                            {
+                                _bitField |= 0x00000004;
+                                Partition = input.ReadInt32();
+                                break;
+                            }
+                        case 32:
+                            {
+                                _bitField |= 0x00000008;
+                                BatchIndex = input.ReadInt32();
+                                break;
+                            }
+                    }
+                }
+            }
             public Builder MergeFrom(MessageIdData Other)
             {
-                if (Other == MessageIdData.DefaultInstance)
+                if (Other == DefaultInstance)
                 {
                     return this;
                 }
