@@ -2080,7 +2080,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetCloseProducer(CommandCloseProducer.Builder BuilderForValue)
 			{
-				CloseProducer_ = BuilderForValue.build();
+				CloseProducer_ = BuilderForValue.Build();
 
 				_bitField |= 0x00004000;
 				return this;
@@ -2089,7 +2089,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00004000) == 0x00004000) && CloseProducer_ != CommandCloseProducer.DefaultInstance)
 				{
-					CloseProducer_ = CommandCloseProducer.NewBuilder(CloseProducer).mergeFrom(Value).buildPartial();
+					CloseProducer_ = CommandCloseProducer.NewBuilder(CloseProducer_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2130,7 +2130,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetCloseConsumer(CommandCloseConsumer.Builder BuilderForValue)
 			{
-				CloseConsumer_ = BuilderForValue.build();
+				CloseConsumer_ = BuilderForValue.Build();
 
 				_bitField |= 0x00008000;
 				return this;
@@ -2139,7 +2139,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00008000) == 0x00008000) && CloseConsumer_ != CommandCloseConsumer.DefaultInstance)
 				{
-					CloseConsumer_ = CommandCloseConsumer.NewBuilder(CloseConsumer).mergeFrom(Value).buildPartial();
+					CloseConsumer_ = CommandCloseConsumer.NewBuilder(CloseConsumer_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2180,7 +2180,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetProducerSuccess(CommandProducerSuccess.Builder BuilderForValue)
 			{
-				ProducerSuccess_ = BuilderForValue.build();
+				ProducerSuccess_ = BuilderForValue.Build();
 
 				_bitField |= 0x00010000;
 				return this;
@@ -2189,7 +2189,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00010000) == 0x00010000) && ProducerSuccess_ != CommandProducerSuccess.DefaultInstance)
 				{
-					ProducerSuccess_ = CommandProducerSuccess.NewBuilder(ProducerSuccess).mergeFrom(Value).buildPartial();
+					ProducerSuccess_ = CommandProducerSuccess.NewBuilder(ProducerSuccess_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2230,7 +2230,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetPing(CommandPing.Builder BuilderForValue)
 			{
-				Ping_ = BuilderForValue.build();
+				Ping_ = BuilderForValue.Build();
 
 				_bitField |= 0x00020000;
 				return this;
@@ -2239,7 +2239,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00020000) == 0x00020000) && Ping_ != CommandPing.DefaultInstance)
 				{
-					Ping_ = CommandPing.NewBuilder(Ping).mergeFrom(Value).buildPartial();
+					Ping_ = CommandPing.NewBuilder(Ping_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2280,7 +2280,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetPong(CommandPong.Builder BuilderForValue)
 			{
-				Pong_ = BuilderForValue.build();
+				Pong_ = BuilderForValue.Build();
 
 				_bitField |= 0x00040000;
 				return this;
@@ -2289,7 +2289,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00040000) == 0x00040000) && Pong_ != CommandPong.DefaultInstance)
 				{
-					Pong_ = CommandPong.NewBuilder(Pong).mergeFrom(Value).buildPartial();
+					Pong_ = CommandPong.NewBuilder(Pong_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2330,7 +2330,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages.Builder BuilderForValue)
 			{
-				RedeliverUnacknowledgedMessages_ = BuilderForValue.build();
+				RedeliverUnacknowledgedMessages_ = BuilderForValue.Build();
 
 				_bitField |= 0x00080000;
 				return this;
@@ -2339,7 +2339,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00080000) == 0x00080000) && RedeliverUnacknowledgedMessages_ != CommandRedeliverUnacknowledgedMessages.DefaultInstance)
 				{
-					RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.NewBuilder(RedeliverUnacknowledgedMessages).mergeFrom(Value).buildPartial();
+					RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.NewBuilder(RedeliverUnacknowledgedMessages_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2380,7 +2380,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata.Builder BuilderForValue)
 			{
-				PartitionMetadata_ = BuilderForValue.build();
+				PartitionMetadata_ = BuilderForValue.Build();
 
 				_bitField |= 0x00100000;
 				return this;
@@ -2389,7 +2389,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00100000) == 0x00100000) && PartitionMetadata_ != CommandPartitionedTopicMetadata.DefaultInstance)
 				{
-					PartitionMetadata_ = CommandPartitionedTopicMetadata.NewBuilder(PartitionMetadata).mergeFrom(Value).buildPartial();
+					PartitionMetadata_ = CommandPartitionedTopicMetadata.NewBuilder(PartitionMetadata_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2430,7 +2430,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse.Builder BuilderForValue)
 			{
-				PartitionMetadataResponse_ = BuilderForValue.build();
+				PartitionMetadataResponse_ = BuilderForValue.Build();
 
 				_bitField |= 0x00200000;
 				return this;
@@ -2439,7 +2439,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00200000) == 0x00200000) && PartitionMetadataResponse_ != CommandPartitionedTopicMetadataResponse.DefaultInstance)
 				{
-					PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.NewBuilder(PartitionMetadataResponse).mergeFrom(Value).buildPartial();
+					PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.NewBuilder(PartitionMetadataResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2480,7 +2480,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetLookupTopic(CommandLookupTopic.Builder BuilderForValue)
 			{
-				LookupTopic_ = BuilderForValue.build();
+				LookupTopic_ = BuilderForValue.Build();
 
 				_bitField |= 0x00400000;
 				return this;
@@ -2489,7 +2489,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00400000) == 0x00400000) && LookupTopic_ != CommandLookupTopic.DefaultInstance)
 				{
-					LookupTopic_ = CommandLookupTopic.NewBuilder(LookupTopic).mergeFrom(Value).buildPartial();
+					LookupTopic_ = CommandLookupTopic.NewBuilder(LookupTopic_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2530,7 +2530,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetLookupTopicResponse(CommandLookupTopicResponse.Builder BuilderForValue)
 			{
-				LookupTopicResponse_ = BuilderForValue.build();
+				LookupTopicResponse_ = BuilderForValue.Build();
 
 				_bitField |= 0x00800000;
 				return this;
@@ -2539,7 +2539,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00800000) == 0x00800000) && LookupTopicResponse_ != CommandLookupTopicResponse.DefaultInstance)
 				{
-					LookupTopicResponse_ = CommandLookupTopicResponse.NewBuilder(LookupTopicResponse).mergeFrom(Value).buildPartial();
+					LookupTopicResponse_ = CommandLookupTopicResponse.NewBuilder(LookupTopicResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2580,7 +2580,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetConsumerStats(CommandConsumerStats.Builder BuilderForValue)
 			{
-				ConsumerStats_ = BuilderForValue.build();
+				ConsumerStats_ = BuilderForValue.Build();
 
 				_bitField |= 0x01000000;
 				return this;
@@ -2589,7 +2589,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x01000000) == 0x01000000) && ConsumerStats_ != CommandConsumerStats.DefaultInstance)
 				{
-					ConsumerStats_ = CommandConsumerStats.NewBuilder(ConsumerStats).mergeFrom(Value).buildPartial();
+					ConsumerStats_ = CommandConsumerStats.NewBuilder(ConsumerStats_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
