@@ -3614,7 +3614,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x02000000) == 0x02000000) && ConsumerStatsResponse_ != CommandConsumerStatsResponse.DefaultInstance)
 				{
-					ConsumerStatsResponse_ = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse).MergeFrom(Value).BuildPartial();
+					ConsumerStatsResponse_ = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
