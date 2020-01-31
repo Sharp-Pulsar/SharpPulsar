@@ -3,6 +3,7 @@ using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
 using System.Linq;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
@@ -743,7 +744,7 @@ namespace SharpPulsar.Protocol.Proto
 		}
 		
 
-		public  class Builder: ByteBufGeneratedMessage
+		public  class Builder: ByteBufMessageBuilder
 		{
 			// Construct using org.apache.pulsar.common.api.proto.BaseCommand.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
@@ -1339,7 +1340,7 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				return this;
 			}
-			public Builder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
 			{
 				while (true)
 				{
