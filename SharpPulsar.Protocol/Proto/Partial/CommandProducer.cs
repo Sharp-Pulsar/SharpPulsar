@@ -10,7 +10,7 @@ using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class CommandProducer : ByteBufCodedOutputStream.ByteBufGeneratedMessage
+	public partial class CommandProducer : ByteBufGeneratedMessage
 	{
 		// Use CommandProducer.newBuilder() to construct.
 		internal static ThreadLocalPool<CommandProducer> _pool = new ThreadLocalPool<CommandProducer>(handle => new CommandProducer(handle), 1, true);

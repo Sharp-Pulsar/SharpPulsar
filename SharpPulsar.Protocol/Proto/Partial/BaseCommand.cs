@@ -19,10 +19,10 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public void Recycle()
 		{
-			this.InitFields();
-			this.MemoizedIsInitialized = -1;
-			this._hasBits0 = 0;
-			this.MemoizedSerializedSize = -1;
+			InitFields();
+			MemoizedIsInitialized = -1;
+			_hasBits0 = 0;
+			MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
 				_handle.Release(this);
@@ -775,7 +775,6 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder Clear()
 			{
 				ClearType();
-				//_type = BaseCommand.Types.Type.Connect;
 				ClearConnect();
 				ClearConnected();
 				ClearSubscribe();
@@ -1016,14 +1015,14 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				get
 				{
-					if (!HasType)
+					if (!HasType())
 					{
 
 						return false;
 					}
 					if (HasConnect())
 					{
-						if (!getConnect().IsInitialized())
+						if (!GetConnect().IsInitialized())
 						{
 
 							return false;
@@ -1031,7 +1030,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasConnected())
 					{
-						if (!getConnected().IsInitialized())
+						if (!GetConnected().IsInitialized())
 						{
 
 							return false;
@@ -1039,7 +1038,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSubscribe())
 					{
-						if (!getSubscribe().IsInitialized())
+						if (!GetSubscribe().IsInitialized())
 						{
 
 							return false;
@@ -1047,7 +1046,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasProducer())
 					{
-						if (!getProducer().IsInitialized())
+						if (!GetProducer().IsInitialized())
 						{
 
 							return false;
@@ -1055,7 +1054,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSend())
 					{
-						if (!getSend().IsInitialized())
+						if (!GetSend().IsInitialized())
 						{
 
 							return false;
@@ -1063,7 +1062,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSendReceipt())
 					{
-						if (!getSendReceipt().IsInitialized())
+						if (!GetSendReceipt().IsInitialized())
 						{
 
 							return false;
@@ -1071,7 +1070,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSendError())
 					{
-						if (!getSendError().IsInitialized())
+						if (!GetSendError().IsInitialized())
 						{
 
 							return false;
@@ -1079,7 +1078,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasMessage())
 					{
-						if (!getMessage().IsInitialized())
+						if (!GetMessage().IsInitialized())
 						{
 
 							return false;
@@ -1087,7 +1086,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAck())
 					{
-						if (!getAck().IsInitialized())
+						if (!GetAck().IsInitialized())
 						{
 
 							return false;
@@ -1095,7 +1094,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasFlow())
 					{
-						if (!getFlow().IsInitialized())
+						if (!GetFlow().IsInitialized())
 						{
 
 							return false;
@@ -1103,7 +1102,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasUnsubscribe())
 					{
-						if (!getUnsubscribe().IsInitialized())
+						if (!GetUnsubscribe().IsInitialized())
 						{
 
 							return false;
@@ -1111,7 +1110,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSuccess())
 					{
-						if (!getSuccess().IsInitialized())
+						if (!GetSuccess().IsInitialized())
 						{
 
 							return false;
@@ -1119,7 +1118,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasError())
 					{
-						if (!getError().IsInitialized())
+						if (!GetError().IsInitialized())
 						{
 
 							return false;
@@ -1127,7 +1126,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasCloseProducer())
 					{
-						if (!getCloseProducer().IsInitialized())
+						if (!GetCloseProducer().IsInitialized())
 						{
 
 							return false;
@@ -1135,7 +1134,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasCloseConsumer())
 					{
-						if (!getCloseConsumer().IsInitialized())
+						if (!GetCloseConsumer().IsInitialized())
 						{
 
 							return false;
@@ -1143,7 +1142,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasProducerSuccess())
 					{
-						if (!getProducerSuccess().IsInitialized())
+						if (!GetProducerSuccess().IsInitialized())
 						{
 
 							return false;
@@ -1151,7 +1150,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasRedeliverUnacknowledgedMessages())
 					{
-						if (!getRedeliverUnacknowledgedMessages().IsInitialized())
+						if (!GetRedeliverUnacknowledgedMessages().IsInitialized())
 						{
 
 							return false;
@@ -1159,7 +1158,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasPartitionMetadata())
 					{
-						if (!getPartitionMetadata().IsInitialized())
+						if (!GetPartitionMetadata().IsInitialized())
 						{
 
 							return false;
@@ -1167,7 +1166,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasPartitionMetadataResponse())
 					{
-						if (!getPartitionMetadataResponse().IsInitialized())
+						if (!GetPartitionMetadataResponse().IsInitialized())
 						{
 
 							return false;
@@ -1175,7 +1174,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasLookupTopic())
 					{
-						if (!getLookupTopic().IsInitialized())
+						if (!GetLookupTopic().IsInitialized())
 						{
 
 							return false;
@@ -1183,7 +1182,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasLookupTopicResponse())
 					{
-						if (!getLookupTopicResponse().IsInitialized())
+						if (!GetLookupTopicResponse().IsInitialized())
 						{
 
 							return false;
@@ -1191,7 +1190,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasConsumerStats())
 					{
-						if (!getConsumerStats().IsInitialized())
+						if (!GetConsumerStats().IsInitialized())
 						{
 
 							return false;
@@ -1199,7 +1198,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasConsumerStatsResponse())
 					{
-						if (!getConsumerStatsResponse().IsInitialized())
+						if (!GetConsumerStatsResponse().IsInitialized())
 						{
 
 							return false;
@@ -1207,7 +1206,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasReachedEndOfTopic())
 					{
-						if (!getReachedEndOfTopic().IsInitialized())
+						if (!GetReachedEndOfTopic().IsInitialized())
 						{
 
 							return false;
@@ -1215,7 +1214,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasSeek())
 					{
-						if (!getSeek().IsInitialized())
+						if (!GetSeek().IsInitialized())
 						{
 
 							return false;
@@ -1223,7 +1222,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetLastMessageId())
 					{
-						if (!getGetLastMessageId().IsInitialized())
+						if (!GetGetLastMessageId().IsInitialized())
 						{
 
 							return false;
@@ -1231,7 +1230,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetLastMessageIdResponse())
 					{
-						if (!getGetLastMessageIdResponse().IsInitialized())
+						if (!GetGetLastMessageIdResponse().IsInitialized())
 						{
 
 							return false;
@@ -1239,7 +1238,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasActiveConsumerChange())
 					{
-						if (!getActiveConsumerChange().IsInitialized())
+						if (!GetActiveConsumerChange().IsInitialized())
 						{
 
 							return false;
@@ -1247,7 +1246,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetTopicsOfNamespace())
 					{
-						if (!getGetTopicsOfNamespace().IsInitialized())
+						if (!GetGetTopicsOfNamespace().IsInitialized())
 						{
 
 							return false;
@@ -1255,7 +1254,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetTopicsOfNamespaceResponse())
 					{
-						if (!getGetTopicsOfNamespaceResponse().IsInitialized())
+						if (!GetGetTopicsOfNamespaceResponse().IsInitialized())
 						{
 
 							return false;
@@ -1263,7 +1262,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetSchema())
 					{
-						if (!getGetSchema().IsInitialized())
+						if (!GetGetSchema().IsInitialized())
 						{
 
 							return false;
@@ -1271,7 +1270,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetSchemaResponse())
 					{
-						if (!getGetSchemaResponse().IsInitialized())
+						if (!GetGetSchemaResponse().IsInitialized())
 						{
 
 							return false;
@@ -1279,7 +1278,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAckResponse())
 					{
-						if (!getAckResponse().IsInitialized())
+						if (!GetAckResponse().IsInitialized())
 						{
 
 							return false;
@@ -1287,7 +1286,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetOrCreateSchema())
 					{
-						if (!getGetOrCreateSchema().IsInitialized())
+						if (!GetGetOrCreateSchema().IsInitialized())
 						{
 
 							return false;
@@ -1295,7 +1294,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasGetOrCreateSchemaResponse())
 					{
-						if (!getGetOrCreateSchemaResponse().IsInitialized())
+						if (!GetGetOrCreateSchemaResponse().IsInitialized())
 						{
 
 							return false;
@@ -1303,7 +1302,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasNewTxn())
 					{
-						if (!getNewTxn().IsInitialized())
+						if (!GetNewTxn().IsInitialized())
 						{
 
 							return false;
@@ -1311,7 +1310,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasNewTxnResponse())
 					{
-						if (!getNewTxnResponse().IsInitialized())
+						if (!GetNewTxnResponse().IsInitialized())
 						{
 
 							return false;
@@ -1319,7 +1318,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAddPartitionToTxn())
 					{
-						if (!getAddPartitionToTxn().IsInitialized())
+						if (!GetAddPartitionToTxn().IsInitialized())
 						{
 
 							return false;
@@ -1327,7 +1326,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAddPartitionToTxnResponse())
 					{
-						if (!getAddPartitionToTxnResponse().IsInitialized())
+						if (!GetAddPartitionToTxnResponse().IsInitialized())
 						{
 
 							return false;
@@ -1335,7 +1334,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAddSubscriptionToTxn())
 					{
-						if (!getAddSubscriptionToTxn().IsInitialized())
+						if (!GetAddSubscriptionToTxn().IsInitialized())
 						{
 
 							return false;
@@ -1343,7 +1342,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasAddSubscriptionToTxnResponse())
 					{
-						if (!getAddSubscriptionToTxnResponse().IsInitialized())
+						if (!GetAddSubscriptionToTxnResponse().IsInitialized())
 						{
 
 							return false;
@@ -1351,7 +1350,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxn())
 					{
-						if (!getEndTxn().IsInitialized())
+						if (!GetEndTxn().IsInitialized())
 						{
 
 							return false;
@@ -1359,7 +1358,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxnResponse())
 					{
-						if (!getEndTxnResponse().IsInitialized())
+						if (!GetEndTxnResponse().IsInitialized())
 						{
 
 							return false;
@@ -1367,7 +1366,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxnOnPartition())
 					{
-						if (!getEndTxnOnPartition().IsInitialized())
+						if (!GetEndTxnOnPartition().IsInitialized())
 						{
 
 							return false;
@@ -1375,7 +1374,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxnOnPartitionResponse())
 					{
-						if (!getEndTxnOnPartitionResponse().IsInitialized())
+						if (!GetEndTxnOnPartitionResponse().IsInitialized())
 						{
 
 							return false;
@@ -1383,7 +1382,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxnOnSubscription())
 					{
-						if (!getEndTxnOnSubscription().IsInitialized())
+						if (!GetEndTxnOnSubscription().IsInitialized())
 						{
 
 							return false;
@@ -1391,7 +1390,7 @@ namespace SharpPulsar.Protocol.Proto
 					}
 					if (HasEndTxnOnSubscriptionResponse())
 					{
-						if (!getEndTxnOnSubscriptionResponse().IsInitialized())
+						if (!GetEndTxnOnSubscriptionResponse().IsInitialized())
 						{
 
 							return false;
@@ -1531,7 +1530,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetSubscribe(CommandSubscribe.Builder BuilderForValue)
 			{
-				Subscribe_ = BuilderForValue.build();
+				Subscribe_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000008;
 				return this;
@@ -1540,7 +1539,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000008) == 0x00000008) && Subscribe_ != CommandSubscribe.DefaultInstance)
 				{
-					Subscribe_ = CommandSubscribe.NewBuilder(Subscribe).mergeFrom(Value).buildPartial();
+					Subscribe_ = CommandSubscribe.NewBuilder(Subscribe_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1581,7 +1580,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetProducer(CommandProducer.Builder BuilderForValue)
 			{
-				Producer_ = BuilderForValue.build();
+				Producer_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000010;
 				return this;
@@ -1590,7 +1589,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000010) == 0x00000010) && Producer_ != CommandProducer.DefaultInstance)
 				{
-					Producer_ = CommandProducer.NewBuilder(Producer).mergeFrom(Value).buildPartial();
+					Producer_ = CommandProducer.NewBuilder(Producer_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1631,7 +1630,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetSend(CommandSend.Builder BuilderForValue)
 			{
-				Send_ = BuilderForValue.build();
+				Send_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000020;
 				return this;
@@ -1640,7 +1639,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000020) == 0x00000020) && Send_ != CommandSend.DefaultInstance)
 				{
-					Send_ = CommandSend.NewBuilder(Send).mergeFrom(Value).buildPartial();
+					Send_ = CommandSend.NewBuilder(Send_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1681,7 +1680,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetSendReceipt(CommandSendReceipt.Builder BuilderForValue)
 			{
-				SendReceipt_ = BuilderForValue.build();
+				SendReceipt_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000040;
 				return this;
@@ -1690,7 +1689,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000040) == 0x00000040) && SendReceipt_ != CommandSendReceipt.DefaultInstance)
 				{
-					SendReceipt_ = CommandSendReceipt.NewBuilder(SendReceipt).mergeFrom(Value).buildPartial();
+					SendReceipt_ = CommandSendReceipt.NewBuilder(SendReceipt_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1731,7 +1730,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetSendError(CommandSendError.Builder BuilderForValue)
 			{
-				SendError_ = BuilderForValue.build();
+				SendError_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000080;
 				return this;
@@ -1740,7 +1739,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000080) == 0x00000080) && SendError_ != CommandSendError.DefaultInstance)
 				{
-					SendError_ = CommandSendError.NewBuilder(SendError).mergeFrom(Value).buildPartial();
+					SendError_ = CommandSendError.NewBuilder(SendError_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1781,7 +1780,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetMessage(CommandMessage.Builder BuilderForValue)
 			{
-				Message_ = BuilderForValue.build();
+				Message_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000100;
 				return this;
@@ -1790,7 +1789,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000100) == 0x00000100) && Message_ != CommandMessage.DefaultInstance)
 				{
-					Message_ = CommandMessage.NewBuilder(Message).mergeFrom(Value).buildPartial();
+					Message_ = CommandMessage.NewBuilder(Message_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1831,7 +1830,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetAck(CommandAck.Builder BuilderForValue)
 			{
-				Ack_ = BuilderForValue.build();
+				Ack_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000200;
 				return this;
@@ -1840,7 +1839,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000200) == 0x00000200) && Ack_ != CommandAck.DefaultInstance)
 				{
-					Ack_ = CommandAck.NewBuilder(Ack).mergeFrom(Value).buildPartial();
+					Ack_ = CommandAck.NewBuilder(Ack_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1881,7 +1880,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetFlow(CommandFlow.Builder BuilderForValue)
 			{
-				Flow_ = BuilderForValue.build();
+				Flow_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000400;
 				return this;
@@ -1890,7 +1889,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000400) == 0x00000400) && Flow_ != CommandFlow.DefaultInstance)
 				{
-					Flow_ = CommandFlow.NewBuilder(Flow).mergeFrom(Value).buildPartial();
+					Flow_ = CommandFlow.NewBuilder(Flow_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1931,7 +1930,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetUnsubscribe(CommandUnsubscribe.Builder BuilderForValue)
 			{
-				Unsubscribe_ = BuilderForValue.build();
+				Unsubscribe_ = BuilderForValue.Build();
 
 				_bitField |= 0x00000800;
 				return this;
@@ -1940,7 +1939,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00000800) == 0x00000800) && Unsubscribe_ != CommandUnsubscribe.DefaultInstance)
 				{
-					Unsubscribe_ = CommandUnsubscribe.NewBuilder(Unsubscribe).mergeFrom(Value).buildPartial();
+					Unsubscribe_ = CommandUnsubscribe.NewBuilder(Unsubscribe_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -1981,7 +1980,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetSuccess(CommandSuccess.Builder BuilderForValue)
 			{
-				Success_ = BuilderForValue.build();
+				Success_ = BuilderForValue.Build();
 
 				_bitField |= 0x00001000;
 				return this;
@@ -1990,7 +1989,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00001000) == 0x00001000) && Success_ != CommandSuccess.DefaultInstance)
 				{
-					Success_ = CommandSuccess.NewBuilder(Success).mergeFrom(Value).buildPartial();
+					Success_ = CommandSuccess.NewBuilder(Success_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -2031,7 +2030,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetError(CommandError.Builder BuilderForValue)
 			{
-				Error_ = BuilderForValue.build();
+				Error_ = BuilderForValue.Build();
 
 				_bitField |= 0x00002000;
 				return this;
@@ -2040,7 +2039,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField & 0x00002000) == 0x00002000) && Error_ != CommandError.DefaultInstance)
 				{
-					Error_ = CommandError.NewBuilder(Error).mergeFrom(Value).buildPartial();
+					Error_ = CommandError.NewBuilder(Error_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
