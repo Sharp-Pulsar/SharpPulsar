@@ -2,6 +2,7 @@
 using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
+using System.Linq;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
@@ -16,7 +17,8 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			_handle = handle;
 		}
-		
+		internal int _bitField0 = 0;
+		internal int _bitField1 = 0;
 		public void Recycle()
 		{
 			InitFields();
@@ -741,11 +743,12 @@ namespace SharpPulsar.Protocol.Proto
 		}
 		
 
-		public  class Builder
+		public  class Builder: ByteBufGeneratedMessage
 		{
 			// Construct using org.apache.pulsar.common.api.proto.BaseCommand.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
-			int _bitField = 0;
+			internal int _bitField0 = 0;
+			internal int _bitField1 = 0;
 			internal ThreadLocalPool.Handle _handle;
 			private Builder(ThreadLocalPool.Handle handle)
 			{
@@ -847,175 +850,1146 @@ namespace SharpPulsar.Protocol.Proto
 				return result;
 			}
 			Types.Type _type;
+			
 			public BaseCommand BuildPartial()
 			{
-				var result = BaseCommand._pool.Take();
-				result.type_ = _type;
-				result._hasBits0 = (int)_type;
-				switch(_type)
+				BaseCommand Result = BaseCommand._pool.Take();
+				int From_bitField0 = _bitField0;
+				int FromBitField1_ = _bitField1;
+				int To_bitField0 = 0;
+				int ToBitField1_ = 0;
+				if (((From_bitField0 & 0x00000001) == 0x00000001))
 				{
-					case Types.Type.Connect:
-						result.connect_ = _connect;
-						break;
-					case Types.Type.Connected:
-						result.connected_ = _connected;
-						break;
-					case Types.Type.Subscribe:
-						result.subscribe_ = Subscribe_;
-						break;
-					case Types.Type.Producer:
-						result.producer_ = Producer_;
-						break;
-					case Types.Type.Send:
-						result.send_ = Send_;
-						break;
-					case Types.Type.SendReceipt:
-						result.sendReceipt_ = SendReceipt_;
-						break;
-					case Types.Type.SendError:
-						result.sendError_ = SendError_;
-						break;
-					case Types.Type.Message:
-						result.message_ = Message_;
-						break;
-					case Types.Type.Ack:
-						result.ack_ = Ack_;
-						break;
-					case Types.Type.Flow:
-						result.flow_ = Flow_;
-						break;
-					case Types.Type.Unsubscribe:
-						result.unsubscribe_ = Unsubscribe_;
-						break;
-					case Types.Type.Success:
-						result.success_ = Success_;
-						break;
-					case Types.Type.Error:
-						result.error_ = Error_;
-						break;
-					case Types.Type.CloseProducer:
-						result.closeProducer_ = CloseProducer_;
-						break;
-					case Types.Type.CloseConsumer:
-						result.closeConsumer_ = CloseConsumer_;
-						break;
-					case Types.Type.ProducerSuccess:
-						result.producerSuccess_ = ProducerSuccess_;
-						break;
-					case Types.Type.Ping:
-						result.ping_ = Ping_;
-						break;
-					case Types.Type.Pong:
-						result.pong_ = Pong_;
-						break;
-					case Types.Type.RedeliverUnacknowledgedMessages:
-						result.redeliverUnacknowledgedMessages_ = RedeliverUnacknowledgedMessages_;
-						break;
-					case Types.Type.PartitionedMetadata:
-						result.partitionMetadata_ = PartitionMetadata_;
-						break;
-					case Types.Type.PartitionedMetadataResponse:
-						result.partitionMetadataResponse_ = PartitionMetadataResponse_;
-						break;
-					case Types.Type.Lookup:
-						result.lookupTopic_ = LookupTopic_;
-						break;
-					case Types.Type.LookupResponse:
-						result.lookupTopicResponse_ = LookupTopicResponse_;
-						break;
-					case Types.Type.ConsumerStats:
-						result.consumerStats_ = ConsumerStats_;
-						break;
-					case Types.Type.ConsumerStatsResponse:
-						result.consumerStatsResponse_ = ConsumerStatsResponse_;
-						break;
-					case Types.Type.ReachedEndOfTopic:
-						result.reachedEndOfTopic_ = ReachedEndOfTopic_;
-						break;
-					case Types.Type.Seek:
-						result.seek_ = Seek_;
-						break;
-					case Types.Type.GetLastMessageId:
-						result.getLastMessageId_ = GetLastMessageId_;
-						break;
-					case Types.Type.GetLastMessageIdResponse:
-						result.getLastMessageIdResponse_ = GetLastMessageIdResponse_;
-						break;
-					case Types.Type.ActiveConsumerChange:
-						result.activeConsumerChange_ = ActiveConsumerChange_;
-						break;
-					case Types.Type.GetTopicsOfNamespace:
-						result.getTopicsOfNamespace_ = GetTopicsOfNamespace_;
-						break;
-					case Types.Type.GetTopicsOfNamespaceResponse:
-						result.getTopicsOfNamespaceResponse_ = GetTopicsOfNamespaceResponse_;
-						break;
-					case Types.Type.GetSchema:
-						result.getSchema_ = GetSchema_;
-						break;
-					case Types.Type.GetSchemaResponse:
-						result.getSchemaResponse_ = GetSchemaResponse_;
-						break;
-					case Types.Type.AuthChallenge:
-						result.authChallenge_ = AuthChallenge_;
-						break;
-					case Types.Type.AuthResponse:
-						result.authResponse_ = AuthResponse_;
-						break;
-					case Types.Type.AckResponse:
-						result.ackResponse_ = AckResponse_;
-						break;
-					case Types.Type.GetOrCreateSchema:
-						result.getOrCreateSchema_ = GetOrCreateSchema_;
-						break;
-					case Types.Type.GetOrCreateSchemaResponse:
-						result.getOrCreateSchemaResponse_ = GetOrCreateSchemaResponse_;
-						break;
-					case Types.Type.NewTxn:
-						result.newTxn_ = NewTxn_;
-						break;
-					case Types.Type.NewTxnResponse:
-						result.newTxnResponse_ = NewTxnResponse_;
-						break;
-					case Types.Type.AddPartitionToTxn:
-						result.addPartitionToTxn_ = AddPartitionToTxn_;
-						break;
-					case Types.Type.AddPartitionToTxnResponse:
-						result.addPartitionToTxnResponse_ = AddPartitionToTxnResponse_;
-						break;
-					case Types.Type.AddSubscriptionToTxn:
-						result.addSubscriptionToTxn_ = AddSubscriptionToTxn_;
-						break;
-					case Types.Type.AddSubscriptionToTxnResponse:
-						result.addSubscriptionToTxnResponse_ = AddSubscriptionToTxnResponse_;
-						break;
-					case Types.Type.EndTxn:
-						result.endTxn_ = EndTxn_;
-						break;
-					case Types.Type.EndTxnResponse:
-						result.endTxnResponse_ = EndTxnResponse_;
-						break;
-					case Types.Type.EndTxnOnPartition:
-						result.endTxnOnPartition_ = EndTxnOnPartition_;
-						break;
-					case Types.Type.EndTxnOnPartitionResponse:
-						result.endTxnOnPartitionResponse_ = EndTxnOnPartitionResponse_;
-						break;
-					case Types.Type.EndTxnOnSubscription:
-						result.endTxnOnSubscription_ = _endTxnOnSubscription;
-						break;
-					case Types.Type.EndTxnOnSubscriptionResponse:
-						result.endTxnOnSubscriptionResponse_ = _endTxnOnSubscriptionResponse;
-						break;
-				}						
-				return result;
+					To_bitField0 |= 0x00000001;
+				}
+				Result.Type = _type;
+				if (((From_bitField0 & 0x00000002) == 0x00000002))
+				{
+					To_bitField0 |= 0x00000002;
+				}
+				Result.Connect = _connect;
+				if (((From_bitField0 & 0x00000004) == 0x00000004))
+				{
+					To_bitField0 |= 0x00000004;
+				}
+				Result.Connected = _connected;
+				if (((From_bitField0 & 0x00000008) == 0x00000008))
+				{
+					To_bitField0 |= 0x00000008;
+				}
+				Result.Subscribe = Subscribe_;
+				if (((From_bitField0 & 0x00000010) == 0x00000010))
+				{
+					To_bitField0 |= 0x00000010;
+				}
+				Result.Producer = Producer_;
+				if (((From_bitField0 & 0x00000020) == 0x00000020))
+				{
+					To_bitField0 |= 0x00000020;
+				}
+				Result.Send = Send_;
+				if (((From_bitField0 & 0x00000040) == 0x00000040))
+				{
+					To_bitField0 |= 0x00000040;
+				}
+				Result.SendReceipt = SendReceipt_;
+				if (((From_bitField0 & 0x00000080) == 0x00000080))
+				{
+					To_bitField0 |= 0x00000080;
+				}
+				Result.SendError = SendError_;
+				if (((From_bitField0 & 0x00000100) == 0x00000100))
+				{
+					To_bitField0 |= 0x00000100;
+				}
+				Result.Message = Message_;
+				if (((From_bitField0 & 0x00000200) == 0x00000200))
+				{
+					To_bitField0 |= 0x00000200;
+				}
+				Result.Ack = Ack_;
+				if (((From_bitField0 & 0x00000400) == 0x00000400))
+				{
+					To_bitField0 |= 0x00000400;
+				}
+				Result.Flow = Flow_;
+				if (((From_bitField0 & 0x00000800) == 0x00000800))
+				{
+					To_bitField0 |= 0x00000800;
+				}
+				Result.Unsubscribe = Unsubscribe_;
+				if (((From_bitField0 & 0x00001000) == 0x00001000))
+				{
+					To_bitField0 |= 0x00001000;
+				}
+				Result.Success = Success_;
+				if (((From_bitField0 & 0x00002000) == 0x00002000))
+				{
+					To_bitField0 |= 0x00002000;
+				}
+				Result.Error = Error_;
+				if (((From_bitField0 & 0x00004000) == 0x00004000))
+				{
+					To_bitField0 |= 0x00004000;
+				}
+				Result.CloseProducer = CloseProducer_;
+				if (((From_bitField0 & 0x00008000) == 0x00008000))
+				{
+					To_bitField0 |= 0x00008000;
+				}
+				Result.CloseConsumer = CloseConsumer_;
+				if (((From_bitField0 & 0x00010000) == 0x00010000))
+				{
+					To_bitField0 |= 0x00010000;
+				}
+				Result.ProducerSuccess = ProducerSuccess_;
+				if (((From_bitField0 & 0x00020000) == 0x00020000))
+				{
+					To_bitField0 |= 0x00020000;
+				}
+				Result.Ping = Ping_;
+				if (((From_bitField0 & 0x00040000) == 0x00040000))
+				{
+					To_bitField0 |= 0x00040000;
+				}
+				Result.Pong = Pong_;
+				if (((From_bitField0 & 0x00080000) == 0x00080000))
+				{
+					To_bitField0 |= 0x00080000;
+				}
+				Result.RedeliverUnacknowledgedMessages = RedeliverUnacknowledgedMessages_;
+				if (((From_bitField0 & 0x00100000) == 0x00100000))
+				{
+					To_bitField0 |= 0x00100000;
+				}
+				Result.PartitionMetadata = PartitionMetadata_;
+				if (((From_bitField0 & 0x00200000) == 0x00200000))
+				{
+					To_bitField0 |= 0x00200000;
+				}
+				Result.PartitionMetadataResponse = PartitionMetadataResponse_;
+				if (((From_bitField0 & 0x00400000) == 0x00400000))
+				{
+					To_bitField0 |= 0x00400000;
+				}
+				Result.LookupTopic = LookupTopic_;
+				if (((From_bitField0 & 0x00800000) == 0x00800000))
+				{
+					To_bitField0 |= 0x00800000;
+				}
+				Result.LookupTopicResponse = LookupTopicResponse_;
+				if (((From_bitField0 & 0x01000000) == 0x01000000))
+				{
+					To_bitField0 |= 0x01000000;
+				}
+				Result.ConsumerStats = ConsumerStats_;
+				if (((From_bitField0 & 0x02000000) == 0x02000000))
+				{
+					To_bitField0 |= 0x02000000;
+				}
+				Result.ConsumerStatsResponse = ConsumerStatsResponse_;
+				if (((From_bitField0 & 0x04000000) == 0x04000000))
+				{
+					To_bitField0 |= 0x04000000;
+				}
+				Result.ReachedEndOfTopic = ReachedEndOfTopic_;
+				if (((From_bitField0 & 0x08000000) == 0x08000000))
+				{
+					To_bitField0 |= 0x08000000;
+				}
+				Result.Seek = Seek_;
+				if (((From_bitField0 & 0x10000000) == 0x10000000))
+				{
+					To_bitField0 |= 0x10000000;
+				}
+				Result.GetLastMessageId = GetLastMessageId_;
+				if (((From_bitField0 & 0x20000000) == 0x20000000))
+				{
+					To_bitField0 |= 0x20000000;
+				}
+				Result.GetLastMessageIdResponse = GetLastMessageIdResponse_;
+				if (((From_bitField0 & 0x40000000) == 0x40000000))
+				{
+					To_bitField0 |= 0x40000000;
+				}
+				Result.ActiveConsumerChange = ActiveConsumerChange_;
+				if (((From_bitField0 & 0x80000000) == 0x80000000))
+				{
+					To_bitField0 |= unchecked((int)0x80000000);
+				}
+				Result.GetTopicsOfNamespace = GetTopicsOfNamespace_;
+				if (((FromBitField1_ & 0x00000001) == 0x00000001))
+				{
+					ToBitField1_ |= 0x00000001;
+				}
+				Result.GetTopicsOfNamespaceResponse = GetTopicsOfNamespaceResponse_;
+				if (((FromBitField1_ & 0x00000002) == 0x00000002))
+				{
+					ToBitField1_ |= 0x00000002;
+				}
+				Result.GetSchema = GetSchema_;
+				if (((FromBitField1_ & 0x00000004) == 0x00000004))
+				{
+					ToBitField1_ |= 0x00000004;
+				}
+				Result.GetSchemaResponse = GetSchemaResponse_;
+				if (((FromBitField1_ & 0x00000008) == 0x00000008))
+				{
+					ToBitField1_ |= 0x00000008;
+				}
+				Result.AuthChallenge = AuthChallenge_;
+				if (((FromBitField1_ & 0x00000010) == 0x00000010))
+				{
+					ToBitField1_ |= 0x00000010;
+				}
+				Result.AuthResponse = AuthResponse_;
+				if (((FromBitField1_ & 0x00000020) == 0x00000020))
+				{
+					ToBitField1_ |= 0x00000020;
+				}
+				Result.AckResponse = AckResponse_;
+				if (((FromBitField1_ & 0x00000040) == 0x00000040))
+				{
+					ToBitField1_ |= 0x00000040;
+				}
+				Result.GetOrCreateSchema = GetOrCreateSchema_;
+				if (((FromBitField1_ & 0x00000080) == 0x00000080))
+				{
+					ToBitField1_ |= 0x00000080;
+				}
+				Result.GetOrCreateSchemaResponse = GetOrCreateSchemaResponse_;
+				if (((FromBitField1_ & 0x00000100) == 0x00000100))
+				{
+					ToBitField1_ |= 0x00000100;
+				}
+				Result.NewTxn = NewTxn_;
+				if (((FromBitField1_ & 0x00000200) == 0x00000200))
+				{
+					ToBitField1_ |= 0x00000200;
+				}
+				Result.NewTxnResponse = NewTxnResponse_;
+				if (((FromBitField1_ & 0x00000400) == 0x00000400))
+				{
+					ToBitField1_ |= 0x00000400;
+				}
+				Result.AddPartitionToTxn = AddPartitionToTxn_;
+				if (((FromBitField1_ & 0x00000800) == 0x00000800))
+				{
+					ToBitField1_ |= 0x00000800;
+				}
+				Result.AddPartitionToTxnResponse = AddPartitionToTxnResponse_;
+				if (((FromBitField1_ & 0x00001000) == 0x00001000))
+				{
+					ToBitField1_ |= 0x00001000;
+				}
+				Result.AddSubscriptionToTxn = AddSubscriptionToTxn_;
+				if (((FromBitField1_ & 0x00002000) == 0x00002000))
+				{
+					ToBitField1_ |= 0x00002000;
+				}
+				Result.AddSubscriptionToTxnResponse = AddSubscriptionToTxnResponse_;
+				if (((FromBitField1_ & 0x00004000) == 0x00004000))
+				{
+					ToBitField1_ |= 0x00004000;
+				}
+				Result.EndTxn = EndTxn_;
+				if (((FromBitField1_ & 0x00008000) == 0x00008000))
+				{
+					ToBitField1_ |= 0x00008000;
+				}
+				Result.EndTxnResponse = EndTxnResponse_;
+				if (((FromBitField1_ & 0x00010000) == 0x00010000))
+				{
+					ToBitField1_ |= 0x00010000;
+				}
+				Result.EndTxnOnPartition = EndTxnOnPartition_;
+				if (((FromBitField1_ & 0x00020000) == 0x00020000))
+				{
+					ToBitField1_ |= 0x00020000;
+				}
+				Result.EndTxnOnPartitionResponse = EndTxnOnPartitionResponse_;
+				if (((FromBitField1_ & 0x00040000) == 0x00040000))
+				{
+					ToBitField1_ |= 0x00040000;
+				}
+				Result.EndTxnOnSubscription = _endTxnOnSubscription;
+				if (((FromBitField1_ & 0x00080000) == 0x00080000))
+				{
+					ToBitField1_ |= 0x00080000;
+				}
+				Result.EndTxnOnSubscriptionResponse = _endTxnOnSubscriptionResponse;
+				Result._hasBits0 = To_bitField0;
+				Result._bitField1 = ToBitField1_;
+				return Result;
+			}
+
+			public Builder MergeFrom(BaseCommand Other)
+			{
+				if (Other == DefaultInstance)
+				{
+					return this;
+				}
+				if (Other.HasType)
+				{
+					SetType(Other.Type);
+				}
+				if (Other.HasConnect)
+				{
+					MergeConnect(Other.Connect);
+				}
+				if (Other.HasConnected)
+				{
+					MergeConnected(Other.Connected);
+				}
+				if (Other.HasSubscribe)
+				{
+					MergeSubscribe(Other.Subscribe);
+				}
+				if (Other.HasProducer)
+				{
+					MergeProducer(Other.Producer);
+				}
+				if (Other.HasSend)
+				{
+					MergeSend(Other.Send);
+				}
+				if (Other.HasSendReceipt)
+				{
+					MergeSendReceipt(Other.SendReceipt);
+				}
+				if (Other.HasSendError)
+				{
+					MergeSendError(Other.SendError);
+				}
+				if (Other.HasMessage)
+				{
+					MergeMessage(Other.Message);
+				}
+				if (Other.HasAck)
+				{
+					MergeAck(Other.Ack);
+				}
+				if (Other.HasFlow)
+				{
+					MergeFlow(Other.Flow);
+				}
+				if (Other.HasUnsubscribe)
+				{
+					MergeUnsubscribe(Other.Unsubscribe);
+				}
+				if (Other.HasSuccess)
+				{
+					MergeSuccess(Other.Success);
+				}
+				if (Other.HasError)
+				{
+					MergeError(Other.Error);
+				}
+				if (Other.HasCloseProducer)
+				{
+					MergeCloseProducer(Other.CloseProducer);
+				}
+				if (Other.HasCloseConsumer)
+				{
+					MergeCloseConsumer(Other.CloseConsumer);
+				}
+				if (Other.HasProducerSuccess)
+				{
+					MergeProducerSuccess(Other.ProducerSuccess);
+				}
+				if (Other.HasPing)
+				{
+					MergePing(Other.Ping);
+				}
+				if (Other.HasPong)
+				{
+					MergePong(Other.Pong);
+				}
+				if (Other.HasRedeliverUnacknowledgedMessages)
+				{
+					MergeRedeliverUnacknowledgedMessages(Other.RedeliverUnacknowledgedMessages);
+				}
+				if (Other.HasPartitionMetadata)
+				{
+					MergePartitionMetadata(Other.PartitionMetadata);
+				}
+				if (Other.HasPartitionMetadataResponse)
+				{
+					MergePartitionMetadataResponse(Other.PartitionMetadataResponse);
+				}
+				if (Other.HasLookupTopic)
+				{
+					MergeLookupTopic(Other.LookupTopic);
+				}
+				if (Other.HasLookupTopicResponse)
+				{
+					MergeLookupTopicResponse(Other.LookupTopicResponse);
+				}
+				if (Other.HasConsumerStats)
+				{
+					MergeConsumerStats(Other.ConsumerStats);
+				}
+				if (Other.HasConsumerStatsResponse)
+				{
+					MergeConsumerStatsResponse(Other.ConsumerStatsResponse);
+				}
+				if (Other.HasReachedEndOfTopic)
+				{
+					MergeReachedEndOfTopic(Other.ReachedEndOfTopic);
+				}
+				if (Other.HasSeek)
+				{
+					MergeSeek(Other.Seek);
+				}
+				if (Other.HasGetLastMessageId)
+				{
+					MergeGetLastMessageId(Other.GetLastMessageId);
+				}
+				if (Other.HasGetLastMessageIdResponse)
+				{
+					MergeGetLastMessageIdResponse(Other.GetLastMessageIdResponse);
+				}
+				if (Other.HasActiveConsumerChange)
+				{
+					MergeActiveConsumerChange(Other.ActiveConsumerChange);
+				}
+				if (Other.HasGetTopicsOfNamespace)
+				{
+					MergeGetTopicsOfNamespace(Other.GetTopicsOfNamespace);
+				}
+				if (Other.HasGetTopicsOfNamespaceResponse)
+				{
+					MergeGetTopicsOfNamespaceResponse(Other.GetTopicsOfNamespaceResponse);
+				}
+				if (Other.HasGetSchema)
+				{
+					MergeGetSchema(Other.GetSchema);
+				}
+				if (Other.HasGetSchemaResponse)
+				{
+					MergeGetSchemaResponse(Other.GetSchemaResponse);
+				}
+				if (Other.HasAuthChallenge)
+				{
+					MergeAuthChallenge(Other.AuthChallenge);
+				}
+				if (Other.HasAuthResponse)
+				{
+					MergeAuthResponse(Other.AuthResponse);
+				}
+				if (Other.HasAckResponse)
+				{
+					MergeAckResponse(Other.AckResponse);
+				}
+				if (Other.HasGetOrCreateSchema)
+				{
+					MergeGetOrCreateSchema(Other.GetOrCreateSchema);
+				}
+				if (Other.HasGetOrCreateSchemaResponse)
+				{
+					MergeGetOrCreateSchemaResponse(Other.GetOrCreateSchemaResponse);
+				}
+				if (Other.HasNewTxn)
+				{
+					MergeNewTxn(Other.NewTxn);
+				}
+				if (Other.HasNewTxnResponse)
+				{
+					MergeNewTxnResponse(Other.NewTxnResponse);
+				}
+				if (Other.HasAddPartitionToTxn)
+				{
+					MergeAddPartitionToTxn(Other.AddPartitionToTxn);
+				}
+				if (Other.HasAddPartitionToTxnResponse)
+				{
+					MergeAddPartitionToTxnResponse(Other.AddPartitionToTxnResponse);
+				}
+				if (Other.HasAddSubscriptionToTxn)
+				{
+					MergeAddSubscriptionToTxn(Other.AddSubscriptionToTxn);
+				}
+				if (Other.HasAddSubscriptionToTxnResponse)
+				{
+					MergeAddSubscriptionToTxnResponse(Other.AddSubscriptionToTxnResponse);
+				}
+				if (Other.HasEndTxn)
+				{
+					MergeEndTxn(Other.EndTxn);
+				}
+				if (Other.HasEndTxnResponse)
+				{
+					MergeEndTxnResponse(Other.EndTxnResponse);
+				}
+				if (Other.HasEndTxnOnPartition)
+				{
+					MergeEndTxnOnPartition(Other.EndTxnOnPartition);
+				}
+				if (Other.HasEndTxnOnPartitionResponse)
+				{
+					MergeEndTxnOnPartitionResponse(Other.EndTxnOnPartitionResponse);
+				}
+				if (Other.HasEndTxnOnSubscription)
+				{
+					MergeEndTxnOnSubscription(Other.EndTxnOnSubscription);
+				}
+				if (Other.HasEndTxnOnSubscriptionResponse)
+				{
+					MergeEndTxnOnSubscriptionResponse(Other.EndTxnOnSubscriptionResponse);
+				}
+				return this;
+			}
+			public Builder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			{
+				while (true)
+				{
+					int Tag = input.ReadTag();
+					switch (Tag)
+					{
+						case 0:
+
+							return this;
+						default:
+							{
+								if (!input.SkipField(Tag))
+								{
+
+									return this;
+								}
+								break;
+							}
+						case 8:
+							{
+								int RawValue = input.ReadEnum();
+								Types.Type Value = Enum.GetValues(typeof(Types.Type)).Cast<Types.Type>().ToList()[RawValue];
+								if (Value != null)
+								{
+									_bitField0 |= 0x00000001;
+									_type = Value;
+								}
+								break;
+							}
+						case 18:
+							{
+								CommandConnect.Builder SubBuilder = CommandConnect.NewBuilder();
+								if (HasConnect())
+								{
+									SubBuilder.MergeFrom(GetConnect());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetConnect(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 26:
+							{
+								CommandConnected.Builder SubBuilder = CommandConnected.NewBuilder();
+								if (HasConnected())
+								{
+									SubBuilder.MergeFrom(GetConnected());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetConnected(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 34:
+							{
+								CommandSubscribe.Builder SubBuilder = CommandSubscribe.NewBuilder();
+								if (HasSubscribe())
+								{
+									SubBuilder.MergeFrom(GetSubscribe());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSubscribe(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 42:
+							{
+								CommandProducer.Builder SubBuilder = CommandProducer.NewBuilder();
+								if (HasProducer())
+								{
+									SubBuilder.MergeFrom(GetProducer());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetProducer(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 50:
+							{
+								CommandSend.Builder SubBuilder = CommandSend.NewBuilder();
+								if (HasSend())
+								{
+									SubBuilder.MergeFrom(GetSend());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSend(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 58:
+							{
+								CommandSendReceipt.Builder SubBuilder = CommandSendReceipt.NewBuilder();
+								if (HasSendReceipt())
+								{
+									SubBuilder.MergeFrom(GetSendReceipt());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSendReceipt(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 66:
+							{
+								CommandSendError.Builder SubBuilder = CommandSendError.NewBuilder();
+								if (HasSendError())
+								{
+									SubBuilder.MergeFrom(GetSendError());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSendError(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 74:
+							{
+								CommandMessage.Builder SubBuilder = CommandMessage.NewBuilder();
+								if (HasMessage())
+								{
+									SubBuilder.MergeFrom(GetMessage());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetMessage(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 82:
+							{
+								CommandAck.Builder SubBuilder = CommandAck.NewBuilder();
+								if (HasAck())
+								{
+									SubBuilder.MergeFrom(GetAck());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAck(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 90:
+							{
+								CommandFlow.Builder SubBuilder = CommandFlow.NewBuilder();
+								if (HasFlow())
+								{
+									SubBuilder.MergeFrom(GetFlow());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetFlow(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 98:
+							{
+								CommandUnsubscribe.Builder SubBuilder = CommandUnsubscribe.NewBuilder();
+								if (HasUnsubscribe())
+								{
+									SubBuilder.MergeFrom(GetUnsubscribe());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetUnsubscribe(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 106:
+							{
+								CommandSuccess.Builder SubBuilder = CommandSuccess.NewBuilder();
+								if (HasSuccess())
+								{
+									SubBuilder.MergeFrom(GetSuccess());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSuccess(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 114:
+							{
+								CommandError.Builder SubBuilder = CommandError.NewBuilder();
+								if (HasError())
+								{
+									SubBuilder.MergeFrom(GetError());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetError(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 122:
+							{
+								CommandCloseProducer.Builder SubBuilder = CommandCloseProducer.NewBuilder();
+								if (HasCloseProducer())
+								{
+									SubBuilder.MergeFrom(GetCloseProducer());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetCloseProducer(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 130:
+							{
+								CommandCloseConsumer.Builder SubBuilder = CommandCloseConsumer.NewBuilder();
+								if (HasCloseConsumer())
+								{
+									SubBuilder.MergeFrom(GetCloseConsumer());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetCloseConsumer(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 138:
+							{
+								CommandProducerSuccess.Builder SubBuilder = CommandProducerSuccess.NewBuilder();
+								if (HasProducerSuccess())
+								{
+									SubBuilder.MergeFrom(GetProducerSuccess());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetProducerSuccess(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 146:
+							{
+								CommandPing.Builder SubBuilder = CommandPing.NewBuilder();
+								if (HasPing())
+								{
+									SubBuilder.MergeFrom(GetPing());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetPing(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 154:
+							{
+								CommandPong.Builder SubBuilder = CommandPong.NewBuilder();
+								if (HasPong())
+								{
+									SubBuilder.MergeFrom(GetPong());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetPong(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 162:
+							{
+								CommandRedeliverUnacknowledgedMessages.Builder SubBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+								if (HasRedeliverUnacknowledgedMessages())
+								{
+									SubBuilder.MergeFrom(GetRedeliverUnacknowledgedMessages());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetRedeliverUnacknowledgedMessages(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 170:
+							{
+								CommandPartitionedTopicMetadata.Builder SubBuilder = CommandPartitionedTopicMetadata.NewBuilder();
+								if (HasPartitionMetadata())
+								{
+									SubBuilder.MergeFrom(GetPartitionMetadata());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetPartitionMetadata(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 178:
+							{
+								CommandPartitionedTopicMetadataResponse.Builder SubBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+								if (HasPartitionMetadataResponse())
+								{
+									SubBuilder.MergeFrom(GetPartitionMetadataResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetPartitionMetadataResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 186:
+							{
+								CommandLookupTopic.Builder SubBuilder = CommandLookupTopic.NewBuilder();
+								if (HasLookupTopic())
+								{
+									SubBuilder.MergeFrom(GetLookupTopic());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetLookupTopic(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 194:
+							{
+								CommandLookupTopicResponse.Builder SubBuilder = CommandLookupTopicResponse.NewBuilder();
+								if (HasLookupTopicResponse())
+								{
+									SubBuilder.MergeFrom(GetLookupTopicResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetLookupTopicResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 202:
+							{
+								CommandConsumerStats.Builder SubBuilder = CommandConsumerStats.NewBuilder();
+								if (HasConsumerStats())
+								{
+									SubBuilder.MergeFrom(GetConsumerStats());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetConsumerStats(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 210:
+							{
+								CommandConsumerStatsResponse.Builder SubBuilder = CommandConsumerStatsResponse.NewBuilder();
+								if (HasConsumerStatsResponse())
+								{
+									SubBuilder.MergeFrom(GetConsumerStatsResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetConsumerStatsResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 218:
+							{
+								CommandReachedEndOfTopic.Builder SubBuilder = CommandReachedEndOfTopic.NewBuilder();
+								if (HasReachedEndOfTopic())
+								{
+									SubBuilder.MergeFrom(GetReachedEndOfTopic());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetReachedEndOfTopic(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 226:
+							{
+								CommandSeek.Builder SubBuilder = CommandSeek.NewBuilder();
+								if (HasSeek())
+								{
+									SubBuilder.MergeFrom(GetSeek());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetSeek(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 234:
+							{
+								CommandGetLastMessageId.Builder SubBuilder = CommandGetLastMessageId.NewBuilder();
+								if (HasGetLastMessageId())
+								{
+									SubBuilder.MergeFrom(GetGetLastMessageId());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetLastMessageId(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 242:
+							{
+								CommandGetLastMessageIdResponse.Builder SubBuilder = CommandGetLastMessageIdResponse.NewBuilder();
+								if (HasGetLastMessageIdResponse())
+								{
+									SubBuilder.MergeFrom(GetGetLastMessageIdResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetLastMessageIdResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 250:
+							{
+								CommandActiveConsumerChange.Builder SubBuilder = CommandActiveConsumerChange.NewBuilder();
+								if (HasActiveConsumerChange())
+								{
+									SubBuilder.MergeFrom(GetActiveConsumerChange());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetActiveConsumerChange(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 258:
+							{
+								CommandGetTopicsOfNamespace.Builder SubBuilder = CommandGetTopicsOfNamespace.NewBuilder();
+								if (HasGetTopicsOfNamespace())
+								{
+									SubBuilder.MergeFrom(GetGetTopicsOfNamespace());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetTopicsOfNamespace(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 266:
+							{
+								CommandGetTopicsOfNamespaceResponse.Builder SubBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
+								if (HasGetTopicsOfNamespaceResponse())
+								{
+									SubBuilder.MergeFrom(GetGetTopicsOfNamespaceResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetTopicsOfNamespaceResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 274:
+							{
+								CommandGetSchema.Builder SubBuilder = CommandGetSchema.NewBuilder();
+								if (HasGetSchema())
+								{
+									SubBuilder.MergeFrom(GetGetSchema());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetSchema(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 282:
+							{
+								CommandGetSchemaResponse.Builder SubBuilder = CommandGetSchemaResponse.NewBuilder();
+								if (HasGetSchemaResponse())
+								{
+									SubBuilder.MergeFrom(GetGetSchemaResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetSchemaResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 290:
+							{
+								CommandAuthChallenge.Builder SubBuilder = CommandAuthChallenge.NewBuilder();
+								if (HasAuthChallenge())
+								{
+									SubBuilder.MergeFrom(GetAuthChallenge());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAuthChallenge(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 298:
+							{
+								CommandAuthResponse.Builder SubBuilder = CommandAuthResponse.NewBuilder();
+								if (HasAuthResponse())
+								{
+									SubBuilder.MergeFrom(GetAuthResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAuthResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 306:
+							{
+								CommandAckResponse.Builder SubBuilder = CommandAckResponse.NewBuilder();
+								if (HasAckResponse())
+								{
+									SubBuilder.MergeFrom(GetAckResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAckResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 314:
+							{
+								CommandGetOrCreateSchema.Builder SubBuilder = CommandGetOrCreateSchema.NewBuilder();
+								if (HasGetOrCreateSchema())
+								{
+									SubBuilder.MergeFrom(GetGetOrCreateSchema());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetOrCreateSchema(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 322:
+							{
+								CommandGetOrCreateSchemaResponse.Builder SubBuilder = CommandGetOrCreateSchemaResponse.NewBuilder();
+								if (HasGetOrCreateSchemaResponse())
+								{
+									SubBuilder.MergeFrom(GetGetOrCreateSchemaResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetGetOrCreateSchemaResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 402:
+							{
+								CommandNewTxn.Builder SubBuilder = CommandNewTxn.NewBuilder();
+								if (HasNewTxn())
+								{
+									SubBuilder.MergeFrom(GetNewTxn());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetNewTxn(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 410:
+							{
+								CommandNewTxnResponse.Builder SubBuilder = CommandNewTxnResponse.NewBuilder();
+								if (HasNewTxnResponse())
+								{
+									SubBuilder.MergeFrom(GetNewTxnResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetNewTxnResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 418:
+							{
+								CommandAddPartitionToTxn.Builder SubBuilder = CommandAddPartitionToTxn.NewBuilder();
+								if (HasAddPartitionToTxn())
+								{
+									SubBuilder.MergeFrom(GetAddPartitionToTxn());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAddPartitionToTxn(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 426:
+							{
+								CommandAddPartitionToTxnResponse.Builder SubBuilder = CommandAddPartitionToTxnResponse.NewBuilder();
+								if (HasAddPartitionToTxnResponse())
+								{
+									SubBuilder.MergeFrom(GetAddPartitionToTxnResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAddPartitionToTxnResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 434:
+							{
+								CommandAddSubscriptionToTxn.Builder SubBuilder = CommandAddSubscriptionToTxn.NewBuilder();
+								if (HasAddSubscriptionToTxn())
+								{
+									SubBuilder.MergeFrom(GetAddSubscriptionToTxn());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAddSubscriptionToTxn(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 442:
+							{
+								CommandAddSubscriptionToTxnResponse.Builder SubBuilder = CommandAddSubscriptionToTxnResponse.NewBuilder();
+								if (HasAddSubscriptionToTxnResponse())
+								{
+									SubBuilder.MergeFrom(GetAddSubscriptionToTxnResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetAddSubscriptionToTxnResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 450:
+							{
+								CommandEndTxn.Builder SubBuilder = CommandEndTxn.NewBuilder();
+								if (HasEndTxn())
+								{
+									SubBuilder.MergeFrom(GetEndTxn());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxn(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 458:
+							{
+								CommandEndTxnResponse.Builder SubBuilder = CommandEndTxnResponse.NewBuilder();
+								if (HasEndTxnResponse())
+								{
+									SubBuilder.MergeFrom(GetEndTxnResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxnResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 466:
+							{
+								CommandEndTxnOnPartition.Builder SubBuilder = CommandEndTxnOnPartition.NewBuilder();
+								if (HasEndTxnOnPartition())
+								{
+									SubBuilder.MergeFrom(GetEndTxnOnPartition());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxnOnPartition(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 474:
+							{
+								CommandEndTxnOnPartitionResponse.Builder SubBuilder = CommandEndTxnOnPartitionResponse.NewBuilder();
+								if (HasEndTxnOnPartitionResponse())
+								{
+									SubBuilder.MergeFrom(GetEndTxnOnPartitionResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxnOnPartitionResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 482:
+							{
+								CommandEndTxnOnSubscription.Builder SubBuilder = CommandEndTxnOnSubscription.NewBuilder();
+								if (HasEndTxnOnSubscription())
+								{
+									SubBuilder.MergeFrom(GetEndTxnOnSubscription());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxnOnSubscription(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+						case 490:
+							{
+								CommandEndTxnOnSubscriptionResponse.Builder SubBuilder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
+								if (HasEndTxnOnSubscriptionResponse())
+								{
+									SubBuilder.MergeFrom(GetEndTxnOnSubscriptionResponse());
+								}
+								input.ReadMessage(SubBuilder, extensionRegistry);
+								SetEndTxnOnSubscriptionResponse(SubBuilder.BuildPartial());
+								SubBuilder.Recycle();
+								break;
+							}
+					}
+				}
 			}
 
 			public bool Initialized
 			{
 				get
 				{
-					if (!HasType())
+					if (!HasType)
 					{
 
 						return false;
@@ -1434,19 +2408,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				_connect = Value;
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder SetConnect(CommandConnect.Builder builder)
 			{
 				_connect = builder.Build();
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder MergeConnect(CommandConnect value)
 			{
-				if (((_bitField & 0x00000002) == 0x00000002) && _connect != CommandConnect.DefaultInstance)
+				if (((_bitField0 & 0x00000002) == 0x00000002) && _connect != CommandConnect.DefaultInstance)
 				{
 					_connect = CommandConnect.NewBuilder(_connect).MergeFrom(value).BuildPartial();
 				}
@@ -1455,7 +2429,7 @@ namespace SharpPulsar.Protocol.Proto
 					_connect = value;
 				}
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			
@@ -1463,7 +2437,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandConnected _connected = CommandConnected.DefaultInstance;
 			public bool HasConnected()
 			{
-				return ((_bitField & 0x00000004) == 0x00000004);
+				return ((_bitField0 & 0x00000004) == 0x00000004);
 			}
 			public CommandConnected GetConnected()
 			{
@@ -1477,18 +2451,18 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				_connected = Value;
 
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder SetConnected(CommandConnected.Builder BuilderForValue)
 			{
 				_connected = BuilderForValue.Build();
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder MergeConnected(CommandConnected Value)
 			{
-				if (((_bitField & 0x00000004) == 0x00000004) && _connected != CommandConnected.DefaultInstance)
+				if (((_bitField0 & 0x00000004) == 0x00000004) && _connected != CommandConnected.DefaultInstance)
 				{
 					_connected = CommandConnected.NewBuilder(_connected).MergeFrom(Value).BuildPartial();
 				}
@@ -1497,21 +2471,21 @@ namespace SharpPulsar.Protocol.Proto
 					_connected = Value;
 				}
 
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder ClearConnected()
 			{
 				_connected = CommandConnected.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000004);
+				_bitField0 = (_bitField0 & ~0x00000004);
 				return this;
 			}
 
 			internal CommandSubscribe Subscribe_ = CommandSubscribe.DefaultInstance;
 			public bool HasSubscribe()
 			{
-				return ((_bitField & 0x00000008) == 0x00000008);
+				return ((_bitField0 & 0x00000008) == 0x00000008);
 			}
 			public CommandSubscribe GetSubscribe()
 			{
@@ -1525,19 +2499,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Subscribe_ = Value;
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder SetSubscribe(CommandSubscribe.Builder BuilderForValue)
 			{
 				Subscribe_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder MergeSubscribe(CommandSubscribe Value)
 			{
-				if (((_bitField & 0x00000008) == 0x00000008) && Subscribe_ != CommandSubscribe.DefaultInstance)
+				if (((_bitField0 & 0x00000008) == 0x00000008) && Subscribe_ != CommandSubscribe.DefaultInstance)
 				{
 					Subscribe_ = CommandSubscribe.NewBuilder(Subscribe_).MergeFrom(Value).BuildPartial();
 				}
@@ -1546,14 +2520,14 @@ namespace SharpPulsar.Protocol.Proto
 					Subscribe_ = Value;
 				}
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder ClearSubscribe()
 			{
 				Subscribe_ = CommandSubscribe.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000008);
+				_bitField0 = (_bitField0 & ~0x00000008);
 				return this;
 			}
 
@@ -1561,7 +2535,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandProducer Producer_ = CommandProducer.DefaultInstance;
 			public bool HasProducer()
 			{
-				return ((_bitField & 0x00000010) == 0x00000010);
+				return ((_bitField0 & 0x00000010) == 0x00000010);
 			}
 			public CommandProducer GetProducer()
 			{
@@ -1575,19 +2549,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Producer_ = Value;
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder SetProducer(CommandProducer.Builder BuilderForValue)
 			{
 				Producer_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder MergeProducer(CommandProducer Value)
 			{
-				if (((_bitField & 0x00000010) == 0x00000010) && Producer_ != CommandProducer.DefaultInstance)
+				if (((_bitField0 & 0x00000010) == 0x00000010) && Producer_ != CommandProducer.DefaultInstance)
 				{
 					Producer_ = CommandProducer.NewBuilder(Producer_).MergeFrom(Value).BuildPartial();
 				}
@@ -1596,14 +2570,14 @@ namespace SharpPulsar.Protocol.Proto
 					Producer_ = Value;
 				}
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder ClearProducer()
 			{
 				Producer_ = CommandProducer.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000010);
+				_bitField0 = (_bitField0 & ~0x00000010);
 				return this;
 			}
 
@@ -1611,7 +2585,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandSend Send_ = CommandSend.DefaultInstance;
 			public bool HasSend()
 			{
-				return ((_bitField & 0x00000020) == 0x00000020);
+				return ((_bitField0 & 0x00000020) == 0x00000020);
 			}
 			public CommandSend GetSend()
 			{
@@ -1625,19 +2599,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Send_ = Value;
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder SetSend(CommandSend.Builder BuilderForValue)
 			{
 				Send_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder MergeSend(CommandSend Value)
 			{
-				if (((_bitField & 0x00000020) == 0x00000020) && Send_ != CommandSend.DefaultInstance)
+				if (((_bitField0 & 0x00000020) == 0x00000020) && Send_ != CommandSend.DefaultInstance)
 				{
 					Send_ = CommandSend.NewBuilder(Send_).MergeFrom(Value).BuildPartial();
 				}
@@ -1646,14 +2620,14 @@ namespace SharpPulsar.Protocol.Proto
 					Send_ = Value;
 				}
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder ClearSend()
 			{
 				Send_ = CommandSend.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000020);
+				_bitField0 = (_bitField0 & ~0x00000020);
 				return this;
 			}
 
@@ -1661,7 +2635,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandSendReceipt SendReceipt_ = CommandSendReceipt.DefaultInstance;
 			public bool HasSendReceipt()
 			{
-				return ((_bitField & 0x00000040) == 0x00000040);
+				return ((_bitField0 & 0x00000040) == 0x00000040);
 			}
 			public CommandSendReceipt GetSendReceipt()
 			{
@@ -1675,19 +2649,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				SendReceipt_ = Value;
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder SetSendReceipt(CommandSendReceipt.Builder BuilderForValue)
 			{
 				SendReceipt_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder MergeSendReceipt(CommandSendReceipt Value)
 			{
-				if (((_bitField & 0x00000040) == 0x00000040) && SendReceipt_ != CommandSendReceipt.DefaultInstance)
+				if (((_bitField0 & 0x00000040) == 0x00000040) && SendReceipt_ != CommandSendReceipt.DefaultInstance)
 				{
 					SendReceipt_ = CommandSendReceipt.NewBuilder(SendReceipt_).MergeFrom(Value).BuildPartial();
 				}
@@ -1696,14 +2670,14 @@ namespace SharpPulsar.Protocol.Proto
 					SendReceipt_ = Value;
 				}
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder ClearSendReceipt()
 			{
 				SendReceipt_ = CommandSendReceipt.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000040);
+				_bitField0 = (_bitField0 & ~0x00000040);
 				return this;
 			}
 
@@ -1711,7 +2685,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandSendError SendError_ = CommandSendError.DefaultInstance;
 			public bool HasSendError()
 			{
-				return ((_bitField & 0x00000080) == 0x00000080);
+				return ((_bitField0 & 0x00000080) == 0x00000080);
 			}
 			public CommandSendError GetSendError()
 			{
@@ -1725,19 +2699,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				SendError_ = Value;
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder SetSendError(CommandSendError.Builder BuilderForValue)
 			{
 				SendError_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder MergeSendError(CommandSendError Value)
 			{
-				if (((_bitField & 0x00000080) == 0x00000080) && SendError_ != CommandSendError.DefaultInstance)
+				if (((_bitField0 & 0x00000080) == 0x00000080) && SendError_ != CommandSendError.DefaultInstance)
 				{
 					SendError_ = CommandSendError.NewBuilder(SendError_).MergeFrom(Value).BuildPartial();
 				}
@@ -1746,14 +2720,14 @@ namespace SharpPulsar.Protocol.Proto
 					SendError_ = Value;
 				}
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder ClearSendError()
 			{
 				SendError_ = CommandSendError.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000080);
+				_bitField0 = (_bitField0 & ~0x00000080);
 				return this;
 			}
 
@@ -1761,7 +2735,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandMessage Message_ = CommandMessage.DefaultInstance;
 			public bool HasMessage()
 			{
-				return ((_bitField & 0x00000100) == 0x00000100);
+				return ((_bitField0 & 0x00000100) == 0x00000100);
 			}
 			public CommandMessage GetMessage()
 			{
@@ -1775,19 +2749,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Message_ = Value;
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder SetMessage(CommandMessage.Builder BuilderForValue)
 			{
 				Message_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder MergeMessage(CommandMessage Value)
 			{
-				if (((_bitField & 0x00000100) == 0x00000100) && Message_ != CommandMessage.DefaultInstance)
+				if (((_bitField0 & 0x00000100) == 0x00000100) && Message_ != CommandMessage.DefaultInstance)
 				{
 					Message_ = CommandMessage.NewBuilder(Message_).MergeFrom(Value).BuildPartial();
 				}
@@ -1796,14 +2770,14 @@ namespace SharpPulsar.Protocol.Proto
 					Message_ = Value;
 				}
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder ClearMessage()
 			{
 				Message_ = CommandMessage.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000100);
+				_bitField0 = (_bitField0 & ~0x00000100);
 				return this;
 			}
 
@@ -1811,7 +2785,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAck Ack_ = CommandAck.DefaultInstance;
 			public bool HasAck()
 			{
-				return ((_bitField & 0x00000200) == 0x00000200);
+				return ((_bitField0 & 0x00000200) == 0x00000200);
 			}
 			public CommandAck GetAck()
 			{
@@ -1825,19 +2799,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Ack_ = Value;
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder SetAck(CommandAck.Builder BuilderForValue)
 			{
 				Ack_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder MergeAck(CommandAck Value)
 			{
-				if (((_bitField & 0x00000200) == 0x00000200) && Ack_ != CommandAck.DefaultInstance)
+				if (((_bitField0 & 0x00000200) == 0x00000200) && Ack_ != CommandAck.DefaultInstance)
 				{
 					Ack_ = CommandAck.NewBuilder(Ack_).MergeFrom(Value).BuildPartial();
 				}
@@ -1846,14 +2820,14 @@ namespace SharpPulsar.Protocol.Proto
 					Ack_ = Value;
 				}
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder ClearAck()
 			{
 				Ack_ = CommandAck.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000200);
+				_bitField0 = (_bitField0 & ~0x00000200);
 				return this;
 			}
 
@@ -1861,7 +2835,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandFlow Flow_ = CommandFlow.DefaultInstance;
 			public bool HasFlow()
 			{
-				return ((_bitField & 0x00000400) == 0x00000400);
+				return ((_bitField0 & 0x00000400) == 0x00000400);
 			}
 			public CommandFlow GetFlow()
 			{
@@ -1875,19 +2849,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Flow_ = Value;
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder SetFlow(CommandFlow.Builder BuilderForValue)
 			{
 				Flow_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder MergeFlow(CommandFlow Value)
 			{
-				if (((_bitField & 0x00000400) == 0x00000400) && Flow_ != CommandFlow.DefaultInstance)
+				if (((_bitField0 & 0x00000400) == 0x00000400) && Flow_ != CommandFlow.DefaultInstance)
 				{
 					Flow_ = CommandFlow.NewBuilder(Flow_).MergeFrom(Value).BuildPartial();
 				}
@@ -1896,14 +2870,14 @@ namespace SharpPulsar.Protocol.Proto
 					Flow_ = Value;
 				}
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder ClearFlow()
 			{
 				Flow_ = CommandFlow.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000400);
+				_bitField0 = (_bitField0 & ~0x00000400);
 				return this;
 			}
 
@@ -1911,7 +2885,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandUnsubscribe Unsubscribe_ = CommandUnsubscribe.DefaultInstance;
 			public bool HasUnsubscribe()
 			{
-				return ((_bitField & 0x00000800) == 0x00000800);
+				return ((_bitField0 & 0x00000800) == 0x00000800);
 			}
 			public CommandUnsubscribe GetUnsubscribe()
 			{
@@ -1925,19 +2899,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Unsubscribe_ = Value;
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder SetUnsubscribe(CommandUnsubscribe.Builder BuilderForValue)
 			{
 				Unsubscribe_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder MergeUnsubscribe(CommandUnsubscribe Value)
 			{
-				if (((_bitField & 0x00000800) == 0x00000800) && Unsubscribe_ != CommandUnsubscribe.DefaultInstance)
+				if (((_bitField0 & 0x00000800) == 0x00000800) && Unsubscribe_ != CommandUnsubscribe.DefaultInstance)
 				{
 					Unsubscribe_ = CommandUnsubscribe.NewBuilder(Unsubscribe_).MergeFrom(Value).BuildPartial();
 				}
@@ -1946,14 +2920,14 @@ namespace SharpPulsar.Protocol.Proto
 					Unsubscribe_ = Value;
 				}
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder ClearUnsubscribe()
 			{
 				Unsubscribe_ = CommandUnsubscribe.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000800);
+				_bitField0 = (_bitField0 & ~0x00000800);
 				return this;
 			}
 
@@ -1961,7 +2935,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandSuccess Success_ = CommandSuccess.DefaultInstance;
 			public bool HasSuccess()
 			{
-				return ((_bitField & 0x00001000) == 0x00001000);
+				return ((_bitField0 & 0x00001000) == 0x00001000);
 			}
 			public CommandSuccess GetSuccess()
 			{
@@ -1975,19 +2949,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Success_ = Value;
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder SetSuccess(CommandSuccess.Builder BuilderForValue)
 			{
 				Success_ = BuilderForValue.Build();
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder MergeSuccess(CommandSuccess Value)
 			{
-				if (((_bitField & 0x00001000) == 0x00001000) && Success_ != CommandSuccess.DefaultInstance)
+				if (((_bitField0 & 0x00001000) == 0x00001000) && Success_ != CommandSuccess.DefaultInstance)
 				{
 					Success_ = CommandSuccess.NewBuilder(Success_).MergeFrom(Value).BuildPartial();
 				}
@@ -1996,14 +2970,14 @@ namespace SharpPulsar.Protocol.Proto
 					Success_ = Value;
 				}
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder ClearSuccess()
 			{
 				Success_ = CommandSuccess.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00001000);
+				_bitField0 = (_bitField0 & ~0x00001000);
 				return this;
 			}
 
@@ -2011,7 +2985,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandError Error_ = CommandError.DefaultInstance;
 			public bool HasError()
 			{
-				return ((_bitField & 0x00002000) == 0x00002000);
+				return ((_bitField0 & 0x00002000) == 0x00002000);
 			}
 			public CommandError GetError()
 			{
@@ -2025,19 +2999,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Error_ = Value;
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder SetError(CommandError.Builder BuilderForValue)
 			{
 				Error_ = BuilderForValue.Build();
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder MergeError(CommandError Value)
 			{
-				if (((_bitField & 0x00002000) == 0x00002000) && Error_ != CommandError.DefaultInstance)
+				if (((_bitField0 & 0x00002000) == 0x00002000) && Error_ != CommandError.DefaultInstance)
 				{
 					Error_ = CommandError.NewBuilder(Error_).MergeFrom(Value).BuildPartial();
 				}
@@ -2046,14 +3020,14 @@ namespace SharpPulsar.Protocol.Proto
 					Error_ = Value;
 				}
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder ClearError()
 			{
 				Error_ = CommandError.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00002000);
+				_bitField0 = (_bitField0 & ~0x00002000);
 				return this;
 			}
 
@@ -2061,7 +3035,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandCloseProducer CloseProducer_ = CommandCloseProducer.DefaultInstance;
 			public bool HasCloseProducer()
 			{
-				return ((_bitField & 0x00004000) == 0x00004000);
+				return ((_bitField0 & 0x00004000) == 0x00004000);
 			}
 			public CommandCloseProducer GetCloseProducer()
 			{
@@ -2075,19 +3049,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				CloseProducer_ = Value;
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder SetCloseProducer(CommandCloseProducer.Builder BuilderForValue)
 			{
 				CloseProducer_ = BuilderForValue.Build();
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder MergeCloseProducer(CommandCloseProducer Value)
 			{
-				if (((_bitField & 0x00004000) == 0x00004000) && CloseProducer_ != CommandCloseProducer.DefaultInstance)
+				if (((_bitField0 & 0x00004000) == 0x00004000) && CloseProducer_ != CommandCloseProducer.DefaultInstance)
 				{
 					CloseProducer_ = CommandCloseProducer.NewBuilder(CloseProducer_).MergeFrom(Value).BuildPartial();
 				}
@@ -2096,14 +3070,14 @@ namespace SharpPulsar.Protocol.Proto
 					CloseProducer_ = Value;
 				}
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder ClearCloseProducer()
 			{
 				CloseProducer_ = CommandCloseProducer.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00004000);
+				_bitField0 = (_bitField0 & ~0x00004000);
 				return this;
 			}
 
@@ -2111,7 +3085,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandCloseConsumer CloseConsumer_ = CommandCloseConsumer.DefaultInstance;
 			public bool HasCloseConsumer()
 			{
-				return ((_bitField & 0x00008000) == 0x00008000);
+				return ((_bitField0 & 0x00008000) == 0x00008000);
 			}
 			public CommandCloseConsumer GetCloseConsumer()
 			{
@@ -2125,19 +3099,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				CloseConsumer_ = Value;
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder SetCloseConsumer(CommandCloseConsumer.Builder BuilderForValue)
 			{
 				CloseConsumer_ = BuilderForValue.Build();
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder MergeCloseConsumer(CommandCloseConsumer Value)
 			{
-				if (((_bitField & 0x00008000) == 0x00008000) && CloseConsumer_ != CommandCloseConsumer.DefaultInstance)
+				if (((_bitField0 & 0x00008000) == 0x00008000) && CloseConsumer_ != CommandCloseConsumer.DefaultInstance)
 				{
 					CloseConsumer_ = CommandCloseConsumer.NewBuilder(CloseConsumer_).MergeFrom(Value).BuildPartial();
 				}
@@ -2146,14 +3120,14 @@ namespace SharpPulsar.Protocol.Proto
 					CloseConsumer_ = Value;
 				}
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder ClearCloseConsumer()
 			{
 				CloseConsumer_ = CommandCloseConsumer.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00008000);
+				_bitField0 = (_bitField0 & ~0x00008000);
 				return this;
 			}
 
@@ -2161,7 +3135,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandProducerSuccess ProducerSuccess_ = CommandProducerSuccess.DefaultInstance;
 			public bool HasProducerSuccess()
 			{
-				return ((_bitField & 0x00010000) == 0x00010000);
+				return ((_bitField0 & 0x00010000) == 0x00010000);
 			}
 			public CommandProducerSuccess GetProducerSuccess()
 			{
@@ -2175,19 +3149,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				ProducerSuccess_ = Value;
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder SetProducerSuccess(CommandProducerSuccess.Builder BuilderForValue)
 			{
 				ProducerSuccess_ = BuilderForValue.Build();
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder MergeProducerSuccess(CommandProducerSuccess Value)
 			{
-				if (((_bitField & 0x00010000) == 0x00010000) && ProducerSuccess_ != CommandProducerSuccess.DefaultInstance)
+				if (((_bitField0 & 0x00010000) == 0x00010000) && ProducerSuccess_ != CommandProducerSuccess.DefaultInstance)
 				{
 					ProducerSuccess_ = CommandProducerSuccess.NewBuilder(ProducerSuccess_).MergeFrom(Value).BuildPartial();
 				}
@@ -2196,14 +3170,14 @@ namespace SharpPulsar.Protocol.Proto
 					ProducerSuccess_ = Value;
 				}
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder ClearProducerSuccess()
 			{
 				ProducerSuccess_ = CommandProducerSuccess.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00010000);
+				_bitField0 = (_bitField0 & ~0x00010000);
 				return this;
 			}
 
@@ -2211,7 +3185,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandPing Ping_ = CommandPing.DefaultInstance;
 			public bool HasPing()
 			{
-				return ((_bitField & 0x00020000) == 0x00020000);
+				return ((_bitField0 & 0x00020000) == 0x00020000);
 			}
 			public CommandPing GetPing()
 			{
@@ -2225,19 +3199,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Ping_ = Value;
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder SetPing(CommandPing.Builder BuilderForValue)
 			{
 				Ping_ = BuilderForValue.Build();
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder MergePing(CommandPing Value)
 			{
-				if (((_bitField & 0x00020000) == 0x00020000) && Ping_ != CommandPing.DefaultInstance)
+				if (((_bitField0 & 0x00020000) == 0x00020000) && Ping_ != CommandPing.DefaultInstance)
 				{
 					Ping_ = CommandPing.NewBuilder(Ping_).MergeFrom(Value).BuildPartial();
 				}
@@ -2246,14 +3220,14 @@ namespace SharpPulsar.Protocol.Proto
 					Ping_ = Value;
 				}
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder ClearPing()
 			{
 				Ping_ = CommandPing.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00020000);
+				_bitField0 = (_bitField0 & ~0x00020000);
 				return this;
 			}
 
@@ -2261,7 +3235,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandPong Pong_ = CommandPong.DefaultInstance;
 			public bool HasPong()
 			{
-				return ((_bitField & 0x00040000) == 0x00040000);
+				return ((_bitField0 & 0x00040000) == 0x00040000);
 			}
 			public CommandPong GetPong()
 			{
@@ -2275,19 +3249,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Pong_ = Value;
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder SetPong(CommandPong.Builder BuilderForValue)
 			{
 				Pong_ = BuilderForValue.Build();
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder MergePong(CommandPong Value)
 			{
-				if (((_bitField & 0x00040000) == 0x00040000) && Pong_ != CommandPong.DefaultInstance)
+				if (((_bitField0 & 0x00040000) == 0x00040000) && Pong_ != CommandPong.DefaultInstance)
 				{
 					Pong_ = CommandPong.NewBuilder(Pong_).MergeFrom(Value).BuildPartial();
 				}
@@ -2296,14 +3270,14 @@ namespace SharpPulsar.Protocol.Proto
 					Pong_ = Value;
 				}
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder ClearPong()
 			{
 				Pong_ = CommandPong.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00040000);
+				_bitField0 = (_bitField0 & ~0x00040000);
 				return this;
 			}
 
@@ -2311,7 +3285,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandRedeliverUnacknowledgedMessages RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
 			public bool HasRedeliverUnacknowledgedMessages()
 			{
-				return ((_bitField & 0x00080000) == 0x00080000);
+				return ((_bitField0 & 0x00080000) == 0x00080000);
 			}
 			public CommandRedeliverUnacknowledgedMessages GetRedeliverUnacknowledgedMessages()
 			{
@@ -2325,19 +3299,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				RedeliverUnacknowledgedMessages_ = Value;
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages.Builder BuilderForValue)
 			{
 				RedeliverUnacknowledgedMessages_ = BuilderForValue.Build();
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder MergeRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages Value)
 			{
-				if (((_bitField & 0x00080000) == 0x00080000) && RedeliverUnacknowledgedMessages_ != CommandRedeliverUnacknowledgedMessages.DefaultInstance)
+				if (((_bitField0 & 0x00080000) == 0x00080000) && RedeliverUnacknowledgedMessages_ != CommandRedeliverUnacknowledgedMessages.DefaultInstance)
 				{
 					RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.NewBuilder(RedeliverUnacknowledgedMessages_).MergeFrom(Value).BuildPartial();
 				}
@@ -2346,14 +3320,14 @@ namespace SharpPulsar.Protocol.Proto
 					RedeliverUnacknowledgedMessages_ = Value;
 				}
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder ClearRedeliverUnacknowledgedMessages()
 			{
 				RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00080000);
+				_bitField0 = (_bitField0 & ~0x00080000);
 				return this;
 			}
 
@@ -2361,7 +3335,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandPartitionedTopicMetadata PartitionMetadata_ = CommandPartitionedTopicMetadata.DefaultInstance;
 			public bool HasPartitionMetadata()
 			{
-				return ((_bitField & 0x00100000) == 0x00100000);
+				return ((_bitField0 & 0x00100000) == 0x00100000);
 			}
 			public CommandPartitionedTopicMetadata GetPartitionMetadata()
 			{
@@ -2375,19 +3349,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				PartitionMetadata_ = Value;
 
-				_bitField |= 0x00100000;
+				_bitField0 |= 0x00100000;
 				return this;
 			}
 			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata.Builder BuilderForValue)
 			{
 				PartitionMetadata_ = BuilderForValue.Build();
 
-				_bitField |= 0x00100000;
+				_bitField0 |= 0x00100000;
 				return this;
 			}
 			public Builder MergePartitionMetadata(CommandPartitionedTopicMetadata Value)
 			{
-				if (((_bitField & 0x00100000) == 0x00100000) && PartitionMetadata_ != CommandPartitionedTopicMetadata.DefaultInstance)
+				if (((_bitField0 & 0x00100000) == 0x00100000) && PartitionMetadata_ != CommandPartitionedTopicMetadata.DefaultInstance)
 				{
 					PartitionMetadata_ = CommandPartitionedTopicMetadata.NewBuilder(PartitionMetadata_).MergeFrom(Value).BuildPartial();
 				}
@@ -2396,14 +3370,14 @@ namespace SharpPulsar.Protocol.Proto
 					PartitionMetadata_ = Value;
 				}
 
-				_bitField |= 0x00100000;
+				_bitField0 |= 0x00100000;
 				return this;
 			}
 			public Builder ClearPartitionMetadata()
 			{
 				PartitionMetadata_ = CommandPartitionedTopicMetadata.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00100000);
+				_bitField0 = (_bitField0 & ~0x00100000);
 				return this;
 			}
 
@@ -2411,7 +3385,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandPartitionedTopicMetadataResponse PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.DefaultInstance;
 			public bool HasPartitionMetadataResponse()
 			{
-				return ((_bitField & 0x00200000) == 0x00200000);
+				return ((_bitField0 & 0x00200000) == 0x00200000);
 			}
 			public CommandPartitionedTopicMetadataResponse GetPartitionMetadataResponse()
 			{
@@ -2425,19 +3399,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				PartitionMetadataResponse_ = Value;
 
-				_bitField |= 0x00200000;
+				_bitField0 |= 0x00200000;
 				return this;
 			}
 			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse.Builder BuilderForValue)
 			{
 				PartitionMetadataResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00200000;
+				_bitField0 |= 0x00200000;
 				return this;
 			}
 			public Builder MergePartitionMetadataResponse(CommandPartitionedTopicMetadataResponse Value)
 			{
-				if (((_bitField & 0x00200000) == 0x00200000) && PartitionMetadataResponse_ != CommandPartitionedTopicMetadataResponse.DefaultInstance)
+				if (((_bitField0 & 0x00200000) == 0x00200000) && PartitionMetadataResponse_ != CommandPartitionedTopicMetadataResponse.DefaultInstance)
 				{
 					PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.NewBuilder(PartitionMetadataResponse_).MergeFrom(Value).BuildPartial();
 				}
@@ -2446,14 +3420,14 @@ namespace SharpPulsar.Protocol.Proto
 					PartitionMetadataResponse_ = Value;
 				}
 
-				_bitField |= 0x00200000;
+				_bitField0 |= 0x00200000;
 				return this;
 			}
 			public Builder ClearPartitionMetadataResponse()
 			{
 				PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00200000);
+				_bitField0 = (_bitField0 & ~0x00200000);
 				return this;
 			}
 
@@ -2461,7 +3435,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandLookupTopic LookupTopic_ = CommandLookupTopic.DefaultInstance;
 			public bool HasLookupTopic()
 			{
-				return ((_bitField & 0x00400000) == 0x00400000);
+				return ((_bitField0 & 0x00400000) == 0x00400000);
 			}
 			public CommandLookupTopic GetLookupTopic()
 			{
@@ -2475,19 +3449,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				LookupTopic_ = Value;
 
-				_bitField |= 0x00400000;
+				_bitField0 |= 0x00400000;
 				return this;
 			}
 			public Builder SetLookupTopic(CommandLookupTopic.Builder BuilderForValue)
 			{
 				LookupTopic_ = BuilderForValue.Build();
 
-				_bitField |= 0x00400000;
+				_bitField0 |= 0x00400000;
 				return this;
 			}
 			public Builder MergeLookupTopic(CommandLookupTopic Value)
 			{
-				if (((_bitField & 0x00400000) == 0x00400000) && LookupTopic_ != CommandLookupTopic.DefaultInstance)
+				if (((_bitField0 & 0x00400000) == 0x00400000) && LookupTopic_ != CommandLookupTopic.DefaultInstance)
 				{
 					LookupTopic_ = CommandLookupTopic.NewBuilder(LookupTopic_).MergeFrom(Value).BuildPartial();
 				}
@@ -2496,14 +3470,14 @@ namespace SharpPulsar.Protocol.Proto
 					LookupTopic_ = Value;
 				}
 
-				_bitField |= 0x00400000;
+				_bitField0 |= 0x00400000;
 				return this;
 			}
 			public Builder ClearLookupTopic()
 			{
 				LookupTopic_ = CommandLookupTopic.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00400000);
+				_bitField0 = (_bitField0 & ~0x00400000);
 				return this;
 			}
 
@@ -2511,7 +3485,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandLookupTopicResponse LookupTopicResponse_ = CommandLookupTopicResponse.DefaultInstance;
 			public bool HasLookupTopicResponse()
 			{
-				return ((_bitField & 0x00800000) == 0x00800000);
+				return ((_bitField0 & 0x00800000) == 0x00800000);
 			}
 			public CommandLookupTopicResponse GetLookupTopicResponse()
 			{
@@ -2525,19 +3499,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				LookupTopicResponse_ = Value;
 
-				_bitField |= 0x00800000;
+				_bitField0 |= 0x00800000;
 				return this;
 			}
 			public Builder SetLookupTopicResponse(CommandLookupTopicResponse.Builder BuilderForValue)
 			{
 				LookupTopicResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00800000;
+				_bitField0 |= 0x00800000;
 				return this;
 			}
 			public Builder MergeLookupTopicResponse(CommandLookupTopicResponse Value)
 			{
-				if (((_bitField & 0x00800000) == 0x00800000) && LookupTopicResponse_ != CommandLookupTopicResponse.DefaultInstance)
+				if (((_bitField0 & 0x00800000) == 0x00800000) && LookupTopicResponse_ != CommandLookupTopicResponse.DefaultInstance)
 				{
 					LookupTopicResponse_ = CommandLookupTopicResponse.NewBuilder(LookupTopicResponse_).MergeFrom(Value).BuildPartial();
 				}
@@ -2546,14 +3520,14 @@ namespace SharpPulsar.Protocol.Proto
 					LookupTopicResponse_ = Value;
 				}
 
-				_bitField |= 0x00800000;
+				_bitField0 |= 0x00800000;
 				return this;
 			}
 			public Builder ClearLookupTopicResponse()
 			{
 				LookupTopicResponse_ = CommandLookupTopicResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00800000);
+				_bitField0 = (_bitField0 & ~0x00800000);
 				return this;
 			}
 
@@ -2561,7 +3535,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandConsumerStats ConsumerStats_ = CommandConsumerStats.DefaultInstance;
 			public bool HasConsumerStats()
 			{
-				return ((_bitField & 0x01000000) == 0x01000000);
+				return ((_bitField0 & 0x01000000) == 0x01000000);
 			}
 			public CommandConsumerStats GetConsumerStats()
 			{
@@ -2575,19 +3549,19 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				ConsumerStats_ = Value;
 
-				_bitField |= 0x01000000;
+				_bitField0 |= 0x01000000;
 				return this;
 			}
 			public Builder SetConsumerStats(CommandConsumerStats.Builder BuilderForValue)
 			{
 				ConsumerStats_ = BuilderForValue.Build();
 
-				_bitField |= 0x01000000;
+				_bitField0 |= 0x01000000;
 				return this;
 			}
 			public Builder MergeConsumerStats(CommandConsumerStats Value)
 			{
-				if (((_bitField & 0x01000000) == 0x01000000) && ConsumerStats_ != CommandConsumerStats.DefaultInstance)
+				if (((_bitField0 & 0x01000000) == 0x01000000) && ConsumerStats_ != CommandConsumerStats.DefaultInstance)
 				{
 					ConsumerStats_ = CommandConsumerStats.NewBuilder(ConsumerStats_).MergeFrom(Value).BuildPartial();
 				}
@@ -2596,14 +3570,14 @@ namespace SharpPulsar.Protocol.Proto
 					ConsumerStats_ = Value;
 				}
 
-				_bitField |= 0x01000000;
+				_bitField0 |= 0x01000000;
 				return this;
 			}
 			public Builder ClearConsumerStats()
 			{
 				ConsumerStats_ = CommandConsumerStats.DefaultInstance;
 
-				_bitField = (_bitField & ~0x01000000);
+				_bitField0 = (_bitField0 & ~0x01000000);
 				return this;
 			}
 
@@ -2611,7 +3585,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandConsumerStatsResponse ConsumerStatsResponse_ = CommandConsumerStatsResponse.DefaultInstance;
 			public bool HasConsumerStatsResponse()
 			{
-				return ((_bitField & 0x02000000) == 0x02000000);
+				return ((_bitField0 & 0x02000000) == 0x02000000);
 			}
 			public CommandConsumerStatsResponse GetConsumerStatsResponse()
 			{
@@ -2625,35 +3599,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				ConsumerStatsResponse_ = Value;
 
-				_bitField |= 0x02000000;
+				_bitField0 |= 0x02000000;
 				return this;
 			}
 			public Builder SetConsumerStatsResponse(CommandConsumerStatsResponse.Builder BuilderForValue)
 			{
-				ConsumerStatsResponse_ = BuilderForValue.build();
+				ConsumerStatsResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x02000000;
+				_bitField0 |= 0x02000000;
 				return this;
 			}
 			public Builder MergeConsumerStatsResponse(CommandConsumerStatsResponse Value)
 			{
-				if (((_bitField & 0x02000000) == 0x02000000) && ConsumerStatsResponse_ != CommandConsumerStatsResponse.DefaultInstance)
+				if (((_bitField0 & 0x02000000) == 0x02000000) && ConsumerStatsResponse_ != CommandConsumerStatsResponse.DefaultInstance)
 				{
-					ConsumerStatsResponse_ = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse).mergeFrom(Value).buildPartial();
+					ConsumerStatsResponse_ = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					ConsumerStatsResponse_ = Value;
 				}
 
-				_bitField |= 0x02000000;
+				_bitField0 |= 0x02000000;
 				return this;
 			}
 			public Builder ClearConsumerStatsResponse()
 			{
 				ConsumerStatsResponse_ = CommandConsumerStatsResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x02000000);
+				_bitField0 = (_bitField0 & ~0x02000000);
 				return this;
 			}
 
@@ -2661,7 +3635,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandReachedEndOfTopic ReachedEndOfTopic_ = CommandReachedEndOfTopic.DefaultInstance;
 			public bool HasReachedEndOfTopic()
 			{
-				return ((_bitField & 0x04000000) == 0x04000000);
+				return ((_bitField0 & 0x04000000) == 0x04000000);
 			}
 			public CommandReachedEndOfTopic GetReachedEndOfTopic()
 			{
@@ -2675,35 +3649,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				ReachedEndOfTopic_ = Value;
 
-				_bitField |= 0x04000000;
+				_bitField0 |= 0x04000000;
 				return this;
 			}
 			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic.Builder BuilderForValue)
 			{
-				ReachedEndOfTopic_ = BuilderForValue.build();
+				ReachedEndOfTopic_ = BuilderForValue.Build();
 
-				_bitField |= 0x04000000;
+				_bitField0 |= 0x04000000;
 				return this;
 			}
 			public Builder MergeReachedEndOfTopic(CommandReachedEndOfTopic Value)
 			{
-				if (((_bitField & 0x04000000) == 0x04000000) && ReachedEndOfTopic_ != CommandReachedEndOfTopic.DefaultInstance)
+				if (((_bitField0 & 0x04000000) == 0x04000000) && ReachedEndOfTopic_ != CommandReachedEndOfTopic.DefaultInstance)
 				{
-					ReachedEndOfTopic_ = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic).mergeFrom(Value).buildPartial();
+					ReachedEndOfTopic_ = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					ReachedEndOfTopic_ = Value;
 				}
 
-				_bitField |= 0x04000000;
+				_bitField0 |= 0x04000000;
 				return this;
 			}
 			public Builder ClearReachedEndOfTopic()
 			{
 				ReachedEndOfTopic_ = CommandReachedEndOfTopic.DefaultInstance;
 
-				_bitField = (_bitField & ~0x04000000);
+				_bitField0 = (_bitField0 & ~0x04000000);
 				return this;
 			}
 
@@ -2711,7 +3685,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandSeek Seek_ = CommandSeek.DefaultInstance;
 			public bool HasSeek()
 			{
-				return ((_bitField & 0x08000000) == 0x08000000);
+				return ((_bitField0 & 0x08000000) == 0x08000000);
 			}
 			public CommandSeek GetSeek()
 			{
@@ -2725,35 +3699,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				Seek_ = Value;
 
-				_bitField |= 0x08000000;
+				_bitField0 |= 0x08000000;
 				return this;
 			}
 			public Builder SetSeek(CommandSeek.Builder BuilderForValue)
 			{
-				Seek_ = BuilderForValue.build();
+				Seek_ = BuilderForValue.Build();
 
-				_bitField |= 0x08000000;
+				_bitField0 |= 0x08000000;
 				return this;
 			}
 			public Builder MergeSeek(CommandSeek Value)
 			{
-				if (((_bitField & 0x08000000) == 0x08000000) && Seek_ != CommandSeek.DefaultInstance)
+				if (((_bitField0 & 0x08000000) == 0x08000000) && Seek_ != CommandSeek.DefaultInstance)
 				{
-					Seek_ = CommandSeek.NewBuilder(Seek).mergeFrom(Value).buildPartial();
+					Seek_ = CommandSeek.NewBuilder(Seek).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					Seek_ = Value;
 				}
 
-				_bitField |= 0x08000000;
+				_bitField0 |= 0x08000000;
 				return this;
 			}
 			public Builder ClearSeek()
 			{
 				Seek_ = CommandSeek.DefaultInstance;
 
-				_bitField = (_bitField & ~0x08000000);
+				_bitField0 = (_bitField0 & ~0x08000000);
 				return this;
 			}
 
@@ -2761,7 +3735,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetLastMessageId GetLastMessageId_ = CommandGetLastMessageId.DefaultInstance;
 			public bool HasGetLastMessageId()
 			{
-				return ((_bitField & 0x10000000) == 0x10000000);
+				return ((_bitField0 & 0x10000000) == 0x10000000);
 			}
 			public CommandGetLastMessageId GetGetLastMessageId()
 			{
@@ -2775,35 +3749,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetLastMessageId_ = Value;
 
-				_bitField |= 0x10000000;
+				_bitField0 |= 0x10000000;
 				return this;
 			}
 			public Builder SetGetLastMessageId(CommandGetLastMessageId.Builder BuilderForValue)
 			{
-				GetLastMessageId_ = BuilderForValue.build();
+				GetLastMessageId_ = BuilderForValue.Build();
 
-				_bitField |= 0x10000000;
+				_bitField0 |= 0x10000000;
 				return this;
 			}
 			public Builder MergeGetLastMessageId(CommandGetLastMessageId Value)
 			{
-				if (((_bitField & 0x10000000) == 0x10000000) && GetLastMessageId_ != CommandGetLastMessageId.DefaultInstance)
+				if (((_bitField0 & 0x10000000) == 0x10000000) && GetLastMessageId_ != CommandGetLastMessageId.DefaultInstance)
 				{
-					GetLastMessageId_ = CommandGetLastMessageId.NewBuilder(GetLastMessageId).mergeFrom(Value).buildPartial();
+					GetLastMessageId_ = CommandGetLastMessageId.NewBuilder(GetLastMessageId).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetLastMessageId_ = Value;
 				}
 
-				_bitField |= 0x10000000;
+				_bitField0 |= 0x10000000;
 				return this;
 			}
 			public Builder ClearGetLastMessageId()
 			{
 				GetLastMessageId_ = CommandGetLastMessageId.DefaultInstance;
 
-				_bitField = (_bitField & ~0x10000000);
+				_bitField0 = (_bitField0 & ~0x10000000);
 				return this;
 			}
 
@@ -2811,7 +3785,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetLastMessageIdResponse GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.DefaultInstance;
 			public bool HasGetLastMessageIdResponse()
 			{
-				return ((_bitField & 0x20000000) == 0x20000000);
+				return ((_bitField0 & 0x20000000) == 0x20000000);
 			}
 			public CommandGetLastMessageIdResponse GetGetLastMessageIdResponse()
 			{
@@ -2825,35 +3799,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetLastMessageIdResponse_ = Value;
 
-				_bitField |= 0x20000000;
+				_bitField0 |= 0x20000000;
 				return this;
 			}
 			public Builder SetGetLastMessageIdResponse(CommandGetLastMessageIdResponse.Builder BuilderForValue)
 			{
-				GetLastMessageIdResponse_ = BuilderForValue.build();
+				GetLastMessageIdResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x20000000;
+				_bitField0 |= 0x20000000;
 				return this;
 			}
 			public Builder MergeGetLastMessageIdResponse(CommandGetLastMessageIdResponse Value)
 			{
-				if (((_bitField & 0x20000000) == 0x20000000) && GetLastMessageIdResponse_ != CommandGetLastMessageIdResponse.DefaultInstance)
+				if (((_bitField0 & 0x20000000) == 0x20000000) && GetLastMessageIdResponse_ != CommandGetLastMessageIdResponse.DefaultInstance)
 				{
-					GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse).mergeFrom(Value).buildPartial();
+					GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetLastMessageIdResponse_ = Value;
 				}
 
-				_bitField |= 0x20000000;
+				_bitField0 |= 0x20000000;
 				return this;
 			}
 			public Builder ClearGetLastMessageIdResponse()
 			{
 				GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x20000000);
+				_bitField0 = (_bitField0 & ~0x20000000);
 				return this;
 			}
 
@@ -2861,7 +3835,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandActiveConsumerChange ActiveConsumerChange_ = CommandActiveConsumerChange.DefaultInstance;
 			public bool HasActiveConsumerChange()
 			{
-				return ((_bitField & 0x40000000) == 0x40000000);
+				return ((_bitField0 & 0x40000000) == 0x40000000);
 			}
 			public CommandActiveConsumerChange GetActiveConsumerChange()
 			{
@@ -2875,35 +3849,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				ActiveConsumerChange_ = Value;
 
-				_bitField |= 0x40000000;
+				_bitField0 |= 0x40000000;
 				return this;
 			}
 			public Builder SetActiveConsumerChange(CommandActiveConsumerChange.Builder BuilderForValue)
 			{
-				ActiveConsumerChange_ = BuilderForValue.build();
+				ActiveConsumerChange_ = BuilderForValue.Build();
 
-				_bitField |= 0x40000000;
+				_bitField0 |= 0x40000000;
 				return this;
 			}
 			public Builder MergeActiveConsumerChange(CommandActiveConsumerChange Value)
 			{
-				if (((_bitField & 0x40000000) == 0x40000000) && ActiveConsumerChange_ != CommandActiveConsumerChange.DefaultInstance)
+				if (((_bitField0 & 0x40000000) == 0x40000000) && ActiveConsumerChange_ != CommandActiveConsumerChange.DefaultInstance)
 				{
-					ActiveConsumerChange_ = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange).mergeFrom(Value).buildPartial();
+					ActiveConsumerChange_ = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					ActiveConsumerChange_ = Value;
 				}
 
-				_bitField |= 0x40000000;
+				_bitField0 |= 0x40000000;
 				return this;
 			}
 			public Builder ClearActiveConsumerChange()
 			{
 				ActiveConsumerChange_ = CommandActiveConsumerChange.DefaultInstance;
 
-				_bitField = (_bitField & ~0x40000000);
+				_bitField0 = (_bitField0 & ~0x40000000);
 				return this;
 			}
 
@@ -2911,7 +3885,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetTopicsOfNamespace GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.DefaultInstance;
 			public bool HasGetTopicsOfNamespace()
 			{
-				return ((_bitField & 0x80000000) == 0x80000000);
+				return ((_bitField0 & 0x80000000) == 0x80000000);
 			}
 			public CommandGetTopicsOfNamespace GetGetTopicsOfNamespace()
 			{
@@ -2925,35 +3899,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetTopicsOfNamespace_ = Value;
 
-				_bitField |= unchecked((int)0x80000000);
+				_bitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
 			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace.Builder BuilderForValue)
 			{
-				GetTopicsOfNamespace_ = BuilderForValue.build();
+				GetTopicsOfNamespace_ = BuilderForValue.Build();
 
-				_bitField |= unchecked((int)0x80000000);
+				_bitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
 			public Builder MergeGetTopicsOfNamespace(CommandGetTopicsOfNamespace Value)
 			{
-				if (((_bitField & 0x80000000) == 0x80000000) && GetTopicsOfNamespace_ != CommandGetTopicsOfNamespace.DefaultInstance)
+				if (((_bitField0 & 0x80000000) == 0x80000000) && GetTopicsOfNamespace_ != CommandGetTopicsOfNamespace.DefaultInstance)
 				{
-					GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace).mergeFrom(Value).buildPartial();
+					GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetTopicsOfNamespace_ = Value;
 				}
 
-				_bitField |= unchecked((int)0x80000000);
+				_bitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
 			public Builder ClearGetTopicsOfNamespace()
 			{
 				GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.DefaultInstance;
 
-				_bitField = (_bitField & ~0x80000000);
+				_bitField0 = (_bitField0 & ~0x80000000);
 				return this;
 			}
 
@@ -2961,7 +3935,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
 			public bool HasGetTopicsOfNamespaceResponse()
 			{
-				return ((_bitField & 0x00000001) == 0x00000001);
+				return ((_bitField0 & 0x00000001) == 0x00000001);
 			}
 			public CommandGetTopicsOfNamespaceResponse GetGetTopicsOfNamespaceResponse()
 			{
@@ -2975,35 +3949,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetTopicsOfNamespaceResponse_ = Value;
 
-				_bitField |= 0x00000001;
+				_bitField0 |= 0x00000001;
 				return this;
 			}
 			public Builder SetGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse.Builder BuilderForValue)
 			{
-				GetTopicsOfNamespaceResponse_ = BuilderForValue.build();
+				GetTopicsOfNamespaceResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000001;
+				_bitField0 |= 0x00000001;
 				return this;
 			}
 			public Builder MergeGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse Value)
 			{
-				if (((_bitField & 0x00000001) == 0x00000001) && GetTopicsOfNamespaceResponse_ != CommandGetTopicsOfNamespaceResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000001) == 0x00000001) && GetTopicsOfNamespaceResponse_ != CommandGetTopicsOfNamespaceResponse.DefaultInstance)
 				{
-					GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse).mergeFrom(Value).buildPartial();
+					GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetTopicsOfNamespaceResponse_ = Value;
 				}
 
-				_bitField |= 0x00000001;
+				_bitField0 |= 0x00000001;
 				return this;
 			}
 			public Builder ClearGetTopicsOfNamespaceResponse()
 			{
 				GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000001);
+				_bitField0 = (_bitField0 & ~0x00000001);
 				return this;
 			}
 
@@ -3011,7 +3985,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetSchema GetSchema_ = CommandGetSchema.DefaultInstance;
 			public bool HasGetSchema()
 			{
-				return ((_bitField & 0x00000002) == 0x00000002);
+				return ((_bitField0 & 0x00000002) == 0x00000002);
 			}
 			public CommandGetSchema GetGetSchema()
 			{
@@ -3025,35 +3999,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetSchema_ = Value;
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder SetGetSchema(CommandGetSchema.Builder BuilderForValue)
 			{
-				GetSchema_ = BuilderForValue.build();
+				GetSchema_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder MergeGetSchema(CommandGetSchema Value)
 			{
-				if (((_bitField & 0x00000002) == 0x00000002) && GetSchema_ != CommandGetSchema.DefaultInstance)
+				if (((_bitField0 & 0x00000002) == 0x00000002) && GetSchema_ != CommandGetSchema.DefaultInstance)
 				{
-					GetSchema_ = CommandGetSchema.NewBuilder(GetSchema).mergeFrom(Value).buildPartial();
+					GetSchema_ = CommandGetSchema.NewBuilder(GetSchema).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetSchema_ = Value;
 				}
 
-				_bitField |= 0x00000002;
+				_bitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder ClearGetSchema()
 			{
 				GetSchema_ = CommandGetSchema.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000002);
+				_bitField0 = (_bitField0 & ~0x00000002);
 				return this;
 			}
 
@@ -3061,7 +4035,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetSchemaResponse GetSchemaResponse_ = CommandGetSchemaResponse.DefaultInstance;
 			public bool HasGetSchemaResponse()
 			{
-				return ((_bitField & 0x00000004) == 0x00000004);
+				return ((_bitField0 & 0x00000004) == 0x00000004);
 			}
 			public CommandGetSchemaResponse GetGetSchemaResponse()
 			{
@@ -3075,35 +4049,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetSchemaResponse_ = Value;
 
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder SetGetSchemaResponse(CommandGetSchemaResponse.Builder BuilderForValue)
 			{
-				GetSchemaResponse_ = BuilderForValue.build();
+				GetSchemaResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder MergeGetSchemaResponse(CommandGetSchemaResponse Value)
 			{
-				if (((_bitField & 0x00000004) == 0x00000004) && GetSchemaResponse_ != CommandGetSchemaResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000004) == 0x00000004) && GetSchemaResponse_ != CommandGetSchemaResponse.DefaultInstance)
 				{
-					GetSchemaResponse_ = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse).mergeFrom(Value).buildPartial();
+					GetSchemaResponse_ = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetSchemaResponse_ = Value;
 				}
 
-				_bitField |= 0x00000004;
+				_bitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder ClearGetSchemaResponse()
 			{
 				GetSchemaResponse_ = CommandGetSchemaResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000004);
+				_bitField0 = (_bitField0 & ~0x00000004);
 				return this;
 			}
 
@@ -3111,7 +4085,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAuthChallenge AuthChallenge_ = CommandAuthChallenge.DefaultInstance;
 			public bool HasAuthChallenge()
 			{
-				return ((_bitField & 0x00000008) == 0x00000008);
+				return ((_bitField0 & 0x00000008) == 0x00000008);
 			}
 			public CommandAuthChallenge GetAuthChallenge()
 			{
@@ -3125,35 +4099,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AuthChallenge_ = Value;
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder SetAuthChallenge(CommandAuthChallenge.Builder BuilderForValue)
 			{
-				AuthChallenge_ = BuilderForValue.build();
+				AuthChallenge_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder MergeAuthChallenge(CommandAuthChallenge Value)
 			{
-				if (((_bitField & 0x00000008) == 0x00000008) && AuthChallenge_ != CommandAuthChallenge.DefaultInstance)
+				if (((_bitField0 & 0x00000008) == 0x00000008) && AuthChallenge_ != CommandAuthChallenge.DefaultInstance)
 				{
-					AuthChallenge_ = CommandAuthChallenge.NewBuilder(AuthChallenge).mergeFrom(Value).buildPartial();
+					AuthChallenge_ = CommandAuthChallenge.NewBuilder(AuthChallenge).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AuthChallenge_ = Value;
 				}
 
-				_bitField |= 0x00000008;
+				_bitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder ClearAuthChallenge()
 			{
 				AuthChallenge_ = CommandAuthChallenge.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000008);
+				_bitField0 = (_bitField0 & ~0x00000008);
 				return this;
 			}
 
@@ -3161,7 +4135,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAuthResponse AuthResponse_ = CommandAuthResponse.DefaultInstance;
 			public bool HasAuthResponse()
 			{
-				return ((_bitField & 0x00000010) == 0x00000010);
+				return ((_bitField0 & 0x00000010) == 0x00000010);
 			}
 			public CommandAuthResponse GetAuthResponse()
 			{
@@ -3175,35 +4149,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AuthResponse_ = Value;
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder SetAuthResponse(CommandAuthResponse.Builder BuilderForValue)
 			{
-				AuthResponse_ = BuilderForValue.build();
+				AuthResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder MergeAuthResponse(CommandAuthResponse Value)
 			{
-				if (((_bitField & 0x00000010) == 0x00000010) && AuthResponse_ != CommandAuthResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000010) == 0x00000010) && AuthResponse_ != CommandAuthResponse.DefaultInstance)
 				{
-					AuthResponse_ = CommandAuthResponse.NewBuilder(AuthResponse).mergeFrom(Value).buildPartial();
+					AuthResponse_ = CommandAuthResponse.NewBuilder(AuthResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AuthResponse_ = Value;
 				}
 
-				_bitField |= 0x00000010;
+				_bitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder ClearAuthResponse()
 			{
 				AuthResponse_ = CommandAuthResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000010);
+				_bitField0 = (_bitField0 & ~0x00000010);
 				return this;
 			}
 
@@ -3211,7 +4185,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAckResponse AckResponse_ = CommandAckResponse.DefaultInstance;
 			public bool HasAckResponse()
 			{
-				return ((_bitField & 0x00000020) == 0x00000020);
+				return ((_bitField0 & 0x00000020) == 0x00000020);
 			}
 			public CommandAckResponse GetAckResponse()
 			{
@@ -3225,35 +4199,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AckResponse_ = Value;
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder SetAckResponse(CommandAckResponse.Builder BuilderForValue)
 			{
-				AckResponse_ = BuilderForValue.build();
+				AckResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder MergeAckResponse(CommandAckResponse Value)
 			{
-				if (((_bitField & 0x00000020) == 0x00000020) && AckResponse_ != CommandAckResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000020) == 0x00000020) && AckResponse_ != CommandAckResponse.DefaultInstance)
 				{
-					AckResponse_ = CommandAckResponse.NewBuilder(AckResponse).mergeFrom(Value).buildPartial();
+					AckResponse_ = CommandAckResponse.NewBuilder(AckResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AckResponse_ = Value;
 				}
 
-				_bitField |= 0x00000020;
+				_bitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder ClearAckResponse()
 			{
 				AckResponse_ = CommandAckResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000020);
+				_bitField0 = (_bitField0 & ~0x00000020);
 				return this;
 			}
 
@@ -3261,7 +4235,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetOrCreateSchema GetOrCreateSchema_ = CommandGetOrCreateSchema.DefaultInstance;
 			public bool HasGetOrCreateSchema()
 			{
-				return ((_bitField & 0x00000040) == 0x00000040);
+				return ((_bitField0 & 0x00000040) == 0x00000040);
 			}
 			public CommandGetOrCreateSchema GetGetOrCreateSchema()
 			{
@@ -3275,35 +4249,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetOrCreateSchema_ = Value;
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema.Builder BuilderForValue)
 			{
-				GetOrCreateSchema_ = BuilderForValue.build();
+				GetOrCreateSchema_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder MergeGetOrCreateSchema(CommandGetOrCreateSchema Value)
 			{
-				if (((_bitField & 0x00000040) == 0x00000040) && GetOrCreateSchema_ != CommandGetOrCreateSchema.DefaultInstance)
+				if (((_bitField0 & 0x00000040) == 0x00000040) && GetOrCreateSchema_ != CommandGetOrCreateSchema.DefaultInstance)
 				{
-					GetOrCreateSchema_ = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema).mergeFrom(Value).buildPartial();
+					GetOrCreateSchema_ = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetOrCreateSchema_ = Value;
 				}
 
-				_bitField |= 0x00000040;
+				_bitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder ClearGetOrCreateSchema()
 			{
 				GetOrCreateSchema_ = CommandGetOrCreateSchema.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000040);
+				_bitField0 = (_bitField0 & ~0x00000040);
 				return this;
 			}
 
@@ -3311,7 +4285,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.DefaultInstance;
 			public bool HasGetOrCreateSchemaResponse()
 			{
-				return ((_bitField & 0x00000080) == 0x00000080);
+				return ((_bitField0 & 0x00000080) == 0x00000080);
 			}
 			public CommandGetOrCreateSchemaResponse GetGetOrCreateSchemaResponse()
 			{
@@ -3325,35 +4299,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				GetOrCreateSchemaResponse_ = Value;
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder SetGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse.Builder BuilderForValue)
 			{
-				GetOrCreateSchemaResponse_ = BuilderForValue.build();
+				GetOrCreateSchemaResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder MergeGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse Value)
 			{
-				if (((_bitField & 0x00000080) == 0x00000080) && GetOrCreateSchemaResponse_ != CommandGetOrCreateSchemaResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000080) == 0x00000080) && GetOrCreateSchemaResponse_ != CommandGetOrCreateSchemaResponse.DefaultInstance)
 				{
-					GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse).mergeFrom(Value).buildPartial();
+					GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					GetOrCreateSchemaResponse_ = Value;
 				}
 
-				_bitField |= 0x00000080;
+				_bitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder ClearGetOrCreateSchemaResponse()
 			{
 				GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000080);
+				_bitField0 = (_bitField0 & ~0x00000080);
 				return this;
 			}
 
@@ -3361,7 +4335,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandNewTxn NewTxn_ = CommandNewTxn.DefaultInstance;
 			public bool HasNewTxn()
 			{
-				return ((_bitField & 0x00000100) == 0x00000100);
+				return ((_bitField0 & 0x00000100) == 0x00000100);
 			}
 			public CommandNewTxn GetNewTxn()
 			{
@@ -3375,35 +4349,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				NewTxn_ = Value;
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder SetNewTxn(CommandNewTxn.Builder BuilderForValue)
 			{
-				NewTxn_ = BuilderForValue.build();
+				NewTxn_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder MergeNewTxn(CommandNewTxn Value)
 			{
-				if (((_bitField & 0x00000100) == 0x00000100) && NewTxn_ != CommandNewTxn.DefaultInstance)
+				if (((_bitField0 & 0x00000100) == 0x00000100) && NewTxn_ != CommandNewTxn.DefaultInstance)
 				{
-					NewTxn_ = CommandNewTxn.NewBuilder(NewTxn).mergeFrom(Value).buildPartial();
+					NewTxn_ = CommandNewTxn.NewBuilder(NewTxn).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					NewTxn_ = Value;
 				}
 
-				_bitField |= 0x00000100;
+				_bitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder ClearNewTxn()
 			{
 				NewTxn_ = CommandNewTxn.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000100);
+				_bitField0 = (_bitField0 & ~0x00000100);
 				return this;
 			}
 
@@ -3411,7 +4385,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandNewTxnResponse NewTxnResponse_ = CommandNewTxnResponse.DefaultInstance;
 			public bool HasNewTxnResponse()
 			{
-				return ((_bitField & 0x00000200) == 0x00000200);
+				return ((_bitField0 & 0x00000200) == 0x00000200);
 			}
 			public CommandNewTxnResponse GetNewTxnResponse()
 			{
@@ -3425,35 +4399,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				NewTxnResponse_ = Value;
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder SetNewTxnResponse(CommandNewTxnResponse.Builder BuilderForValue)
 			{
-				NewTxnResponse_ = BuilderForValue.build();
+				NewTxnResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder MergeNewTxnResponse(CommandNewTxnResponse Value)
 			{
-				if (((_bitField & 0x00000200) == 0x00000200) && NewTxnResponse_ != CommandNewTxnResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000200) == 0x00000200) && NewTxnResponse_ != CommandNewTxnResponse.DefaultInstance)
 				{
-					NewTxnResponse_ = CommandNewTxnResponse.NewBuilder(NewTxnResponse).mergeFrom(Value).buildPartial();
+					NewTxnResponse_ = CommandNewTxnResponse.NewBuilder(NewTxnResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					NewTxnResponse_ = Value;
 				}
 
-				_bitField |= 0x00000200;
+				_bitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder ClearNewTxnResponse()
 			{
 				NewTxnResponse_ = CommandNewTxnResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000200);
+				_bitField0 = (_bitField0 & ~0x00000200);
 				return this;
 			}
 
@@ -3461,7 +4435,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAddPartitionToTxn AddPartitionToTxn_ = CommandAddPartitionToTxn.DefaultInstance;
 			public bool HasAddPartitionToTxn()
 			{
-				return ((_bitField & 0x00000400) == 0x00000400);
+				return ((_bitField0 & 0x00000400) == 0x00000400);
 			}
 			public CommandAddPartitionToTxn GetAddPartitionToTxn()
 			{
@@ -3475,35 +4449,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AddPartitionToTxn_ = Value;
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn.Builder BuilderForValue)
 			{
-				AddPartitionToTxn_ = BuilderForValue.build();
+				AddPartitionToTxn_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder MergeAddPartitionToTxn(CommandAddPartitionToTxn Value)
 			{
-				if (((_bitField & 0x00000400) == 0x00000400) && AddPartitionToTxn_ != CommandAddPartitionToTxn.DefaultInstance)
+				if (((_bitField0 & 0x00000400) == 0x00000400) && AddPartitionToTxn_ != CommandAddPartitionToTxn.DefaultInstance)
 				{
-					AddPartitionToTxn_ = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn).mergeFrom(Value).buildPartial();
+					AddPartitionToTxn_ = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AddPartitionToTxn_ = Value;
 				}
 
-				_bitField |= 0x00000400;
+				_bitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder ClearAddPartitionToTxn()
 			{
 				AddPartitionToTxn_ = CommandAddPartitionToTxn.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000400);
+				_bitField0 = (_bitField0 & ~0x00000400);
 				return this;
 			}
 
@@ -3511,7 +4485,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAddPartitionToTxnResponse AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.DefaultInstance;
 			public bool HasAddPartitionToTxnResponse()
 			{
-				return ((_bitField & 0x00000800) == 0x00000800);
+				return ((_bitField0 & 0x00000800) == 0x00000800);
 			}
 			public CommandAddPartitionToTxnResponse GetAddPartitionToTxnResponse()
 			{
@@ -3525,35 +4499,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AddPartitionToTxnResponse_ = Value;
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse.Builder BuilderForValue)
 			{
-				AddPartitionToTxnResponse_ = BuilderForValue.build();
+				AddPartitionToTxnResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder MergeAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse Value)
 			{
-				if (((_bitField & 0x00000800) == 0x00000800) && AddPartitionToTxnResponse_ != CommandAddPartitionToTxnResponse.DefaultInstance)
+				if (((_bitField0 & 0x00000800) == 0x00000800) && AddPartitionToTxnResponse_ != CommandAddPartitionToTxnResponse.DefaultInstance)
 				{
-					AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse).mergeFrom(Value).buildPartial();
+					AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AddPartitionToTxnResponse_ = Value;
 				}
 
-				_bitField |= 0x00000800;
+				_bitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder ClearAddPartitionToTxnResponse()
 			{
 				AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00000800);
+				_bitField0 = (_bitField0 & ~0x00000800);
 				return this;
 			}
 
@@ -3561,7 +4535,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAddSubscriptionToTxn AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.DefaultInstance;
 			public bool HasAddSubscriptionToTxn()
 			{
-				return ((_bitField & 0x00001000) == 0x00001000);
+				return ((_bitField0 & 0x00001000) == 0x00001000);
 			}
 			public CommandAddSubscriptionToTxn GetAddSubscriptionToTxn()
 			{
@@ -3575,35 +4549,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AddSubscriptionToTxn_ = Value;
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn.Builder BuilderForValue)
 			{
-				AddSubscriptionToTxn_ = BuilderForValue.build();
+				AddSubscriptionToTxn_ = BuilderForValue.Build();
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder MergeAddSubscriptionToTxn(CommandAddSubscriptionToTxn Value)
 			{
-				if (((_bitField & 0x00001000) == 0x00001000) && AddSubscriptionToTxn_ != CommandAddSubscriptionToTxn.DefaultInstance)
+				if (((_bitField0 & 0x00001000) == 0x00001000) && AddSubscriptionToTxn_ != CommandAddSubscriptionToTxn.DefaultInstance)
 				{
-					AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn).mergeFrom(Value).buildPartial();
+					AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AddSubscriptionToTxn_ = Value;
 				}
 
-				_bitField |= 0x00001000;
+				_bitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder ClearAddSubscriptionToTxn()
 			{
 				AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00001000);
+				_bitField0 = (_bitField0 & ~0x00001000);
 				return this;
 			}
 
@@ -3611,7 +4585,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandAddSubscriptionToTxnResponse AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.DefaultInstance;
 			public bool HasAddSubscriptionToTxnResponse()
 			{
-				return ((_bitField & 0x00002000) == 0x00002000);
+				return ((_bitField0 & 0x00002000) == 0x00002000);
 			}
 			public CommandAddSubscriptionToTxnResponse GetAddSubscriptionToTxnResponse()
 			{
@@ -3625,35 +4599,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				AddSubscriptionToTxnResponse_ = Value;
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder SetAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse.Builder BuilderForValue)
 			{
-				AddSubscriptionToTxnResponse_ = BuilderForValue.build();
+				AddSubscriptionToTxnResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder MergeAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse Value)
 			{
-				if (((_bitField & 0x00002000) == 0x00002000) && AddSubscriptionToTxnResponse_ != CommandAddSubscriptionToTxnResponse.DefaultInstance)
+				if (((_bitField0 & 0x00002000) == 0x00002000) && AddSubscriptionToTxnResponse_ != CommandAddSubscriptionToTxnResponse.DefaultInstance)
 				{
-					AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse).mergeFrom(Value).buildPartial();
+					AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					AddSubscriptionToTxnResponse_ = Value;
 				}
 
-				_bitField |= 0x00002000;
+				_bitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder ClearAddSubscriptionToTxnResponse()
 			{
 				AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00002000);
+				_bitField0 = (_bitField0 & ~0x00002000);
 				return this;
 			}
 
@@ -3661,7 +4635,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxn EndTxn_ = CommandEndTxn.DefaultInstance;
 			public bool HasEndTxn()
 			{
-				return ((_bitField & 0x00004000) == 0x00004000);
+				return ((_bitField0 & 0x00004000) == 0x00004000);
 			}
 			public CommandEndTxn GetEndTxn()
 			{
@@ -3675,35 +4649,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				EndTxn_ = Value;
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder SetEndTxn(CommandEndTxn.Builder BuilderForValue)
 			{
-				EndTxn_ = BuilderForValue.build();
+				EndTxn_ = BuilderForValue.Build();
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder MergeEndTxn(CommandEndTxn Value)
 			{
-				if (((_bitField & 0x00004000) == 0x00004000) && EndTxn_ != CommandEndTxn.DefaultInstance)
+				if (((_bitField0 & 0x00004000) == 0x00004000) && EndTxn_ != CommandEndTxn.DefaultInstance)
 				{
-					EndTxn_ = CommandEndTxn.NewBuilder(EndTxn).mergeFrom(Value).buildPartial();
+					EndTxn_ = CommandEndTxn.NewBuilder(EndTxn).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					EndTxn_ = Value;
 				}
 
-				_bitField |= 0x00004000;
+				_bitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder ClearEndTxn()
 			{
 				EndTxn_ = CommandEndTxn.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00004000);
+				_bitField0 = (_bitField0 & ~0x00004000);
 				return this;
 			}
 
@@ -3711,7 +4685,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxnResponse EndTxnResponse_ = CommandEndTxnResponse.DefaultInstance;
 			public bool HasEndTxnResponse()
 			{
-				return ((_bitField & 0x00008000) == 0x00008000);
+				return ((_bitField0 & 0x00008000) == 0x00008000);
 			}
 			public CommandEndTxnResponse GetEndTxnResponse()
 			{
@@ -3725,35 +4699,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				EndTxnResponse_ = Value;
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder SetEndTxnResponse(CommandEndTxnResponse.Builder BuilderForValue)
 			{
-				EndTxnResponse_ = BuilderForValue.build();
+				EndTxnResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder MergeEndTxnResponse(CommandEndTxnResponse Value)
 			{
-				if (((_bitField & 0x00008000) == 0x00008000) && EndTxnResponse_ != CommandEndTxnResponse.DefaultInstance)
+				if (((_bitField0 & 0x00008000) == 0x00008000) && EndTxnResponse_ != CommandEndTxnResponse.DefaultInstance)
 				{
-					EndTxnResponse_ = CommandEndTxnResponse.NewBuilder(EndTxnResponse_).mergeFrom(Value).buildPartial();
+					EndTxnResponse_ = CommandEndTxnResponse.NewBuilder(EndTxnResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					EndTxnResponse_ = Value;
 				}
 
-				_bitField |= 0x00008000;
+				_bitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder ClearEndTxnResponse()
 			{
 				EndTxnResponse_ = CommandEndTxnResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00008000);
+				_bitField0 = (_bitField0 & ~0x00008000);
 				return this;
 			}
 
@@ -3761,7 +4735,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxnOnPartition EndTxnOnPartition_ = CommandEndTxnOnPartition.DefaultInstance;
 			public bool HasEndTxnOnPartition()
 			{
-				return ((_bitField & 0x00010000) == 0x00010000);
+				return ((_bitField0 & 0x00010000) == 0x00010000);
 			}
 			public CommandEndTxnOnPartition GetEndTxnOnPartition()
 			{
@@ -3775,35 +4749,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				EndTxnOnPartition_ = Value;
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition.Builder BuilderForValue)
 			{
-				EndTxnOnPartition_ = BuilderForValue.build();
+				EndTxnOnPartition_ = BuilderForValue.Build();
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder MergeEndTxnOnPartition(CommandEndTxnOnPartition Value)
 			{
-				if (((_bitField & 0x00010000) == 0x00010000) && EndTxnOnPartition_ != CommandEndTxnOnPartition.DefaultInstance)
+				if (((_bitField0 & 0x00010000) == 0x00010000) && EndTxnOnPartition_ != CommandEndTxnOnPartition.DefaultInstance)
 				{
-					EndTxnOnPartition_ = CommandEndTxnOnPartition.NewBuilder(EndTxnOnPartition_).mergeFrom(Value).buildPartial();
+					EndTxnOnPartition_ = CommandEndTxnOnPartition.NewBuilder(EndTxnOnPartition_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					EndTxnOnPartition_ = Value;
 				}
 
-				_bitField |= 0x00010000;
+				_bitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder ClearEndTxnOnPartition()
 			{
 				EndTxnOnPartition_ = CommandEndTxnOnPartition.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00010000);
+				_bitField0 = (_bitField0 & ~0x00010000);
 				return this;
 			}
 
@@ -3811,7 +4785,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxnOnPartitionResponse EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.DefaultInstance;
 			public bool HasEndTxnOnPartitionResponse()
 			{
-				return ((_bitField & 0x00020000) == 0x00020000);
+				return ((_bitField0 & 0x00020000) == 0x00020000);
 			}
 			public CommandEndTxnOnPartitionResponse GetEndTxnOnPartitionResponse()
 			{
@@ -3825,35 +4799,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				EndTxnOnPartitionResponse_ = Value;
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse.Builder BuilderForValue)
 			{
-				EndTxnOnPartitionResponse_ = BuilderForValue.build();
+				EndTxnOnPartitionResponse_ = BuilderForValue.Build();
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder MergeEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse Value)
 			{
-				if (((_bitField & 0x00020000) == 0x00020000) && EndTxnOnPartitionResponse_ != CommandEndTxnOnPartitionResponse.DefaultInstance)
+				if (((_bitField0 & 0x00020000) == 0x00020000) && EndTxnOnPartitionResponse_ != CommandEndTxnOnPartitionResponse.DefaultInstance)
 				{
-					EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse).mergeFrom(Value).buildPartial();
+					EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					EndTxnOnPartitionResponse_ = Value;
 				}
 
-				_bitField |= 0x00020000;
+				_bitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder ClearEndTxnOnPartitionResponse()
 			{
 				EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00020000);
+				_bitField0 = (_bitField0 & ~0x00020000);
 				return this;
 			}
 
@@ -3861,7 +4835,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxnOnSubscription _endTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
 			public bool HasEndTxnOnSubscription()
 			{
-				return ((_bitField & 0x00040000) == 0x00040000);
+				return ((_bitField0 & 0x00040000) == 0x00040000);
 			}
 			public CommandEndTxnOnSubscription GetEndTxnOnSubscription()
 			{
@@ -3875,35 +4849,35 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				_endTxnOnSubscription = Value;
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription.Builder BuilderForValue)
 			{
-				_endTxnOnSubscription = BuilderForValue.build();
+				_endTxnOnSubscription = BuilderForValue.Build();
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder MergeEndTxnOnSubscription(CommandEndTxnOnSubscription Value)
 			{
-				if (((_bitField & 0x00040000) == 0x00040000) && _endTxnOnSubscription != CommandEndTxnOnSubscription.DefaultInstance)
+				if (((_bitField0 & 0x00040000) == 0x00040000) && _endTxnOnSubscription != CommandEndTxnOnSubscription.DefaultInstance)
 				{
-					_endTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder(_endTxnOnSubscription).mergeFrom(Value).buildPartial();
+					_endTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder(_endTxnOnSubscription).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					_endTxnOnSubscription = Value;
 				}
 
-				_bitField |= 0x00040000;
+				_bitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder ClearEndTxnOnSubscription()
 			{
 				_endTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
 
-				_bitField = (_bitField & ~0x00040000);
+				_bitField0 = (_bitField0 & ~0x00040000);
 				return this;
 			}
 
@@ -3911,7 +4885,7 @@ namespace SharpPulsar.Protocol.Proto
 			internal CommandEndTxnOnSubscriptionResponse _endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
 			public bool HasEndTxnOnSubscriptionResponse()
 			{
-				return ((_bitField & 0x00080000) == 0x00080000);
+				return ((_bitField0 & 0x00080000) == 0x00080000);
 			}
 			public CommandEndTxnOnSubscriptionResponse GetEndTxnOnSubscriptionResponse()
 			{
@@ -3925,28 +4899,28 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				_endTxnOnSubscriptionResponse = Value;
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder SetEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse.Builder BuilderForValue)
 			{
-				_endTxnOnSubscriptionResponse = BuilderForValue.build();
+				_endTxnOnSubscriptionResponse = BuilderForValue.Build();
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder MergeEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse Value)
 			{
-				if (((_bitField & 0x00080000) == 0x00080000) && _endTxnOnSubscriptionResponse != CommandEndTxnOnSubscriptionResponse.DefaultInstance)
+				if (((_bitField0 & 0x00080000) == 0x00080000) && _endTxnOnSubscriptionResponse != CommandEndTxnOnSubscriptionResponse.DefaultInstance)
 				{
-					_endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.NewBuilder(_endTxnOnSubscriptionResponse).mergeFrom(Value).buildPartial();
+					_endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.NewBuilder(_endTxnOnSubscriptionResponse).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
 					_endTxnOnSubscriptionResponse = Value;
 				}
 
-				_bitField |= 0x00080000;
+				_bitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder ClearEndTxnOnSubscriptionResponse()
