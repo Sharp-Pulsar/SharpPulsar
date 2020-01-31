@@ -6,33 +6,33 @@ using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public sealed partial class CommandPing : ByteBufCodedOutputStream.ByteBufGeneratedMessage
+	public sealed partial class CommandPong : ByteBufCodedOutputStream.ByteBufGeneratedMessage
 	{
-		// Use CommandPing.newBuilder() to construct.
-		internal static ThreadLocalPool<CommandPing> _pool = new ThreadLocalPool<CommandPing>(handle => new CommandPing(handle), 1, true);
+		// Use CommandPong.newBuilder() to construct.
+		internal static ThreadLocalPool<CommandPong> _pool = new ThreadLocalPool<CommandPong>(handle => new CommandPong(handle), 1, true);
 
 		internal ThreadLocalPool.Handle _handle;
-		private CommandPing(ThreadLocalPool.Handle handle)
+		private CommandPong(ThreadLocalPool.Handle handle)
 		{
 			_handle = handle;
 		}
 		public void Recycle()
 		{
-			InitFields();
-			MemoizedIsInitialized = -1;
-			MemoizedSerializedSize = -1;
+			this.InitFields();
+			this.MemoizedIsInitialized = -1;
+			this.MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
 				_handle.Release(this);
 			}
 		}
 
-		public CommandPing(bool NoInit)
+		public CommandPong(bool NoInit)
 		{
 		}
 
-		internal static readonly CommandPing _defaultInstance;
-		public static CommandPing DefaultInstance
+		internal static readonly CommandPong _defaultInstance;
+		public static CommandPong DefaultInstance
 		{
 			get
 			{
@@ -40,7 +40,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		public CommandPing DefaultInstanceForType
+		public CommandPong DefaultInstanceForType
 		{
 			get
 			{
@@ -85,7 +85,7 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		public static Builder NewBuilder(CommandPing Prototype)
+		public static Builder NewBuilder(CommandPong Prototype)
 		{
 			return NewBuilder().MergeFrom(Prototype);
 		}
@@ -96,7 +96,7 @@ namespace SharpPulsar.Protocol.Proto
 
 		public sealed class Builder : ByteBufMessageBuilder
 		{
-			// Construct using org.apache.pulsar.common.api.proto.CommandPing.newBuilder()
+			// Construct using org.apache.pulsar.common.api.proto.CommandPong.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
 
 			internal ThreadLocalPool.Handle _handle;
@@ -132,17 +132,27 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandPing DefaultInstanceForType
+			public CommandPong DefaultInstanceForType
 			{
 				get
 				{
-					return CommandPing.DefaultInstance;
+					return CommandPong.DefaultInstance;
 				}
 			}
 
-			public CommandPing Build()
+			public CommandPong Build()
 			{
-				CommandPing Result = BuildPartial();
+				CommandPong Result = BuildPartial();
+				if (!Result.Initialized)
+				{
+					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
+				}
+				return Result;
+			}
+						
+			public CommandPong BuildParsed()
+			{
+				CommandPong Result = BuildPartial();
 				if (!Result.Initialized)
 				{
 					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
@@ -150,25 +160,15 @@ namespace SharpPulsar.Protocol.Proto
 				return Result;
 			}
 
-			public CommandPing BuildParsed()
+			public CommandPong BuildPartial()
 			{
-				CommandPing Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				CommandPong Result = CommandPong._pool.Take();
 				return Result;
 			}
 
-			public CommandPing BuildPartial()
+			public Builder MergeFrom(CommandPong Other)
 			{
-				CommandPing Result = CommandPing._pool.Take();
-				return Result;
-			}
-
-			public Builder MergeFrom(CommandPing Other)
-			{
-				if (Other == CommandPing.DefaultInstance)
+				if (Other == CommandPong.DefaultInstance)
 				{
 					return this;
 				}
@@ -206,16 +206,16 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 
-			// @@protoc_insertion_point(builder_scope:pulsar.proto.CommandPing)
+			// @@protoc_insertion_point(builder_scope:pulsar.proto.CommandPong)
 		}
 
-		static CommandPing()
+		static CommandPong()
 		{
-			_defaultInstance = new CommandPing(true);
+			_defaultInstance = new CommandPong(true);
 			_defaultInstance.InitFields();
 		}
 
-		// @@protoc_insertion_point(class_scope:pulsar.proto.CommandPing)
+		// @@protoc_insertion_point(class_scope:pulsar.proto.CommandPong)
 	}
 
 }
