@@ -3939,7 +3939,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x80000000);
+				_bitField0 = (_bitField0 & ~unchecked((int)0x80000000));
 				return this;
 			}
 
