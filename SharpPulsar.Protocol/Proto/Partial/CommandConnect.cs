@@ -2,6 +2,8 @@
 using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
+using System.Linq;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
@@ -148,7 +150,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		public sealed class Builder
+		public sealed class Builder : ByteBufMessageBuilder
 		{
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
 
@@ -203,7 +205,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				get
 				{
-					return CommandConnect.DefaultInstance;
+					return DefaultInstance;
 				}
 			}
 
@@ -316,7 +318,87 @@ namespace SharpPulsar.Protocol.Proto
 				}
 				return this;
 			}
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			{
+				while (true)
+				{
+					int Tag = input.ReadTag();
+					switch (Tag)
+					{
+						case 0:
 
+							return this;
+						default:
+							{
+								if (!input.SkipField(Tag))
+								{
+
+									return this;
+								}
+								break;
+							}
+						case 10:
+							{
+								_bitField |= 0x00000001;
+								_clientVersion = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 16:
+							{
+								int RawValue = input.ReadEnum();
+								AuthMethod Value = Enum.GetValues(typeof(AuthMethod)).Cast<AuthMethod>().ToList()[RawValue];
+								if (Value != null)
+								{
+									_bitField |= 0x00000002;
+									_authMethod = Value;
+								}
+								break;
+							}
+						case 26:
+							{
+								_bitField |= 0x00000008;
+								_authData = input.ReadBytes();
+								break;
+							}
+						case 32:
+							{
+								_bitField |= 0x00000010;
+								_protocolVersion = input.ReadInt32();
+								break;
+							}
+						case 42:
+							{
+								_bitField |= 0x00000004;
+								_authMethodName = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 50:
+							{
+								_bitField |= 0x00000020;
+								_proxyToBrokerUrl = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 58:
+							{
+								_bitField |= 0x00000040;
+								_originalPrincipal = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 66:
+							{
+								_bitField |= 0x00000080;
+								Original_authData = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 74:
+							{
+								_bitField |= 0x00000100;
+								Original_authMethod = input.ReadBytes().ToStringUtf8();
+								break;
+							}
+					}
+				}
+			}
 			public bool Initialized
 			{
 				get

@@ -2,9 +2,9 @@
 using Google.Protobuf;
 using SharpPulsar.Util.Protobuf;
 using System;
-using System.Linq;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
+using System.Linq;
 
 namespace SharpPulsar.Protocol.Proto
 {
@@ -1390,7 +1390,7 @@ namespace SharpPulsar.Protocol.Proto
 									SubBuilder.MergeFrom(GetConnected());
 								}
 								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetConnected(SubBuilder.BuildPartial());
+								SetConnected(SubBuilder);
 								SubBuilder.Recycle();
 								break;
 							}
@@ -1990,7 +1990,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				get
 				{
-					if (!HasType)
+					if (!HasType())
 					{
 
 						return false;
@@ -2391,7 +2391,10 @@ namespace SharpPulsar.Protocol.Proto
 
 				return this;
 			}
-
+			public bool HasType()
+			{
+				return ((_bitField0 & 0x00000001) == 0x00000001);
+			}
 			internal CommandConnect _connect = CommandConnect.DefaultInstance;
 			public bool HasConnect()
 			{
@@ -2448,7 +2451,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_connected = Value;
 
@@ -2475,6 +2478,14 @@ namespace SharpPulsar.Protocol.Proto
 				_bitField0 |= 0x00000004;
 				return this;
 			}
+
+			public Builder ClearConnect()
+			{
+				_connect = CommandConnect.DefaultInstance;
+
+				_bitField0 = (_bitField0 & ~0x00000002);
+				return this;
+			}
 			public Builder ClearConnected()
 			{
 				_connected = CommandConnected.DefaultInstance;
@@ -2496,7 +2507,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Subscribe_ = Value;
 
@@ -2546,7 +2557,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Producer_ = Value;
 
@@ -2596,7 +2607,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Send_ = Value;
 
@@ -2646,7 +2657,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				SendReceipt_ = Value;
 
@@ -2696,7 +2707,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				SendError_ = Value;
 
@@ -2746,7 +2757,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Message_ = Value;
 
@@ -2796,7 +2807,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Ack_ = Value;
 
@@ -2846,7 +2857,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Flow_ = Value;
 
@@ -2896,7 +2907,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Unsubscribe_ = Value;
 
@@ -2946,7 +2957,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Success_ = Value;
 
@@ -2996,7 +3007,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Error_ = Value;
 
@@ -3046,7 +3057,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				CloseProducer_ = Value;
 
@@ -3096,7 +3107,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				CloseConsumer_ = Value;
 
@@ -3146,7 +3157,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				ProducerSuccess_ = Value;
 
@@ -3196,7 +3207,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Ping_ = Value;
 
@@ -3246,7 +3257,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Pong_ = Value;
 
@@ -3296,7 +3307,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				RedeliverUnacknowledgedMessages_ = Value;
 
@@ -3346,7 +3357,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				PartitionMetadata_ = Value;
 
@@ -3396,7 +3407,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				PartitionMetadataResponse_ = Value;
 
@@ -3446,7 +3457,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				LookupTopic_ = Value;
 
@@ -3496,7 +3507,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				LookupTopicResponse_ = Value;
 
@@ -3546,7 +3557,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				ConsumerStats_ = Value;
 
@@ -3596,7 +3607,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				ConsumerStatsResponse_ = Value;
 
@@ -3646,7 +3657,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				ReachedEndOfTopic_ = Value;
 
@@ -3664,7 +3675,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x04000000) == 0x04000000) && ReachedEndOfTopic_ != CommandReachedEndOfTopic.DefaultInstance)
 				{
-					ReachedEndOfTopic_ = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic).MergeFrom(Value).BuildPartial();
+					ReachedEndOfTopic_ = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3696,7 +3707,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Seek_ = Value;
 
@@ -3714,7 +3725,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x08000000) == 0x08000000) && Seek_ != CommandSeek.DefaultInstance)
 				{
-					Seek_ = CommandSeek.NewBuilder(Seek).MergeFrom(Value).BuildPartial();
+					Seek_ = CommandSeek.NewBuilder(Seek_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3746,7 +3757,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetLastMessageId_ = Value;
 
@@ -3764,7 +3775,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x10000000) == 0x10000000) && GetLastMessageId_ != CommandGetLastMessageId.DefaultInstance)
 				{
-					GetLastMessageId_ = CommandGetLastMessageId.NewBuilder(GetLastMessageId).MergeFrom(Value).BuildPartial();
+					GetLastMessageId_ = CommandGetLastMessageId.NewBuilder(GetLastMessageId_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3796,7 +3807,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetLastMessageIdResponse_ = Value;
 
@@ -3814,7 +3825,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x20000000) == 0x20000000) && GetLastMessageIdResponse_ != CommandGetLastMessageIdResponse.DefaultInstance)
 				{
-					GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse).MergeFrom(Value).BuildPartial();
+					GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3846,7 +3857,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				ActiveConsumerChange_ = Value;
 
@@ -3864,7 +3875,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x40000000) == 0x40000000) && ActiveConsumerChange_ != CommandActiveConsumerChange.DefaultInstance)
 				{
-					ActiveConsumerChange_ = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange).MergeFrom(Value).BuildPartial();
+					ActiveConsumerChange_ = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3896,7 +3907,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetTopicsOfNamespace_ = Value;
 
@@ -3914,7 +3925,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x80000000) == 0x80000000) && GetTopicsOfNamespace_ != CommandGetTopicsOfNamespace.DefaultInstance)
 				{
-					GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace).MergeFrom(Value).BuildPartial();
+					GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3946,7 +3957,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetTopicsOfNamespaceResponse_ = Value;
 
@@ -3964,7 +3975,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000001) == 0x00000001) && GetTopicsOfNamespaceResponse_ != CommandGetTopicsOfNamespaceResponse.DefaultInstance)
 				{
-					GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse).MergeFrom(Value).BuildPartial();
+					GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -3996,7 +4007,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetSchema_ = Value;
 
@@ -4014,7 +4025,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000002) == 0x00000002) && GetSchema_ != CommandGetSchema.DefaultInstance)
 				{
-					GetSchema_ = CommandGetSchema.NewBuilder(GetSchema).MergeFrom(Value).BuildPartial();
+					GetSchema_ = CommandGetSchema.NewBuilder(GetSchema_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4046,7 +4057,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetSchemaResponse_ = Value;
 
@@ -4064,7 +4075,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000004) == 0x00000004) && GetSchemaResponse_ != CommandGetSchemaResponse.DefaultInstance)
 				{
-					GetSchemaResponse_ = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse).MergeFrom(Value).BuildPartial();
+					GetSchemaResponse_ = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4096,7 +4107,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AuthChallenge_ = Value;
 
@@ -4114,7 +4125,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000008) == 0x00000008) && AuthChallenge_ != CommandAuthChallenge.DefaultInstance)
 				{
-					AuthChallenge_ = CommandAuthChallenge.NewBuilder(AuthChallenge).MergeFrom(Value).BuildPartial();
+					AuthChallenge_ = CommandAuthChallenge.NewBuilder(AuthChallenge_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4146,7 +4157,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AuthResponse_ = Value;
 
@@ -4164,7 +4175,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000010) == 0x00000010) && AuthResponse_ != CommandAuthResponse.DefaultInstance)
 				{
-					AuthResponse_ = CommandAuthResponse.NewBuilder(AuthResponse).MergeFrom(Value).BuildPartial();
+					AuthResponse_ = CommandAuthResponse.NewBuilder(AuthResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4196,7 +4207,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AckResponse_ = Value;
 
@@ -4214,7 +4225,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000020) == 0x00000020) && AckResponse_ != CommandAckResponse.DefaultInstance)
 				{
-					AckResponse_ = CommandAckResponse.NewBuilder(AckResponse).MergeFrom(Value).BuildPartial();
+					AckResponse_ = CommandAckResponse.NewBuilder(AckResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4246,7 +4257,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetOrCreateSchema_ = Value;
 
@@ -4264,7 +4275,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000040) == 0x00000040) && GetOrCreateSchema_ != CommandGetOrCreateSchema.DefaultInstance)
 				{
-					GetOrCreateSchema_ = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema).MergeFrom(Value).BuildPartial();
+					GetOrCreateSchema_ = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4296,7 +4307,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				GetOrCreateSchemaResponse_ = Value;
 
@@ -4314,7 +4325,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000080) == 0x00000080) && GetOrCreateSchemaResponse_ != CommandGetOrCreateSchemaResponse.DefaultInstance)
 				{
-					GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse).MergeFrom(Value).BuildPartial();
+					GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4346,7 +4357,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				NewTxn_ = Value;
 
@@ -4364,7 +4375,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000100) == 0x00000100) && NewTxn_ != CommandNewTxn.DefaultInstance)
 				{
-					NewTxn_ = CommandNewTxn.NewBuilder(NewTxn).MergeFrom(Value).BuildPartial();
+					NewTxn_ = CommandNewTxn.NewBuilder(NewTxn_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4396,7 +4407,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				NewTxnResponse_ = Value;
 
@@ -4414,7 +4425,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000200) == 0x00000200) && NewTxnResponse_ != CommandNewTxnResponse.DefaultInstance)
 				{
-					NewTxnResponse_ = CommandNewTxnResponse.NewBuilder(NewTxnResponse).MergeFrom(Value).BuildPartial();
+					NewTxnResponse_ = CommandNewTxnResponse.NewBuilder(NewTxnResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4446,7 +4457,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AddPartitionToTxn_ = Value;
 
@@ -4464,7 +4475,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000400) == 0x00000400) && AddPartitionToTxn_ != CommandAddPartitionToTxn.DefaultInstance)
 				{
-					AddPartitionToTxn_ = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn).MergeFrom(Value).BuildPartial();
+					AddPartitionToTxn_ = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4496,7 +4507,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AddPartitionToTxnResponse_ = Value;
 
@@ -4514,7 +4525,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00000800) == 0x00000800) && AddPartitionToTxnResponse_ != CommandAddPartitionToTxnResponse.DefaultInstance)
 				{
-					AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse).MergeFrom(Value).BuildPartial();
+					AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4546,7 +4557,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AddSubscriptionToTxn_ = Value;
 
@@ -4564,7 +4575,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00001000) == 0x00001000) && AddSubscriptionToTxn_ != CommandAddSubscriptionToTxn.DefaultInstance)
 				{
-					AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn).MergeFrom(Value).BuildPartial();
+					AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4596,7 +4607,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				AddSubscriptionToTxnResponse_ = Value;
 
@@ -4614,7 +4625,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00002000) == 0x00002000) && AddSubscriptionToTxnResponse_ != CommandAddSubscriptionToTxnResponse.DefaultInstance)
 				{
-					AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse).MergeFrom(Value).BuildPartial();
+					AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4646,7 +4657,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EndTxn_ = Value;
 
@@ -4664,7 +4675,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00004000) == 0x00004000) && EndTxn_ != CommandEndTxn.DefaultInstance)
 				{
-					EndTxn_ = CommandEndTxn.NewBuilder(EndTxn).MergeFrom(Value).BuildPartial();
+					EndTxn_ = CommandEndTxn.NewBuilder(EndTxn_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4696,7 +4707,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EndTxnResponse_ = Value;
 
@@ -4746,7 +4757,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EndTxnOnPartition_ = Value;
 
@@ -4796,7 +4807,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EndTxnOnPartitionResponse_ = Value;
 
@@ -4814,7 +4825,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (((_bitField0 & 0x00020000) == 0x00020000) && EndTxnOnPartitionResponse_ != CommandEndTxnOnPartitionResponse.DefaultInstance)
 				{
-					EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse).MergeFrom(Value).BuildPartial();
+					EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse_).MergeFrom(Value).BuildPartial();
 				}
 				else
 				{
@@ -4846,7 +4857,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_endTxnOnSubscription = Value;
 
@@ -4896,7 +4907,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_endTxnOnSubscriptionResponse = Value;
 
