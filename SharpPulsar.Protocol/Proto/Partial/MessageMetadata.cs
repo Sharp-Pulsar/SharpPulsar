@@ -1,12 +1,16 @@
 ﻿using DotNetty.Common;
+using Google.Protobuf;
+using SharpPulsar.Util.Protobuf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class MessageMetadata 
+	public partial class MessageMetadata : ByteBufGeneratedMessage
 	{
 		internal static ThreadLocalPool<MessageMetadata> _pool = new ThreadLocalPool<MessageMetadata>(handle => new MessageMetadata(handle), 1, true);
 
@@ -20,7 +24,7 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			InitFields();
 			MemoizedIsInitialized = -1;
-			_bitField = 0;
+			_hasBits0 = 0;
 			MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
@@ -32,7 +36,7 @@ namespace SharpPulsar.Protocol.Proto
 		{
 		}
 
-		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
+		
 		internal static readonly MessageMetadata _defaultInstance;
 		public static MessageMetadata DefaultInstance
 		{
@@ -50,207 +54,6 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		internal int _bitField;
-		// required string producer_name = 1;
-		public const int ProducerNameFieldNumber = 1;
-		public bool HasProducerName()
-		{
-			return ((_bitField & 0x00000001) == 0x00000001);
-		}
-		
-		// required uint64 sequence_id = 2;
-		public const int SequenceIdFieldNumber = 2;
-		public bool HasSequenceId()
-		{
-			return ((_bitField & 0x00000002) == 0x00000002);
-		}
-		
-		// required uint64 publish_time = 3;
-		public const int PublishTimeFieldNumber = 3;
-		public bool HasPublishTime()
-		{
-			return ((_bitField & 0x00000004) == 0x00000004);
-		}
-		
-		// repeated .pulsar.proto.KeyValue properties = 4;
-		public const int PropertiesFieldNumber = 4;
-		public IList<KeyValue> PropertiesList
-		{
-			get
-			{
-				return Properties;
-			}
-		}
-		
-		public int PropertiesCount
-		{
-			get
-			{
-				return Properties.Count;
-			}
-		}
-		public KeyValue GetProperties(int Index)
-		{
-			return Properties[Index];
-		}
-		
-		// optional string replicated_from = 5;
-		public const int ReplicatedFromFieldNumber = 5;
-
-		public bool HasReplicatedFrom()
-		{
-			return ((_bitField & 0x00000008) == 0x00000008);
-		}
-		
-		// optional string partition_key = 6;
-		public const int PartitionKeyFieldNumber = 6;
-		public bool HasPartitionKey()
-		{
-			return ((_bitField & 0x00000010) == 0x00000010);
-		}
-		
-		// repeated string replicate_to = 7;
-		public const int ReplicateToFieldNumber = 7;
-		public IList<string> ReplicateToList
-		{
-			get
-			{				
-				return ReplicateToes;
-			}
-		}
-		public int ReplicateToCount
-		{
-			get
-			{
-				return ReplicateToes.Count;
-			}
-		}
-		public string GetReplicateTo(int Index)
-		{
-			return ReplicateToes[Index];
-		}
-
-		// optional .pulsar.proto.CompressionType compression = 8 [default = NONE];
-		public const int CompressionFieldNumber = 8;
-		public bool HasCompression()
-		{
-			return ((_bitField & 0x00000020) == 0x00000020);
-		}
-		
-		// optional uint32 uncompressed_size = 9 [default = 0];
-		public const int UncompressedSizeFieldNumber = 9;
-		public bool HasUncompressedSize()
-		{
-			return ((_bitField & 0x00000040) == 0x00000040);
-		}
-		
-		// optional int32 num_messages_in_batch = 11 [default = 1];
-		public const int NumMessagesInBatchFieldNumber = 11;
-		public bool HasNumMessagesInBatch()
-		{
-			return ((_bitField & 0x00000080) == 0x00000080);
-		}
-		
-		// optional uint64 event_time = 12 [default = 0];
-		public const int EventTimeFieldNumber = 12;
-		public bool HasEventTime()
-		{
-			return ((_bitField & 0x00000100) == 0x00000100);
-		}
-		
-		// repeated .pulsar.proto.EncryptionKeys encryption_keys = 13;
-		public const int EncryptionKeysFieldNumber = 13;
-		public IList<EncryptionKeys> EncryptionKeysList
-		{
-			get
-			{
-				return EncryptionKeys;
-			}
-		}
-		
-		public int EncryptionKeysCount
-		{
-			get
-			{
-				return EncryptionKeys.Count;
-			}
-		}
-		public EncryptionKeys GetEncryptionKeys(int Index)
-		{
-			return EncryptionKeys[Index];
-		}
-		
-		// optional string encryption_algo = 14;
-		public const int EncryptionAlgoFieldNumber = 14;
-		public bool HasEncryptionAlgo()
-		{
-			return ((_bitField & 0x00000200) == 0x00000200);
-		}
-		
-		// optional bytes encryption_param = 15;
-		public const int EncryptionParamFieldNumber = 15;
-		
-		public bool HasEncryptionParam()
-		{
-			return ((_bitField & 0x00000400) == 0x00000400);
-		}
-		
-		// optional bytes schema_version = 16;
-		public const int SchemaVersionFieldNumber = 16;
-		public bool HasSchemaVersion()
-		{
-			return ((_bitField & 0x00000800) == 0x00000800);
-		}
-		
-		// optional bool partition_key_b64_encoded = 17 [default = false];
-		public const int PartitionKeyB64EncodedFieldNumber = 17;
-		public bool HasPartitionKeyB64Encoded()
-		{
-			return ((_bitField & 0x00001000) == 0x00001000);
-		}
-		
-		// optional bytes ordering_key = 18;
-		public const int OrderingKeyFieldNumber = 18;
-		public bool HasOrderingKey()
-		{
-			return ((_bitField & 0x00002000) == 0x00002000);
-		}
-		
-		// optional int64 deliver_at_time = 19;
-		public const int DeliverAtTimeFieldNumber = 19;
-		public bool HasDeliverAtTime()
-		{
-			return ((_bitField & 0x00004000) == 0x00004000);
-		}
-		
-		// optional int32 marker_type = 20;
-		public const int MarkerTypeFieldNumber = 20;
-		public bool HasMarkerType()
-		{
-			return ((_bitField & 0x00008000) == 0x00008000);
-		}
-		
-		// optional uint64 txnid_least_bits = 22 [default = 0];
-		public const int TxnidLeastBitsFieldNumber = 22;
-		public bool HasTxnidLeastBits()
-		{
-			return ((_bitField & 0x00010000) == 0x00010000);
-		}
-		
-		// optional uint64 txnid_most_bits = 23 [default = 0];
-		public const int TxnidMostBitsFieldNumber = 23;
-		public bool HasTxnidMostBits()
-		{
-			return ((_bitField & 0x00020000) == 0x00020000);
-		}
-		
-		// optional uint64 highest_sequence_id = 24 [default = 0];
-		public const int HighestSequenceIdFieldNumber = 24;
-
-		public bool HasHighestSequenceId()
-		{
-			return ((_bitField & 0x00040000) == 0x00040000);
-		}
 		
 		public void InitFields()
 		{
@@ -264,10 +67,10 @@ namespace SharpPulsar.Protocol.Proto
 			NumMessagesInBatch = 1;
 			EventTime = 0L;
 			EncryptionAlgo = "";
-			EncryptionParam= Encoding.UTF8.GetBytes(string.Empty);
-			SchemaVersion = Encoding.UTF8.GetBytes(string.Empty);
+			EncryptionParam= ByteString.Empty;
+			SchemaVersion = ByteString.Empty;
 			PartitionKeyB64Encoded = false;
-			OrderingKey = Encoding.UTF8.GetBytes(string.Empty);
+			OrderingKey = ByteString.Empty;
 			DeliverAtTime = 0L;
 			MarkerType = 0;
 			TxnidLeastBits = 0L;
@@ -275,6 +78,7 @@ namespace SharpPulsar.Protocol.Proto
 			HighestSequenceId = 0L;
 		}
 		internal sbyte MemoizedIsInitialized = -1;
+		public int SerializedSize => CalculateSize();
 		public bool Initialized
 		{
 			get
@@ -285,32 +89,32 @@ namespace SharpPulsar.Protocol.Proto
 					return IsInitialized == 1;
 				}
 
-				if (!HasProducerName())
+				if (!HasProducerName)
 				{
 					MemoizedIsInitialized = 0;
 					return false;
 				}
-				if (!HasSequenceId())
+				if (!HasSequenceId)
 				{
 					MemoizedIsInitialized = 0;
 					return false;
 				}
-				if (!HasPublishTime())
+				if (!HasPublishTime)
 				{
 					MemoizedIsInitialized = 0;
 					return false;
 				}
-				for (int I = 0; I < PropertiesCount; I++)
+				for (int I = 0; I < Properties.Count; I++)
 				{
-					if (GetProperties(I) != null)
+					if (Properties[I] != null)
 					{
 						MemoizedIsInitialized = 0;
 						return false;
 					}
 				}
-				for (int I = 0; I < EncryptionKeysCount; I++)
+				for (int I = 0; I < EncryptionKeys.Count; I++)
 				{
-					if (GetEncryptionKeys(I) != null)
+					if (EncryptionKeys[I] != null)
 					{
 						MemoizedIsInitialized = 0;
 						return false;
@@ -320,8 +124,100 @@ namespace SharpPulsar.Protocol.Proto
 				return true;
 			}
 		}
+		public void WriteTo(ByteBufCodedOutputStream Output)
+		{
+			var _= SerializedSize;
+			if (((_hasBits0 & 0x00000001) == 0x00000001))
+			{
+				Output.WriteBytes(1, ByteString.CopyFromUtf8(ProducerName));
+			}
+			if (((_hasBits0 & 0x00000002) == 0x00000002))
+			{
+				Output.WriteUInt64(2, (long)SequenceId);
+			}
+			if (((_hasBits0 & 0x00000004) == 0x00000004))
+			{
+				Output.WriteUInt64(3, (long)PublishTime);
+			}
+			for (int I = 0; I < Properties.Count; I++)
+			{
+				Output.WriteMessage(4, Properties[I]);
+			}
+			if (((_hasBits0 & 0x00000008) == 0x00000008))
+			{
+				Output.WriteBytes(5, ByteString.CopyFromUtf8(ReplicatedFrom));
+			}
+			if (((_hasBits0 & 0x00000010) == 0x00000010))
+			{
+				Output.WriteBytes(6, ByteString.CopyFromUtf8(PartitionKey));
+			}
+			for (int I = 0; I < ReplicateTo.Count; I++)
+			{
+				Output.WriteBytes(7, ByteString.CopyFromUtf8(ReplicateTo[I]));
+			}
+			if (((_hasBits0 & 0x00000020) == 0x00000020))
+			{
+				Output.WriteEnum(8, (int)Compression);
+			}
+			if (((_hasBits0 & 0x00000040) == 0x00000040))
+			{
+				Output.WriteUInt32(9, (int)UncompressedSize);
+			}
+			if (((_hasBits0 & 0x00000080) == 0x00000080))
+			{
+				Output.WriteInt32(11, NumMessagesInBatch);
+			}
+			if (((_hasBits0 & 0x00000100) == 0x00000100))
+			{
+				Output.WriteUInt64(12, (long)EventTime);
+			}
+			for (int I = 0; I < EncryptionKeys.Count; I++)
+			{
+				Output.WriteMessage(13, EncryptionKeys[I]);
+			}
+			if (((_hasBits0 & 0x00000200) == 0x00000200))
+			{
+				Output.WriteBytes(14, ByteString.CopyFromUtf8(EncryptionAlgo));
+			}
+			if (((_hasBits0 & 0x00000400) == 0x00000400))
+			{
+				Output.WriteBytes(15, EncryptionParam);
+			}
+			if (((_hasBits0 & 0x00000800) == 0x00000800))
+			{
+				Output.WriteBytes(16, SchemaVersion);
+			}
+			if (((_hasBits0 & 0x00001000) == 0x00001000))
+			{
+				Output.WriteBool(17, PartitionKeyB64Encoded);
+			}
+			if (((_hasBits0 & 0x00002000) == 0x00002000))
+			{
+				Output.WriteBytes(18, OrderingKey);
+			}
+			if (((_hasBits0 & 0x00004000) == 0x00004000))
+			{
+				Output.WriteInt64(19, DeliverAtTime);
+			}
+			if (((_hasBits0 & 0x00008000) == 0x00008000))
+			{
+				Output.WriteInt32(20, MarkerType);
+			}
+			if (((_hasBits0 & 0x00010000) == 0x00010000))
+			{
+				Output.WriteUInt64(22, (long)TxnidLeastBits);
+			}
+			if (((_hasBits0 & 0x00020000) == 0x00020000))
+			{
+				Output.WriteUInt64(23, (long)TxnidMostBits);
+			}
+			if (((_hasBits0 & 0x00040000) == 0x00040000))
+			{
+				Output.WriteUInt64(24, (long)HighestSequenceId);
+			}
+		}
 
-		
+
 		internal int MemoizedSerializedSize = -1;
 		
 		internal const long SerialVersionUID = 0L;
@@ -334,8 +230,15 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		
-		public sealed class Builder 
+		public static Builder NewBuilder(MessageMetadata Prototype)
+		{
+			return NewBuilder().MergeFrom(Prototype);
+		}
+		public Builder ToBuilder()
+		{
+			return NewBuilder(this);
+		}
+		public sealed class Builder : ByteBufMessageBuilder
 		{
 
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
@@ -393,13 +296,13 @@ namespace SharpPulsar.Protocol.Proto
 				_bitField = (_bitField & ~0x00000800);
 				_encryptionAlgo = "";
 				_bitField = (_bitField & ~0x00001000);
-				_encryptionParam = Encoding.UTF8.GetBytes(string.Empty);
+				_encryptionParam = ByteString.Empty;
 				_bitField = (_bitField & ~0x00002000);
-				_schemaVersion = Encoding.UTF8.GetBytes(string.Empty);
+				_schemaVersion = ByteString.Empty;
 				_bitField = (_bitField & ~0x00004000);
 				_partitionKeyB64Encoded = false;
 				_bitField = (_bitField & ~0x00008000);
-				_orderingKey = Encoding.UTF8.GetBytes(string.Empty);
+				_orderingKey = ByteString.Empty;
 				_bitField = (_bitField & ~0x00010000);
 				_deliverAtTime = 0L;
 				_bitField = (_bitField & ~0x00020000);
@@ -475,8 +378,8 @@ namespace SharpPulsar.Protocol.Proto
 					_replicateToes = new List<string>(_replicateToes);
 					_bitField = (_bitField & ~0x00000040);
 				}
-				result.ReplicateToes.Clear();
-				_replicateToes.ToList().ForEach(result.ReplicateToes.Add);
+				result.ReplicateTo.Clear();
+				_replicateToes.ToList().ForEach(result.ReplicateTo.Add);
 				if (((_frombitField & 0x00000080) == 0x00000080))
 				{
 					To_bitField |= 0x00000020;
@@ -554,7 +457,7 @@ namespace SharpPulsar.Protocol.Proto
 					To_bitField |= 0x00040000;
 				}
 				result.HighestSequenceId = (ulong)HighestSequenceId;
-				result._bitField = To_bitField;
+				result._hasBits0 = To_bitField;
 				return result;
 			}
 
@@ -564,15 +467,15 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					return this;
 				}
-				if (Other.HasProducerName())
+				if (Other.HasProducerName)
 				{
 					SetProducerName(Other.ProducerName);
 				}
-				if (Other.HasSequenceId())
+				if (Other.HasSequenceId)
 				{
 					_sequenceId = (long)Other.SequenceId;
 				}
-				if (Other.HasPublishTime())
+				if (Other.HasPublishTime)
 				{
 					SetPublishTime((long)Other.PublishTime);
 				}
@@ -586,45 +489,45 @@ namespace SharpPulsar.Protocol.Proto
 					else
 					{
 						EnsurePropertiesIsMutable();
-						((List<KeyValue>)_properties).AddRange(Other.PropertiesList);
+						((List<KeyValue>)_properties).AddRange(Other.Properties);
 					}
 
 				}
-				if (Other.HasReplicatedFrom())
+				if (Other.HasReplicatedFrom)
 				{
 					SetReplicatedFrom(Other.ReplicatedFrom);
 				}
-				if (Other.HasPartitionKey())
+				if (Other.HasPartitionKey)
 				{
 					SetPartitionKey(Other.PartitionKey);
 				}
-				if (!Other.ReplicateToes.Any())
+				if (!Other.ReplicateTo.Any())
 				{
 					if (!_replicateToes.Any())
 					{
-						_replicateToes = Other.ReplicateToes;
+						_replicateToes = Other.ReplicateTo;
 						_bitField = (_bitField & ~0x00000040);
 					}
 					else
 					{
 						EnsureReplicateToIsMutable();
-						Other.ReplicateToes.ToList().ForEach(_replicateToes.Add);
+						Other.ReplicateTo.ToList().ForEach(_replicateToes.Add);
 					}
 
 				}
-				if (Other.HasCompression())
+				if (Other.HasCompression)
 				{
 					SetCompression(Other.Compression);
 				}
-				if (Other.HasUncompressedSize())
+				if (Other.HasUncompressedSize)
 				{
 					SetUncompressedSize((int)Other.UncompressedSize);
 				}
-				if (Other.HasNumMessagesInBatch())
+				if (Other.HasNumMessagesInBatch)
 				{
 					SetNumMessagesInBatch(Other.NumMessagesInBatch);
 				}
-				if (Other.HasEventTime())
+				if (Other.HasEventTime)
 				{
 					SetEventTime((long)Other.EventTime);
 				}
@@ -642,49 +545,209 @@ namespace SharpPulsar.Protocol.Proto
 					}
 
 				}
-				if (Other.HasEncryptionAlgo())
+				if (Other.HasEncryptionAlgo)
 				{
 					SetEncryptionAlgo(Other.EncryptionAlgo);
 				}
-				if (Other.HasEncryptionParam())
+				if (Other.HasEncryptionParam)
 				{
 					SetEncryptionParam(Other.EncryptionParam);
 				}
-				if (Other.HasSchemaVersion())
+				if (Other.HasSchemaVersion)
 				{
 					SetSchemaVersion(Other.SchemaVersion);
 				}
-				if (Other.HasPartitionKeyB64Encoded())
+				if (Other.HasPartitionKeyB64Encoded)
 				{
 					SetPartitionKeyB64Encoded(Other.PartitionKeyB64Encoded);
 				}
-				if (Other.HasOrderingKey())
+				if (Other.HasOrderingKey)
 				{
 					SetOrderingKey(Other.OrderingKey);
 				}
-				if (Other.HasDeliverAtTime())
+				if (Other.HasDeliverAtTime)
 				{
 					_deliverAtTime = Other.DeliverAtTime;
 				}
-				if (Other.HasMarkerType())
+				if (Other.HasMarkerType)
 				{
 					_markerType = Other.MarkerType;
 				}
-				if (Other.HasTxnidLeastBits())
+				if (Other.HasTxnidLeastBits)
 				{
 					_txnidLeastBits = (long)Other.TxnidLeastBits;
 				}
-				if (Other.HasTxnidMostBits())
+				if (Other.HasTxnidMostBits)
 				{
 					_txnidMostBits = (long)Other.TxnidMostBits;
 				}
-				if (Other.HasHighestSequenceId())
+				if (Other.HasHighestSequenceId)
 				{
 					HighestSequenceId = (long)Other.HighestSequenceId;
 				}
 				return this;
 			}
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream Input, ExtensionRegistry ExtensionRegistry)
+			{
+				while (true)
+				{
+					int Tag = Input.ReadTag();
+					switch (Tag)
+					{
+						case 0:
 
+							return this;
+						default:
+							{
+								if (!Input.SkipField(Tag))
+								{
+
+									return this;
+								}
+								break;
+							}
+						case 10:
+							{
+								_bitField |= 0x00000001;
+								_producerName = Input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 16:
+							{
+								_bitField |= 0x00000002;
+								_sequenceId = Input.ReadUInt64();
+								break;
+							}
+						case 24:
+							{
+								_bitField |= 0x00000004;
+								_publishTime = Input.ReadUInt64();
+								break;
+							}
+						case 34:
+							{
+								KeyValue.Builder SubBuilder = KeyValue.NewBuilder();
+								Input.ReadMessage(SubBuilder, ExtensionRegistry);
+								AddProperties(SubBuilder.BuildPartial());
+								break;
+							}
+						case 42:
+							{
+								_bitField |= 0x00000010;
+								_replicatedFrom = Input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 50:
+							{
+								_bitField |= 0x00000020;
+								_partitionKey = Input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 58:
+							{
+								EnsureReplicateToIsMutable();
+								_replicateToes.Add(Input.ReadBytes().ToStringUtf8());
+								break;
+							}
+						case 64:
+							{
+								int RawValue = Input.ReadEnum();
+								CompressionType Value = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>().ToList()[RawValue];
+								if (Value != null)
+								{
+									_bitField |= 0x00000080;
+									_compression = Value;
+								}
+								break;
+							}
+						case 72:
+							{
+								_bitField |= 0x00000100;
+								_uncompressedSize = Input.ReadUInt32();
+								break;
+							}
+						case 88:
+							{
+								_bitField |= 0x00000200;
+								_numMessagesInBatch = Input.ReadInt32();
+								break;
+							}
+						case 96:
+							{
+								_bitField |= 0x00000400;
+								_eventTime = Input.ReadUInt64();
+								break;
+							}
+						case 106:
+							{
+								EncryptionKeys.Builder SubBuilder = Proto.EncryptionKeys.NewBuilder();
+								Input.ReadMessage(SubBuilder, ExtensionRegistry);
+								AddEncryptionKeys(SubBuilder.BuildPartial());
+								break;
+							}
+						case 114:
+							{
+								_bitField |= 0x00001000;
+								_encryptionAlgo = Input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 122:
+							{
+								_bitField |= 0x00002000;
+								_encryptionParam = Input.ReadBytes();
+								break;
+							}
+						case 130:
+							{
+								_bitField |= 0x00004000;
+								_schemaVersion = Input.ReadBytes();
+								break;
+							}
+						case 136:
+							{
+								_bitField |= 0x00008000;
+								_partitionKeyB64Encoded = Input.ReadBool();
+								break;
+							}
+						case 146:
+							{
+								_bitField |= 0x00010000;
+								_orderingKey = Input.ReadBytes();
+								break;
+							}
+						case 152:
+							{
+								_bitField |= 0x00020000;
+								_deliverAtTime = Input.ReadInt64();
+								break;
+							}
+						case 160:
+							{
+								_bitField |= 0x00040000;
+								_markerType = Input.ReadInt32();
+								break;
+							}
+						case 176:
+							{
+								_bitField |= 0x00080000;
+								_txnidLeastBits = Input.ReadUInt64();
+								break;
+							}
+						case 184:
+							{
+								_bitField |= 0x00100000;
+								_txnidMostBits = Input.ReadUInt64();
+								break;
+							}
+						case 192:
+							{
+								_bitField |= 0x00200000;
+								HighestSequenceId = Input.ReadUInt64();
+								break;
+							}
+					}
+				}
+			}
 			public bool Initialized
 			{
 				get
@@ -864,7 +927,7 @@ namespace SharpPulsar.Protocol.Proto
 
 				return this;
 			}
-			public Builder AddAllProperties<T1>(IEnumerable<T1> Values) where T1 : KeyValue
+			public Builder AddAllProperties(IEnumerable<KeyValue> Values) 
 			{
 				EnsurePropertiesIsMutable();
 				Values.ToList().ForEach(_properties.Add);
@@ -1182,7 +1245,7 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 						
-			public Builder AddAllEncryptionKeys<T1>(IEnumerable<T1> Values) where T1 : EncryptionKeys
+			public Builder AddAllEncryptionKeys(IEnumerable<EncryptionKeys> Values) 
 			{
 				EnsureEncryptionKeysIsMutable();
 				Values.ToList().ForEach(_encryptionKeys.Add);
@@ -1233,13 +1296,13 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			
 			// optional bytes encryption_param = 15;
-			private byte[] _encryptionParam = Encoding.UTF8.GetBytes(string.Empty);
+			private ByteString _encryptionParam = ByteString.Empty;
 			public bool HasEncryptionParam()
 			{
 				return ((_bitField & 0x00002000) == 0x00002000);
 			}
 			
-			public Builder SetEncryptionParam(byte[] value)
+			public Builder SetEncryptionParam(ByteString value)
 			{
 				if (value == null)
 				{
@@ -1259,13 +1322,13 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional bytes schema_version = 16;
-			private byte[] _schemaVersion = Encoding.UTF8.GetBytes(string.Empty);
+			internal ByteString _schemaVersion = ByteString.Empty;
 			public bool HasSchemaVersion()
 			{
 				return ((_bitField & 0x00004000) == 0x00004000);
 			}
 			
-			public Builder SetSchemaVersion(byte[] value)
+			public Builder SetSchemaVersion(ByteString value)
 			{
 				if (value == null)
 				{
@@ -1313,13 +1376,13 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional bytes ordering_key = 18;
-			private byte[] _orderingKey = Encoding.UTF8.GetBytes(string.Empty);
+			private ByteString _orderingKey = ByteString.Empty;
 			public bool HasOrderingKey()
 			{
 				return ((_bitField & 0x00010000) == 0x00010000);
 			}
 			
-			public Builder SetOrderingKey(byte[] value)
+			public Builder SetOrderingKey(ByteString value)
 			{
 				if (value == null)
 				{

@@ -13,6 +13,10 @@ using SharpPulsar.Common;
 using SharpPulsar.Util.Protobuf;
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Common.Entity;
+using System.Linq;
+using Optional;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -62,7 +66,7 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewConnect(string AuthMethodName, string authData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, string OriginalAuthData, string OriginalAuthMethod)
 		{
-			Proto.CommandConnect.Builder ConnectBuilder = CommandConnect.NewBuilder();
+			CommandConnect.Builder ConnectBuilder = CommandConnect.NewBuilder();
 			ConnectBuilder.SetClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
 			ConnectBuilder.SetAuthMethodName(AuthMethodName);
 
@@ -175,46 +179,46 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewAuthChallenge(string AuthMethod, AuthData BrokerData, int ClientProtocolVersion)
 		{
-			Proto.CommandAuthChallenge.Builder ChallengeBuilder = Proto.CommandAuthChallenge.newBuilder();
+			CommandAuthChallenge.Builder ChallengeBuilder = CommandAuthChallenge.NewBuilder();
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
-			int CurrentProtocolVersion = CurrentProtocolVersion;
+			int currentProtocolVersion = CurrentProtocolVersion;
 			int VersionToAdvertise = Math.Min(CurrentProtocolVersion, ClientProtocolVersion);
 
-			ChallengeBuilder.ProtocolVersion = VersionToAdvertise;
+			ChallengeBuilder.SetProtocolVersion(VersionToAdvertise);
 
-			Proto.CommandAuthChallenge Challenge = ChallengeBuilder.setChallenge(Proto.AuthData.newBuilder().setAuthData(copyFrom(BrokerData.Bytes)).setAuthMethodName(AuthMethod).build()).build();
+			CommandAuthChallenge Challenge = ChallengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(BrokerData.AuthData_).SetAuthMethodName(AuthMethod).Build()).Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.AUTH_CHALLENGE).setAuthChallenge(Challenge));
-			Challenge.recycle();
-			ChallengeBuilder.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthChallenge).SetAuthChallenge(Challenge));
+			Challenge.Recycle();
+			ChallengeBuilder.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewAuthResponse(string AuthMethod, AuthData ClientData, int ClientProtocolVersion, string ClientVersion)
 		{
-			Proto.CommandAuthResponse.Builder ResponseBuilder = Proto.CommandAuthResponse.newBuilder();
+			CommandAuthResponse.Builder ResponseBuilder = CommandAuthResponse.NewBuilder();
 
-			ResponseBuilder.setClientVersion(!string.ReferenceEquals(ClientVersion, null) ? ClientVersion : "Pulsar Client");
-			ResponseBuilder.ProtocolVersion = ClientProtocolVersion;
+			ResponseBuilder.SetClientVersion(!string.ReferenceEquals(ClientVersion, null) ? ClientVersion : "Pulsar Client");
+			ResponseBuilder.SetProtocolVersion(ClientProtocolVersion);
 
-			Proto.CommandAuthResponse Response = ResponseBuilder.setResponse(Proto.AuthData.newBuilder().setAuthData(copyFrom(ClientData.Bytes)).setAuthMethodName(AuthMethod).build()).build();
+			CommandAuthResponse Response = ResponseBuilder.SetResponse(AuthData.NewBuilder().SetAuthData(ClientData.AuthData_).SetAuthMethodName(AuthMethod).Build()).Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.AUTH_RESPONSE).setAuthResponse(Response));
-			Response.recycle();
-			ResponseBuilder.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthResponse).SetAuthResponse(Response));
+			Response.Recycle();
+			ResponseBuilder.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewSuccess(long RequestId)
 		{
-			Proto.CommandSuccess.Builder SuccessBuilder = Proto.CommandSuccess.newBuilder();
-			SuccessBuilder.RequestId = RequestId;
-			Proto.CommandSuccess Success = SuccessBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SUCCESS).setSuccess(Success));
-			SuccessBuilder.recycle();
-			Success.recycle();
+			CommandSuccess.Builder SuccessBuilder = CommandSuccess.NewBuilder();
+			SuccessBuilder.SetRequestId(RequestId);
+			CommandSuccess Success = SuccessBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Success).SetSuccess(Success));
+			SuccessBuilder.Recycle();
+			Success.Recycle();
 			return Res;
 		}
 
@@ -225,70 +229,70 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewProducerSuccess(long RequestId, string ProducerName, long LastSequenceId, SchemaVersion SchemaVersion)
 		{
-			Proto.CommandProducerSuccess.Builder ProducerSuccessBuilder = Proto.CommandProducerSuccess.newBuilder();
-			ProducerSuccessBuilder.RequestId = RequestId;
-			ProducerSuccessBuilder.setProducerName(ProducerName);
-			ProducerSuccessBuilder.LastSequenceId = LastSequenceId;
-			ProducerSuccessBuilder.SchemaVersion = ByteString.copyFrom(SchemaVersion.bytes());
-			Proto.CommandProducerSuccess ProducerSuccess = ProducerSuccessBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PRODUCER_SUCCESS).setProducerSuccess(ProducerSuccess));
-			ProducerSuccess.recycle();
-			ProducerSuccessBuilder.recycle();
+			CommandProducerSuccess.Builder ProducerSuccessBuilder = CommandProducerSuccess.NewBuilder();
+			ProducerSuccessBuilder.SetRequestId(RequestId);
+			ProducerSuccessBuilder.SetProducerName(ProducerName);
+			ProducerSuccessBuilder.SetLastSequenceId(LastSequenceId);
+			ProducerSuccessBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)SchemaVersion.Bytes()));
+			CommandProducerSuccess ProducerSuccess = ProducerSuccessBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ProducerSuccess).SetProducerSuccess(ProducerSuccess));
+			ProducerSuccess.Recycle();
+			ProducerSuccessBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewError(long RequestId, Proto.ServerError Error, string Message)
+		public static IByteBuffer NewError(long RequestId, ServerError Error, string Message)
 		{
-			Proto.CommandError.Builder CmdErrorBuilder = Proto.CommandError.newBuilder();
-			CmdErrorBuilder.RequestId = RequestId;
-			CmdErrorBuilder.Error = Error;
-			CmdErrorBuilder.setMessage(Message);
-			Proto.CommandError CmdError = CmdErrorBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ERROR).setError(CmdError));
-			CmdError.recycle();
-			CmdErrorBuilder.recycle();
+			CommandError.Builder CmdErrorBuilder = CommandError.NewBuilder();
+			CmdErrorBuilder.SetRequestId(RequestId);
+			CmdErrorBuilder.SetError(Error);
+			CmdErrorBuilder.SetMessage(Message);
+			CommandError CmdError = CmdErrorBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Error).SetError(CmdError));
+			CmdError.Recycle();
+			CmdErrorBuilder.Recycle();
 			return Res;
 
 		}
 
 		public static IByteBuffer NewSendReceipt(long ProducerId, long SequenceId, long HighestId, long LedgerId, long EntryId)
 		{
-			Proto.CommandSendReceipt.Builder SendReceiptBuilder = Proto.CommandSendReceipt.newBuilder();
-			SendReceiptBuilder.ProducerId = ProducerId;
-			SendReceiptBuilder.SequenceId = SequenceId;
-			SendReceiptBuilder.HighestSequenceId = HighestId;
-			Proto.MessageIdData.Builder MessageIdBuilder = Proto.MessageIdData.newBuilder();
+			CommandSendReceipt.Builder SendReceiptBuilder = CommandSendReceipt.NewBuilder();
+			SendReceiptBuilder.SetProducerId(ProducerId);
+			SendReceiptBuilder.SetSequenceId(SequenceId);
+			SendReceiptBuilder.SetHighestSequenceId(HighestId);
+			MessageIdData.Builder MessageIdBuilder = MessageIdData.NewBuilder();
 			MessageIdBuilder.LedgerId = LedgerId;
 			MessageIdBuilder.EntryId = EntryId;
-			Proto.MessageIdData MessageId = MessageIdBuilder.build();
-			SendReceiptBuilder.setMessageId(MessageId);
-			Proto.CommandSendReceipt SendReceipt = SendReceiptBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEND_RECEIPT).setSendReceipt(SendReceipt));
-			MessageIdBuilder.recycle();
-			MessageId.recycle();
-			SendReceiptBuilder.recycle();
-			SendReceipt.recycle();
+			MessageIdData MessageId = MessageIdBuilder.Build();
+			SendReceiptBuilder.SetMessageId(MessageId);
+			CommandSendReceipt SendReceipt = SendReceiptBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendReceipt).SetSendReceipt(SendReceipt));
+			MessageIdBuilder.Recycle();
+			MessageId.Recycle();
+			SendReceiptBuilder.Recycle();
+			SendReceipt.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewSendError(long ProducerId, long SequenceId, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewSendError(long ProducerId, long SequenceId, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandSendError.Builder SendErrorBuilder = Proto.CommandSendError.newBuilder();
-			SendErrorBuilder.ProducerId = ProducerId;
-			SendErrorBuilder.SequenceId = SequenceId;
-			SendErrorBuilder.Error = Error;
-			SendErrorBuilder.setMessage(ErrorMsg);
-			Proto.CommandSendError SendError = SendErrorBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEND_ERROR).setSendError(SendError));
-			SendErrorBuilder.recycle();
-			SendError.recycle();
+			CommandSendError.Builder SendErrorBuilder = CommandSendError.NewBuilder();
+			SendErrorBuilder.SetProducerId(ProducerId);
+			SendErrorBuilder.SetSequenceId(SequenceId);
+			SendErrorBuilder.SetError(Error);
+			SendErrorBuilder.SetMessage(ErrorMsg);
+			CommandSendError SendError = SendErrorBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendError).SetSendError(SendError));
+			SendErrorBuilder.Recycle();
+			SendError.Recycle();
 			return Res;
 		}
 
 
 		public static bool HasChecksum(IByteBuffer Buffer)
 		{
-			return Buffer.getShort(Buffer.readerIndex()) == MagicCrc32c;
+			return Buffer.GetShort(Buffer.ReaderIndex) == MagicCrc32c;
 		}
 
 		/// <summary>
@@ -299,8 +303,8 @@ namespace SharpPulsar.Protocol
 		/// </summary>
 		public static int ReadChecksum(IByteBuffer Buffer)
 		{
-			Buffer.skipBytes(2); //skip magic bytes
-			return Buffer.readInt();
+			Buffer.SkipBytes(2); //skip magic bytes
+			return Buffer.ReadInt();
 		}
 
 		public static void SkipChecksumIfPresent(IByteBuffer Buffer)
@@ -311,28 +315,28 @@ namespace SharpPulsar.Protocol
 			}
 		}
 
-		public static Proto.MessageMetadata ParseMessageMetadata(IByteBuffer Buffer)
+		public static MessageMetadata ParseMessageMetadata(IByteBuffer Buffer)
 		{
 			try
 			{
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
 				SkipChecksumIfPresent(Buffer);
-				int MetadataSize = (int) Buffer.readUnsignedInt();
+				int MetadataSize = (int) Buffer.ReadUnsignedInt();
 
-				int WriterIndex = Buffer.writerIndex();
-				Buffer.writerIndex(Buffer.readerIndex() + MetadataSize);
-				IByteBufferCodedInputStream Stream = IByteBufferCodedInputStream.get(Buffer);
-				Proto.MessageMetadata.Builder MessageMetadataBuilder = Proto.MessageMetadata.newBuilder();
-				Proto.MessageMetadata Res = MessageMetadataBuilder.mergeFrom(Stream, null).build();
-				Buffer.writerIndex(WriterIndex);
-				MessageMetadataBuilder.recycle();
-				Stream.recycle();
+				int WriterIndex = Buffer.WriterIndex;
+				Buffer.SetWriterIndex(Buffer.ReaderIndex + MetadataSize);
+				ByteBufCodedInputStream Stream = ByteBufCodedInputStream.Get(Buffer);
+				MessageMetadata.Builder MessageMetadataBuilder = MessageMetadata.NewBuilder();
+				MessageMetadata Res = ((MessageMetadata.Builder)MessageMetadataBuilder.MergeFrom(Stream, null)).Build();
+				Buffer.SetWriterIndex(WriterIndex);
+				MessageMetadataBuilder.Recycle();
+				Stream.Recycle();
 				return Res;
 			}
 			catch (IOException E)
 			{
-				throw new Exception(E);
+				throw new System.Exception(E.Message, E);
 			}
 		}
 
@@ -341,262 +345,260 @@ namespace SharpPulsar.Protocol
 			// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
 			// metadata
 			SkipChecksumIfPresent(Buffer);
-			int MetadataSize = (int) Buffer.readUnsignedInt();
-			Buffer.skipBytes(MetadataSize);
+			int MetadataSize = (int) Buffer.ReadUnsignedInt();
+			Buffer.SkipBytes(MetadataSize);
 		}
 
-		public static IByteBufferPair NewMessage(long ConsumerId, Proto.MessageIdData MessageId, int RedeliveryCount, IByteBuffer MetadataAndPayload)
+		public static ByteBufPair NewMessage(long ConsumerId, MessageIdData MessageId, int RedeliveryCount, IByteBuffer MetadataAndPayload)
 		{
-			Proto.CommandMessage.Builder MsgBuilder = Proto.CommandMessage.newBuilder();
-			MsgBuilder.ConsumerId = ConsumerId;
-			MsgBuilder.setMessageId(MessageId);
+			CommandMessage.Builder MsgBuilder = CommandMessage.NewBuilder();
+			MsgBuilder.SetConsumerId(ConsumerId);
+			MsgBuilder.SetMessageId(MessageId);
 			if (RedeliveryCount > 0)
 			{
-				MsgBuilder.RedeliveryCount = RedeliveryCount;
+				MsgBuilder.SetRedeliveryCount(RedeliveryCount);
 			}
-			Proto.CommandMessage Msg = MsgBuilder.build();
-			Proto.BaseCommand.Builder CmdBuilder = Proto.BaseCommand.newBuilder();
-			Proto.BaseCommand Cmd = CmdBuilder.setType(Proto.BaseCommand.Type.MESSAGE).setMessage(Msg).build();
+			CommandMessage Msg = MsgBuilder.Build();
+			BaseCommand.Builder CmdBuilder = BaseCommand.NewBuilder();
+			BaseCommand Cmd = CmdBuilder.SetType(BaseCommand.Types.Type.Message).SetMessage(Msg).Build();
 
-			IByteBufferPair Res = SerializeCommandMessageWithSize(Cmd, MetadataAndPayload);
-			Cmd.recycle();
-			CmdBuilder.recycle();
-			Msg.recycle();
-			MsgBuilder.recycle();
+			ByteBufPair Res = SerializeCommandMessageWithSize(Cmd, MetadataAndPayload);
+			Cmd.Recycle();
+			CmdBuilder.Recycle();
+			Msg.Recycle();
+			MsgBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBufferPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType ChecksumType, Proto.MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
 		{
 			return NewSend(ProducerId, SequenceId, NumMessaegs, 0, 0, ChecksumType, MessageMetadata, Payload);
 		}
 
-		public static IByteBufferPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessaegs, ChecksumType ChecksumType, Proto.MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessaegs, ChecksumType ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
 		{
 			return NewSend(ProducerId, LowestSequenceId, HighestSequenceId, NumMessaegs, 0, 0, ChecksumType, MessageMetadata, Payload);
 		}
 
-		public static IByteBufferPair NewSend(long ProducerId, long SequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, Proto.MessageMetadata MessageData, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, MessageMetadata MessageData, IByteBuffer Payload)
 		{
-			Proto.CommandSend.Builder SendBuilder = Proto.CommandSend.newBuilder();
-			SendBuilder.ProducerId = ProducerId;
-			SendBuilder.SequenceId = SequenceId;
+			CommandSend.Builder SendBuilder = CommandSend.NewBuilder();
+			SendBuilder.SetProducerId(ProducerId);
+			SendBuilder.SetSequenceId(SequenceId);
 			if (NumMessages > 1)
 			{
-				SendBuilder.NumMessages = NumMessages;
+				SendBuilder.SetNumMessages(NumMessages);
 			}
 			if (TxnIdLeastBits > 0)
 			{
-				SendBuilder.TxnidLeastBits = TxnIdLeastBits;
+				SendBuilder.SetTxnidLeastBits(TxnIdLeastBits);
 			}
 			if (TxnIdMostBits > 0)
 			{
-				SendBuilder.TxnidMostBits = TxnIdMostBits;
+				SendBuilder.SetTxnidMostBits(TxnIdMostBits);
 			}
-			Proto.CommandSend Send = SendBuilder.build();
+			CommandSend Send = SendBuilder.Build();
 
-			IByteBufferPair Res = SerializeCommandSendWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEND).setSend(Send), ChecksumType, MessageData, Payload);
-			Send.recycle();
-			SendBuilder.recycle();
+			ByteBufPair Res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(Send), ChecksumType, MessageData, Payload);
+			Send.Recycle();
+			SendBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBufferPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, Proto.MessageMetadata MessageData, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, MessageMetadata MessageData, IByteBuffer Payload)
 		{
-			Proto.CommandSend.Builder SendBuilder = Proto.CommandSend.newBuilder();
-			SendBuilder.ProducerId = ProducerId;
-			SendBuilder.SequenceId = LowestSequenceId;
-			SendBuilder.HighestSequenceId = HighestSequenceId;
+			CommandSend.Builder SendBuilder = CommandSend.NewBuilder();
+			SendBuilder.SetProducerId(ProducerId);
+			SendBuilder.SetSequenceId(LowestSequenceId);
+			SendBuilder.SetHighestSequenceId(HighestSequenceId);
 			if (NumMessages > 1)
 			{
-				SendBuilder.NumMessages = NumMessages;
+				SendBuilder.SetNumMessages(NumMessages);
 			}
 			if (TxnIdLeastBits > 0)
 			{
-				SendBuilder.TxnidLeastBits = TxnIdLeastBits;
+				SendBuilder.SetTxnidLeastBits(TxnIdLeastBits);
 			}
 			if (TxnIdMostBits > 0)
 			{
-				SendBuilder.TxnidMostBits = TxnIdMostBits;
+				SendBuilder.SetTxnidMostBits(TxnIdMostBits);
 			}
-			Proto.CommandSend Send = SendBuilder.build();
+			CommandSend Send = SendBuilder.Build();
 
-			IByteBufferPair Res = SerializeCommandSendWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEND).setSend(Send), ChecksumType, MessageData, Payload);
-			Send.recycle();
-			SendBuilder.recycle();
+			ByteBufPair Res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(Send), ChecksumType, MessageData, Payload);
+			Send.Recycle();
+			SendBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, Proto.CommandSubscribe.SubType SubType, int PriorityLevel, string ConsumerName, long ResetStartMessageBackInSeconds)
+		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, long ResetStartMessageBackInSeconds)
 		{
-			return NewSubscribe(Topic, Subscription, ConsumerId, RequestId, SubType, PriorityLevel, ConsumerName, true, null, Collections.emptyMap(), false, false, Proto.CommandSubscribe.InitialPosition.Earliest, ResetStartMessageBackInSeconds, null, true);
+			return NewSubscribe(Topic, Subscription, ConsumerId, RequestId, SubType, PriorityLevel, ConsumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, ResetStartMessageBackInSeconds, null, true);
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, Proto.CommandSubscribe.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, Proto.MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, Proto.CommandSubscribe.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist)
+		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, CommandSubscribe.Types.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist)
 		{
 					return NewSubscribe(Topic, Subscription, ConsumerId, RequestId, SubType, PriorityLevel, ConsumerName, IsDurable, StartMessageId, Metadata, ReadCompacted, IsReplicated, SubscriptionInitialPosition, StartMessageRollbackDurationInSec, SchemaInfo, CreateTopicIfDoesNotExist, null);
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, Proto.CommandSubscribe.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, Proto.MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, Proto.CommandSubscribe.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist, KeySharedPolicy KeySharedPolicy)
+		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, CommandSubscribe.Types.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist, KeySharedPolicy KeySharedPolicy)
 		{
-			Proto.CommandSubscribe.Builder SubscribeBuilder = Proto.CommandSubscribe.newBuilder();
-			SubscribeBuilder.setTopic(Topic);
-			SubscribeBuilder.setSubscription(Subscription);
-			SubscribeBuilder.SubType = SubType;
-			SubscribeBuilder.ConsumerId = ConsumerId;
-			SubscribeBuilder.setConsumerName(ConsumerName);
-			SubscribeBuilder.RequestId = RequestId;
-			SubscribeBuilder.PriorityLevel = PriorityLevel;
-			SubscribeBuilder.Durable = IsDurable;
-			SubscribeBuilder.ReadCompacted = ReadCompacted;
-			SubscribeBuilder.InitialPosition = SubscriptionInitialPosition;
-			SubscribeBuilder.ReplicateSubscriptionState = IsReplicated;
-			SubscribeBuilder.ForceTopicCreation = CreateTopicIfDoesNotExist;
+			CommandSubscribe.Builder SubscribeBuilder = CommandSubscribe.NewBuilder();
+			SubscribeBuilder.SetTopic(Topic);
+			SubscribeBuilder.SetSubscription(Subscription);
+			SubscribeBuilder.SetSubType(SubType);
+			SubscribeBuilder.SetConsumerId(ConsumerId);
+			SubscribeBuilder.SetConsumerName(ConsumerName);
+			SubscribeBuilder.SetRequestId(RequestId);
+			SubscribeBuilder.SetPriorityLevel(PriorityLevel);
+			SubscribeBuilder.SetDurable(IsDurable);
+			SubscribeBuilder.SetReadCompacted(ReadCompacted);
+			SubscribeBuilder.SetInitialPosition(SubscriptionInitialPosition);
+			SubscribeBuilder.SetReplicateSubscriptionState(IsReplicated);
+			SubscribeBuilder.SetForceTopicCreation(CreateTopicIfDoesNotExist);
 
 			if (KeySharedPolicy != null)
 			{
 				switch (KeySharedPolicy.KeySharedMode)
 				{
-					case AUTO_SPLIT:
-						SubscribeBuilder.setKeySharedMeta(Proto.KeySharedMeta.newBuilder().setKeySharedMode(Proto.KeySharedMode.AUTO_SPLIT));
+					case Common.Enum.KeySharedMode.AUTO_SPLIT:
+						SubscribeBuilder.SetKeySharedMeta(KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.AutoSplit));
 						break;
-					case STICKY:
-						Proto.KeySharedMeta.Builder Builder = Proto.KeySharedMeta.newBuilder().setKeySharedMode(Proto.KeySharedMode.STICKY);
-						IList<Range> Ranges = ((KeySharedPolicy.KeySharedPolicySticky) KeySharedPolicy).Ranges;
-						foreach (Range Range in Ranges)
+					case Common.Enum.KeySharedMode.STICKY:
+						KeySharedMeta.Builder Builder = KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.Sticky);
+						IList<Common.Entity.Range> Ranges = ((KeySharedPolicy.KeySharedPolicySticky) KeySharedPolicy).GetRanges;
+						foreach (var Range in Ranges)
 						{
-							Builder.addHashRanges(Proto.IntRange.newBuilder().setStart(Range.Start).setEnd(Range.End));
+							Builder.AddHashRanges(IntRange.NewBuilder().SetStart(Range.Start).SetEnd(Range.End));
 						}
-						SubscribeBuilder.setKeySharedMeta(Builder);
+						SubscribeBuilder.SetKeySharedMeta(Builder);
 						break;
 				}
 			}
 
 			if (StartMessageId != null)
 			{
-				SubscribeBuilder.setStartMessageId(StartMessageId);
+				SubscribeBuilder.SetStartMessageId(StartMessageId);
 			}
 			if (StartMessageRollbackDurationInSec > 0)
 			{
-				SubscribeBuilder.StartMessageRollbackDurationSec = StartMessageRollbackDurationInSec;
+				SubscribeBuilder.SetStartMessageRollbackDurationSec(StartMessageRollbackDurationInSec);
 			}
-			SubscribeBuilder.addAllMetadata(CommandUtils.ToKeyValueList(Metadata));
+			SubscribeBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(Metadata));
 
 			Proto.Schema Schema = null;
 			if (SchemaInfo != null)
 			{
 				Schema = GetSchema(SchemaInfo);
-				SubscribeBuilder.setSchema(Schema);
+				SubscribeBuilder.SetSchema(Schema);
 			}
 
-			Proto.CommandSubscribe Subscribe = SubscribeBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SUBSCRIBE).setSubscribe(Subscribe));
-			SubscribeBuilder.recycle();
-			Subscribe.recycle();
+			CommandSubscribe Subscribe = SubscribeBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Subscribe).SetSubscribe(Subscribe));
+			SubscribeBuilder.Recycle();
+			Subscribe.Recycle();
 			if (null != Schema)
 			{
-				Schema.recycle();
+				Schema.Recycle();
 			}
 			return Res;
 		}
 
 		public static IByteBuffer NewUnsubscribe(long ConsumerId, long RequestId)
 		{
-			Proto.CommandUnsubscribe.Builder UnsubscribeBuilder = Proto.CommandUnsubscribe.newBuilder();
-			UnsubscribeBuilder.ConsumerId = ConsumerId;
-			UnsubscribeBuilder.RequestId = RequestId;
-			Proto.CommandUnsubscribe Unsubscribe = UnsubscribeBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.UNSUBSCRIBE).setUnsubscribe(Unsubscribe));
-			UnsubscribeBuilder.recycle();
-			Unsubscribe.recycle();
+			CommandUnsubscribe.Builder UnsubscribeBuilder = CommandUnsubscribe.NewBuilder();
+			UnsubscribeBuilder.SetConsumerId(ConsumerId);
+			UnsubscribeBuilder.SetRequestId(RequestId);
+			CommandUnsubscribe Unsubscribe = UnsubscribeBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Unsubscribe).SetUnsubscribe(Unsubscribe));
+			UnsubscribeBuilder.Recycle();
+			Unsubscribe.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewActiveConsumerChange(long ConsumerId, bool IsActive)
 		{
-			Proto.CommandActiveConsumerChange.Builder ChangeBuilder = Proto.CommandActiveConsumerChange.newBuilder().setConsumerId(ConsumerId).setIsActive(IsActive);
+			CommandActiveConsumerChange.Builder ChangeBuilder = CommandActiveConsumerChange.NewBuilder().SetConsumerId(ConsumerId).SetIsActive(IsActive);
 
-			Proto.CommandActiveConsumerChange Change = ChangeBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ACTIVE_CONSUMER_CHANGE).setActiveConsumerChange(Change));
-			ChangeBuilder.recycle();
-			Change.recycle();
+			CommandActiveConsumerChange Change = ChangeBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ActiveConsumerChange).SetActiveConsumerChange(Change));
+			ChangeBuilder.Recycle();
+			Change.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewSeek(long ConsumerId, long RequestId, long LedgerId, long EntryId)
 		{
-			Proto.CommandSeek.Builder SeekBuilder = Proto.CommandSeek.newBuilder();
-			SeekBuilder.ConsumerId = ConsumerId;
-			SeekBuilder.RequestId = RequestId;
+			CommandSeek.Builder SeekBuilder = CommandSeek.NewBuilder();
+			SeekBuilder.SetConsumerId(ConsumerId);
+			SeekBuilder.SetRequestId(RequestId);
 
-			Proto.MessageIdData.Builder MessageIdBuilder = Proto.MessageIdData.newBuilder();
+			MessageIdData.Builder MessageIdBuilder = MessageIdData.NewBuilder();
 			MessageIdBuilder.LedgerId = LedgerId;
 			MessageIdBuilder.EntryId = EntryId;
-			Proto.MessageIdData MessageId = MessageIdBuilder.build();
-			SeekBuilder.setMessageId(MessageId);
+			MessageIdData MessageId = MessageIdBuilder.Build();
+			SeekBuilder.SetMessageId(MessageId);
 
-			Proto.CommandSeek Seek = SeekBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEEK).setSeek(Seek));
-			MessageId.recycle();
-			MessageIdBuilder.recycle();
-			SeekBuilder.recycle();
-			Seek.recycle();
+			CommandSeek Seek = SeekBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(Seek));
+			MessageId.Recycle();
+			MessageIdBuilder.Recycle();
+			SeekBuilder.Recycle();
+			Seek.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewSeek(long ConsumerId, long RequestId, long Timestamp)
 		{
-			Proto.CommandSeek.Builder SeekBuilder = Proto.CommandSeek.newBuilder();
-			SeekBuilder.ConsumerId = ConsumerId;
-			SeekBuilder.RequestId = RequestId;
+			CommandSeek.Builder SeekBuilder = CommandSeek.NewBuilder();
+			SeekBuilder.SetConsumerId(ConsumerId);
+			SeekBuilder.SetRequestId(RequestId);
 
-			SeekBuilder.MessagePublishTime = Timestamp;
+			SeekBuilder.SetMessagePublishTime(Timestamp);
 
-			Proto.CommandSeek Seek = SeekBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.SEEK).setSeek(Seek));
+			CommandSeek Seek = SeekBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(Seek));
 
-			SeekBuilder.recycle();
-			Seek.recycle();
+			SeekBuilder.Recycle();
+			Seek.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewCloseConsumer(long ConsumerId, long RequestId)
 		{
-			Proto.CommandCloseConsumer.Builder CloseConsumerBuilder = Proto.CommandCloseConsumer.newBuilder();
-			CloseConsumerBuilder.ConsumerId = ConsumerId;
-			CloseConsumerBuilder.RequestId = RequestId;
-			Proto.CommandCloseConsumer CloseConsumer = CloseConsumerBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CLOSE_CONSUMER).setCloseConsumer(CloseConsumer));
-			CloseConsumerBuilder.recycle();
-			CloseConsumer.recycle();
+			CommandCloseConsumer.Builder CloseConsumerBuilder = CommandCloseConsumer.NewBuilder();
+			CloseConsumerBuilder.SetConsumerId(ConsumerId);
+			CloseConsumerBuilder.SetRequestId(RequestId);
+			CommandCloseConsumer CloseConsumer = CloseConsumerBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseConsumer).SetCloseConsumer(CloseConsumer));
+			CloseConsumerBuilder.Recycle();
+			CloseConsumer.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewReachedEndOfTopic(long ConsumerId)
 		{
-			Proto.CommandReachedEndOfTopic.Builder ReachedEndOfTopicBuilder = Proto.CommandReachedEndOfTopic.newBuilder();
-			ReachedEndOfTopicBuilder.ConsumerId = ConsumerId;
-			Proto.CommandReachedEndOfTopic ReachedEndOfTopic = ReachedEndOfTopicBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.REACHED_END_OF_TOPIC).setReachedEndOfTopic(ReachedEndOfTopic));
-			ReachedEndOfTopicBuilder.recycle();
-			ReachedEndOfTopic.recycle();
+			CommandReachedEndOfTopic.Builder ReachedEndOfTopicBuilder = CommandReachedEndOfTopic.NewBuilder();
+			ReachedEndOfTopicBuilder.SetConsumerId(ConsumerId);
+			CommandReachedEndOfTopic ReachedEndOfTopic = ReachedEndOfTopicBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ReachedEndOfTopic).SetReachedEndOfTopic(ReachedEndOfTopic));
+			ReachedEndOfTopicBuilder.Recycle();
+			ReachedEndOfTopic.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewCloseProducer(long ProducerId, long RequestId)
 		{
-			Proto.CommandCloseProducer.Builder CloseProducerBuilder = Proto.CommandCloseProducer.newBuilder();
-			CloseProducerBuilder.ProducerId = ProducerId;
-			CloseProducerBuilder.RequestId = RequestId;
-			Proto.CommandCloseProducer CloseProducer = CloseProducerBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CLOSE_PRODUCER).setCloseProducer(CloseProducerBuilder));
-			CloseProducerBuilder.recycle();
-			CloseProducer.recycle();
+			CommandCloseProducer.Builder CloseProducerBuilder = CommandCloseProducer.NewBuilder();
+			CloseProducerBuilder.SetProducerId(ProducerId);
+			CloseProducerBuilder.SetRequestId(RequestId);
+			CommandCloseProducer CloseProducer = CloseProducerBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseProducer).SetCloseProducer(CloseProducerBuilder));
+			CloseProducerBuilder.Recycle();
+			CloseProducer.Recycle();
 			return Res;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public static io.netty.buffer.IByteBuffer newProducer(String topic, long producerId, long requestId, String producerName, java.util.Map<String, String> metadata)
 		public static IByteBuffer NewProducer(string Topic, long ProducerId, long RequestId, string ProducerName, IDictionary<string, string> Metadata)
 		{
 			return NewProducer(Topic, ProducerId, RequestId, ProducerName, false, Metadata);
@@ -607,19 +609,19 @@ namespace SharpPulsar.Protocol
 			return NewProducer(Topic, ProducerId, RequestId, ProducerName, Encrypted, Metadata, null, 0, false);
 		}
 
-		private static Proto.Schema.Type GetSchemaType(SchemaType Type)
+		private static Proto.Schema.Types.Type GetSchemaType(SchemaType Type)
 		{
 			if (Type.Value < 0)
 			{
-				return Proto.Schema.Type.None;
+				return Proto.Schema.Types.Type.None;
 			}
 			else
 			{
-				return Proto.Schema.Type.valueOf(Type.Value);
+				return Enum.GetValues(typeof(Proto.Schema.Types.Type)).Cast<Proto.Schema.Types.Type>().ToList()[Type.Value];
 			}
 		}
 
-		public static SchemaType GetSchemaType(Proto.Schema.Type type)
+		public static SchemaType GetSchemaType(Proto.Schema.Types.Type type)
 		{
 			if (type < 0)
 			{
@@ -634,326 +636,326 @@ namespace SharpPulsar.Protocol
 
 		private static Proto.Schema GetSchema(SchemaInfo SchemaInfo)
 		{
-			Proto.Schema.Builder Builder = Proto.Schema.newBuilder().setName(SchemaInfo.Name).setSchemaData(copyFrom(SchemaInfo.Schema)).setType(GetSchemaType(SchemaInfo.Type)).addAllProperties(SchemaInfo.Properties.entrySet().Select(entry => Proto.KeyValue.newBuilder().setKey(entry.Key).setValue(entry.Value).build()).ToList());
-			Proto.Schema Schema = Builder.build();
-			Builder.recycle();
+			Proto.Schema.Builder Builder = Proto.Schema.NewBuilder().SetName(SchemaInfo.Name).SetSchemaData(ByteString.CopyFrom((byte[])(Array)SchemaInfo.Schema)).SetType(GetSchemaType(SchemaInfo.Type)).AddAllProperties(SchemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
+			Proto.Schema Schema = Builder.Build();
+			Builder.Recycle();
 			return Schema;
 		}
 
 		public static IByteBuffer NewProducer(string Topic, long ProducerId, long RequestId, string ProducerName, bool Encrypted, IDictionary<string, string> Metadata, SchemaInfo SchemaInfo, long Epoch, bool UserProvidedProducerName)
 		{
-			Proto.CommandProducer.Builder ProducerBuilder = Proto.CommandProducer.newBuilder();
-			ProducerBuilder.setTopic(Topic);
-			ProducerBuilder.ProducerId = ProducerId;
-			ProducerBuilder.RequestId = RequestId;
-			ProducerBuilder.Epoch = Epoch;
+			CommandProducer.Builder ProducerBuilder = CommandProducer.NewBuilder();
+			ProducerBuilder.SetTopic(Topic);
+			ProducerBuilder.SetProducerId(ProducerId);
+			ProducerBuilder.SetRequestId(RequestId);
+			ProducerBuilder.SetEpoch(Epoch);
 			if (!string.ReferenceEquals(ProducerName, null))
 			{
-				ProducerBuilder.setProducerName(ProducerName);
+				ProducerBuilder.SetProducerName(ProducerName);
 			}
-			ProducerBuilder.UserProvidedProducerName = UserProvidedProducerName;
-			ProducerBuilder.Encrypted = Encrypted;
+			ProducerBuilder.SetUserProvidedProducerName(UserProvidedProducerName);
+			ProducerBuilder.SetEncrypted(Encrypted);
 
-			ProducerBuilder.addAllMetadata(CommandUtils.ToKeyValueList(Metadata));
+			ProducerBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(Metadata));
 
 			if (null != SchemaInfo)
 			{
-				ProducerBuilder.setSchema(GetSchema(SchemaInfo));
+				ProducerBuilder.SetSchema(GetSchema(SchemaInfo));
 			}
 
-			Proto.CommandProducer Producer = ProducerBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PRODUCER).setProducer(Producer));
-			ProducerBuilder.recycle();
-			Producer.recycle();
+			CommandProducer Producer = ProducerBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Producer).SetProducer(Producer));
+			ProducerBuilder.Recycle();
+			Producer.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewPartitionMetadataResponse(Proto.ServerError Error, string ErrorMsg, long RequestId)
+		public static IByteBuffer NewPartitionMetadataResponse(ServerError Error, string ErrorMsg, long RequestId)
 		{
-			Proto.CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = Proto.CommandPartitionedTopicMetadataResponse.newBuilder();
-			PartitionMetadataResponseBuilder.RequestId = RequestId;
-			PartitionMetadataResponseBuilder.Error = Error;
-			PartitionMetadataResponseBuilder.Response = Proto.CommandPartitionedTopicMetadataResponse.LookupType.Failed;
+			CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+			PartitionMetadataResponseBuilder.SetRequestId(RequestId);
+			PartitionMetadataResponseBuilder.SetError(Error);
+			PartitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Failed);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				PartitionMetadataResponseBuilder.setMessage(ErrorMsg);
+				PartitionMetadataResponseBuilder.SetMessage(ErrorMsg);
 			}
 
-			Proto.CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PARTITIONED_METADATA_RESPONSE).setPartitionMetadataResponse(PartitionMetadataResponse));
-			PartitionMetadataResponseBuilder.recycle();
-			PartitionMetadataResponse.recycle();
+			CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(PartitionMetadataResponse));
+			PartitionMetadataResponseBuilder.Recycle();
+			PartitionMetadataResponse.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewPartitionMetadataRequest(string Topic, long RequestId)
 		{
-			Proto.CommandPartitionedTopicMetadata.Builder PartitionMetadataBuilder = Proto.CommandPartitionedTopicMetadata.newBuilder();
-			PartitionMetadataBuilder.setTopic(Topic);
-			PartitionMetadataBuilder.RequestId = RequestId;
-			Proto.CommandPartitionedTopicMetadata PartitionMetadata = PartitionMetadataBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PARTITIONED_METADATA).setPartitionMetadata(PartitionMetadata));
-			PartitionMetadataBuilder.recycle();
-			PartitionMetadata.recycle();
+			CommandPartitionedTopicMetadata.Builder PartitionMetadataBuilder = CommandPartitionedTopicMetadata.NewBuilder();
+			PartitionMetadataBuilder.SetTopic(Topic);
+			PartitionMetadataBuilder.SetRequestId(RequestId);
+			CommandPartitionedTopicMetadata PartitionMetadata = PartitionMetadataBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadata).SetPartitionMetadata(PartitionMetadata));
+			PartitionMetadataBuilder.Recycle();
+			PartitionMetadata.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewPartitionMetadataResponse(int Partitions, long RequestId)
 		{
-			Proto.CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = Proto.CommandPartitionedTopicMetadataResponse.newBuilder();
-			PartitionMetadataResponseBuilder.Partitions = Partitions;
-			PartitionMetadataResponseBuilder.Response = Proto.CommandPartitionedTopicMetadataResponse.LookupType.Success;
-			PartitionMetadataResponseBuilder.RequestId = RequestId;
+			CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+			PartitionMetadataResponseBuilder.SetPartitions(Partitions);
+			PartitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Success);
+			PartitionMetadataResponseBuilder.SetRequestId(RequestId);
 
-			Proto.CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PARTITIONED_METADATA_RESPONSE).setPartitionMetadataResponse(PartitionMetadataResponse));
-			PartitionMetadataResponseBuilder.recycle();
-			PartitionMetadataResponse.recycle();
+			CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(PartitionMetadataResponse));
+			PartitionMetadataResponseBuilder.Recycle();
+			PartitionMetadataResponse.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewLookup(string Topic, bool Authoritative, long RequestId)
 		{
-			Proto.CommandLookupTopic.Builder LookupTopicBuilder = Proto.CommandLookupTopic.newBuilder();
-			LookupTopicBuilder.setTopic(Topic);
-			LookupTopicBuilder.RequestId = RequestId;
-			LookupTopicBuilder.Authoritative = Authoritative;
-			Proto.CommandLookupTopic LookupBroker = LookupTopicBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.LOOKUP).setLookupTopic(LookupBroker));
-			LookupTopicBuilder.recycle();
-			LookupBroker.recycle();
+			CommandLookupTopic.Builder LookupTopicBuilder = CommandLookupTopic.NewBuilder();
+			LookupTopicBuilder.SetTopic(Topic);
+			LookupTopicBuilder.SetRequestId(RequestId);
+			LookupTopicBuilder.SetAuthoritative(Authoritative);
+			CommandLookupTopic LookupBroker = LookupTopicBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Lookup).SetLookupTopic(LookupBroker));
+			LookupTopicBuilder.Recycle();
+			LookupBroker.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewLookupResponse(string BrokerServiceUrl, string BrokerServiceUrlTls, bool Authoritative, Proto.CommandLookupTopicResponse.LookupType Response, long RequestId, bool ProxyThroughServiceUrl)
+		public static IByteBuffer NewLookupResponse(string BrokerServiceUrl, string BrokerServiceUrlTls, bool Authoritative, CommandLookupTopicResponse.Types.LookupType Response, long RequestId, bool ProxyThroughServiceUrl)
 		{
-			Proto.CommandLookupTopicResponse.Builder CommandLookupTopicResponseBuilder = Proto.CommandLookupTopicResponse.newBuilder();
-			CommandLookupTopicResponseBuilder.setBrokerServiceUrl(BrokerServiceUrl);
+			CommandLookupTopicResponse.Builder CommandLookupTopicResponseBuilder = CommandLookupTopicResponse.NewBuilder();
+			CommandLookupTopicResponseBuilder.SetBrokerServiceUrl(BrokerServiceUrl);
 			if (!string.ReferenceEquals(BrokerServiceUrlTls, null))
 			{
-				CommandLookupTopicResponseBuilder.setBrokerServiceUrlTls(BrokerServiceUrlTls);
+				CommandLookupTopicResponseBuilder.SetBrokerServiceUrlTls(BrokerServiceUrlTls);
 			}
-			CommandLookupTopicResponseBuilder.Response = Response;
-			CommandLookupTopicResponseBuilder.RequestId = RequestId;
-			CommandLookupTopicResponseBuilder.Authoritative = Authoritative;
-			CommandLookupTopicResponseBuilder.ProxyThroughServiceUrl = ProxyThroughServiceUrl;
+			CommandLookupTopicResponseBuilder.SetResponse(Response);
+			CommandLookupTopicResponseBuilder.SetRequestId(RequestId);
+			CommandLookupTopicResponseBuilder.SetAuthoritative(Authoritative);
+			CommandLookupTopicResponseBuilder.SetProxyThroughServiceUrl(ProxyThroughServiceUrl);
 
-			Proto.CommandLookupTopicResponse CommandLookupTopicResponse = CommandLookupTopicResponseBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.LOOKUP_RESPONSE).setLookupTopicResponse(CommandLookupTopicResponse));
-			CommandLookupTopicResponseBuilder.recycle();
-			CommandLookupTopicResponse.recycle();
+			CommandLookupTopicResponse commandLookupTopicResponse = CommandLookupTopicResponseBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(commandLookupTopicResponse));
+			CommandLookupTopicResponseBuilder.Recycle();
+			commandLookupTopicResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewLookupErrorResponse(Proto.ServerError Error, string ErrorMsg, long RequestId)
+		public static IByteBuffer NewLookupErrorResponse(ServerError Error, string ErrorMsg, long RequestId)
 		{
-			Proto.CommandLookupTopicResponse.Builder ConnectionBuilder = Proto.CommandLookupTopicResponse.newBuilder();
-			ConnectionBuilder.RequestId = RequestId;
-			ConnectionBuilder.Error = Error;
+			CommandLookupTopicResponse.Builder ConnectionBuilder = CommandLookupTopicResponse.NewBuilder();
+			ConnectionBuilder.SetRequestId(RequestId);
+			ConnectionBuilder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				ConnectionBuilder.setMessage(ErrorMsg);
+				ConnectionBuilder.SetMessage(ErrorMsg);
 			}
-			ConnectionBuilder.Response = Proto.CommandLookupTopicResponse.LookupType.Failed;
+			ConnectionBuilder.SetResponse(CommandLookupTopicResponse.Types.LookupType.Failed);
 
-			Proto.CommandLookupTopicResponse ConnectionBroker = ConnectionBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.LOOKUP_RESPONSE).setLookupTopicResponse(ConnectionBroker));
-			ConnectionBuilder.recycle();
-			ConnectionBroker.recycle();
+			CommandLookupTopicResponse ConnectionBroker = ConnectionBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(ConnectionBroker));
+			ConnectionBuilder.Recycle();
+			ConnectionBroker.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewMultiMessageAck(long ConsumerId, IList<Pair<long, long>> Entries)
+		public static IByteBuffer NewMultiMessageAck(long ConsumerId, IList<KeyValuePair<long, long>> Entries)
 		{
-			Proto.CommandAck.Builder AckBuilder = Proto.CommandAck.newBuilder();
-			AckBuilder.ConsumerId = ConsumerId;
-			AckBuilder.AckType = Proto.CommandAck.AckType.Individual;
+			CommandAck.Builder AckBuilder = CommandAck.NewBuilder();
+			AckBuilder.SetConsumerId(ConsumerId);
+			AckBuilder.SetAckType(CommandAck.Types.AckType.Individual);
 
 			int EntriesCount = Entries.Count;
 			for (int I = 0; I < EntriesCount; I++)
 			{
-				long LedgerId = Entries[I].Left;
-				long EntryId = Entries[I].Right;
+				long LedgerId = Entries[I].Key;
+				long EntryId = Entries[I].Value;
 
-				Proto.MessageIdData.Builder MessageIdDataBuilder = Proto.MessageIdData.newBuilder();
+				MessageIdData.Builder MessageIdDataBuilder = MessageIdData.NewBuilder();
 				MessageIdDataBuilder.LedgerId = LedgerId;
 				MessageIdDataBuilder.EntryId = EntryId;
-				Proto.MessageIdData MessageIdData = MessageIdDataBuilder.build();
-				AckBuilder.addMessageId(MessageIdData);
+				MessageIdData messageIdData = MessageIdDataBuilder.Build();
+				AckBuilder.AddMessageId(messageIdData);
 
-				MessageIdDataBuilder.recycle();
+				MessageIdDataBuilder.Recycle();
 			}
 
-			Proto.CommandAck Ack = AckBuilder.build();
+			CommandAck Ack = AckBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ACK).setAck(Ack));
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(Ack));
 
 			for (int I = 0; I < EntriesCount; I++)
 			{
-				Ack.getMessageId(I).recycle();
+				Ack.GetMessageId(I).Recycle();
 			}
-			Ack.recycle();
-			AckBuilder.recycle();
+			Ack.Recycle();
+			AckBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, Proto.CommandAck.AckType AckType, Proto.CommandAck.ValidationError ValidationError, IDictionary<string, long> Properties)
+		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, CommandAck.Types.AckType AckType, CommandAck.Types.ValidationError ValidationError, IDictionary<string, long> Properties)
 		{
 			return NewAck(ConsumerId, LedgerId, EntryId, AckType, ValidationError, Properties, 0, 0);
 		}
 
-		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, Proto.CommandAck.AckType AckType, Proto.CommandAck.ValidationError ValidationError, IDictionary<string, long> Properties, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, CommandAck.Types.AckType AckType, CommandAck.Types.ValidationError ValidationError, IDictionary<string, long> Properties, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandAck.Builder AckBuilder = Proto.CommandAck.newBuilder();
-			AckBuilder.ConsumerId = ConsumerId;
-			AckBuilder.AckType = AckType;
-			Proto.MessageIdData.Builder MessageIdDataBuilder = Proto.MessageIdData.newBuilder();
+			CommandAck.Builder AckBuilder = CommandAck.NewBuilder();
+			AckBuilder.SetConsumerId(ConsumerId);
+			AckBuilder.SetAckType(AckType);
+			MessageIdData.Builder MessageIdDataBuilder = MessageIdData.NewBuilder();
 			MessageIdDataBuilder.LedgerId = LedgerId;
 			MessageIdDataBuilder.EntryId = EntryId;
-			Proto.MessageIdData MessageIdData = MessageIdDataBuilder.build();
-			AckBuilder.addMessageId(MessageIdData);
+			MessageIdData messageIdData = MessageIdDataBuilder.Build();
+			AckBuilder.AddMessageId(messageIdData);
 			if (ValidationError != null)
 			{
-				AckBuilder.ValidationError = ValidationError;
+				AckBuilder.SetValidationError(ValidationError);
 			}
 			if (TxnIdMostBits > 0)
 			{
-				AckBuilder.TxnidMostBits = TxnIdMostBits;
+				AckBuilder.SetTxnidMostBits(TxnIdMostBits);
 			}
 			if (TxnIdLeastBits > 0)
 			{
-				AckBuilder.TxnidLeastBits = TxnIdLeastBits;
+				AckBuilder.SetTxnidLeastBits(TxnIdLeastBits);
 			}
 			foreach (KeyValuePair<string, long> E in Properties.SetOfKeyValuePairs())
 			{
-				AckBuilder.addProperties(Proto.KeyLongValue.newBuilder().setKey(E.Key).setValue(E.Value).build());
+				AckBuilder.AddProperties(KeyLongValue.NewBuilder().SetKey(E.Key).SetValue(E.Value).Build());
 			}
-			Proto.CommandAck Ack = AckBuilder.build();
+			CommandAck Ack = AckBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ACK).setAck(Ack));
-			Ack.recycle();
-			AckBuilder.recycle();
-			MessageIdDataBuilder.recycle();
-			MessageIdData.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(Ack));
+			Ack.Recycle();
+			AckBuilder.Recycle();
+			MessageIdDataBuilder.Recycle();
+			messageIdData.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewAckResponse(long ConsumerId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandAckResponse.Builder CommandAckResponseBuilder = Proto.CommandAckResponse.newBuilder();
-			CommandAckResponseBuilder.ConsumerId = ConsumerId;
-			CommandAckResponseBuilder.TxnidLeastBits = TxnIdLeastBits;
-			CommandAckResponseBuilder.TxnidMostBits = TxnIdMostBits;
-			Proto.CommandAckResponse CommandAckResponse = CommandAckResponseBuilder.build();
+			CommandAckResponse.Builder CommandAckResponseBuilder = CommandAckResponse.NewBuilder();
+			CommandAckResponseBuilder.SetConsumerId(ConsumerId);
+			CommandAckResponseBuilder.SetTxnidLeastBits(TxnIdLeastBits);
+			CommandAckResponseBuilder.SetTxnidMostBits(TxnIdMostBits);
+			CommandAckResponse commandAckResponse = CommandAckResponseBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ACK_RESPONSE).setAckResponse(CommandAckResponse));
-			CommandAckResponseBuilder.recycle();
-			CommandAckResponse.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(commandAckResponse));
+			CommandAckResponseBuilder.Recycle();
+			commandAckResponse.Recycle();
 
 			return Res;
 		}
 
-		public static IByteBuffer NewAckErrorResponse(Proto.ServerError Error, string ErrorMsg, long ConsumerId)
+		public static IByteBuffer NewAckErrorResponse(ServerError Error, string ErrorMsg, long ConsumerId)
 		{
-			Proto.CommandAckResponse.Builder AckErrorBuilder = Proto.CommandAckResponse.newBuilder();
-			AckErrorBuilder.ConsumerId = ConsumerId;
-			AckErrorBuilder.Error = Error;
+			CommandAckResponse.Builder AckErrorBuilder = CommandAckResponse.NewBuilder();
+			AckErrorBuilder.SetConsumerId(ConsumerId);
+			AckErrorBuilder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				AckErrorBuilder.setMessage(ErrorMsg);
+				AckErrorBuilder.SetMessage(ErrorMsg);
 			}
 
-			Proto.CommandAckResponse Response = AckErrorBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ACK_RESPONSE).setAckResponse(Response));
+			CommandAckResponse Response = AckErrorBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(Response));
 
-			AckErrorBuilder.recycle();
-			Response.recycle();
+			AckErrorBuilder.Recycle();
+			Response.Recycle();
 
 			return Res;
 		}
 
 		public static IByteBuffer NewFlow(long ConsumerId, int MessagePermits)
 		{
-			Proto.CommandFlow.Builder FlowBuilder = Proto.CommandFlow.newBuilder();
-			FlowBuilder.ConsumerId = ConsumerId;
-			FlowBuilder.MessagePermits = MessagePermits;
-			Proto.CommandFlow Flow = FlowBuilder.build();
+			CommandFlow.Builder FlowBuilder = CommandFlow.NewBuilder();
+			FlowBuilder.SetConsumerId(ConsumerId);
+			FlowBuilder.SetMessagePermits(MessagePermits);
+			CommandFlow Flow = FlowBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.FLOW).setFlow(FlowBuilder));
-			Flow.recycle();
-			FlowBuilder.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Flow).SetFlow(FlowBuilder));
+			Flow.Recycle();
+			FlowBuilder.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long ConsumerId)
 		{
-			Proto.CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = Proto.CommandRedeliverUnacknowledgedMessages.newBuilder();
-			RedeliverBuilder.ConsumerId = ConsumerId;
-			Proto.CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.REDELIVER_UNACKNOWLEDGED_MESSAGES).setRedeliverUnacknowledgedMessages(RedeliverBuilder));
-			Redeliver.recycle();
-			RedeliverBuilder.recycle();
+			CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+			RedeliverBuilder.SetConsumerId(ConsumerId);
+			CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(RedeliverBuilder));
+			Redeliver.Recycle();
+			RedeliverBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long ConsumerId, IList<Proto.MessageIdData> MessageIds)
+		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long ConsumerId, IList<MessageIdData> MessageIds)
 		{
-			Proto.CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = Proto.CommandRedeliverUnacknowledgedMessages.newBuilder();
-			RedeliverBuilder.ConsumerId = ConsumerId;
-			RedeliverBuilder.addAllMessageIds(MessageIds);
-			Proto.CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.REDELIVER_UNACKNOWLEDGED_MESSAGES).setRedeliverUnacknowledgedMessages(RedeliverBuilder));
-			Redeliver.recycle();
-			RedeliverBuilder.recycle();
+			CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+			RedeliverBuilder.SetConsumerId(ConsumerId);
+			RedeliverBuilder.AddAllMessageIds(MessageIds);
+			CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(RedeliverBuilder));
+			Redeliver.Recycle();
+			RedeliverBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewConsumerStatsResponse(Proto.ServerError ServerError, string ErrMsg, long RequestId)
+		public static IByteBuffer NewConsumerStatsResponse(ServerError ServerError, string ErrMsg, long RequestId)
 		{
-			Proto.CommandConsumerStatsResponse.Builder CommandConsumerStatsResponseBuilder = Proto.CommandConsumerStatsResponse.newBuilder();
-			CommandConsumerStatsResponseBuilder.RequestId = RequestId;
-			CommandConsumerStatsResponseBuilder.setErrorMessage(ErrMsg);
-			CommandConsumerStatsResponseBuilder.ErrorCode = ServerError;
+			CommandConsumerStatsResponse.Builder CommandConsumerStatsResponseBuilder = CommandConsumerStatsResponse.NewBuilder();
+			CommandConsumerStatsResponseBuilder.SetRequestId(RequestId);
+			CommandConsumerStatsResponseBuilder.SetErrorMessage(ErrMsg);
+			CommandConsumerStatsResponseBuilder.SetErrorCode(ServerError);
 
-			Proto.CommandConsumerStatsResponse CommandConsumerStatsResponse = CommandConsumerStatsResponseBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CONSUMER_STATS_RESPONSE).setConsumerStatsResponse(CommandConsumerStatsResponseBuilder));
-			CommandConsumerStatsResponse.recycle();
-			CommandConsumerStatsResponseBuilder.recycle();
+			CommandConsumerStatsResponse commandConsumerStatsResponse = CommandConsumerStatsResponseBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(CommandConsumerStatsResponseBuilder));
+			commandConsumerStatsResponse.Recycle();
+			CommandConsumerStatsResponseBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewConsumerStatsResponse(Proto.CommandConsumerStatsResponse.Builder Builder)
+		public static IByteBuffer NewConsumerStatsResponse(CommandConsumerStatsResponse.Builder Builder)
 		{
-			Proto.CommandConsumerStatsResponse CommandConsumerStatsResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.CONSUMER_STATS_RESPONSE).setConsumerStatsResponse(Builder));
-			CommandConsumerStatsResponse.recycle();
-			Builder.recycle();
+			CommandConsumerStatsResponse CommandConsumerStatsResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(Builder));
+			CommandConsumerStatsResponse.Recycle();
+			Builder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string Namespace, long RequestId, Proto.CommandGetTopicsOfNamespace.Mode Mode)
+		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string Namespace, long RequestId, CommandGetTopicsOfNamespace.Types.Mode Mode)
 		{
-			Proto.CommandGetTopicsOfNamespace.Builder TopicsBuilder = Proto.CommandGetTopicsOfNamespace.newBuilder();
-			TopicsBuilder.setNamespace(Namespace).setRequestId(RequestId).setMode(Mode);
+			CommandGetTopicsOfNamespace.Builder TopicsBuilder = CommandGetTopicsOfNamespace.NewBuilder();
+			TopicsBuilder.SetNamespace(Namespace).SetRequestId(RequestId).SetMode(Mode);
 
-			Proto.CommandGetTopicsOfNamespace TopicsCommand = TopicsBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_TOPICS_OF_NAMESPACE).setGetTopicsOfNamespace(TopicsCommand));
-			TopicsBuilder.recycle();
-			TopicsCommand.recycle();
+			CommandGetTopicsOfNamespace TopicsCommand = TopicsBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(TopicsCommand));
+			TopicsBuilder.Recycle();
+			TopicsCommand.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewGetTopicsOfNamespaceResponse(IList<string> Topics, long RequestId)
 		{
-			Proto.CommandGetTopicsOfNamespaceResponse.Builder TopicsResponseBuilder = Proto.CommandGetTopicsOfNamespaceResponse.newBuilder();
+			CommandGetTopicsOfNamespaceResponse.Builder TopicsResponseBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
 
-			TopicsResponseBuilder.setRequestId(RequestId).addAllTopics(Topics);
+			TopicsResponseBuilder.SetRequestId(RequestId).AddAllTopics(Topics);
 
-			Proto.CommandGetTopicsOfNamespaceResponse TopicsOfNamespaceResponse = TopicsResponseBuilder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_TOPICS_OF_NAMESPACE_RESPONSE).setGetTopicsOfNamespaceResponse(TopicsOfNamespaceResponse));
+			CommandGetTopicsOfNamespaceResponse TopicsOfNamespaceResponse = TopicsResponseBuilder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespaceResponse).SetGetTopicsOfNamespaceResponse(TopicsOfNamespaceResponse));
 
-			TopicsResponseBuilder.recycle();
-			TopicsOfNamespaceResponse.recycle();
+			TopicsResponseBuilder.Recycle();
+			TopicsOfNamespaceResponse.Recycle();
 			return Res;
 		}
 
@@ -961,17 +963,17 @@ namespace SharpPulsar.Protocol
 
 		static Commands()
 		{
-			IByteBuffer SerializedCmdPing = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PING).setPing(Proto.CommandPing.DefaultInstance));
-			cmdPing = Unpooled.copiedBuffer(SerializedCmdPing);
-			SerializedCmdPing.release();
-			IByteBuffer SerializedCmdPong = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.PONG).setPong(Proto.CommandPong.DefaultInstance));
-			cmdPong = Unpooled.copiedBuffer(SerializedCmdPong);
-			SerializedCmdPong.release();
+			IByteBuffer SerializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ping).SetPing(CommandPing.DefaultInstance));
+			cmdPing = Unpooled.CopiedBuffer(SerializedCmdPing);
+			SerializedCmdPing.Release();
+			IByteBuffer SerializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Pong).SetPong(CommandPong.DefaultInstance));
+			cmdPong = Unpooled.CopiedBuffer(SerializedCmdPong);
+			SerializedCmdPong.Release();
 		}
 
 		internal static IByteBuffer NewPing()
 		{
-			return cmdPing.retainedDuplicate();
+			return cmdPing.RetainedDuplicate();
 		}
 
 		private static readonly IByteBuffer cmdPong;
@@ -979,92 +981,92 @@ namespace SharpPulsar.Protocol
 
 		internal static IByteBuffer NewPong()
 		{
-			return cmdPong.retainedDuplicate();
+			return cmdPong.RetainedDuplicate();
 		}
 
 		public static IByteBuffer NewGetLastMessageId(long ConsumerId, long RequestId)
 		{
-			Proto.CommandGetLastMessageId.Builder CmdBuilder = Proto.CommandGetLastMessageId.newBuilder();
-			CmdBuilder.setConsumerId(ConsumerId).setRequestId(RequestId);
+			CommandGetLastMessageId.Builder CmdBuilder = CommandGetLastMessageId.NewBuilder();
+			CmdBuilder.SetConsumerId(ConsumerId).SetRequestId(RequestId);
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_LAST_MESSAGE_ID).setGetLastMessageId(CmdBuilder.build()));
-			CmdBuilder.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageId).SetGetLastMessageId(CmdBuilder.Build()));
+			CmdBuilder.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetLastMessageIdResponse(long RequestId, Proto.MessageIdData MessageIdData)
+		public static IByteBuffer NewGetLastMessageIdResponse(long RequestId, MessageIdData MessageIdData)
 		{
-			Proto.CommandGetLastMessageIdResponse.Builder Response = Proto.CommandGetLastMessageIdResponse.newBuilder().setLastMessageId(MessageIdData).setRequestId(RequestId);
+			CommandGetLastMessageIdResponse.Builder Response = CommandGetLastMessageIdResponse.NewBuilder().SetLastMessageId(MessageIdData).SetRequestId(RequestId);
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_LAST_MESSAGE_ID_RESPONSE).setGetLastMessageIdResponse(Response.build()));
-			Response.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageIdResponse).SetGetLastMessageIdResponse(Response.Build()));
+			Response.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetSchema(long RequestId, string Topic, Optional<SchemaVersion> Version)
+		public static IByteBuffer NewGetSchema(long RequestId, string Topic, SchemaVersion Version)
 		{
-			Proto.CommandGetSchema.Builder Schema = Proto.CommandGetSchema.newBuilder().setRequestId(RequestId);
-			Schema.setTopic(Topic);
-			if (Version.Present)
+			CommandGetSchema.Builder Schema = CommandGetSchema.NewBuilder().SetRequestId(RequestId);
+			Schema.SetTopic(Topic);
+			if (Version != null)
 			{
-				Schema.SchemaVersion = ByteString.copyFrom(Version.get().bytes());
+				Schema.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)Version.Bytes()));
 			}
 
-			Proto.CommandGetSchema GetSchema = Schema.build();
+			CommandGetSchema GetSchema = Schema.Build();
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_SCHEMA).setGetSchema(GetSchema));
-			Schema.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchema).SetGetSchema(GetSchema));
+			Schema.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetSchemaResponse(long RequestId, Proto.CommandGetSchemaResponse Response)
+		public static IByteBuffer NewGetSchemaResponse(long RequestId, CommandGetSchemaResponse Response)
 		{
-			Proto.CommandGetSchemaResponse.Builder SchemaResponseBuilder = Proto.CommandGetSchemaResponse.newBuilder(Response).setRequestId(RequestId);
+			CommandGetSchemaResponse.Builder SchemaResponseBuilder = CommandGetSchemaResponse.NewBuilder(Response).SetRequestId(RequestId);
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(SchemaResponseBuilder.build()));
-			SchemaResponseBuilder.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponseBuilder.Build()));
+			SchemaResponseBuilder.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewGetSchemaResponse(long RequestId, SchemaInfo Schema, SchemaVersion Version)
 		{
-			Proto.CommandGetSchemaResponse.Builder SchemaResponse = Proto.CommandGetSchemaResponse.newBuilder().setRequestId(RequestId).setSchemaVersion(ByteString.copyFrom(Version.bytes())).setSchema(GetSchema(Schema));
+			CommandGetSchemaResponse.Builder SchemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(RequestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)Version.Bytes())).SetSchema(GetSchema(Schema));
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(SchemaResponse.build()));
-			SchemaResponse.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponse.Build()));
+			SchemaResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetSchemaResponseError(long RequestId, Proto.ServerError Error, string ErrorMessage)
+		public static IByteBuffer NewGetSchemaResponseError(long RequestId, ServerError Error, string ErrorMessage)
 		{
-			Proto.CommandGetSchemaResponse.Builder SchemaResponse = Proto.CommandGetSchemaResponse.newBuilder().setRequestId(RequestId).setErrorCode(Error).setErrorMessage(ErrorMessage);
+			CommandGetSchemaResponse.Builder SchemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(RequestId).SetErrorCode(Error).SetErrorMessage(ErrorMessage);
 
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_SCHEMA_RESPONSE).setGetSchemaResponse(SchemaResponse.build()));
-			SchemaResponse.recycle();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponse.Build()));
+			SchemaResponse.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewGetOrCreateSchema(long RequestId, string Topic, SchemaInfo SchemaInfo)
 		{
-			Proto.CommandGetOrCreateSchema GetOrCreateSchema = Proto.CommandGetOrCreateSchema.newBuilder().setRequestId(RequestId).setTopic(Topic).setSchema(GetSchema(SchemaInfo)).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_OR_CREATE_SCHEMA).setGetOrCreateSchema(GetOrCreateSchema));
-			GetOrCreateSchema.recycle();
+			CommandGetOrCreateSchema GetOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(RequestId).SetTopic(Topic).SetSchema(GetSchema(SchemaInfo).ToBuilder()).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchema).SetGetOrCreateSchema(GetOrCreateSchema));
+			GetOrCreateSchema.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewGetOrCreateSchemaResponse(long RequestId, SchemaVersion SchemaVersion)
 		{
-			Proto.CommandGetOrCreateSchemaResponse.Builder SchemaResponse = Proto.CommandGetOrCreateSchemaResponse.newBuilder().setRequestId(RequestId).setSchemaVersion(ByteString.copyFrom(SchemaVersion.bytes()));
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_OR_CREATE_SCHEMA_RESPONSE).setGetOrCreateSchemaResponse(SchemaResponse.build()));
-			SchemaResponse.recycle();
+			CommandGetOrCreateSchemaResponse.Builder SchemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(RequestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)SchemaVersion.Bytes()));
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(SchemaResponse.Build()));
+			SchemaResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewGetOrCreateSchemaResponseError(long RequestId, Proto.ServerError Error, string ErrorMessage)
+		public static IByteBuffer NewGetOrCreateSchemaResponseError(long RequestId, ServerError Error, string ErrorMessage)
 		{
-			Proto.CommandGetOrCreateSchemaResponse.Builder SchemaResponse = Proto.CommandGetOrCreateSchemaResponse.newBuilder().setRequestId(RequestId).setErrorCode(Error).setErrorMessage(ErrorMessage);
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.GET_OR_CREATE_SCHEMA_RESPONSE).setGetOrCreateSchemaResponse(SchemaResponse.build()));
-			SchemaResponse.recycle();
+			CommandGetOrCreateSchemaResponse.Builder SchemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(RequestId).SetErrorCode(Error).SetErrorMessage(ErrorMessage);
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(SchemaResponse.Build()));
+			SchemaResponse.Recycle();
 			return Res;
 		}
 
@@ -1072,290 +1074,202 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewTxn(long TcId, long RequestId, long TtlSeconds)
 		{
-			Proto.CommandNewTxn CommandNewTxn = Proto.CommandNewTxn.newBuilder().setTcId(TcId).setRequestId(RequestId).setTxnTtlSeconds(TtlSeconds).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.NEW_TXN).setNewTxn(CommandNewTxn));
-			CommandNewTxn.recycle();
+			CommandNewTxn CommandNewTxn = CommandNewTxn.NewBuilder().SetTcId(TcId).SetRequestId(RequestId).SetTxnTtlSeconds(TtlSeconds).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxn).SetNewTxn(CommandNewTxn));
+			CommandNewTxn.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandNewTxnResponse CommandNewTxnResponse = Proto.CommandNewTxnResponse.newBuilder().setRequestId(RequestId).setTxnidMostBits(TxnIdMostBits).setTxnidLeastBits(TxnIdLeastBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.NEW_TXN_RESPONSE).setNewTxnResponse(CommandNewTxnResponse));
-			CommandNewTxnResponse.recycle();
+			CommandNewTxnResponse CommandNewTxnResponse = CommandNewTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidMostBits(TxnIdMostBits).SetTxnidLeastBits(TxnIdLeastBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(CommandNewTxnResponse));
+			CommandNewTxnResponse.Recycle();
 
 			return Res;
 		}
 
-		public static IByteBuffer NewTxnResponse(long RequestId, long TxnIdMostBits, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandNewTxnResponse.Builder Builder = Proto.CommandNewTxnResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.TxnidMostBits = TxnIdMostBits;
-			Builder.Error = Error;
+			CommandNewTxnResponse.Builder Builder = CommandNewTxnResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetTxnidMostBits(TxnIdMostBits);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandNewTxnResponse ErrorResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.NEW_TXN_RESPONSE).setNewTxnResponse(ErrorResponse));
-			Builder.recycle();
-			ErrorResponse.recycle();
+			CommandNewTxnResponse ErrorResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(ErrorResponse));
+			Builder.Recycle();
+			ErrorResponse.Recycle();
 
 			return Res;
 		}
 
 		public static IByteBuffer NewAddPartitionToTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandAddPartitionToTxn CommandAddPartitionToTxn = Proto.CommandAddPartitionToTxn.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_PARTITION_TO_TXN).setAddPartitionToTxn(CommandAddPartitionToTxn));
-			CommandAddPartitionToTxn.recycle();
+			CommandAddPartitionToTxn CommandAddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxn).SetAddPartitionToTxn(CommandAddPartitionToTxn));
+			CommandAddPartitionToTxn.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewAddPartitionToTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandAddPartitionToTxnResponse CommandAddPartitionToTxnResponse = Proto.CommandAddPartitionToTxnResponse.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_PARTITION_TO_TXN_RESPONSE).setAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse));
-			CommandAddPartitionToTxnResponse.recycle();
+			CommandAddPartitionToTxnResponse CommandAddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse));
+			CommandAddPartitionToTxnResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewAddPartitionToTxnResponse(long RequestId, long TxnIdMostBits, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewAddPartitionToTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandAddPartitionToTxnResponse.Builder Builder = Proto.CommandAddPartitionToTxnResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.TxnidMostBits = TxnIdMostBits;
-			Builder.Error = Error;
+			CommandAddPartitionToTxnResponse.Builder Builder = CommandAddPartitionToTxnResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetTxnidMostBits(TxnIdMostBits);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandAddPartitionToTxnResponse CommandAddPartitionToTxnResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_PARTITION_TO_TXN_RESPONSE).setAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse));
-			Builder.recycle();
-			CommandAddPartitionToTxnResponse.recycle();
+			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
+			Builder.Recycle();
+			commandAddPartitionToTxnResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewAddSubscriptionToTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, IList<Proto.Subscription> Subscription)
+		public static IByteBuffer NewAddSubscriptionToTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, IList<Subscription> Subscription)
 		{
-			Proto.CommandAddSubscriptionToTxn CommandAddSubscriptionToTxn = Proto.CommandAddSubscriptionToTxn.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).addAllSubscription(Subscription).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN).setAddSubscriptionToTxn(CommandAddSubscriptionToTxn));
-			CommandAddSubscriptionToTxn.recycle();
+			CommandAddSubscriptionToTxn CommandAddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).AddAllSubscription(Subscription).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn));
+			CommandAddSubscriptionToTxn.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewAddSubscriptionToTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandAddSubscriptionToTxnResponse Command = Proto.CommandAddSubscriptionToTxnResponse.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN_RESPONSE).setAddSubscriptionToTxnResponse(Command));
-			Command.recycle();
+			CommandAddSubscriptionToTxnResponse Command = CommandAddSubscriptionToTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(Command));
+			Command.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewAddSubscriptionToTxnResponse(long RequestId, long TxnIdMostBits, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewAddSubscriptionToTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandAddSubscriptionToTxnResponse.Builder Builder = Proto.CommandAddSubscriptionToTxnResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.TxnidMostBits = TxnIdMostBits;
-			Builder.Error = Error;
+			CommandAddSubscriptionToTxnResponse.Builder Builder = CommandAddSubscriptionToTxnResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetTxnidMostBits(TxnIdMostBits);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandAddSubscriptionToTxnResponse ErrorResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.ADD_SUBSCRIPTION_TO_TXN_RESPONSE).setAddSubscriptionToTxnResponse(ErrorResponse));
-			Builder.recycle();
-			ErrorResponse.recycle();
+			CommandAddSubscriptionToTxnResponse ErrorResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(ErrorResponse));
+			Builder.Recycle();
+			ErrorResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, Proto.TxnAction TxnAction)
+		public static IByteBuffer NewEndTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, TxnAction TxnAction)
 		{
-			Proto.CommandEndTxn CommandEndTxn = Proto.CommandEndTxn.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).setTxnAction(TxnAction).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN).setEndTxn(CommandEndTxn));
-			CommandEndTxn.recycle();
+			CommandEndTxn CommandEndTxn = CommandEndTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetTxnAction(TxnAction).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxn).SetEndTxn(CommandEndTxn));
+			CommandEndTxn.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewEndTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandEndTxnResponse CommandEndTxnResponse = Proto.CommandEndTxnResponse.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(CommandEndTxnResponse));
-			CommandEndTxnResponse.recycle();
+			CommandEndTxnResponse CommandEndTxnResponse = CommandEndTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(CommandEndTxnResponse));
+			CommandEndTxnResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxnResponse(long RequestId, long TxnIdMostBits, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewEndTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandEndTxnResponse.Builder Builder = Proto.CommandEndTxnResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.TxnidMostBits = TxnIdMostBits;
-			Builder.Error = Error;
+			CommandEndTxnResponse.Builder Builder = CommandEndTxnResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetTxnidMostBits(TxnIdMostBits);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandEndTxnResponse CommandEndTxnResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_RESPONSE).setEndTxnResponse(CommandEndTxnResponse));
-			Builder.recycle();
-			CommandEndTxnResponse.recycle();
+			CommandEndTxnResponse commandEndTxnResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(commandEndTxnResponse));
+			Builder.Recycle();
+			commandEndTxnResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxnOnPartition(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, string Topic, Proto.TxnAction TxnAction)
+		public static IByteBuffer NewEndTxnOnPartition(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, string Topic, TxnAction TxnAction)
 		{
-			Proto.CommandEndTxnOnPartition.Builder TxnEndOnPartition = Proto.CommandEndTxnOnPartition.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).setTopic(Topic).setTxnAction(TxnAction);
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_PARTITION).setEndTxnOnPartition(TxnEndOnPartition));
-			TxnEndOnPartition.recycle();
+			CommandEndTxnOnPartition.Builder TxnEndOnPartition = CommandEndTxnOnPartition.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetTopic(Topic).SetTxnAction(TxnAction);
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartition).SetEndTxnOnPartition(TxnEndOnPartition));
+			TxnEndOnPartition.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewEndTxnOnPartitionResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandEndTxnOnPartitionResponse CommandEndTxnOnPartitionResponse = Proto.CommandEndTxnOnPartitionResponse.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse));
-			CommandEndTxnOnPartitionResponse.recycle();
+			CommandEndTxnOnPartitionResponse CommandEndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse));
+			CommandEndTxnOnPartitionResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxnOnPartitionResponse(long RequestId, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewEndTxnOnPartitionResponse(long RequestId, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandEndTxnOnPartitionResponse.Builder Builder = Proto.CommandEndTxnOnPartitionResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.Error = Error;
+			CommandEndTxnOnPartitionResponse.Builder Builder = CommandEndTxnOnPartitionResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandEndTxnOnPartitionResponse CommandEndTxnOnPartitionResponse = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_PARTITION_RESPONSE).setEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse));
-			Builder.recycle();
-			CommandEndTxnOnPartitionResponse.recycle();
+			CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
+			Builder.Recycle();
+			commandEndTxnOnPartitionResponse.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxnOnSubscription(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, Proto.Subscription Subscription, Proto.TxnAction TxnAction)
+		public static IByteBuffer NewEndTxnOnSubscription(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, Subscription Subscription, TxnAction TxnAction)
 		{
-			Proto.CommandEndTxnOnSubscription CommandEndTxnOnSubscription = Proto.CommandEndTxnOnSubscription.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).setSubscription(Subscription).setTxnAction(TxnAction).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION).setEndTxnOnSubscription(CommandEndTxnOnSubscription));
-			CommandEndTxnOnSubscription.recycle();
+			CommandEndTxnOnSubscription CommandEndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetSubscription(Subscription).SetTxnAction(TxnAction).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(CommandEndTxnOnSubscription));
+			CommandEndTxnOnSubscription.Recycle();
 			return Res;
 		}
 
 		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
 		{
-			Proto.CommandEndTxnOnSubscriptionResponse Response = Proto.CommandEndTxnOnSubscriptionResponse.newBuilder().setRequestId(RequestId).setTxnidLeastBits(TxnIdLeastBits).setTxnidMostBits(TxnIdMostBits).build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(Response));
-			Response.recycle();
+			CommandEndTxnOnSubscriptionResponse Response = CommandEndTxnOnSubscriptionResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(Response));
+			Response.Recycle();
 			return Res;
 		}
 
-		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long RequestId, Proto.ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long RequestId, ServerError Error, string ErrorMsg)
 		{
-			Proto.CommandEndTxnOnSubscriptionResponse.Builder Builder = Proto.CommandEndTxnOnSubscriptionResponse.newBuilder();
-			Builder.RequestId = RequestId;
-			Builder.Error = Error;
+			CommandEndTxnOnSubscriptionResponse.Builder Builder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
+			Builder.SetRequestId(RequestId);
+			Builder.SetError(Error);
 			if (!string.ReferenceEquals(ErrorMsg, null))
 			{
-				Builder.setMessage(ErrorMsg);
+				Builder.SetMessage(ErrorMsg);
 			}
-			Proto.CommandEndTxnOnSubscriptionResponse Response = Builder.build();
-			IByteBuffer Res = SerializeWithSize(Proto.BaseCommand.newBuilder().setType(Proto.BaseCommand.Type.END_TXN_ON_SUBSCRIPTION_RESPONSE).setEndTxnOnSubscriptionResponse(Response));
-			Builder.recycle();
-			Response.recycle();
+			CommandEndTxnOnSubscriptionResponse Response = Builder.Build();
+			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(Response));
+			Builder.Recycle();
+			Response.Recycle();
 			return Res;
 		}
 
-		public static Stream SerializePayloadCommand(BaseCommand command)
-		{
-			Stream output = null;
-			using var stream = new RecyclableMemoryStreamManager().GetStream();
-			// write fake totalLength
-			for (var i = 0; i < 5; i++)
-				stream.WriteByte(0);
-
-			// write commandPayload
-			Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
-
-			var frameSize = stream.Length;
-
-			var totalSize = frameSize - 4;
-
-			//write total size and command size
-			stream.Seek(0L, SeekOrigin.Begin);
-
-			using var binaryWriter = new BinaryWriter(stream);
-			var int32ToBigEndian = IPAddress.HostToNetworkOrder(totalSize);
-			binaryWriter.Write(int32ToBigEndian);
-			stream.Seek(0L, SeekOrigin.Begin);
-			//Log.Logger.LogDebug("Sending message of type {0}", command.``type``);
-
-			stream.CopyToAsync(output);
-			return output;
-
-
-		}
-		public static Stream SerializePayloadCommand(BaseCommand command, MessageMetadata metadata, byte[] payload)
-		{
-			Stream output = null;
-			using var stream = new RecyclableMemoryStreamManager().GetStream();
-			// write fake totalLength
-			for (var i = 0; i < 5; i++)
-				stream.WriteByte(0);
-
-			// write commandPayload
-			Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
-
-			var stream1Size = stream.Length;
-
-			// write magic number 0x0e01
-			stream.WriteByte(14);
-			stream.WriteByte(1);
-
-			// write fake CRC sum and fake metadata length
-			for (var i = 0; i < 5; i++)
-				stream.WriteByte(0);
-
-			// write metadata
-			Serializer.SerializeWithLengthPrefix(stream, metadata, PrefixStyle.Fixed32BigEndian);
-
-			var stream2Size = stream.Length;
-			var totalMetadataSize = stream2Size - stream1Size - 6;
-
-			// write payload
-			stream.Write(payload, 0, payload.Length);
-
-
-			var frameSize = stream.Length;
-			var totalSize = frameSize - 4;
-			var payloadSize = frameSize - stream2Size;
-			var crcStart = stream1Size + 2;
-			var crcPayloadStart = crcStart + 4;
-
-			// write missing sizes
-			using var binaryWriter = new BinaryWriter(stream);
-
-			//write CRC
-			stream.Seek(crcPayloadStart, SeekOrigin.Begin);
-			var crc = CRC32C.Get(0u, stream.ToArray(), (int)(totalMetadataSize + payloadSize));
-			stream.Seek(crcStart, SeekOrigin.Begin);
-			var int32ToBigEndian = IPAddress.HostToNetworkOrder(crc);
-			binaryWriter.Write(int32ToBigEndian);
-
-			//write total size and command size
-			stream.Seek(0L, SeekOrigin.Begin);
-			int32ToBigEndian = IPAddress.HostToNetworkOrder(totalSize);
-			binaryWriter.Write(int32ToBigEndian);
-
-			//Log.Logger.LogDebug("Sending message of type {0}", command.``type``);
-
-			stream.CopyToAsync(output);
-			return output;
-
-
-		}
 		public static IByteBuffer SerializeWithSize(BaseCommand.Builder cmdBuilder)
 		{
 			// / Wire format
@@ -1393,15 +1307,15 @@ namespace SharpPulsar.Protocol
 			return buf;
 		}
 
-		private static ByteBufPair SerializeCommandSendWithSize(Proto.BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, Proto.MessageMetadata MsgMetadata, IByteBuffer Payload)
+		private static ByteBufPair SerializeCommandSendWithSize(BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, MessageMetadata MsgMetadata, IByteBuffer Payload)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
 
-			Proto.BaseCommand Cmd = CmdBuilder.build();
+			BaseCommand Cmd = CmdBuilder.Build();
 			int CmdSize = Cmd.SerializedSize;
-			int MsgMetadataSize = MsgMetadata.SerializedSize;
-			int PayloadSize = Payload.readableBytes();
+			int MsgMetadataSize = MsgMetadata.CalculateSize();
+			int PayloadSize = Payload.ReadableBytes;
 			int MagicAndChecksumLength = ChecksumType.Crc32c.Equals(ChecksumType) ? (2 + 4) : 0;
 			bool IncludeChecksum = MagicAndChecksumLength > 0;
 			// cmdLength + cmdSize + magicLength +
@@ -1412,60 +1326,60 @@ namespace SharpPulsar.Protocol
 			int HeadersSize = 4 + HeaderContentSize; // totalSize + headerLength
 			int ChecksumReaderIndex = -1;
 
-			IByteBuffer Headers = PulsarIByteBufferAllocator.DEFAULT.buffer(HeadersSize, HeadersSize);
-			Headers.writeInt(TotalSize); // External frame
+			IByteBuffer Headers = PulsarByteBufAllocator.DEFAULT.Buffer(HeadersSize, HeadersSize);
+			Headers.WriteInt(TotalSize); // External frame
 
 			try
 			{
 				// Write cmd
-				Headers.writeInt(CmdSize);
+				Headers.WriteInt(CmdSize);
 
-				IByteBufferCodedOutputStream OutStream = IByteBufferCodedOutputStream.get(Headers);
-				Cmd.writeTo(OutStream);
-				Cmd.recycle();
-				CmdBuilder.recycle();
+				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(Headers);
+				Cmd.WriteTo(OutStream);
+				Cmd.Recycle();
+				CmdBuilder.Recycle();
 
 				//Create checksum placeholder
 				if (IncludeChecksum)
 				{
-					Headers.writeShort(MagicCrc32c);
-					ChecksumReaderIndex = Headers.writerIndex();
-					Headers.writerIndex(Headers.writerIndex() + ChecksumSize); //skip 4 bytes of checksum
+					Headers.WriteShort(MagicCrc32c);
+					ChecksumReaderIndex = Headers.WriterIndex;
+					Headers.SetWriterIndex(Headers.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
 				}
 
 				// Write metadata
-				Headers.writeInt(MsgMetadataSize);
-				MsgMetadata.writeTo(OutStream);
-				OutStream.recycle();
+				Headers.WriteInt(MsgMetadataSize);
+				MsgMetadata.WriteTo(OutStream);
+				OutStream.Recycle();
 			}
 			catch (IOException E)
 			{
 				// This is in-memory serialization, should not fail
-				throw new Exception(E);
+				throw new System.Exception(E);
 			}
 
-			IByteBufferPair Command = IByteBufferPair.Get(Headers, Payload);
+			ByteBufPair Command = ByteBufPair.Get(Headers, Payload);
 
 			// write checksum at created checksum-placeholder
 			if (IncludeChecksum)
 			{
-				Headers.markReaderIndex();
-				Headers.readerIndex(ChecksumReaderIndex + ChecksumSize);
-				int MetadataChecksum = computeChecksum(Headers);
-				int ComputedChecksum = resumeChecksum(MetadataChecksum, Payload);
+				Headers.MarkReaderIndex();
+				Headers.SetReaderIndex(ChecksumReaderIndex + ChecksumSize);
+				int MetadataChecksum = ComputeChecksum(Headers);
+				int ComputedChecksum = ResumeChecksum(MetadataChecksum, Payload);
 				// set computed checksum
-				Headers.setInt(ChecksumReaderIndex, ComputedChecksum);
-				Headers.resetReaderIndex();
+				Headers.SetInt(ChecksumReaderIndex, ComputedChecksum);
+				Headers.ResetReaderIndex();
 			}
 			return Command;
 		}
 
-		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType ChecksumType, Proto.MessageMetadata MsgMetadata, IByteBuffer Payload)
+		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType ChecksumType, MessageMetadata MsgMetadata, IByteBuffer Payload)
 		{
 			// / Wire format
 			// [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
 			int MsgMetadataSize = MsgMetadata.SerializedSize;
-			int PayloadSize = Payload.readableBytes();
+			int PayloadSize = Payload.ReadableBytes;
 			int MagicAndChecksumLength = ChecksumType.Crc32c.Equals(ChecksumType) ? (2 + 4) : 0;
 			bool IncludeChecksum = MagicAndChecksumLength > 0;
 			int HeaderContentSize = MagicAndChecksumLength + 4 + MsgMetadataSize; // magicLength +
@@ -1474,111 +1388,112 @@ namespace SharpPulsar.Protocol
 			int ChecksumReaderIndex = -1;
 			int TotalSize = HeaderContentSize + PayloadSize;
 
-			IByteBuffer MetadataAndPayload = PulsarIByteBufferAllocator.DEFAULT.buffer(TotalSize, TotalSize);
+			IByteBuffer MetadataAndPayload = PulsarByteBufAllocator.DEFAULT.Buffer(TotalSize, TotalSize);
 			try
 			{
-				IByteBufferCodedOutputStream OutStream = IByteBufferCodedOutputStream.get(MetadataAndPayload);
+				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(MetadataAndPayload);
 
 				//Create checksum placeholder
 				if (IncludeChecksum)
 				{
-					MetadataAndPayload.writeShort(MagicCrc32c);
-					ChecksumReaderIndex = MetadataAndPayload.writerIndex();
-					MetadataAndPayload.writerIndex(MetadataAndPayload.writerIndex() + ChecksumSize); //skip 4 bytes of checksum
+					MetadataAndPayload.WriteShort(MagicCrc32c);
+					ChecksumReaderIndex = MetadataAndPayload.WriterIndex;
+					MetadataAndPayload.SetWriterIndex(MetadataAndPayload.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
 				}
 
 				// Write metadata
-				MetadataAndPayload.writeInt(MsgMetadataSize);
-				MsgMetadata.writeTo(OutStream);
-				OutStream.recycle();
+				MetadataAndPayload.WriteInt(MsgMetadataSize);
+				MsgMetadata.WriteTo(OutStream);
+				OutStream.Recycle();
 			}
 			catch (IOException E)
 			{
 				// This is in-memory serialization, should not fail
-				throw new Exception(E);
+				throw new System.Exception(E.Message, E);
 			}
 
 			// write checksum at created checksum-placeholder
 			if (IncludeChecksum)
 			{
-				MetadataAndPayload.markReaderIndex();
-				MetadataAndPayload.readerIndex(ChecksumReaderIndex + ChecksumSize);
-				int MetadataChecksum = computeChecksum(MetadataAndPayload);
-				int ComputedChecksum = resumeChecksum(MetadataChecksum, Payload);
+				MetadataAndPayload.MarkReaderIndex();
+				MetadataAndPayload.SetReaderIndex(ChecksumReaderIndex + ChecksumSize);
+				int MetadataChecksum = ComputeChecksum(MetadataAndPayload);
+				int ComputedChecksum = ResumeChecksum(MetadataChecksum, Payload);
 				// set computed checksum
-				MetadataAndPayload.setInt(ChecksumReaderIndex, ComputedChecksum);
-				MetadataAndPayload.resetReaderIndex();
+				MetadataAndPayload.SetInt(ChecksumReaderIndex, ComputedChecksum);
+				MetadataAndPayload.ResetReaderIndex();
 			}
-			MetadataAndPayload.writeBytes(Payload);
+			MetadataAndPayload.WriteBytes(Payload);
 
 			return MetadataAndPayload;
 		}
 
-		public static long InitBatchMessageMetadata(MessageMetadataBuilder MessageMetadata)
+		public static long InitBatchMessageMetadata(MessageMetadata.Builder Builder)
 		{
-			MessageMetadata.PublishTime = Builder.PublishTime;
-			MessageMetadata.setProducerName(Builder.getProducerName());
-			MessageMetadata.SequenceId = Builder.SequenceId;
-			if (Builder.hasReplicatedFrom())
+			MessageMetadata.Builder messageMetadata = MessageMetadata.NewBuilder();
+			messageMetadata.SetPublishTime(Builder._publishTime);
+			messageMetadata.SetProducerName(Builder.GetProducerName());
+			messageMetadata.SetSequenceId(Builder._sequenceId);
+			if (Builder.HasReplicatedFrom())
 			{
-				MessageMetadata.setReplicatedFrom(Builder.getReplicatedFrom());
+				messageMetadata.SetReplicatedFrom(Builder.getReplicatedFrom());
 			}
 			if (Builder.ReplicateToCount > 0)
 			{
-				MessageMetadata.addAllReplicateTo(Builder.ReplicateToList);
+				messageMetadata.AddAllReplicateTo(Builder.ReplicateToList);
 			}
-			if (Builder.hasSchemaVersion())
+			if (Builder.HasSchemaVersion())
 			{
-				MessageMetadata.SchemaVersion = Builder.SchemaVersion;
+				messageMetadata.SetSchemaVersion(Builder._schemaVersion);
 			}
-			return Builder.SequenceId;
+			return Builder._sequenceId;
 		}
 
-		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(Proto.SingleMessageMetadata.Builder SingleMessageMetadataBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
+		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata.Builder SingleMessageMetadataBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
 		{
-			int PayLoadSize = Payload.readableBytes();
-			Proto.SingleMessageMetadata SingleMessageMetadata = SingleMessageMetadataBuilder.setPayloadSize(PayLoadSize).build();
+			int PayLoadSize = Payload.ReadableBytes;
+			SingleMessageMetadata SingleMessageMetadata = SingleMessageMetadataBuilder.SetPayloadSize(PayLoadSize).Build();
 			// serialize meta-data size, meta-data and payload for single message in batch
-			int SingleMsgMetadataSize = SingleMessageMetadata.SerializedSize;
+			int SingleMsgMetadataSize = SingleMessageMetadata.CalculateSize();
 			try
 			{
-				BatchBuffer.writeInt(SingleMsgMetadataSize);
-				IByteBufferCodedOutputStream OutStream = IByteBufferCodedOutputStream.get(BatchBuffer);
-				SingleMessageMetadata.writeTo(OutStream);
-				SingleMessageMetadata.recycle();
-				OutStream.recycle();
+				BatchBuffer.WriteInt(SingleMsgMetadataSize);
+				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(BatchBuffer);
+				SingleMessageMetadata.WriteTo(OutStream);
+				SingleMessageMetadata.Recycle();
+				OutStream.Recycle();
 			}
 			catch (IOException E)
 			{
-				throw new Exception(E);
+				throw new System.Exception(E.Message, E);
 			}
-			return BatchBuffer.writeBytes(Payload);
+			return BatchBuffer.WriteBytes(Payload);
 		}
 
-		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(Proto.MessageMetadata.Builder MsgBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
+		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(MessageMetadata.Builder MsgBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
 		{
 
 			// build single message meta-data
-			Proto.SingleMessageMetadata.Builder SingleMessageMetadataBuilder = Proto.SingleMessageMetadata.newBuilder();
-			if (MsgBuilder.hasPartitionKey())
+			SingleMessageMetadata.Builder SingleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
+			if (MsgBuilder.HasPartitionKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.setPartitionKey(MsgBuilder.getPartitionKey()).setPartitionKeyB64Encoded(MsgBuilder.PartitionKeyB64Encoded);
+				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetPartitionKey(MsgBuilder.getPartitionKey()).SetPartitionKeyB64Encoded(MsgBuilder.PartitionKeyB64Encoded);
 			}
-			if (MsgBuilder.hasOrderingKey())
+			if (MsgBuilder.HasOrderingKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.setOrderingKey(MsgBuilder.OrderingKey);
+				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetOrderingKey(MsgBuilder.OrderingKey);
 			}
 			if (MsgBuilder.PropertiesList.Count > 0)
 			{
 				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.addAllProperties(MsgBuilder.PropertiesList);
 			}
 
-			if (MsgBuilder.hasEventTime())
+			if (MsgBuilder.HasEventTime())
 			{
 				SingleMessageMetadataBuilder.EventTime = MsgBuilder.EventTime;
 			}
 
-			if (MsgBuilder.hasSequenceId())
+			if (MsgBuilder.HasSequenceId())
 			{
 				SingleMessageMetadataBuilder.SequenceId = MsgBuilder.SequenceId;
 			}
@@ -1589,38 +1504,36 @@ namespace SharpPulsar.Protocol
 			}
 			finally
 			{
-				SingleMessageMetadataBuilder.recycle();
+				SingleMessageMetadataBuilder.Recycle();
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static io.netty.buffer.IByteBuffer deSerializeSingleMessageInBatch(io.netty.buffer.IByteBuffer uncompressedPayload, SharpPulsar.api.proto.Proto.SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize) throws java.io.IOException
-		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer UncompressedPayload, Proto.SingleMessageMetadata.Builder SingleMessageMetadataBuilder, int Index, int BatchSize)
+		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer UncompressedPayload, SingleMessageMetadata.Builder SingleMessageMetadataBuilder, int Index, int BatchSize)
 		{
-			int SingleMetaSize = (int) UncompressedPayload.readUnsignedInt();
-			int WriterIndex = UncompressedPayload.writerIndex();
-			int BeginIndex = UncompressedPayload.readerIndex() + SingleMetaSize;
-			UncompressedPayload.writerIndex(BeginIndex);
-			IByteBufferCodedInputStream Stream = IByteBufferCodedInputStream.get(UncompressedPayload);
-			SingleMessageMetadataBuilder.mergeFrom(Stream, null);
-			Stream.recycle();
+			int SingleMetaSize = (int) UncompressedPayload.ReadUnsignedInt();
+			int WriterIndex = UncompressedPayload.WriterIndex;
+			int BeginIndex = UncompressedPayload.ReaderIndex + SingleMetaSize;
+			UncompressedPayload.SetWriterIndex(BeginIndex);
+			ByteBufCodedInputStream Stream = ByteBufCodedInputStream.Get(UncompressedPayload);
+			SingleMessageMetadataBuilder.MergeFrom(Stream, null);
+			Stream.Recycle();
 
 			int SingleMessagePayloadSize = SingleMessageMetadataBuilder.PayloadSize;
 
-			int ReaderIndex = UncompressedPayload.readerIndex();
-			IByteBuffer SingleMessagePayload = UncompressedPayload.retainedSlice(ReaderIndex, SingleMessagePayloadSize);
-			UncompressedPayload.writerIndex(WriterIndex);
+			int ReaderIndex = UncompressedPayload.ReaderIndex;
+			IByteBuffer SingleMessagePayload = UncompressedPayload.RetainedSlice(ReaderIndex, SingleMessagePayloadSize);
+			UncompressedPayload.SetWriterIndex(WriterIndex);
 
 			// reader now points to beginning of payload read; so move it past message payload just read
 			if (Index < BatchSize)
 			{
-				UncompressedPayload.readerIndex(ReaderIndex + SingleMessagePayloadSize);
+				UncompressedPayload.SetReaderIndex(ReaderIndex + SingleMessagePayloadSize);
 			}
 
 			return SingleMessagePayload;
 		}
 
-		private static IByteBufferPair SerializeCommandMessageWithSize(Proto.BaseCommand Cmd, IByteBuffer MetadataAndPayload)
+		private static ByteBufPair SerializeCommandMessageWithSize(BaseCommand Cmd, IByteBuffer MetadataAndPayload)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
@@ -1629,33 +1542,33 @@ namespace SharpPulsar.Protocol
 
 
 			int CmdSize = Cmd.SerializedSize;
-			int TotalSize = 4 + CmdSize + MetadataAndPayload.readableBytes();
+			int TotalSize = 4 + CmdSize + MetadataAndPayload.ReadableBytes;
 			int HeadersSize = 4 + 4 + CmdSize;
 
-			IByteBuffer Headers = PulsarIByteBufferAllocator.DEFAULT.buffer(HeadersSize);
-			Headers.writeInt(TotalSize); // External frame
+			IByteBuffer Headers = PulsarByteBufAllocator.DEFAULT.Buffer(HeadersSize);
+			Headers.WriteInt(TotalSize); // External frame
 
 			try
 			{
 				// Write cmd
-				Headers.writeInt(CmdSize);
+				Headers.WriteInt(CmdSize);
 
-				IByteBufferCodedOutputStream OutStream = IByteBufferCodedOutputStream.get(Headers);
-				Cmd.writeTo(OutStream);
-				OutStream.recycle();
+				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(Headers);
+				Cmd.WriteTo(OutStream);
+				OutStream.Recycle();
 			}
 			catch (IOException E)
 			{
 				// This is in-memory serialization, should not fail
-				throw new Exception(E);
+				throw new System.Exception(E);
 			}
 
-			return (IByteBufferPair) IByteBufferPair.Get(Headers, MetadataAndPayload);
+			return (ByteBufPair) ByteBufPair.Get(Headers, MetadataAndPayload);
 		}
 
 		public static int GetNumberOfMessagesInBatch(IByteBuffer MetadataAndPayload, string Subscription, long ConsumerId)
 		{
-			Proto.MessageMetadata MsgMetadata = PeekMessageMetadata(MetadataAndPayload, Subscription, ConsumerId);
+			MessageMetadata MsgMetadata = PeekMessageMetadata(MetadataAndPayload, Subscription, ConsumerId);
 			if (MsgMetadata == null)
 			{
 				return -1;
@@ -1663,23 +1576,23 @@ namespace SharpPulsar.Protocol
 			else
 			{
 				int NumMessagesInBatch = MsgMetadata.NumMessagesInBatch;
-				MsgMetadata.recycle();
+				MsgMetadata.Recycle();
 				return NumMessagesInBatch;
 			}
 		}
 
-		public static Proto.MessageMetadata PeekMessageMetadata(IByteBuffer MetadataAndPayload, string Subscription, long ConsumerId)
+		public static MessageMetadata PeekMessageMetadata(IByteBuffer MetadataAndPayload, string Subscription, long ConsumerId)
 		{
 			try
 			{
 				// save the reader index and restore after parsing
-				int ReaderIdx = MetadataAndPayload.readerIndex();
-				Proto.MessageMetadata Metadata = Commands.ParseMessageMetadata(MetadataAndPayload);
-				MetadataAndPayload.readerIndex(ReaderIdx);
+				int ReaderIdx = MetadataAndPayload.ReaderIndex;
+				MessageMetadata Metadata = ParseMessageMetadata(MetadataAndPayload);
+				MetadataAndPayload.SetReaderIndex(ReaderIdx);
 
 				return Metadata;
 			}
-			catch (Exception T)
+			catch (System.Exception T)
 			{
 				log.error("[{}] [{}] Failed to parse message metadata", Subscription, ConsumerId, T);
 				return null;
@@ -1690,8 +1603,9 @@ namespace SharpPulsar.Protocol
 		{
 			get
 			{
+				var versions = Enum.GetValues(typeof(ProtocolVersion)).Length;
 				// Return the last ProtocolVersion enum value
-				return Proto.ProtocolVersion.values()[Proto.ProtocolVersion.values().length - 1].Number;
+				return Enum.GetValues(typeof(ProtocolVersion)).Cast<int>().ToList()[versions - 1];
 			}
 		}
 
@@ -1706,27 +1620,27 @@ namespace SharpPulsar.Protocol
 
 		public static bool PeerSupportsGetLastMessageId(int PeerVersion)
 		{
-			return PeerVersion >= Proto.ProtocolVersion.v12.Number;
+			return PeerVersion >= (int)ProtocolVersion.V12;
 		}
 
 		public static bool PeerSupportsActiveConsumerListener(int PeerVersion)
 		{
-			return PeerVersion >= Proto.ProtocolVersion.v12.Number;
+			return PeerVersion >= (int)ProtocolVersion.V12;
 		}
 
 		public static bool PeerSupportsMultiMessageAcknowledgment(int PeerVersion)
 		{
-			return PeerVersion >= Proto.ProtocolVersion.v12.Number;
+			return PeerVersion >= (int)ProtocolVersion.V12;
 		}
 
 		public static bool PeerSupportJsonSchemaAvroFormat(int PeerVersion)
 		{
-			return PeerVersion >= Proto.ProtocolVersion.v13.Number;
+			return PeerVersion >= (int)ProtocolVersion.V13;
 		}
 
 		public static bool PeerSupportsGetOrCreateSchema(int PeerVersion)
 		{
-			return PeerVersion >= Proto.ProtocolVersion.v15.Number;
+			return PeerVersion >= (int)ProtocolVersion.V15;
 		}
 	}
 
