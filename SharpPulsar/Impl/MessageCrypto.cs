@@ -1,6 +1,27 @@
-﻿using System;
+﻿using DotNetty.Buffers;
+using Google.Protobuf;
+using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Utilities.IO.Pem;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
+using SharpPulsar.Common;
+using SharpPulsar.Exception;
+using SharpPulsar.Protocol.Proto;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using Org.BouncyCastle.Crypto;
+using SharpPulsar.Common.Entity;
+using SharpPulsar.Api;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1;
+using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
+using SharpPulsar.Shared;
+using System.Security.Cryptography;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,7 +43,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using CacheBuilder = com.google.common.cache.CacheBuilder;
+	/*using CacheBuilder = com.google.common.cache.CacheBuilder;
 	using CacheLoader = com.google.common.cache.CacheLoader;
 	using LoadingCache = com.google.common.cache.LoadingCache;
 
@@ -32,13 +53,6 @@ namespace SharpPulsar.Impl
 
 	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
 	using EncryptionKeyInfo = SharpPulsar.Api.EncryptionKeyInfo;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using CryptoException = SharpPulsar.Api.PulsarClientException.CryptoException;
-	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
-	using EncryptionKeys = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.EncryptionKeys;
-	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
 	using ASN1ObjectIdentifier = org.bouncycastle.asn1.ASN1ObjectIdentifier;
 	using PrivateKeyInfo = org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 	using SubjectPublicKeyInfo = org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -46,16 +60,14 @@ namespace SharpPulsar.Impl
 	using X9ECParameters = org.bouncycastle.asn1.x9.X9ECParameters;
 	using BCECPrivateKey = org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 	using BCECPublicKey = org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
-	using BouncyCastleProvider = org.bouncycastle.jce.provider.BouncyCastleProvider;
+	//using BouncyCastleProvider = org.bouncycastle.jce.provider.BouncyCastleProvider;
 	using ECParameterSpec = org.bouncycastle.jce.spec.ECParameterSpec;
 	using ECPrivateKeySpec = org.bouncycastle.jce.spec.ECPrivateKeySpec;
 	using ECPublicKeySpec = org.bouncycastle.jce.spec.ECPublicKeySpec;
 	using PEMException = org.bouncycastle.openssl.PEMException;
 	using PEMKeyPair = org.bouncycastle.openssl.PEMKeyPair;
 	using PEMParser = org.bouncycastle.openssl.PEMParser;
-	using JcaPEMKeyConverter = org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+	using JcaPEMKeyConverter = org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;*/
 
 	public class MessageCrypto
 	{
@@ -69,7 +81,7 @@ namespace SharpPulsar.Impl
 		private const string RsaTrans = "RSA/NONE/OAEPWithSHA1AndMGF1Padding";
 		private const string AESGCM = "AES/GCM/NoPadding";
 
-		private static KeyGenerator keyGenerator;
+		private static CipherKeyGenerator keyGenerator;
 		private const int TagLen = 16 * 8;
 		public const int IvLen = 12;
 		private sbyte[] iv = new sbyte[IvLen];
@@ -78,8 +90,8 @@ namespace SharpPulsar.Impl
 		private string logCtx;
 
 		// Data key which is used to encrypt message
-		private SecretKey dataKey;
-		private LoadingCache<ByteBuffer, SecretKey> dataKeyCache;
+		private byte[] dataKey;
+		//private LoadingCache<ByteBuffer, SecretKey> dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
 		private ConcurrentDictionary<string, EncryptionKeyInfo> encryptedDataKeyMap;
@@ -87,12 +99,10 @@ namespace SharpPulsar.Impl
 		internal static readonly SecureRandom SecureRandom;
 		static MessageCrypto()
 		{
-
-			Security.addProvider(new BouncyCastleProvider());
 			SecureRandom Rand = null;
 			try
 			{
-				Rand = SecureRandom.getInstance("NativePRNGNonBlocking");
+				Rand = SecureRandom.GetInstance("NativePRNGNonBlocking");
 			}
 			catch (NoSuchAlgorithmException)
 			{
@@ -102,7 +112,7 @@ namespace SharpPulsar.Impl
 			SecureRandom = Rand;
 
 			// Initial seed
-			SecureRandom.NextBytes(new sbyte[IvLen]);
+			SecureRandom.NextBytes(new byte[IvLen]);
 		}
 
 		public MessageCrypto(string LogCtx, bool KeyGenNeeded)
@@ -125,180 +135,74 @@ namespace SharpPulsar.Impl
 					dataKey = null;
 					return;
 				}
-				keyGenerator = KeyGenerator.getInstance("AES");
-				int AesKeyLength = Cipher.getMaxAllowedKeyLength("AES");
+				keyGenerator = new CipherKeyGenerator();//.GetInstance("AES");
+				int AesKeyLength = Cipher.GetMaxAllowedKeyLength("AES");
 				if (AesKeyLength <= 128)
 				{
-					log.warn("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", LogCtx, AesKeyLength);
-					keyGenerator.init(AesKeyLength, SecureRandom);
+					log.LogWarning("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", LogCtx, AesKeyLength);
+					keyGenerator.Init(new KeyGenerationParameters(SecureRandom, AesKeyLength));
 				}
 				else
 				{
-					keyGenerator.init(256, SecureRandom);
+					keyGenerator.Init(new KeyGenerationParameters(SecureRandom, 256));
 				}
 
 			}
-			catch (Exception e) when (e is NoSuchAlgorithmException || e is NoSuchProviderException || e is NoSuchPaddingException)
+			catch (System.Exception e) when (e is NoSuchAlgorithmException || e is NoSuchProviderException || e is NoSuchPaddingException)
 			{
 
 				cipher = null;
-				log.error("{} MessageCrypto initialization Failed {}", LogCtx, e.Message);
+				log.LogError("{} MessageCrypto initialization Failed {}", LogCtx, e.Message);
 
 			}
 
 			// Generate data key to encrypt messages
-			dataKey = keyGenerator.generateKey();
+			dataKey = keyGenerator.GenerateKey();
 
 			iv = new sbyte[IvLen];
 		}
 
-		public class CacheLoaderAnonymousInnerClass : CacheLoader<ByteBuffer, SecretKey>
-		{
-			private readonly MessageCrypto outerInstance;
-
-			public CacheLoaderAnonymousInnerClass(MessageCrypto OuterInstance)
-			{
-				this.outerInstance = OuterInstance;
-			}
-
-
-			public override SecretKey load(ByteBuffer Key)
-			{
-				return null;
-			}
-
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private java.security.PublicKey loadPublicKey(byte[] keyBytes) throws Exception
-		private PublicKey LoadPublicKey(sbyte[] KeyBytes)
+		
+		private AsymmetricKeyParameter LoadPublicKey(sbyte[] KeyBytes)
 		{
 
-			Reader KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
-			PublicKey PublicKey = null;
+			var KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
 			try
 			{
-					using (PEMParser PemReader = new PEMParser(KeyReader))
-					{
-					object PemObj = PemReader.readObject();
-					JcaPEMKeyConverter PemConverter = new JcaPEMKeyConverter();
-					SubjectPublicKeyInfo KeyInfo = null;
-					X9ECParameters EcParam = null;
-        
-					if (PemObj is ASN1ObjectIdentifier)
-					{
-        
-						// make sure this is EC Parameter we're handling. In which case
-						// we'll store it and read the next object which should be our
-						// EC Public Key
-        
-						ASN1ObjectIdentifier EcOID = (ASN1ObjectIdentifier) PemObj;
-						EcParam = ECNamedCurveTable.getByOID(EcOID);
-						if (EcParam == null)
-						{
-							throw new PEMException("Unable to find EC Parameter for the given curve oid: " + ((ASN1ObjectIdentifier) PemObj).Id);
-						}
-        
-						PemObj = PemReader.readObject();
-					}
-					else if (PemObj is X9ECParameters)
-					{
-						EcParam = (X9ECParameters) PemObj;
-						PemObj = PemReader.readObject();
-					}
-        
-					if (PemObj is org.bouncycastle.cert.X509CertificateHolder)
-					{
-						KeyInfo = ((org.bouncycastle.cert.X509CertificateHolder) PemObj).SubjectPublicKeyInfo;
-					}
-					else
-					{
-						KeyInfo = (SubjectPublicKeyInfo) PemObj;
-					}
-					PublicKey = PemConverter.getPublicKey(KeyInfo);
-        
-					if (EcParam != null && ECDSA.Equals(PublicKey.Algorithm))
-					{
-						ECParameterSpec EcSpec = new ECParameterSpec(EcParam.Curve, EcParam.G, EcParam.N, EcParam.H, EcParam.Seed);
-						KeyFactory KeyFactory = KeyFactory.getInstance(ECDSA, BouncyCastleProvider.PROVIDER_NAME);
-						ECPublicKeySpec KeySpec = new ECPublicKeySpec(((BCECPublicKey) PublicKey).Q, EcSpec);
-						PublicKey = (PublicKey) KeyFactory.generatePublic(KeySpec);
-					}
-					}
-			}
-			catch (Exception e) when (e is IOException || e is NoSuchAlgorithmException || e is NoSuchProviderException || e is InvalidKeySpecException)
-			{
-				throw new Exception(e);
-			}
-			return PublicKey;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private java.security.PrivateKey loadPrivateKey(byte[] keyBytes) throws Exception
-		private PrivateKey LoadPrivateKey(sbyte[] KeyBytes)
-		{
-
-			Reader KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
-			PrivateKey PrivateKey = null;
-			try
-			{
-					using (PEMParser PemReader = new PEMParser(KeyReader))
-					{
-					X9ECParameters EcParam = null;
-        
-					object PemObj = PemReader.readObject();
-        
-					if (PemObj is ASN1ObjectIdentifier)
-					{
-        
-						// make sure this is EC Parameter we're handling. In which case
-						// we'll store it and read the next object which should be our
-						// EC Private Key
-        
-						ASN1ObjectIdentifier EcOID = (ASN1ObjectIdentifier) PemObj;
-						EcParam = ECNamedCurveTable.getByOID(EcOID);
-						if (EcParam == null)
-						{
-							throw new PEMException("Unable to find EC Parameter for the given curve oid: " + EcOID.Id);
-						}
-        
-						PemObj = PemReader.readObject();
-        
-					}
-					else if (PemObj is X9ECParameters)
-					{
-        
-						EcParam = (X9ECParameters) PemObj;
-						PemObj = PemReader.readObject();
-					}
-        
-					if (PemObj is PEMKeyPair)
-					{
-        
-						PrivateKeyInfo PKeyInfo = ((PEMKeyPair) PemObj).PrivateKeyInfo;
-						JcaPEMKeyConverter PemConverter = new JcaPEMKeyConverter();
-						PrivateKey = PemConverter.getPrivateKey(PKeyInfo);
-        
-					}
-        
-					// if our private key is EC type and we have parameters specified
-					// then we need to set it accordingly
-        
-					if (EcParam != null && ECDSA.Equals(PrivateKey.Algorithm))
-					{
-						ECParameterSpec EcSpec = new ECParameterSpec(EcParam.Curve, EcParam.G, EcParam.N, EcParam.H, EcParam.Seed);
-						KeyFactory KeyFactory = KeyFactory.getInstance(ECDSA, BouncyCastleProvider.PROVIDER_NAME);
-						ECPrivateKeySpec KeySpec = new ECPrivateKeySpec(((BCECPrivateKey) PrivateKey).S, EcSpec);
-						PrivateKey = (PrivateKey) KeyFactory.generatePrivate(KeySpec);
-					}
-        
-					}
+				var PemReader = new PemReader(KeyReader);
+				var PemObj = (AsymmetricCipherKeyPair)PemReader.ReadObject();
+				if (PemObj != null)
+				{
+					return PemObj.Public;
+				}
+				else
+					throw new ArgumentException("Unknown key type");
 			}
 			catch (IOException E)
 			{
-				throw new Exception(E);
+				throw new System.Exception(E.Message, E);
 			}
-			return PrivateKey;
+		}
+		
+		private AsymmetricKeyParameter LoadPrivateKey(sbyte[] KeyBytes)
+		{
+
+			var KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
+			try
+			{
+				var PemReader = new PemReader(KeyReader);
+				var PemObj = (AsymmetricCipherKeyPair)PemReader.ReadObject();
+				if(PemObj != null)
+				{
+					return PemObj.Private;
+				}
+				else
+					throw new ArgumentException("Unknown key type");
+			}
+			catch (IOException E)
+			{
+				throw new System.Exception(E.Message, E);
+			}
 		}
 
 		/*
@@ -311,15 +215,13 @@ namespace SharpPulsar.Impl
 		 * @param keyReader Implementation to read the key values
 		 *
 		 */
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public synchronized void addPublicKeyCipher(java.util.Set<String> keyNames, SharpPulsar.api.CryptoKeyReader keyReader) throws SharpPulsar.api.PulsarClientException.CryptoException
 		public virtual void AddPublicKeyCipher(ISet<string> KeyNames, CryptoKeyReader KeyReader)
 		{
 			lock (this)
 			{
         
 				// Generate data key
-				dataKey = keyGenerator.generateKey();
+				dataKey = keyGenerator.GenerateKey();
         
 				foreach (string Key in KeyNames)
 				{
@@ -328,8 +230,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void addPublicKeyCipher(String keyName, SharpPulsar.api.CryptoKeyReader keyReader) throws SharpPulsar.api.PulsarClientException.CryptoException
 		private void AddPublicKeyCipher(string KeyName, CryptoKeyReader KeyReader)
 		{
 
@@ -339,29 +239,42 @@ namespace SharpPulsar.Impl
 			}
 
 			// Read the public key and its info using callback
-			EncryptionKeyInfo KeyInfo = KeyReader.getPublicKey(KeyName, null);
+			EncryptionKeyInfo KeyInfo = KeyReader.GetPublicKey(KeyName, null);
 
-			PublicKey PubKey;
+			AsymmetricKeyParameter PubKey;
 
 			try
 			{
 				PubKey = LoadPublicKey(KeyInfo.Key);
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
 				string Msg = logCtx + "Failed to load public key " + KeyName + ". " + E.Message;
-				log.error(Msg);
+				log.LogError(Msg);
 				throw new PulsarClientException.CryptoException(Msg);
 			}
-
-			Cipher DataKeyCipher = null;
+			
 			sbyte[] EncryptedKey;
 
 			try
 			{
-
+				using (SymmetricAlgorithm aes = SymmetricAlgorithm.Create())
+				{
+					aes.Mode = CipherMode.CBC;
+					aes.Padding = PaddingMode.PKCS7;
+					ICryptoTransform encryptor = aes.CreateEncryptor();
+					using (MemoryStream mStream = new MemoryStream())
+					{
+						using (CryptoStream cStream = new CryptoStream(mStream, encryptor, CryptoStreamMode.Write))
+						{
+							cStream.Write(dataKey, 0, dataKey.Length);
+							cStream.FlushFinalBlock();
+							EncryptedKey = (sbyte[])(object)mStream.ToArray();
+						}
+					}
+				}
 				// Encrypt data key using public key
-				if (RSA.Equals(PubKey.Algorithm))
+				/*if (RSA.Equals(PubKey.Algorithm))
 				{
 					DataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
 				}
@@ -372,16 +285,16 @@ namespace SharpPulsar.Impl
 				else
 				{
 					string Msg = logCtx + "Unsupported key type " + PubKey.Algorithm + " for key " + KeyName;
-					log.error(Msg);
+					log.LogError(Msg);
 					throw new PulsarClientException.CryptoException(Msg);
 				}
 				DataKeyCipher.init(Cipher.ENCRYPT_MODE, PubKey);
-				EncryptedKey = DataKeyCipher.doFinal(dataKey.Encoded);
+				EncryptedKey = DataKeyCipher.doFinal(dataKey.Encoded);*/
 
 			}
-			catch (Exception E) when (E is IllegalBlockSizeException || E is BadPaddingException || E is NoSuchAlgorithmException || E is NoSuchProviderException || E is NoSuchPaddingException || E is InvalidKeyException)
+			catch (System.Exception E)
 			{
-				log.error("{} Failed to encrypt data key {}. {}", logCtx, KeyName, E.Message);
+				log.LogError("{} Failed to encrypt data key {}. {}", logCtx, KeyName, E.Message);
 				throw new PulsarClientException.CryptoException(E.Message);
 			}
 			EncryptionKeyInfo Eki = new EncryptionKeyInfo(EncryptedKey, KeyInfo.Metadata);
@@ -404,7 +317,7 @@ namespace SharpPulsar.Impl
 			{
 				return false;
 			}
-			encryptedDataKeyMap.Remove(KeyName);
+			encryptedDataKeyMap.Remove(KeyName, out var d);
 			return true;
 		}
 
@@ -419,9 +332,7 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return encryptedData if success
 		 */
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public synchronized io.netty.buffer.ByteBuf encrypt(java.util.Set<String> encKeys, SharpPulsar.api.CryptoKeyReader keyReader, org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata.Builder msgMetadata, io.netty.buffer.ByteBuf payload) throws SharpPulsar.api.PulsarClientException
-		public virtual ByteBuf Encrypt(ISet<string> EncKeys, CryptoKeyReader KeyReader, MessageMetadata.Builder MsgMetadata, ByteBuf Payload)
+		public virtual IByteBuffer Encrypt(ISet<string> EncKeys, CryptoKeyReader KeyReader, MessageMetadata.Builder MsgMetadata, IByteBuffer Payload)
 		{
 			lock (this)
 			{
@@ -446,59 +357,59 @@ namespace SharpPulsar.Impl
 						if (KeyInfo.Metadata != null && KeyInfo.Metadata.Count > 0)
 						{
 							IList<KeyValue> KvList = new List<KeyValue>();
-							KeyInfo.Metadata.forEach((key, value) =>
+							KeyInfo.Metadata.ToList().ForEach(x =>
 							{
-							KvList.Add(KeyValue.newBuilder().setKey(key).setValue(value).build());
+								KvList.Add(KeyValue.NewBuilder().SetKey(x.Key).SetValue(x.Value).Build());
 							});
-							MsgMetadata.addEncryptionKeys(EncryptionKeys.newBuilder().setKey(KeyName).setValue(ByteString.copyFrom(KeyInfo.Key)).addAllMetadata(KvList).build());
+							MsgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(KeyName).SetValue(ByteString.CopyFrom((byte[])(object)KeyInfo.Key)).AddAllMetadata(KvList).Build());
 						}
 						else
 						{
-							MsgMetadata.addEncryptionKeys(EncryptionKeys.newBuilder().setKey(KeyName).setValue(ByteString.copyFrom(KeyInfo.Key)).build());
+							MsgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(KeyName).SetValue(ByteString.CopyFrom((byte[])(object)KeyInfo.Key)).Build());
 						}
 					}
 					else
 					{
 						// We should never reach here.
-						log.error("{} Failed to find encrypted Data key for key {}.", logCtx, KeyName);
+						log.LogError("{} Failed to find encrypted Data key for key {}.", logCtx, KeyName);
 					}
         
 				}
         
 				// Create gcm param
 				// TODO: Replace random with counter and periodic refreshing based on timer/counter value
-				SecureRandom.NextBytes(iv);
+				SecureRandom.NextBytes((byte[])(object)iv);
 				GCMParameterSpec GcmParam = new GCMParameterSpec(TagLen, iv);
         
 				// Update message metadata with encryption param
-				MsgMetadata.EncryptionParam = ByteString.copyFrom(iv);
+				MsgMetadata.SetEncryptionParam(ByteString.CopyFrom((byte[])(object)iv));
         
-				ByteBuf TargetBuf = null;
+				IByteBuffer TargetBuf = null;
 				try
 				{
 					// Encrypt the data
 					cipher.init(Cipher.ENCRYPT_MODE, dataKey, GcmParam);
         
-					ByteBuffer SourceNioBuf = Payload.nioBuffer(Payload.readerIndex(), Payload.readableBytes());
+					var SourceNioBuf = Payload.GetIoBuffer(Payload.ReaderIndex, Payload.ReadableBytes);
         
-					int MaxLength = cipher.getOutputSize(Payload.readableBytes());
-					TargetBuf = PulsarByteBufAllocator.DEFAULT.buffer(MaxLength, MaxLength);
-					ByteBuffer TargetNioBuf = TargetBuf.nioBuffer(0, MaxLength);
+					int MaxLength = cipher.getOutputSize(Payload.ReadableBytes);
+					TargetBuf = PulsarByteBufAllocator.DEFAULT.Buffer(MaxLength, MaxLength);
+					var TargetNioBuf = TargetBuf.GetIoBuffer(0, MaxLength);
         
 					int BytesStored = cipher.doFinal(SourceNioBuf, TargetNioBuf);
-					TargetBuf.writerIndex(BytesStored);
+					TargetBuf.SetWriterIndex(BytesStored);
         
 				}
-				catch (Exception e) when (e is IllegalBlockSizeException || e is BadPaddingException || e is InvalidKeyException || e is InvalidAlgorithmParameterException || e is ShortBufferException)
+				catch (System.Exception e) 
 				{
         
-					TargetBuf.release();
-					log.error("{} Failed to encrypt message. {}", logCtx, e);
+					TargetBuf.Release();
+					log.LogError("{} Failed to encrypt message. {}", logCtx, e);
 					throw new PulsarClientException.CryptoException(e.Message);
         
 				}
         
-				Payload.release();
+				Payload.Release();
 				return TargetBuf;
 			}
 		}
@@ -507,13 +418,13 @@ namespace SharpPulsar.Impl
 		{
 
 			IDictionary<string, string> KeyMeta = new Dictionary<string, string>();
-			EncKeyMeta.ForEach(kv =>
+			EncKeyMeta.ToList().ForEach(kv =>
 			{
-			KeyMeta[kv.Key] = kv.Value;
+				KeyMeta[kv.Key] = kv.Value;
 			});
 
 			// Read the private key info using callback
-			EncryptionKeyInfo KeyInfo = KeyReader.getPrivateKey(KeyName, KeyMeta);
+			Api.EncryptionKeyInfo KeyInfo = KeyReader.GetPrivateKey(KeyName, KeyMeta);
 
 			// Convert key from byte to PivateKey
 			PrivateKey PrivateKey;
@@ -570,7 +481,7 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private ByteBuf DecryptData(SecretKey DataKeySecret, MessageMetadata MsgMetadata, ByteBuf Payload)
+		private IByteBuffer DecryptData(SecretKey DataKeySecret, MessageMetadata MsgMetadata, IByteBuffer Payload)
 		{
 
 			// unpack iv and encrypted data
@@ -578,19 +489,19 @@ namespace SharpPulsar.Impl
 			IvString.copyTo(iv, 0);
 
 			GCMParameterSpec GcmParams = new GCMParameterSpec(TagLen, iv);
-			ByteBuf TargetBuf = null;
+			IByteBuffer TargetBuf = null;
 			try
 			{
 				cipher.init(Cipher.DECRYPT_MODE, DataKeySecret, GcmParams);
 
-				ByteBuffer SourceNioBuf = Payload.nioBuffer(Payload.readerIndex(), Payload.readableBytes());
+				var SourceNioBuf = Payload.GetIoBuffer(Payload.ReaderIndex, Payload.ReadableBytes);
 
-				int MaxLength = cipher.getOutputSize(Payload.readableBytes());
-				TargetBuf = PulsarByteBufAllocator.DEFAULT.buffer(MaxLength, MaxLength);
-				ByteBuffer TargetNioBuf = TargetBuf.nioBuffer(0, MaxLength);
+				int MaxLength = cipher.getOutputSize(Payload.ReadableBytes);
+				TargetBuf = PulsarByteBufAllocator.DEFAULT.Buffer(MaxLength, MaxLength);
+				var TargetNioBuf = TargetBuf.GetIoBuffer(0, MaxLength);
 
 				int DecryptedSize = cipher.doFinal(SourceNioBuf, TargetNioBuf);
-				TargetBuf.writerIndex(DecryptedSize);
+				TargetBuf.SetWriterIndex(DecryptedSize);
 
 			}
 			catch (Exception e) when (e is InvalidKeyException || e is InvalidAlgorithmParameterException || e is IllegalBlockSizeException || e is BadPaddingException || e is ShortBufferException)
@@ -606,20 +517,20 @@ namespace SharpPulsar.Impl
 			return TargetBuf;
 		}
 
-		private ByteBuf GetKeyAndDecryptData(MessageMetadata MsgMetadata, ByteBuf Payload)
+		private IByteBuffer GetKeyAndDecryptData(MessageMetadata MsgMetadata, IByteBuffer Payload)
 		{
 
-			ByteBuf DecryptedData = null;
+			IByteBuffer DecryptedData = null;
 
-			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
+			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeys;
 
 			// Go through all keys to retrieve data key from cache
 			for (int I = 0; I < EncKeys.Count; I++)
 			{
 
-				sbyte[] MsgDataKey = EncKeys[I].Value.toByteArray();
+				sbyte[] MsgDataKey = (sbyte[])(object)EncKeys[I].Value.ToByteArray();
 				sbyte[] KeyDigest = Digest.digest(MsgDataKey);
-				SecretKey StoredSecretKey = dataKeyCache.getIfPresent(ByteBuffer.wrap(KeyDigest));
+				SecretKey StoredSecretKey = dataKeyCache.getIfPresent(ByteBuffer.Wrap(KeyDigest));
 				if (StoredSecretKey != null)
 				{
 
@@ -636,7 +547,7 @@ namespace SharpPulsar.Impl
 				else
 				{
 					// First time, entry won't be present in cache
-					log.debug("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", logCtx);
+					log.LogDebug("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", logCtx);
 				}
 
 			}
@@ -655,13 +566,13 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return decryptedData if success, null otherwise
 		 */
-		public virtual ByteBuf Decrypt(MessageMetadata MsgMetadata, ByteBuf Payload, CryptoKeyReader KeyReader)
+		public virtual IByteBuffer Decrypt(MessageMetadata MsgMetadata, IByteBuffer Payload, CryptoKeyReader KeyReader)
 		{
 
 			// If dataKey is present, attempt to decrypt using the existing key
 			if (dataKey != null)
 			{
-				ByteBuf DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
+				IByteBuffer DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
 				// If decryption succeeded, data is non null
 				if (DecryptedData != null)
 				{
@@ -670,13 +581,13 @@ namespace SharpPulsar.Impl
 			}
 
 			// dataKey is null or decryption failed. Attempt to regenerate data key
-			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
+			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeys;
 			EncryptionKeys EncKeyInfo = EncKeys.Where(kbv =>
 			{
-			sbyte[] EncDataKey = kbv.Value.toByteArray();
-			IList<KeyValue> EncKeyMeta = kbv.MetadataList;
-			return DecryptDataKey(kbv.Key, EncDataKey, EncKeyMeta, KeyReader);
-			}).First().orElse(null);
+				sbyte[] EncDataKey = (sbyte[])(object)kbv.Value.ToByteArray();
+				IList<KeyValue> EncKeyMeta = kbv.Metadata;
+				return DecryptDataKey(kbv.Key, EncDataKey, EncKeyMeta, KeyReader);
+			}).FirstOrDefault();
 
 			if (EncKeyInfo == null || dataKey == null)
 			{
@@ -688,7 +599,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(MessageCrypto));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(MessageCrypto));
 
 	}
 

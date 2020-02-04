@@ -38,6 +38,7 @@ namespace SharpPulsar.Impl
 		public abstract TaskCompletionSource<IMessageId> SendAsync(sbyte[] Message);
 		public abstract IMessageId Send(sbyte[] Message);
 		public abstract string ProducerName { get; set; }
+		public MultiSchemaMode MultiSchemaMode;
 
 		protected internal readonly TaskCompletionSource<IProducer<T>> _producerCreatedTask;
 		protected internal readonly ProducerConfigurationData Conf;
@@ -211,15 +212,14 @@ namespace SharpPulsar.Impl
 		{
 			throw new NotImplementedException();
 		}
+		
 
-		public enum MultiSchemaMode
-		{
-			Auto,
-			Enabled,
-			Disabled
-		}
+        public static explicit operator ProducerBase<object>(ProducerBase<T> v)
+        {
+            throw new NotImplementedException();
+        }
 
-        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
+        /*public static explicit operator ProducerBase<object>(ProducerBase<T> v)
         {
             throw new NotImplementedException();
         }
@@ -227,12 +227,12 @@ namespace SharpPulsar.Impl
         public static explicit operator ProducerBase<T>(ProducerBase<T> v)
         {
             throw new NotImplementedException();
-        }
-
-        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
-        {
-            throw new NotImplementedException();
-        }
+        }*/
     }
-
+	public enum MultiSchemaMode
+	{
+		Auto,
+		Enabled,
+		Disabled
+	}
 }

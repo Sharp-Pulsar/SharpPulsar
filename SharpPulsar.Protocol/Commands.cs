@@ -48,7 +48,7 @@ namespace SharpPulsar.Protocol
 
 		public const short MagicCrc32c = 0x0e01;
 		private const int ChecksumSize = 4;
-
+		
 		public static IByteBuffer NewConnect(string AuthMethodName, string AuthData, string LibVersion)
 		{
 			return NewConnect(AuthMethodName, AuthData, CurrentProtocolVersion, LibVersion, null, null, null, null);
@@ -370,7 +370,7 @@ namespace SharpPulsar.Protocol
 			return Res;
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType? ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
 		{
 			return NewSend(ProducerId, SequenceId, NumMessaegs, 0, 0, ChecksumType, MessageMetadata, Payload);
 		}

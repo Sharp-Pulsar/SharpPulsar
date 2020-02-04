@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

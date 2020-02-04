@@ -3,7 +3,7 @@
 //
 //	This class is used to convert some aspects of the Java String class.
 //-------------------------------------------------------------------------------------------
-internal static class StringHelper
+public static class StringHelper
 {
 	//----------------------------------------------------------------------------------
 	//	This method replaces the Java String.substring method when 'start' is a

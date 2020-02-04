@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common;
+using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,32 +22,26 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
-	using PlatformDependent = io.netty.util.@internal.PlatformDependent;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using InvalidServiceURL = SharpPulsar.Api.PulsarClientException.InvalidServiceURL;
-	using ServiceURI = Org.Apache.Pulsar.Common.Net.ServiceURI;
+    using static SharpPulsar.Exception.PulsarClientException;
+    using PlatformDependent = io.netty.util.@internal.PlatformDependent;
 
 	/// <summary>
 	/// The default implementation of <seealso cref="ServiceNameResolver"/>.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class PulsarServiceNameResolver implements ServiceNameResolver
 	public class PulsarServiceNameResolver : ServiceNameResolver
 	{
 
-		public virtual ServiceUri {get;}
-		public virtual ServiceUrl {get;}
-		private volatile int currentIndex;
-		private volatile IList<InetSocketAddress> addressList;
+		public ServiceURI ServiceUrl;
+		private  int currentIndex;
+		private volatile IList<Uri> addressList;
 
-		public override InetSocketAddress ResolveHost()
+		public  Uri ResolveHost()
 		{
-			IList<InetSocketAddress> List = addressList;
-			checkState(List != null, "No service url is provided yet");
-			checkState(List.Count > 0, "No hosts found for service url : " + ServiceUrl);
+			IList<Uri> List = addressList;
+			if(List == null)
+				throw new ArgumentNullException("No service url is provided yet");
+			if(List.Count < 1)
+				throw new ArgumentNullException("No hosts found for service url : " + ServiceUrl);
 			if (List.Count == 1)
 			{
 				return List[0];
@@ -58,38 +54,35 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override URI ResolveHostUri()
+		public Uri ResolveHostUri()
 		{
-			InetSocketAddress Host = ResolveHost();
-			string HostUrl = ServiceUri.ServiceScheme + "://" + Host.HostName + ":" + Host.Port;
-			return URI.create(HostUrl);
+			Uri Host = ResolveHost();
+			string HostUrl = ServiceUrl.ServiceScheme + "://" + Host.Host + ":" + Host.Port;
+			return new Uri(HostUrl);
 		}
 
 
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void updateServiceUrl(String serviceUrl) throws SharpPulsar.api.PulsarClientException.InvalidServiceURL
-		public override void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string ServiceUrl)
 		{
 			ServiceURI Uri;
 			try
 			{
-				Uri = ServiceURI.create(ServiceUrl);
+				Uri = ServiceURI.Create(ServiceUrl);
 			}
-			catch (System.ArgumentException Iae)
+			catch (ArgumentException Iae)
 			{
 				log.error("Invalid service-url {} provided {}", ServiceUrl, Iae.Message, Iae);
-				throw new InvalidServiceURL(Iae);
+				throw new InvalidServiceURL(Iae.Message);
 			}
 
 			string[] Hosts = Uri.ServiceHosts;
-			IList<InetSocketAddress> Addresses = new List<InetSocketAddress>(Hosts.Length);
+			IList<Uri> Addresses = new List<Uri>(Hosts.Length);
 			foreach (string Host in Hosts)
 			{
 				string HostUrl = Uri.ServiceScheme + "://" + Host;
 				try
 				{
-					URI HostUri = new URI(HostUrl);
+					Uri HostUri = new uri(HostUrl);
 					Addresses.Add(InetSocketAddress.createUnresolved(HostUri.Host, HostUri.Port));
 				}
 				catch (URISyntaxException E)

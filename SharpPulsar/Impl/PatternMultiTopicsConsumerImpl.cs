@@ -26,6 +26,7 @@ namespace SharpPulsar.Impl
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+    using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
     public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, TimerTask
 	{

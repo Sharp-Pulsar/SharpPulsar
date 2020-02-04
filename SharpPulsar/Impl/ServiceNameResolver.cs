@@ -18,6 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
+    using SharpPulsar.Common;
     using System;
     using System.Net;
 
@@ -31,7 +32,7 @@ namespace SharpPulsar.Impl
 		/// Resolve pulsar service url.
 		/// </summary>
 		/// <returns> resolve the service url to return a socket address </returns>
-		EndPoint ResolveHost();
+		Uri ResolveHost();
 
 		/// <summary>
 		/// Resolve pulsar service url

@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 
 		protected internal readonly HandlerState State;
 		protected internal readonly Backoff Backoff;
-		protected internal long EpochConflict = 0L;
+		protected internal long _epoch = 0L;
 
 		
 
@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 			return null;
 		}
 
-		public virtual void ReconnectLater(Exception Exception)
+		public virtual void ReconnectLater(System.Exception Exception)
 		{
 			CLIENT_CNX_UPDATER.set(this, null);
 			if (!ValidStateForReconnection)
@@ -110,7 +110,7 @@ namespace SharpPulsar.Impl
 			State.client.timer().newTimeout(timeout =>
 			{
 			log.info("[{}] [{}] Reconnecting after connection was closed", State.topic, State.HandlerName);
-			++EpochConflict;
+			++_epoch;
 			GrabCnx();
 			}, DelayMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
@@ -127,10 +127,10 @@ namespace SharpPulsar.Impl
 				long DelayMs = Backoff.Next();
 				State.SetState(HandlerState.State.Connecting);
 				log.LogInformation("[{}] [{}] Closed connection {} -- Will try again in {} s", State.Topic, State.HandlerName, cnx.channel(), DelayMs / 1000.0);
-				State.Client.Timer().Change(timeout =>
+				State.Client.Timer.Change(timeout =>
 				{
 					log.info("[{}] [{}] Reconnecting after timeout", State.topic, State.HandlerName);
-					++EpochConflict;
+					++_epoch;
 					GrabCnx();
 				}, DelayMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			}
@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return EpochConflict;
+				return _epoch;
 			}
 		}
 		private static readonly ILogger log = new LoggerFactory().CreateLogger<ConnectionHandler>();

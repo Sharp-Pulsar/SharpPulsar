@@ -1,5 +1,11 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Api.Interceptor;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,46 +27,14 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
 
-
-	using AccessLevel = lombok.AccessLevel;
-	using Getter = lombok.Getter;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
-	using ICompressionType = SharpPulsar.Api.ICompressionType;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using HashingScheme = SharpPulsar.Api.HashingScheme;
-	using MessageRouter = SharpPulsar.Api.MessageRouter;
-	using MessageRoutingMode = SharpPulsar.Api.MessageRoutingMode;
-	using Producer = SharpPulsar.Api.Producer;
-	using SharpPulsar.Api;
-	using ProducerCryptoFailureAction = SharpPulsar.Api.ProducerCryptoFailureAction;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using SharpPulsar.Api;
-	using ProducerInterceptor = SharpPulsar.Api.Interceptor.ProducerInterceptor;
-	using ProducerInterceptorWrapper = SharpPulsar.Api.Interceptor.ProducerInterceptorWrapper;
-	using ConfigurationDataUtils = SharpPulsar.Impl.Conf.ConfigurationDataUtils;
-	using ProducerConfigurationData = SharpPulsar.Impl.Conf.ProducerConfigurationData;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-
-	using NonNull = lombok.NonNull;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter(AccessLevel.PUBLIC) public class ProducerBuilderImpl<T> implements SharpPulsar.api.ProducerBuilder<T>
 	public class ProducerBuilderImpl<T> : IProducerBuilder<T>
 	{
 
 		private readonly PulsarClientImpl client;
 		private ProducerConfigurationData conf;
 		private ISchema<T> schema;
-		private IList<ProducerInterceptor> interceptorList;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public ProducerBuilderImpl(PulsarClientImpl client, SharpPulsar.api.Schema<T> schema)
+		private IList<IProducerInterceptor> interceptorList;
 		public ProducerBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ProducerConfigurationData(), Schema)
 		{
 		}
@@ -73,7 +47,7 @@ namespace SharpPulsar.Impl
 		}
 
 		/// <summary>
-		/// Allow to override schema in builder implementation
+		/// Allow to schema in builder implementation
 		/// @return
 		/// </summary>
 		public virtual IProducerBuilder<T> Schema(ISchema<T> Schema)
@@ -82,30 +56,28 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public override IProducerBuilder<T> Clone()
+		public IProducerBuilder<T> Clone()
 		{
 			return new ProducerBuilderImpl<T>(client, conf.Clone(), schema);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.Producer<T> create() throws SharpPulsar.api.PulsarClientException
-		public override Producer<T> Create()
+		public IProducer<T> Create()
 		{
 			try
 			{
-				return CreateAsync().get();
+				return CreateAsync().Result;
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<Producer<T>> CreateAsync()
+		public ValueTask<IProducer<T>> CreateAsync()
 		{
 			if (conf.TopicName == null)
 			{
-				return FutureUtil.failedFuture(new System.ArgumentException("Topic name must be set on the producer builder"));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new ArgumentException("Topic name must be set on the producer builder")));
 			}
 
 			try
@@ -114,228 +86,206 @@ namespace SharpPulsar.Impl
 			}
 			catch (PulsarClientException Pce)
 			{
-				return FutureUtil.failedFuture(Pce);
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(Pce));
 			}
 
 			return interceptorList == null || interceptorList.Count == 0 ? client.CreateProducerAsync(conf, schema, null) : client.CreateProducerAsync(conf, schema, new ProducerInterceptors(interceptorList));
 		}
 
-		public override IProducerBuilder<T> LoadConf(IDictionary<string, object> Config)
+		public IProducerBuilder<T> LoadConf(IDictionary<string, object> Config)
 		{
-			conf = ConfigurationDataUtils.loadData(Config, conf, typeof(ProducerConfigurationData));
+			conf = ConfigurationDataUtils.LoadData(Config, conf, typeof(ProducerConfigurationData));
 			return this;
 		}
 
-		public override IProducerBuilder<T> Topic(string TopicName)
+		public IProducerBuilder<T> Topic(string TopicName)
 		{
-			checkArgument(StringUtils.isNotBlank(TopicName), "topicName cannot be blank");
-			conf.TopicName = StringUtils.Trim(TopicName);
+			if(string.IsNullOrWhiteSpace(TopicName))
+				throw new ArgumentNullException("topicName cannot be blank");
+			conf.TopicName = TopicName.Trim();
 			return this;
 		}
 
-		public override IProducerBuilder<T> ProducerName(string ProducerName)
+		public IProducerBuilder<T> ProducerName(string ProducerName)
 		{
 			conf.ProducerName = ProducerName;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> sendTimeout(int sendTimeout, @NonNull BAMCIS.Util.Concurrent.TimeUnit unit)
-		public override IProducerBuilder<T> SendTimeout(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IProducerBuilder<T> SendTimeout(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
 			conf.SetSendTimeoutMs(SendTimeout, Unit);
 			return this;
 		}
 
-		public override IProducerBuilder<T> MaxPendingMessages(int MaxPendingMessages)
+		public IProducerBuilder<T> MaxPendingMessages(int MaxPendingMessages)
 		{
 			conf.MaxPendingMessages = MaxPendingMessages;
 			return this;
 		}
 
-		public override IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int MaxPendingMessagesAcrossPartitions)
+		public IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int MaxPendingMessagesAcrossPartitions)
 		{
 			conf.MaxPendingMessagesAcrossPartitions = MaxPendingMessagesAcrossPartitions;
 			return this;
 		}
 
-		public override IProducerBuilder<T> BlockIfQueueFull(bool BlockIfQueueFull)
+		public IProducerBuilder<T> BlockIfQueueFull(bool BlockIfQueueFull)
 		{
-			conf.BlockIfQueueFull = BlockIfQueueFull;
+			//conf.q.BlockIfQueueFull = BlockIfQueueFull;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> messageRoutingMode(@NonNull MessageRoutingMode messageRouteMode)
-		public override IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode MessageRouteMode)
+		public IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode MessageRouteMode)
 		{
 			conf.MessageRoutingMode = MessageRouteMode;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> compressionType(@NonNull CompressionType compressionType)
-		public override IProducerBuilder<T> CompressionType(ICompressionType CompressionType)
+		public IProducerBuilder<T> CompressionType(ICompressionType CompressionType)
 		{
 			conf.CompressionType = CompressionType;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> hashingScheme(@NonNull HashingScheme hashingScheme)
-		public override IProducerBuilder<T> HashingScheme(HashingScheme HashingScheme)
+		public IProducerBuilder<T> HashingScheme(HashingScheme HashingScheme)
 		{
 			conf.HashingScheme = HashingScheme;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> messageRouter(@NonNull MessageRouter messageRouter)
-		public override IProducerBuilder<T> MessageRouter(MessageRouter MessageRouter)
+		public IProducerBuilder<T> MessageRouter(MessageRouter MessageRouter)
 		{
 			conf.CustomMessageRouter = MessageRouter;
 			return this;
 		}
 
-		public override IProducerBuilder<T> EnableBatching(bool BatchMessagesEnabled)
+		public IProducerBuilder<T> EnableBatching(bool BatchMessagesEnabled)
 		{
 			conf.BatchingEnabled = BatchMessagesEnabled;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> cryptoKeyReader(@NonNull CryptoKeyReader cryptoKeyReader)
-		public override IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader)
+		public IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader)
 		{
 			conf.CryptoKeyReader = CryptoKeyReader;
 			return this;
 		}
 
-		public override IProducerBuilder<T> AddEncryptionKey(string Key)
+		public IProducerBuilder<T> AddEncryptionKey(string Key)
 		{
-			checkArgument(StringUtils.isNotBlank(Key), "Encryption key cannot be blank");
-			conf.EncryptionKeys.add(Key);
+			if(string.IsNullOrWhiteSpace(Key))
+				throw new ArgumentNullException("Encryption key cannot be blank");
+			conf.EncryptionKeys.Add(Key);
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> cryptoFailureAction(@NonNull ProducerCryptoFailureAction action)
-		public override IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction Action)
+		public IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction Action)
 		{
 			conf.CryptoFailureAction = Action;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> batchingMaxPublishDelay(long batchDelay, @NonNull BAMCIS.Util.Concurrent.TimeUnit BAMCIS.Util.Concurrent.TimeUnit)
-		public override IProducerBuilder<T> BatchingMaxPublishDelay(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit BAMCIS.Util.Concurrent.TimeUnit)
+		public IProducerBuilder<T> BatchingMaxPublishDelay(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			conf.SetBatchingMaxPublishDelayMicros(BatchDelay, BAMCIS.Util.Concurrent.TimeUnit);
+			conf.SetBatchingMaxPublishDelayMicros(BatchDelay, timeUnit);
 			return this;
 		}
 
-		public override IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int Frequency)
+		public IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int Frequency)
 		{
 			conf.BatchingPartitionSwitchFrequencyByPublishDelay = Frequency;
 			return this;
 		}
 
-		public override IProducerBuilder<T> BatchingMaxMessages(int BatchMessagesMaxMessagesPerBatch)
+		public IProducerBuilder<T> BatchingMaxMessages(int BatchMessagesMaxMessagesPerBatch)
 		{
 			conf.BatchingMaxMessages = BatchMessagesMaxMessagesPerBatch;
 			return this;
 		}
 
-		public override IProducerBuilder<T> BatchingMaxBytes(int BatchingMaxBytes)
+		public IProducerBuilder<T> BatchingMaxBytes(int BatchingMaxBytes)
 		{
 			conf.BatchingMaxBytes = BatchingMaxBytes;
 			return this;
 		}
 
-		public override IProducerBuilder<T> BatcherBuilder(BatcherBuilder BatcherBuilder)
+		public IProducerBuilder<T> BatcherBuilder(BatcherBuilder BatcherBuilder)
 		{
 			conf.BatcherBuilder = BatcherBuilder;
 			return this;
 		}
 
 
-		public override IProducerBuilder<T> InitialSequenceId(long InitialSequenceId)
+		public IProducerBuilder<T> InitialSequenceId(long InitialSequenceId)
 		{
 			conf.InitialSequenceId = InitialSequenceId;
 			return this;
 		}
 
-		public override IProducerBuilder<T> Property(string Key, string Value)
+		public IProducerBuilder<T> Property(string Key, string Value)
 		{
-			checkArgument(StringUtils.isNotBlank(Key) && StringUtils.isNotBlank(Value), "property key/value cannot be blank");
-			conf.Properties.put(Key, Value);
+			if(string.IsNullOrWhiteSpace(Key) && string.IsNullOrWhiteSpace(Value))
+				throw new ArgumentNullException("property key/value cannot be blank");
+			conf.Properties.Add(Key, Value);
 			return this;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ProducerBuilder<T> properties(@NonNull Map<String, String> properties)
-		public override IProducerBuilder<T> Properties(IDictionary<string, string> Properties)
+		public IProducerBuilder<T> Properties(IDictionary<string, string> Properties)
 		{
-			checkArgument(Properties.Count > 0, "properties cannot be empty");
+			if(Properties.Count < 1)
+				throw new ArgumentNullException("properties cannot be empty");
 			Properties.SetOfKeyValuePairs().forEach(entry => checkArgument(StringUtils.isNotBlank(entry.Key) && StringUtils.isNotBlank(entry.Value), "properties' key/value cannot be blank"));
-			conf.Properties.putAll(Properties);
+			Properties.ToList().ForEach(x => conf.Properties.Add(x.Key, x.Value));
 			return this;
 		}
 
-		public override IProducerBuilder<T> Intercept(params ProducerInterceptor[] Interceptors)
+		public IProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors)
 		{
 			if (interceptorList == null)
 			{
-				interceptorList = new List<ProducerInterceptor>();
+				interceptorList = new List<IProducerInterceptor>();
 			}
-			((List<ProducerInterceptor>)interceptorList).AddRange(Arrays.asList(Interceptors));
+			((List<IProducerInterceptor>)interceptorList).AddRange(Interceptors.ToArray());
 			return this;
 		}
 
-		[Obsolete]
-		public override IProducerBuilder<T> Intercept(params ProducerInterceptor<T>[] Interceptors)
-		{
-			if (interceptorList == null)
-			{
-				interceptorList = new List<ProducerInterceptor>();
-			}
-//JAVA TO C# CONVERTER TODO TASK: Method reference constructor syntax is not converted by Java to C# Converter:
-			((List<ProducerInterceptor>)interceptorList).AddRange(java.util.interceptors.Select(ProducerInterceptorWrapper::new).ToList());
-			return this;
-		}
-		public override IProducerBuilder<T> AutoUpdatePartitions(bool AutoUpdate)
+		public IProducerBuilder<T> AutoUpdatePartitions(bool AutoUpdate)
 		{
 			conf.AutoUpdatePartitions = AutoUpdate;
 			return this;
 		}
 
-		public override IProducerBuilder<T> EnableMultiSchema(bool MultiSchema)
+		public IProducerBuilder<T> EnableMultiSchema(bool MultiSchema)
 		{
 			conf.MultiSchema = MultiSchema;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private void setMessageRoutingMode() throws SharpPulsar.api.PulsarClientException
 		private void SetMessageRoutingMode()
 		{
 			if (conf.MessageRoutingMode == null && conf.CustomMessageRouter == null)
 			{
-				MessageRoutingMode(MessageRoutingMode.RoundRobinPartition);
+				MessageRoutingMode(Api.MessageRoutingMode.RoundRobinPartition);
 			}
 			else if (conf.MessageRoutingMode == null && conf.CustomMessageRouter != null)
 			{
-				MessageRoutingMode(MessageRoutingMode.CustomPartition);
+				MessageRoutingMode(Api.MessageRoutingMode.CustomPartition);
 			}
-			else if ((conf.MessageRoutingMode == MessageRoutingMode.CustomPartition && conf.CustomMessageRouter == null) || (conf.MessageRoutingMode != MessageRoutingMode.CustomPartition && conf.CustomMessageRouter != null))
+			else if ((conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && conf.CustomMessageRouter == null) || (conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && conf.CustomMessageRouter != null))
 			{
-				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + MessageRoutingMode.CustomPartition);
+				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + Api.MessageRoutingMode.CustomPartition);
 			}
 		}
 
-		public override string ToString()
+		public string ToString()
 		{
 			return conf != null ? conf.ToString() : null;
+		}
+
+		object ICloneable.Clone()
+		{
+			return new ProducerBuilderImpl<T>(client, conf.Clone(), schema);
 		}
 	}
 

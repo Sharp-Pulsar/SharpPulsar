@@ -26,6 +26,7 @@ namespace SharpPulsar.Impl
     using DotNetty.Buffers;
     using SharpPulsar.Api;
     using SharpPulsar.Common.Naming;
+    using SharpPulsar.Impl.Conf;
     using SharpPulsar.Protocol;
     using SharpPulsar.Protocol.Proto;
     using System.Threading.Tasks;
@@ -100,7 +101,7 @@ namespace SharpPulsar.Impl
 			NonDurable
 		}
 
-		internal static ConsumerImpl<T> NewConsumerImpl<T>(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, Task ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
+		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, Task ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{

@@ -24,11 +24,11 @@ namespace SharpPulsar.Impl
     using DotNetty.Buffers;
     using Optional;
     using DotNetty.Common;
-    using SharpPulsar.Protocol.Builder;
     using SharpPulsar.Api;
     using Pulsar.Common.Auth;
     using SharpPulsar.Protocol.Proto;
     using System.Linq;
+    using SharpPulsar.Impl.Schema;
 
     public class MessageImpl<T> : Message<T>
 	{
@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl
 		public long RedeliveryCount;
 
 		// Constructor for out-going message
-		internal static MessageImpl<T> Create(MessageMetadataBuilder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
+		internal static MessageImpl<T> Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
 		{
 			MessageImpl<T> msg = _pool.Take();
 			msg.MessageBuilder = msgMetadataBuilder;
@@ -65,7 +65,7 @@ namespace SharpPulsar.Impl
 
 		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema, int rredeliveryCount)
 		{
-			this.MessageBuilder = new MessageMetadataBuilder(MsgMetadata);
+			this.MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			this.MessageId = MessageId;
 			this.TopicName = topic;
 			this.Cnx = Cnx;
@@ -88,25 +88,25 @@ namespace SharpPulsar.Impl
 			this.schema = Schema;
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
 		{
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, PulsarApi.MessageMetadata MsgMetadata, PulsarApi.SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema, int RedeliveryCount)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema, int RedeliveryCount)
 		{
-			this.MessageBuilder = PulsarApi.MessageMetadata.newBuilder(MsgMetadata);
+			this.MessageBuilder = MessageMetadata.NewBuilder(MsgMetadata);
 			this.MessageIdConflict = BatchMessageIdImpl;
 			this.TopicName = Topic;
 			this.Cnx = Cnx;
 			this.RedeliveryCount = RedeliveryCount;
 
-			this.DataBuffer = Unpooled.copiedBuffer(Payload);
+			this.DataBuffer = Unpooled.CopiedBuffer(Payload);
 			this.encryptionCtx = EncryptionCtx;
 
 			if (SingleMessageMetadata.PropertiesCount > 0)
 			{
 				IDictionary<string, string> Properties = Maps.newTreeMap();
-				foreach (PulsarApi.KeyValue Entry in SingleMessageMetadata.PropertiesList)
+				foreach (KeyValue Entry in SingleMessageMetadata.PropertiesList)
 				{
 					Properties[Entry.Key] = Entry.Value;
 				}
@@ -164,9 +164,9 @@ namespace SharpPulsar.Impl
 		public static MessageImpl<sbyte[]> Deserialize(ByteBuf HeadersAndPayload)
 		{
 			MessageImpl<sbyte[]> Msg = (MessageImpl<sbyte[]>) RECYCLER.get();
-			PulsarApi.MessageMetadata MsgMetadata = Commands.parseMessageMetadata(HeadersAndPayload);
+			MessageMetadata MsgMetadata = Commands.parseMessageMetadata(HeadersAndPayload);
 
-			Msg.MessageBuilder = PulsarApi.MessageMetadata.newBuilder(MsgMetadata);
+			Msg.MessageBuilder = MessageMetadata.newBuilder(MsgMetadata);
 			MsgMetadata.recycle();
 			Msg.DataBuffer = HeadersAndPayload;
 			Msg.MessageIdConflict = null;
@@ -245,7 +245,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual Schema Schema
+		public virtual ISchema<T> Schema
 		{
 			get
 			{
@@ -383,7 +383,7 @@ namespace SharpPulsar.Impl
 					{
 						if (MessageBuilder.PropertiesCount > 0)
 						{
-							this.properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(PulsarApi.KeyValue::getKey, PulsarApi.KeyValue::getValue));
+							this.properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(KeyValue::getKey, KeyValue::getValue));
 						}
 						else
 						{

@@ -23,14 +23,14 @@ namespace SharpPulsar.Protocol.Schema
 	using Hashing = com.google.common.hash.Hashing;
 	using EqualsAndHashCode = lombok.EqualsAndHashCode;
 	using Org.Apache.Pulsar.Client.Api;
-	using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
+    using SharpPulsar.Common.Schema;
 
-	/// <summary>
-	/// Schema hash wrapper with a HashCode inner type.
-	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @EqualsAndHashCode public class SchemaHash
-	public class SchemaHash
+    //using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
+
+    /// <summary>
+    /// Schema hash wrapper with a HashCode inner type.
+    /// </summary>
+    public class SchemaHash
 	{
 
 		private static HashFunction hashFunction = Hashing.sha256();
@@ -42,10 +42,9 @@ namespace SharpPulsar.Protocol.Schema
 			this.hash = Hash;
 		}
 
-		public static SchemaHash Of(Schema Schema)
+		public static SchemaHash Of(Proto.Schema schema)
 		{
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			return Of(Optional.ofNullable(Schema).map(Schema::getSchemaInfo).map(SchemaInfo.getSchema).orElse(new sbyte[0]));
+			return Of(Optional.ofNullable(schema).map(schema::getSchemaInfo).map(new SchemaInfo().Schema).orElse(new sbyte[0]));
 		}
 
 		public static SchemaHash Of(SchemaData SchemaData)

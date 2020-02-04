@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DotNetty.Transport.Channels;
+using Microsoft.Extensions.Logging;
 using Optional;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
@@ -13,14 +14,16 @@ using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Util;
 using SharpPulsar.Util.Atomic;
+using SharpPulsar.Util.Netty;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Impl.ConsumerImpl<object>;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -55,7 +58,7 @@ namespace SharpPulsar.Impl
 		public ClientConfigurationData Configuration;
 		public ILookupService Lookup;
 		public  ConnectionPool CnxPool;
-		private Timer timer;
+		public Timer Timer;
 		private readonly ExecutorProvider externalExecutorProvider;
 		private State state;
 		private readonly HashSet<ProducerBase<object>> _producers;
@@ -67,21 +70,27 @@ namespace SharpPulsar.Impl
 
 
 		public virtual DateTime ClientClock {get;}
-		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, new ConnectionPool(Conf))
+		private readonly IEventLoopGroup _eventLoopGroup;
+
+		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, GetEventLoopGroup(Conf))
 		{
 		}
-
-		public PulsarClientImpl(ClientConfigurationData Conf, ConnectionPool CnxPool)
+		public PulsarClientImpl(ClientConfigurationData Conf, IEventLoopGroup eventLoopGroup) : this(Conf, eventLoopGroup, new ConnectionPool(Conf, eventLoopGroup))
 		{
-			if (Conf == null || string.IsNullOrWhiteSpace(Conf.ServiceUrl) )
+		}
+		public PulsarClientImpl(ClientConfigurationData Conf, IEventLoopGroup eventLoopGroup, ConnectionPool CnxPool)
+		{
+			if (Conf == null || string.IsNullOrWhiteSpace(Conf.ServiceUrl) || eventLoopGroup == null)
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
 			Auth = Conf;
+			_eventLoopGroup = eventLoopGroup;
 			this.Configuration = Conf;
 			this.ClientClock = Conf.clock;
 			Conf.Authentication.Start();
 			this.CnxPool = CnxPool;
+
 			Lookup = new BinaryProtoLookupService(this, Conf.ServiceUrl, Conf.UseTls);
 			_producers = new HashSet<ProducerBase<object>>();
 			_consumers = new HashSet<ConsumerBase<object>>();
@@ -559,7 +568,7 @@ namespace SharpPulsar.Impl
 			{
 				Lookup.Close();
 				CnxPool.Dispose();
-				timer.Dispose();
+				Timer.Dispose();
 				Configuration.Authentication.Dispose();
 			}
 			catch (System.Exception t)
@@ -585,14 +594,14 @@ namespace SharpPulsar.Impl
 		{
 			TopicName topicName = TopicName.Get(topic);
 			var lkup = Lookup.GetBroker(topicName).Result;
-			return CnxPool.GetConnection(lkup.Key, lkup.Value);
+			return CnxPool.GetConnection((IPEndPoint)lkup.Key, (IPEndPoint)lkup.Value);
 		}
 
 		/// <summary>
 		/// visible for pulsar-functions * </summary>
-		public virtual Timer Timer()
+		public virtual Timer GetTimer()
 		{
-			return timer;
+			return Timer;
 		}
 
 		public virtual ExecutorProvider ExternalExecutorProvider()
@@ -662,7 +671,7 @@ namespace SharpPulsar.Impl
 					task.SetException(ex);
 					return;
 				}
-				timer = new Timer(_=> {
+				Timer = new Timer(_=> {
 					log.LogWarning("[topic: {}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {} ms", topicName, nextDelay);
 					RemainingTime.AddAndGet(-nextDelay);
 					GetPartitionedTopicMetadata(topicName, Backoff, RemainingTime, task);
@@ -693,7 +702,12 @@ namespace SharpPulsar.Impl
 				return new ValueTask<IList<string>>(new List<string>() { topic });
 			}
 		}
+		private static IEventLoopGroup GetEventLoopGroup(ClientConfigurationData Conf)
+		{
+			return EventLoopUtil.NewEventLoopGroup(Conf.NumIoThreads);
+		}
 
+		
 		public virtual void CleanupProducer<T1>(ProducerBase<T1> producer)
 		{
 			lock (_producers)

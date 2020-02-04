@@ -33,23 +33,22 @@ using DotNetty.Transport.Libuv;
 /// </summary>
 namespace SharpPulsar.Util.Netty
 {
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("checkstyle:JavadocType") public class EventLoopUtil
 	public class EventLoopUtil
 	{
 
 		/// <returns> an EventLoopGroup suitable for the current platform </returns>
-		public static EventLoopGroup NewEventLoopGroup(int nThreads, ThreadFactory threadFactory)
+		public static IEventLoopGroup NewEventLoopGroup(int nThreads)
 		{
-			if (Epoll.Available)
+			/*if (Epoll.Available)
 			{
-				return new EventLoopGroup(nThreads, threadFactory);
+				return new EventLoopGroup(nThreads);
 			}
 			else
 			{
 				// Fallback to NIO
-				return new NioEventLoopGroup(nThreads, threadFactory);
-			}
+				return new MultithreadEventLoopGroup(nThreads);
+			}*/
+			return new MultithreadEventLoopGroup(nThreads);
 		}
 
 		/// <summary>
@@ -62,36 +61,38 @@ namespace SharpPulsar.Util.Netty
 			return typeof(NioSocketChannel);
 		}
 
-		public static Type getServerSocketChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetServerSocketChannelClass(EventLoopGroup eventLoopGroup)
 		{
-			if (eventLoopGroup is EpollEventLoopGroup)
+			/*if (eventLoopGroup is EpollEventLoopGroup)
 			{
 				return typeof(EpollServerSocketChannel);
 			}
 			else
 			{
 				return typeof(NioServerSocketChannel);
-			}
+			}*/
+			return typeof(NioServerSocketChannel);
 		}
 
-		public static Type getDatagramChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetDatagramChannelClass(EventLoopGroup eventLoopGroup)
 		{
-			if (eventLoopGroup is EpollEventLoopGroup)
+			/*if (eventLoopGroup is EpollEventLoopGroup)
 			{
 				return typeof(EpollDatagramChannel);
 			}
 			else
 			{
 				return typeof(NioDatagramChannel);
-			}
+			}*/
+			return typeof(NioDatagramChannel);
 		}
 
 		public static void EnableTriggeredMode(ServerBootstrap bootstrap)
 		{
-			if (Epoll.Available)
+			/*if (Epoll.Available)
 			{
-				bootstrap.ChildOption(ChannelOption..EPOLL_MODE, EpollMode.LEVEL_TRIGGERED);
-			}
+				bootstrap.ChildOption(ChannelOption.mo..EPOLL_MODE, EpollMode.LEVEL_TRIGGERED);
+			}*/
 		}
 	}
 
