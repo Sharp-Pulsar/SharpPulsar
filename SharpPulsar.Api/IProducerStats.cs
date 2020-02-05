@@ -26,7 +26,7 @@ namespace SharpPulsar.Api
 	/// <seealso cref="IPulsarClientBuilder.statsInterval(long, java.util.concurrent.TimeUnit)"/> with a default of 1 minute.
 	/// </para>
 	/// </summary>
-	public interface ProducerStats
+	public interface IProducerStats
 	{
 		/// <returns> the number of messages published in the last interval </returns>
 		long NumMsgsSent {get;}

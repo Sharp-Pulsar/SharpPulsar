@@ -20,7 +20,7 @@
 namespace SharpPulsar.Impl
 {
 
-	public interface ProducerStatsRecorder : ProducerStats
+	public interface IProducerStatsRecorder : IProducerStats
 	{
 		void UpdateNumMsgsSent(long NumMsgs, long TotalMsgsSize);
 

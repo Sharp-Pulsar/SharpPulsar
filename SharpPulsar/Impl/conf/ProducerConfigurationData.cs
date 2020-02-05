@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl.Conf
 		[NonSerialized]
 		private string _producerName = null;
 		public long SendTimeoutMs = 30000;
-		private bool _blockIfQueueFull = false;
+		public bool BlockIfQueueFull = false;
 		private int _maxPendingMessages = DefaultMaxPendingMessages;
 		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
 		public MessageRoutingMode MessageRoutingMode;

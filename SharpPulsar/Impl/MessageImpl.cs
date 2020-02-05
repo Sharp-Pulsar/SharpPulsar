@@ -29,17 +29,20 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Protocol.Proto;
     using System.Linq;
     using SharpPulsar.Impl.Schema;
+    using SharpPulsar.Protocol;
+    using SharpPulsar.Shared;
+    using SharpPulsar.Common.Enum;
 
     public class MessageImpl<T> : Message<T>
 	{
 
 		protected internal IMessageId MessageId;
-		public ITypedMessageBuilder<T> MessageBuilder;
+		public MessageMetadata.Builder MessageBuilder;
 		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
 		private ISchema<T> schema;
 		private SchemaState schemaState = SchemaState.None;
-		private Option<EncryptionContext> encryptionCtx;
+		private EncryptionContext encryptionCtx;
 
 		public string TopicName {get;} // only set for incoming messages
 		public long RedeliveryCount;
@@ -63,116 +66,113 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema, int rredeliveryCount)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
 		{
-			this.MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
-			this.MessageId = MessageId;
-			this.TopicName = topic;
-			this.Cnx = Cnx;
-			this.RedeliveryCount = RedeliveryCount;
+			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
+			MessageId = messageId;
+			TopicName = topic;
+			Cnx = cnx;
+			RedeliveryCount = redeliveryCount;
 
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			this.DataBuffer = Unpooled.CopiedBuffer(payload);
-			this.encryptionCtx = EncryptionCtx;
+			DataBuffer = Unpooled.CopiedBuffer(payload);
+			encryptionCtx = EncryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
 			{
-				Properties = msgMetadata.Properties.ToDictionary(x => x.Key, x=> x.Value);
+				msgMetadata.Properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
 			}
 			else
 			{
-				properties = Collections.emptyMap();
+				Properties.Clear();
 			}
-			this.schema = Schema;
+			schema = Schema;
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, IByteBuffer Payload, EncryptionContext EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema) : this(Topic, BatchMessageIdImpl, MsgMetadata, SingleMessageMetadata, Payload, EncryptionCtx, Cnx, Schema, 0)
 		{
 		}
 
-		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, ByteBuf Payload, Optional<EncryptionContext> EncryptionCtx, ClientCnx Cnx, ISchema<T> Schema, int RedeliveryCount)
+		public MessageImpl(string Topic, BatchMessageIdImpl BatchMessageIdImpl, MessageMetadata MsgMetadata, SingleMessageMetadata SingleMessageMetadata, IByteBuffer Payload, EncryptionContext EncryptionCtx, ClientCnx cnx, ISchema<T> Schema, int redeliveryCount)
 		{
-			this.MessageBuilder = MessageMetadata.NewBuilder(MsgMetadata);
-			this.MessageIdConflict = BatchMessageIdImpl;
-			this.TopicName = Topic;
-			this.Cnx = Cnx;
-			this.RedeliveryCount = RedeliveryCount;
+			MessageBuilder = MessageMetadata.NewBuilder(MsgMetadata);
+			MessageId = BatchMessageIdImpl;
+			TopicName = Topic;
+			Cnx = cnx;
+			RedeliveryCount = redeliveryCount;
 
-			this.DataBuffer = Unpooled.CopiedBuffer(Payload);
-			this.encryptionCtx = EncryptionCtx;
+			DataBuffer = Unpooled.CopiedBuffer(Payload);
+			encryptionCtx = EncryptionCtx;
 
-			if (SingleMessageMetadata.PropertiesCount > 0)
+			if (SingleMessageMetadata.Properties.Count > 0)
 			{
-				IDictionary<string, string> Properties = Maps.newTreeMap();
-				foreach (KeyValue Entry in SingleMessageMetadata.PropertiesList)
+				foreach (KeyValue Entry in SingleMessageMetadata.Properties)
 				{
 					Properties[Entry.Key] = Entry.Value;
 				}
-				this.properties = Collections.unmodifiableMap(Properties);
 			}
 			else
 			{
-				properties = Collections.emptyMap();
+				Properties.Clear();
 			}
 
-			if (SingleMessageMetadata.hasPartitionKey())
+			if (SingleMessageMetadata.HasPartitionKey)
 			{
-				MessageBuilder.PartitionKeyB64Encoded = SingleMessageMetadata.PartitionKeyB64Encoded;
-				MessageBuilder.setPartitionKey(SingleMessageMetadata.PartitionKey);
+				MessageBuilder.SetPartitionKeyB64Encoded(SingleMessageMetadata.PartitionKeyB64Encoded);
+				MessageBuilder.SetPartitionKey(SingleMessageMetadata.PartitionKey);
 			}
 
-			if (SingleMessageMetadata.hasEventTime())
+			if (SingleMessageMetadata.HasEventTime)
 			{
-				MessageBuilder.EventTime = SingleMessageMetadata.EventTime;
+				MessageBuilder.SetEventTime((long)SingleMessageMetadata.EventTime);
 			}
 
-			if (SingleMessageMetadata.hasSequenceId())
+			if (SingleMessageMetadata.HasSequenceId)
 			{
-				MessageBuilder.SequenceId = SingleMessageMetadata.SequenceId;
+				MessageBuilder.SetSequenceId((long)SingleMessageMetadata.SequenceId);
 			}
 
-			this.schema = Schema;
+			schema = Schema;
 		}
 
 		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, sbyte[] Payload, ISchema<T> Schema) : this(Topic, MsgId, Properties, Unpooled.wrappedBuffer(Payload), Schema)
 		{
 		}
 
-		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> Properties, ByteBuf Payload, ISchema<T> Schema)
+		public MessageImpl(string Topic, string MsgId, IDictionary<string, string> properties, IByteBuffer Payload, ISchema<T> Schema)
 		{
 			string[] Data = MsgId.Split(":", true);
 			long LedgerId = long.Parse(Data[0]);
 			long EntryId = long.Parse(Data[1]);
 			if (Data.Length == 3)
 			{
-				this.MessageIdConflict = new BatchMessageIdImpl(LedgerId, EntryId, -1, int.Parse(Data[2]));
+				MessageId = new BatchMessageIdImpl(LedgerId, EntryId, -1, int.Parse(Data[2]));
 			}
 			else
 			{
-				this.MessageIdConflict = new MessageIdImpl(LedgerId, EntryId, -1);
+				MessageId = new MessageIdImpl(LedgerId, EntryId, -1);
 			}
-			this.TopicName = Topic;
-			this.Cnx = null;
-			this.DataBuffer = Payload;
-			this.properties = Collections.unmodifiableMap(Properties);
-			this.schema = Schema;
-			this.RedeliveryCount = 0;
+			TopicName = Topic;
+			Cnx = null;
+			DataBuffer = Payload;
+			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
+			schema = Schema;
+			RedeliveryCount = 0;
 		}
 
-		public static MessageImpl<sbyte[]> Deserialize(ByteBuf HeadersAndPayload)
+		public static MessageImpl<sbyte[]> Deserialize(IByteBuffer HeadersAndPayload)
 		{
-			MessageImpl<sbyte[]> Msg = (MessageImpl<sbyte[]>) RECYCLER.get();
-			MessageMetadata MsgMetadata = Commands.parseMessageMetadata(HeadersAndPayload);
+			var Msg = _pool.Take();
+			MessageMetadata MsgMetadata = Commands.ParseMessageMetadata(HeadersAndPayload);
 
-			Msg.MessageBuilder = MessageMetadata.newBuilder(MsgMetadata);
-			MsgMetadata.recycle();
+			Msg.MessageBuilder = MessageMetadata.NewBuilder(MsgMetadata);
+			MsgMetadata.Recycle();
 			Msg.DataBuffer = HeadersAndPayload;
-			Msg.MessageIdConflict = null;
-			Msg.TopicName = null;
+			Msg.MessageId = null;
 			Msg.Cnx = null;
-			Msg.properties = Collections.emptyMap();
+			Msg.Properties.Clear();
 			return Msg;
 		}
 
@@ -180,13 +180,15 @@ namespace SharpPulsar.Impl
 		{
 			set
 			{
-				checkNotNull(MessageBuilder);
-				MessageBuilder.setReplicatedFrom(value);
+				if(MessageBuilder != null)
+					MessageBuilder.SetReplicatedFrom(value);
 			}
 			get
 			{
-				checkNotNull(MessageBuilder);
-				return MessageBuilder.getReplicatedFrom();
+				if (MessageBuilder != null)
+					return MessageBuilder.getReplicatedFrom();
+				else
+					return string.Empty;
 			}
 		}
 
@@ -194,8 +196,9 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
-				return MessageBuilder.HasReplicatedFrom();
+				if(MessageBuilder != null)
+					return MessageBuilder.HasReplicatedFrom();
+				return false;
 			}
 		}
 
@@ -204,8 +207,9 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
-				return MessageBuilder.PublishTime;
+				if(MessageBuilder != null)
+					return MessageBuilder.GetPublishTime();
+				return 0L;
 			}
 		}
 
@@ -213,7 +217,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
+				if(MessageBuilder != null)
 				if (MessageBuilder.HasEventTime())
 				{
 					return MessageBuilder.EventTime;
@@ -231,15 +235,15 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				if (DataBuffer.arrayOffset() == 0 && DataBuffer.capacity() == DataBuffer.array().length)
+				if (DataBuffer.ArrayOffset == 0 && DataBuffer.Capacity == DataBuffer.Array.Length)
 				{
-					return DataBuffer.array();
+					return (sbyte[])(object) DataBuffer.Array;
 				}
 				else
 				{
 					// Need to copy into a smaller byte array
-					sbyte[] Data = new sbyte[DataBuffer.readableBytes()];
-					DataBuffer.readBytes(Data);
+					sbyte[] Data = new sbyte[DataBuffer.ReadableBytes];
+					DataBuffer.ReadBytes(Data, Data.Length);
 					return Data;
 				}
 			}
@@ -249,7 +253,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return this.schema;
+				return schema;
 			}
 		}
 
@@ -367,10 +371,10 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public virtual MessageId getMessageId()
+		public virtual IMessageId GetMessageId()
 		{
 			checkNotNull(MessageIdConflict, "Cannot get the message id of a message that was not received");
-			return MessageIdConflict;
+			return MessageId;
 		}
 
 		public virtual IDictionary<string, string> Properties
@@ -379,34 +383,34 @@ namespace SharpPulsar.Impl
 			{
 				lock (this)
 				{
-					if (this.properties == null)
+					if (Properties == null)
 					{
 						if (MessageBuilder.PropertiesCount > 0)
 						{
-							this.properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(KeyValue::getKey, KeyValue::getValue));
+							Properties = Collections.unmodifiableMap(MessageBuilder.PropertiesList.ToDictionary(KeyValue::getKey, KeyValue::getValue));
 						}
 						else
 						{
-							this.properties = Collections.emptyMap();
+							properties = Collections.emptyMap();
 						}
 					}
-					return this.properties;
+					return properties;
 				}
 			}
 		}
 
-		public override bool HasProperty(string Name)
+		public bool HasProperty(string Name)
 		{
 			return Properties.ContainsKey(Name);
 		}
 
-		public override string GetProperty(string Name)
+		public string GetProperty(string Name)
 		{
-			return this.Properties[Name];
+			return Properties[Name];
 		}
 
 
-		public override bool HasKey()
+		public bool HasKey()
 		{
 			checkNotNull(MessageBuilder);
 			return MessageBuilder.HasPartitionKey();
@@ -418,11 +422,11 @@ namespace SharpPulsar.Impl
 			get
 			{
 				checkNotNull(MessageBuilder);
-				return MessageBuilder.getPartitionKey();
+				return MessageBuilder.GetPartitionKey();
 			}
 		}
 
-		public override bool HasBase64EncodedKey()
+		public bool HasBase64EncodedKey()
 		{
 			checkNotNull(MessageBuilder);
 			return MessageBuilder.PartitionKeyB64Encoded;
@@ -444,7 +448,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HasOrderingKey()
+		public bool HasOrderingKey()
 		{
 			checkNotNull(MessageBuilder);
 			return MessageBuilder.HasOrderingKey();
@@ -463,10 +467,10 @@ namespace SharpPulsar.Impl
 		public virtual void Recycle()
 		{
 			MessageBuilder = null;
-			MessageIdConflict = null;
+			MessageId = null;
 			TopicName = null;
 			DataBuffer = null;
-			properties = null;
+			Properties = null;
 			schema = null;
 			schemaState = SchemaState.None;
 
@@ -480,7 +484,7 @@ namespace SharpPulsar.Impl
 		private MessageImpl(ThreadLocalPool.Handle handle)
 		{
 			_handle = handle;
-			this.RedeliveryCount = 0;
+			RedeliveryCount = 0;
 		}
 		
 		public virtual bool HasReplicateTo()
@@ -500,13 +504,13 @@ namespace SharpPulsar.Impl
 
 		public virtual void SetMessageId(MessageIdImpl MessageId)
 		{
-			this.MessageIdConflict = MessageId;
+			MessageId = MessageId;
 		}
 
-		public virtual Option<EncryptionContext> EncryptionCtx
+		public virtual EncryptionContext EncryptionCtx
 		{
 			get
-			{
+			{//check not null 
 				return encryptionCtx;
 			}
 		}
@@ -519,7 +523,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void SetSchemaState(SchemaState SchemaState)
 		{
-			this.schemaState = SchemaState;
+			schemaState = SchemaState;
 		}
 
 		public enum SchemaState

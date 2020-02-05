@@ -1,5 +1,6 @@
 ﻿using DotNetty.Common;
 using Google.Protobuf;
+using SharpPulsar.Api;
 using SharpPulsar.Util.Protobuf;
 using System;
 using System.Collections.Generic;
@@ -955,7 +956,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000010) == 0x00000010);
 			}
-			public string getReplicatedFrom()
+			public string GetReplicatedFrom()
 			{
 				return _replicatedFrom;
 			}
@@ -987,6 +988,26 @@ namespace SharpPulsar.Protocol.Proto
 			public string GetPartitionKey()
 			{
 				return _partitionKey;
+			}
+			public long GetPublishTime()
+			{
+				return _publishTime;
+			}
+			public long SequenceId()
+			{
+				return _sequenceId;
+			}
+			public long GetSequenceId()
+			{
+				return _sequenceId;
+			}
+			public ByteString GetOrderingKey()
+			{
+				return _orderingKey;
+			}
+			public ByteString GetSchemaVersion()
+			{
+				return _schemaVersion;
 			}
 			public Builder SetPartitionKey(string Value)
 			{
@@ -1079,6 +1100,17 @@ namespace SharpPulsar.Protocol.Proto
 				return ((_bitField & 0x00000080) == 0x00000080);
 			}
 			
+			public Builder SetCompression(Common.Enum.CompressionType Value)
+			{
+				if (Value == null)
+				{
+					throw new System.NullReferenceException();
+				}
+				_bitField |= 0x00000080;
+				_compression = GetCompressionType(Value);
+
+				return this;
+			}
 			public Builder SetCompression(CompressionType Value)
 			{
 				if (Value == null)
@@ -1089,6 +1121,22 @@ namespace SharpPulsar.Protocol.Proto
 				_compression = Value;
 
 				return this;
+			}
+			private CompressionType GetCompressionType(Common.Enum.CompressionType value)
+			{
+				switch(value)
+				{
+					case Common.Enum.CompressionType.LZ4:
+						return CompressionType.Lz4;
+					case Common.Enum.CompressionType.SNAPPY:
+						return CompressionType.Snappy;
+					case Common.Enum.CompressionType.ZLIB:
+						return CompressionType.Zlib;
+					case Common.Enum.CompressionType.ZSTD:
+						return CompressionType.Zstd;
+					default:
+						return CompressionType.None;
+				}
 			}
 			public Builder ClearCompression()
 			{

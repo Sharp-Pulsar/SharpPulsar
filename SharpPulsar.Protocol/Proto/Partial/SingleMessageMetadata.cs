@@ -1,12 +1,15 @@
 ﻿using DotNetty.Common;
+using Google.Protobuf;
+using SharpPulsar.Util.Protobuf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class SingleMessageMetadata 
+	public partial class SingleMessageMetadata : ByteBufCodedOutputStream.ByteBufGeneratedMessage
 	{
 		// Use SingleMessageMetadata.newBuilder() to construct.
 		internal static ThreadLocalPool<SingleMessageMetadata> _pool = new ThreadLocalPool<SingleMessageMetadata>(handle => new SingleMessageMetadata(handle), 1, true);
@@ -20,10 +23,10 @@ namespace SharpPulsar.Protocol.Proto
 
 		public void Recycle()
 		{
-			this.InitFields();
-			this.MemoizedIsInitialized = -1;
-			this._bitField = 0;
-			this.MemoizedSerializedSize = -1;
+			InitFields();
+			MemoizedIsInitialized = -1;
+			_hasBits0 = 0;
+			MemoizedSerializedSize = -1;
 			if (_handle != null)
 			{
 				_handle.Release(this);
@@ -34,7 +37,6 @@ namespace SharpPulsar.Protocol.Proto
 		{
 		}
 
-		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		internal static readonly SingleMessageMetadata _defaultInstance;
 		public static SingleMessageMetadata DefaultInstance
 		{
@@ -52,81 +54,6 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		internal int _bitField;
-		// repeated .pulsar.proto.KeyValue properties = 1;
-		public const int PropertiesFieldNumber = 1;
-		public IList<KeyValue> PropertiesList
-		{
-			get
-			{
-				return Properties;
-			}
-		}
-		
-		public int PropertiesCount
-		{
-			get
-			{
-				return Properties.Count;
-			}
-		}
-		public KeyValue GetProperties(int Index)
-		{
-			return Properties[Index];
-		}
-		
-		// optional string partition_key = 2;
-		public const int PartitionKeyFieldNumber = 2;
-		public bool HasPartitionKey()
-		{
-			return ((_bitField & 0x00000001) == 0x00000001);
-		}
-		
-		// required int32 payload_size = 3;
-		public const int PayloadSizeFieldNumber = 3;
-		public bool HasPayloadSize()
-		{
-			return ((_bitField & 0x00000002) == 0x00000002);
-		}
-	
-
-		// optional bool compacted_out = 4 [default = false];
-		public const int CompactedOutFieldNumber = 4;
-		public bool HasCompactedOut()
-		{
-			return ((_bitField & 0x00000004) == 0x00000004);
-		}
-		
-		// optional uint64 event_time = 5 [default = 0];
-		public const int EventTimeFieldNumber = 5;
-		public bool HasEventTime()
-		{
-			return ((_bitField & 0x00000008) == 0x00000008);
-		}
-		
-		// optional bool partition_key_b64_encoded = 6 [default = false];
-		public const int PartitionKeyB64EncodedFieldNumber = 6;
-		public bool HasPartitionKeyB64Encoded()
-		{
-			return ((_bitField & 0x00000010) == 0x00000010);
-		}
-		
-		// optional bytes ordering_key = 7;
-		public const int OrderingKeyFieldNumber = 7;
-		public bool HasOrderingKey()
-		{
-			return ((_bitField & 0x00000020) == 0x00000020);
-		}
-		
-
-		// optional uint64 sequence_id = 8;
-		public const int SequenceIdFieldNumber = 8;
-		public bool HasSequenceId()
-		{
-			return ((_bitField & 0x00000040) == 0x00000040);
-		}
-		
-
 		public void InitFields()
 		{
 			Properties.Clear();
@@ -135,10 +62,47 @@ namespace SharpPulsar.Protocol.Proto
 			CompactedOut = false;
 			EventTime = 0L;
 			PartitionKeyB64Encoded = false;
-			OrderingKey = Encoding.UTF8.GetBytes(string.Empty);
+			OrderingKey = ByteString.Empty;
 			SequenceId = 0L;
 		}
 		internal sbyte MemoizedIsInitialized = -1;
+		public int SerializedSize => CalculateSize();
+		public void WriteTo(ByteBufCodedOutputStream Output)
+		{
+			var _= SerializedSize;
+			for (int I = 0; I < Properties.Count; I++)
+			{
+				Output.WriteMessage(1, Properties[I]);
+			}
+			if (((_hasBits0 & 0x00000001) == 0x00000001))
+			{
+				Output.WriteBytes(2, ByteString.CopyFromUtf8(PartitionKey));
+			}
+			if (((_hasBits0 & 0x00000002) == 0x00000002))
+			{
+				Output.WriteInt32(3, PayloadSize);
+			}
+			if (((_hasBits0 & 0x00000004) == 0x00000004))
+			{
+				Output.WriteBool(4, CompactedOut);
+			}
+			if (((_hasBits0 & 0x00000008) == 0x00000008))
+			{
+				Output.WriteUInt64(5, (long)EventTime);
+			}
+			if (((_hasBits0 & 0x00000010) == 0x00000010))
+			{
+				Output.WriteBool(6, PartitionKeyB64Encoded);
+			}
+			if (((_hasBits0 & 0x00000020) == 0x00000020))
+			{
+				Output.WriteBytes(7, OrderingKey);
+			}
+			if (((_hasBits0 & 0x00000040) == 0x00000040))
+			{
+				Output.WriteUInt64(8, (long)SequenceId);
+			}
+		}
 		public bool Initialized
 		{
 			get
@@ -149,14 +113,14 @@ namespace SharpPulsar.Protocol.Proto
 					return IsInitialized == 1;
 				}
 
-				if (!HasPayloadSize())
+				if (!HasPayloadSize)
 				{
 					MemoizedIsInitialized = 0;
 					return false;
 				}
-				for (int I = 0; I < PropertiesCount; I++)
+				for (int I = 0; I < Properties.Count; I++)
 				{
-					if (GetProperties(I) != null)
+					if (Properties[I] != null)
 					{
 						MemoizedIsInitialized = 0;
 						return false;
@@ -181,9 +145,16 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		
+		public static Builder NewBuilder(SingleMessageMetadata Prototype)
+		{
+			return NewBuilder().MergeFrom(Prototype);
+		}
+		public Builder ToBuilder()
+		{
+			return NewBuilder(this);
+		}
 
-		public sealed class Builder
+		public sealed class Builder: ByteBufMessageBuilder
 		{
 
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
@@ -292,13 +263,13 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					tobitField |= 0x00000020;
 				}
-				result.OrderingKey = _orderingKey;
+				result.OrderingKey = ByteString.CopyFrom(_orderingKey);
 				if (((frombitField & 0x00000080) == 0x00000080))
 				{
 					tobitField |= 0x00000040;
 				}
 				result.SequenceId = (ulong)_sequenceId;
-				result._bitField = tobitField;
+				result._hasBits0 = tobitField;
 				return result;
 			}
 
@@ -322,31 +293,31 @@ namespace SharpPulsar.Protocol.Proto
 					}
 
 				}
-				if (Other.HasPartitionKey())
+				if (Other.HasPartitionKey)
 				{
 					SetPartitionKey(Other.PartitionKey);
 				}
-				if (Other.HasPayloadSize())
+				if (Other.HasPayloadSize)
 				{
 					SetPayloadSize(Other.PayloadSize);
 				}
-				if (Other.HasCompactedOut())
+				if (Other.HasCompactedOut)
 				{
 					SetCompactedOut(Other.CompactedOut);
 				}
-				if (Other.HasEventTime())
+				if (Other.HasEventTime)
 				{
 					SetEventTime((long)Other.EventTime);
 				}
-				if (Other.HasPartitionKeyB64Encoded())
+				if (Other.HasPartitionKeyB64Encoded)
 				{
 					SetPartitionKeyB64Encoded(Other.PartitionKeyB64Encoded);
 				}
-				if (Other.HasOrderingKey())
+				if (Other.HasOrderingKey)
 				{
-					SetOrderingKey(Other.OrderingKey);
+					SetOrderingKey(Other.OrderingKey.ToArray());
 				}
-				if (Other.HasSequenceId())
+				if (Other.HasSequenceId)
 				{
 					SetSequenceId((long)Other.SequenceId);
 				}
@@ -374,7 +345,77 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			
+			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream Input, ExtensionRegistry ExtensionRegistry)
+			{
+				while (true)
+				{
+					int Tag = Input.ReadTag();
+					switch (Tag)
+					{
+						case 0:
+
+							return this;
+						default:
+							{
+								if (!Input.SkipField(Tag))
+								{
+
+									return this;
+								}
+								break;
+							}
+						case 10:
+							{
+								KeyValue.Builder SubBuilder = KeyValue.NewBuilder();
+								Input.ReadMessage(SubBuilder, ExtensionRegistry);
+								AddProperties(SubBuilder.BuildPartial());
+								break;
+							}
+						case 18:
+							{
+								_bitField |= 0x00000002;
+								_partitionKey = Input.ReadBytes().ToStringUtf8();
+								break;
+							}
+						case 24:
+							{
+								_bitField |= 0x00000004;
+								_payloadSize = Input.ReadInt32();
+								break;
+							}
+						case 32:
+							{
+								_bitField |= 0x00000008;
+								_compactedOut = Input.ReadBool();
+								break;
+							}
+						case 40:
+							{
+								_bitField |= 0x00000010;
+								_eventTime = Input.ReadUInt64();
+								break;
+							}
+						case 48:
+							{
+								_bitField |= 0x00000020;
+								_partitionKeyB64Encoded = Input.ReadBool();
+								break;
+							}
+						case 58:
+							{
+								_bitField |= 0x00000040;
+								_orderingKey = Input.ReadBytes().ToByteArray();
+								break;
+							}
+						case 64:
+							{
+								_bitField |= 0x00000080;
+								_sequenceId = Input.ReadUInt64();
+								break;
+							}
+					}
+				}
+			}
 			internal int _bitField;
 
 			// repeated .pulsar.proto.KeyValue properties = 1;
@@ -442,7 +483,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			
 			
-			public Builder AddAllProperties<T1>(IEnumerable<T1> Values) where T1 : KeyValue
+			public Builder AddAllProperties(IEnumerable<KeyValue> Values)
 			{
 				EnsurePropertiesIsMutable();
 				Values.ToList().ForEach(_properties.Add);
@@ -626,7 +667,7 @@ namespace SharpPulsar.Protocol.Proto
 			public Builder ClearOrderingKey()
 			{
 				_bitField = (_bitField & ~0x00000040);
-				_orderingKey = DefaultInstance.OrderingKey;
+				_orderingKey = DefaultInstance.OrderingKey.ToArray();
 
 				return this;
 			}
@@ -668,7 +709,7 @@ namespace SharpPulsar.Protocol.Proto
 			_defaultInstance.InitFields();
 		}
 
-		// @@protoc_insertion_point(class_scope:pulsar.proto.SingleMessageMetadata)
+		
 	}
 
 

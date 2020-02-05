@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
 		public abstract bool Connected { get; set; }
-		public abstract ProducerStats Stats { get; set; }
+		public abstract IProducerStatsRecorder Stats { get; set; }
 		public abstract long LastSequenceId { get; set; }
 		public abstract ValueTask FlushAsync();
 		public abstract TaskCompletionSource<IMessageId> SendAsync(sbyte[] Message);

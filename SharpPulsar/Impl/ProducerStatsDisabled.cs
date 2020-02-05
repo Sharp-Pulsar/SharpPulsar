@@ -21,11 +21,11 @@
 namespace SharpPulsar.Impl
 {
 	[Serializable]
-	public class ProducerStatsDisabled : ProducerStatsRecorder
+	public class ProducerStatsDisabled : IProducerStatsRecorder
 	{
 		private const long SerialVersionUID = 1L;
 
-		internal static readonly ProducerStatsRecorder INSTANCE = new ProducerStatsDisabled();
+		internal static readonly IProducerStatsRecorder INSTANCE = new ProducerStatsDisabled();
 
 		public override void IncrementSendFailed()
 		{

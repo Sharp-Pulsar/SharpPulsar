@@ -20,16 +20,14 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
-	using MessageId = SharpPulsar.Api.IMessageId;
 
 	[Serializable]
 	public class BatchMessageIdImpl : MessageIdImpl
 	{
 		private const int NoBatch = -1;
-		public virtual BatchIndex {get;}
+		public int BatchIndex {get;}
 
-		public virtual Acker {get;}
+		public BatchMessageAcker Acker {get;}
 
 		public BatchMessageIdImpl(long LedgerId, long EntryId, int PartitionIndex, int BatchIndex) : this(LedgerId, EntryId, PartitionIndex, BatchIndex, BatchMessageAckerDisabled.INSTANCE)
 		{
@@ -53,37 +51,6 @@ namespace SharpPulsar.Impl
 			{
 				this.BatchIndex = NoBatch;
 				this.Acker = BatchMessageAckerDisabled.INSTANCE;
-			}
-		}
-
-
-		public override int CompareTo(MessageId O)
-		{
-			if (O is BatchMessageIdImpl)
-			{
-				BatchMessageIdImpl Other = (BatchMessageIdImpl) O;
-				return ComparisonChain.start().compare(this.LedgerIdConflict, Other.LedgerIdConflict).compare(this.EntryIdConflict, Other.EntryIdConflict).compare(this.BatchIndex, Other.BatchIndex).compare(this.PartitionIndex, Other.PartitionIndex).result();
-			}
-			else if (O is MessageIdImpl)
-			{
-				int Res = base.CompareTo(O);
-				if (Res == 0 && BatchIndex > NoBatch)
-				{
-					return 1;
-				}
-				else
-				{
-					return Res;
-				}
-			}
-			else if (O is TopicMessageIdImpl)
-			{
-				return CompareTo(((TopicMessageIdImpl) O).InnerMessageId);
-			}
-			else
-			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected BatchMessageIdImpl object. Got instance of " + O.GetType().FullName);
 			}
 		}
 

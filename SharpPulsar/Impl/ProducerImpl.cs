@@ -210,7 +210,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public Task<IMessageId> InternalSendAsync(Message<T> Message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync<T1>(Message<T1> Message)
 		{
 
 			TaskCompletionSource<IMessageId> task = new TaskCompletionSource<IMessageId>();
@@ -222,35 +222,35 @@ namespace SharpPulsar.Impl
 				//InterceptorMessage.Properties;
 			}
 			SendAsync(InterceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, InterceptorMessage));
-			return task.Task;
+			return task;
 		}
 
 		public class SendCallbackAnonymousInnerClass<S> : SendCallback
 		{
-			private readonly ProducerImpl<S> outerInstance;
+			private readonly ProducerImpl<S> _outerInstance;
 
-			private TaskCompletionSource<IMessageId> task;
-			private MessageImpl<S> interceptorMessage;
+			private TaskCompletionSource<IMessageId> _task;
+			private MessageImpl<S> _interceptorMessage;
 
 			public SendCallbackAnonymousInnerClass(ProducerImpl<S> outerInstance, TaskCompletionSource<IMessageId> task, MessageImpl<S> interceptorMessage)
 			{
-				outerInstance = outerInstance;
-				task = task;
-				interceptorMessage = interceptorMessage;
-				nextCallback = null;
-				nextMsg = null;
-				createdAt = DateTimeHelper.CurrentUnixTimeMillis();
+				_outerInstance = outerInstance;
+				_task = task;
+				_interceptorMessage = interceptorMessage;
+				NextCallback = null;
+				NextMsg = null;
+				CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
-			internal SendCallback nextCallback;
-			internal MessageImpl<S> nextMsg;
-			internal long createdAt;
+			internal SendCallback NextCallback;
+			internal MessageImpl<S> NextMsg;
+			internal long CreatedAt;
 
 			public TaskCompletionSource<IMessageId> Task
 			{
 				get
 				{
-					return task;
+					return _task;
 				}
 			}
 
@@ -258,15 +258,15 @@ namespace SharpPulsar.Impl
 			{
 				get
 				{
-					return nextCallback;
+					return NextCallback;
 				}
 			}
 
-			public MessageImpl<S> NextMessage
+			public MessageImpl<object> NextMessage
 			{
 				get
 				{
-					return nextMsg;
+					return NextMsg;
 				}
 			}
 
@@ -277,43 +277,43 @@ namespace SharpPulsar.Impl
 					if (e != null)
 					{
 						//outerInstance.Stats.NumSendFailed++;
-						outerInstance.OnSendAcknowledgement(interceptorMessage, null, e);
-						task.SetException(e);
+						_outerInstance.OnSendAcknowledgement(_interceptorMessage, null, e);
+						_task.SetException(e);
 					}
 					else
 					{
-						outerInstance.OnSendAcknowledgement(interceptorMessage, interceptorMessage.getMessageId(), null);
-						task.SetResult(interceptorMessage.MessageId);
-						outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - createdAt);
+						_outerInstance.OnSendAcknowledgement(_interceptorMessage, _interceptorMessage.GetMessageId(), null);
+						_task.SetResult(_interceptorMessage.MessageId);
+						_outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - CreatedAt);
 					}
 				}
 				finally
 				{
-					interceptorMessage.DataBuffer.Release();
+					_interceptorMessage.DataBuffer.Release();
 				}
 
-				while (nextCallback != null)
+				while (NextCallback != null)
 				{
-					SendCallback SendCallback = nextCallback;
-					var Msg = nextMsg;
+					SendCallback SendCallback = NextCallback;
+					var Msg = NextMsg;
 					//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
 					try
 					{
 						Msg.DataBuffer.Retain();
 						if (e != null)
 						{
-							outerInstance.Stats.IncrementSendFailed();
-							outerInstance.OnSendAcknowledgement(Msg, null, e);
+							_outerInstance.Stats.IncrementSendFailed();
+							_outerInstance.OnSendAcknowledgement(Msg, null, e);
 							SendCallback.Task.SetException(e);
 						}
 						else
 						{
-							outerInstance.OnSendAcknowledgement(Msg, Msg.MessageId, null);
+							_outerInstance.OnSendAcknowledgement(Msg, Msg.MessageId, null);
 							SendCallback.Task.SetResult(Msg.MessageId);
-							outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - createdAt);
+							_outerInstance.Stats.IncrementNumAcksReceived(System.nanoTime() - CreatedAt);
 						}
-						nextMsg = nextCallback.NextMessage;
-						nextCallback = nextCallback.NextSendCallback;
+						NextMsg = NextCallback.NextMessage;
+						NextCallback = NextCallback.NextSendCallback;
 					}
 					finally
 					{
@@ -324,16 +324,19 @@ namespace SharpPulsar.Impl
 
 			public void AddCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb)
 			{
-				nextMsg = (MessageImpl<object>)Msg;
-				nextCallback = Scb;
+				NextMsg = (MessageImpl<object>)Msg;
+				NextCallback = Scb;
 			}
-
-		public static implicit operator ProducerImpl<T>(ProducerImpl<T> v)
-		{
-			throw new NotImplementedException();
 		}
-	}
 
+		public static implicit operator ProducerImpl<T>(ProducerImpl<object> v)
+		{
+			return (ProducerImpl<T>)Convert.ChangeType(v, typeof(ProducerImpl<T>));
+		}
+		public static implicit operator ProducerImpl<object>(ProducerImpl<T> v)
+		{
+			return (ProducerImpl<object>)Convert.ChangeType(v, typeof(ProducerImpl<object>));
+		}
 		public virtual void SendAsync<T1>(Message<T1> Message, SendCallback Callback)
 		{
 			if (Message is MessageImpl<T1>)
@@ -349,7 +352,7 @@ namespace SharpPulsar.Impl
 				return;
 			}
 
-			MessageImpl<object> Msg = (MessageImpl) Message;
+			MessageImpl<object> Msg = (MessageImpl<object>) Message;
 			MessageMetadata.Builder MsgMetadataBuilder = Msg.MessageBuilder;
 			IByteBuffer Payload = Msg.DataBuffer;
 
@@ -369,7 +372,7 @@ namespace SharpPulsar.Impl
 				{
 					CompressedPayload.Release();
 					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.NONE) ? "Compressed" : "";
-					PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, CompressedStr, CompressedSize, ClientCnx.MaxMessageSize));
+					PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, CompressedStr, CompressedSize, ClientCnx.MaxMessageSize));
 					Callback.SendComplete(InvalidMessageException);
 					return;
 				}
@@ -377,7 +380,7 @@ namespace SharpPulsar.Impl
 
 			if (!Msg.Replicated && MsgMetadataBuilder.HasProducerName())
 			{
-				PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(format("The producer %s of the topic %s can not reuse the same message", HandlerName, Topic));
+				PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s can not reuse the same message", HandlerName, Topic));
 				Callback.SendComplete(InvalidMessageException);
 				CompressedPayload.Release();
 				return;
@@ -407,7 +410,7 @@ namespace SharpPulsar.Impl
 					{
 						MsgMetadataBuilder.SetPublishTime(Client.ClientClock.Millisecond);
 
-						checkArgument(!MsgMetadataBuilder.hasProducerName());
+						checkArgument(!MsgMetadataBuilder.HasProducerName());
 
 						MsgMetadataBuilder.SetProducerName(HandlerName);
 
@@ -460,7 +463,7 @@ namespace SharpPulsar.Impl
 						// This is only used in tracking the publish rate stats
 						int NumMessages = Msg.MessageBuilder.HasNumMessagesInBatch() ? Msg.MessageBuilder.NumMessagesInBatch : 1;
 						OpSendMsg Op;
-						if (Msg.GetSchemaState() == MessageImpl.SchemaState.Ready)
+						if (Msg.GetSchemaState() == MessageImpl<T>.SchemaState.Ready)
 						{
 							MessageMetadata MsgMetadata = MsgMetadataBuilder.Build();
 							ByteBufPair Cmd = SendMessage(ProducerId, SequenceId, NumMessages, MsgMetadata, EncryptedPayload);
@@ -498,7 +501,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private bool PopulateMessageSchema(MessageImpl Msg, SendCallback Callback)
+		private bool PopulateMessageSchema(MessageImpl<object> Msg, SendCallback Callback)
 		{
 			MessageMetadata.Builder MsgMetadataBuilder = Msg.MessageBuilder;
 			if (Msg.Schema == Schema)
@@ -522,20 +525,20 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private bool RePopulateMessageSchema(MessageImpl Msg)
+		private bool RePopulateMessageSchema(MessageImpl<T> Msg)
 		{
-			SchemaHash SchemaHash = SchemaHash.of(Msg.Schema);
-			sbyte[] SchemaVersion = SchemaCache.get(SchemaHash);
+			SchemaHash schemaHash = SchemaHash.Of(Msg.Schema);
+			sbyte[] SchemaVersion = SchemaCache.Get(SchemaHash);
 			if (SchemaVersion == null)
 			{
 				return false;
 			}
-			Msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(SchemaVersion);
-			Msg.setSchemaState(MessageImpl.SchemaState.Ready);
+			Msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(SchemaVersion));
+			Msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
 			return true;
 		}
 
-		private void TryRegisterSchema(ClientCnx Cnx, MessageImpl Msg, SendCallback Callback)
+		private void TryRegisterSchema(ClientCnx Cnx, MessageImpl<T> Msg, SendCallback Callback)
 		{
 			if (!ChangeToRegisteringSchemaState())
 			{
@@ -578,7 +581,7 @@ namespace SharpPulsar.Impl
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.NotSupportedException(string.Format("The command `GetOrCreateSchema` is not supported for the protocol version %d. " + "The producer is %s, topic is %s", Cnx.RemoteEndpointProtocolVersion, HandlerName, Topic)));
 			}
-			long RequestId = ClientConflict.newRequestId();
+			long RequestId = Client.NewRequestId();
 			IByteBuffer Request = Commands.NewGetOrCreateSchema(RequestId, Topic, SchemaInfo);
 			log.LogInformation("[{}] [{}] GetOrCreateSchema request", Topic, HandlerName);
 			return Cnx.SendGetOrCreateSchema(Request, RequestId);
@@ -666,25 +669,25 @@ namespace SharpPulsar.Impl
 		{
 			switch (state)
 			{
-			case State.Ready:
-				// OK
-			case State.Connecting:
-				// We are OK to queue the messages on the client, it will be sent to the broker once we get the connection
-			case State.RegisteringSchema:
-				// registering schema
-				return true;
-			case State.Closing:
-			case State.Closed:
-				Callback.SendComplete(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-				return false;
-			case State.Terminated:
-				Callback.SendComplete(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-				return false;
-			case State.Failed:
-			case State.Uninitialized:
-			default:
-				Callback.SendComplete(new PulsarClientException.NotConnectedException());
-				return false;
+				case State.Ready:
+					// OK
+				case State.Connecting:
+					// We are OK to queue the messages on the client, it will be sent to the broker once we get the connection
+				case State.RegisteringSchema:
+					// registering schema
+					return true;
+				case State.Closing:
+				case State.Closed:
+					Callback.SendComplete(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+					return false;
+				case State.Terminated:
+					Callback.SendComplete(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+					return false;
+				case State.Failed:
+				case State.Uninitialized:
+				default:
+					Callback.SendComplete(new PulsarClientException.NotConnectedException());
+					return false;
 			}
 		}
 
@@ -704,11 +707,12 @@ namespace SharpPulsar.Impl
 						return false;
 					}
 				}
+				semaphore.Release();
 			}
-			catch (InterruptedException E)
+			catch (System.Exception E)
 			{
 				Thread.CurrentThread.Interrupt();
-				Callback.SendComplete(new PulsarClientException(E));
+				Callback.SendComplete(E);
 				return false;
 			}
 
@@ -1190,7 +1194,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void ConnectionOpened(in ClientCnx cnx)
+		public void ConnectionOpened(ClientCnx cnx)
 		{
 			var Cnx = cnx;
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
@@ -1701,7 +1705,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void RecoverProcessOpSendMsgFrom(ClientCnx Cnx, MessageImpl From)
+		private void RecoverProcessOpSendMsgFrom(ClientCnx Cnx, MessageImpl<T> From)
 		{
 			bool StripChecksum = Cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
 			IEnumerator<OpSendMsg> MsgIterator = pendingMessages.GetEnumerator();

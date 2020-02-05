@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Impl;
+using System;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -145,7 +146,7 @@ namespace SharpPulsar.Api
 		/// </ul>
 		/// </summary>
 		/// <returns> statistic for the producer or null if ProducerStatsRecorderImpl is disabled. </returns>
-		ProducerStats Stats {get;}
+		IProducerStatsRecorder Stats {get;}
 
 		/// <summary>
 		/// Close the producer and releases resources allocated.

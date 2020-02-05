@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text.Json;
-
+﻿using SharpPulsar.Api;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,31 +17,20 @@ using System.Text.Json;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Conf
+namespace SharpPulsar.Api
 {
-    public class ObjectMapper
+
+	public interface IProducerStatsRecorder : IProducerStats
 	{
-		public  JsonSerializerOptions Options()
-		{
-			var jsonObject = new JsonSerializerOptions
-			{
-				IgnoreNullValues = true,
-				WriteIndented = true
-			};
-			return jsonObject;
-		}
-		public string WriteValueAsString<T>(T @object)
-		{
-			return JsonSerializer.Serialize(@object, Options());
-		}
-		public ObjectMapper WithOutAttribute<T>(T @object)
-		{
-			return this;
-		}
-		public object ReadValue(string existingConfigJson, Type t)
-		{
-			return JsonSerializer.Deserialize(existingConfigJson, t);
-		}
+		void UpdateNumMsgsSent(long NumMsgs, long TotalMsgsSize);
+
+		void IncrementSendFailed();
+
+		void IncrementSendFailed(long NumMsgs);
+
+		void IncrementNumAcksReceived(long LatencyNs);
+
+		void CancelStatsTimeout();
 	}
-	
+
 }
