@@ -50,6 +50,7 @@ namespace SharpPulsar.Impl
 
 		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, ISchema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
 		{
+			Stats = new ProducerStatsRecorderImpl<T>(Client, Conf, (ProducerImpl<T>)ProducerCreatedFuture.Task.Result);
 			_producerCreatedTask = ProducerCreatedFuture;
 			this.Conf = Conf;
 			this.Schema = Schema;
