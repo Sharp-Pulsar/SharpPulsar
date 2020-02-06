@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SharpPulsar.Command.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
 using static SharpPulsar.Impl.ProducerImpl<object>;
@@ -60,9 +61,9 @@ namespace SharpPulsar.Impl
 			{
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
-				lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadataBuilder(), msg.MessageBuilder);
+				lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadata.Builder, msg.MessageBuilder);
 				this.FirstCallback = callback;
-				batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
+				batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
 			}
 
 			if (PreviousCallback != null)

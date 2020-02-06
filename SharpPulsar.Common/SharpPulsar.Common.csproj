@@ -7,7 +7,9 @@
   <ItemGroup>
     <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.1" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
+    <PackageReference Include="Snappy.Standard" Version="0.2.0" />
   </ItemGroup>
 
   <ItemGroup>

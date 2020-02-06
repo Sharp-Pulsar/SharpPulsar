@@ -33,15 +33,7 @@ namespace SharpPulsar.Common.Compression
 
 		static CompressionCodecLZ4()
 		{
-			try
-			{
-				// Force the attempt to load LZ4 JNI
-				net.jpountz.util.Native.load();
-			}
-			catch (Exception Th)
-			{
-				log.warn("Failed to load native LZ4 implementation: {}", Th.Message);
-			}
+			
 		}
 
 		//private static readonly LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
@@ -56,7 +48,7 @@ namespace SharpPulsar.Common.Compression
 
 			var sourceNio = source.GetIoBuffer(source.ReaderIndex, source.ReadableBytes).ToArray();
 
-			IByteBuffer target = PulsarByteBufAllocator.DEFAULT.Buffer(maxLength, maxLength);
+			IByteBuffer target = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
 			var targetNio = target.GetIoBuffer(0, maxLength).ToArray();
 
 			int compressedLength = LZ4Codec.Encode(sourceNio, 0, uncompressedLength, targetNio, 0, maxLength);
@@ -66,11 +58,11 @@ namespace SharpPulsar.Common.Compression
 
 		public IByteBuffer Decode(IByteBuffer encoded, int uncompressedLength)
 		{
-			IByteBuffer uncompressed = PulsarByteBufAllocator.DEFAULT.Buffer(uncompressedLength, uncompressedLength);
-			var uncompressedNio = uncompressed.GetIoBuffer(0, uncompressedLength);
+			IByteBuffer uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength);
+			var uncompressedNio = uncompressed.GetIoBuffer(0, uncompressedLength).ToArray();
 
 			var encodedNio = encoded.GetIoBuffer(encoded.ReaderIndex, encoded.ReadableBytes).ToArray();
-			LZ4Codec.Decode(encodedNio, encodedNio.Length, uncompressedNio, uncompressedNio.Offset);
+			LZ4Codec.Decode(encodedNio, 0,  encodedNio.Length, uncompressedNio, 0, uncompressedLength);
 
 			uncompressed.SetWriterIndex(uncompressedLength);
 			return uncompressed;

@@ -1292,7 +1292,7 @@ namespace SharpPulsar.Protocol
 			int totalSize = cmdSize + 4;
 			int frameSize = totalSize + 4;
 
-			IByteBuffer buf = PulsarByteBufAllocator.DEFAULT.Buffer(frameSize, frameSize);
+			IByteBuffer buf = PooledByteBufferAllocator.Default.Buffer(frameSize, frameSize);
 
 			// Prepend 2 lengths to the buffer
 			buf.WriteInt(totalSize);
@@ -1338,7 +1338,7 @@ namespace SharpPulsar.Protocol
 			int HeadersSize = 4 + HeaderContentSize; // totalSize + headerLength
 			int ChecksumReaderIndex = -1;
 
-			IByteBuffer Headers = PulsarByteBufAllocator.DEFAULT.Buffer(HeadersSize, HeadersSize);
+			IByteBuffer Headers = PooledByteBufferAllocator.Default.Buffer(HeadersSize, HeadersSize);
 			Headers.WriteInt(TotalSize); // External frame
 
 			try
@@ -1400,7 +1400,7 @@ namespace SharpPulsar.Protocol
 			int ChecksumReaderIndex = -1;
 			int TotalSize = HeaderContentSize + PayloadSize;
 
-			IByteBuffer MetadataAndPayload = PulsarByteBufAllocator.DEFAULT.Buffer(TotalSize, TotalSize);
+			IByteBuffer MetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(TotalSize, TotalSize);
 			try
 			{
 				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(MetadataAndPayload);
@@ -1557,7 +1557,7 @@ namespace SharpPulsar.Protocol
 			int TotalSize = 4 + CmdSize + MetadataAndPayload.ReadableBytes;
 			int HeadersSize = 4 + 4 + CmdSize;
 
-			IByteBuffer Headers = PulsarByteBufAllocator.DEFAULT.Buffer(HeadersSize);
+			IByteBuffer Headers = PooledByteBufferAllocator.Default.Buffer(HeadersSize);
 			Headers.WriteInt(TotalSize); // External frame
 
 			try

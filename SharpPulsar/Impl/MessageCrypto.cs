@@ -373,7 +373,7 @@ namespace SharpPulsar.Impl
 					var SourceNioBuf = Payload.GetIoBuffer(Payload.ReaderIndex, Payload.ReadableBytes);
         
 					int MaxLength = cipher.GetOutputSize(Payload.ReadableBytes);
-					TargetBuf = PulsarByteBufAllocator.DEFAULT.Buffer(MaxLength, MaxLength);
+					TargetBuf = PooledByteBufferAllocator.Default.Buffer(MaxLength, MaxLength);
 					var TargetNioBuf = TargetBuf.GetIoBuffer(0, MaxLength);
         
 					int BytesStored = cipher.DoFinal(SourceNioBuf.ToArray(), TargetNioBuf.ToArray().Length);
@@ -477,7 +477,7 @@ namespace SharpPulsar.Impl
 				var SourceNioBuf = Payload.GetIoBuffer(Payload.ReaderIndex, Payload.ReadableBytes);
 
 				int MaxLength = cipher.getOutputSize(Payload.ReadableBytes);
-				TargetBuf = PulsarByteBufAllocator.DEFAULT.Buffer(MaxLength, MaxLength);
+				TargetBuf = PooledByteBufferAllocator.Default.Buffer(MaxLength, MaxLength);
 				var TargetNioBuf = TargetBuf.GetIoBuffer(0, MaxLength);
 
 				int DecryptedSize = cipher.doFinal(SourceNioBuf, TargetNioBuf);

@@ -42,10 +42,7 @@ namespace SharpPulsar.Common.Compression
 				return new Deflater();
 			}
 
-			public void OnRemoval(Deflater deflater)
-			{
-				deflater.Finish();
-			}
+			
 		}
 
 		private readonly FastThreadLocal<Inflater> _inflater = new FastThreadLocalAnonymousInnerClass2();
@@ -56,11 +53,7 @@ namespace SharpPulsar.Common.Compression
 			{
 				return new Inflater();
 			}
-
-			public void OnRemoval(Inflater inflater)
-			{
-				//inflater.se.IsFinished(true);
-			}
+			
 		}
 
 		public IByteBuffer Encode(IByteBuffer source)
@@ -69,7 +62,7 @@ namespace SharpPulsar.Common.Compression
 			int length = source.ReadableBytes;
 
 			int sizeEstimate = (int) Math.Ceiling(source.ReadableBytes * 1.001) + 14;
-			IByteBuffer compressed = PulsarByteBufAllocator.DEFAULT.HeapBuffer(sizeEstimate);
+			IByteBuffer compressed = PooledByteBufferAllocator.Default.HeapBuffer(sizeEstimate);
 
 			int offset = 0;
 			if (source.HasArray)
@@ -102,38 +95,38 @@ namespace SharpPulsar.Common.Compression
 			{
 				int writerIndex = @out.WriterIndex;
 				numBytes = deflater.Deflate(@out.Array, @out.ArrayOffset + writerIndex, @out.WritableBytes,deflater.Flush);
-				@out.WriterIndex = writerIndex + numBytes;
+				@out.SetWriterIndex(writerIndex + numBytes);
 			} while (numBytes > 0);
 		}
 
-		public override ByteBuf Decode(ByteBuf Encoded, int UncompressedLength)
+		public IByteBuffer Decode(IByteBuffer Encoded, int UncompressedLength)
 		{
-			ByteBuf Uncompressed = PulsarByteBufAllocator.DEFAULT.heapBuffer(UncompressedLength, UncompressedLength);
+			IByteBuffer Uncompressed = PooledByteBufferAllocator.Default.HeapBuffer(UncompressedLength, UncompressedLength);
 
-			int Len = Encoded.readableBytes();
+			int Len = Encoded.ReadableBytes;
 
 			sbyte[] Array;
 			int Offset;
-			if (Encoded.hasArray())
+			if (Encoded.HasArray)
 			{
-				Array = Encoded.array();
-				Offset = Encoded.arrayOffset() + Encoded.readerIndex();
+				Array = (sbyte[])(Array)Encoded.Array;
+				Offset = Encoded.ArrayOffset + Encoded.ReaderIndex;
 			}
 			else
 			{
 				Array = new sbyte[Len];
-				Encoded.getBytes(Encoded.readerIndex(), Array);
+				Encoded.GetBytes(Encoded.ReaderIndex, Array);
 				Offset = 0;
 			}
 
 			int ResultLength;
 			Inflater Inflater = this.inflater.get();
-			Inflater.reset();
-			Inflater.setInput(Array, Offset, Len);
+			Inflater.Reset();
+			Inflater.SetInput(Array, Offset, Len);
 
 			try
 			{
-				ResultLength = Inflater.inflate(Uncompressed.array(), Uncompressed.arrayOffset(), UncompressedLength);
+				ResultLength = Inflater.Inflate(Uncompressed.Array, Uncompressed.ArrayOffset, UncompressedLength);
 			}
 			catch (DataFormatException E)
 			{
@@ -142,7 +135,7 @@ namespace SharpPulsar.Common.Compression
 
 			checkArgument(ResultLength == UncompressedLength);
 
-			Uncompressed.writerIndex(UncompressedLength);
+			Uncompressed.SetWriterIndex(UncompressedLength);
 			return Uncompressed;
 		}
 	}

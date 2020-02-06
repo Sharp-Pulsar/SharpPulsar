@@ -18,53 +18,54 @@
 /// </summary>
 namespace SharpPulsar.Common.Compression
 {
+    using DotNetty.Buffers;
+    using Microsoft.Extensions.Logging;
     using SharpPulsar.Common.Compression;
-    using ByteBuf = io.netty.buffer.ByteBuf;
-	using PooledByteBufAllocator = io.netty.buffer.PooledByteBufAllocator;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Snappy = org.xerial.snappy.Snappy;
+    using Snappy;
+    using System.IO;
 
-	/// <summary>
-	/// Snappy Compression.
-	/// </summary>
-	public class CompressionCodecSnappy : CompressionCodec
+    //using PooledByteBufAllocator = io.netty.buffer.PooledByteBufAllocator;
+
+    /// <summary>
+    /// Snappy Compression.
+    /// </summary>
+    public class CompressionCodecSnappy : CompressionCodec
 	{
-		public override ByteBuf Encode(ByteBuf Source)
+		public IByteBuffer Encode(IByteBuffer Source)
 		{
-			int UncompressedLength = Source.readableBytes();
-			int MaxLength = Snappy.maxCompressedLength(UncompressedLength);
+			int UncompressedLength = Source.ReadableBytes;
+			int MaxLength = SnappyCodec.GetMaxCompressedLength(UncompressedLength);
 
-			ByteBuffer SourceNio = Source.nioBuffer(Source.readerIndex(), Source.readableBytes());
+			var SourceNio = Source.GetIoBuffer(Source.ReaderIndex, Source.ReadableBytes).ToArray();
 
-			ByteBuf Target = PooledByteBufAllocator.DEFAULT.buffer(MaxLength, MaxLength);
-			ByteBuffer TargetNio = Target.nioBuffer(0, MaxLength);
+			var Target = PooledByteBufferAllocator.Default.Buffer(MaxLength, MaxLength);
+			var TargetNio = Target.GetIoBuffer(0, MaxLength).ToArray();
 
 			int CompressedLength = 0;
 			try
 			{
-				CompressedLength = Snappy.compress(SourceNio, TargetNio);
+				CompressedLength = SnappyCodec.Compress(SourceNio, 0, SourceNio.Length, TargetNio, 0);
 			}
 			catch (IOException E)
 			{
-				log.error("Failed to compress to Snappy: {}", E.Message);
+				log.LogError("Failed to compress to Snappy: {}", E.Message);
 			}
-			Target.writerIndex(CompressedLength);
+			Target.SetWriterIndex(CompressedLength);
 			return Target;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public io.netty.buffer.ByteBuf decode(io.netty.buffer.ByteBuf encoded, int uncompressedLength) throws java.io.IOException
-		public override ByteBuf Decode(ByteBuf Encoded, int UncompressedLength)
+		public IByteBuffer Decode(IByteBuffer Encoded, int UncompressedLength)
 		{
-			ByteBuf Uncompressed = PooledByteBufAllocator.DEFAULT.buffer(UncompressedLength, UncompressedLength);
-			ByteBuffer UncompressedNio = Uncompressed.nioBuffer(0, UncompressedLength);
+			IByteBuffer Uncompressed = PooledByteBufferAllocator.Default.Buffer(UncompressedLength, UncompressedLength);
+			var UncompressedNio = Uncompressed.GetIoBuffer(0, UncompressedLength).ToArray();
 
-			ByteBuffer EncodedNio = Encoded.nioBuffer(Encoded.readerIndex(), Encoded.readableBytes());
-			Snappy.uncompress(EncodedNio, UncompressedNio);
+			var EncodedNio = Encoded.GetIoBuffer(Encoded.ReaderIndex, Encoded.ReadableBytes).ToArray();
+			SnappyCodec.Uncompress(EncodedNio, 0, EncodedNio.Length, UncompressedNio, 0);
 
-			Uncompressed.writerIndex(UncompressedLength);
+			Uncompressed.SetWriterIndex(UncompressedLength);
 			return Uncompressed;
 		}
+		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(CompressionCodecSnappy));
 	}
-
+	
 }

@@ -1,4 +1,5 @@
-﻿using DotNetty.Transport.Bootstrapping;
+﻿using DotNetty.Buffers;
+using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using DotNetty.Transport.Libuv;
@@ -62,7 +63,7 @@ namespace SharpPulsar.Impl
 
 			bootstrap.Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(Conf.ConnectionTimeoutMs));
 			bootstrap.Option(ChannelOption.TcpNodelay, Conf.UseTcpNoDelay);
-			bootstrap.Option(ChannelOption.Allocator, PulsarByteBufAllocator.DEFAULT);
+			bootstrap.Option(ChannelOption.Allocator, PooledByteBufferAllocator.Default);
 
 			try
 			{

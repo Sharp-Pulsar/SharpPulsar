@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using SharpPulsar.Api;
+using System;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
