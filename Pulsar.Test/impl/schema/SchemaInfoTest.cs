@@ -21,16 +21,16 @@ namespace org.apache.pulsar.client.impl.schema
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using Schema = api.Schema;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
+	using SchemaInfo = common.schema.SchemaInfo;
 	using DataProvider = org.testng.annotations.DataProvider;
 	using Test = org.testng.annotations.Test;
 
-	/// <summary>
-	/// Unit test <seealso cref="org.apache.pulsar.common.schema.SchemaInfo"/>.
-	/// </summary>
-	public class SchemaInfoTest
+    /// <summary>
+    /// Unit test <seealso cref="common.schema.SchemaInfo"/>.
+    /// </summary>
+    public class SchemaInfoTest
 	{
 
 		private const string INT32_SCHEMA_INFO = "{\n" + "  \"name\": \"INT32\",\n" + "  \"schema\": \"\",\n" + "  \"type\": \"INT32\",\n" + "  \"properties\": {}\n" + "}";

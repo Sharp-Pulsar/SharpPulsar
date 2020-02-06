@@ -408,23 +408,23 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional .pulsar.proto.CommandPartitionedTopicMetadataResponse.LookupType response = 3;
-			internal CommandPartitionedTopicMetadataResponse.Types.LookupType Response_ = CommandPartitionedTopicMetadataResponse.Types.LookupType.Success;
+			internal Types.LookupType Response_ = CommandPartitionedTopicMetadataResponse.Types.LookupType.Success;
 			public bool HasResponse()
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public CommandPartitionedTopicMetadataResponse.Types.LookupType Response
+			public Types.LookupType Response
 			{
 				get
 				{
 					return Response_;
 				}
 			}
-			public Builder SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType Value)
+			public Builder SetResponse(Types.LookupType Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000004;
 				Response_ = Value;
@@ -456,7 +456,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000008;
 				Error_ = Value;
@@ -495,7 +495,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000010;
 				Message_ = Value;

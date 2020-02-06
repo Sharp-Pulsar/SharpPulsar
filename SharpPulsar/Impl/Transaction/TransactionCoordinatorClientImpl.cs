@@ -23,11 +23,11 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using IPulsarClient = SharpPulsar.Api.IPulsarClient;
-	using TransactionCoordinatorClient = SharpPulsar.Api.Transaction.TransactionCoordinatorClient;
-	using TransactionCoordinatorClientException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException;
-	using CoordinatorClientStateException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException.CoordinatorClientStateException;
-	using MathUtils = SharpPulsar.Util.MathUtils;
+	using IPulsarClient = Api.IPulsarClient;
+	using TransactionCoordinatorClient = TransactionCoordinatorClient;
+	using TransactionCoordinatorClientException = TransactionCoordinatorClientException;
+	using CoordinatorClientStateException = TransactionCoordinatorClientException.CoordinatorClientStateException;
+	using MathUtils = Util.MathUtils;
     using Microsoft.Extensions.Logging;
     using SharpPulsar.Util.Collections;
     using SharpPulsar.Util.Atomic;
@@ -103,7 +103,7 @@ namespace SharpPulsar.Impl.Transaction
 			}
 			else
 			{
-				return new ValueTask(Task.FromException(new TransactionCoordinatorClientException.CoordinatorClientStateException("Can not start while current state is " + state)));
+				return new ValueTask(Task.FromException(new CoordinatorClientStateException("Can not start while current state is " + state)));
 			}
 		}
 
@@ -111,7 +111,7 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			try
 			{
-				CloseAsync().get();
+				CloseAsync();
 			}
 			catch (System.Exception E)
 			{
@@ -150,7 +150,7 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			try
 			{
-				return NewTransactionAsync().get();
+				return NewTransactionAsync().Result;
 			}
 			catch (System.Exception E)
 			{
@@ -158,55 +158,55 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public override CompletableFuture<TxnID> NewTransactionAsync()
+		public ValueTask<TxnID> NewTransactionAsync()
 		{
 			return NewTransactionAsync(TransactionCoordinatorClientFields.DefaultTxnTtlMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		public override TxnID NewTransaction(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public TxnID NewTransaction(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
 			try
 			{
-				return NewTransactionAsync(Timeout, Unit).get();
+				return NewTransactionAsync(Timeout, Unit);
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<TxnID> NewTransactionAsync(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public ValueTask<TxnID> NewTransactionAsync(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
-			return NextHandler().newTransactionAsync(Timeout, Unit);
+			return NextHandler().NewTransactionAsync(Timeout, Unit);
 		}
 
-		public override void AddPublishPartitionToTxn(TxnID TxnID, IList<string> Partitions)
+		public void AddPublishPartitionToTxn(TxnID TxnID, IList<string> Partitions)
 		{
 			try
 			{
-				AddPublishPartitionToTxnAsync(TxnID, Partitions).get();
+				AddPublishPartitionToTxnAsync(TxnID, Partitions);
 			}
 			catch (Exception E)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<Void> AddPublishPartitionToTxnAsync(TxnID TxnID, IList<string> Partitions)
+		public ValueTask AddPublishPartitionToTxnAsync(TxnID TxnID, IList<string> Partitions)
 		{
 			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
 			if (Handler == null)
 			{
 				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(TxnID.MostSigBits));
 			}
-			return Handler.addPublishPartitionToTxnAsync(TxnID, Partitions);
+			return Handler.AddPublishPartitionToTxnAsync(TxnID, Partitions);
 		}
 
-		public override void Commit(TxnID TxnID)
+		public void Commit(TxnID TxnID)
 		{
 			try
 			{
-				CommitAsync(TxnID).get();
+				CommitAsync(TxnID).Result;
 			}
 			catch (Exception E)
 			{
@@ -214,21 +214,21 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public override CompletableFuture<Void> CommitAsync(TxnID TxnID)
+		public ValueTask CommitAsync(TxnID TxnID)
 		{
 			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
 			if (Handler == null)
 			{
 				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(TxnID.MostSigBits));
 			}
-			return Handler.commitAsync(TxnID);
+			return Handler.CommitAsync(TxnID);
 		}
 
-		public override void Abort(TxnID TxnID)
+		public void Abort(TxnID TxnID)
 		{
 			try
 			{
-				AbortAsync(TxnID).get();
+				AbortAsync(TxnID).Result;
 			}
 			catch (Exception E)
 			{
@@ -236,7 +236,7 @@ namespace SharpPulsar.Impl.Transaction
 			}
 		}
 
-		public override CompletableFuture<Void> AbortAsync(TxnID TxnID)
+		public ValueTask<Void> AbortAsync(TxnID TxnID)
 		{
 			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
 			if (Handler == null)

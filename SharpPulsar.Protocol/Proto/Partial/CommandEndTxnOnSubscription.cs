@@ -459,7 +459,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Subscription_ = Value;
 
@@ -512,7 +512,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000010;
 				TxnAction_ = Value;

@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl.Schema
 	using SchemaBuilder = org.apache.avro.SchemaBuilder;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Api.Schema;
-	using GenericAvroSchema = SharpPulsar.Impl.Schema.Generic.GenericAvroSchema;
+	using GenericAvroSchema = Generic.GenericAvroSchema;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>

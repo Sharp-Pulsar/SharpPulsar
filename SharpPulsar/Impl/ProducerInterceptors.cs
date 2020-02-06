@@ -24,7 +24,7 @@ namespace SharpPulsar.Impl
     using Microsoft.Extensions.Logging;
     using SharpPulsar.Api;
     using SharpPulsar.Api.Interceptor;
-    using IMessageId = SharpPulsar.Api.IMessageId;
+    using IMessageId = Api.IMessageId;
 
 
 	/// <summary>

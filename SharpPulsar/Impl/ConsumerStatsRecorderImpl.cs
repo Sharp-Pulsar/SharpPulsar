@@ -21,7 +21,7 @@
 namespace SharpPulsar.Impl
 {
 
-	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
+	using ConsumerStats = Api.ConsumerStats;
 	using SharpPulsar.Api;
 	using SharpPulsar.Impl.Conf;
 	using Logger = org.slf4j.Logger;

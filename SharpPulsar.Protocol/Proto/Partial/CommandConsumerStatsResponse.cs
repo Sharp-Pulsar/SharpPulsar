@@ -608,7 +608,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				ErrorCode_ = Value;
@@ -647,7 +647,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000004;
 				ErrorMessage_ = Value;
@@ -776,7 +776,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000040;
 				ConsumerName_ = Value;
@@ -905,7 +905,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000400;
 				Address_ = Value;
@@ -950,7 +950,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000800;
 				ConnectedSince_ = Value;
@@ -995,7 +995,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00001000;
 				Type_ = Value;

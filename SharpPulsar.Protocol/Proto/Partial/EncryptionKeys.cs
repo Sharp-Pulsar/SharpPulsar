@@ -354,7 +354,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000001;
 				Key_ = Value;
@@ -392,7 +392,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				Value_ = Value;
@@ -440,7 +440,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_[Index] = Value;
@@ -458,7 +458,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_.Add(Value);
@@ -469,7 +469,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_.Insert(Index, Value);

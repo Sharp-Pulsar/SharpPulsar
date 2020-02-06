@@ -314,7 +314,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00000001;
 				ServerVersion_ = Value;

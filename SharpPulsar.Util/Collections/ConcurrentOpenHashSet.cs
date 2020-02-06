@@ -154,7 +154,7 @@ namespace SharpPulsar.Util.Collections
 
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
 //ORIGINAL LINE: public void forEach(java.util.function.Consumer<? super V> processor)
-		public virtual void forEach<T1>(System.Action<T1> processor)
+		public virtual void forEach<T1>(Action<T1> processor)
 		{
 			foreach (Section<V> s in sections)
 			{
@@ -162,7 +162,7 @@ namespace SharpPulsar.Util.Collections
 			}
 		}
 
-		public virtual int removeIf(System.Predicate<V> filter)
+		public virtual int removeIf(Predicate<V> filter)
 		{
 			checkNotNull(filter);
 
@@ -416,7 +416,7 @@ namespace SharpPulsar.Util.Collections
 				}
 			}
 
-			internal int removeIf(System.Predicate<V> filter)
+			internal int removeIf(Predicate<V> filter)
 			{
 				long stamp = writeLock();
 
@@ -464,7 +464,7 @@ namespace SharpPulsar.Util.Collections
 
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
 //ORIGINAL LINE: public void forEach(java.util.function.Consumer<? super V> processor)
-			public void forEach<T1>(System.Action<T1> processor)
+			public void forEach<T1>(Action<T1> processor)
 			{
 				long stamp = tryOptimisticRead();
 

@@ -22,8 +22,8 @@ namespace org.apache.pulsar.client.admin
 {
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using ObjectMapperFactory = pulsar.common.util.ObjectMapperFactory;
 
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

@@ -33,7 +33,7 @@ using Org.BouncyCastle.Security;
 namespace SharpPulsar.Util
 {
 	using ClientAuth =  io.netty.handler.ssl.ClientAuth;
-	using SslContext = DotNetty.Handlers.Tls.TlsHandler io.netty.handler.ssl.SslContext;
+	using SslContext = TlsHandler io.netty.handler.ssl.SslContext;
 	using SslContextBuilder = io.netty.handler.ssl.SslContextBuilder;
 	using InsecureTrustManagerFactory = io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 	using SslContextFactory = org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -328,7 +328,7 @@ namespace SharpPulsar.Util
 				SslCtxRefresher = new DefaultSslContextBuilder(TlsAllowInsecureConnection, TlsTrustCertsFilePath, TlsCertificateFilePath, TlsKeyFilePath, TlsRequireTrustedClientCertOnConnect, CertRefreshInSec);
 			}
 
-			public override TlsHandler SslContext
+			public override SslContext SslContext
 			{
 				get
 				{

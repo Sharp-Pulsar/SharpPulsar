@@ -22,11 +22,11 @@ using System.Collections.Generic;
 namespace org.apache.pulsar.client.admin
 {
 
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using NonPersistentTopicStats = org.apache.pulsar.common.policies.data.NonPersistentTopicStats;
-	using PersistentTopicInternalStats = org.apache.pulsar.common.policies.data.PersistentTopicInternalStats;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PartitionedTopicMetadata = pulsar.common.partition.PartitionedTopicMetadata;
+	using NonPersistentTopicStats = pulsar.common.policies.data.NonPersistentTopicStats;
+	using PersistentTopicInternalStats = pulsar.common.policies.data.PersistentTopicInternalStats;
 
 	/// @deprecated since 2.0. See <seealso cref="Topics"/> 
 	[Obsolete("since 2.0. See <seealso cref=\"Topics\"/>")]

@@ -131,7 +131,7 @@ namespace SharpPulsar.Common.Naming
 					}
 					else
 					{
-						throw new System.ArgumentException("Invalid short topic name '" + completeTopicName + "', it should be in the format of " + "<tenant>/<namespace>/<topic> or <topic>");
+						throw new ArgumentException("Invalid short topic name '" + completeTopicName + "', it should be in the format of " + "<tenant>/<namespace>/<topic> or <topic>");
 					}
 				}
 
@@ -175,19 +175,19 @@ namespace SharpPulsar.Common.Naming
 				}
 				else
 				{
-					throw new System.ArgumentException("Invalid topic name: " + completeTopicName);
+					throw new ArgumentException("Invalid topic name: " + completeTopicName);
 				}
 
 
 				if (string.ReferenceEquals(localName, null) || localName.Length == 0)
 				{
-					throw new System.ArgumentException("Invalid topic name: " + completeTopicName);
+					throw new ArgumentException("Invalid topic name: " + completeTopicName);
 				}
 
 			}
-			catch (System.NullReferenceException e)
+			catch (NullReferenceException e)
 			{
-				throw new System.ArgumentException("Invalid topic name: " + completeTopicName, e);
+				throw new ArgumentException("Invalid topic name: " + completeTopicName, e);
 			}
 			if (V2)
 			{
@@ -347,7 +347,7 @@ namespace SharpPulsar.Common.Naming
 				{
 					partitionIndex = int.Parse(topic.Substring(topic.LastIndexOf('-') + 1));
 				}
-				catch (System.FormatException)
+				catch (FormatException)
 				{
 					log.warn("Could not get the partition index from the topic {}", topic);
 				}

@@ -41,17 +41,17 @@ namespace SharpPulsar.Impl
 		{
 			if (StringUtils.isBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
 			{
-				throw new System.ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
+				throw new ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
 			}
 			if (StringUtils.isNotBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider != null)
 			{
-				throw new System.ArgumentException("Can only chose one way service URL or service URL provider.");
+				throw new ArgumentException("Can only chose one way service URL or service URL provider.");
 			}
 			if (Conf.ServiceUrlProvider != null)
 			{
 				if (StringUtils.isBlank(Conf.ServiceUrlProvider.ServiceUrl))
 				{
-					throw new System.ArgumentException("Cannot get service url from service url provider.");
+					throw new ArgumentException("Cannot get service url from service url provider.");
 				}
 				else
 				{
@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl
 		{
 			if (StringUtils.isBlank(ServiceUrl))
 			{
-				throw new System.ArgumentException("Param serviceUrl must not be blank.");
+				throw new ArgumentException("Param serviceUrl must not be blank.");
 			}
 			Conf.ServiceUrl = ServiceUrl;
 			if (!Conf.UseTls)
@@ -95,7 +95,7 @@ namespace SharpPulsar.Impl
 		{
 			if (ServiceUrlProvider == null)
 			{
-				throw new System.ArgumentException("Param serviceUrlProvider must not be null.");
+				throw new ArgumentException("Param serviceUrlProvider must not be null.");
 			}
 			Conf.ServiceUrlProvider = ServiceUrlProvider;
 			return this;

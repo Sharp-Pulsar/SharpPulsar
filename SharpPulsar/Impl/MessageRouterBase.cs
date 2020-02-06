@@ -22,8 +22,8 @@ using System;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using HashingScheme = SharpPulsar.Api.HashingScheme;
-	using MessageRouter = SharpPulsar.Api.MessageRouter;
+	using HashingScheme = HashingScheme;
+	using MessageRouter = MessageRouter;
 
 	[Serializable]
 	public abstract class MessageRouterBase : MessageRouter

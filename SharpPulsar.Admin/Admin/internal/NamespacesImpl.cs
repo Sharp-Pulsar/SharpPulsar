@@ -27,23 +27,23 @@ namespace org.apache.pulsar.client.admin.@internal
 
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using AuthAction = org.apache.pulsar.common.policies.data.AuthAction;
-	using BacklogQuota = org.apache.pulsar.common.policies.data.BacklogQuota;
-	using BookieAffinityGroupData = org.apache.pulsar.common.policies.data.BookieAffinityGroupData;
-	using BacklogQuotaType = org.apache.pulsar.common.policies.data.BacklogQuota.BacklogQuotaType;
-	using BundlesData = org.apache.pulsar.common.policies.data.BundlesData;
-	using DispatchRate = org.apache.pulsar.common.policies.data.DispatchRate;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using PersistencePolicies = org.apache.pulsar.common.policies.data.PersistencePolicies;
-	using Policies = org.apache.pulsar.common.policies.data.Policies;
-	using PublishRate = org.apache.pulsar.common.policies.data.PublishRate;
-	using RetentionPolicies = org.apache.pulsar.common.policies.data.RetentionPolicies;
-	using SchemaAutoUpdateCompatibilityStrategy = org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy;
-	using SchemaCompatibilityStrategy = org.apache.pulsar.common.policies.data.SchemaCompatibilityStrategy;
-	using SubscribeRate = org.apache.pulsar.common.policies.data.SubscribeRate;
-	using SubscriptionAuthMode = org.apache.pulsar.common.policies.data.SubscriptionAuthMode;
+	using Authentication = client.api.Authentication;
+	using NamespaceName = pulsar.common.naming.NamespaceName;
+	using AuthAction = pulsar.common.policies.data.AuthAction;
+	using BacklogQuota = pulsar.common.policies.data.BacklogQuota;
+	using BookieAffinityGroupData = pulsar.common.policies.data.BookieAffinityGroupData;
+	using BacklogQuotaType = pulsar.common.policies.data.BacklogQuota.BacklogQuotaType;
+	using BundlesData = pulsar.common.policies.data.BundlesData;
+	using DispatchRate = pulsar.common.policies.data.DispatchRate;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using PersistencePolicies = pulsar.common.policies.data.PersistencePolicies;
+	using Policies = pulsar.common.policies.data.Policies;
+	using PublishRate = pulsar.common.policies.data.PublishRate;
+	using RetentionPolicies = pulsar.common.policies.data.RetentionPolicies;
+	using SchemaAutoUpdateCompatibilityStrategy = pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy;
+	using SchemaCompatibilityStrategy = pulsar.common.policies.data.SchemaCompatibilityStrategy;
+	using SubscribeRate = pulsar.common.policies.data.SubscribeRate;
+	using SubscriptionAuthMode = pulsar.common.policies.data.SubscriptionAuthMode;
 
 	public class NamespacesImpl : BaseResource, Namespaces
 	{

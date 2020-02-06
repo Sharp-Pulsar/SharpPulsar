@@ -21,11 +21,11 @@
 namespace org.apache.pulsar.client.impl
 {
 	using Timer = io.netty.util.Timer;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using Message = org.apache.pulsar.client.api.Message;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using SubscriptionMode = org.apache.pulsar.client.impl.ConsumerImpl.SubscriptionMode;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using Consumer = api.Consumer;
+	using Message = api.Message;
+	using PulsarClientException = api.PulsarClientException;
+	using SubscriptionMode = impl.ConsumerImpl.SubscriptionMode;
+	using ClientConfigurationData = conf.ClientConfigurationData;
 	using org.apache.pulsar.client.impl.conf;
 	using Assert = org.testng.Assert;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;

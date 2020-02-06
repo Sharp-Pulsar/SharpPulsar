@@ -34,8 +34,8 @@ namespace org.apache.pulsar.client.impl.schema
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SchemaInfo = common.schema.SchemaInfo;
+	using SchemaType = common.schema.SchemaType;
 	using DataProvider = org.testng.annotations.DataProvider;
 	using Test = org.testng.annotations.Test;
 

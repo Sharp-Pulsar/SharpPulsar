@@ -26,9 +26,9 @@ namespace org.apache.pulsar.client.impl.schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using Function = org.apache.pulsar.functions.proto.Function;
+	using Schema = apache.avro.Schema;
+	using SchemaType = common.schema.SchemaType;
+	using Function = pulsar.functions.proto.Function;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 
@@ -63,7 +63,7 @@ namespace org.apache.pulsar.client.impl.schema
 //ORIGINAL LINE: @Test public void testSchema()
 		public virtual void testSchema()
 		{
-			ProtobufSchema<org.apache.pulsar.client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(org.apache.pulsar.client.schema.proto.Test.TestMessage));
+			ProtobufSchema<client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(client.schema.proto.Test.TestMessage));
 
 			Assert.assertEquals(protobufSchema.SchemaInfo.Type, SchemaType.PROTOBUF);
 
@@ -80,7 +80,7 @@ namespace org.apache.pulsar.client.impl.schema
 		{
 			try
 			{
-				ProtobufSchema<org.apache.pulsar.client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.ofGenericClass(typeof(org.apache.pulsar.client.schema.proto.Test.TestMessage), new Dictionary<org.apache.pulsar.client.schema.proto.Test.TestMessage>());
+				ProtobufSchema<client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.ofGenericClass(typeof(client.schema.proto.Test.TestMessage), new Dictionary<client.schema.proto.Test.TestMessage>());
 			}
 			catch (Exception)
 			{
@@ -89,7 +89,7 @@ namespace org.apache.pulsar.client.impl.schema
 
 			try
 			{
-				ProtobufSchema<org.apache.pulsar.client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.ofGenericClass(typeof(string), Collections.emptyMap());
+				ProtobufSchema<client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.ofGenericClass(typeof(string), Collections.emptyMap());
 				Assert.fail("Should not construct a ProtobufShema over a non-protobuf-generated class");
 			}
 			catch (Exception)
@@ -103,7 +103,7 @@ namespace org.apache.pulsar.client.impl.schema
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void testParsingInfoProperty()
 		{
-			ProtobufSchema<org.apache.pulsar.client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(org.apache.pulsar.client.schema.proto.Test.TestMessage));
+			ProtobufSchema<client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(client.schema.proto.Test.TestMessage));
 
 			Assert.assertEquals((new ObjectMapper()).writeValueAsString(protobufSchema.SchemaInfo.Properties), EXPECTED_PARSING_INFO);
 
@@ -114,8 +114,8 @@ namespace org.apache.pulsar.client.impl.schema
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void testDecodeByteBuf()
 		{
-			ProtobufSchema<org.apache.pulsar.client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(org.apache.pulsar.client.schema.proto.Test.TestMessage));
-			org.apache.pulsar.client.schema.proto.Test.TestMessage testMessage = org.apache.pulsar.client.schema.proto.Test.TestMessage.newBuilder().build();
+			ProtobufSchema<client.schema.proto.Test.TestMessage> protobufSchema = ProtobufSchema.of(typeof(client.schema.proto.Test.TestMessage));
+            client.schema.proto.Test.TestMessage testMessage = org.apache.pulsar.client.schema.proto.Test.TestMessage.newBuilder().build();
 			sbyte[] bytes = protobufSchema.encode(org.apache.pulsar.client.schema.proto.Test.TestMessage.newBuilder().build());
 			ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer(bytes.Length);
 			byteBuf.writeBytes(bytes);

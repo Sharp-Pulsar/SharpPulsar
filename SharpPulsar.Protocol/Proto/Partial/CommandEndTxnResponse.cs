@@ -445,7 +445,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000008;
 				Error_ = Value;
@@ -484,7 +484,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000010;
 				Message_ = Value;

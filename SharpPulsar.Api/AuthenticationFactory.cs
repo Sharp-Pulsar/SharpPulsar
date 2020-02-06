@@ -49,7 +49,7 @@ namespace SharpPulsar.Api
 		/// <param name="tokenSupplier">
 		///            a supplier of the client auth token </param>
 		/// <returns> the Authentication object initialized with the token credentials </returns>
-		public static IAuthentication Token(System.Func<string> TokenSupplier)
+		public static IAuthentication Token(Func<string> TokenSupplier)
 		{
 			return DefaultImplementation.newAuthenticationToken(TokenSupplier);
 		}

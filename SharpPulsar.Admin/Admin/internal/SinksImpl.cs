@@ -23,13 +23,13 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 	using Gson = com.google.gson.Gson;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using UpdateOptions = org.apache.pulsar.common.functions.UpdateOptions;
-	using ConnectorDefinition = org.apache.pulsar.common.io.ConnectorDefinition;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using SinkStatus = org.apache.pulsar.common.policies.data.SinkStatus;
-	using SinkConfig = org.apache.pulsar.common.io.SinkConfig;
-	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
+	using Authentication = client.api.Authentication;
+	using UpdateOptions = pulsar.common.functions.UpdateOptions;
+	using ConnectorDefinition = pulsar.common.io.ConnectorDefinition;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using SinkStatus = pulsar.common.policies.data.SinkStatus;
+	using SinkConfig = pulsar.common.io.SinkConfig;
+	using ObjectMapperFactory = pulsar.common.util.ObjectMapperFactory;
 	using AsyncHttpClient = org.asynchttpclient.AsyncHttpClient;
 	using RequestBuilder = org.asynchttpclient.RequestBuilder;
 	using FilePart = org.asynchttpclient.request.body.multipart.FilePart;

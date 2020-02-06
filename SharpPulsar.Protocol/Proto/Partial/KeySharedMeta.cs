@@ -144,8 +144,8 @@ namespace SharpPulsar.Protocol.Proto
 			return NewBuilder(this);
 		}
 
-		public sealed class Builder : ByteBufCodedInputStream.ByteBufMessageBuilder
-		{
+		public sealed class Builder : ByteBufMessageBuilder
+        {
 			// Construct using org.apache.pulsar.common.api.proto.KeySharedMeta.newBuilder()
 
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
@@ -344,7 +344,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000001;
 				KeySharedMode_ = Value;
@@ -392,7 +392,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureHashRangesIsMutable();
 				HashRanges_[Index] = Value;
@@ -410,7 +410,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureHashRangesIsMutable();
 				HashRanges_.Add(Value);
@@ -421,7 +421,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureHashRangesIsMutable();
 				HashRanges_.Insert(Index, Value);

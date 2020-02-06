@@ -295,7 +295,7 @@ namespace SharpPulsar.Protocol.Proto
 						case 24:
 							{
 								int RawValue = input.ReadEnum();
-								CommandGetTopicsOfNamespace.Types.Mode Value = Enum.GetValues(typeof(Types.Mode)).Cast<Types.Mode>().ToList()[RawValue];
+                                Types.Mode Value = Enum.GetValues(typeof(Types.Mode)).Cast<Types.Mode>().ToList()[RawValue];
 								if (Value != null)
 								{
 									BitField0_ |= 0x00000004;
@@ -361,7 +361,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				Namespace_ = Value;
@@ -388,18 +388,18 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public CommandGetTopicsOfNamespace.Types.Mode Mode
+			public Types.Mode Mode
 			{
 				get
 				{
 					return Mode_;
 				}
 			}
-			public Builder SetMode(CommandGetTopicsOfNamespace.Types.Mode Value)
+			public Builder SetMode(Types.Mode Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000004;
 				Mode_ = Value;

@@ -33,8 +33,8 @@ namespace org.apache.pulsar.client.impl.conf
 //	import static org.testng.Assert.fail;
 
 
-	using BatcherBuilder = org.apache.pulsar.client.api.BatcherBuilder;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using BatcherBuilder = api.BatcherBuilder;
+	using PulsarClientException = api.PulsarClientException;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

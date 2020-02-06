@@ -25,7 +25,7 @@ namespace org.apache.pulsar.client.impl.schema
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Schema = org.apache.pulsar.client.api.Schema;
+	using Schema = api.Schema;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

@@ -23,11 +23,11 @@ namespace org.apache.pulsar.client.impl.schema
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using ConsumerBuilder = org.apache.pulsar.client.api.ConsumerBuilder;
-	using ProducerBuilder = org.apache.pulsar.client.api.ProducerBuilder;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ReaderBuilder = org.apache.pulsar.client.api.ReaderBuilder;
+	using ConsumerBuilder = api.ConsumerBuilder;
+	using ProducerBuilder = api.ProducerBuilder;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
+	using ReaderBuilder = api.ReaderBuilder;
 	using Assert = org.testng.Assert;
 	using AfterClass = org.testng.annotations.AfterClass;
 	using BeforeClass = org.testng.annotations.BeforeClass;

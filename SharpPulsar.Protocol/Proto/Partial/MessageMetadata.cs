@@ -806,7 +806,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000001;
 				_producerName = Value;
@@ -898,7 +898,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties[Index] = Value;
@@ -910,7 +910,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties.Add(Value);
@@ -921,7 +921,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties.Insert(Index, Value);
@@ -964,7 +964,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000010;
 				_replicatedFrom = Value;
@@ -1060,7 +1060,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureReplicateToIsMutable();
 				_replicateToes.Insert(Index, Value);
@@ -1071,7 +1071,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureReplicateToIsMutable();
 				_replicateToes.Add(Value);
@@ -1104,7 +1104,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000080;
 				_compression = GetCompressionType(Value);
@@ -1115,7 +1115,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000080;
 				_compression = Value;
@@ -1263,7 +1263,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureEncryptionKeysIsMutable();
 				_encryptionKeys[Index] = Value;
@@ -1285,7 +1285,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureEncryptionKeysIsMutable();
 				_encryptionKeys.Insert(Index, Value);
@@ -1354,7 +1354,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00002000;
 				_encryptionParam = value;

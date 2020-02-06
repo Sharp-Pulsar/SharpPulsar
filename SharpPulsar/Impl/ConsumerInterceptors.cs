@@ -21,10 +21,10 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Consumer = SharpPulsar.Api.IConsumer;
+	using Consumer = Api.IConsumer;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using SharpPulsar.Api;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
@@ -34,8 +34,8 @@ namespace SharpPulsar.Impl
 	/// A container that hold the list <seealso cref="SharpPulsar.api.ConsumerInterceptor"/> and wraps calls to the chain
 	/// of custom interceptors.
 	/// </summary>
-	public class ConsumerInterceptors<T> : System.IDisposable
-	{
+	public class ConsumerInterceptors<T> : IDisposable
+    {
 
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerInterceptors));
 

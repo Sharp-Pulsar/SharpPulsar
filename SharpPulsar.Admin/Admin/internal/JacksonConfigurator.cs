@@ -21,7 +21,7 @@
 namespace org.apache.pulsar.client.admin.@internal
 {
 
-	using ObjectMapperFactory = org.apache.pulsar.common.util.ObjectMapperFactory;
+	using ObjectMapperFactory = pulsar.common.util.ObjectMapperFactory;
 
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 

@@ -22,7 +22,7 @@ using System.IO;
 namespace SharpPulsar.Impl.Schema.Reader
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;

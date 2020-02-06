@@ -129,8 +129,8 @@ namespace SharpPulsar.Protocol.Proto
 			return NewBuilder(this);
 		}
 
-		public sealed class Builder : ByteBufCodedInputStream.ByteBufMessageBuilder
-		{
+		public sealed class Builder : ByteBufMessageBuilder
+        {
 			// Construct using org.apache.pulsar.common.api.proto.CommandError.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
 
@@ -363,7 +363,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				Error_ = Value;
@@ -402,7 +402,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000004;
 				Message_ = Value;

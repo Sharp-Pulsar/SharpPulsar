@@ -125,14 +125,14 @@ namespace SharpPulsar.Common
 			{
 				Uri = new Uri("dummyscheme://" + Hostname);
 			}
-			catch (System.ArgumentException)
+			catch (ArgumentException)
 			{
-				throw new System.ArgumentException("Invalid hostname : " + Hostname);
+				throw new ArgumentException("Invalid hostname : " + Hostname);
 			}
 			string Host = Uri.Host;
 			if (string.ReferenceEquals(Host, null))
 			{
-				throw new System.ArgumentException("Invalid hostname : " + Hostname);
+				throw new ArgumentException("Invalid hostname : " + Hostname);
 			}
 			int Port = Uri.Port;
 			if (Port == -1)
@@ -203,7 +203,7 @@ namespace SharpPulsar.Common
 					}
 					else
 					{
-						throw new System.ArgumentException("Invalid pulsar service : " + ServiceName + "+" + ServiceInfos);
+						throw new ArgumentException("Invalid pulsar service : " + ServiceName + "+" + ServiceInfos);
 					}
 					break;
 				case HttpService:
@@ -213,7 +213,7 @@ namespace SharpPulsar.Common
 					Port = HttpsPort;
 					break;
 				default:
-					throw new System.ArgumentException("Invalid pulsar service : " + ServiceName);
+					throw new ArgumentException("Invalid pulsar service : " + ServiceName);
 			}
 			return Port;
 		}

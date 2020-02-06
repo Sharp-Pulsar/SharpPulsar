@@ -33,11 +33,11 @@ namespace org.apache.pulsar.client.impl
 
 
 	using Channel = io.netty.channel.Channel;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using PulsarHandler = org.apache.pulsar.common.protocol.PulsarHandler;
-	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
+	using PulsarClientException = api.PulsarClientException;
+	using ClientConfigurationData = conf.ClientConfigurationData;
+	using PulsarApi = common.api.proto.PulsarApi;
+	using PulsarHandler = common.protocol.PulsarHandler;
+	using EventLoopUtil = common.util.netty.EventLoopUtil;
 	using Test = org.testng.annotations.Test;
 
 	using ChannelFuture = io.netty.channel.ChannelFuture;

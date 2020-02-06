@@ -21,14 +21,14 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using ConflictException = org.apache.pulsar.client.admin.PulsarAdminException.ConflictException;
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using BrokerNamespaceIsolationData = org.apache.pulsar.common.policies.data.BrokerNamespaceIsolationData;
-	using ClusterData = org.apache.pulsar.common.policies.data.ClusterData;
-	using FailureDomain = org.apache.pulsar.common.policies.data.FailureDomain;
-	using NamespaceIsolationData = org.apache.pulsar.common.policies.data.NamespaceIsolationData;
+	using ConflictException = PulsarAdminException.ConflictException;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using BrokerNamespaceIsolationData = pulsar.common.policies.data.BrokerNamespaceIsolationData;
+	using ClusterData = pulsar.common.policies.data.ClusterData;
+	using FailureDomain = pulsar.common.policies.data.FailureDomain;
+	using NamespaceIsolationData = pulsar.common.policies.data.NamespaceIsolationData;
 
 	/// <summary>
 	/// Admin interface for clusters management.

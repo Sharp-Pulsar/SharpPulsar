@@ -22,10 +22,10 @@ namespace org.apache.pulsar.client.tutorial
 {
 	using Lists = com.google.common.collect.Lists;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using MessageId = api.MessageId;
+	using Producer = api.Producer;
+	using PulsarClient = api.PulsarClient;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class SampleAsyncProducerWithSchema

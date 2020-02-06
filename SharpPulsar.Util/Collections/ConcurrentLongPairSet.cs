@@ -613,7 +613,7 @@ namespace SharpPulsar.Util.Collections
 		{
 			if (n < 0L)
 			{
-				throw new System.ArgumentException("Keys and values must be >= 0");
+				throw new ArgumentException("Keys and values must be >= 0");
 			}
 		}
 

@@ -25,7 +25,7 @@ namespace SharpPulsar.Impl
 	using Lists = com.google.common.collect.Lists;
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using PulsarClientException = Api.PulsarClientException;
 	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
 	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
 	using CompressionCodec = Org.Apache.Pulsar.Common.Compression.CompressionCodec;

@@ -25,7 +25,7 @@ namespace SharpPulsar.Impl.Schema
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using SharpPulsar.Api;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 
 	public abstract class AbstractSchema<T> : ISchema<T>
 	{

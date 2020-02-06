@@ -19,16 +19,16 @@
 namespace org.apache.pulsar.client.impl
 {
 
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using Schema = api.Schema;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
 	using org.apache.pulsar.client.impl.schema;
-	using SchemaTestUtils = org.apache.pulsar.client.impl.schema.SchemaTestUtils;
-	using MultiVersionSchemaInfoProvider = org.apache.pulsar.client.impl.schema.generic.MultiVersionSchemaInfoProvider;
-	using MessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using ByteString = org.apache.pulsar.shaded.com.google.protobuf.v241.ByteString;
+	using SchemaTestUtils = schema.SchemaTestUtils;
+	using MultiVersionSchemaInfoProvider = schema.generic.MultiVersionSchemaInfoProvider;
+	using MessageMetadata = common.api.proto.PulsarApi.MessageMetadata;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
+	using ByteString = pulsar.shaded.com.google.protobuf.v241.ByteString;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 

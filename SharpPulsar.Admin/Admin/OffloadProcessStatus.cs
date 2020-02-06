@@ -18,8 +18,8 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using MessageIdImpl = org.apache.pulsar.client.impl.MessageIdImpl;
+	using MessageId = client.api.MessageId;
+	using MessageIdImpl = client.impl.MessageIdImpl;
 
 	/// <summary>
 	/// Status of offload process.

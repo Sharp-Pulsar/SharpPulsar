@@ -35,15 +35,15 @@ namespace org.apache.pulsar.client.impl.schema
 //	import static org.testng.@internal.junit.ArrayAsserts.assertArrayEquals;
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using Bar = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Bar;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using Schema = api.Schema;
+	using SchemaDefinition = api.schema.SchemaDefinition;
+	using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
+	using DefaultImplementation = client.@internal.DefaultImplementation;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
+	using SchemaInfo = common.schema.SchemaInfo;
+	using SchemaType = common.schema.SchemaType;
 	using DataProvider = org.testng.annotations.DataProvider;
 	using Test = org.testng.annotations.Test;
 

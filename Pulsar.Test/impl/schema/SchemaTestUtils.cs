@@ -24,8 +24,8 @@ namespace org.apache.pulsar.client.impl.schema
 	using Data = lombok.Data;
 	using EqualsAndHashCode = lombok.EqualsAndHashCode;
 	using ToString = lombok.ToString;
-	using AvroDefault = org.apache.avro.reflect.AvroDefault;
-	using Nullable = org.apache.avro.reflect.Nullable;
+	using AvroDefault = apache.avro.reflect.AvroDefault;
+	using Nullable = apache.avro.reflect.Nullable;
 
 	/// <summary>
 	/// Utils for testing avro.

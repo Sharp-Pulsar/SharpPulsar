@@ -21,8 +21,8 @@
 namespace org.apache.pulsar.client.tutorial
 {
 
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 

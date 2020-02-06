@@ -347,7 +347,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureTopicsIsMutable();
 				Topics_.Insert(Index, Value);
@@ -358,7 +358,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureTopicsIsMutable();
 				Topics_.Add(Value);

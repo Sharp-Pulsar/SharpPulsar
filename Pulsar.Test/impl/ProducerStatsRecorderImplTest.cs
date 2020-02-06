@@ -22,8 +22,8 @@ namespace org.apache.pulsar.client.impl
 {
 	using HashedWheelTimer = io.netty.util.HashedWheelTimer;
 	using Timer = io.netty.util.Timer;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
+	using ClientConfigurationData = conf.ClientConfigurationData;
+	using ProducerConfigurationData = conf.ProducerConfigurationData;
 	using Test = org.testng.annotations.Test;
 
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:

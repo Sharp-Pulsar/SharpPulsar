@@ -364,7 +364,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdsIsMutable();
 				MessageIds_[Index] = Value;
@@ -382,7 +382,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdsIsMutable();
 				MessageIds_.Add(Value);
@@ -393,7 +393,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdsIsMutable();
 				MessageIds_.Insert(Index, Value);

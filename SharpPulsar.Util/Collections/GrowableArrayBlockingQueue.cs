@@ -412,7 +412,7 @@ namespace SharpPulsar.Util.Collections
 
 		public override IEnumerator<T> iterator()
 		{
-			throw new System.NotSupportedException();
+			throw new NotSupportedException();
 		}
 
 		public virtual IList<T> toList()
@@ -424,7 +424,7 @@ namespace SharpPulsar.Util.Collections
 
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
 //ORIGINAL LINE: @Override public void forEach(java.util.function.Consumer<? super T> action)
-		public override void forEach<T1>(System.Action<T1> action)
+		public override void forEach<T1>(Action<T1> action)
 		{
 			tailLock.@lock();
 			headLock.@lock();

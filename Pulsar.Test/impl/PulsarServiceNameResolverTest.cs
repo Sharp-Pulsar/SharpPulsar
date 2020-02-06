@@ -29,8 +29,8 @@ namespace org.apache.pulsar.client.impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.fail;
 
-	using InvalidServiceURL = org.apache.pulsar.client.api.PulsarClientException.InvalidServiceURL;
-	using ServiceURI = org.apache.pulsar.common.net.ServiceURI;
+	using InvalidServiceURL = api.PulsarClientException.InvalidServiceURL;
+	using ServiceURI = common.net.ServiceURI;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;
 	using Test = org.testng.annotations.Test;
 

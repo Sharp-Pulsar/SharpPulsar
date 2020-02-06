@@ -20,7 +20,7 @@ namespace SharpPulsar.Impl.Schema.Writer
 {
 	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 
 	public class JsonWriter<T> : ISchemaWriter<T>

@@ -20,8 +20,8 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using BatchMessageContainer = SharpPulsar.Api.BatchMessageContainer;
-	using BatcherBuilder = SharpPulsar.Api.BatcherBuilder;
+	using BatchMessageContainer = Api.BatchMessageContainer;
+	using BatcherBuilder = Api.BatcherBuilder;
 
 	[Serializable]
 	public class KeyBasedBatcherBuilder : BatcherBuilder

@@ -21,11 +21,11 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using ConflictException = org.apache.pulsar.client.admin.PulsarAdminException.ConflictException;
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using TenantInfo = org.apache.pulsar.common.policies.data.TenantInfo;
+	using ConflictException = PulsarAdminException.ConflictException;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using TenantInfo = pulsar.common.policies.data.TenantInfo;
 
 	/// <summary>
 	/// Admin interface for tenants management

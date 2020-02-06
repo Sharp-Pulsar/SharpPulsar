@@ -21,7 +21,7 @@
 namespace org.apache.pulsar.client.impl
 {
 	using org.apache.pulsar.client.api;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
+	using ProducerConfigurationData = conf.ProducerConfigurationData;
 	using BeforeTest = org.testng.annotations.BeforeTest;
 	using Test = org.testng.annotations.Test;
 

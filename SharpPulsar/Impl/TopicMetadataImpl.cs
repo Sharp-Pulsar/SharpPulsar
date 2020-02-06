@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
+	using TopicMetadata = Api.TopicMetadata;
 
 	public class TopicMetadataImpl : TopicMetadata
 	{

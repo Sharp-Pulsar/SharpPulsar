@@ -29,8 +29,8 @@ namespace org.apache.pulsar.client.impl.schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using Unpooled = io.netty.buffer.Unpooled;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using Schema = api.Schema;
+	using SchemaType = common.schema.SchemaType;
 	using DataProvider = org.testng.annotations.DataProvider;
 	using Test = org.testng.annotations.Test;
 

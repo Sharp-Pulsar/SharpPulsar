@@ -18,15 +18,15 @@
 /// </summary>
 namespace org.apache.pulsar.client.examples
 {
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-	using Transaction = org.apache.pulsar.client.api.transaction.Transaction;
+	using Message = api.Message;
+	using MessageId = api.MessageId;
+	using PulsarClient = api.PulsarClient;
+	using Schema = api.Schema;
+	using SubscriptionType = api.SubscriptionType;
+	using Transaction = api.transaction.Transaction;
 	using org.apache.pulsar.client.impl;
 	using org.apache.pulsar.client.impl;
-	using PulsarClientImpl = org.apache.pulsar.client.impl.PulsarClientImpl;
+	using PulsarClientImpl = impl.PulsarClientImpl;
 
 	/// <summary>
 	/// Example to use Pulsar transactions.

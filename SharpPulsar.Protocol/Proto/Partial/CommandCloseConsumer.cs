@@ -116,8 +116,8 @@ namespace SharpPulsar.Protocol.Proto
 			return NewBuilder(this);
 		}
 
-		public sealed class Builder : ByteBufCodedInputStream.ByteBufMessageBuilder
-		{
+		public sealed class Builder : ByteBufMessageBuilder
+        {
 			// Construct using org.apache.pulsar.common.api.proto.CommandCloseConsumer.newBuilder()
 			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
 

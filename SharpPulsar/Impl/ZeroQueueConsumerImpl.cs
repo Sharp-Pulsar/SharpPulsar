@@ -28,10 +28,10 @@ namespace SharpPulsar.Impl
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
-	using Consumer = SharpPulsar.Api.IConsumer;
+	using Consumer = Api.IConsumer;
 	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using IMessageId = Api.IMessageId;
+	using PulsarClientException = Api.PulsarClientException;
 	using SharpPulsar.Api;
 	using SharpPulsar.Impl.Conf;
 	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;

@@ -21,9 +21,9 @@
 namespace org.apache.pulsar.client.admin.@internal
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using LookupData = org.apache.pulsar.common.lookup.data.LookupData;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
+	using Authentication = client.api.Authentication;
+	using LookupData = pulsar.common.lookup.data.LookupData;
+	using TopicName = pulsar.common.naming.TopicName;
 
 	public class LookupImpl : BaseResource, Lookup
 	{

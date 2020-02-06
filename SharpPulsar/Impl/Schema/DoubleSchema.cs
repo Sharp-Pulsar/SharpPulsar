@@ -19,7 +19,7 @@
 namespace SharpPulsar.Impl.Schema
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 

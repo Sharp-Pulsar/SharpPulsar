@@ -23,12 +23,12 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using BrokerNamespaceIsolationData = org.apache.pulsar.common.policies.data.BrokerNamespaceIsolationData;
-	using ClusterData = org.apache.pulsar.common.policies.data.ClusterData;
-	using FailureDomain = org.apache.pulsar.common.policies.data.FailureDomain;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using NamespaceIsolationData = org.apache.pulsar.common.policies.data.NamespaceIsolationData;
+	using Authentication = client.api.Authentication;
+	using BrokerNamespaceIsolationData = pulsar.common.policies.data.BrokerNamespaceIsolationData;
+	using ClusterData = pulsar.common.policies.data.ClusterData;
+	using FailureDomain = pulsar.common.policies.data.FailureDomain;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using NamespaceIsolationData = pulsar.common.policies.data.NamespaceIsolationData;
 
 	public class ClustersImpl : BaseResource, Clusters
 	{

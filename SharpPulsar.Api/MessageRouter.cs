@@ -38,7 +38,7 @@ namespace SharpPulsar.Api
 		[Obsolete(@"since 1.22.0. Please use <seealso cref=""choosePartition(Message, TopicMetadata)""/> instead.")]
 		virtual int ChoosePartition<T1>(Message<T1> Msg)
 		{
-			throw new System.NotSupportedException("Use #choosePartition(Message, TopicMetadata) instead");
+			throw new NotSupportedException("Use #choosePartition(Message, TopicMetadata) instead");
 		}
 
 		/// <summary>

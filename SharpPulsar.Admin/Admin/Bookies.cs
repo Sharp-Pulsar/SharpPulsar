@@ -18,8 +18,8 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using BookieInfo = org.apache.pulsar.common.policies.data.BookieInfo;
-	using BookiesRackConfiguration = org.apache.pulsar.common.policies.data.BookiesRackConfiguration;
+	using BookieInfo = pulsar.common.policies.data.BookieInfo;
+	using BookiesRackConfiguration = pulsar.common.policies.data.BookiesRackConfiguration;
 
 	/// <summary>
 	/// Admin interface for bookies rack placement management.

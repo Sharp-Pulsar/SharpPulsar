@@ -22,7 +22,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 {
 	using InvalidProtocolBufferException = com.google.protobuf.InvalidProtocolBufferException;
 	using Parser = com.google.protobuf.Parser;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;

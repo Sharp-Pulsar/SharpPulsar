@@ -140,13 +140,13 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent {
         /// <param name="arrayIndex">
         /// The zero-based index in array at which copying begins.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// array is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// arrayIndex is less than zero.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The number of elements in the source queue is greater than the available space from arrayIndex to the end of the 
         /// destination array.
         /// </exception>
@@ -168,7 +168,7 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent {
         /// The object at the beginning of the queue.
         /// </returns>
         /// 
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The queue is empty.
         /// </exception>
         public T Peek() {

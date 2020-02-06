@@ -19,9 +19,9 @@
 namespace org.apache.pulsar.client.tutorial
 {
 
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using Producer = api.Producer;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
 
 	public class ContinuousAsyncProducer
 	{

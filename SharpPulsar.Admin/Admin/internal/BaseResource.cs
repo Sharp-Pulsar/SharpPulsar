@@ -23,19 +23,19 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 
 
-	using ConflictException = org.apache.pulsar.client.admin.PulsarAdminException.ConflictException;
-	using ConnectException = org.apache.pulsar.client.admin.PulsarAdminException.ConnectException;
-	using GettingAuthenticationDataException = org.apache.pulsar.client.admin.PulsarAdminException.GettingAuthenticationDataException;
-	using NotAllowedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAllowedException;
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using ServerSideErrorException = org.apache.pulsar.client.admin.PulsarAdminException.ServerSideErrorException;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using FutureUtil = org.apache.pulsar.common.util.FutureUtil;
+	using ConflictException = PulsarAdminException.ConflictException;
+	using ConnectException = PulsarAdminException.ConnectException;
+	using GettingAuthenticationDataException = PulsarAdminException.GettingAuthenticationDataException;
+	using NotAllowedException = PulsarAdminException.NotAllowedException;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using ServerSideErrorException = PulsarAdminException.ServerSideErrorException;
+	using Authentication = client.api.Authentication;
+	using AuthenticationDataProvider = client.api.AuthenticationDataProvider;
+	using PulsarClientException = client.api.PulsarClientException;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using FutureUtil = pulsar.common.util.FutureUtil;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ namespace org.apache.pulsar.client.admin.@internal
 			}
 			catch (Exception e)
 			{
-				throw new PulsarAdminException.GettingAuthenticationDataException(e);
+				throw new GettingAuthenticationDataException(e);
 			}
 		}
 
@@ -117,7 +117,7 @@ namespace org.apache.pulsar.client.admin.@internal
 			}
 			catch (Exception t)
 			{
-				builderFuture.completeExceptionally(new PulsarAdminException.GettingAuthenticationDataException(t));
+				builderFuture.completeExceptionally(new GettingAuthenticationDataException(t));
 			}
 
 			return builderFuture;
@@ -280,7 +280,7 @@ namespace org.apache.pulsar.client.admin.@internal
 			{
 				if (e.InnerException is java.net.ConnectException)
 				{
-					return new PulsarAdminException.ConnectException(e.InnerException);
+					return new ConnectException(e.InnerException);
 				}
 				else
 				{
@@ -293,7 +293,7 @@ namespace org.apache.pulsar.client.admin.@internal
 				if (e is ServerErrorException)
 				{
 					ServerErrorException see = (ServerErrorException) e;
-					return new PulsarAdminException.ServerSideErrorException(see, e.Message);
+					return new ServerSideErrorException(see, e.Message);
 				}
 				else if (e is ClientErrorException)
 				{
@@ -304,15 +304,15 @@ namespace org.apache.pulsar.client.admin.@internal
 					{
 						case 401:
 						case 403:
-							return new PulsarAdminException.NotAuthorizedException(cee);
+							return new NotAuthorizedException(cee);
 						case 404:
-							return new PulsarAdminException.NotFoundException(cee);
+							return new NotFoundException(cee);
 						case 405:
-							return new PulsarAdminException.NotAllowedException(cee);
+							return new NotAllowedException(cee);
 						case 409:
-							return new PulsarAdminException.ConflictException(cee);
+							return new ConflictException(cee);
 						case 412:
-							return new PulsarAdminException.PreconditionFailedException(cee);
+							return new PreconditionFailedException(cee);
 						default:
 							return new PulsarAdminException(cee);
 					}

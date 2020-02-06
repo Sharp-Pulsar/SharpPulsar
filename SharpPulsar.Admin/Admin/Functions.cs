@@ -22,15 +22,15 @@ using System.Collections.Generic;
 namespace org.apache.pulsar.client.admin
 {
 
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using FunctionState = org.apache.pulsar.common.functions.FunctionState;
-	using UpdateOptions = org.apache.pulsar.common.functions.UpdateOptions;
-	using ConnectorDefinition = org.apache.pulsar.common.io.ConnectorDefinition;
-	using FunctionStats = org.apache.pulsar.common.policies.data.FunctionStats;
-	using FunctionConfig = org.apache.pulsar.common.functions.FunctionConfig;
-	using FunctionStatus = org.apache.pulsar.common.policies.data.FunctionStatus;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using FunctionState = pulsar.common.functions.FunctionState;
+	using UpdateOptions = pulsar.common.functions.UpdateOptions;
+	using ConnectorDefinition = pulsar.common.io.ConnectorDefinition;
+	using FunctionStats = pulsar.common.policies.data.FunctionStats;
+	using FunctionConfig = pulsar.common.functions.FunctionConfig;
+	using FunctionStatus = pulsar.common.policies.data.FunctionStatus;
 
 	/// <summary>
 	/// Admin interface for function management.

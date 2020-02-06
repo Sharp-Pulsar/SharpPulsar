@@ -18,10 +18,10 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl.schema
 {
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using GenericAvroSchema = org.apache.pulsar.client.impl.schema.generic.GenericAvroSchema;
-	using MultiVersionSchemaInfoProvider = org.apache.pulsar.client.impl.schema.generic.MultiVersionSchemaInfoProvider;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using SchemaDefinition = api.schema.SchemaDefinition;
+	using GenericAvroSchema = generic.GenericAvroSchema;
+	using MultiVersionSchemaInfoProvider = generic.MultiVersionSchemaInfoProvider;
+	using SchemaInfo = common.schema.SchemaInfo;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;
 	using Test = org.testng.annotations.Test;
 

@@ -18,9 +18,9 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl
 {
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ServiceUrlProvider = org.apache.pulsar.client.api.ServiceUrlProvider;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
+	using ServiceUrlProvider = api.ServiceUrlProvider;
 	using Test = org.testng.annotations.Test;
 
 	public class ClientBuilderImplTest

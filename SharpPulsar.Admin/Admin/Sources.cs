@@ -20,13 +20,13 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using UpdateOptions = org.apache.pulsar.common.functions.UpdateOptions;
-	using ConnectorDefinition = org.apache.pulsar.common.io.ConnectorDefinition;
-	using SourceConfig = org.apache.pulsar.common.io.SourceConfig;
-	using SourceStatus = org.apache.pulsar.common.policies.data.SourceStatus;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using UpdateOptions = pulsar.common.functions.UpdateOptions;
+	using ConnectorDefinition = pulsar.common.io.ConnectorDefinition;
+	using SourceConfig = pulsar.common.io.SourceConfig;
+	using SourceStatus = pulsar.common.policies.data.SourceStatus;
 
 	/// <summary>
 	/// Admin interface for Source management.

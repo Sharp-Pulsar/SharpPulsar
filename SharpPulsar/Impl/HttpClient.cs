@@ -27,10 +27,10 @@ namespace SharpPulsar.Impl
 	using HttpResponse = io.netty.handler.codec.http.HttpResponse;
 	using SslContext = io.netty.handler.ssl.SslContext;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Authentication = SharpPulsar.Api.Authentication;
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using NotFoundException = SharpPulsar.Api.PulsarClientException.NotFoundException;
+	using Authentication = Api.Authentication;
+	using IAuthenticationDataProvider = Api.IAuthenticationDataProvider;
+	using PulsarClientException = Api.PulsarClientException;
+	using NotFoundException = Api.PulsarClientException.NotFoundException;
 	using ObjectMapperFactory = Org.Apache.Pulsar.Common.Util.ObjectMapperFactory;
 	using SecurityUtility = Org.Apache.Pulsar.Common.Util.SecurityUtility;
 	using AsyncHttpClient = org.asynchttpclient.AsyncHttpClient;
@@ -44,8 +44,8 @@ namespace SharpPulsar.Impl
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class HttpClient implements java.io.Closeable
-	public class HttpClient : System.IDisposable
-	{
+	public class HttpClient : IDisposable
+    {
 
 		protected internal const int DefaultConnectTimeoutInSeconds = 10;
 		protected internal const int DefaultReadTimeoutInSeconds = 30;

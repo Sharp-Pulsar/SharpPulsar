@@ -25,8 +25,8 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using GenericDatumWriter = org.apache.avro.generic.GenericDatumWriter;
 	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
 	using EncoderFactory = org.apache.avro.io.EncoderFactory;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	public class GenericAvroWriter : ISchemaWriter<IGenericRecord>

@@ -21,9 +21,9 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
+	using Authentication = client.api.Authentication;
+	using PulsarClientException = client.api.PulsarClientException;
+	using UnsupportedAuthenticationException = client.api.PulsarClientException.UnsupportedAuthenticationException;
 
 	/// <summary>
 	/// Builder class for a <seealso cref="PulsarAdmin"/> instance.

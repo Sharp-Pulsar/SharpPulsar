@@ -50,7 +50,7 @@ namespace SharpPulsar.Util
 	public sealed class FieldParser
 	{
 
-		private static readonly IDictionary<string, System.Reflection.MethodInfo> CONVERTERS = new Dictionary<string, System.Reflection.MethodInfo>();
+		private static readonly IDictionary<string, MethodInfo> CONVERTERS = new Dictionary<string, MethodInfo>();
 		private static readonly IDictionary<Type, Type> WRAPPER_TYPES = new Dictionary<Type, Type>();
 
 		static FieldParser()
@@ -94,7 +94,7 @@ namespace SharpPulsar.Util
 			// Lookup the suitable converter.
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
 			string converterId = from.GetType().FullName + "_" + to.FullName;
-			System.Reflection.MethodInfo converter = CONVERTERS[converterId];
+            MethodInfo converter = CONVERTERS[converterId];
 
 			if (to.IsEnum)
 			{
@@ -113,7 +113,7 @@ namespace SharpPulsar.Util
 			if (converter == null)
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.NotSupportedException("Cannot convert from " + from.GetType().FullName + " to " + to.FullName + ". Requested converter does not exist.");
+				throw new NotSupportedException("Cannot convert from " + from.GetType().FullName + " to " + to.FullName + ". Requested converter does not exist.");
 			}
 
 			// Convert the value.
@@ -142,7 +142,7 @@ namespace SharpPulsar.Util
 //ORIGINAL LINE: public static <T> void update(java.util.Map<String, String> properties, T obj) throws IllegalArgumentException
 		public static void update<T>(IDictionary<string, string> properties, T obj)
 		{
-			System.Reflection.FieldInfo[] fields = obj.GetType().GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            FieldInfo[] fields = obj.GetType().GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 			java.util.fields.ForEach(f =>
 			{
 			if (properties.ContainsKey(f.Name))
@@ -162,7 +162,7 @@ namespace SharpPulsar.Util
 				}
 				catch (Exception e)
 				{
-					throw new System.ArgumentException(format("failed to initialize %s field while setting value %s", f.Name, properties[f.Name]), e);
+					throw new ArgumentException(format("failed to initialize %s field while setting value %s", f.Name, properties[f.Name]), e);
 				}
 			}
 			});
@@ -176,7 +176,7 @@ namespace SharpPulsar.Util
 		/// <param name="field">
 		///            : field of the attribute
 		/// @return </param>
-		public static object value(string strValue, System.Reflection.FieldInfo field)
+		public static object value(string strValue, FieldInfo field)
 		{
 			checkNotNull(field);
 			// if field is not primitive type
@@ -204,13 +204,13 @@ namespace SharpPulsar.Util
 					Type typeClazz = ((ParameterizedType) fieldType).ActualTypeArguments[0];
 					if (typeClazz is ParameterizedType)
 					{
-						throw new System.ArgumentException(format("unsupported non-primitive Optional<%s> for %s", typeClazz.GetType(), field.Name));
+						throw new ArgumentException(format("unsupported non-primitive Optional<%s> for %s", typeClazz.GetType(), field.Name));
 					}
 					return Optional.ofNullable(convert(strValue, (Type) typeClazz));
 				}
 				else
 				{
-					throw new System.ArgumentException(format("unsupported field-type %s for %s", field.Type, field.Name));
+					throw new ArgumentException(format("unsupported field-type %s for %s", field.Type, field.Name));
 				}
 			}
 			else
@@ -229,7 +229,7 @@ namespace SharpPulsar.Util
 		/// <exception cref="IllegalAccessException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: public static <T> void setEmptyValue(String strValue, Field field, T obj) throws IllegalArgumentException, IllegalAccessException
-		public static void setEmptyValue<T>(string strValue, System.Reflection.FieldInfo field, T obj)
+		public static void setEmptyValue<T>(string strValue, FieldInfo field, T obj)
 		{
 			checkNotNull(field);
 			// if field is not primitive type
@@ -250,7 +250,7 @@ namespace SharpPulsar.Util
 				}
 				else
 				{
-					throw new System.ArgumentException(format("unsupported field-type %s for %s", field.Type, field.Name));
+					throw new ArgumentException(format("unsupported field-type %s for %s", field.Type, field.Name));
 				}
 			}
 			else if (field.Type.IsAssignableFrom(typeof(Number)) || fieldType.GetType().Equals(typeof(string)))
@@ -266,7 +266,7 @@ namespace SharpPulsar.Util
 
 		private static void initConverters()
 		{
-			System.Reflection.MethodInfo[] methods = typeof(FieldParser).GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            MethodInfo[] methods = typeof(FieldParser).GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 			java.util.methods.ForEach(method =>
 			{
 			if (method.ParameterTypes.length == 1)

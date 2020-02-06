@@ -19,7 +19,7 @@
 namespace org.apache.pulsar.client.admin.@internal.http
 {
 
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using ClientConfigurationData = client.impl.conf.ClientConfigurationData;
 	using Connector = org.glassfish.jersey.client.spi.Connector;
 	using ConnectorProvider = org.glassfish.jersey.client.spi.ConnectorProvider;
 

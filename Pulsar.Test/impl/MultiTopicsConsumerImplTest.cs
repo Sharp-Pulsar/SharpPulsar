@@ -23,9 +23,9 @@ namespace org.apache.pulsar.client.impl
 	using Sets = com.google.common.collect.Sets;
 	using EventLoopGroup = io.netty.channel.EventLoopGroup;
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using ClientConfigurationData = conf.ClientConfigurationData;
 	using org.apache.pulsar.client.impl.conf;
-	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
+	using EventLoopUtil = common.util.netty.EventLoopUtil;
 	using Test = org.testng.annotations.Test;
 
 

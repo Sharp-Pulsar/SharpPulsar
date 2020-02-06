@@ -21,7 +21,7 @@ namespace SharpPulsar.Impl
 	using DigestUtils = org.apache.commons.codec.digest.DigestUtils;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using SharpPulsar.Api;
-	using SubscriptionMode = SharpPulsar.Impl.ConsumerImpl.SubscriptionMode;
+	using SubscriptionMode = Impl.ConsumerImpl.SubscriptionMode;
 	using SharpPulsar.Impl.Conf;
 	using SharpPulsar.Impl.Conf;
 	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;

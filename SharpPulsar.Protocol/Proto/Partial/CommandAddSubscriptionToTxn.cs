@@ -458,7 +458,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureSubscriptionIsMutable();
 				Subscription_[Index] = Value;
@@ -476,7 +476,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureSubscriptionIsMutable();
 				Subscription_.Add(Value);
@@ -487,7 +487,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureSubscriptionIsMutable();
 				Subscription_.Insert(Index, Value);

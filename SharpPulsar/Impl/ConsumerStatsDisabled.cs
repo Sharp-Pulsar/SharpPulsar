@@ -21,7 +21,7 @@
 namespace SharpPulsar.Impl
 {
 
-	using ConsumerStats = SharpPulsar.Api.ConsumerStats;
+	using ConsumerStats = Api.ConsumerStats;
 	using SharpPulsar.Api;
 
 	using Timeout = io.netty.util.Timeout;

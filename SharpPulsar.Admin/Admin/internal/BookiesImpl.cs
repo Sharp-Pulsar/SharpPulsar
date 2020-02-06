@@ -21,10 +21,10 @@
 namespace org.apache.pulsar.client.admin.@internal
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using BookieInfo = org.apache.pulsar.common.policies.data.BookieInfo;
-	using BookiesRackConfiguration = org.apache.pulsar.common.policies.data.BookiesRackConfiguration;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
+	using Authentication = client.api.Authentication;
+	using BookieInfo = pulsar.common.policies.data.BookieInfo;
+	using BookiesRackConfiguration = pulsar.common.policies.data.BookiesRackConfiguration;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
 
 	public class BookiesImpl : BaseResource, Bookies
 	{

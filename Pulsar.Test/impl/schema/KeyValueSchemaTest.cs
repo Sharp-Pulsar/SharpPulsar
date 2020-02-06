@@ -25,15 +25,15 @@ namespace org.apache.pulsar.client.impl.schema
 
 	using Maps = com.google.common.collect.Maps;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using Bar = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Bar;
-	using Color = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Color;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using Schema = api.Schema;
+	using SchemaSerializationException = api.SchemaSerializationException;
+	using SchemaDefinition = api.schema.SchemaDefinition;
+	using Bar = SchemaTestUtils.Bar;
+	using Color = SchemaTestUtils.Color;
+	using Foo = SchemaTestUtils.Foo;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
+	using SchemaType = common.schema.SchemaType;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 

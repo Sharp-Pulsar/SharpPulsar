@@ -22,9 +22,9 @@ using System.Collections.Generic;
 namespace org.apache.pulsar.client.admin.@internal
 {
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using WorkerInfo = org.apache.pulsar.common.functions.WorkerInfo;
-	using WorkerFunctionInstanceStats = org.apache.pulsar.common.policies.data.WorkerFunctionInstanceStats;
+	using Authentication = client.api.Authentication;
+	using WorkerInfo = pulsar.common.functions.WorkerInfo;
+	using WorkerFunctionInstanceStats = pulsar.common.policies.data.WorkerFunctionInstanceStats;
 
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -77,7 +77,7 @@ namespace org.apache.pulsar.client.admin.@internal
 
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: @Override public java.util.Collection<org.apache.pulsar.common.stats.Metrics> getMetrics() throws org.apache.pulsar.client.admin.PulsarAdminException
-		public virtual ICollection<org.apache.pulsar.common.stats.Metrics> Metrics
+		public virtual ICollection<pulsar.common.stats.Metrics> Metrics
 		{
 			get
 			{
@@ -97,7 +97,7 @@ namespace org.apache.pulsar.client.admin.@internal
 			}
 		}
 
-		private class GenericTypeAnonymousInnerClass2 : GenericType<IList<org.apache.pulsar.common.stats.Metrics>>
+		private class GenericTypeAnonymousInnerClass2 : GenericType<IList<pulsar.common.stats.Metrics>>
 		{
 			private readonly WorkerImpl outerInstance;
 

@@ -33,14 +33,14 @@ namespace org.apache.pulsar.client.impl.schema.generic
 
 	using Lists = com.google.common.collect.Lists;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using GenericSchema = org.apache.pulsar.client.api.schema.GenericSchema;
+	using Schema = api.Schema;
+	using GenericRecord = api.schema.GenericRecord;
+	using GenericSchema = api.schema.GenericSchema;
 	using org.apache.pulsar.client.impl.schema;
-	using Bar = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Bar;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
+	using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

@@ -24,7 +24,7 @@ namespace SharpPulsar.Impl.Schema
 
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Api.Schema;
-	using IRecordSchemaBuilder = SharpPulsar.Api.Schema.IRecordSchemaBuilder;
+	using IRecordSchemaBuilder = Api.Schema.IRecordSchemaBuilder;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 

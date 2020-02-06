@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿// ReSharper disable All
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,23 +19,21 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
-	using IGenericRecordBuilder = SharpPulsar.Api.Schema.IGenericRecordBuilder;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
+	using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
 
 	/// <summary>
-	/// Builder to build <seealso cref="SharpPulsar.api.schema.GenericRecord"/>.
+	/// Builder to build <seealso cref="IGenericRecord"/>.
 	/// </summary>
 	public class AvroRecordBuilderImpl : IGenericRecordBuilder
 	{
 
 		private readonly GenericSchemaImpl genericSchema;
-		private readonly org.apache.avro.generic.GenericRecordBuilder avroRecordBuilder;
 
 		public AvroRecordBuilderImpl(GenericSchemaImpl GenericSchema)
 		{
 			this.genericSchema = GenericSchema;
-			this.avroRecordBuilder = new org.apache.avro.generic.GenericRecordBuilder(GenericSchema.AvroSchema);
 		}
 
 		/// <summary>
@@ -43,13 +42,13 @@ namespace SharpPulsar.Impl.Schema.Generic
 		/// <param name="fieldName"> the name of the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		public override IGenericRecordBuilder Set(string FieldName, object Value)
+		public IGenericRecordBuilder Set(string fieldName, object value)
 		{
-			if (Value is IGenericRecord)
+			if (value is IGenericRecord)
 			{
-				if (Value is GenericAvroRecord)
+				if (value is GenericAvroRecord)
 				{
-					avroRecordBuilder.set(FieldName, ((GenericAvroRecord)Value).AvroRecord);
+					AvroRecordBuilderImpl.set(FieldName, ((GenericAvroRecord)value).AvroRecord);
 				}
 				else
 				{
@@ -133,7 +132,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			return this;
 		}
 
-		public override IGenericRecord Build()
+		public IGenericRecord Build()
 		{
 			return new GenericAvroRecord(null, genericSchema.AvroSchema, genericSchema.Fields, avroRecordBuilder.build());
 		}

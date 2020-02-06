@@ -24,9 +24,9 @@ namespace SharpPulsar.Impl
 //	import static SharpPulsar.util.MathUtils.signSafeMod;
 
 
-	using HashingScheme = SharpPulsar.Api.HashingScheme;
+	using HashingScheme = Api.HashingScheme;
 	using SharpPulsar.Api;
-	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
+	using TopicMetadata = Api.TopicMetadata;
 
 	/// <summary>
 	/// The routing strategy here:

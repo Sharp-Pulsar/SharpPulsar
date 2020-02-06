@@ -23,19 +23,19 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using DeleteSchemaResponse = org.apache.pulsar.common.protocol.schema.DeleteSchemaResponse;
-	using GetAllVersionsSchemaResponse = org.apache.pulsar.common.protocol.schema.GetAllVersionsSchemaResponse;
-	using GetSchemaResponse = org.apache.pulsar.common.protocol.schema.GetSchemaResponse;
-	using IsCompatibilityResponse = org.apache.pulsar.common.protocol.schema.IsCompatibilityResponse;
-	using LongSchemaVersionResponse = org.apache.pulsar.common.protocol.schema.LongSchemaVersionResponse;
-	using PostSchemaPayload = org.apache.pulsar.common.protocol.schema.PostSchemaPayload;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaInfoWithVersion = org.apache.pulsar.common.schema.SchemaInfoWithVersion;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using Authentication = client.api.Authentication;
+	using DefaultImplementation = client.@internal.DefaultImplementation;
+	using TopicName = pulsar.common.naming.TopicName;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using DeleteSchemaResponse = pulsar.common.protocol.schema.DeleteSchemaResponse;
+	using GetAllVersionsSchemaResponse = pulsar.common.protocol.schema.GetAllVersionsSchemaResponse;
+	using GetSchemaResponse = pulsar.common.protocol.schema.GetSchemaResponse;
+	using IsCompatibilityResponse = pulsar.common.protocol.schema.IsCompatibilityResponse;
+	using LongSchemaVersionResponse = pulsar.common.protocol.schema.LongSchemaVersionResponse;
+	using PostSchemaPayload = pulsar.common.protocol.schema.PostSchemaPayload;
+	using SchemaInfo = pulsar.common.schema.SchemaInfo;
+	using SchemaInfoWithVersion = pulsar.common.schema.SchemaInfoWithVersion;
+	using SchemaType = pulsar.common.schema.SchemaType;
 
 
 	public class SchemasImpl : BaseResource, Schemas

@@ -25,21 +25,21 @@ namespace org.apache.pulsar.common.schema
 //	import static org.testng.Assert.assertEquals;
 
 	using Unpooled = io.netty.buffer.Unpooled;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using BooleanSchema = org.apache.pulsar.client.impl.schema.BooleanSchema;
-	using ByteBufSchema = org.apache.pulsar.client.impl.schema.ByteBufSchema;
-	using ByteBufferSchema = org.apache.pulsar.client.impl.schema.ByteBufferSchema;
-	using ByteSchema = org.apache.pulsar.client.impl.schema.ByteSchema;
-	using BytesSchema = org.apache.pulsar.client.impl.schema.BytesSchema;
-	using DateSchema = org.apache.pulsar.client.impl.schema.DateSchema;
-	using DoubleSchema = org.apache.pulsar.client.impl.schema.DoubleSchema;
-	using FloatSchema = org.apache.pulsar.client.impl.schema.FloatSchema;
-	using IntSchema = org.apache.pulsar.client.impl.schema.IntSchema;
-	using LongSchema = org.apache.pulsar.client.impl.schema.LongSchema;
-	using ShortSchema = org.apache.pulsar.client.impl.schema.ShortSchema;
-	using StringSchema = org.apache.pulsar.client.impl.schema.StringSchema;
-	using TimeSchema = org.apache.pulsar.client.impl.schema.TimeSchema;
-	using TimestampSchema = org.apache.pulsar.client.impl.schema.TimestampSchema;
+	using Schema = client.api.Schema;
+	using BooleanSchema = client.impl.schema.BooleanSchema;
+	using ByteBufSchema = client.impl.schema.ByteBufSchema;
+	using ByteBufferSchema = client.impl.schema.ByteBufferSchema;
+	using ByteSchema = client.impl.schema.ByteSchema;
+	using BytesSchema = client.impl.schema.BytesSchema;
+	using DateSchema = client.impl.schema.DateSchema;
+	using DoubleSchema = client.impl.schema.DoubleSchema;
+	using FloatSchema = client.impl.schema.FloatSchema;
+	using IntSchema = client.impl.schema.IntSchema;
+	using LongSchema = client.impl.schema.LongSchema;
+	using ShortSchema = client.impl.schema.ShortSchema;
+	using StringSchema = client.impl.schema.StringSchema;
+	using TimeSchema = client.impl.schema.TimeSchema;
+	using TimestampSchema = client.impl.schema.TimestampSchema;
 	using DataProvider = org.testng.annotations.DataProvider;
 	using Test = org.testng.annotations.Test;
 

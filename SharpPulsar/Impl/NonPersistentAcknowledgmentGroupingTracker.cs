@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 
 	/// <summary>

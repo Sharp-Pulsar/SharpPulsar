@@ -18,9 +18,9 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using ResourceQuota = org.apache.pulsar.common.policies.data.ResourceQuota;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using ResourceQuota = pulsar.common.policies.data.ResourceQuota;
 
 	public interface ResourceQuotas
 	{

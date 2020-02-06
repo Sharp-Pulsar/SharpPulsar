@@ -27,8 +27,8 @@ using System.Threading;
 namespace SharpPulsar.Impl
 {
 
-	public class UnAckedMessageTracker<T> : System.IDisposable
-	{
+	public class UnAckedMessageTracker<T> : IDisposable
+    {
 		private static readonly Logger log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
 
 		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>> MessageIdPartitionMap;

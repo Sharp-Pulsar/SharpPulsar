@@ -428,7 +428,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000001;
 				_clientVersion = Value;
@@ -455,7 +455,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000002;
 				_authMethod = Value;
@@ -484,7 +484,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000004;
 				_authMethodName = Value;
@@ -511,7 +511,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000008;
 				_authData = value;
@@ -568,7 +568,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000020;
 				_proxyToBrokerUrl = Value;
@@ -597,7 +597,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000040;
 				_originalPrincipal = Value;
@@ -626,7 +626,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000080;
 				Original_authData = Value;
@@ -655,7 +655,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000100;
 				Original_authMethod = Value;

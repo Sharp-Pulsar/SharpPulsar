@@ -33,8 +33,8 @@ namespace org.apache.pulsar.client.impl
 
 
 	using org.apache.pulsar.client.impl.conf;
-	using AckType = org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
-	using ProtocolVersion = org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion;
+	using AckType = common.api.proto.PulsarApi.CommandAck.AckType;
+	using ProtocolVersion = common.api.proto.PulsarApi.ProtocolVersion;
 	using AfterClass = org.testng.annotations.AfterClass;
 	using BeforeClass = org.testng.annotations.BeforeClass;
 	using Test = org.testng.annotations.Test;

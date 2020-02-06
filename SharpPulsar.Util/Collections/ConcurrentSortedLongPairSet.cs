@@ -22,8 +22,8 @@ using System.Text;
 namespace SharpPulsar.Util.Collections
 {
 
-	using LongPair = SharpPulsar.Util.collections.ConcurrentLongPairSet.LongPair;
-	using LongPairConsumer = SharpPulsar.Util.collections.ConcurrentLongPairSet.LongPairConsumer;
+	using LongPair = Util.collections.ConcurrentLongPairSet.LongPair;
+	using LongPairConsumer = Util.collections.ConcurrentLongPairSet.LongPairConsumer;
 
 	/// <summary>
 	/// Sorted concurrent <seealso cref="LongPairSet"/> which is not fully accurate in sorting.

@@ -23,30 +23,30 @@ namespace org.apache.pulsar.client.admin
 {
 
 
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using BookiesImpl = org.apache.pulsar.client.admin.@internal.BookiesImpl;
-	using BrokerStatsImpl = org.apache.pulsar.client.admin.@internal.BrokerStatsImpl;
-	using BrokersImpl = org.apache.pulsar.client.admin.@internal.BrokersImpl;
-	using ClustersImpl = org.apache.pulsar.client.admin.@internal.ClustersImpl;
-	using FunctionsImpl = org.apache.pulsar.client.admin.@internal.FunctionsImpl;
-	using JacksonConfigurator = org.apache.pulsar.client.admin.@internal.JacksonConfigurator;
-	using LookupImpl = org.apache.pulsar.client.admin.@internal.LookupImpl;
-	using NamespacesImpl = org.apache.pulsar.client.admin.@internal.NamespacesImpl;
-	using NonPersistentTopicsImpl = org.apache.pulsar.client.admin.@internal.NonPersistentTopicsImpl;
-	using PulsarAdminBuilderImpl = org.apache.pulsar.client.admin.@internal.PulsarAdminBuilderImpl;
-	using ResourceQuotasImpl = org.apache.pulsar.client.admin.@internal.ResourceQuotasImpl;
-	using SchemasImpl = org.apache.pulsar.client.admin.@internal.SchemasImpl;
-	using SinksImpl = org.apache.pulsar.client.admin.@internal.SinksImpl;
-	using SourcesImpl = org.apache.pulsar.client.admin.@internal.SourcesImpl;
-	using TenantsImpl = org.apache.pulsar.client.admin.@internal.TenantsImpl;
-	using TopicsImpl = org.apache.pulsar.client.admin.@internal.TopicsImpl;
-	using WorkerImpl = org.apache.pulsar.client.admin.@internal.WorkerImpl;
-	using AsyncHttpConnectorProvider = org.apache.pulsar.client.admin.@internal.http.AsyncHttpConnectorProvider;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationFactory = org.apache.pulsar.client.api.AuthenticationFactory;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using AuthenticationDisabled = org.apache.pulsar.client.impl.auth.AuthenticationDisabled;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using StringUtils = apache.commons.lang3.StringUtils;
+	using BookiesImpl = @internal.BookiesImpl;
+	using BrokerStatsImpl = @internal.BrokerStatsImpl;
+	using BrokersImpl = @internal.BrokersImpl;
+	using ClustersImpl = @internal.ClustersImpl;
+	using FunctionsImpl = @internal.FunctionsImpl;
+	using JacksonConfigurator = @internal.JacksonConfigurator;
+	using LookupImpl = @internal.LookupImpl;
+	using NamespacesImpl = @internal.NamespacesImpl;
+	using NonPersistentTopicsImpl = @internal.NonPersistentTopicsImpl;
+	using PulsarAdminBuilderImpl = @internal.PulsarAdminBuilderImpl;
+	using ResourceQuotasImpl = @internal.ResourceQuotasImpl;
+	using SchemasImpl = @internal.SchemasImpl;
+	using SinksImpl = @internal.SinksImpl;
+	using SourcesImpl = @internal.SourcesImpl;
+	using TenantsImpl = @internal.TenantsImpl;
+	using TopicsImpl = @internal.TopicsImpl;
+	using WorkerImpl = @internal.WorkerImpl;
+	using AsyncHttpConnectorProvider = @internal.http.AsyncHttpConnectorProvider;
+	using Authentication = client.api.Authentication;
+	using AuthenticationFactory = client.api.AuthenticationFactory;
+	using PulsarClientException = client.api.PulsarClientException;
+	using AuthenticationDisabled = client.impl.auth.AuthenticationDisabled;
+	using ClientConfigurationData = client.impl.conf.ClientConfigurationData;
 	using AsyncHttpClient = org.asynchttpclient.AsyncHttpClient;
 	using ClientConfig = org.glassfish.jersey.client.ClientConfig;
 	using ClientProperties = org.glassfish.jersey.client.ClientProperties;
@@ -61,8 +61,8 @@ namespace org.apache.pulsar.client.admin
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("deprecation") public class PulsarAdmin implements java.io.Closeable
-	public class PulsarAdmin : System.IDisposable
-	{
+	public class PulsarAdmin : IDisposable
+    {
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(PulsarAdmin));
 
 		public const int DEFAULT_CONNECT_TIMEOUT_SECONDS = 60;

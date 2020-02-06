@@ -647,7 +647,7 @@ namespace SharpPulsar.Impl
 				Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMandatoryStop(OpTimeoutMs.Get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).Create();
 				GetPartitionedTopicMetadata(TopicName, Backoff, OpTimeoutMs, metadataTask);
 			}
-			catch (System.ArgumentException e)
+			catch (ArgumentException e)
 			{
 				return new ValueTask<PartitionedTopicMetadata>(Task.FromException<PartitionedTopicMetadata>(new PulsarClientException.InvalidConfigurationException(e.Message)));
 			}

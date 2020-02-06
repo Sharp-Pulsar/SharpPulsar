@@ -21,8 +21,8 @@
 namespace SharpPulsar.Util.Collections
 {
 
-	using LongPair = SharpPulsar.Util.collections.ConcurrentLongPairSet.LongPair;
-	using LongPairConsumer = SharpPulsar.Util.collections.ConcurrentLongPairSet.LongPairConsumer;
+	using LongPair = Util.collections.ConcurrentLongPairSet.LongPair;
+	using LongPairConsumer = Util.collections.ConcurrentLongPairSet.LongPairConsumer;
 
 	/// <summary>
 	/// Hash set where values are composed of pairs of longs.

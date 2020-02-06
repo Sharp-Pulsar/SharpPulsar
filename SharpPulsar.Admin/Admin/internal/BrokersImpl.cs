@@ -23,11 +23,11 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using InternalConfigurationData = org.apache.pulsar.common.conf.InternalConfigurationData;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using NamespaceOwnershipStatus = org.apache.pulsar.common.policies.data.NamespaceOwnershipStatus;
-	using Codec = org.apache.pulsar.common.util.Codec;
+	using Authentication = client.api.Authentication;
+	using InternalConfigurationData = pulsar.common.conf.InternalConfigurationData;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using NamespaceOwnershipStatus = pulsar.common.policies.data.NamespaceOwnershipStatus;
+	using Codec = pulsar.common.util.Codec;
 
 	public class BrokersImpl : BaseResource, Brokers
 	{

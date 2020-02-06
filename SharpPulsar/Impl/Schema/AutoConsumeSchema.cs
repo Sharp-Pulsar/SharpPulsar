@@ -26,11 +26,11 @@ namespace SharpPulsar.Impl.Schema
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using SharpPulsar.Api;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
-	using ISchemaInfoProvider = SharpPulsar.Api.Schema.ISchemaInfoProvider;
-	using GenericSchemaImpl = SharpPulsar.Impl.Schema.Generic.GenericSchemaImpl;
+	using ISchemaInfoProvider = Api.Schema.ISchemaInfoProvider;
+	using GenericSchemaImpl = Generic.GenericSchemaImpl;
 	using Org.Apache.Pulsar.Common.Schema;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
@@ -207,7 +207,7 @@ namespace SharpPulsar.Impl.Schema
 					ISchema<object> ValueSchema = GetSchema(KvSchemaInfo.Value);
 					return KeyValueSchema.Of(KeySchema, ValueSchema);
 				default:
-					throw new System.ArgumentException("Retrieve schema instance from schema info for type '" + SchemaInfo.Type + "' is not supported yet");
+					throw new ArgumentException("Retrieve schema instance from schema info for type '" + SchemaInfo.Type + "' is not supported yet");
 			}
 		}
 	}

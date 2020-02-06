@@ -20,9 +20,9 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl.auth
 {
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using Authentication = api.Authentication;
+	using AuthenticationDataProvider = api.AuthenticationDataProvider;
+	using PulsarClientException = api.PulsarClientException;
 
 
 	public class MockAuthentication : Authentication

@@ -451,7 +451,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties[Index] = Value;
@@ -463,7 +463,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties.Add(Value);
@@ -474,7 +474,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				_properties.Insert(Index, Value);
@@ -519,7 +519,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000002;
 				_partitionKey = Value;
@@ -657,7 +657,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_bitField |= 0x00000040;
 				_orderingKey = Value;

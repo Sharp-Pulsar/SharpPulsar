@@ -21,11 +21,11 @@
 namespace org.apache.pulsar.client.admin.@internal
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using AllocatorStats = org.apache.pulsar.common.stats.AllocatorStats;
-	using LoadManagerReport = org.apache.pulsar.policies.data.loadbalancer.LoadManagerReport;
-	using LocalBrokerData = org.apache.pulsar.policies.data.loadbalancer.LocalBrokerData;
+	using Authentication = client.api.Authentication;
+	using NamespaceName = pulsar.common.naming.NamespaceName;
+	using AllocatorStats = pulsar.common.stats.AllocatorStats;
+	using LoadManagerReport = pulsar.policies.data.loadbalancer.LoadManagerReport;
+	using LocalBrokerData = pulsar.policies.data.loadbalancer.LocalBrokerData;
 
 	using Gson = com.google.gson.Gson;
 	using JsonArray = com.google.gson.JsonArray;

@@ -22,7 +22,7 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
 	using Getter = lombok.Getter;
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using NotImplementedException = sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 	/// <summary>
@@ -60,7 +60,7 @@ namespace SharpPulsar.Impl
 			if (!(O is MultiMessageIdImpl))
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected MultiMessageIdImpl object. Got instance of " + O.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + O.GetType().FullName);
 			}
 
 			MultiMessageIdImpl Other = (MultiMessageIdImpl) O;
@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 
 			if (OtherMap == null || map == null || OtherMap.Count != map.Count)
 			{
-				throw new System.ArgumentException("Current size and other size not equals");
+				throw new ArgumentException("Current size and other size not equals");
 			}
 
 			int Result = 0;
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
 				IMessageId OtherMessage = OtherMap[Entry.Key];
 				if (OtherMessage == null)
 				{
-					throw new System.ArgumentException("Other MessageId not have topic " + Entry.Key);
+					throw new ArgumentException("Other MessageId not have topic " + Entry.Key);
 				}
 
 				int CurrentResult = Entry.Value.compareTo(OtherMessage);
@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 				}
 				else if (Result != CurrentResult)
 				{
-					throw new System.ArgumentException("Different MessageId in Map get different compare result");
+					throw new ArgumentException("Different MessageId in Map get different compare result");
 				}
 				else
 				{
@@ -112,7 +112,7 @@ namespace SharpPulsar.Impl
 			if (!(Obj is MultiMessageIdImpl))
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected MultiMessageIdImpl object. Got instance of " + Obj.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + Obj.GetType().FullName);
 			}
 
 			MultiMessageIdImpl Other = (MultiMessageIdImpl) Obj;
@@ -121,7 +121,7 @@ namespace SharpPulsar.Impl
 			{
 				return CompareTo(Other) == 0;
 			}
-			catch (System.ArgumentException)
+			catch (ArgumentException)
 			{
 				return false;
 			}

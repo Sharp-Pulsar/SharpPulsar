@@ -343,7 +343,7 @@ namespace SharpPulsar.Protocol.Proto
                         case 32:
                             {
                                 int RawValue = input.ReadEnum();
-                                Schema.Types.Type Value = Enum.GetValues(typeof(Types.Type)).Cast<Types.Type>().ToList()[RawValue];
+                                Types.Type Value = Enum.GetValues(typeof(Types.Type)).Cast<Types.Type>().ToList()[RawValue];
                                 if (Value != null)
                                 {
                                     _bitField |= 0x00000004;
@@ -459,7 +459,7 @@ namespace SharpPulsar.Protocol.Proto
             {
                 if (value == null)
                 {
-                    throw new System.NullReferenceException();
+                    throw new NullReferenceException();
                 }
                 _bitField |= 0x00000004;
                 _type = value;
@@ -507,7 +507,7 @@ namespace SharpPulsar.Protocol.Proto
             {
                 if (Value == null)
                 {
-                    throw new System.NullReferenceException();
+                    throw new NullReferenceException();
                 }
                 EnsurePropertiesIsMutable();
                 _properties[Index] = Value;
@@ -519,7 +519,7 @@ namespace SharpPulsar.Protocol.Proto
             {
                 if (Value == null)
                 {
-                    throw new System.NullReferenceException();
+                    throw new NullReferenceException();
                 }
                 EnsurePropertiesIsMutable();
                 _properties.Add(Value);
@@ -530,7 +530,7 @@ namespace SharpPulsar.Protocol.Proto
             {
                 if (Value == null)
                 {
-                    throw new System.NullReferenceException();
+                    throw new NullReferenceException();
                 }
                 EnsurePropertiesIsMutable();
                 _properties.Insert(Index, Value);

@@ -19,8 +19,8 @@
 namespace SharpPulsar.Impl.Schema.Generic
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	public class GenericJsonWriter : ISchemaWriter<IGenericRecord>

@@ -21,18 +21,18 @@
 namespace SharpPulsar.Api
 {
 
-	/// <summary>
-	/// Opaque unique identifier of a single message
-	/// 
-	/// <para>The MessageId can be used to reference a specific message, for example when acknowledging, without having
-	/// to retain the message content in memory for an extended period of time.
-	/// 
-	/// </para>
-	/// <para>Message ids are <seealso cref="System.IComparable"/> and a bigger message id will imply that a message was published "after"
-	/// the other one.
-	/// </para>
-	/// </summary>
-	public interface IMessageId : IComparable<IMessageId>
+    /// <summary>
+    /// Opaque unique identifier of a single message
+    /// 
+    /// <para>The MessageId can be used to reference a specific message, for example when acknowledging, without having
+    /// to retain the message content in memory for an extended period of time.
+    /// 
+    /// </para>
+    /// <para>Message ids are <seealso cref="IComparable"/> and a bigger message id will imply that a message was published "after"
+    /// the other one.
+    /// </para>
+    /// </summary>
+    public interface IMessageId : IComparable<IMessageId>
 	{
 
 		/// <summary>

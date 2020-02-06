@@ -154,7 +154,7 @@ namespace SharpPulsar.Util.Collections
 			return getSection(h).put(key, value, (int) h, true, null);
 		}
 
-		public virtual V computeIfAbsent(long key, System.Func<long, V> provider)
+		public virtual V computeIfAbsent(long key, Func<long, V> provider)
 		{
 			checkNotNull(provider);
 			long h = hash(key);
@@ -318,7 +318,7 @@ namespace SharpPulsar.Util.Collections
 				}
 			}
 
-			internal V put(long key, V value, int keyHash, bool onlyIfAbsent, System.Func<long, V> valueProvider)
+			internal V put(long key, V value, int keyHash, bool onlyIfAbsent, Func<long, V> valueProvider)
 			{
 				int bucket = keyHash;
 

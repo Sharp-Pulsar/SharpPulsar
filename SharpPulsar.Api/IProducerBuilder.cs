@@ -477,18 +477,18 @@ namespace SharpPulsar.Api
 		/// <returns> the producer builder instance </returns>
 		IProducerBuilder<T> Properties(IDictionary<string, string> Properties);
 
-		
-		/// <summary>
-		/// Add a set of <seealso cref="SharpPulsar.Api.interceptor.ProducerInterceptor"/> to the producer.
-		/// 
-		/// <para>Interceptors can be used to trace the publish and acknowledgments operation happening in a producer.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="interceptors">
-		///            the list of interceptors to intercept the producer created by this builder. </param>
-		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors);
+
+        /// <summary>
+        /// Add a set of <seealso cref="Api.interceptor.ProducerInterceptor"/> to the producer.
+        /// 
+        /// <para>Interceptors can be used to trace the publish and acknowledgments operation happening in a producer.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="interceptors">
+        ///            the list of interceptors to intercept the producer created by this builder. </param>
+        /// <returns> the producer builder instance </returns>
+        IProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors);
 
 		/// <summary>
 		/// If enabled, partitioned producer will automatically discover new partitions at runtime. This is only applied on

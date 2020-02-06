@@ -20,8 +20,8 @@
 /// </summary>
 namespace org.apache.pulsar.client.api
 {
-	using MockEncodedAuthenticationParameterSupport = org.apache.pulsar.client.impl.auth.MockEncodedAuthenticationParameterSupport;
-	using MockAuthentication = org.apache.pulsar.client.impl.auth.MockAuthentication;
+	using MockEncodedAuthenticationParameterSupport = impl.auth.MockEncodedAuthenticationParameterSupport;
+	using MockAuthentication = impl.auth.MockAuthentication;
 
 	using Test = org.testng.annotations.Test;
 	using Assert = org.testng.Assert;

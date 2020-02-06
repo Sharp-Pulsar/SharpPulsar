@@ -22,23 +22,23 @@ using System.Collections.Generic;
 namespace org.apache.pulsar.client.admin
 {
 
-	using ConflictException = org.apache.pulsar.client.admin.PulsarAdminException.ConflictException;
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using AuthAction = org.apache.pulsar.common.policies.data.AuthAction;
-	using BacklogQuota = org.apache.pulsar.common.policies.data.BacklogQuota;
-	using BookieAffinityGroupData = org.apache.pulsar.common.policies.data.BookieAffinityGroupData;
-	using BundlesData = org.apache.pulsar.common.policies.data.BundlesData;
-	using DispatchRate = org.apache.pulsar.common.policies.data.DispatchRate;
-	using PersistencePolicies = org.apache.pulsar.common.policies.data.PersistencePolicies;
-	using Policies = org.apache.pulsar.common.policies.data.Policies;
-	using PublishRate = org.apache.pulsar.common.policies.data.PublishRate;
-	using RetentionPolicies = org.apache.pulsar.common.policies.data.RetentionPolicies;
-	using SchemaAutoUpdateCompatibilityStrategy = org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy;
-	using SchemaCompatibilityStrategy = org.apache.pulsar.common.policies.data.SchemaCompatibilityStrategy;
-	using SubscribeRate = org.apache.pulsar.common.policies.data.SubscribeRate;
-	using SubscriptionAuthMode = org.apache.pulsar.common.policies.data.SubscriptionAuthMode;
+	using ConflictException = PulsarAdminException.ConflictException;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using AuthAction = pulsar.common.policies.data.AuthAction;
+	using BacklogQuota = pulsar.common.policies.data.BacklogQuota;
+	using BookieAffinityGroupData = pulsar.common.policies.data.BookieAffinityGroupData;
+	using BundlesData = pulsar.common.policies.data.BundlesData;
+	using DispatchRate = pulsar.common.policies.data.DispatchRate;
+	using PersistencePolicies = pulsar.common.policies.data.PersistencePolicies;
+	using Policies = pulsar.common.policies.data.Policies;
+	using PublishRate = pulsar.common.policies.data.PublishRate;
+	using RetentionPolicies = pulsar.common.policies.data.RetentionPolicies;
+	using SchemaAutoUpdateCompatibilityStrategy = pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy;
+	using SchemaCompatibilityStrategy = pulsar.common.policies.data.SchemaCompatibilityStrategy;
+	using SubscribeRate = pulsar.common.policies.data.SubscribeRate;
+	using SubscriptionAuthMode = pulsar.common.policies.data.SubscriptionAuthMode;
 
 	/// <summary>
 	/// Admin interface for namespaces management
@@ -1612,49 +1612,49 @@ namespace org.apache.pulsar.client.admin
 //ORIGINAL LINE: void clearOffloadDeleteLag(String namespace) throws PulsarAdminException;
 		void clearOffloadDeleteLag(string @namespace);
 
-		/// <summary>
-		/// Get the strategy used to check the a new schema provided by a producer is compatible with the current schema
-		/// before it is installed.
-		/// 
-		/// <para>If this is
-		/// <seealso cref="org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled"/>,
-		/// then all new schemas provided via the producer are rejected, and schemas must be updated through the REST api.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="namespace"> The namespace in whose policy we are interested </param>
-		/// <returns> the strategy used to check compatibility </returns>
-		/// <exception cref="NotAuthorizedException">
-		///             Don't have admin permission </exception>
-		/// <exception cref="NotFoundException">
-		///             Namespace does not exist </exception>
-		/// <exception cref="PulsarAdminException">
-		///             Unexpected error </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Deprecated SchemaAutoUpdateCompatibilityStrategy getSchemaAutoUpdateCompatibilityStrategy(String namespace) throws PulsarAdminException;
-		[Obsolete]
+        /// <summary>
+        /// Get the strategy used to check the a new schema provided by a producer is compatible with the current schema
+        /// before it is installed.
+        /// 
+        /// <para>If this is
+        /// <seealso cref="pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled"/>,
+        /// then all new schemas provided via the producer are rejected, and schemas must be updated through the REST api.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="namespace"> The namespace in whose policy we are interested </param>
+        /// <returns> the strategy used to check compatibility </returns>
+        /// <exception cref="NotAuthorizedException">
+        ///             Don't have admin permission </exception>
+        /// <exception cref="NotFoundException">
+        ///             Namespace does not exist </exception>
+        /// <exception cref="PulsarAdminException">
+        ///             Unexpected error </exception>
+        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+        //ORIGINAL LINE: @Deprecated SchemaAutoUpdateCompatibilityStrategy getSchemaAutoUpdateCompatibilityStrategy(String namespace) throws PulsarAdminException;
+        [Obsolete]
 		SchemaAutoUpdateCompatibilityStrategy getSchemaAutoUpdateCompatibilityStrategy(string @namespace);
 
-		/// <summary>
-		/// Set the strategy used to check the a new schema provided by a producer is compatible with the current schema
-		/// before it is installed.
-		/// 
-		/// <para>To disable all new schema updates through the producer, set this to
-		/// <seealso cref="org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled"/>.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="namespace"> The namespace in whose policy should be set </param>
-		/// <param name="autoUpdate"> true if connecting producers can automatically update the schema, false otherwise </param>
-		/// <exception cref="NotAuthorizedException">
-		///             Don't have admin permission </exception>
-		/// <exception cref="NotFoundException">
-		///             Namespace does not exist </exception>
-		/// <exception cref="PulsarAdminException">
-		///             Unexpected error </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Deprecated void setSchemaAutoUpdateCompatibilityStrategy(String namespace, org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy strategy) throws PulsarAdminException;
-		[Obsolete]
+        /// <summary>
+        /// Set the strategy used to check the a new schema provided by a producer is compatible with the current schema
+        /// before it is installed.
+        /// 
+        /// <para>To disable all new schema updates through the producer, set this to
+        /// <seealso cref="pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled"/>.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="namespace"> The namespace in whose policy should be set </param>
+        /// <param name="autoUpdate"> true if connecting producers can automatically update the schema, false otherwise </param>
+        /// <exception cref="NotAuthorizedException">
+        ///             Don't have admin permission </exception>
+        /// <exception cref="NotFoundException">
+        ///             Namespace does not exist </exception>
+        /// <exception cref="PulsarAdminException">
+        ///             Unexpected error </exception>
+        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+        //ORIGINAL LINE: @Deprecated void setSchemaAutoUpdateCompatibilityStrategy(String namespace, org.apache.pulsar.common.policies.data.SchemaAutoUpdateCompatibilityStrategy strategy) throws PulsarAdminException;
+        [Obsolete]
 		void setSchemaAutoUpdateCompatibilityStrategy(string @namespace, SchemaAutoUpdateCompatibilityStrategy strategy);
 
 		/// <summary>

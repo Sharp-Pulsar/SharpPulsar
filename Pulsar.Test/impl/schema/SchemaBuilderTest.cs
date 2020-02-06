@@ -24,11 +24,11 @@ namespace org.apache.pulsar.client.impl.schema
 	using Data = lombok.Data;
 	using EqualsAndHashCode = lombok.EqualsAndHashCode;
 	using ToString = lombok.ToString;
-	using Nullable = org.apache.avro.reflect.Nullable;
-	using Schema = org.apache.pulsar.client.api.Schema;
+	using Nullable = apache.avro.reflect.Nullable;
+	using Schema = api.Schema;
 	using org.apache.pulsar.client.api.schema;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using SchemaInfo = common.schema.SchemaInfo;
+	using SchemaType = common.schema.SchemaType;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>
@@ -111,9 +111,9 @@ namespace org.apache.pulsar.client.impl.schema
 			Schema<AllOptionalFields> pojoSchema = Schema.AVRO(typeof(AllOptionalFields));
 			SchemaInfo pojoSchemaInfo = pojoSchema.SchemaInfo;
 
-			org.apache.avro.Schema avroSchema = (new org.apache.avro.Schema.Parser()).parse(new string(schemaInfo.Schema, UTF_8)
+            apache.avro.Schema avroSchema = (new apache.avro.Schema.Parser()).parse(new string(schemaInfo.Schema, UTF_8)
 		   );
-			org.apache.avro.Schema avroPojoSchema = (new org.apache.avro.Schema.Parser()).parse(new string(pojoSchemaInfo.Schema, UTF_8)
+            apache.avro.Schema avroPojoSchema = (new apache.avro.Schema.Parser()).parse(new string(pojoSchemaInfo.Schema, UTF_8)
 		   );
 
 			assertEquals(avroPojoSchema, avroSchema);
@@ -134,9 +134,9 @@ namespace org.apache.pulsar.client.impl.schema
 			Schema<AllPrimitiveFields> pojoSchema = Schema.AVRO(typeof(AllPrimitiveFields));
 			SchemaInfo pojoSchemaInfo = pojoSchema.SchemaInfo;
 
-			org.apache.avro.Schema avroSchema = (new org.apache.avro.Schema.Parser()).parse(new string(schemaInfo.Schema, UTF_8)
+            apache.avro.Schema avroSchema = (new apache.avro.Schema.Parser()).parse(new string(schemaInfo.Schema, UTF_8)
 		   );
-			org.apache.avro.Schema avroPojoSchema = (new org.apache.avro.Schema.Parser()).parse(new string(pojoSchemaInfo.Schema, UTF_8)
+            apache.avro.Schema avroPojoSchema = (new apache.avro.Schema.Parser()).parse(new string(pojoSchemaInfo.Schema, UTF_8)
 		   );
 
 			assertEquals(avroPojoSchema, avroSchema);

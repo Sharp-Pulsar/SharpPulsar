@@ -28,9 +28,9 @@ namespace SharpPulsar.Impl.Auth
 	{
 		public const string HTTP_HEADER_NAME = "Authorization";
 
-		private readonly System.Func<string> tokenSupplier;
+		private readonly Func<string> tokenSupplier;
 
-		public AuthenticationDataToken(System.Func<string> tokenSupplier)
+		public AuthenticationDataToken(Func<string> tokenSupplier)
 		{
 			this.tokenSupplier = tokenSupplier;
 		}

@@ -36,27 +36,27 @@ namespace org.apache.pulsar.client.admin.@internal
 
 
 
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using MessageIdImpl = org.apache.pulsar.client.impl.MessageIdImpl;
-	using MessageImpl = org.apache.pulsar.client.impl.MessageImpl;
-	using Commands = org.apache.pulsar.common.protocol.Commands;
-	using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using KeyValue = org.apache.pulsar.common.api.proto.PulsarApi.KeyValue;
-	using SingleMessageMetadata = org.apache.pulsar.common.api.proto.PulsarApi.SingleMessageMetadata;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using AuthAction = org.apache.pulsar.common.policies.data.AuthAction;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using PartitionedTopicInternalStats = org.apache.pulsar.common.policies.data.PartitionedTopicInternalStats;
-	using PartitionedTopicStats = org.apache.pulsar.common.policies.data.PartitionedTopicStats;
-	using PersistentTopicInternalStats = org.apache.pulsar.common.policies.data.PersistentTopicInternalStats;
-	using TopicStats = org.apache.pulsar.common.policies.data.TopicStats;
-	using Codec = org.apache.pulsar.common.util.Codec;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using Authentication = client.api.Authentication;
+	using Message = client.api.Message;
+	using MessageId = client.api.MessageId;
+	using Schema = client.api.Schema;
+	using MessageIdImpl = client.impl.MessageIdImpl;
+	using MessageImpl = client.impl.MessageImpl;
+	using Commands = pulsar.common.protocol.Commands;
+	using PulsarApi = pulsar.common.api.proto.PulsarApi;
+	using KeyValue = pulsar.common.api.proto.PulsarApi.KeyValue;
+	using SingleMessageMetadata = pulsar.common.api.proto.PulsarApi.SingleMessageMetadata;
+	using NamespaceName = pulsar.common.naming.NamespaceName;
+	using TopicName = pulsar.common.naming.TopicName;
+	using PartitionedTopicMetadata = pulsar.common.partition.PartitionedTopicMetadata;
+	using AuthAction = pulsar.common.policies.data.AuthAction;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using PartitionedTopicInternalStats = pulsar.common.policies.data.PartitionedTopicInternalStats;
+	using PartitionedTopicStats = pulsar.common.policies.data.PartitionedTopicStats;
+	using PersistentTopicInternalStats = pulsar.common.policies.data.PersistentTopicInternalStats;
+	using TopicStats = pulsar.common.policies.data.TopicStats;
+	using Codec = pulsar.common.util.Codec;
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 

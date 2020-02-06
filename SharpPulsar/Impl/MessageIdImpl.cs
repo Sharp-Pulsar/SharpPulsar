@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using Unpooled = io.netty.buffer.Unpooled;
 
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
 	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;
 	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
@@ -246,7 +246,7 @@ namespace SharpPulsar.Impl
 			else
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException("expected MessageIdImpl object. Got instance of " + O.GetType().FullName);
+				throw new ArgumentException("expected MessageIdImpl object. Got instance of " + O.GetType().FullName);
 			}
 		}
 	}

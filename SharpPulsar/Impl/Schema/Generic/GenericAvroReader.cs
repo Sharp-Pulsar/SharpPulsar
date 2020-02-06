@@ -27,9 +27,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using Decoder = org.apache.avro.io.Decoder;
 	using DecoderFactory = org.apache.avro.io.DecoderFactory;
 	using EncoderFactory = org.apache.avro.io.EncoderFactory;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;

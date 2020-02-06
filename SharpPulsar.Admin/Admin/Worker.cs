@@ -21,8 +21,8 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using WorkerInfo = org.apache.pulsar.common.functions.WorkerInfo;
-	using WorkerFunctionInstanceStats = org.apache.pulsar.common.policies.data.WorkerFunctionInstanceStats;
+	using WorkerInfo = pulsar.common.functions.WorkerInfo;
+	using WorkerFunctionInstanceStats = pulsar.common.policies.data.WorkerFunctionInstanceStats;
 
 	/// <summary>
 	/// Admin interface for worker stats management.
@@ -45,7 +45,7 @@ namespace org.apache.pulsar.client.admin
 		/// <exception cref="PulsarAdminException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: java.util.Collection<org.apache.pulsar.common.stats.Metrics> getMetrics() throws PulsarAdminException;
-		ICollection<org.apache.pulsar.common.stats.Metrics> Metrics {get;}
+		ICollection<pulsar.common.stats.Metrics> Metrics {get;}
 
 		/// <summary>
 		/// Get List of all workers belonging to this cluster

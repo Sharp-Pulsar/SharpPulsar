@@ -20,11 +20,11 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin.@internal
 {
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationFactory = org.apache.pulsar.client.api.AuthenticationFactory;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using UnsupportedAuthenticationException = org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using Authentication = client.api.Authentication;
+	using AuthenticationFactory = client.api.AuthenticationFactory;
+	using PulsarClientException = client.api.PulsarClientException;
+	using UnsupportedAuthenticationException = client.api.PulsarClientException.UnsupportedAuthenticationException;
+	using ClientConfigurationData = client.impl.conf.ClientConfigurationData;
 
 
 	public class PulsarAdminBuilderImpl : PulsarAdminBuilder

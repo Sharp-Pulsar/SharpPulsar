@@ -23,9 +23,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using SchemaSerializationException = Api.SchemaSerializationException;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;

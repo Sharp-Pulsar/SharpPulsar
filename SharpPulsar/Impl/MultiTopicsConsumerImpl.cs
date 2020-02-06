@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
 		private readonly ConsumerStatsRecorder stats;
 		public  UnAckedMessageTracker<T> UnAckedTopicMessageTracker;
 		private readonly ConsumerConfigurationData<T> internalConfig;
-		private HandlerState.State State = State.Closed;
+		private State State = State.Closed;
 
 		public MultiTopicsConsumerImpl(PulsarClientImpl Client, ConsumerConfigurationData<T> Conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : this(Client, DummyTopicNamePrefix + Util.ConsumerName.GenerateRandomName(), Conf, subscribeTask, Schema, Interceptors, CreateTopicIfDoesNotExist)
 		{

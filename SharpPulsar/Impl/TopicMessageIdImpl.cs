@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 
 	[Serializable]
 	public class TopicMessageIdImpl : IMessageId

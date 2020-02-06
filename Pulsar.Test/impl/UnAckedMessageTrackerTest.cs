@@ -39,8 +39,8 @@ namespace org.apache.pulsar.client.impl
 	using Timer = io.netty.util.Timer;
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
 
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using ConcurrentOpenHashSet = org.apache.pulsar.common.util.collections.ConcurrentOpenHashSet;
+	using MessageId = api.MessageId;
+	using ConcurrentOpenHashSet = common.util.collections.ConcurrentOpenHashSet;
 	using Test = org.testng.annotations.Test;
 
 	public class UnAckedMessageTrackerTest

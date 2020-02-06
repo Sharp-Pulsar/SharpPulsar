@@ -28,20 +28,20 @@ namespace SharpPulsar.Impl
 
 	using Timeout = io.netty.util.Timeout;
 	using TimerTask = io.netty.util.TimerTask;
-	using BatchReceivePolicy = SharpPulsar.Api.BatchReceivePolicy;
-	using Consumer = SharpPulsar.Api.IConsumer;
-	using ConsumerEventListener = SharpPulsar.Api.ConsumerEventListener;
+	using BatchReceivePolicy = Api.BatchReceivePolicy;
+	using Consumer = Api.IConsumer;
+	using ConsumerEventListener = Api.ConsumerEventListener;
 	using SharpPulsar.Api;
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
+	using PulsarClientException = Api.PulsarClientException;
 	using SharpPulsar.Api;
-	using SubscriptionType = SharpPulsar.Api.SubscriptionType;
-	using Transaction = SharpPulsar.Api.Transaction.ITransaction;
+	using SubscriptionType = Api.SubscriptionType;
+	using Transaction = Api.Transaction.ITransaction;
 	using SharpPulsar.Impl.Conf;
-	using TransactionImpl = SharpPulsar.Impl.Transaction.TransactionImpl;
-	using ConsumerName = SharpPulsar.Util.ConsumerName;
+	using TransactionImpl = Transaction.TransactionImpl;
+	using ConsumerName = Util.ConsumerName;
 	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
 	using SubType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandSubscribe.SubType;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
@@ -209,7 +209,7 @@ namespace SharpPulsar.Impl
 			{
 				Acknowledge(Message.MessageId);
 			}
-			catch (System.NullReferenceException Npe)
+			catch (NullReferenceException Npe)
 			{
 				throw new PulsarClientException.InvalidMessageException(Npe.Message);
 			}
@@ -251,7 +251,7 @@ namespace SharpPulsar.Impl
 			{
 				AcknowledgeCumulative(Message.MessageId);
 			}
-			catch (System.NullReferenceException Npe)
+			catch (NullReferenceException Npe)
 			{
 				throw new PulsarClientException.InvalidMessageException(Npe.Message);
 			}
@@ -277,7 +277,7 @@ namespace SharpPulsar.Impl
 			{
 				return AcknowledgeAsync(Message.MessageId);
 			}
-			catch (System.NullReferenceException Npe)
+			catch (NullReferenceException Npe)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(Npe.Message));
 			}
@@ -290,7 +290,7 @@ namespace SharpPulsar.Impl
 				Messages.forEach(this.acknowledgeAsync);
 				return CompletableFuture.completedFuture(null);
 			}
-			catch (System.NullReferenceException Npe)
+			catch (NullReferenceException Npe)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(Npe.Message));
 			}
@@ -302,7 +302,7 @@ namespace SharpPulsar.Impl
 			{
 				return AcknowledgeCumulativeAsync(Message.MessageId);
 			}
-			catch (System.NullReferenceException Npe)
+			catch (NullReferenceException Npe)
 			{
 				return FutureUtil.failedFuture(new PulsarClientException.InvalidMessageException(Npe.Message));
 			}

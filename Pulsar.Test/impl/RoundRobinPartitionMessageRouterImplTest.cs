@@ -28,8 +28,8 @@ namespace org.apache.pulsar.client.impl
 //	import static org.testng.Assert.assertTrue;
 
 
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using Message = org.apache.pulsar.client.api.Message;
+	using HashingScheme = api.HashingScheme;
+	using Message = api.Message;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

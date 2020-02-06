@@ -74,7 +74,7 @@ namespace SharpPulsar.Common.Naming
 					return e;
 				}
 			}
-			throw new System.ArgumentException("Invalid topic domain: '" + value + "'");
+			throw new ArgumentException("Invalid topic domain: '" + value + "'");
 		}
 
 		public override string ToString()
@@ -101,7 +101,7 @@ namespace SharpPulsar.Common.Naming
 					return enumInstance;
 				}
 			}
-			throw new System.ArgumentException(name);
+			throw new ArgumentException(name);
 		}
 	}
 }

@@ -32,11 +32,11 @@ namespace org.apache.pulsar.client.admin.@internal.http
 	using SneakyThrows = lombok.SneakyThrows;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using PulsarServiceNameResolver = org.apache.pulsar.client.impl.PulsarServiceNameResolver;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using SecurityUtility = org.apache.pulsar.common.util.SecurityUtility;
+	using StringUtils = apache.commons.lang3.StringUtils;
+	using AuthenticationDataProvider = client.api.AuthenticationDataProvider;
+	using PulsarServiceNameResolver = client.impl.PulsarServiceNameResolver;
+	using ClientConfigurationData = client.impl.conf.ClientConfigurationData;
+	using SecurityUtility = pulsar.common.util.SecurityUtility;
 	using AsyncCompletionHandler = org.asynchttpclient.AsyncCompletionHandler;
 	using AsyncHttpClient = org.asynchttpclient.AsyncHttpClient;
 	using BoundRequestBuilder = org.asynchttpclient.BoundRequestBuilder;

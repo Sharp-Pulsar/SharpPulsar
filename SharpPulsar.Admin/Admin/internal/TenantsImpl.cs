@@ -23,9 +23,9 @@ namespace org.apache.pulsar.client.admin.@internal
 {
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using TenantInfo = org.apache.pulsar.common.policies.data.TenantInfo;
+	using Authentication = client.api.Authentication;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using TenantInfo = pulsar.common.policies.data.TenantInfo;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @SuppressWarnings("deprecation") public class TenantsImpl extends BaseResource implements org.apache.pulsar.client.admin.Tenants, org.apache.pulsar.client.admin.Properties

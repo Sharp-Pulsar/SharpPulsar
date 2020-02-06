@@ -20,8 +20,8 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.

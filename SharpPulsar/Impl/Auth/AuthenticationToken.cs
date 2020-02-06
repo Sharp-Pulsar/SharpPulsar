@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl.Auth
 	public class AuthenticationToken : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 
-		private System.Func<string> tokenSupplier;
+		private Func<string> tokenSupplier;
 
 		public AuthenticationToken()
 		{
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Auth
 		{
 		}
 
-		public AuthenticationToken(System.Func<string> tokenSupplier)
+		public AuthenticationToken(Func<string> tokenSupplier)
 		{
 			this.tokenSupplier = tokenSupplier;
 		}

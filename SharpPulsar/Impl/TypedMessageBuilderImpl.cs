@@ -75,7 +75,7 @@ namespace SharpPulsar.Impl
 			{
 				// NOTE: it makes no sense to send a transactional message in a blocking way.
 				//       because #send only completes when a transaction is committed or aborted.
-				throw new System.InvalidOperationException("Use sendAsync to send a transactional message");
+				throw new InvalidOperationException("Use sendAsync to send a transactional message");
 			}
 			return _producer.Send(Message);
 		}

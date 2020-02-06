@@ -34,9 +34,9 @@ namespace SharpPulsar.Impl.Schema
 	using Hex = org.apache.commons.codec.binary.Hex;
 	using SerializationException = org.apache.commons.lang3.SerializationException;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
-	using ISchemaInfoProvider = SharpPulsar.Api.Schema.ISchemaInfoProvider;
+	using ISchemaInfoProvider = Api.Schema.ISchemaInfoProvider;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Api.Schema;
 	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;

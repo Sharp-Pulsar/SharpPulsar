@@ -25,7 +25,7 @@ namespace SharpPulsar.Impl
 	using Timer = io.netty.util.Timer;
 
 
-	using IMessageId = SharpPulsar.Api.IMessageId;
+	using IMessageId = Api.IMessageId;
 	using SharpPulsar.Impl.Conf;
 
 	public class NegativeAcksTracker

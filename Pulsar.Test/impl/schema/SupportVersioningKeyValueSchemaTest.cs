@@ -18,11 +18,11 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl.schema
 {
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using MultiVersionSchemaInfoProvider = org.apache.pulsar.client.impl.schema.generic.MultiVersionSchemaInfoProvider;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
+	using Schema = api.Schema;
+	using SchemaDefinition = api.schema.SchemaDefinition;
+	using MultiVersionSchemaInfoProvider = generic.MultiVersionSchemaInfoProvider;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 

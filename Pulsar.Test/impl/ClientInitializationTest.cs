@@ -25,9 +25,9 @@ namespace org.apache.pulsar.client.impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using Authentication = api.Authentication;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
 	using Test = org.testng.annotations.Test;
 
 	public class ClientInitializationTest

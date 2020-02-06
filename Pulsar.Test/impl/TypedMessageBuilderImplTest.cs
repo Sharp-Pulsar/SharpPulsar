@@ -18,12 +18,12 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl
 {
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using Schema = api.Schema;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
-	using SchemaTestUtils = org.apache.pulsar.client.impl.schema.SchemaTestUtils;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
+	using SchemaTestUtils = schema.SchemaTestUtils;
+	using KeyValue = common.schema.KeyValue;
+	using KeyValueEncodingType = common.schema.KeyValueEncodingType;
 	using Mock = org.mockito.Mock;
 	using Test = org.testng.annotations.Test;
 

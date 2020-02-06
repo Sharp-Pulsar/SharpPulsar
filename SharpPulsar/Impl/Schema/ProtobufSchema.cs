@@ -116,7 +116,7 @@ namespace SharpPulsar.Impl.Schema
 			if (!Pojo.IsAssignableFrom(typeof(GeneratedMessageV3)))
 			{
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new System.ArgumentException(typeof(GeneratedMessageV3).FullName + " is not assignable from " + Pojo.FullName);
+				throw new ArgumentException(typeof(GeneratedMessageV3).FullName + " is not assignable from " + Pojo.FullName);
 			}
 
 				SchemaInfo SchemaInfo = SchemaInfo.builder().schema(CreateProtobufAvroSchema(SchemaDefinition.Pojo).ToString().GetBytes(UTF_8)).type(SchemaType.PROTOBUF).name("").properties(SchemaDefinition.Properties).build();
@@ -127,7 +127,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 			catch (Exception e) when (e is IllegalAccessException || e is InvocationTargetException || e is NoSuchMethodException)
 			{
-				throw new System.ArgumentException(e);
+				throw new ArgumentException(e);
 			}
 		}
 

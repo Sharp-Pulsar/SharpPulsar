@@ -30,7 +30,7 @@ namespace org.apache.pulsar.client.impl
 //	import static org.testng.Assert.fail;
 
 	using Maps = com.google.common.collect.Maps;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
+	using MessageId = api.MessageId;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

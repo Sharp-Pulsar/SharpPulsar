@@ -63,7 +63,7 @@ namespace SharpPulsar.Util
 		private long acquiredPermits;
 		private bool isClosed;
 		// permitUpdate helps to update permit-rate at runtime
-		private System.Func<long> permitUpdater;
+		private Func<long> permitUpdater;
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: public RateLimiter(final long permits, final long rateTime, final java.util.concurrent.TimeUnit timeUnit)
@@ -73,7 +73,7 @@ namespace SharpPulsar.Util
 
 //JAVA TO C# CONVERTER WARNING: 'final' parameters are ignored unless the option to convert to C# 7.2 'in' parameters is selected:
 //ORIGINAL LINE: public RateLimiter(final java.util.concurrent.ScheduledExecutorService service, final long permits, final long rateTime, final java.util.concurrent.TimeUnit timeUnit, java.util.function.Supplier<long> permitUpdater)
-		public RateLimiter(ScheduledExecutorService service, long permits, long rateTime, TimeUnit timeUnit, System.Func<long> permitUpdater)
+		public RateLimiter(ScheduledExecutorService service, long permits, long rateTime, TimeUnit timeUnit, Func<long> permitUpdater)
 		{
 			checkArgument(permits > 0, "rate must be > 0");
 			checkArgument(rateTime > 0, "Renew permit time must be > 0");
@@ -275,7 +275,7 @@ namespace SharpPulsar.Util
 		/// <param name="rateTime"> </param>
 		/// <param name="timeUnit"> </param>
 		/// <param name="permitUpdaterByte"> </param>
-		public virtual void setRate(long permits, long rateTime, TimeUnit timeUnit, System.Func<long> permitUpdaterByte)
+		public virtual void setRate(long permits, long rateTime, TimeUnit timeUnit, Func<long> permitUpdaterByte)
 		{
 			lock (this)
 			{

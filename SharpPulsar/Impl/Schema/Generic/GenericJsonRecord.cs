@@ -22,7 +22,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
 	using Lists = com.google.common.collect.Lists;
-	using Field = SharpPulsar.Api.Schema.Field;
+	using Field = Api.Schema.Field;
 
 	/// <summary>
 	/// Generic json record.

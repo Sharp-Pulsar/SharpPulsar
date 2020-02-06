@@ -21,19 +21,19 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using ConflictException = org.apache.pulsar.client.admin.PulsarAdminException.ConflictException;
-	using NotAllowedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAllowedException;
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using PreconditionFailedException = org.apache.pulsar.client.admin.PulsarAdminException.PreconditionFailedException;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using AuthAction = org.apache.pulsar.common.policies.data.AuthAction;
-	using PartitionedTopicInternalStats = org.apache.pulsar.common.policies.data.PartitionedTopicInternalStats;
-	using PartitionedTopicStats = org.apache.pulsar.common.policies.data.PartitionedTopicStats;
-	using PersistentTopicInternalStats = org.apache.pulsar.common.policies.data.PersistentTopicInternalStats;
-	using TopicStats = org.apache.pulsar.common.policies.data.TopicStats;
+	using ConflictException = PulsarAdminException.ConflictException;
+	using NotAllowedException = PulsarAdminException.NotAllowedException;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using PreconditionFailedException = PulsarAdminException.PreconditionFailedException;
+	using Message = client.api.Message;
+	using MessageId = client.api.MessageId;
+	using PartitionedTopicMetadata = pulsar.common.partition.PartitionedTopicMetadata;
+	using AuthAction = pulsar.common.policies.data.AuthAction;
+	using PartitionedTopicInternalStats = pulsar.common.policies.data.PartitionedTopicInternalStats;
+	using PartitionedTopicStats = pulsar.common.policies.data.PartitionedTopicStats;
+	using PersistentTopicInternalStats = pulsar.common.policies.data.PersistentTopicInternalStats;
+	using TopicStats = pulsar.common.policies.data.TopicStats;
 
 	using JsonObject = com.google.gson.JsonObject;
 

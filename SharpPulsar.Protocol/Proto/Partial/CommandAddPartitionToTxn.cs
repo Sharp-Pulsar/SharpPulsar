@@ -440,7 +440,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePartitionsIsMutable();
 				Partitions_.Insert(Index, Value);
@@ -451,7 +451,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePartitionsIsMutable();
 				Partitions_.Add(Value);

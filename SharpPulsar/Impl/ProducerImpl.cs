@@ -60,7 +60,7 @@ namespace SharpPulsar.Impl
 		private readonly BlockingQueue<OpSendMsg> pendingMessages;
 		private readonly BlockingQueue<OpSendMsg> pendingCallbacks;
 		private readonly Semaphore semaphore;
-		public HandlerState.State state;
+		public State state;
 		private  Timer sendTimeout;
 		private  Timer batchMessageAndSendTimeout = null;
 		private long createProducerTimeout;

@@ -141,7 +141,7 @@ namespace SharpPulsar.Util.Collections
 			return getSection(h).put(key, value, (int) h, true, null);
 		}
 
-		public virtual V computeIfAbsent(K key, System.Func<K, V> provider)
+		public virtual V computeIfAbsent(K key, Func<K, V> provider)
 		{
 			checkNotNull(key);
 			checkNotNull(provider);
@@ -183,7 +183,7 @@ namespace SharpPulsar.Util.Collections
 
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
 //ORIGINAL LINE: public void forEach(java.util.function.BiConsumer<? super K, ? super V> processor)
-		public virtual void forEach<T1>(System.Action<T1> processor)
+		public virtual void forEach<T1>(Action<T1> processor)
 		{
 			foreach (Section<K, V> s in sections)
 			{
@@ -291,7 +291,7 @@ namespace SharpPulsar.Util.Collections
 				}
 			}
 
-			internal V put(K key, V value, int keyHash, bool onlyIfAbsent, System.Func<K, V> valueProvider)
+			internal V put(K key, V value, int keyHash, bool onlyIfAbsent, Func<K, V> valueProvider)
 			{
 				long stamp = writeLock();
 				int bucket = signSafeMod(keyHash, capacity);
@@ -445,7 +445,7 @@ namespace SharpPulsar.Util.Collections
 
 //JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
 //ORIGINAL LINE: public void forEach(java.util.function.BiConsumer<? super K, ? super V> processor)
-			public void forEach<T1>(System.Action<T1> processor)
+			public void forEach<T1>(Action<T1> processor)
 			{
 				long stamp = tryOptimisticRead();
 

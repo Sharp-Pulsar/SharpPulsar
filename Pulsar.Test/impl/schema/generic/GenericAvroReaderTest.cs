@@ -22,11 +22,11 @@ namespace org.apache.pulsar.client.impl.schema.generic
 //	import static org.testng.Assert.assertEquals;
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using GenericRecord = api.schema.GenericRecord;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using FooV2 = org.apache.pulsar.client.impl.schema.SchemaTestUtils.FooV2;
+	using Foo = SchemaTestUtils.Foo;
+	using FooV2 = SchemaTestUtils.FooV2;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;
 	using Test = org.testng.annotations.Test;
 
@@ -35,8 +35,8 @@ namespace org.apache.pulsar.client.impl.schema.generic
 	public class GenericAvroReaderTest
 	{
 
-		private SchemaTestUtils.Foo foo;
-		private SchemaTestUtils.FooV2 fooV2;
+		private Foo foo;
+		private FooV2 fooV2;
 		private AvroSchema fooSchemaNotNull;
 		private AvroSchema fooSchema;
 		private AvroSchema fooV2Schema;
@@ -46,17 +46,17 @@ namespace org.apache.pulsar.client.impl.schema.generic
 //ORIGINAL LINE: @BeforeMethod public void setup()
 		public virtual void setup()
 		{
-			fooSchema = AvroSchema.of(typeof(SchemaTestUtils.Foo));
-			fooV2Schema = AvroSchema.of(typeof(SchemaTestUtils.FooV2));
-			fooSchemaNotNull = AvroSchema.of(SchemaDefinition.builder().withAlwaysAllowNull(false).withPojo(typeof(SchemaTestUtils.Foo)).build());
+			fooSchema = AvroSchema.of(typeof(Foo));
+			fooV2Schema = AvroSchema.of(typeof(FooV2));
+			fooSchemaNotNull = AvroSchema.of(SchemaDefinition.builder().withAlwaysAllowNull(false).withPojo(typeof(Foo)).build());
 
-			foo = new SchemaTestUtils.Foo();
+			foo = new Foo();
 			foo.Field1 = "foo1";
 			foo.Field2 = "bar1";
 			foo.Field4 = new SchemaTestUtils.Bar();
 			foo.FieldUnableNull = "notNull";
 
-			fooV2 = new SchemaTestUtils.FooV2();
+			fooV2 = new FooV2();
 			fooV2.Field1 = "foo1";
 			fooV2.Field3 = 10;
 		}

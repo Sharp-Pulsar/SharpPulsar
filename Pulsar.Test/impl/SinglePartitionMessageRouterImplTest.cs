@@ -25,8 +25,8 @@ namespace org.apache.pulsar.client.impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using HashingScheme = org.apache.pulsar.client.api.HashingScheme;
-	using Message = org.apache.pulsar.client.api.Message;
+	using HashingScheme = api.HashingScheme;
+	using Message = api.Message;
 	using Test = org.testng.annotations.Test;
 
 	/// <summary>

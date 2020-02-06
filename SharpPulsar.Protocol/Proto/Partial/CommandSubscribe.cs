@@ -786,7 +786,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00000001;
 				Topic_ = Value;
@@ -831,7 +831,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00000002;
 				Subscription_ = Value;
@@ -853,12 +853,12 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// required .pulsar.proto.CommandSubscribe.SubType subType = 3;
-			internal CommandSubscribe.Types.SubType SubType_ = CommandSubscribe.Types.SubType.Exclusive;
+			internal Types.SubType SubType_ = CommandSubscribe.Types.SubType.Exclusive;
 			public bool HasSubType()
 			{
 				return ((_hasBits0 & 0x00000004) == 0x00000004);
 			}
-			public CommandSubscribe.Types.SubType SubType
+			public Types.SubType SubType
 			{
 				get
 				{
@@ -869,7 +869,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00000004;
 				SubType_ = Value;
@@ -964,7 +964,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00000020;
 				ConsumerName_ = Value;
@@ -1055,7 +1055,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				StartMessageId_ = Value;
 
@@ -1139,7 +1139,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_[Index] = Value;
@@ -1157,7 +1157,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_.Add(Value);
@@ -1168,7 +1168,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMetadataIsMutable();
 				Metadata_.Insert(Index, Value);
@@ -1253,7 +1253,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				Schema_ = Value;
 
@@ -1290,23 +1290,23 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional .pulsar.proto.CommandSubscribe.InitialPosition initialPosition = 13 [default = Latest];
-			internal CommandSubscribe.Types.InitialPosition InitialPosition_ = CommandSubscribe.Types.InitialPosition.Latest;
+			internal Types.InitialPosition InitialPosition_ = CommandSubscribe.Types.InitialPosition.Latest;
 			public bool HasInitialPosition()
 			{
 				return ((_hasBits0 & 0x00001000) == 0x00001000);
 			}
-			public CommandSubscribe.Types.InitialPosition InitialPosition
+			public Types.InitialPosition InitialPosition
 			{
 				get
 				{
 					return InitialPosition_;
 				}
 			}
-			public Builder SetInitialPosition(CommandSubscribe.Types.InitialPosition Value)
+			public Builder SetInitialPosition(Types.InitialPosition Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				_hasBits0 |= 0x00001000;
 				InitialPosition_ = Value;
@@ -1419,7 +1419,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				KeySharedMeta_ = Value;
 

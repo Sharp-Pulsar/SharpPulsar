@@ -19,11 +19,11 @@
 namespace org.apache.pulsar.client.tutorial
 {
 
-	using CryptoKeyReader = org.apache.pulsar.client.api.CryptoKeyReader;
-	using EncryptionKeyInfo = org.apache.pulsar.client.api.EncryptionKeyInfo;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using CryptoKeyReader = api.CryptoKeyReader;
+	using EncryptionKeyInfo = api.EncryptionKeyInfo;
+	using Producer = api.Producer;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 

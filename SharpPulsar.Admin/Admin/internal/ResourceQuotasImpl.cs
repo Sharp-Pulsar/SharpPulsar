@@ -21,10 +21,10 @@
 namespace org.apache.pulsar.client.admin.@internal
 {
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using ErrorData = org.apache.pulsar.common.policies.data.ErrorData;
-	using ResourceQuota = org.apache.pulsar.common.policies.data.ResourceQuota;
+	using Authentication = client.api.Authentication;
+	using NamespaceName = pulsar.common.naming.NamespaceName;
+	using ErrorData = pulsar.common.policies.data.ErrorData;
+	using ResourceQuota = pulsar.common.policies.data.ResourceQuota;
 
 	public class ResourceQuotasImpl : BaseResource, ResourceQuotas
 	{

@@ -25,15 +25,15 @@ namespace SharpPulsar.Impl
 	using AccessLevel = lombok.AccessLevel;
 	using Getter = lombok.Getter;
 	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using ConsumerCryptoFailureAction = SharpPulsar.Api.ConsumerCryptoFailureAction;
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using IMessageId = SharpPulsar.Api.IMessageId;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-	using Reader = SharpPulsar.Api.IReader;
+	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
+	using CryptoKeyReader = Api.CryptoKeyReader;
+	using IMessageId = Api.IMessageId;
+	using PulsarClientException = Api.PulsarClientException;
+	using Reader = Api.IReader;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
 	using SharpPulsar.Api;
-	using ConfigurationDataUtils = SharpPulsar.Impl.Conf.ConfigurationDataUtils;
+	using ConfigurationDataUtils = Conf.ConfigurationDataUtils;
 	using SharpPulsar.Impl.Conf;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
 
@@ -84,12 +84,12 @@ namespace SharpPulsar.Impl
 		{
 			if (conf.TopicName == null)
 			{
-				return FutureUtil.failedFuture(new System.ArgumentException("Topic name must be set on the reader builder"));
+				return FutureUtil.failedFuture(new ArgumentException("Topic name must be set on the reader builder"));
 			}
 
 			if (conf.StartMessageId == null)
 			{
-				return FutureUtil.failedFuture(new System.ArgumentException("Start message id must be set on the reader builder"));
+				return FutureUtil.failedFuture(new ArgumentException("Start message id must be set on the reader builder"));
 			}
 
 			return client.CreateReaderAsync(conf, schema);

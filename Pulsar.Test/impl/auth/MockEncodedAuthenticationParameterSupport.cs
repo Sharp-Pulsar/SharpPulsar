@@ -20,10 +20,10 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl.auth
 {
-	using EncodedAuthenticationParameterSupport = org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using EncodedAuthenticationParameterSupport = api.EncodedAuthenticationParameterSupport;
+	using Authentication = api.Authentication;
+	using AuthenticationDataProvider = api.AuthenticationDataProvider;
+	using PulsarClientException = api.PulsarClientException;
 
 
 	public class MockEncodedAuthenticationParameterSupport : Authentication, EncodedAuthenticationParameterSupport

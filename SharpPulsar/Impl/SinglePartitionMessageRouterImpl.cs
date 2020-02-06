@@ -23,9 +23,9 @@ namespace SharpPulsar.Impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static SharpPulsar.util.MathUtils.signSafeMod;
 
-	using HashingScheme = SharpPulsar.Api.HashingScheme;
+	using HashingScheme = Api.HashingScheme;
 	using SharpPulsar.Api;
-	using TopicMetadata = SharpPulsar.Api.TopicMetadata;
+	using TopicMetadata = Api.TopicMetadata;
 
 	[Serializable]
 	public class SinglePartitionMessageRouterImpl : MessageRouterBase

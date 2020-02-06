@@ -18,8 +18,8 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using AllocatorStats = org.apache.pulsar.common.stats.AllocatorStats;
-	using LoadManagerReport = org.apache.pulsar.policies.data.loadbalancer.LoadManagerReport;
+	using AllocatorStats = pulsar.common.stats.AllocatorStats;
+	using LoadManagerReport = pulsar.policies.data.loadbalancer.LoadManagerReport;
 
 	using JsonArray = com.google.gson.JsonArray;
 	using JsonObject = com.google.gson.JsonObject;

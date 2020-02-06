@@ -24,15 +24,15 @@ namespace org.apache.pulsar.client.impl
 	using Timer = io.netty.util.Timer;
 
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-	using Message = org.apache.pulsar.client.api.Message;
-	using MessageRouter = org.apache.pulsar.client.api.MessageRouter;
-	using MessageRoutingMode = org.apache.pulsar.client.api.MessageRoutingMode;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using TopicMetadata = org.apache.pulsar.client.api.TopicMetadata;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
-	using ProducerConfigurationData = org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
-	using EventLoopUtil = org.apache.pulsar.common.util.netty.EventLoopUtil;
+	using Message = api.Message;
+	using MessageRouter = api.MessageRouter;
+	using MessageRoutingMode = api.MessageRoutingMode;
+	using Producer = api.Producer;
+	using Schema = api.Schema;
+	using TopicMetadata = api.TopicMetadata;
+	using ClientConfigurationData = conf.ClientConfigurationData;
+	using ProducerConfigurationData = conf.ProducerConfigurationData;
+	using EventLoopUtil = common.util.netty.EventLoopUtil;
 	using BeforeTest = org.testng.annotations.BeforeTest;
 	using Test = org.testng.annotations.Test;
 

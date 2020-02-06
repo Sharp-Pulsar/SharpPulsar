@@ -21,10 +21,10 @@
 namespace org.apache.pulsar.client.tutorial
 {
 
-	using MessageId = org.apache.pulsar.client.api.MessageId;
-	using Producer = org.apache.pulsar.client.api.Producer;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
+	using MessageId = api.MessageId;
+	using Producer = api.Producer;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
 
 	using Lists = com.google.common.collect.Lists;
 

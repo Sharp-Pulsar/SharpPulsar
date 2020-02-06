@@ -25,15 +25,15 @@ namespace org.apache.pulsar.client.impl.schema
 	using ByteBuf = io.netty.buffer.ByteBuf;
 	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using Bar = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Bar;
-	using DerivedFoo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.DerivedFoo;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using NestedBar = org.apache.pulsar.client.impl.schema.SchemaTestUtils.NestedBar;
-	using NestedBarList = org.apache.pulsar.client.impl.schema.SchemaTestUtils.NestedBarList;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	using Schema = apache.avro.Schema;
+	using SchemaSerializationException = api.SchemaSerializationException;
+	using SchemaDefinition = api.schema.SchemaDefinition;
+	using Bar = SchemaTestUtils.Bar;
+	using DerivedFoo = SchemaTestUtils.DerivedFoo;
+	using Foo = SchemaTestUtils.Foo;
+	using NestedBar = SchemaTestUtils.NestedBar;
+	using NestedBarList = SchemaTestUtils.NestedBarList;
+	using SchemaType = common.schema.SchemaType;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 

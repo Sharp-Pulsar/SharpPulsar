@@ -25,8 +25,8 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl.Schema.Generic
 {
 
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Impl.Schema;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 				case JSON:
 					return new GenericJsonSchema(SchemaInfo, UseProvidedSchemaAsReaderSchema);
 				default:
-					throw new System.NotSupportedException("Generic schema is not supported on schema type " + SchemaInfo.Type + "'");
+					throw new NotSupportedException("Generic schema is not supported on schema type " + SchemaInfo.Type + "'");
 			}
 		}
 

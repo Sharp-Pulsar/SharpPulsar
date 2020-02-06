@@ -21,10 +21,10 @@
 namespace org.apache.pulsar.client.admin
 {
 
-	using NotAuthorizedException = org.apache.pulsar.client.admin.PulsarAdminException.NotAuthorizedException;
-	using NotFoundException = org.apache.pulsar.client.admin.PulsarAdminException.NotFoundException;
-	using InternalConfigurationData = org.apache.pulsar.common.conf.InternalConfigurationData;
-	using NamespaceOwnershipStatus = org.apache.pulsar.common.policies.data.NamespaceOwnershipStatus;
+	using NotAuthorizedException = PulsarAdminException.NotAuthorizedException;
+	using NotFoundException = PulsarAdminException.NotFoundException;
+	using InternalConfigurationData = pulsar.common.conf.InternalConfigurationData;
+	using NamespaceOwnershipStatus = pulsar.common.policies.data.NamespaceOwnershipStatus;
 
 	/// <summary>
 	/// Admin interface for brokers management.

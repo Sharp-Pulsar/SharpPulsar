@@ -21,9 +21,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using Schema = org.apache.avro.Schema;
-	using Field = SharpPulsar.Api.Schema.Field;
-	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
-	using IGenericRecordBuilder = SharpPulsar.Api.Schema.IGenericRecordBuilder;
+	using Field = Api.Schema.Field;
+	using IGenericRecord = Api.Schema.IGenericRecord;
+	using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Api.Schema;
 	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;

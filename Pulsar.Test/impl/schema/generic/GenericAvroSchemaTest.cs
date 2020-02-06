@@ -18,11 +18,11 @@
 /// </summary>
 namespace org.apache.pulsar.client.impl.schema.generic
 {
-	using GenericRecord = org.apache.pulsar.client.api.schema.GenericRecord;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using GenericRecord = api.schema.GenericRecord;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
-	using Foo = org.apache.pulsar.client.impl.schema.SchemaTestUtils.Foo;
-	using FooV2 = org.apache.pulsar.client.impl.schema.SchemaTestUtils.FooV2;
+	using Foo = SchemaTestUtils.Foo;
+	using FooV2 = SchemaTestUtils.FooV2;
 	using Assert = org.testng.Assert;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;
 	using Test = org.testng.annotations.Test;
@@ -44,8 +44,8 @@ namespace org.apache.pulsar.client.impl.schema.generic
 //ORIGINAL LINE: @BeforeMethod public void init()
 		public virtual void init()
 		{
-			AvroSchema<SchemaTestUtils.FooV2> avroFooV2Schema = AvroSchema.of(SchemaDefinition.builder<SchemaTestUtils.FooV2>().withAlwaysAllowNull(false).withPojo(typeof(SchemaTestUtils.FooV2)).build());
-			AvroSchema<SchemaTestUtils.Foo> avroFooSchema = AvroSchema.of(SchemaDefinition.builder<SchemaTestUtils.Foo>().withAlwaysAllowNull(false).withPojo(typeof(SchemaTestUtils.Foo)).build());
+			AvroSchema<FooV2> avroFooV2Schema = AvroSchema.of(SchemaDefinition.builder<FooV2>().withAlwaysAllowNull(false).withPojo(typeof(FooV2)).build());
+			AvroSchema<Foo> avroFooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withAlwaysAllowNull(false).withPojo(typeof(Foo)).build());
 			writerSchema = new GenericAvroSchema(avroFooV2Schema.SchemaInfo);
 			readerSchema = new GenericAvroSchema(avroFooSchema.SchemaInfo);
 		}

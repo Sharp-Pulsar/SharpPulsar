@@ -142,7 +142,7 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent
                 _lock.Unlock();
             }
         }
-        
+
         /// <summary>
         /// Copies the queue elements to an existing one-dimensional <c>T</c> array, starting at the specified array 
         /// index.
@@ -154,13 +154,13 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent
         /// <param name="arrayIndex">
         /// The zero-based index in array at which copying begins.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// array is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// arrayIndex is less than zero.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The number of elements in the source queue is greater than the available space from arrayIndex to the end of the 
         /// destination array.
         /// </exception>
@@ -173,7 +173,7 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent
                 _lock.Unlock();
             }
         }
-        
+
         /// <summary>
         /// Returns the object at the beginning of the queue without removing it.
         /// </summary>
@@ -182,7 +182,7 @@ namespace SharpPulsar.Util.Atomic.Collections.Concurrent
         /// The object at the beginning of the queue.
         /// </returns>
         /// 
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The queue is empty.
         /// </exception>
         public T Peek() {

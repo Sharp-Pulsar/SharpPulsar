@@ -20,13 +20,13 @@
 /// </summary>
 namespace org.apache.pulsar.client.admin
 {
-	using GetAllVersionsSchemaResponse = org.apache.pulsar.common.protocol.schema.GetAllVersionsSchemaResponse;
-	using IsCompatibilityResponse = org.apache.pulsar.common.protocol.schema.IsCompatibilityResponse;
-	using PostSchemaPayload = org.apache.pulsar.common.protocol.schema.PostSchemaPayload;
-	using PostSchemaResponse = org.apache.pulsar.common.protocol.schema.PostSchemaResponse;
-	using SchemaVersion = org.apache.pulsar.common.protocol.schema.SchemaVersion;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaInfoWithVersion = org.apache.pulsar.common.schema.SchemaInfoWithVersion;
+	using GetAllVersionsSchemaResponse = pulsar.common.protocol.schema.GetAllVersionsSchemaResponse;
+	using IsCompatibilityResponse = pulsar.common.protocol.schema.IsCompatibilityResponse;
+	using PostSchemaPayload = pulsar.common.protocol.schema.PostSchemaPayload;
+	using PostSchemaResponse = pulsar.common.protocol.schema.PostSchemaResponse;
+	using SchemaVersion = pulsar.common.protocol.schema.SchemaVersion;
+	using SchemaInfo = pulsar.common.schema.SchemaInfo;
+	using SchemaInfoWithVersion = pulsar.common.schema.SchemaInfoWithVersion;
 
 	/// <summary>
 	/// Admin interface on interacting with schemas.

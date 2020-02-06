@@ -27,7 +27,7 @@ namespace org.apache.pulsar.client.api
 
 	using Objects = com.google.common.@base.Objects;
 
-	using ConsumerId = org.apache.pulsar.client.impl.ConsumerId;
+	using ConsumerId = impl.ConsumerId;
 
 	public class ConsumerIdTest
 	{

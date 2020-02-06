@@ -28,10 +28,10 @@ namespace org.apache.pulsar.client.impl.schema.generic
 //	import static org.testng.Assert.assertEquals;
 
 
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using TopicName = common.naming.TopicName;
+	using SchemaInfo = common.schema.SchemaInfo;
 	using BeforeMethod = org.testng.annotations.BeforeMethod;
 	using Test = org.testng.annotations.Test;
 

@@ -30,10 +30,10 @@ namespace org.apache.pulsar.client.impl.auth
 	using Charsets = com.google.common.@base.Charsets;
 
 
-	using FileUtils = org.apache.commons.io.FileUtils;
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using ClientConfigurationData = org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+	using FileUtils = apache.commons.io.FileUtils;
+	using Authentication = api.Authentication;
+	using AuthenticationDataProvider = api.AuthenticationDataProvider;
+	using ClientConfigurationData = conf.ClientConfigurationData;
 	using Test = org.testng.annotations.Test;
 
 	public class AuthenticationTokenTest

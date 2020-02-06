@@ -21,9 +21,9 @@ using System.Collections.Generic;
 /// </summary>
 namespace org.apache.pulsar.client.admin.@internal
 {
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using AuthenticationDataProvider = org.apache.pulsar.client.api.AuthenticationDataProvider;
-	using SaslConstants = org.apache.pulsar.common.sasl.SaslConstants;
+	using Authentication = client.api.Authentication;
+	using AuthenticationDataProvider = client.api.AuthenticationDataProvider;
+	using SaslConstants = pulsar.common.sasl.SaslConstants;
 	using RequestBuilder = org.asynchttpclient.RequestBuilder;
 
 

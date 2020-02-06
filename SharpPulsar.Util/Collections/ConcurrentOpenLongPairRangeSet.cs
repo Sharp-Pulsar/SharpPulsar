@@ -29,18 +29,18 @@ namespace SharpPulsar.Util.Collections
 	using BoundType = com.google.common.collect.BoundType;
 	using Range = com.google.common.collect.Range;
 
-	/// <summary>
-	/// A Concurrent set comprising zero or more ranges of type <seealso cref="LongPair"/>. This can be alternative of
-	/// <seealso cref="com.google.common.collect.RangeSet"/> and can be used if {@code range} type is <seealso cref="LongPair"/>
-	/// 
-	/// <pre>
-	/// Usage:
-	/// a. This can be used if one doesn't want to create object for every new inserted {@code range}
-	/// b. It creates <seealso cref="System.Collections.BitArray"/> for every unique first-key of the range.
-	/// So, this rangeSet is not suitable for large number of unique keys.
-	/// </pre>
-	/// </summary>
-	public class ConcurrentOpenLongPairRangeSet<T> : LongPairRangeSet<T> where T : IComparable<T>
+    /// <summary>
+    /// A Concurrent set comprising zero or more ranges of type <seealso cref="LongPair"/>. This can be alternative of
+    /// <seealso cref="com.google.common.collect.RangeSet"/> and can be used if {@code range} type is <seealso cref="LongPair"/>
+    /// 
+    /// <pre>
+    /// Usage:
+    /// a. This can be used if one doesn't want to create object for every new inserted {@code range}
+    /// b. It creates <seealso cref="BitArray"/> for every unique first-key of the range.
+    /// So, this rangeSet is not suitable for large number of unique keys.
+    /// </pre>
+    /// </summary>
+    public class ConcurrentOpenLongPairRangeSet<T> : LongPairRangeSet<T> where T : IComparable<T>
 	{
 
 		protected internal readonly NavigableMap<long, BitArray> rangeBitSetMap = new ConcurrentSkipListMap<long, BitArray>();

@@ -21,11 +21,11 @@
 namespace org.apache.pulsar.client.tutorial
 {
 	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
-	using Consumer = org.apache.pulsar.client.api.Consumer;
-	using Message = org.apache.pulsar.client.api.Message;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
+	using Consumer = api.Consumer;
+	using Message = api.Message;
+	using PulsarClient = api.PulsarClient;
+	using PulsarClientException = api.PulsarClientException;
+	using SchemaDefinition = api.schema.SchemaDefinition;
 	using org.apache.pulsar.client.impl.schema;
 
 	public class SampleConsumerWithSchema

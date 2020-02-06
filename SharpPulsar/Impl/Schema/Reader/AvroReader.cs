@@ -25,7 +25,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 	using BinaryDecoder = org.apache.avro.io.BinaryDecoder;
 	using DecoderFactory = org.apache.avro.io.DecoderFactory;
 	using ReflectDatumReader = org.apache.avro.reflect.ReflectDatumReader;
-	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
+	using SchemaSerializationException = Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;

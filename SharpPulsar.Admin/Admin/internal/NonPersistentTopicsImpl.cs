@@ -27,12 +27,12 @@ namespace org.apache.pulsar.client.admin.@internal
 
 
 
-	using Authentication = org.apache.pulsar.client.api.Authentication;
-	using TopicName = org.apache.pulsar.common.naming.TopicName;
-	using NamespaceName = org.apache.pulsar.common.naming.NamespaceName;
-	using PartitionedTopicMetadata = org.apache.pulsar.common.partition.PartitionedTopicMetadata;
-	using NonPersistentTopicStats = org.apache.pulsar.common.policies.data.NonPersistentTopicStats;
-	using PersistentTopicInternalStats = org.apache.pulsar.common.policies.data.PersistentTopicInternalStats;
+	using Authentication = client.api.Authentication;
+	using TopicName = pulsar.common.naming.TopicName;
+	using NamespaceName = pulsar.common.naming.NamespaceName;
+	using PartitionedTopicMetadata = pulsar.common.partition.PartitionedTopicMetadata;
+	using NonPersistentTopicStats = pulsar.common.policies.data.NonPersistentTopicStats;
+	using PersistentTopicInternalStats = pulsar.common.policies.data.PersistentTopicInternalStats;
 
 	public class NonPersistentTopicsImpl : BaseResource, NonPersistentTopics
 	{

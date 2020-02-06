@@ -1036,7 +1036,7 @@ namespace SharpPulsar.Impl
 
 			if (Message == null)
 			{
-				System.InvalidOperationException E = new System.InvalidOperationException("received message can't be null");
+                InvalidOperationException E = new InvalidOperationException("received message can't be null");
 				ListenerExecutor.execute(() => ReceivedFuture.completeExceptionally(E));
 				return;
 			}

@@ -419,7 +419,7 @@ namespace SharpPulsar.Protocol.Proto
 						case 16:
 							{
 								int RawValue = input.ReadEnum();
-								CommandAck.Types.AckType Value = Enum.GetValues(typeof(Types.AckType)).Cast<Types.AckType>().ToList()[RawValue];
+                                Types.AckType Value = Enum.GetValues(typeof(Types.AckType)).Cast<Types.AckType>().ToList()[RawValue];
 								if (Value != null)
 								{
 									BitField0_ |= 0x00000002;
@@ -437,7 +437,7 @@ namespace SharpPulsar.Protocol.Proto
 						case 32:
 							{
 								int RawValue = input.ReadEnum();
-								CommandAck.Types.ValidationError Value = Enum.GetValues(typeof(Types.ValidationError)).Cast<Types.ValidationError>().ToList()[RawValue]; ;
+                                Types.ValidationError Value = Enum.GetValues(typeof(Types.ValidationError)).Cast<Types.ValidationError>().ToList()[RawValue]; ;
 								if (Value != null)
 								{
 									BitField0_ |= 0x00000008;
@@ -499,23 +499,23 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// required .pulsar.proto.CommandAck.AckType ack_type = 2;
-			internal CommandAck.Types.AckType AckType_ = CommandAck.Types.AckType.Individual;
+			internal Types.AckType AckType_ = CommandAck.Types.AckType.Individual;
 			public bool HasAckType()
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public CommandAck.Types.AckType AckType
+			public Types.AckType AckType
 			{
 				get
 				{
 					return AckType_;
 				}
 			}
-			public Builder SetAckType(CommandAck.Types.AckType Value)
+			public Builder SetAckType(Types.AckType Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				AckType_ = Value;
@@ -563,7 +563,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdIsMutable();
 				MessageId_[Index] = Value;
@@ -581,7 +581,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdIsMutable();
 				MessageId_.Add(Value);
@@ -592,7 +592,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsureMessageIdIsMutable();
 				MessageId_.Insert(Index, Value);
@@ -636,23 +636,23 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional .pulsar.proto.CommandAck.ValidationError validation_error = 4;
-			internal CommandAck.Types.ValidationError ValidationError_ = CommandAck.Types.ValidationError.UncompressedSizeCorruption;
+			internal Types.ValidationError ValidationError_ = CommandAck.Types.ValidationError.UncompressedSizeCorruption;
 			public bool HasValidationError()
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public CommandAck.Types.ValidationError ValidationError
+			public Types.ValidationError ValidationError
 			{
 				get
 				{
 					return ValidationError_;
 				}
 			}
-			public Builder SetValidationError(CommandAck.Types.ValidationError Value)
+			public Builder SetValidationError(Types.ValidationError Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000008;
 				ValidationError_ = Value;
@@ -700,7 +700,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				Properties_[Index] = Value;
@@ -718,7 +718,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				Properties_.Add(Value);
@@ -729,7 +729,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				EnsurePropertiesIsMutable();
 				Properties_.Insert(Index, Value);

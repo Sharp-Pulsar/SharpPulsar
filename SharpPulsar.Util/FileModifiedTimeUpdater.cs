@@ -51,7 +51,7 @@ namespace SharpPulsar.Util
 					log.LogError("Unable to fetch lastModified time for file {}: ", fileName, e);
 				}
 			}
-			throw new System.Exception("Invalid file name");
+			throw new Exception("Invalid file name");
 		}
 
 		public virtual bool CheckAndRefresh()

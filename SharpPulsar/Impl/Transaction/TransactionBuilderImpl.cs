@@ -20,8 +20,8 @@ namespace SharpPulsar.Impl.Transaction
 {
     using SharpPulsar.Util;
     using System.Threading.Tasks;
-    using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
-	using TransactionBuilder = SharpPulsar.Api.Transaction.TransactionBuilder;
+    using ITransaction = Api.Transaction.ITransaction;
+	using TransactionBuilder = Api.Transaction.TransactionBuilder;
 
 	/// <summary>
 	/// The default implementation of transaction builder to build transactions.

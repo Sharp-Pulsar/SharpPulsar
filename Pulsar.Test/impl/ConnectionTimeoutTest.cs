@@ -22,7 +22,7 @@ namespace org.apache.pulsar.client.impl
 {
 
 	using ConnectTimeoutException = io.netty.channel.ConnectTimeoutException;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
+	using PulsarClient = api.PulsarClient;
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;
 

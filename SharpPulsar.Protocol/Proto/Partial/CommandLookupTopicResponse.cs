@@ -441,7 +441,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000001;
 				BrokerServiceUrl_ = Value;
@@ -486,7 +486,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000002;
 				BrokerServiceUrlTls_ = Value;
@@ -508,23 +508,23 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional .pulsar.proto.CommandLookupTopicResponse.LookupType response = 3;
-			internal CommandLookupTopicResponse.Types.LookupType Response_ = CommandLookupTopicResponse.Types.LookupType.Redirect;
+			internal Types.LookupType Response_ = CommandLookupTopicResponse.Types.LookupType.Redirect;
 			public bool HasResponse()
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public CommandLookupTopicResponse.Types.LookupType Response
+			public Types.LookupType Response
 			{
 				get
 				{
 					return Response_;
 				}
 			}
-			public Builder SetResponse(CommandLookupTopicResponse.Types.LookupType Value)
+			public Builder SetResponse(Types.LookupType Value)
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000004;
 				Response_ = Value;
@@ -612,7 +612,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (Value == null)
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000020;
 				Error_ = Value;
@@ -651,7 +651,7 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				if (string.ReferenceEquals(Value, null))
 				{
-					throw new System.NullReferenceException();
+					throw new NullReferenceException();
 				}
 				BitField0_ |= 0x00000040;
 				Message_ = Value;

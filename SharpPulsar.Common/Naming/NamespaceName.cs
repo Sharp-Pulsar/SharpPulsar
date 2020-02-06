@@ -65,9 +65,9 @@ namespace SharpPulsar.Common.Naming
 			{
 				checkNotNull(@namespace);
 			}
-			catch (System.NullReferenceException)
+			catch (NullReferenceException)
 			{
-				throw new System.ArgumentException("Invalid null namespace: " + @namespace);
+				throw new ArgumentException("Invalid null namespace: " + @namespace);
 			}
 			try
 			{
@@ -87,7 +87,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			if (string.ReferenceEquals(@namespace, null) || @namespace.Length == 0)
 			{
-				throw new System.ArgumentException("Invalid null namespace: " + @namespace);
+				throw new ArgumentException("Invalid null namespace: " + @namespace);
 			}
 
 			// Verify it's a proper namespace
@@ -118,12 +118,12 @@ namespace SharpPulsar.Common.Naming
 				}
 				else
 				{
-					throw new System.ArgumentException("Invalid namespace format. namespace: " + @namespace);
+					throw new ArgumentException("Invalid namespace format. namespace: " + @namespace);
 				}
 			}
-			catch (System.NullReferenceException e)
+			catch (NullReferenceException e)
 			{
-				throw new System.ArgumentException("Invalid namespace format. namespace: " + @namespace, e);
+				throw new ArgumentException("Invalid namespace format. namespace: " + @namespace, e);
 			}
 			this.@namespace = @namespace;
 		}
@@ -180,9 +180,9 @@ namespace SharpPulsar.Common.Naming
 				NamedEntity.checkName(topic);
 				return string.Format("{0}://{1}/{2}", domain.ToString(), @namespace, topic);
 			}
-			catch (System.NullReferenceException e)
+			catch (NullReferenceException e)
 			{
-				throw new System.ArgumentException("Null pointer is invalid as domain for topic.", e);
+				throw new ArgumentException("Null pointer is invalid as domain for topic.", e);
 			}
 		}
 
@@ -215,14 +215,14 @@ namespace SharpPulsar.Common.Naming
 				checkNotNull(@namespace);
 				if (tenant.Length == 0 || @namespace.Length == 0)
 				{
-					throw new System.ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}", tenant, @namespace));
+					throw new ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}", tenant, @namespace));
 				}
 				NamedEntity.checkName(tenant);
 				NamedEntity.checkName(@namespace);
 			}
-			catch (System.NullReferenceException e)
+			catch (NullReferenceException e)
 			{
-				throw new System.ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}", tenant, @namespace), e);
+				throw new ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}", tenant, @namespace), e);
 			}
 		}
 
@@ -235,15 +235,15 @@ namespace SharpPulsar.Common.Naming
 				checkNotNull(@namespace);
 				if (tenant.Length == 0 || cluster.Length == 0 || @namespace.Length == 0)
 				{
-					throw new System.ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}/{2}", tenant, cluster, @namespace));
+					throw new ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}/{2}", tenant, cluster, @namespace));
 				}
 				NamedEntity.checkName(tenant);
 				NamedEntity.checkName(cluster);
 				NamedEntity.checkName(@namespace);
 			}
-			catch (System.NullReferenceException e)
+			catch (NullReferenceException e)
 			{
-				throw new System.ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}/{2}", tenant, cluster, @namespace), e);
+				throw new ArgumentException(string.Format("Invalid namespace format. namespace: {0}/{1}/{2}", tenant, cluster, @namespace), e);
 			}
 		}
 
