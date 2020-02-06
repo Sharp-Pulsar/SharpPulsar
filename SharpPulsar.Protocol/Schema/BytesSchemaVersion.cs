@@ -33,15 +33,14 @@ namespace SharpPulsar.Protocol.Schema
 
 		private readonly sbyte[] bytes;
 		// cache the hash code for the string, default to 0
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private int hashCode_Conflict;
+		private int _hashCode;
 
 		private BytesSchemaVersion(sbyte[] Bytes)
 		{
 			this.bytes = Bytes;
 		}
 
-		public override sbyte[] Bytes()
+		public sbyte[] Bytes()
 		{
 			return bytes;
 		}
@@ -66,11 +65,11 @@ namespace SharpPulsar.Protocol.Schema
 		/// <returns> the hashcode </returns>
 		public override int GetHashCode()
 		{
-			if (hashCode_Conflict == 0)
+			if (_hashCode == 0)
 			{
-				hashCode_Conflict = Arrays.hashCode(bytes);
+				_hashCode = bytes.GetHashCode();
 			}
-			return hashCode_Conflict;
+			return _hashCode;
 		}
 
 		public override bool Equals(object Other)
@@ -92,13 +91,13 @@ namespace SharpPulsar.Protocol.Schema
 
 			if (Other is BytesSchemaVersion)
 			{
-				return Arrays.equals(this.bytes, ((BytesSchemaVersion) Other).get());
+				return Array.Equals(this.bytes, ((BytesSchemaVersion) Other).Get());
 			}
 
 			return false;
 		}
 
-		public override int CompareTo(BytesSchemaVersion That)
+		public int CompareTo(BytesSchemaVersion That)
 		{
 			return BytesLexicoComparator.Compare(this.bytes, That.bytes);
 		}
@@ -178,7 +177,7 @@ namespace SharpPulsar.Protocol.Schema
 
 			internal const long SerialVersionUID = -1915703761143534937L;
 
-			public override int Compare(sbyte[] Buffer1, sbyte[] Buffer2)
+			public int Compare(sbyte[] Buffer1, sbyte[] Buffer2)
 			{
 				return Compare(Buffer1, 0, Buffer1.Length, Buffer2, 0, Buffer2.Length);
 			}

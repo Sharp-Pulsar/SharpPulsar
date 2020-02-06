@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl.Schema
 			Reader = new JsonReader<>(JSON_MAPPER.get(), Pojo);
 		}
 
-		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			throw new Exception("JSONSchema don't support schema versioning");
 		}
@@ -98,19 +98,19 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public static JSONSchema<T> Of<T>(SchemaDefinition<T> SchemaDefinition)
+		public static JSONSchema<T> Of<T>(ISchemaDefinition<T> SchemaDefinition)
 		{
 			return new JSONSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.JSON), SchemaDefinition.Pojo);
 		}
 
 		public static JSONSchema<T> Of<T>(Type Pojo)
 		{
-			return JSONSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).build());
+			return JSONSchema.Of(ISchemaDefinition.builder<T>().withPojo(Pojo).build());
 		}
 
 		public static JSONSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			return JSONSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build());
+			return JSONSchema.Of(ISchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build());
 		}
 
 	}

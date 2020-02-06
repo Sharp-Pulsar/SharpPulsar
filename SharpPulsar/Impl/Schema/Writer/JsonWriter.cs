@@ -23,7 +23,7 @@ namespace SharpPulsar.Impl.Schema.Writer
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 
-	public class JsonWriter<T> : SchemaWriter<T>
+	public class JsonWriter<T> : ISchemaWriter<T>
 	{
 
 		private readonly ObjectMapper objectMapper;

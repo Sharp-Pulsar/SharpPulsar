@@ -3,6 +3,7 @@ using SharpPulsar.Protocol.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SharpPulsar.Common;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,12 +37,12 @@ namespace SharpPulsar.Protocol
 
 		public static IDictionary<string, string> MetadataFromCommand(CommandProducer CommandProducer)
 		{
-			return ToMap(CommandProducer.Metadatas);
+			return ToMap(CommandProducer.Metadata);
 		}
 
 		public static IDictionary<string, string> MetadataFromCommand(CommandSubscribe CommandSubscribe)
 		{
-			return ToMap(CommandSubscribe.Metadatas);
+			return ToMap(CommandSubscribe.Metadata);
 		}
 
 		internal static IList<KeyValue> ToKeyValueList(IDictionary<string, string> metadata)

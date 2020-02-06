@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl.Schema
 	/// A json schema definition
 	/// <seealso cref="SharpPulsar.api.schema.SchemaDefinition"/> for the json schema definition.
 	/// </summary>
-	public class SchemaDefinitionImpl<T> : SchemaDefinition<T>
+	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
 	{
 
 		/// <summary>

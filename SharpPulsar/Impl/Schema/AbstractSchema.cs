@@ -29,31 +29,31 @@ namespace SharpPulsar.Impl.Schema
 
 	public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public abstract GenericSchema<GenericRecord> Generic(SchemaInfo SchemaInfo);
+		public abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo SchemaInfo);
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: public abstract SharpPulsar.api.Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
 		public abstract ISchema<object> GetSchema(SchemaInfo SchemaInfo);
 		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> Schema);
 		public abstract ISchema<sbyte[]> AutoProduceBytes();
-		public abstract ISchema<GenericRecord> AutoConsume();
-		public abstract ISchema<GenericRecord> AUTO();
+		public abstract ISchema<IGenericRecord> AutoConsume();
+		public abstract ISchema<IGenericRecord> AUTO();
 		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType);
 		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value);
 		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
 		public abstract ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes();
 		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
-		public abstract ISchema<T> JSON(SchemaDefinition SchemaDefinition);
+		public abstract ISchema<T> JSON(ISchemaDefinition SchemaDefinition);
 		public abstract ISchema<T> JSON(Type Pojo);
-		public abstract ISchema<T> AVRO(SchemaDefinition<T> SchemaDefinition);
+		public abstract ISchema<T> AVRO(ISchemaDefinition<T> SchemaDefinition);
 		public abstract ISchema<T> AVRO(Type Pojo);
-		public abstract ISchema<T> PROTOBUF(SchemaDefinition<T> SchemaDefinition);
+		public abstract ISchema<T> PROTOBUF(ISchemaDefinition<T> SchemaDefinition);
 		public abstract ISchema<T> PROTOBUF(Type Clazz);
 		public abstract void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();
 		public abstract SchemaInfo SchemaInfo {get;}
 		public abstract T Decode(sbyte[] Bytes, sbyte[] SchemaVersion);
 		public abstract T Decode(sbyte[] Bytes);
-		public abstract SchemaInfoProvider SchemaInfoProvider {set;}
+		public abstract ISchemaInfoProvider SchemaInfoProvider {set;}
 		public abstract bool SupportSchemaVersioning();
 		public abstract sbyte[] Encode(T Message);
 		public abstract void Validate(sbyte[] Message);

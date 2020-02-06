@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Exception;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,14 +24,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Auth
 {
-
-	using Authentication = SharpPulsar.Api.Authentication;
-	using AuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-
+	
 	/// 
 	/// <summary>
 	/// This plugin requires these parameters
@@ -36,39 +32,35 @@ namespace SharpPulsar.Impl.Auth
 	/// tlsCertFile: A file path for a client certificate. tlsKeyFile: A file path for a client private key.
 	/// 
 	/// </summary>
-	[Serializable]
-	public class AuthenticationTls : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationTls : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 
-		private const long SerialVersionUID = 1L;
+		private const long serialVersionUID = 1L;
 
-		public virtual CertFilePath {get;}
-		public virtual KeyFilePath {get;}
+		private string certFilePath;
+		private string keyFilePath;
 
 		// Load Bouncy Castle
 		static AuthenticationTls()
 		{
-			Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+			//Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		}
 
 		public AuthenticationTls()
 		{
 		}
 
-		public AuthenticationTls(string CertFilePath, string KeyFilePath)
+		public AuthenticationTls(string certFilePath, string keyFilePath)
 		{
-			this.CertFilePath = CertFilePath;
-			this.KeyFilePath = KeyFilePath;
+			this.certFilePath = certFilePath;
+			this.keyFilePath = keyFilePath;
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
 			// noop
 		}
 
-		public virtual string AuthMethodName
+		public string AuthMethodName
 		{
 			get
 			{
@@ -76,65 +68,80 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
-		public virtual AuthenticationDataProvider AuthData
+
+		public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
 				try
 				{
-					return new AuthenticationDataTls(CertFilePath, KeyFilePath);
+					return new AuthenticationDataTls(certFilePath, keyFilePath);
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					throw new PulsarClientException(E);
+					throw new PulsarClientException(e.Message);
 				}
 			}
 		}
 
-		public override void Configure(string EncodedAuthParamString)
+		public void Configure(string encodedAuthParamString)
 		{
-			IDictionary<string, string> AuthParamsMap = null;
+			IDictionary<string, string> authParamsMap = null;
 			try
 			{
-				AuthParamsMap = AuthenticationUtil.configureFromJsonString(EncodedAuthParamString);
+				authParamsMap = AuthenticationUtil.ConfigureFromJsonString(encodedAuthParamString);
 			}
-			catch (Exception)
+			catch (System.Exception)
 			{
 				// auth-param is not in json format
 			}
-			AuthParamsMap = (AuthParamsMap == null || AuthParamsMap.Count == 0) ? AuthenticationUtil.configureFromPulsar1AuthParamString(EncodedAuthParamString) : AuthParamsMap;
-			AuthParams = AuthParamsMap;
+			authParamsMap = (authParamsMap == null || authParamsMap.Count == 0) ? AuthenticationUtil.ConfigureFromPulsar1AuthParamString(encodedAuthParamString) : authParamsMap;
+			AuthParams = authParamsMap;
 		}
 
-		[Obsolete]
-		public override void Configure(IDictionary<string, string> AuthParams)
-		{
-			AuthParams = AuthParams;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
-		public override void Start()
+		public void Start()
 		{
 			// noop
+		}
+
+		public ValueTask DisposeAsync()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Configure(IDictionary<string, string> AuthParams)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Dispose()
+		{
+			throw new NotImplementedException();
 		}
 
 		private IDictionary<string, string> AuthParams
 		{
 			set
 			{
-				CertFilePath = value["tlsCertFile"];
-				KeyFilePath = value["tlsKeyFile"];
+				certFilePath = value["tlsCertFile"];
+				keyFilePath = value["tlsKeyFile"];
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public String getCertFilePath()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public String getKeyFilePath()
+		public virtual string CertFilePath
+		{
+			get
+			{
+				return certFilePath;
+			}
+		}
+		public virtual string KeyFilePath
+		{
+			get
+			{
+				return keyFilePath;
+			}
+		}
 
 	}
 

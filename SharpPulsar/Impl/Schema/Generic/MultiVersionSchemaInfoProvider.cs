@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// Multi version generic schema provider by guava cache.
 	/// </summary>
-	public class MultiVersionSchemaInfoProvider : SchemaInfoProvider
+	public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
 	{
 
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(MultiVersionSchemaInfoProvider));

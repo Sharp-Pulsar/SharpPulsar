@@ -27,9 +27,9 @@ namespace SharpPulsar.Impl.Schema
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using SharpPulsar.Api;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
+	using ISchemaInfoProvider = SharpPulsar.Api.Schema.ISchemaInfoProvider;
 	using GenericSchemaImpl = SharpPulsar.Impl.Schema.Generic.GenericSchemaImpl;
 	using Org.Apache.Pulsar.Common.Schema;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
@@ -40,18 +40,18 @@ namespace SharpPulsar.Impl.Schema
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class AutoConsumeSchema implements SharpPulsar.api.Schema<SharpPulsar.api.schema.GenericRecord>
-	public class AutoConsumeSchema : ISchema<GenericRecord>
+	public class AutoConsumeSchema : ISchema<IGenericRecord>
 	{
 
-		private ISchema<GenericRecord> schema;
+		private ISchema<IGenericRecord> schema;
 
 		private string topicName;
 
 		private string componentName;
 
-		private SchemaInfoProvider schemaInfoProvider;
+		private ISchemaInfoProvider schemaInfoProvider;
 
-		public virtual ISchema<GenericRecord> Schema
+		public virtual ISchema<IGenericRecord> Schema
 		{
 			set
 			{
@@ -76,14 +76,14 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public override sbyte[] Encode(GenericRecord Message)
+		public override sbyte[] Encode(IGenericRecord Message)
 		{
 			EnsureSchemaInitialized();
 
 			return schema.Encode(Message);
 		}
 
-		public override GenericRecord Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		public override IGenericRecord Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
 			if (schema == null)
 			{
@@ -109,7 +109,7 @@ namespace SharpPulsar.Impl.Schema
 			return schema.Decode(Bytes, SchemaVersion);
 		}
 
-		public virtual SchemaInfoProvider SchemaInfoProvider
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -147,13 +147,13 @@ namespace SharpPulsar.Impl.Schema
 			this.componentName = ComponentName;
 			if (SchemaInfo != null)
 			{
-				GenericSchema GenericSchema = GenerateSchema(SchemaInfo);
+				IGenericSchema GenericSchema = GenerateSchema(SchemaInfo);
 				Schema = GenericSchema;
 				log.info("Configure {} schema for topic {} : {}", ComponentName, TopicName, SchemaInfo.SchemaDefinition);
 			}
 		}
 
-		private GenericSchema GenerateSchema(SchemaInfo SchemaInfo)
+		private IGenericSchema GenerateSchema(SchemaInfo SchemaInfo)
 		{
 			if (SchemaInfo.Type != SchemaType.AVRO && SchemaInfo.Type != SchemaType.JSON)
 			{

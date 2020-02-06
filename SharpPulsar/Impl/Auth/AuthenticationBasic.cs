@@ -2,6 +2,8 @@
 using SharpPulsar.Exception;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,19 +26,12 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Impl.Auth
 {
-
-
-	[Serializable]
 	public class AuthenticationBasic : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 		private string userId;
 		private string password;
-		public void Close()
-		{
-			// noop
-		}
 
-		public virtual string AuthMethodName
+		public string AuthMethodName
 		{
 			get
 			{
@@ -44,7 +39,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public virtual IAuthenticationDataProvider AuthData
+		public  IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -52,28 +47,35 @@ namespace SharpPulsar.Impl.Auth
 				{
 					return new AuthenticationDataBasic(userId, password);
 				}
-				catch (System.Exception E)
+				catch (System.Exception e)
 				{
-					throw PulsarClientException.Unwrap(E);
+					throw PulsarClientException.Unwrap(e);
 				}
 			}
 		}
 
-		public void Configure(IDictionary<string, string> AuthParams)
+		public void Configure(IDictionary<string, string> authParams)
 		{
-			Configure((new Gson()).toJson(AuthParams));
+			var jsonString = JsonSerializer.Serialize(authParams);
+			Configure(jsonString);
 		}
 
-		public void Configure(string EncodedAuthParamString)
+		public void Configure(string encodedAuthParamString)
 		{
-			JsonObject Params = (new Gson()).fromJson(EncodedAuthParamString, typeof(JsonObject));
-			userId = Params.get("userId").AsString;
-			password = Params.get("password").AsString;
+			var authParams = JsonSerializer.Deserialize<IDictionary<string, string>>(encodedAuthParamString);
+			userId = authParams["userId"];
+			password = authParams["password"];
 		}
 
+		
 		public void Start()
 		{
-			// noop
+			throw new NotImplementedException();
+		}
+
+		public ValueTask DisposeAsync()
+		{
+			throw new NotImplementedException();
 		}
 
 		public void Dispose()

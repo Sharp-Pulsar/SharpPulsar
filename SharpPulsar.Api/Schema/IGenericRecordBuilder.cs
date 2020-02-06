@@ -19,9 +19,9 @@
 namespace SharpPulsar.Api.Schema
 {
 	/// <summary>
-	/// Generic Record Builder to build a <seealso cref="GenericRecord"/>.
+	/// Generic Record Builder to build a <seealso cref="IGenericRecord"/>.
 	/// </summary>
-	public interface GenericRecordBuilder
+	public interface IGenericRecordBuilder
 	{
 
 		/// <summary>
@@ -30,7 +30,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="fieldName"> the name of the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		GenericRecordBuilder Set(string FieldName, object Value);
+		IGenericRecordBuilder Set(string FieldName, object Value);
 
 		/// <summary>
 		/// Sets the value of a field.
@@ -38,27 +38,27 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="field"> the field to set. </param>
 		/// <param name="value"> the value to set. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		GenericRecordBuilder Set(Field Field, object Value);
+		IGenericRecordBuilder Set(Field Field, object Value);
 
 		/// <summary>
 		/// Clears the value of the given field.
 		/// </summary>
 		/// <param name="fieldName"> the name of the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		GenericRecordBuilder Clear(string FieldName);
+		IGenericRecordBuilder Clear(string FieldName);
 
 		/// <summary>
 		/// Clears the value of the given field.
 		/// </summary>
 		/// <param name="field"> the field to clear. </param>
 		/// <returns> a reference to the RecordBuilder. </returns>
-		GenericRecordBuilder Clear(Field Field);
+		IGenericRecordBuilder Clear(Field Field);
 
 		/// <summary>
 		/// Build a generic record.
 		/// </summary>
 		/// <returns> a generic record. </returns>
-		GenericRecord Build();
+		IGenericRecord Build();
 
 	}
 

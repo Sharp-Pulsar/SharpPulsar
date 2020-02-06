@@ -20,10 +20,10 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
-	public class GenericJsonWriter : SchemaWriter<GenericRecord>
+	public class GenericJsonWriter : ISchemaWriter<IGenericRecord>
 	{
 
 		private readonly ObjectMapper objectMapper;
@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			this.objectMapper = new ObjectMapper();
 		}
 
-		public override sbyte[] Write(GenericRecord Message)
+		public override sbyte[] Write(IGenericRecord Message)
 		{
 			try
 			{

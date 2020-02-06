@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.Schema;
+﻿using SharpPulsar.Api;
+using SharpPulsar.Common.Schema;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -45,8 +46,8 @@ namespace SharpPulsar.Protocol.Schema
 		{
 			var si = new SchemaInfo();
 			si.Name = schema.Name;
-			si.Schema = (sbyte[])(Array)schema.SchemaData;
-			si.Type = Commands.GetSchemaType(schema.type);
+			si.Schema = (sbyte[])(Array)schema.SchemaData.ToByteArray();
+			si.Type = Commands.GetSchemaType(schema.Type);
 			if (schema.Properties.Count == 0)
 			{
 				si.Properties = Array.Empty<IDictionary<string, string>>()[0];

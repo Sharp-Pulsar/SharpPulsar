@@ -17,6 +17,7 @@ using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Common.Entity;
 using System.Linq;
 using Optional;
+using SharpPulsar.Api.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -370,14 +371,14 @@ namespace SharpPulsar.Protocol
 			return Res;
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType? ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType checksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
 		{
-			return NewSend(ProducerId, SequenceId, NumMessaegs, 0, 0, ChecksumType, MessageMetadata, Payload);
+			return NewSend(ProducerId, SequenceId, NumMessaegs, 0, 0, checksumType, MessageMetadata, Payload);
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessaegs, ChecksumType ChecksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessaegs, ChecksumType checksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
 		{
-			return NewSend(ProducerId, LowestSequenceId, HighestSequenceId, NumMessaegs, 0, 0, ChecksumType, MessageMetadata, Payload);
+			return NewSend(ProducerId, LowestSequenceId, HighestSequenceId, NumMessaegs, 0, 0, checksumType, MessageMetadata, Payload);
 		}
 
 		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, MessageMetadata MessageData, IByteBuffer Payload)
@@ -633,7 +634,18 @@ namespace SharpPulsar.Protocol
 				return SchemaType.ValueOf((int)type);
 			}
 		}
-
+		public static SchemaType GetSchemaTypeFor(SchemaType type)
+		{
+			if (type.Value < 0)
+			{
+				// this is unexpected
+				return SchemaType.NONE;
+			}
+			else
+			{
+				return SchemaType.ValueOf(type.Value);
+			}
+		}
 		private static Proto.Schema GetSchema(SchemaInfo SchemaInfo)
 		{
 			Proto.Schema.Builder Builder = Proto.Schema.NewBuilder().SetName(SchemaInfo.Name).SetSchemaData(ByteString.CopyFrom((byte[])(Array)SchemaInfo.Schema)).SetType(GetSchemaType(SchemaInfo.Type)).AddAllProperties(SchemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
@@ -1355,7 +1367,7 @@ namespace SharpPulsar.Protocol
 			catch (IOException E)
 			{
 				// This is in-memory serialization, should not fail
-				throw new System.Exception(E);
+				throw new System.Exception(E.Message);
 			}
 
 			ByteBufPair Command = ByteBufPair.Get(Headers, Payload);
@@ -1436,7 +1448,7 @@ namespace SharpPulsar.Protocol
 			messageMetadata.SetSequenceId(Builder._sequenceId);
 			if (Builder.HasReplicatedFrom())
 			{
-				messageMetadata.SetReplicatedFrom(Builder.getReplicatedFrom());
+				messageMetadata.SetReplicatedFrom(Builder.GetReplicatedFrom());
 			}
 			if (Builder.ReplicateToCount > 0)
 			{
@@ -1477,25 +1489,25 @@ namespace SharpPulsar.Protocol
 			SingleMessageMetadata.Builder SingleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
 			if (MsgBuilder.HasPartitionKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetPartitionKey(MsgBuilder.getPartitionKey()).SetPartitionKeyB64Encoded(MsgBuilder.PartitionKeyB64Encoded);
+				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetPartitionKey(MsgBuilder.GetPartitionKey()).SetPartitionKeyB64Encoded(MsgBuilder.PartitionKeyB64Encoded);
 			}
 			if (MsgBuilder.HasOrderingKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetOrderingKey(MsgBuilder.OrderingKey);
+				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetOrderingKey(MsgBuilder.GetOrderingKey().ToByteArray());
 			}
 			if (MsgBuilder.PropertiesList.Count > 0)
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.addAllProperties(MsgBuilder.PropertiesList);
+				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.AddAllProperties(MsgBuilder.PropertiesList);
 			}
 
 			if (MsgBuilder.HasEventTime())
 			{
-				SingleMessageMetadataBuilder.EventTime = MsgBuilder.EventTime;
+				SingleMessageMetadataBuilder.SetEventTime(MsgBuilder.EventTime);
 			}
 
 			if (MsgBuilder.HasSequenceId())
 			{
-				SingleMessageMetadataBuilder.SequenceId = MsgBuilder.SequenceId;
+				SingleMessageMetadataBuilder.SetSequenceId(MsgBuilder.SequenceId());
 			}
 
 			try
@@ -1560,7 +1572,7 @@ namespace SharpPulsar.Protocol
 			catch (IOException E)
 			{
 				// This is in-memory serialization, should not fail
-				throw new System.Exception(E);
+				throw new System.Exception(E.Message);
 			}
 
 			return (ByteBufPair) ByteBufPair.Get(Headers, MetadataAndPayload);
@@ -1594,7 +1606,7 @@ namespace SharpPulsar.Protocol
 			}
 			catch (System.Exception T)
 			{
-				log.error("[{}] [{}] Failed to parse message metadata", Subscription, ConsumerId, T);
+				//log.error("[{}] [{}] Failed to parse message metadata", Subscription, ConsumerId, T);
 				return null;
 			}
 		}

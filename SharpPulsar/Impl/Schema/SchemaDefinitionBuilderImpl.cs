@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Builder to build <seealso cref="SharpPulsar.api.schema.GenericRecord"/>.
 	/// </summary>
-	public class SchemaDefinitionBuilderImpl<T> : SchemaDefinitionBuilder<T>
+	public class SchemaDefinitionBuilderImpl<T> : ISchemaDefinitionBuilder<T>
 	{
 
 		public const string AlwaysAllowNull = "__alwaysAllowNull";
@@ -62,43 +62,43 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		private bool supportSchemaVersioning = false;
 
-		public override SchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull)
+		public override ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull)
 		{
 			this.alwaysAllowNull = AlwaysAllowNull;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> AddProperty(string Key, string Value)
+		public override ISchemaDefinitionBuilder<T> AddProperty(string Key, string Value)
 		{
 			this.properties[Key] = Value;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> WithPojo(Type Clazz)
+		public override ISchemaDefinitionBuilder<T> WithPojo(Type Clazz)
 		{
 			this.clazz = Clazz;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> WithJsonDef(string JsonDef)
+		public override ISchemaDefinitionBuilder<T> WithJsonDef(string JsonDef)
 		{
 			this.jsonDef = JsonDef;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning)
+		public override ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning)
 		{
 			this.supportSchemaVersioning = SupportSchemaVersioning;
 			return this;
 		}
 
-		public override SchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties)
+		public override ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties)
 		{
 			this.properties = Properties;
 			return this;
 		}
 
-		public override SchemaDefinition<T> Build()
+		public override ISchemaDefinition<T> Build()
 		{
 			properties[AlwaysAllowNull] = this.alwaysAllowNull ? "true" : "false";
 			return new SchemaDefinitionImpl(clazz, jsonDef, alwaysAllowNull, properties, supportSchemaVersioning);

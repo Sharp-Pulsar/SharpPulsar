@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class ProtobufReader<T> : SchemaReader<T> where T : com.google.protobuf.GeneratedMessageV3
+	public class ProtobufReader<T> : ISchemaReader<T> where T : com.google.protobuf.GeneratedMessageV3
 	{
 		private Parser<T> tParser;
 

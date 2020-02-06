@@ -1,5 +1,11 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Enum;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
+using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -22,7 +28,7 @@ using System.Runtime.InteropServices;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common
+namespace SharpPulsar.Impl
 {
 	/// <summary>
 	/// Helper class for class instantiations and it also contains methods to work with schemas.
@@ -39,7 +45,7 @@ namespace SharpPulsar.Common
 
 		public static IPulsarClientBuilder NewClientBuilder()
 		{
-			return new ClientBuilderImpl();
+			return new PulsarClientBuilderImpl();
 		}
 
 		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex)
@@ -322,7 +328,7 @@ namespace SharpPulsar.Common
 			return new DefaultBatcherBuilder();
 		}
 
-		public static IBatcherBuilder NewKeyBasedBatcherBuilder()
+		public static BatcherBuilder NewKeyBasedBatcherBuilder()
 		{
 			return new KeyBasedBatcherBuilder();
 		}

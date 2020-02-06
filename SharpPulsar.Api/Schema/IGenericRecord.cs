@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System.Collections.Generic;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,32 +20,41 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-    using System.Threading.Tasks;
 
 	/// <summary>
-	/// Schema Provider.
+	/// An interface represents a message with schema.
 	/// </summary>
-	public interface SchemaInfoProvider
+	public interface IGenericRecord
 	{
 
 		/// <summary>
-		/// Retrieve the schema info of a given <tt>schemaVersion</tt>.
+		/// Return schema version.
 		/// </summary>
-		/// <param name="schemaVersion"> schema version </param>
-		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion);
+		/// <returns> schema version. </returns>
+		sbyte[] SchemaVersion {get;}
 
 		/// <summary>
-		/// Retrieve the latest schema info.
+		/// Returns the list of fields associated with the record.
 		/// </summary>
-		/// <returns> the latest schema </returns>
-		ValueTask<ISchemaInfo> LatestSchema {get;}
+		/// <returns> the list of fields associated with the record. </returns>
+		IList<Field> Fields {get;}
 
 		/// <summary>
-		/// Retrieve the topic name.
+		/// Retrieve the value of the provided <tt>field</tt>.
 		/// </summary>
-		/// <returns> the topic name </returns>
-		string TopicName {get;}
+		/// <param name="field"> the field to retrieve the value </param>
+		/// <returns> the value object </returns>
+		virtual object GetField(Field field)
+		{
+			return GetField(field.Name);
+		}
+
+		/// <summary>
+		/// Retrieve the value of the provided <tt>fieldName</tt>.
+		/// </summary>
+		/// <param name="fieldName"> the field name </param>
+		/// <returns> the value object </returns>
+		object GetField(string FieldName);
 
 	}
 

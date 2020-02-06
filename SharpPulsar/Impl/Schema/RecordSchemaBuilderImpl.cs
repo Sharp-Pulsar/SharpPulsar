@@ -24,14 +24,14 @@ namespace SharpPulsar.Impl.Schema
 
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Api.Schema;
-	using RecordSchemaBuilder = SharpPulsar.Api.Schema.RecordSchemaBuilder;
+	using IRecordSchemaBuilder = SharpPulsar.Api.Schema.IRecordSchemaBuilder;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
-	/// The default implementation of <seealso cref="RecordSchemaBuilder"/>.
+	/// The default implementation of <seealso cref="IRecordSchemaBuilder"/>.
 	/// </summary>
-	public class RecordSchemaBuilderImpl : RecordSchemaBuilder
+	public class RecordSchemaBuilderImpl : IRecordSchemaBuilder
 	{
 
 		public const string NAMESPACE = "org.apache.pulsar.schema.record";
@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl.Schema
 			this.properties = new Dictionary<string, string>();
 		}
 
-		public override RecordSchemaBuilder Property(string Name, string Val)
+		public override IRecordSchemaBuilder Property(string Name, string Val)
 		{
 			this.properties[Name] = Val;
 			return this;
@@ -61,14 +61,14 @@ namespace SharpPulsar.Impl.Schema
 			return Field;
 		}
 
-		public override FieldSchemaBuilder Field(string FieldName, GenericSchema GenericSchema)
+		public override FieldSchemaBuilder Field(string FieldName, IGenericSchema GenericSchema)
 		{
 			FieldSchemaBuilderImpl Field = new FieldSchemaBuilderImpl(FieldName, GenericSchema);
 			fields.Add(Field);
 			return Field;
 		}
 
-		public override RecordSchemaBuilder Doc(string Doc)
+		public override IRecordSchemaBuilder Doc(string Doc)
 		{
 			this.doc = Doc;
 			return this;

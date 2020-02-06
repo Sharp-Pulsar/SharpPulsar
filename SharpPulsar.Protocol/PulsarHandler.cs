@@ -33,7 +33,7 @@ namespace SharpPulsar.Protocol
 	{
 		//protected internal ChannelHandlerContext Ctx;
 		protected internal EndPoint RemoteAddress;
-		protected internal int RemoteEndpointProtocolVersionConflict = (int)ProtocolVersion.V0;
+		protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
 		private readonly long keepAliveIntervalSeconds;
 		private bool waitingForPingResponse = false;
 		private IScheduledTask keepAliveTask;
@@ -43,11 +43,11 @@ namespace SharpPulsar.Protocol
 		{
 			set 
 			{
-				return RemoteEndpointProtocolVersionConflict;
+				_remoteEndpointProtocolVersion = value;
 			}
 			get
 			{
-				return RemoteEndpointProtocolVersionConflict;
+				return _remoteEndpointProtocolVersion;
 			}
 		}
 
@@ -115,7 +115,7 @@ namespace SharpPulsar.Protocol
 				log.LogWarning("[{}] Forcing connection to close after keep-alive timeout", _context.Channel);
 				_context.CloseAsync();
 			}
-			else if (RemoteEndpointProtocolVersionConflict >= (int)ProtocolVersion.V1)
+			else if (_remoteEndpointProtocolVersion >= (int)ProtocolVersion.V1)
 			{
 				// Send keep alive probe to peer only if it supports the ping/pong commands, added in v1
 				if (log.IsEnabled(LogLevel.Debug))

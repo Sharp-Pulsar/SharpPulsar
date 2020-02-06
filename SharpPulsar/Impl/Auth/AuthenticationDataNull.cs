@@ -1,5 +1,4 @@
-﻿using System;
-
+﻿using SharpPulsar.Api;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -20,9 +19,7 @@
 /// </summary>
 namespace SharpPulsar.Impl.Auth
 {
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
 
-	[Serializable]
 	public class AuthenticationDataNull : IAuthenticationDataProvider
 	{
 

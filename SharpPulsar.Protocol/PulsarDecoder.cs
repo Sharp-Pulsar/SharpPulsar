@@ -45,329 +45,330 @@ namespace SharpPulsar.Protocol
 				// De-serialize the command
 				int CmdSize = (int) buffer.ReadUnsignedInt();
 				int WriterIndex = buffer.WriterIndex;
-				buffer.WriterIndex(buffer.ReaderIndex + CmdSize);
+				buffer.SetWriterIndex(buffer.ReaderIndex + CmdSize);
 				ByteBufCodedInputStream CmdInputStream = ByteBufCodedInputStream.Get(buffer);
-				CmdBuilder = BaseCommand.newBuilder();
-				Cmd = CmdBuilder.mergeFrom(CmdInputStream, null).build();
-				buffer.writerIndex(WriterIndex);
+				CmdBuilder = BaseCommand.NewBuilder();
+				Cmd = CmdBuilder.MergeFrom(CmdInputStream, null).Build();
+				buffer.SetWriterIndex(WriterIndex);
 
-				CmdInputStream.recycle();
+				CmdInputStream.Recycle();
 
-				if (log.DebugEnabled)
+				if (log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, Cmd.getType());
+					log.LogDebug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, Cmd.Type);
 				}
 
 				MessageReceived();
 
-				switch (Cmd.getType())
+				switch (Cmd.Type)
 				{
-				case PARTITIONED_METADATA:
-					checkArgument(Cmd.hasPartitionMetadata());
-					HandlePartitionMetadataRequest(Cmd.PartitionMetadata);
-					Cmd.PartitionMetadata.recycle();
+				case BaseCommand.Types.Type.PartitionedMetadata:
+					if(Cmd.HasPartitionMetadata)
+						HandlePartitionMetadataRequest(Cmd.PartitionMetadata);
+					Cmd.PartitionMetadata.Recycle();
 					break;
 
-				case PARTITIONED_METADATA_RESPONSE:
-					checkArgument(Cmd.hasPartitionMetadataResponse());
-					HandlePartitionResponse(Cmd.PartitionMetadataResponse);
-					Cmd.PartitionMetadataResponse.recycle();
+				case BaseCommand.Types.Type.PartitionedMetadataResponse:
+					if(Cmd.HasPartitionMetadataResponse)
+						HandlePartitionResponse(Cmd.PartitionMetadataResponse);
+					Cmd.PartitionMetadataResponse.Recycle();
 					break;
 
-				case LOOKUP:
-					checkArgument(Cmd.hasLookupTopic());
-					HandleLookup(Cmd.LookupTopic);
-					Cmd.LookupTopic.recycle();
+				case BaseCommand.Types.Type.Lookup:
+					if(Cmd.HasLookupTopic)
+						HandleLookup(Cmd.LookupTopic);
+					Cmd.LookupTopic.Recycle();
 					break;
 
-				case LOOKUP_RESPONSE:
-					checkArgument(Cmd.hasLookupTopicResponse());
-					HandleLookupResponse(Cmd.LookupTopicResponse);
-					Cmd.LookupTopicResponse.recycle();
+				case BaseCommand.Types.Type.LookupResponse:
+					if(Cmd.HasLookupTopicResponse)
+						HandleLookupResponse(Cmd.LookupTopicResponse);
+					Cmd.LookupTopicResponse.Recycle();
 					break;
 
-				case ACK:
-					checkArgument(Cmd.hasAck());
-					CommandAck Ack = Cmd.Ack;
-					HandleAck(Ack);
-					for (int I = 0; I < Ack.MessageIdCount; I++)
+				case BaseCommand.Types.Type.Ack:
+					if(Cmd.HasAck)
+					HandleAck(Cmd.Ack);
+					for (int I = 0; I < Cmd.Ack.MessageId.Count; I++)
 					{
-						Ack.getMessageId(I).recycle();
+						Cmd.Ack.GetMessageId(I).Recycle();
 					}
-					Ack.recycle();
+					Cmd.Ack.Recycle();
 					break;
 
-				case CLOSE_CONSUMER:
-					checkArgument(Cmd.hasCloseConsumer());
-					HandleCloseConsumer(Cmd.CloseConsumer);
-					Cmd.CloseConsumer.recycle();
+				case BaseCommand.Types.Type.CloseConsumer:
+					if(Cmd.HasCloseConsumer)
+						HandleCloseConsumer(Cmd.CloseConsumer);
+					Cmd.CloseConsumer.Recycle();
 					break;
 
-				case CLOSE_PRODUCER:
-					checkArgument(Cmd.hasCloseProducer());
-					HandleCloseProducer(Cmd.CloseProducer);
-					Cmd.CloseProducer.recycle();
+				case BaseCommand.Types.Type.CloseProducer:
+					if(Cmd.HasCloseProducer)
+						HandleCloseProducer(Cmd.CloseProducer);
+					Cmd.CloseProducer.Recycle();
 					break;
 
-				case CONNECT:
-					checkArgument(Cmd.hasConnect());
-					HandleConnect(Cmd.Connect);
-					Cmd.Connect.recycle();
+				case BaseCommand.Types.Type.Connect:
+					if(Cmd.HasConnect)
+						HandleConnect(Cmd.Connect);
+					Cmd.Connect.Recycle();
 					break;
-				case CONNECTED:
-					checkArgument(Cmd.hasConnected());
-					HandleConnected(Cmd.Connected);
-					Cmd.Connected.recycle();
-					break;
-
-				case ERROR:
-					checkArgument(Cmd.hasError());
-					HandleError(Cmd.Error);
-					Cmd.Error.recycle();
+				case BaseCommand.Types.Type.Connected:
+					if(Cmd.HasConnected)
+						HandleConnected(Cmd.Connected);
+					Cmd.Connected.Recycle();
 					break;
 
-				case FLOW:
-					checkArgument(Cmd.hasFlow());
-					HandleFlow(Cmd.Flow);
-					Cmd.Flow.recycle();
+				case BaseCommand.Types.Type.Error:
+					if(Cmd.HasError)
+						HandleError(Cmd.Error);
+					Cmd.Error.Recycle();
 					break;
 
-				case MESSAGE:
+				case BaseCommand.Types.Type.Flow:
+					if(Cmd.HasFlow)
+						HandleFlow(Cmd.Flow);
+					Cmd.Flow.Recycle();
+					break;
+
+				case BaseCommand.Types.Type.Message:
 				{
-					checkArgument(Cmd.hasMessage());
-					HandleMessage(Cmd.Message, Buffer);
-					Cmd.Message.recycle();
+					if(Cmd.HasMessage)
+						HandleMessage(Cmd.Message, buffer);
+					Cmd.Message.Recycle();
 					break;
 				}
-				case PRODUCER:
-					checkArgument(Cmd.hasProducer());
-					HandleProducer(Cmd.Producer);
-					Cmd.Producer.recycle();
+				case BaseCommand.Types.Type.Producer:
+					if(Cmd.HasProducer)
+						HandleProducer(Cmd.Producer);
+					Cmd.Producer.Recycle();
 					break;
 
-				case SEND:
+				case BaseCommand.Types.Type.Send:
 				{
-					checkArgument(Cmd.hasSend());
-
-					// Store a buffer marking the content + headers
-					ByteBuf HeadersAndPayload = buffer.markReaderIndex();
-					HandleSend(Cmd.Send, HeadersAndPayload);
-					Cmd.Send.recycle();
+					if(Cmd.HasSend)
+							{
+								// Store a buffer marking the content + headers
+								IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
+								HandleSend(Cmd.Send, headersAndPayload);
+							}
+					
+					Cmd.Send.Recycle();
 					break;
 				}
-				case SEND_ERROR:
-					checkArgument(Cmd.hasSendError());
-					HandleSendError(Cmd.SendError);
-					Cmd.SendError.recycle();
+				case BaseCommand.Types.Type.SendError:
+					if(Cmd.HasSendError)
+						HandleSendError(Cmd.SendError);
+					Cmd.SendError.Recycle();
 					break;
 
-				case SEND_RECEIPT:
-					checkArgument(Cmd.hasSendReceipt());
-					HandleSendReceipt(Cmd.SendReceipt);
-					Cmd.SendReceipt.recycle();
+				case BaseCommand.Types.Type.SendReceipt:
+					if(Cmd.HasSendReceipt)
+						HandleSendReceipt(Cmd.SendReceipt);
+					Cmd.SendReceipt.Recycle();
 					break;
 
-				case SUBSCRIBE:
-					checkArgument(Cmd.hasSubscribe());
-					HandleSubscribe(Cmd.Subscribe);
-					Cmd.Subscribe.recycle();
+				case BaseCommand.Types.Type.Subscribe:
+					if(Cmd.HasSubscribe)
+						HandleSubscribe(Cmd.Subscribe);
+					Cmd.Subscribe.Recycle();
 					break;
 
-				case SUCCESS:
-					checkArgument(Cmd.hasSuccess());
-					HandleSuccess(Cmd.Success);
-					Cmd.Success.recycle();
+				case BaseCommand.Types.Type.Success:
+					if(Cmd.HasSuccess)
+						HandleSuccess(Cmd.Success);
+					Cmd.Success.Recycle();
 					break;
 
-				case PRODUCER_SUCCESS:
-					checkArgument(Cmd.hasProducerSuccess());
-					HandleProducerSuccess(Cmd.ProducerSuccess);
-					Cmd.ProducerSuccess.recycle();
+				case BaseCommand.Types.Type.ProducerSuccess:
+					if(Cmd.HasProducerSuccess)
+						HandleProducerSuccess(Cmd.ProducerSuccess);
+					Cmd.ProducerSuccess.Recycle();
 					break;
 
-				case UNSUBSCRIBE:
-					checkArgument(Cmd.hasUnsubscribe());
-					HandleUnsubscribe(Cmd.Unsubscribe);
-					Cmd.Unsubscribe.recycle();
+				case BaseCommand.Types.Type.Unsubscribe:
+					if(Cmd.HasUnsubscribe)
+						HandleUnsubscribe(Cmd.Unsubscribe);
+					Cmd.Unsubscribe.Recycle();
 					break;
 
-				case SEEK:
-					checkArgument(Cmd.hasSeek());
-					HandleSeek(Cmd.Seek);
-					Cmd.Seek.recycle();
+				case BaseCommand.Types.Type.Seek:
+					if(Cmd.HasSeek)
+						HandleSeek(Cmd.Seek);
+					Cmd.Seek.Recycle();
 					break;
 
-				case PING:
-					checkArgument(Cmd.hasPing());
-					HandlePing(Cmd.Ping);
-					Cmd.Ping.recycle();
+				case BaseCommand.Types.Type.Ping:
+					if(Cmd.HasPing)
+						HandlePing(Cmd.Ping);
+					Cmd.Ping.Recycle();
 					break;
 
-				case PONG:
-					checkArgument(Cmd.hasPong());
-					HandlePong(Cmd.Pong);
-					Cmd.Pong.recycle();
+				case BaseCommand.Types.Type.Pong:
+					if(Cmd.HasPong)
+						HandlePong(Cmd.Pong);
+					Cmd.Pong.Recycle();
 					break;
 
-				case REDELIVER_UNACKNOWLEDGED_MESSAGES:
-					checkArgument(Cmd.hasRedeliverUnacknowledgedMessages());
-					HandleRedeliverUnacknowledged(Cmd.RedeliverUnacknowledgedMessages);
-					Cmd.RedeliverUnacknowledgedMessages.recycle();
+				case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
+					if(Cmd.HasRedeliverUnacknowledgedMessages)
+						HandleRedeliverUnacknowledged(Cmd.RedeliverUnacknowledgedMessages);
+					Cmd.RedeliverUnacknowledgedMessages.Recycle();
 					break;
 
-				case CONSUMER_STATS:
-					checkArgument(Cmd.hasConsumerStats());
-					HandleConsumerStats(Cmd.ConsumerStats);
-					Cmd.ConsumerStats.recycle();
+				case BaseCommand.Types.Type.ConsumerStats:
+					if(Cmd.HasConsumerStats)
+						HandleConsumerStats(Cmd.ConsumerStats);
+					Cmd.ConsumerStats.Recycle();
 					break;
 
-				case CONSUMER_STATS_RESPONSE:
-					checkArgument(Cmd.hasConsumerStatsResponse());
-					HandleConsumerStatsResponse(Cmd.ConsumerStatsResponse);
-					Cmd.ConsumerStatsResponse.recycle();
+				case BaseCommand.Types.Type.ConsumerStatsResponse:
+					if(Cmd.HasConsumerStatsResponse)
+						HandleConsumerStatsResponse(Cmd.ConsumerStatsResponse);
+					Cmd.ConsumerStatsResponse.Recycle();
 					break;
 
-				case REACHED_END_OF_TOPIC:
-					checkArgument(Cmd.hasReachedEndOfTopic());
-					HandleReachedEndOfTopic(Cmd.ReachedEndOfTopic);
-					Cmd.ReachedEndOfTopic.recycle();
+				case BaseCommand.Types.Type.ReachedEndOfTopic:
+					if(Cmd.HasReachedEndOfTopic)
+						HandleReachedEndOfTopic(Cmd.ReachedEndOfTopic);
+					Cmd.ReachedEndOfTopic.Recycle();
 					break;
 
-				case GET_LAST_MESSAGE_ID:
-					checkArgument(Cmd.hasGetLastMessageId());
-					HandleGetLastMessageId(Cmd.GetLastMessageId);
-					Cmd.GetLastMessageId.recycle();
+				case BaseCommand.Types.Type.GetLastMessageId:
+					if(Cmd.HasGetLastMessageId)
+						HandleGetLastMessageId(Cmd.GetLastMessageId);
+					Cmd.GetLastMessageId.Recycle();
 					break;
 
-				case GET_LAST_MESSAGE_ID_RESPONSE:
-					checkArgument(Cmd.hasGetLastMessageIdResponse());
-					HandleGetLastMessageIdSuccess(Cmd.GetLastMessageIdResponse);
-					Cmd.GetLastMessageIdResponse.recycle();
+				case BaseCommand.Types.Type.GetLastMessageIdResponse:
+					if(Cmd.HasGetLastMessageIdResponse)
+						HandleGetLastMessageIdSuccess(Cmd.GetLastMessageIdResponse);
+					Cmd.GetLastMessageIdResponse.Recycle();
 					break;
 
-				case ACTIVE_CONSUMER_CHANGE:
-					HandleActiveConsumerChange(Cmd.ActiveConsumerChange);
-					Cmd.ActiveConsumerChange.recycle();
+				case BaseCommand.Types.Type.ActiveConsumerChange:
+						HandleActiveConsumerChange(Cmd.ActiveConsumerChange);
+					Cmd.ActiveConsumerChange.Recycle();
 					break;
 
-				case GET_TOPICS_OF_NAMESPACE:
-					checkArgument(Cmd.hasGetTopicsOfNamespace());
-					HandleGetTopicsOfNamespace(Cmd.GetTopicsOfNamespace);
-					Cmd.GetTopicsOfNamespace.recycle();
+				case BaseCommand.Types.Type.GetTopicsOfNamespace:
+					if(Cmd.HasGetTopicsOfNamespace)
+						HandleGetTopicsOfNamespace(Cmd.GetTopicsOfNamespace);
+					Cmd.GetTopicsOfNamespace.Recycle();
 					break;
 
-				case GET_TOPICS_OF_NAMESPACE_RESPONSE:
-					checkArgument(Cmd.hasGetTopicsOfNamespaceResponse());
-					HandleGetTopicsOfNamespaceSuccess(Cmd.GetTopicsOfNamespaceResponse);
-					Cmd.GetTopicsOfNamespaceResponse.recycle();
+				case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
+					if(Cmd.HasGetTopicsOfNamespaceResponse)
+						HandleGetTopicsOfNamespaceSuccess(Cmd.GetTopicsOfNamespaceResponse);
+					Cmd.GetTopicsOfNamespaceResponse.Recycle();
 					break;
 
-				case GET_SCHEMA:
-					checkArgument(Cmd.hasGetSchema());
-					HandleGetSchema(Cmd.GetSchema);
-					Cmd.GetSchema.recycle();
+				case BaseCommand.Types.Type.GetSchema:
+					if(Cmd.HasGetSchema)
+						HandleGetSchema(Cmd.GetSchema);
+					Cmd.GetSchema.Recycle();
 					break;
 
-				case GET_SCHEMA_RESPONSE:
-					checkArgument(Cmd.hasGetSchemaResponse());
+				case BaseCommand.Types.Type.GetSchemaResponse:
+					if(Cmd.HasGetSchemaResponse)
 					HandleGetSchemaResponse(Cmd.GetSchemaResponse);
-					Cmd.GetSchemaResponse.recycle();
+					Cmd.GetSchemaResponse.Recycle();
 					break;
 
-				case GET_OR_CREATE_SCHEMA:
-					checkArgument(Cmd.hasGetOrCreateSchema());
-					HandleGetOrCreateSchema(Cmd.GetOrCreateSchema);
-					Cmd.GetOrCreateSchema.recycle();
+				case BaseCommand.Types.Type.GetOrCreateSchema:
+					if(Cmd.HasGetOrCreateSchema)
+						HandleGetOrCreateSchema(Cmd.GetOrCreateSchema);
+					Cmd.GetOrCreateSchema.Recycle();
 					break;
 
-				case GET_OR_CREATE_SCHEMA_RESPONSE:
-					checkArgument(Cmd.hasGetOrCreateSchemaResponse());
-					HandleGetOrCreateSchemaResponse(Cmd.GetOrCreateSchemaResponse);
-					Cmd.GetOrCreateSchemaResponse.recycle();
+				case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
+					if(Cmd.HasGetOrCreateSchemaResponse)
+						HandleGetOrCreateSchemaResponse(Cmd.GetOrCreateSchemaResponse);
+					Cmd.GetOrCreateSchemaResponse.Recycle();
 					break;
 
-				case AUTH_CHALLENGE:
-					checkArgument(Cmd.hasAuthChallenge());
-					HandleAuthChallenge(Cmd.AuthChallenge);
-					Cmd.AuthChallenge.recycle();
+				case BaseCommand.Types.Type.AuthChallenge:
+					if(Cmd.HasAuthChallenge)
+						HandleAuthChallenge(Cmd.AuthChallenge);
+					Cmd.AuthChallenge.Recycle();
 					break;
 
-				case AUTH_RESPONSE:
-					checkArgument(Cmd.hasAuthResponse());
-					HandleAuthResponse(Cmd.AuthResponse);
-					Cmd.AuthResponse.recycle();
+				case BaseCommand.Types.Type.AuthResponse:
+					if(Cmd.HasAuthResponse)
+						HandleAuthResponse(Cmd.AuthResponse);
+					Cmd.AuthResponse.Recycle();
 					break;
 
-				case NEW_TXN:
-					checkArgument(Cmd.hasNewTxn());
-					HandleNewTxn(Cmd.NewTxn);
-					Cmd.NewTxn.recycle();
+				case BaseCommand.Types.Type.NewTxn:
+					if(Cmd.HasNewTxn)
+						HandleNewTxn(Cmd.NewTxn);
+					Cmd.NewTxn.Recycle();
 					break;
 
-				case NEW_TXN_RESPONSE:
-					checkArgument(Cmd.hasNewTxnResponse());
-					HandleNewTxnResponse(Cmd.NewTxnResponse);
-					Cmd.NewTxnResponse.recycle();
+				case BaseCommand.Types.Type.NewTxnResponse:
+					if(Cmd.HasNewTxnResponse)
+						HandleNewTxnResponse(Cmd.NewTxnResponse);
+					Cmd.NewTxnResponse.Recycle();
 					break;
 
-				case ADD_PARTITION_TO_TXN:
-					checkArgument(Cmd.hasAddPartitionToTxn());
-					HandleAddPartitionToTxn(Cmd.AddPartitionToTxn);
-					Cmd.AddPartitionToTxn.recycle();
+				case BaseCommand.Types.Type.AddPartitionToTxn:
+					if(Cmd.HasAddPartitionToTxn)
+						HandleAddPartitionToTxn(Cmd.AddPartitionToTxn);
+					Cmd.AddPartitionToTxn.Recycle();
 					break;
 
-				case ADD_PARTITION_TO_TXN_RESPONSE:
-					checkArgument(Cmd.hasAddPartitionToTxnResponse());
-					HandleAddPartitionToTxnResponse(Cmd.AddPartitionToTxnResponse);
-					Cmd.AddPartitionToTxnResponse.recycle();
+				case BaseCommand.Types.Type.AddPartitionToTxnResponse:
+					if(Cmd.HasAddPartitionToTxnResponse)
+						HandleAddPartitionToTxnResponse(Cmd.AddPartitionToTxnResponse);
+					Cmd.AddPartitionToTxnResponse.Recycle();
 					break;
 
-				case ADD_SUBSCRIPTION_TO_TXN:
-					checkArgument(Cmd.hasAddSubscriptionToTxn());
-					HandleAddSubscriptionToTxn(Cmd.AddSubscriptionToTxn);
-					Cmd.AddSubscriptionToTxn.recycle();
+				case BaseCommand.Types.Type.AddSubscriptionToTxn:
+					if(Cmd.HasAddSubscriptionToTxn)
+						HandleAddSubscriptionToTxn(Cmd.AddSubscriptionToTxn);
+					Cmd.AddSubscriptionToTxn.Recycle();
 					break;
 
-				case ADD_SUBSCRIPTION_TO_TXN_RESPONSE:
-					checkArgument(Cmd.hasAddSubscriptionToTxnResponse());
-					HandleAddSubscriptionToTxnResponse(Cmd.AddSubscriptionToTxnResponse);
-					Cmd.AddSubscriptionToTxnResponse.recycle();
+				case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
+					if(Cmd.HasAddSubscriptionToTxnResponse)
+						HandleAddSubscriptionToTxnResponse(Cmd.AddSubscriptionToTxnResponse);
+					Cmd.AddSubscriptionToTxnResponse.Recycle();
 					break;
 
-				case END_TXN:
-					checkArgument(Cmd.hasEndTxn());
-					HandleEndTxn(Cmd.EndTxn);
-					Cmd.EndTxn.recycle();
+				case BaseCommand.Types.Type.EndTxn:
+					if(Cmd.HasEndTxn)
+						HandleEndTxn(Cmd.EndTxn);
+					Cmd.EndTxn.Recycle();
 					break;
 
-				case END_TXN_RESPONSE:
-					checkArgument(Cmd.hasEndTxnResponse());
-					HandleEndTxnResponse(Cmd.EndTxnResponse);
-					Cmd.EndTxnResponse.recycle();
+				case BaseCommand.Types.Type.EndTxnResponse:
+					if(Cmd.HasEndTxnResponse)
+						HandleEndTxnResponse(Cmd.EndTxnResponse);
+					Cmd.EndTxnResponse.Recycle();
 					break;
 
-				case END_TXN_ON_PARTITION:
-					checkArgument(Cmd.hasEndTxnOnPartition());
-					HandleEndTxnOnPartition(Cmd.EndTxnOnPartition);
-					Cmd.EndTxnOnPartition.recycle();
+				case BaseCommand.Types.Type.EndTxnOnPartition:
+					if(Cmd.HasEndTxnOnPartition)
+						HandleEndTxnOnPartition(Cmd.EndTxnOnPartition);
+					Cmd.EndTxnOnPartition.Recycle();
 					break;
 
-				case END_TXN_ON_PARTITION_RESPONSE:
-					checkArgument(Cmd.hasEndTxnOnPartitionResponse());
-					HandleEndTxnOnPartitionResponse(Cmd.EndTxnOnPartitionResponse);
-					Cmd.EndTxnOnPartitionResponse.recycle();
+				case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
+					if(Cmd.HasEndTxnOnPartitionResponse)
+						HandleEndTxnOnPartitionResponse(Cmd.EndTxnOnPartitionResponse);
+					Cmd.EndTxnOnPartitionResponse.Recycle();
 					break;
 
-				case END_TXN_ON_SUBSCRIPTION:
-					checkArgument(Cmd.hasEndTxnOnSubscription());
-					HandleEndTxnOnSubscription(Cmd.EndTxnOnSubscription);
-					Cmd.EndTxnOnSubscription.recycle();
+				case BaseCommand.Types.Type.EndTxnOnSubscription:
+					if(Cmd.HasEndTxnOnSubscription)
+						HandleEndTxnOnSubscription(Cmd.EndTxnOnSubscription);
+					Cmd.EndTxnOnSubscription.Recycle();
 					break;
 
-				case END_TXN_ON_SUBSCRIPTION_RESPONSE:
-					checkArgument(Cmd.hasEndTxnOnSubscriptionResponse());
-					HandleEndTxnOnSubscriptionResponse(Cmd.EndTxnOnSubscriptionResponse);
-					Cmd.EndTxnOnSubscriptionResponse.recycle();
+				case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
+					if(Cmd.HasEndTxnOnSubscriptionResponse)
+						HandleEndTxnOnSubscriptionResponse(Cmd.EndTxnOnSubscriptionResponse);
+					Cmd.EndTxnOnSubscriptionResponse.Recycle();
 					break;
 				}
 			}
@@ -375,15 +376,15 @@ namespace SharpPulsar.Protocol
 			{
 				if (CmdBuilder != null)
 				{
-					CmdBuilder.recycle();
+					CmdBuilder.Recycle();
 				}
 
 				if (Cmd != null)
 				{
-					Cmd.recycle();
+					Cmd.Recycle();
 				}
 
-				buffer.release();
+				buffer.Release();
 			}
 		}
 
@@ -429,7 +430,7 @@ namespace SharpPulsar.Protocol
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSend(CommandSend Send, ByteBuf HeadersAndPayload)
+		public virtual void HandleSend(CommandSend Send, IByteBuffer HeadersAndPayload)
 		{
 			throw new NotSupportedException();
 		}
@@ -444,7 +445,7 @@ namespace SharpPulsar.Protocol
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleMessage(CommandMessage CmdMessage, ByteBuf HeadersAndPayload)
+		public virtual void HandleMessage(CommandMessage CmdMessage, IByteBuffer HeadersAndPayload)
 		{
 			throw new NotSupportedException();
 		}

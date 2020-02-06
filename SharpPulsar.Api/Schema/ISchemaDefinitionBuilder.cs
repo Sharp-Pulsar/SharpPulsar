@@ -26,7 +26,7 @@ namespace SharpPulsar.Api.Schema
 	/// <summary>
 	/// Builder to build schema definition <seealso cref="SchemaDefinition"/>.
 	/// </summary>
-	public interface SchemaDefinitionBuilder<T>
+	public interface ISchemaDefinitionBuilder<T>
 	{
 
 		/// <summary>
@@ -34,14 +34,14 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="alwaysAllowNull"> definition null or not </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull);
+		ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull);
 
 		/// <summary>
 		/// Set schema info properties.
 		/// </summary>
 		/// <param name="properties"> schema info properties </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties);
+		ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties);
 
 		/// <summary>
 		/// Set schema info properties.
@@ -50,7 +50,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="value"> property value
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> AddProperty(string Key, string Value);
+		ISchemaDefinitionBuilder<T> AddProperty(string Key, string Value);
 
 		/// <summary>
 		/// Set schema of pojo definition.
@@ -58,7 +58,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="pojo"> pojo schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> WithPojo(Type Pojo);
+		ISchemaDefinitionBuilder<T> WithPojo(Type Pojo);
 
 		/// <summary>
 		/// Set schema of json definition.
@@ -66,7 +66,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="jsonDefinition"> json schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> WithJsonDef(string JsonDefinition);
+		ISchemaDefinitionBuilder<T> WithJsonDef(string JsonDefinition);
 
 		/// <summary>
 		/// Set schema whether decode by schema version.
@@ -74,13 +74,13 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="supportSchemaVersioning"> decode by version
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		SchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning);
+		ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning);
 
 		/// <summary>
 		/// Build the schema definition.
 		/// </summary>
 		/// <returns> the schema definition. </returns>
-		SchemaDefinition<T> Build();
+		ISchemaDefinition<T> Build();
 
 	}
 

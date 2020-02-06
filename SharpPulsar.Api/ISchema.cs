@@ -60,7 +60,7 @@ namespace SharpPulsar.Api
 		/// 
 		/// <para>Most of the schema implementations don't really support schema versioning, or it just doesn't
 		/// make any sense to support schema versionings (e.g. primitive schemas). Only schema returns
-		/// <seealso cref="GenericRecord"/> should support schema versioning.
+		/// <seealso cref="IGenericRecord"/> should support schema versioning.
 		/// 
 		/// </para>
 		/// <para>If a schema implementation returns <tt>false</tt>, it should implement <seealso cref="decode(sbyte[])"/>;
@@ -75,7 +75,7 @@ namespace SharpPulsar.Api
 			return false;
 		}
 
-		virtual SchemaInfoProvider SchemaInfoProvider
+		virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -193,7 +193,7 @@ namespace SharpPulsar.Api
 		/// <returns> a Schema instance </returns>
 		static ISchema<T> PROTOBUF(Type Clazz) where T : com.google.protobuf.GeneratedMessageV3
 		{
-			return DefaultImplementation.newProtobufSchema(SchemaDefinition.builder().withPojo(clazz).build());
+			return DefaultImplementation.newProtobufSchema(ISchemaDefinition.builder().withPojo(clazz).build());
 		}
 
 		/// <summary>
@@ -201,7 +201,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> schemaDefinition the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> PROTOBUF<T>(SchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
+		static ISchema<T> PROTOBUF<T>(ISchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
 		{
 			return DefaultImplementation.newProtobufSchema(schemaDefinition);
 		}
@@ -213,7 +213,7 @@ namespace SharpPulsar.Api
 		/// <returns> a Schema instance </returns>
 		static ISchema<T> AVRO(Type Pojo)
 		{
-			return DefaultImplementation.newAvroSchema(SchemaDefinition.builder().withPojo(pojo).build());
+			return DefaultImplementation.newAvroSchema(ISchemaDefinition.builder().withPojo(pojo).build());
 		}
 
 		/// <summary>
@@ -221,7 +221,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> AVRO(SchemaDefinition<T> SchemaDefinition)
+		static ISchema<T> AVRO(ISchemaDefinition<T> SchemaDefinition)
 		{
 			return DefaultImplementation.newAvroSchema(schemaDefinition);
 		}
@@ -233,7 +233,7 @@ namespace SharpPulsar.Api
 		/// <returns> a Schema instance </returns>
 		static ISchema<T> JSON(Type Pojo)
 		{
-			return DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(pojo).build());
+			return DefaultImplementation.newJSONSchema(ISchemaDefinition.builder().withPojo(pojo).build());
 		}
 
 		/// <summary>
@@ -241,7 +241,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> JSON<T>(SchemaDefinition SchemaDefinition)
+		static ISchema<T> JSON<T>(ISchemaDefinition SchemaDefinition)
 		{
 			return DefaultImplementation.newJSONSchema(schemaDefinition);
 		}
@@ -287,7 +287,7 @@ namespace SharpPulsar.Api
 		}
 
 		[Obsolete]
-		static ISchema<GenericRecord> AUTO()
+		static ISchema<IGenericRecord> AUTO()
 		{
 			return AUTO_CONSUME();
 		}
@@ -296,7 +296,7 @@ namespace SharpPulsar.Api
 		/// Create a schema instance that automatically deserialize messages
 		/// based on the current topic schema.
 		/// 
-		/// <para>The messages values are deserialized into a <seealso cref="GenericRecord"/> object.
+		/// <para>The messages values are deserialized into a <seealso cref="IGenericRecord"/> object.
 		/// 
 		/// </para>
 		/// <para>Currently this is only supported with Avro and JSON schema types.
@@ -304,7 +304,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-		static ISchema<GenericRecord> AutoConsume()
+		static ISchema<IGenericRecord> AutoConsume()
 		{
 			return DefaultImplementation.newAutoConsumeSchema();
 		}
@@ -353,7 +353,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-		static GenericSchema<GenericRecord> Generic(SchemaInfo SchemaInfo)
+		static IGenericSchema<IGenericRecord> Generic(SchemaInfo SchemaInfo)
 		{
 			return DefaultImplementation.getGenericSchema(schemaInfo);
 		}

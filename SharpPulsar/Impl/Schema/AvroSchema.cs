@@ -93,23 +93,23 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public static AvroSchema<T> Of<T>(SchemaDefinition<T> SchemaDefinition)
+		public static AvroSchema<T> Of<T>(ISchemaDefinition<T> SchemaDefinition)
 		{
 			return new AvroSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.AVRO));
 		}
 
 		public static AvroSchema<T> Of<T>(Type Pojo)
 		{
-			return AvroSchema.Of(SchemaDefinition.builder<T>().withPojo(Pojo).build());
+			return AvroSchema.Of(ISchemaDefinition.builder<T>().withPojo(Pojo).build());
 		}
 
 		public static AvroSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			SchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
+			ISchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
 			return new AvroSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.AVRO));
 		}
 
-		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			SchemaInfo SchemaInfo = GetSchemaInfoByVersion(SchemaVersion.get());
 			if (SchemaInfo != null)

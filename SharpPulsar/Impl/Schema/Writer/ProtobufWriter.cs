@@ -20,7 +20,7 @@ namespace SharpPulsar.Impl.Schema.Writer
 {
 	using SharpPulsar.Api.Schema;
 
-	public class ProtobufWriter<T> : SchemaWriter<T> where T : com.google.protobuf.GeneratedMessageV3
+	public class ProtobufWriter<T> : ISchemaWriter<T> where T : com.google.protobuf.GeneratedMessageV3
 	{
 
 		public override sbyte[] Write(T Message)

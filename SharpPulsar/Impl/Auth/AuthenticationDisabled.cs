@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,20 +23,19 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Auth
 {
-	
-	[Serializable]
+
 	public class AuthenticationDisabled : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 
-		protected internal readonly IAuthenticationDataProvider NullData = new AuthenticationDataNull();
+		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();
 		/// 
-		private const long SerialVersionUID = 1L;
+		private const long serialVersionUID = 1L;
 
 		public AuthenticationDisabled()
 		{
 		}
 
-		public virtual string AuthMethodName
+		public string AuthMethodName
 		{
 			get
 			{
@@ -43,20 +43,15 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public virtual IAuthenticationDataProvider AuthData
+		public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
-				return NullData;
+				return nullData;
 			}
 		}
 
-		public void Configure(string EncodedAuthParamString)
-		{
-		}
-
-		[Obsolete]
-		public void Configure(IDictionary<string, string> AuthParams)
+		public void Configure(string encodedAuthParamString)
 		{
 		}
 
@@ -64,9 +59,14 @@ namespace SharpPulsar.Impl.Auth
 		{
 		}
 
-		public void Close()
+		public ValueTask DisposeAsync()
 		{
-			// Do nothing
+			throw new NotImplementedException();
+		}
+
+		public void Configure(IDictionary<string, string> AuthParams)
+		{
+			throw new NotImplementedException();
 		}
 
 		public void Dispose()

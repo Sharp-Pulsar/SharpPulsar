@@ -20,15 +20,9 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
 	/// <summary>
 	/// Payload with information about a schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @AllArgsConstructor @NoArgsConstructor public class PostSchemaPayload
 	public class PostSchemaPayload
 	{
 		private string type;

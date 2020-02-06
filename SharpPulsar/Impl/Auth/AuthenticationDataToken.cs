@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -23,39 +24,40 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl.Auth
 {
 
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-
-	[Serializable]
 	public class AuthenticationDataToken : IAuthenticationDataProvider
 	{
-		public const string HttpHeaderName = "Authorization";
+		public const string HTTP_HEADER_NAME = "Authorization";
 
 		private readonly System.Func<string> tokenSupplier;
 
-		public AuthenticationDataToken(System.Func<string> TokenSupplier)
+		public AuthenticationDataToken(System.Func<string> tokenSupplier)
 		{
-			this.tokenSupplier = TokenSupplier;
+			this.tokenSupplier = tokenSupplier;
 		}
 
-		public override bool HasDataForHttp()
+		public bool HasDataForHttp()
 		{
 			return true;
 		}
 
-		public virtual ISet<KeyValuePair<string, string>> HttpHeaders
+		public ISet<KeyValuePair<string, string>> HttpHeaders
 		{
 			get
 			{
-				return Collections.singletonMap(HttpHeaderName, "Bearer " + Token).entrySet();
+				var set = new HashSet<KeyValuePair<string, string>>
+				{
+					new KeyValuePair<string, string>(HTTP_HEADER_NAME, "Bearer " + Token)
+				};
+				return set;
 			}
 		}
 
-		public override bool HasDataFromCommand()
+		public bool HasDataFromCommand()
 		{
 			return true;
 		}
 
-		public virtual string CommandData
+		public string CommandData
 		{
 			get
 			{
@@ -69,11 +71,11 @@ namespace SharpPulsar.Impl.Auth
 			{
 				try
 				{
-					return tokenSupplier.get();
+					return tokenSupplier.Invoke();
 				}
-				catch (Exception T)
+				catch (System.Exception t)
 				{
-					throw new Exception("failed to get client token", T);
+					throw new System.Exception("failed to get client token", t);
 				}
 			}
 		}

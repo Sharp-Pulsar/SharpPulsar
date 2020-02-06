@@ -25,14 +25,14 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 	using Field = SharpPulsar.Api.Schema.Field;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class GenericJsonReader : SchemaReader<GenericRecord>
+	public class GenericJsonReader : ISchemaReader<IGenericRecord>
 	{
 
 		private readonly ObjectMapper objectMapper;
@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public override GenericRecord Read(Stream InputStream)
+		public override IGenericRecord Read(Stream InputStream)
 		{
 			try
 			{

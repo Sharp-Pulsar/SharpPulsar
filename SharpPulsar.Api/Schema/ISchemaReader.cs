@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System.IO;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,24 +20,39 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
 
 	/// <summary>
-	/// Builder to build schema.
+	/// Deserialize messages from bytes.
 	/// </summary>
-	public interface SchemaBuilder
+
+	public interface ISchemaReader<T>
 	{
 
 		/// <summary>
-		/// Build the schema for a record.
+		/// Serialize bytes convert pojo.
 		/// </summary>
-		/// <param name="name"> name of the record. </param>
-		/// <returns> builder to build the schema for a record. </returns>
-		static RecordSchemaBuilder Record(string Name)
+		/// <param name="bytes"> the data </param>
+		/// <returns> the serialized object </returns>
+		virtual T Read(sbyte[] bytes)
 		{
-			return DefaultImplementation.newRecordSchemaBuilder(name);
+			return Read(bytes, 0, bytes.Length);
 		}
 
+		/// <summary>
+		/// serialize bytes convert pojo.
+		/// </summary>
+		/// <param name="bytes"> the data </param>
+		/// <param name="offset"> the byte[] initial position </param>
+		/// <param name="length"> the byte[] read length </param>
+		/// <returns> the serialized object </returns>
+		T Read(sbyte[] Bytes, int Offset, int Length);
+
+		/// <summary>
+		/// serialize bytes convert pojo.
+		/// </summary>
+		/// <param name="inputStream"> the stream of message </param>
+		/// <returns> the serialized object </returns>
+		T Read(Stream InputStream);
 	}
 
 }

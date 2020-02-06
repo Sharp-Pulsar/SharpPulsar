@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class AvroReader<T> : SchemaReader<T>
+	public class AvroReader<T> : ISchemaReader<T>
 	{
 
 		private ReflectDatumReader<T> reader;

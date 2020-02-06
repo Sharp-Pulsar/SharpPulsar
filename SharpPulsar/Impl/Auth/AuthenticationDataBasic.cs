@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
 using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,42 +24,47 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Impl.Auth
 {
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-
-
-	[Serializable]
 	public class AuthenticationDataBasic : IAuthenticationDataProvider
 	{
-		private const string HttpHeaderName = "Authorization";
+		private const string HTTP_HEADER_NAME = "Authorization";
 		private string httpAuthToken;
-		public virtual CommandData {get;}
+		private string commandAuthToken;
 
-		public AuthenticationDataBasic(string UserId, string Password)
+		public AuthenticationDataBasic(string userId, string password)
 		{
-			httpAuthToken = "Basic " + Base64.Encoder.encodeToString((UserId + ":" + Password).GetBytes());
-			CommandData = UserId + ":" + Password;
+			httpAuthToken = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(userId + ":" + password));
+			commandAuthToken = userId + ":" + password;
 		}
 
-		public override bool HasDataForHttp()
+		public bool HasDataForHttp()
 		{
 			return true;
 		}
 
-		public virtual ISet<KeyValuePair<string, string>> HttpHeaders
+		public ISet<KeyValuePair<string, string>> HttpHeaders
 		{
 			get
 			{
-				IDictionary<string, string> Headers = new Dictionary<string, string>();
-				Headers[HttpHeaderName] = httpAuthToken;
-				return Headers.SetOfKeyValuePairs();
+				IDictionary<string, string> headers = new Dictionary<string, string>
+				{
+					[HTTP_HEADER_NAME] = httpAuthToken
+				};
+				return new HashSet<KeyValuePair<string, string>>(headers);
 			}
 		}
 
-		public override bool HasDataFromCommand()
+		public bool HasDataFromCommand()
 		{
 			return true;
 		}
 
+		public string CommandData
+		{
+			get
+			{
+				return commandAuthToken;
+			}
+		}
 	}
 
 }

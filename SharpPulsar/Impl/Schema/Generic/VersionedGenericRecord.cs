@@ -21,12 +21,12 @@
 namespace SharpPulsar.Impl.Schema.Generic
 {
 	using Field = SharpPulsar.Api.Schema.Field;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.
 	/// </summary>
-	public abstract class VersionedGenericRecord : GenericRecord
+	public abstract class VersionedGenericRecord : IGenericRecord
 	{
 		public abstract object GetField(string FieldName);
 		public abstract object GetField(Field Field);

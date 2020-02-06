@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,25 +18,32 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-	using SharpPulsar.Api;
+    using System.Threading.Tasks;
 
 	/// <summary>
-	/// A schema that serializes and deserializes between <seealso cref="GenericRecord"/> and bytes.
+	/// Schema Provider.
 	/// </summary>
-	public interface GenericSchema<T> : ISchema<T> where T : GenericRecord
+	public interface ISchemaInfoProvider
 	{
 
 		/// <summary>
-		/// Returns the list of fields.
+		/// Retrieve the schema info of a given <tt>schemaVersion</tt>.
 		/// </summary>
-		/// <returns> the list of fields of generic record. </returns>
-		IList<Field> Fields {get;}
+		/// <param name="schemaVersion"> schema version </param>
+		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
+		ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion);
 
 		/// <summary>
-		/// Create a builder to build <seealso cref="GenericRecord"/>.
+		/// Retrieve the latest schema info.
 		/// </summary>
-		/// <returns> generic record builder </returns>
-		GenericRecordBuilder NewRecordBuilder();
+		/// <returns> the latest schema </returns>
+		ValueTask<ISchemaInfo> LatestSchema {get;}
+
+		/// <summary>
+		/// Retrieve the topic name.
+		/// </summary>
+		/// <returns> the topic name </returns>
+		string TopicName {get;}
 
 	}
 

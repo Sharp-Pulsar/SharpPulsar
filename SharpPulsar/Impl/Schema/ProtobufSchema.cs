@@ -93,7 +93,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public override SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			throw new Exception("ProtobufSchema don't support schema versioning");
 		}
@@ -105,11 +105,11 @@ namespace SharpPulsar.Impl.Schema
 
 		public static ProtobufSchema OfGenericClass<T>(Type Pojo, IDictionary<string, string> Properties)
 		{
-			SchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
+			ISchemaDefinition<T> SchemaDefinition = SchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build();
 			return ProtobufSchema.Of(SchemaDefinition);
 		}
 
-		public static ProtobufSchema Of<T>(SchemaDefinition<T> SchemaDefinition)
+		public static ProtobufSchema Of<T>(ISchemaDefinition<T> SchemaDefinition)
 		{
 			Type Pojo = SchemaDefinition.Pojo;
 

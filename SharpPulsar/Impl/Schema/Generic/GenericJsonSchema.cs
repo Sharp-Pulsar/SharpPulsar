@@ -22,8 +22,8 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using Schema = org.apache.avro.Schema;
 	using Field = SharpPulsar.Api.Schema.Field;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
-	using GenericRecordBuilder = SharpPulsar.Api.Schema.GenericRecordBuilder;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using IGenericRecordBuilder = SharpPulsar.Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Api.Schema;
 	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			Reader = new GenericJsonReader(FieldsConflict);
 		}
 
-		public override SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			SchemaInfo SchemaInfo = getSchemaInfoByVersion(SchemaVersion.get());
 			if (SchemaInfo != null)
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public override GenericRecordBuilder NewRecordBuilder()
+		public override IGenericRecordBuilder NewRecordBuilder()
 		{
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}

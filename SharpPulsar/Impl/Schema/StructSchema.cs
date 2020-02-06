@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl.Schema
 	using StringUtils = org.apache.commons.lang3.StringUtils;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
-	using SchemaInfoProvider = SharpPulsar.Api.Schema.SchemaInfoProvider;
+	using ISchemaInfoProvider = SharpPulsar.Api.Schema.ISchemaInfoProvider;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Api.Schema;
 	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
@@ -65,17 +65,17 @@ namespace SharpPulsar.Impl.Schema
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		protected internal readonly SchemaInfo SchemaInfoConflict;
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal SchemaReader<T> ReaderConflict;
+		protected internal ISchemaReader<T> ReaderConflict;
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal SchemaWriter<T> WriterConflict;
+		protected internal ISchemaWriter<T> WriterConflict;
 //JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
+		protected internal ISchemaInfoProvider SchemaInfoProviderConflict;
 
-		private readonly LoadingCache<BytesSchemaVersion, SchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly LoadingCache<BytesSchemaVersion, ISchemaReader<T>> readerCache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
 
-		public class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, SchemaReader<T>>
+		public class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, ISchemaReader<T>>
 		{
-			public override SchemaReader<T> load(BytesSchemaVersion SchemaVersion)
+			public override ISchemaReader<T> load(BytesSchemaVersion SchemaVersion)
 			{
 				return outerInstance.loadReader(SchemaVersion);
 			}
@@ -148,7 +148,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		protected internal static org.apache.avro.Schema CreateAvroSchema(SchemaDefinition SchemaDefinition)
+		protected internal static org.apache.avro.Schema CreateAvroSchema(ISchemaDefinition SchemaDefinition)
 		{
 			Type Pojo = SchemaDefinition.Pojo;
 
@@ -174,12 +174,12 @@ namespace SharpPulsar.Impl.Schema
 			return Parser.parse(SchemaJson);
 		}
 
-		protected internal static SchemaInfo ParseSchemaInfo<T>(SchemaDefinition<T> SchemaDefinition, SchemaType SchemaType)
+		protected internal static SchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> SchemaDefinition, SchemaType SchemaType)
 		{
 			return SchemaInfo.builder().schema(CreateAvroSchema(SchemaDefinition).ToString().GetBytes(UTF_8)).properties(SchemaDefinition.Properties).name("").type(SchemaType).build();
 		}
 
-		public override SchemaInfoProvider SchemaInfoProvider
+		public override ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -192,7 +192,7 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		public abstract SchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion);
+		public abstract ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async
@@ -214,7 +214,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public virtual SchemaWriter<T> Writer
+		public virtual ISchemaWriter<T> Writer
 		{
 			set
 			{
@@ -222,7 +222,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public virtual SchemaReader<T> Reader
+		public virtual ISchemaReader<T> Reader
 		{
 			set
 			{

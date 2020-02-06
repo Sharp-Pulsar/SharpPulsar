@@ -18,16 +18,9 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
 	/// <summary>
 	/// Response defining if a schema is compatible with existing topic's schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class IsCompatibilityResponse
 	public class IsCompatibilityResponse
 	{
 		internal bool IsCompatibility;

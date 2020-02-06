@@ -20,8 +20,8 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 	using Slf4j = lombok.@extern.slf4j.Slf4j;
 	using Schema = org.apache.avro.Schema;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
-	using GenericRecordBuilder = SharpPulsar.Api.Schema.GenericRecordBuilder;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
+	using IGenericRecordBuilder = SharpPulsar.Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Api.Schema;
 	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			Writer = new GenericAvroWriter(schema);
 		}
 
-		public override GenericRecordBuilder NewRecordBuilder()
+		public override IGenericRecordBuilder NewRecordBuilder()
 		{
 			return new AvroRecordBuilderImpl(this);
 		}
@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			return true;
 		}
 
-		public override SchemaReader<GenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
 		{
 			 SchemaInfo SchemaInfo = getSchemaInfoByVersion(SchemaVersion.get());
 			 if (SchemaInfo != null)

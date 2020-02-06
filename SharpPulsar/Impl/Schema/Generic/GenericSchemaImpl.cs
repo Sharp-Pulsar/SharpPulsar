@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 
 	using Field = SharpPulsar.Api.Schema.Field;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Impl.Schema;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
@@ -34,27 +34,27 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// A generic schema representation.
 	/// </summary>
-	public abstract class GenericSchemaImpl : StructSchema<GenericRecord>, GenericSchema<GenericRecord>
+	public abstract class GenericSchemaImpl : StructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
 	{
-		public abstract GenericRecordBuilder NewRecordBuilder();
-		public override abstract GenericSchema<GenericRecord> Generic(SchemaInfo SchemaInfo);
+		public abstract IGenericRecordBuilder NewRecordBuilder();
+		public override abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo SchemaInfo);
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: public abstract Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
 		public override abstract ISchema<object> GetSchema(SchemaInfo SchemaInfo);
 		public override abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> Schema);
 		public override abstract ISchema<sbyte[]> AutoProduceBytes();
-		public override abstract ISchema<GenericRecord> AutoConsume();
-		public override abstract ISchema<GenericRecord> AUTO();
+		public override abstract ISchema<IGenericRecord> AutoConsume();
+		public override abstract ISchema<IGenericRecord> AUTO();
 		public override abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType);
 		public override abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value);
 		public override abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
 		public override abstract ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes();
 		public override abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
-		public override abstract ISchema<T> JSON(SchemaDefinition SchemaDefinition);
+		public override abstract ISchema<T> JSON(ISchemaDefinition SchemaDefinition);
 		public override abstract ISchema<T> JSON(Type Pojo);
-		public override abstract ISchema<T> AVRO(SchemaDefinition<T> SchemaDefinition);
+		public override abstract ISchema<T> AVRO(ISchemaDefinition<T> SchemaDefinition);
 		public override abstract ISchema<T> AVRO(Type Pojo);
-		public override abstract ISchema<T> PROTOBUF(SchemaDefinition<T> SchemaDefinition);
+		public override abstract ISchema<T> PROTOBUF(ISchemaDefinition<T> SchemaDefinition);
 		public override abstract ISchema<T> PROTOBUF(Type Clazz);
 		public override abstract void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo);
 		public override abstract bool RequireFetchingSchemaInfo();

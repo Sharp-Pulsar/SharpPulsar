@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
-	public class JsonReader<T> : SchemaReader<T>
+	public class JsonReader<T> : ISchemaReader<T>
 	{
 		private readonly Type pojo = typeof(T);
 		private readonly ObjectMapper objectMapper;

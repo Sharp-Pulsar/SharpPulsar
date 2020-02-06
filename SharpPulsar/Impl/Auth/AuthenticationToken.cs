@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,19 +25,11 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Impl.Auth
 {
-	using Charsets = com.google.common.@base.Charsets;
-
-
-	using Authentication = SharpPulsar.Api.Authentication;
-	using IAuthenticationDataProvider = SharpPulsar.Api.IAuthenticationDataProvider;
-	using EncodedAuthenticationParameterSupport = SharpPulsar.Api.EncodedAuthenticationParameterSupport;
-	using PulsarClientException = SharpPulsar.Api.PulsarClientException;
 
 	/// <summary>
 	/// Token based authentication provider.
 	/// </summary>
-	[Serializable]
-	public class AuthenticationToken : Authentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationToken : IAuthentication, EncodedAuthenticationParameterSupport
 	{
 
 		private System.Func<string> tokenSupplier;
@@ -43,23 +38,21 @@ namespace SharpPulsar.Impl.Auth
 		{
 		}
 
-		public AuthenticationToken(string Token) : this(() -> Token)
+		public AuthenticationToken(string token) : this(() => token)
 		{
 		}
 
-		public AuthenticationToken(System.Func<string> TokenSupplier)
+		public AuthenticationToken(System.Func<string> tokenSupplier)
 		{
-			this.tokenSupplier = TokenSupplier;
+			this.tokenSupplier = tokenSupplier;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
 			// noop
 		}
 
-		public virtual string AuthMethodName
+		public string AuthMethodName
 		{
 			get
 			{
@@ -67,9 +60,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.AuthenticationDataProvider getAuthData() throws SharpPulsar.api.PulsarClientException
-		public virtual IAuthenticationDataProvider AuthData
+		public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -77,48 +68,50 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public override void Configure(string EncodedAuthParamString)
+		public void Configure(string encodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix
-			if (EncodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
+			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
 			{
-				this.tokenSupplier = () => EncodedAuthParamString.Substring("token:".Length);
+				this.tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
 			}
-			else if (EncodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
+			else if (encodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
 			{
 				// Read token from a file
-				URI FilePath = URI.create(EncodedAuthParamString);
+				URI filePath = URI.create(encodedAuthParamString);
 				this.tokenSupplier = () =>
 				{
 				try
 				{
-					return (new string(Files.readAllBytes(Paths.get(FilePath)), Charsets.UTF_8)).Trim();
+					return (new string(File.ReadAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
 				}
-				catch (IOException E)
+				catch (IOException e)
 				{
-					throw new Exception("Failed to read token from file", E);
+					throw new Exception("Failed to read token from file", e);
 				}
 				};
 			}
 			else
 			{
-				this.tokenSupplier = () => EncodedAuthParamString;
+				this.tokenSupplier = () => encodedAuthParamString;
 			}
 		}
 
-		public override void Configure(IDictionary<string, string> AuthParams)
+		public void Configure(IDictionary<string, string> authParams)
 		{
 			// noop
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.PulsarClientException
-		public override void Start()
+		public void Start()
 		{
 			// noop
 		}
 
+		public ValueTask DisposeAsync()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

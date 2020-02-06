@@ -33,9 +33,7 @@ namespace SharpPulsar.Common.Naming
 		{
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static void validateMetadata(java.util.Map<String, String> metadata) throws IllegalArgumentException
-		public static void validateMetadata(IDictionary<string, string> metadata)
+		public static void ValidateMetadata(IDictionary<string, string> metadata)
 		{
 			if (metadata == null)
 			{
@@ -45,7 +43,7 @@ namespace SharpPulsar.Common.Naming
 			int size = 0;
 			foreach (KeyValuePair<string, string> e in metadata.SetOfKeyValuePairs())
 			{
-				size += (e.Key.length() + e.Value.length());
+				size += (e.Key.Length + e.Value.Length);
 				if (size > MAX_METADATA_SIZE)
 				{
 					throw new System.ArgumentException(ErrorMessage);

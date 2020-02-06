@@ -756,7 +756,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private SchemaInfoProvider NewSchemaProvider(string topicName)
+		private ISchemaInfoProvider NewSchemaProvider(string topicName)
 		{
 			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), this);
 		}
@@ -773,7 +773,7 @@ namespace SharpPulsar.Impl
 		{
 			if (Schema != null && Schema.SupportSchemaVersioning())
 			{
-				SchemaInfoProvider SchemaInfoProvider;
+				ISchemaInfoProvider SchemaInfoProvider;
 				try
 				{
 					SchemaInfoProvider = PulsarClientImpl.SchemaProviderLoadingCache.get(TopicName);

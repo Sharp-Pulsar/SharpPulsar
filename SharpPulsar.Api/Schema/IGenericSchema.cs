@@ -20,41 +20,25 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
+	using SharpPulsar.Api;
 
 	/// <summary>
-	/// An interface represents a message with schema.
+	/// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
 	/// </summary>
-	public interface GenericRecord
+	public interface IGenericSchema<T> : ISchema<T> where T : IGenericRecord
 	{
 
 		/// <summary>
-		/// Return schema version.
+		/// Returns the list of fields.
 		/// </summary>
-		/// <returns> schema version. </returns>
-		sbyte[] SchemaVersion {get;}
-
-		/// <summary>
-		/// Returns the list of fields associated with the record.
-		/// </summary>
-		/// <returns> the list of fields associated with the record. </returns>
+		/// <returns> the list of fields of generic record. </returns>
 		IList<Field> Fields {get;}
 
 		/// <summary>
-		/// Retrieve the value of the provided <tt>field</tt>.
+		/// Create a builder to build <seealso cref="IGenericRecord"/>.
 		/// </summary>
-		/// <param name="field"> the field to retrieve the value </param>
-		/// <returns> the value object </returns>
-		virtual object GetField(Field Field)
-		{
-			return getField(field.getName());
-		}
-
-		/// <summary>
-		/// Retrieve the value of the provided <tt>fieldName</tt>.
-		/// </summary>
-		/// <param name="fieldName"> the field name </param>
-		/// <returns> the value object </returns>
-		object GetField(string FieldName);
+		/// <returns> generic record builder </returns>
+		IGenericRecordBuilder NewRecordBuilder();
 
 	}
 

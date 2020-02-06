@@ -25,7 +25,7 @@ namespace SharpPulsar.Protocol.Schema
 	{
 		private static readonly sbyte[] EMPTY = new sbyte[]{};
 
-		public override sbyte[] Bytes()
+		public sbyte[] Bytes()
 		{
 			return EMPTY;
 		}

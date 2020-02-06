@@ -26,14 +26,14 @@ namespace SharpPulsar.Api.Schema
 	/// <summary>
 	/// Interface for schema definition.
 	/// </summary>
-	public interface SchemaDefinition<T>
+	public interface ISchemaDefinition<T>
 	{
 
 		/// <summary>
 		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
 		/// </summary>
 		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-		static SchemaDefinitionBuilder<T> Builder<T>()
+		static ISchemaDefinitionBuilder<T> Builder<T>()
 		{
 			return DefaultImplementation.newSchemaDefinitionBuilder();
 		}
@@ -60,7 +60,7 @@ namespace SharpPulsar.Api.Schema
 		/// Get pojo schema definition.
 		/// </summary>
 		/// <returns> pojo schema </returns>
-		Type<T> Pojo {get;}
+		ITypedMessageBuilder<T> Pojo {get;}
 
 		/// <summary>
 		/// Get supportSchemaVersioning schema definition.

@@ -18,16 +18,10 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
 
 	/// <summary>
 	/// Response with the version of a schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @Builder @AllArgsConstructor @NoArgsConstructor public class PostSchemaResponse
 	public class PostSchemaResponse
 	{
 		private SchemaVersion version;

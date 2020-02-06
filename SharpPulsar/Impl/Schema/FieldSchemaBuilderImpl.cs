@@ -49,13 +49,13 @@ namespace SharpPulsar.Impl.Schema
 		private string doc;
 		private string[] aliases;
 
-		private GenericSchema genericSchema;
+		private IGenericSchema genericSchema;
 
 		public FieldSchemaBuilderImpl(string FieldName) : this(FieldName, null)
 		{
 		}
 
-		public FieldSchemaBuilderImpl(string FieldName, GenericSchema GenericSchema)
+		public FieldSchemaBuilderImpl(string FieldName, IGenericSchema GenericSchema)
 		{
 			this.fieldName = FieldName;
 			this.genericSchema = GenericSchema;

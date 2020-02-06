@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl.Schema
 		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
 		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
 		private SchemaInfo schemaInfo;
-		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
+		protected internal ISchemaInfoProvider SchemaInfoProviderConflict;
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
@@ -101,7 +101,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public class SchemaInfoProviderAnonymousInnerClass : SchemaInfoProvider
+		public class SchemaInfoProviderAnonymousInnerClass : ISchemaInfoProvider
 		{
 			public readonly KeyValueSchema<K, V> OuterInstance;
 
@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public virtual SchemaInfoProvider SchemaInfoProvider
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -226,7 +226,7 @@ namespace SharpPulsar.Impl.Schema
 			this.valueSchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass3(this);
 		}
 
-		public class SchemaInfoProviderAnonymousInnerClass2 : SchemaInfoProvider
+		public class SchemaInfoProviderAnonymousInnerClass2 : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> outerInstance;
 
@@ -257,7 +257,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public class SchemaInfoProviderAnonymousInnerClass3 : SchemaInfoProvider
+		public class SchemaInfoProviderAnonymousInnerClass3 : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> outerInstance;
 

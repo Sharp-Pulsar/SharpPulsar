@@ -26,10 +26,10 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using BinaryEncoder = org.apache.avro.io.BinaryEncoder;
 	using EncoderFactory = org.apache.avro.io.EncoderFactory;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
-	public class GenericAvroWriter : SchemaWriter<GenericRecord>
+	public class GenericAvroWriter : ISchemaWriter<IGenericRecord>
 	{
 
 		private readonly GenericDatumWriter<org.apache.avro.generic.GenericRecord> writer;
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			this.encoder = EncoderFactory.get().binaryEncoder(this.byteArrayOutputStream, encoder);
 		}
 
-		public override sbyte[] Write(GenericRecord Message)
+		public override sbyte[] Write(IGenericRecord Message)
 		{
 			lock (this)
 			{

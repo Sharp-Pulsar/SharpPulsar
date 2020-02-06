@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Schema.Writer
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 	using SharpPulsar.Api.Schema;
 
-	public class AvroWriter<T> : SchemaWriter<T>
+	public class AvroWriter<T> : ISchemaWriter<T>
 	{
 		private readonly ReflectDatumWriter<T> writer;
 		private BinaryEncoder encoder;

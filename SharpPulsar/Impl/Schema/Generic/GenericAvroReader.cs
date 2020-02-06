@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using EncoderFactory = org.apache.avro.io.EncoderFactory;
 	using SchemaSerializationException = SharpPulsar.Api.SchemaSerializationException;
 	using Field = SharpPulsar.Api.Schema.Field;
-	using GenericRecord = SharpPulsar.Api.Schema.GenericRecord;
+	using IGenericRecord = SharpPulsar.Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
 	using Logger = org.slf4j.Logger;
@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 
 
 
-	public class GenericAvroReader : SchemaReader<GenericRecord>
+	public class GenericAvroReader : ISchemaReader<IGenericRecord>
 	{
 
 		private readonly GenericDatumReader<GenericAvroRecord> reader;
@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public override GenericRecord Read(Stream InputStream)
+		public override IGenericRecord Read(Stream InputStream)
 		{
 			try
 			{
