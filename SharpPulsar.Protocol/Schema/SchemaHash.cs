@@ -18,12 +18,9 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	using HashCode = com.google.common.hash.HashCode;
-	using HashFunction = com.google.common.hash.HashFunction;
-	using Hashing = com.google.common.hash.Hashing;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using Org.Apache.Pulsar.Client.Api;
-    using SharpPulsar.Common.Schema;
+    using SharpPulsar.Api;
+    using System;
+    using System.Security.Cryptography;
 
     //using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
 
@@ -33,18 +30,19 @@ namespace SharpPulsar.Protocol.Schema
     public class SchemaHash
 	{
 
-		private static HashFunction hashFunction = Hashing.sha256();
+		private static SHA256Managed hashFunction = new SHA256Managed();
 
-		private readonly HashCode hash;
+		private readonly byte[] hash;
 
-		private SchemaHash(HashCode Hash)
+		private SchemaHash(byte[] hash)
 		{
-			this.hash = Hash;
+			this.hash = hash;
 		}
 
-		public static SchemaHash Of(Proto.Schema schema)
+		public static SchemaHash Of<T>(ISchema<T> schema)
 		{
-			return Of(Optional.ofNullable(schema).map(schema::getSchemaInfo).map(new SchemaInfo().Schema).orElse(new sbyte[0]));
+			var schem = schema != null? schema.SchemaInfo.Schema: Array.Empty<sbyte>();
+			return Of(schem);
 		}
 
 		public static SchemaHash Of(SchemaData SchemaData)
@@ -52,14 +50,16 @@ namespace SharpPulsar.Protocol.Schema
 			return Of(SchemaData.Data);
 		}
 
-		private static SchemaHash Of(sbyte[] SchemaBytes)
+		private static SchemaHash Of(sbyte[] schemaBytes)
 		{
-			return new SchemaHash(hashFunction.hashBytes(SchemaBytes));
+			var scmBy = (byte[])(Array)schemaBytes;
+			return new SchemaHash(hashFunction.ComputeHash(scmBy));
 		}
 
 		public virtual sbyte[] AsBytes()
 		{
-			return hash.asBytes();
+			var scmBy = (sbyte[])(Array)hash;
+			return scmBy;
 		}
 	}
 

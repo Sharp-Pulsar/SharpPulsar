@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl.Conf
 		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.FAIL;
 		public MessageRouter CustomMessageRouter = null;
 
-		private long _batchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
+		public long BatchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
 		private int _batchingMaxMessages = DefaultBatchingMaxMessages;
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
@@ -177,7 +177,7 @@ namespace SharpPulsar.Impl.Conf
 			long DelayInMs = timeUnit.ToMillis(BatchDelay);
 			if (DelayInMs < 1)
 				throw new System.Exception("configured value for batch delay must be at least 1ms");
-			_batchingMaxPublishDelayMicros = DelayInMs;
+			BatchingMaxPublishDelayMicros = DelayInMs;
 		}
 
 		public virtual int BatchingPartitionSwitchFrequencyByPublishDelay
@@ -192,7 +192,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual long BatchingPartitionSwitchFrequencyIntervalMicros()
 		{
-			return _batchingPartitionSwitchFrequencyByPublishDelay * _batchingMaxPublishDelayMicros;
+			return _batchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
 		}
 
 		object ICloneable.Clone()

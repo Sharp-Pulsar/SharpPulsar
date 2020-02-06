@@ -68,15 +68,15 @@ namespace SharpPulsar.Impl
 			StateUpdater[this] =  S;
 		}
 
-		public abstract string HandlerName {get;}
+		public abstract string HandlerName { get; set; }
 
-		public virtual State? GetAndUpdateState(in System.Func<State, State> Updater)
+		public virtual State GetAndUpdateState(in System.Func<State, State> Updater)
 		{
 			var oldState = StateUpdater[this];
 			var newState = Updater.Invoke(oldState);
 			if (StateUpdater.TryUpdate(this, newState, oldState))
 				return newState;
-			return null;
+			return State.Uninitialized;
 		}
 
 		public virtual PulsarClientImpl Client

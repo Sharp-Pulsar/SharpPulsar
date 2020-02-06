@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl
 
 
 		public virtual DateTime ClientClock {get;}
-		private readonly IEventLoopGroup _eventLoopGroup;
+		public readonly IEventLoopGroup EventLoopGroup;
 
 		public PulsarClientImpl(ClientConfigurationData Conf) : this(Conf, GetEventLoopGroup(Conf))
 		{
@@ -85,7 +85,7 @@ namespace SharpPulsar.Impl
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
 			Auth = Conf;
-			_eventLoopGroup = eventLoopGroup;
+			EventLoopGroup = eventLoopGroup;
 			this.Configuration = Conf;
 			this.ClientClock = Conf.clock;
 			Conf.Authentication.Start();

@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
 		public abstract bool Connected { get; set; }
-		public abstract IProducerStatsRecorder Stats { get; set; }
+		public abstract IProducerStatsRecorder Stats { get; set;}
 		public abstract long LastSequenceId { get; set; }
 		public abstract ValueTask FlushAsync();
 		public abstract TaskCompletionSource<IMessageId> SendAsync(sbyte[] Message);
@@ -48,12 +48,12 @@ namespace SharpPulsar.Impl
 		public MultiSchemaMode ProducerMultiSchemaMode;
 
 
-		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, ISchema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic)
+		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, ISchema<T> schema, ProducerInterceptors Interceptors) : base(Client, Topic)
 		{
 			Stats = new ProducerStatsRecorderImpl<T>(Client, Conf, (ProducerImpl<T>)ProducerCreatedFuture.Task.Result);
 			_producerCreatedTask = ProducerCreatedFuture;
 			this.Conf = Conf;
-			this.Schema = Schema;
+			this.Schema = schema;
 			this.Interceptors = Interceptors;
 			this.SchemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
 			if (!Conf.MultiSchema)
@@ -79,7 +79,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual TaskCompletionSource<IMessageId> SendAsync<T1>(Message<T1> Message)
+		public virtual TaskCompletionSource<IMessageId> SendAsync(Message<T> Message)
 		{
 			return InternalSendAsync(Message);
 		}
@@ -114,8 +114,8 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public abstract TaskCompletionSource<IMessageId> InternalSendAsync<T1>(Message<T1> Message);
-		public virtual IMessageId Send<T1>(Message<T1> Message)
+		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> Message);
+		public virtual IMessageId Send(Message<T> Message)
 		{
 			try
 			{
@@ -178,6 +178,8 @@ namespace SharpPulsar.Impl
 				return Conf;
 			}
 		}
+
+		
 
 		public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
 		{

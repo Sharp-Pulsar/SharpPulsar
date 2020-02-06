@@ -40,7 +40,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="message"> the messages to verify </param>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		virtual void Validate(sbyte[] Message)
+		virtual void Validate(sbyte[] message)
 		{
 			Decode(message);
 		}

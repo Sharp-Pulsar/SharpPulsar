@@ -532,6 +532,14 @@ namespace SharpPulsar.Impl
 			Ready,
 			Broken
 		}
+		public static implicit operator MessageImpl<T>(MessageImpl<object> v)
+		{
+			return (MessageImpl<T>)Convert.ChangeType(v, typeof(MessageImpl<T>));
+		}
+		public static implicit operator MessageImpl<object>(MessageImpl<T> v)
+		{
+			return (MessageImpl<object>)Convert.ChangeType(v, typeof(MessageImpl<object>));
+		}
 	}
 
 }
