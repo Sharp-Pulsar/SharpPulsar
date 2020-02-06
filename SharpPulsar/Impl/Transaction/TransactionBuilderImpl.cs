@@ -18,7 +18,9 @@
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
+    using SharpPulsar.Util;
+    using System.Threading.Tasks;
+    using ITransaction = SharpPulsar.Api.Transaction.ITransaction;
 	using TransactionBuilder = SharpPulsar.Api.Transaction.TransactionBuilder;
 
 	/// <summary>
@@ -35,20 +37,20 @@ namespace SharpPulsar.Impl.Transaction
 			this.client = Client;
 		}
 
-		public override TransactionBuilder WithTransactionTimeout(long Timeout, BAMCIS.Util.Concurrent.TimeUnit TimeoutUnit)
+		public TransactionBuilder WithTransactionTimeout(long Timeout, BAMCIS.Util.Concurrent.TimeUnit TimeoutUnit)
 		{
-			this.txnTimeoutMs = TimeoutUnit.toMillis(Timeout);
+			this.txnTimeoutMs = TimeoutUnit.ToMillis(Timeout);
 			return this;
 		}
 
-		public override CompletableFuture<ITransaction> Build()
+		public ValueTask<ITransaction> Build()
 		{
 			// TODO: talk to TC to begin a transaction
 			//       the builder is responsible for locating the transaction coorindator (TC)
 			//       and start the transaction to get the transaction id.
 			//       After getting the transaction id, all the operations are handled by the
 			//       `TransactionImpl`
-			return CompletableFuture.completedFuture(new TransactionImpl(client, txnTimeoutMs, -1L, -1L));
+			return new ValueTask<ITransaction>(new TransactionImpl(client, txnTimeoutMs, -1L, -1L));
 		}
 	}
 

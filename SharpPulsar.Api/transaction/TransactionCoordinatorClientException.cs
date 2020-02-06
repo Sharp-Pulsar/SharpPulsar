@@ -25,10 +25,10 @@ namespace SharpPulsar.Api.Transaction
 	/// <summary>
 	/// Exceptions for transaction coordinator client.
 	/// </summary>
-	public class TransactionCoordinatorClientException : IOException
+	public class TransactionCoordinatorClientException : System.Exception
 	{
 
-		public TransactionCoordinatorClientException(Exception T) : base(T)
+		public TransactionCoordinatorClientException(System.Exception T) : base(T.Message, T)
 		{
 		}
 
@@ -100,7 +100,7 @@ namespace SharpPulsar.Api.Transaction
 			}
 		}
 
-		public static TransactionCoordinatorClientException Unwrap(Exception T)
+		public static TransactionCoordinatorClientException Unwrap(System.Exception T)
 		{
 			if (T is TransactionCoordinatorClientException)
 			{

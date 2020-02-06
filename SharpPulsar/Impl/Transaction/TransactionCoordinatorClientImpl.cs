@@ -28,28 +28,29 @@ namespace SharpPulsar.Impl.Transaction
 	using TransactionCoordinatorClientException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException;
 	using CoordinatorClientStateException = SharpPulsar.Api.Transaction.TransactionCoordinatorClientException.CoordinatorClientStateException;
 	using MathUtils = SharpPulsar.Util.MathUtils;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Org.Apache.Pulsar.Common.Util.Collections;
-	using TxnID = Org.Apache.Pulsar.Transaction.Impl.Common.TxnID;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
+    using Microsoft.Extensions.Logging;
+    using SharpPulsar.Util.Collections;
+    using SharpPulsar.Util.Atomic;
+    using System.Threading.Tasks;
+    using SharpPulsar.Common.Naming;
+    using System.Collections.Concurrent;
+    using SharpPulsar.Transaction;
 
 
-	/// <summary>
-	/// Transaction coordinator client based topic assigned.
-	/// </summary>
-	public class TransactionCoordinatorClientImpl : TransactionCoordinatorClient
+    /// <summary>
+    /// Transaction coordinator client based topic assigned.
+    /// </summary>
+    public class TransactionCoordinatorClientImpl : TransactionCoordinatorClient
 	{
 
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(TransactionCoordinatorClientImpl));
+		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(TransactionCoordinatorClientImpl));
 
 		private readonly PulsarClientImpl pulsarClient;
 		private TransactionMetaStoreHandler[] handlers;
 		private ConcurrentLongHashMap<TransactionMetaStoreHandler> handlerMap = new ConcurrentLongHashMap<TransactionMetaStoreHandler>(16, 1);
 		private readonly AtomicLong epoch = new AtomicLong(0);
 
-		private static readonly AtomicReferenceFieldUpdater<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> STATE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(typeof(TransactionCoordinatorClientImpl), typeof(TransactionCoordinatorClientState), "state");
+		private static readonly ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> STATE_UPDATER = new ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState>();
 		private volatile TransactionCoordinatorClientState state = TransactionCoordinatorClientState.NONE;
 
 		public TransactionCoordinatorClientImpl(IPulsarClient PulsarClient)
@@ -57,77 +58,74 @@ namespace SharpPulsar.Impl.Transaction
 			this.pulsarClient = (PulsarClientImpl) PulsarClient;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
-		public override void Start()
+		public void Start()
 		{
 			try
 			{
-				StartAsync().get();
+				StartAsync();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<Void> StartAsync()
+		public ValueTask StartAsync()
 		{
-			if (STATE_UPDATER.compareAndSet(this, TransactionCoordinatorClientState.NONE, TransactionCoordinatorClientState.STARTING))
+			if (STATE_UPDATER.TryUpdate(this, TransactionCoordinatorClientState.STARTING, TransactionCoordinatorClientState.NONE))
 			{
-				return pulsarClient.Lookup.getPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).thenAccept(partitionMeta =>
+				var tsk = pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).AsTask().ContinueWith(partitionMeta =>
 				{
-				if (LOG.DebugEnabled)
-				{
-					LOG.debug("Transaction meta store assign partition is {}.", partitionMeta.partitions);
-				}
-				if (partitionMeta.partitions > 0)
-				{
-					handlers = new TransactionMetaStoreHandler[partitionMeta.partitions];
-					for (int I = 0; I < partitionMeta.partitions; I++)
+					if (log.IsEnabled(LogLevel.Debug))
 					{
-						TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(I, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + I);
-						handlers[I] = Handler;
-						handlerMap.Put(I, Handler);
+						log.LogDebug("Transaction meta store assign partition is {}.", partitionMeta.Result.partitions);
 					}
-				}
-				else
-				{
-					handlers = new TransactionMetaStoreHandler[1];
-					TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(0, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
-					handlers[0] = Handler;
-					handlerMap.Put(0, Handler);
-				}
-				STATE_UPDATER.set(TransactionCoordinatorClientImpl.this, TransactionCoordinatorClientState.READY);
+					if (partitionMeta.Result.partitions > 0)
+					{
+						handlers = new TransactionMetaStoreHandler[partitionMeta.Result.partitions];
+						for (int I = 0; I < partitionMeta.Result.partitions; I++)
+						{
+							TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(I, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + I);
+							handlers[I] = Handler;
+							handlerMap.put(I, Handler);
+						}
+					}
+					else
+					{
+						handlers = new TransactionMetaStoreHandler[1];
+						TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(0, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
+						handlers[0] = Handler;
+						handlerMap.put(0, Handler);
+					}
+					STATE_UPDATER[this]  = TransactionCoordinatorClientState.READY;
 				});
+				return new ValueTask(tsk);
 			}
 			else
 			{
-				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.CoordinatorClientStateException("Can not start while current state is " + state));
+				return new ValueTask(Task.FromException(new TransactionCoordinatorClientException.CoordinatorClientStateException("Can not start while current state is " + state)));
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
-		public override void Close()
+		public  void Close()
 		{
 			try
 			{
 				CloseAsync().get();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(E);
 			}
 		}
 
-		public override CompletableFuture<Void> CloseAsync()
+		public ValueTask CloseAsync()
 		{
-			CompletableFuture<Void> Result = new CompletableFuture<Void>();
+			TaskCompletionSource<Task> Result = new TaskCompletionSource<Task>();
 			if (State == TransactionCoordinatorClientState.CLOSING || State == TransactionCoordinatorClientState.CLOSED)
 			{
-				LOG.warn("The transaction meta store is closing or closed, doing nothing.");
-				Result.complete(null);
+				log.LogWarning("The transaction meta store is closing or closed, doing nothing.");
+				Result.SetResult(null);
 			}
 			else
 			{
@@ -135,30 +133,28 @@ namespace SharpPulsar.Impl.Transaction
 				{
 					try
 					{
-						Handler.Dispose();
+						Handler.Close();
 					}
-					catch (IOException E)
+					catch (System.Exception E)
 					{
-						LOG.warn("Close transaction meta store handler error", E);
+						log.LogWarning("Close transaction meta store handler error", E);
 					}
 				}
 				this.handlers = null;
-				Result.complete(null);
+				Result.SetResult(null);
 			}
-			return Result;
+			return new ValueTask(Result.Task);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.transaction.impl.common.TxnID newTransaction() throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
-		public override TxnID NewTransaction()
+		public TxnID NewTransaction()
 		{
 			try
 			{
 				return NewTransactionAsync().get();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(E);
 			}
 		}
 
@@ -167,8 +163,6 @@ namespace SharpPulsar.Impl.Transaction
 			return NewTransactionAsync(TransactionCoordinatorClientFields.DefaultTxnTtlMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.transaction.impl.common.TxnID newTransaction(long timeout, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unit) throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
 		public override TxnID NewTransaction(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
 		{
 			try
@@ -186,8 +180,6 @@ namespace SharpPulsar.Impl.Transaction
 			return NextHandler().newTransactionAsync(Timeout, Unit);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void addPublishPartitionToTxn(org.apache.pulsar.transaction.impl.common.TxnID txnID, java.util.List<String> partitions) throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
 		public override void AddPublishPartitionToTxn(TxnID TxnID, IList<string> Partitions)
 		{
 			try
@@ -210,8 +202,6 @@ namespace SharpPulsar.Impl.Transaction
 			return Handler.addPublishPartitionToTxnAsync(TxnID, Partitions);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void commit(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
 		public override void Commit(TxnID TxnID)
 		{
 			try
@@ -234,8 +224,6 @@ namespace SharpPulsar.Impl.Transaction
 			return Handler.commitAsync(TxnID);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void abort(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws SharpPulsar.api.transaction.TransactionCoordinatorClientException
 		public override void Abort(TxnID TxnID)
 		{
 			try

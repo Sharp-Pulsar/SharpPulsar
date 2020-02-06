@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -38,7 +39,7 @@ namespace SharpPulsar.Api.Transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		TransactionBuilder WithTransactionTimeout(long Timeout, TimeUnit TimeoutUnit);
+		TransactionBuilder WithTransactionTimeout(long timeout, BAMCIS.Util.Concurrent.TimeUnit timeoutUnit);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.

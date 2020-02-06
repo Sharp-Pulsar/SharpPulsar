@@ -18,12 +18,12 @@
 /// </summary>
 namespace SharpPulsar.Impl.Transaction
 {
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
+    using System.Threading.Tasks;
 
 	/// <summary>
-	/// The implementation of <seealso cref="TransactionBufferClient"/>.
+	/// The implementation of <seealso cref="ITransactionBufferClient"/>.
 	/// </summary>
-	public class TransactionBufferClientImpl : TransactionBufferClient
+	public class TransactionBufferClientImpl : ITransactionBufferClient
 	{
 
 		private readonly PulsarClientImpl client;
@@ -33,24 +33,24 @@ namespace SharpPulsar.Impl.Transaction
 			this.client = Client;
 		}
 
-		public override CompletableFuture<Void> CommitTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
+		public ValueTask CommitTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 
-		public override CompletableFuture<Void> AbortTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
+		public ValueTask AbortTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits)
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 
-		public override CompletableFuture<Void> CommitTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
+		public ValueTask CommitTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 
-		public override CompletableFuture<Void> AbortTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
+		public ValueTask AbortTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits)
 		{
-			return FutureUtil.failedFuture(new System.NotSupportedException("Not Implemented Yet"));
+			return new ValueTask(Task.FromException(new System.NotSupportedException("Not Implemented Yet")));
 		}
 	}
 

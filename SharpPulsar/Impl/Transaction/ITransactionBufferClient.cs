@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -22,7 +23,7 @@ namespace SharpPulsar.Impl.Transaction
 	/// <summary>
 	/// The transaction buffer client to commit and abort transactions on topics.
 	/// </summary>
-	public interface TransactionBufferClient
+	public interface ITransactionBufferClient
 	{
 
 		/// <summary>
@@ -32,7 +33,7 @@ namespace SharpPulsar.Impl.Transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the commit result </returns>
-		CompletableFuture<Void> CommitTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits);
+		ValueTask CommitTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits);
 
 		/// <summary>
 		/// Abort the transaction associated with the topic.
@@ -41,7 +42,7 @@ namespace SharpPulsar.Impl.Transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the abort result </returns>
-		CompletableFuture<Void> AbortTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits);
+		ValueTask AbortTxnOnTopic(string Topic, long TxnIdMostBits, long TxnIdLeastBits);
 
 		/// <summary>
 		/// Commit the transaction associated with the topic subscription.
@@ -51,7 +52,7 @@ namespace SharpPulsar.Impl.Transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the commit result </returns>
-		CompletableFuture<Void> CommitTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits);
+		ValueTask CommitTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits);
 
 		/// <summary>
 		/// Abort the transaction associated with the topic subscription.
@@ -61,7 +62,7 @@ namespace SharpPulsar.Impl.Transaction
 		/// <param name="txnIdMostBits"> the most bits of txn id </param>
 		/// <param name="txnIdLeastBits"> the least bits of txn id </param>
 		/// <returns> the future represents the abort result </returns>
-		CompletableFuture<Void> AbortTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits);
+		ValueTask AbortTxnOnSubscription(string Topic, string Subscription, long TxnIdMostBits, long TxnIdLeastBits);
 
 	}
 
