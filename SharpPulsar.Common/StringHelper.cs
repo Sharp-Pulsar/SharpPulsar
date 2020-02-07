@@ -86,7 +86,7 @@ public static class StringHelper
 	}
 	private static sbyte[] GetSBytesForEncoding(System.Text.Encoding encoding, string s)
 	{
-		sbyte[] sbytes = new sbyte[encoding.GetByteCount(s)];
+		var sbytes = new sbyte[encoding.GetByteCount(s)];
 		encoding.GetBytes(s, 0, s.Length, (byte[])(object)sbytes, 0);
 		return sbytes;
 	}
