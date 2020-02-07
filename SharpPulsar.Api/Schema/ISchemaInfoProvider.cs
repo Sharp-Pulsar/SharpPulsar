@@ -31,7 +31,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> schema version </param>
 		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion);
+		ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion);
 
 		/// <summary>
 		/// Retrieve the latest schema info.

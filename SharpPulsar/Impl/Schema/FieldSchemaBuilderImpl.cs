@@ -161,7 +161,7 @@ namespace SharpPulsar.Impl.Schema
 
 			if (null != aliases)
 			{
-				foreach (string Alias in aliases)
+				foreach (var Alias in aliases)
 				{
 					BaseSchema.addAlias(Alias);
 				}

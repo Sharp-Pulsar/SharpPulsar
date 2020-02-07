@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,74 +24,73 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = Api.SchemaSerializationException;
 	using Field = Api.Schema.Field;
 	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
-
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
 
 
 	public class GenericJsonReader : ISchemaReader<IGenericRecord>
 	{
 
-		private readonly ObjectMapper objectMapper;
-		private readonly sbyte[] schemaVersion;
-		private readonly IList<Field> fields;
-		public GenericJsonReader(IList<Field> Fields)
+		private readonly ObjectMapper _objectMapper;
+		private readonly sbyte[] _schemaVersion;
+		private readonly IList<Field> _fields;
+		public GenericJsonReader(IList<Field> fields)
 		{
-			this.fields = Fields;
-			this.schemaVersion = null;
-			this.objectMapper = new ObjectMapper();
+			_fields = fields;
+			_schemaVersion = null;
+			_objectMapper = new ObjectMapper();
 		}
 
-		public GenericJsonReader(sbyte[] SchemaVersion, IList<Field> Fields)
+		public GenericJsonReader(sbyte[] schemaVersion, IList<Field> fields)
 		{
-			this.objectMapper = new ObjectMapper();
-			this.fields = Fields;
-			this.schemaVersion = SchemaVersion;
+			_objectMapper = new ObjectMapper();
+			_fields = fields;
+			_schemaVersion = schemaVersion;
 		}
-		public override GenericJsonRecord Read(sbyte[] Bytes, int Offset, int Length)
+		public override GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				JsonNode Jn = objectMapper.readTree(StringHelper.NewString(Bytes, Offset, Length, UTF_8));
-				return new GenericJsonRecord(schemaVersion, fields, Jn);
+				JsonNode jn = _objectMapper.readTree(StringHelper.NewString(bytes, offset, length, UTF_8));
+				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
-			catch (IOException Ioe)
+			catch (IOException ioe)
 			{
-				throw new SchemaSerializationException(Ioe);
+				throw new SchemaSerializationException(ioe);
 			}
 		}
 
-		public override IGenericRecord Read(Stream InputStream)
+		public override IGenericRecord Read(Stream inputStream)
 		{
 			try
 			{
-				JsonNode Jn = objectMapper.readTree(InputStream);
-				return new GenericJsonRecord(schemaVersion, fields, Jn);
+				JsonNode jn = _objectMapper.ReadTree(inputStream);
+				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
-			catch (IOException Ioe)
+			catch (IOException ioe)
 			{
-				throw new SchemaSerializationException(Ioe);
+				throw new SchemaSerializationException(ioe);
 			}
 			finally
 			{
 				try
 				{
-					InputStream.Close();
+					inputStream.Close();
 				}
-				catch (IOException E)
+				catch (IOException e)
 				{
-					log.error("GenericJsonReader close inputStream close error", E.Message);
+					Log.LogError("GenericJsonReader close inputStream close error", e.Message);
 				}
 			}
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(GenericJsonReader));
+		IGenericRecord ISchemaReader<IGenericRecord>.Read(sbyte[] Bytes, int Offset, int Length)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(GenericJsonReader));
 	}
 
 }

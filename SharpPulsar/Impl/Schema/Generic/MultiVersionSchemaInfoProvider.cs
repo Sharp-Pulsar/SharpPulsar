@@ -1,6 +1,12 @@
-﻿using SharpPulsar.Api;
+﻿using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Protocol.Schema;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -29,71 +35,47 @@ namespace SharpPulsar.Impl.Schema.Generic
 	public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
 	{
 
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(MultiVersionSchemaInfoProvider));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(MultiVersionSchemaInfoProvider));
 
-		private readonly TopicName topicName;
-		public virtual IPulsarClient PulsarClient { get;}
+		private readonly TopicName _topicName;
+		public virtual PulsarClientImpl PulsarClient { get;}
 
-		private readonly LoadingCache<BytesSchemaVersion, CompletableFuture<SchemaInfo>> cache = CacheBuilder.newBuilder().maximumSize(100000).expireAfterAccess(30, BAMCIS.Util.Concurrent.TimeUnit.MINUTES).build(new CacheLoaderAnonymousInnerClass());
+		private readonly ConcurrentDictionary<BytesSchemaVersion, Task<ISchemaInfo>> _cache = new ConcurrentDictionary<BytesSchemaVersion, Task<ISchemaInfo>>();
 
-		public class CacheLoaderAnonymousInnerClass : CacheLoader<BytesSchemaVersion, CompletableFuture<SchemaInfo>>
+		
+		public MultiVersionSchemaInfoProvider(TopicName topicName, PulsarClientImpl pulsarClient)
 		{
-			public override CompletableFuture<SchemaInfo> load(BytesSchemaVersion SchemaVersion)
-			{
-				CompletableFuture<SchemaInfo> SiFuture = outerInstance.loadSchema(SchemaVersion.get());
-				SiFuture.whenComplete((si, cause) =>
-				{
-				if (null != cause)
-				{
-					cache.asMap().remove(SchemaVersion, SiFuture);
-				}
-				});
-				return SiFuture;
-			}
+			_topicName = topicName;
+			PulsarClient = pulsarClient;
 		}
 
-		public MultiVersionSchemaInfoProvider(TopicName topicName, PulsarClientImpl PulsarClient)
-		{
-			this.topicName = topicName;
-			this.PulsarClient = PulsarClient;
-		}
-
-		public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
+		public ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
 		{
 			try
+            {
+                return null == schemaVersion ? new ValueTask<ISchemaInfo>(Task.FromResult<ISchemaInfo>(null)) : new ValueTask<ISchemaInfo>(_cache[BytesSchemaVersion.Of(schemaVersion)]);
+            }
+			catch (System.Exception e)
 			{
-				if (null == SchemaVersion)
-				{
-					return CompletableFuture.completedFuture(null);
-				}
-				return cache.get(BytesSchemaVersion.of(SchemaVersion));
-			}
-			catch (ExecutionException E)
-			{
-				LOG.error("Can't get schema for topic {} schema version {}", topicName.ToString(), StringHelper.NewString(SchemaVersion, StandardCharsets.UTF_8), E);
-				return FutureUtil.failedFuture(E.InnerException);
+				Log.LogError("Can't get schema for topic {} schema version {}", _topicName.ToString(), StringHelper.NewString(schemaVersion), e);
+				return new ValueTask<ISchemaInfo>(Task.FromException<ISchemaInfo>(e)); 
 			}
 		}
 
-		public virtual CompletableFuture<SchemaInfo> LatestSchema
+		public virtual ValueTask<ISchemaInfo> LatestSchema
 		{
 			get
 			{
-				return PulsarClient.Lookup.getSchema(topicName).thenApply(o => o.orElse(null));
-			}
+				var lkup = PulsarClient.Lookup.GetSchema(_topicName);
+                return new ValueTask<ISchemaInfo>(lkup.Result);
+            }
 		}
 
-		public virtual string TopicName
-		{
-			get
-			{
-				return topicName.LocalName;
-			}
-		}
+		public virtual string TopicName => _topicName.LocalName;
 
-		private CompletableFuture<SchemaInfo> LoadSchema(sbyte[] SchemaVersion)
+        private ValueTask<SchemaInfo> LoadSchema(sbyte[] schemaVersion)
 		{
-			 return PulsarClient.Lookup.getSchema(topicName, SchemaVersion).thenApply(o => o.orElse(null));
+			 return PulsarClient.Lookup.GetSchema(_topicName, schemaVersion);
 		}
 
 	}

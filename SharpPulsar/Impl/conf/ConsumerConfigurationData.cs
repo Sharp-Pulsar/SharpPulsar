@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public CryptoKeyReader CryptoKeyReader = null;
 
-		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.FAIL;
+		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.Fail;
 
 		[NonSerialized]
 		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
@@ -108,7 +108,7 @@ namespace SharpPulsar.Impl.Conf
 			try
 			{
 //JAVA 
-				ConsumerConfigurationData<T> C = (ConsumerConfigurationData<T>) base.MemberwiseClone();
+				var C = (ConsumerConfigurationData<T>) base.MemberwiseClone();
 				C.TopicNames = new SortedSet<string>(TopicNames);
 				C.Properties = new SortedDictionary<string, string>(Properties);
 				return C;

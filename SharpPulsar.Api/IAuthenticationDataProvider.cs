@@ -127,7 +127,7 @@ namespace SharpPulsar.Api
 		/// <para>Mainly used for mutual authentication like sasl.
 		/// </para>
 		/// </summary>
-		virtual AuthData Authenticate(AuthData Data)
+		virtual AuthData Authenticate(AuthData data)
 		{
 			sbyte[] bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
 			return AuthData.Of(bytes);

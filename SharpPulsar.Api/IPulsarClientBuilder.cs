@@ -62,7 +62,7 @@ namespace SharpPulsar.Api
 		/// <param name="config">
 		///            configuration to load </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder LoadConf(IDictionary<string, object> Config);
+		IPulsarClientBuilder LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Create a copy of the current client builder.
@@ -103,7 +103,7 @@ namespace SharpPulsar.Api
 		/// <param name="serviceUrl">
 		///            the URL of the Pulsar service that the client should connect to </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder ServiceUrl(string ServiceUrl);
+		IPulsarClientBuilder ServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Configure the service URL provider for Pulsar service.
@@ -116,7 +116,7 @@ namespace SharpPulsar.Api
 		/// <param name="serviceUrlProvider">
 		///            the provider instance </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder ServiceUrlProvider(ServiceUrlProvider ServiceUrlProvider);
+		IPulsarClientBuilder ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider);
 
 		/// <summary>
 		/// Set the authentication provider to use in the Pulsar client instance.
@@ -142,7 +142,7 @@ namespace SharpPulsar.Api
 		/// <param name="authentication">
 		///            an instance of the <seealso cref="Authentication"/> provider already constructed </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder Authentication(IAuthentication Authentication);
+		IPulsarClientBuilder Authentication(IAuthentication authentication);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance.
@@ -168,7 +168,7 @@ namespace SharpPulsar.Api
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-		IPulsarClientBuilder Authentication(string AuthPluginClassName, string AuthParamsString);
+		IPulsarClientBuilder Authentication(string authPluginClassName, string authParamsString);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance
@@ -196,7 +196,7 @@ namespace SharpPulsar.Api
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-		IPulsarClientBuilder Authentication(string AuthPluginClassName, IDictionary<string, string> AuthParams);
+		IPulsarClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams);
 
 		/// <summary>
 		/// Set the operation timeout <i>(default: 30 seconds)</i>.
@@ -211,14 +211,14 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            time unit for {@code operationTimeout} </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder OperationTimeout(int OperationTimeout, TimeUnit Unit);
+		IPulsarClientBuilder OperationTimeout(int operationTimeout, TimeUnit unit);
 
 		/// <summary>
 		/// Set the number of threads to be used for handling connections to brokers <i>(default: 1 thread)</i>.
 		/// </summary>
 		/// <param name="numIoThreads"> the number of IO threads </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder IoThreads(int NumIoThreads);
+		IPulsarClientBuilder IoThreads(int numIoThreads);
 
 		/// <summary>
 		/// Set the number of threads to be used for message listeners <i>(default: 1 thread)</i>.
@@ -231,7 +231,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="numListenerThreads"> the number of listener threads </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder ListenerThreads(int NumListenerThreads);
+		IPulsarClientBuilder ListenerThreads(int numListenerThreads);
 
 		/// <summary>
 		/// Sets the max number of connection that the client library will open to a single broker.
@@ -244,7 +244,7 @@ namespace SharpPulsar.Api
 		/// <param name="connectionsPerBroker">
 		///            max number of connections per broker (needs to be greater than 0) </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder ConnectionsPerBroker(int ConnectionsPerBroker);
+		IPulsarClientBuilder ConnectionsPerBroker(int connectionsPerBroker);
 
 		/// <summary>
 		/// Configure whether to use TCP no-delay flag on the connection, to disable Nagle algorithm.
@@ -261,7 +261,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="enableTcpNoDelay"> whether to enable TCP no-delay feature </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder EnableTcpNoDelay(bool EnableTcpNoDelay);
+		IPulsarClientBuilder EnableTcpNoDelay(bool enableTcpNoDelay);
 
 		/// <summary>
 		/// Configure whether to use TLS encryption on the connection
@@ -271,21 +271,21 @@ namespace SharpPulsar.Api
 		/// @deprecated use "pulsar+ssl://" in serviceUrl to enable 
 		/// <returns> the client builder instance </returns>
 		[Obsolete(@"use ""pulsar+ssl://"" in serviceUrl to enable")]
-		IPulsarClientBuilder EnableTls(bool EnableTls);
+		IPulsarClientBuilder EnableTls(bool enableTls);
 
 		/// <summary>
 		/// Set the path to the trusted TLS certificate file.
 		/// </summary>
 		/// <param name="tlsTrustCertsFilePath"> </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder TlsTrustCertsFilePath(string TlsTrustCertsFilePath);
+		IPulsarClientBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath);
 
 		/// <summary>
 		/// Configure whether the Pulsar client accept untrusted TLS certificate from broker <i>(default: false)</i>.
 		/// </summary>
 		/// <param name="allowTlsInsecureConnection"> whether to accept a untrusted TLS certificate </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder AllowTlsInsecureConnection(bool AllowTlsInsecureConnection);
+		IPulsarClientBuilder AllowTlsInsecureConnection(bool allowTlsInsecureConnection);
 
 		/// <summary>
 		/// It allows to validate hostname verification when client connects to broker over tls. It validates incoming x509
@@ -296,7 +296,7 @@ namespace SharpPulsar.Api
 		/// </seealso>
 		/// <param name="enableTlsHostnameVerification"> whether to enable TLS hostname verification </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder EnableTlsHostnameVerification(bool EnableTlsHostnameVerification);
+		IPulsarClientBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification);
 
 		/// <summary>
 		/// Set the interval between each stat info <i>(default: 60 seconds)</i> Stats will be activated with positive
@@ -307,7 +307,7 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            time unit for {@code statsInterval} </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder StatsInterval(long StatsInterval, TimeUnit Unit);
+		IPulsarClientBuilder StatsInterval(long statsInterval, TimeUnit unit);
 
 		/// <summary>
 		/// Number of concurrent lookup-requests allowed to send on each broker-connection to prevent overload on broker.
@@ -316,7 +316,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="maxConcurrentLookupRequests"> </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder MaxConcurrentLookupRequests(int MaxConcurrentLookupRequests);
+		IPulsarClientBuilder MaxConcurrentLookupRequests(int maxConcurrentLookupRequests);
 
 		/// <summary>
 		/// Number of max lookup-requests allowed on each broker-connection to prevent overload on broker.
@@ -326,7 +326,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="maxLookupRequests"> </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder MaxLookupRequests(int MaxLookupRequests);
+		IPulsarClientBuilder MaxLookupRequests(int maxLookupRequests);
 
 		/// <summary>
 		/// Set max number of broker-rejected requests in a certain time-frame (30 seconds) after which current connection
@@ -335,7 +335,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="maxNumberOfRejectedRequestPerConnection"> </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder MaxNumberOfRejectedRequestPerConnection(int MaxNumberOfRejectedRequestPerConnection);
+		IPulsarClientBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection);
 
 		/// <summary>
 		/// Set keep alive interval for each client-broker-connection. <i>(default: 30 seconds)</i>.
@@ -343,7 +343,7 @@ namespace SharpPulsar.Api
 		/// <param name="keepAliveInterval"> </param>
 		/// <param name="unit"> the time unit in which the keepAliveInterval is defined </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder KeepAliveInterval(int KeepAliveInterval, TimeUnit Unit);
+		IPulsarClientBuilder KeepAliveInterval(int keepAliveInterval, TimeUnit unit);
 
 		/// <summary>
 		/// Set the duration of time to wait for a connection to a broker to be established. If the duration passes without a
@@ -355,7 +355,7 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder ConnectionTimeout(int Duration, TimeUnit Unit);
+		IPulsarClientBuilder ConnectionTimeout(int duration, TimeUnit unit);
 
 		/// <summary>
 		/// Set the duration of time for a backoff interval.
@@ -363,7 +363,7 @@ namespace SharpPulsar.Api
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder StartingBackoffInterval(long Duration, TimeUnit Unit);
+		IPulsarClientBuilder StartingBackoffInterval(long duration, TimeUnit unit);
 
 		/// <summary>
 		/// Set the maximum duration of time for a backoff interval.
@@ -371,7 +371,7 @@ namespace SharpPulsar.Api
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder MaxBackoffInterval(long Duration, TimeUnit Unit);
+		IPulsarClientBuilder MaxBackoffInterval(long duration, TimeUnit unit);
 
 		/// <summary>
 		/// The clock used by the pulsar client.
@@ -389,7 +389,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="clock"> the clock used by the pulsar client to retrieve time information </param>
 		/// <returns> the client builder instance </returns>
-		IPulsarClientBuilder Clock(DateTime Clock);
+		IPulsarClientBuilder Clock(DateTime clock);
 	}
 
 }

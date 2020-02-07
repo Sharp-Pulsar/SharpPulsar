@@ -16,57 +16,59 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Linq;
+using Avro;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Protocol.Schema;
+
 namespace SharpPulsar.Impl.Schema.Generic
 {
-
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
 	using Field = Api.Schema.Field;
 	using IGenericRecord = Api.Schema.IGenericRecord;
 	using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Api.Schema;
-	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 
 	/// <summary>
 	/// A generic json schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j class GenericJsonSchema extends GenericSchemaImpl
-	public class GenericJsonSchema : GenericSchemaImpl
+	public abstract class GenericJsonSchema : GenericSchemaImpl
 	{
-
-		public GenericJsonSchema(SchemaInfo SchemaInfo) : this(SchemaInfo, true)
+        private GenericSchemaImpl _genericSchemaImplImplementation;
+		private static ILogger log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
+        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-		public GenericJsonSchema(SchemaInfo SchemaInfo, bool UseProvidedSchemaAsReaderSchema) : base(SchemaInfo, UseProvidedSchemaAsReaderSchema)
+		public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 			Writer = new GenericJsonWriter();
-			Reader = new GenericJsonReader(FieldsConflict);
+			
+			Reader = new GenericJsonReader(Fields);
 		}
 
-		public override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			SchemaInfo SchemaInfo = getSchemaInfoByVersion(SchemaVersion.get());
-			if (SchemaInfo != null)
+			var schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
+			if (schemaInfo != null)
 			{
-				log.info("Load schema reader for version({}), schema is : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), SchemaInfo.SchemaDefinition);
-				Schema ReaderSchema;
+				log.LogInformation("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), schemaInfo.SchemaDefinition);
+				RecordSchema readerSchema;
 				if (UseProvidedSchemaAsReaderSchema)
 				{
-					ReaderSchema = schema;
+					readerSchema = Schema;
 				}
 				else
 				{
-					ReaderSchema = parseAvroSchema(SchemaInfo.SchemaDefinition);
+					readerSchema = (RecordSchema)ParseAvroSchema(schemaInfo.SchemaDefinition);
 				}
-				return new GenericJsonReader(SchemaVersion.get(), ReaderSchema.Fields.Select(f => new Field(f.name(), f.pos())).ToList());
+				return new GenericJsonReader(schemaVersion.Get(), readerSchema.Fields.Select(f => new Field(){Name = f.Name, Index = f.Pos}).ToList());
 			}
 			else
 			{
-				log.warn("No schema found for version({}), use latest schema : {}", SchemaUtils.getStringSchemaVersion(SchemaVersion.get()), this.schemaInfo.SchemaDefinition);
-				return reader;
+				log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), _schemaInfo.SchemaDefinition);
+				return Reader;
 			}
 		}
 

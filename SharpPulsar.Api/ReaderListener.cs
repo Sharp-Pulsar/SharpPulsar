@@ -41,14 +41,14 @@ namespace SharpPulsar.Api
 		///            the Reader object from where the message was received </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(IReader<T> Reader, Message<T> Msg);
+		void Received(IReader<T> reader, Message<T> msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.
 		/// </summary>
 		/// <param name="reader">
 		///            the Reader object associated with the terminated topic </param>
-		virtual void ReachedEndOfTopic(IReader<T> Reader)
+		virtual void ReachedEndOfTopic(IReader<T> reader)
 		{
 			// By default ignore the notification
 		}

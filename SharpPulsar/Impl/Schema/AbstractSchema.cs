@@ -1,7 +1,8 @@
 ﻿using SharpPulsar.Api.Schema;
-using Org.Apache.Pulsar.Common.Schema;
-
 using System;
+using DotNetty.Buffers;
+using SharpPulsar.Api;
+using SharpPulsar.Exception;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,40 +24,32 @@ using System;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SharpPulsar.Api;
-	using SchemaSerializationException = Api.SchemaSerializationException;
+    using SharpPulsar.Common.Schema;
 
-	public abstract class AbstractSchema<T> : ISchema<T>
+    public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo SchemaInfo);
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: public abstract SharpPulsar.api.Schema<JavaToDotNetGenericWildcard> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
-		public abstract ISchema<object> GetSchema(SchemaInfo SchemaInfo);
-		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> Schema);
+		public abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo);
+
+		public abstract ISchema<object> GetSchema(SchemaInfo schemaInfo);
+
+		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema);
+
 		public abstract ISchema<sbyte[]> AutoProduceBytes();
 		public abstract ISchema<IGenericRecord> AutoConsume();
-		public abstract ISchema<IGenericRecord> AUTO();
-		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType);
-		public abstract ISchema<KeyValue<K, V>> KeyValue(ISchema<K> Key, ISchema<V> Value);
-		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value);
-		public abstract ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes();
-		public abstract ISchema<KeyValue<K, V>> KeyValue(Type Key, Type Value, SchemaType Type);
-		public abstract ISchema<T> JSON(ISchemaDefinition SchemaDefinition);
-		public abstract ISchema<T> JSON(Type Pojo);
-		public abstract ISchema<T> AVRO(ISchemaDefinition<T> SchemaDefinition);
-		public abstract ISchema<T> AVRO(Type Pojo);
-		public abstract ISchema<T> PROTOBUF(ISchemaDefinition<T> SchemaDefinition);
-		public abstract ISchema<T> PROTOBUF(Type Clazz);
-		public abstract void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo);
+		public abstract ISchema<IGenericRecord> Auto();
+
+		public abstract ISchema<T> Json<T>(ISchemaDefinition<T> schemaDefinition);
+		public abstract ISchema<T> Json(Type pojo);
+
+		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();
-		public abstract SchemaInfo SchemaInfo {get;}
-		public abstract T Decode(sbyte[] Bytes, sbyte[] SchemaVersion);
-		public abstract T Decode(sbyte[] Bytes);
+
+		public abstract ISchemaInfo SchemaInfo {get;}
 		public abstract ISchemaInfoProvider SchemaInfoProvider {set;}
+
 		public abstract bool SupportSchemaVersioning();
-		public abstract sbyte[] Encode(T Message);
-		public abstract void Validate(sbyte[] Message);
+		public abstract sbyte[] Encode(T message);
+		public abstract void Validate(sbyte[] message);
 
 		/// <summary>
 		/// Check if the message read able length length is a valid object for this schema.
@@ -71,10 +64,10 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(ByteBuf ByteBuf)
+		public virtual void Validate(IByteBuffer byteBuf)
 		{
 			throw new SchemaSerializationException("This method is not supported");
-		};
+		}
 
 		/// <summary>
 		/// Decode a byteBuf into an object using the schema definition and deserializer implementation
@@ -82,7 +75,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode(ByteBuf ByteBuf);
+		public abstract T Decode(IByteBuffer byteBuf);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -91,11 +84,13 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode(ByteBuf ByteBuf, sbyte[] SchemaVersion)
+		public virtual T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return Decode(ByteBuf);
+			return Decode(byteBuf);
 		}
+        public abstract T Decode(sbyte[] bytes, sbyte[] schemaVersion);
+        public abstract T Decode(sbyte[] bytes);
 	}
 
 }

@@ -155,7 +155,7 @@ namespace SharpPulsar.Impl
 				BatcherBuilder ContainerBuilder = Conf.BatcherBuilder;
 				if (ContainerBuilder == null)
 				{
-					ContainerBuilder = BatcherBuilderFields.DEFAULT;
+					ContainerBuilder = BatcherBuilderFields.Default;
 				}
 				batchMessageContainer = (BatchMessageContainerBase)ContainerBuilder.Build();
 				batchMessageContainer.Producer = this;
@@ -373,7 +373,7 @@ namespace SharpPulsar.Impl
 				if (CompressedSize > ClientCnx.MaxMessageSize)
 				{
 					CompressedPayload.Release();
-					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.NONE) ? "Compressed" : "";
+					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.None) ? "Compressed" : "";
 					PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, CompressedStr, CompressedSize, ClientCnx.MaxMessageSize));
 					Callback.SendComplete(InvalidMessageException);
 					return;
@@ -416,7 +416,7 @@ namespace SharpPulsar.Impl
 						if(MsgMetadataBuilder.HasProducerName())
 							MsgMetadataBuilder.SetProducerName(HandlerName);
 
-						if (Conf.CompressionType != ICompressionType.NONE)
+						if (Conf.CompressionType != ICompressionType.None)
 						{
 							MsgMetadataBuilder.SetCompression(CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType));
 						}
@@ -547,7 +547,7 @@ namespace SharpPulsar.Impl
 			{
 				return;
 			}
-			SchemaInfo SchemaInfo = Optional.ofNullable(Msg.Schema).map(Schema.getSchemaInfo).filter(si => si.Type.Value > 0).orElse(SchemaFields.BYTES.SchemaInfo);
+			SchemaInfo SchemaInfo = Optional.ofNullable(Msg.Schema).map(Schema.getSchemaInfo).filter(si => si.Type.Value > 0).orElse(SchemaFields.Bytes.SchemaInfo);
 			GetOrCreateSchemaAsync(Cnx, SchemaInfo).handle((v, ex) =>
 			{
 				if (ex != null)
@@ -605,7 +605,7 @@ namespace SharpPulsar.Impl
 			catch (PulsarClientException E)
 			{
 				// Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
-				if (Conf.CryptoFailureAction == ProducerCryptoFailureAction.SEND)
+				if (Conf.CryptoFailureAction == ProducerCryptoFailureAction.Send)
 				{
 					log.LogWarning("[{}] [{}] Failed to encrypt message {}. Proceeding with publishing unencrypted message", Topic, HandlerName, E.Message);
 					return CompressedPayload;
@@ -1222,9 +1222,9 @@ namespace SharpPulsar.Impl
 						{
 							SchemaInfo = (SchemaInfo)Schema.SchemaInfo;
 						}
-						else if (Schema is JSONSchema<T>)
+						else if (Schema is JsonSchema<T>)
 						{
-							JSONSchema<T> JsonSchema = (JSONSchema<T>) Schema;
+							JsonSchema<T> JsonSchema = (JsonSchema<T>) Schema;
 							SchemaInfo = JsonSchema.BackwardsCompatibleJsonSchemaInfo;
 						}
 						else

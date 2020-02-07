@@ -1,5 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Shared;
+using SharpPulsar.Util.Atomic.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,50 +27,30 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using JsonInclude = com.fasterxml.jackson.annotation.JsonInclude;
-	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
-	using DeserializationFeature = com.fasterxml.jackson.databind.DeserializationFeature;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using JsonSchema = com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-	using JsonSchemaGenerator = com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using SharpPulsar.Api.Schema;
+	using DotNetty.Buffers;
+	using SharpPulsar.Api;
 	using SharpPulsar.Api.Schema;
 	using SharpPulsar.Impl.Schema.Reader;
 	using SharpPulsar.Impl.Schema.Writer;
-	using BytesSchemaVersion = Org.Apache.Pulsar.Common.Protocol.Schema.BytesSchemaVersion;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
 
 	/// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class JSONSchema<T> extends StructSchema<T>
-	public class JSONSchema<T> : StructSchema<T>
+	public class JsonSchema<T> : StructSchema<T>
 	{
 		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
 		// return shaded version of object mapper
-		private static readonly ThreadLocal<ObjectMapper> JSON_MAPPER = ThreadLocal.withInitial(() =>
-		{
-		ObjectMapper Mapper = new ObjectMapper();
-		Mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		Mapper.SerializationInclusion = JsonInclude.Include.NON_NULL;
-		return Mapper;
-		});
+		private readonly ObjectMapper _mapper = new ObjectMapper();
 
-		private readonly Type pojo = typeof(T);
-
-		private JSONSchema(SchemaInfo SchemaInfo, Type Pojo) : base(SchemaInfo)
+		private JsonSchema(SchemaInfo schemaInfo) : base(schemaInfo)
 		{
-			this.pojo = Pojo;
-			Writer = new JsonWriter<>(JSON_MAPPER.get());
-			Reader = new JsonReader<>(JSON_MAPPER.get(), Pojo);
+			Writer = new JsonWriter<T>(_mapper);
+			Reader = new JsonReader<T>(_mapper);
 		}
 
-		public override ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion)
+		public override ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			throw new Exception("JSONSchema don't support schema versioning");
+			throw new System.Exception("JSONSchema don't support schema versioning");
 		}
 
 		/// <summary>
@@ -74,45 +60,116 @@ namespace SharpPulsar.Impl.Schema
 		/// 
 		/// @return
 		/// </summary>
+		[Obsolete]
 		public virtual SchemaInfo BackwardsCompatibleJsonSchemaInfo
 		{
 			get
 			{
-				SchemaInfo BackwardsCompatibleSchemaInfo;
+				SchemaInfo backwardsCompatibleSchemaInfo;
 				try
 				{
-					ObjectMapper ObjectMapper = new ObjectMapper();
-					JsonSchemaGenerator SchemaGen = new JsonSchemaGenerator(ObjectMapper);
-					JsonSchema JsonBackwardsCompatibleSchema = SchemaGen.generateSchema(pojo);
-					BackwardsCompatibleSchemaInfo = new SchemaInfo();
-					BackwardsCompatibleSchemaInfo.Name = "";
-					BackwardsCompatibleSchemaInfo.Properties = SchemaInfoConflict.Properties;
-					BackwardsCompatibleSchemaInfo.Type = SchemaType.JSON;
-					BackwardsCompatibleSchemaInfo.Schema = ObjectMapper.writeValueAsBytes(JsonBackwardsCompatibleSchema);
+					var objectMapper = new ObjectMapper();
+					var schemaGen = new JsonSchemaGenerator();
+					var jsonBackwardsCompatibleSchema = schemaGen.Generate(typeof(T));
+					backwardsCompatibleSchemaInfo = new SchemaInfo
+					{
+						Name = "",
+						Properties = SchemaInfo.Properties,
+						Type = SchemaType.JSON,
+						Schema = (sbyte[])(Array)objectMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
+					};
 				}
-				catch (JsonProcessingException Ex)
+				catch (System.Exception ex)
 				{
-					throw new Exception(Ex);
+					throw ex;
 				}
-				return BackwardsCompatibleSchemaInfo;
+				return backwardsCompatibleSchemaInfo;
 			}
 		}
 
-		public static JSONSchema<T> Of<T>(ISchemaDefinition<T> SchemaDefinition)
+		public override SchemaInfo SchemaInfo => throw new NotImplementedException();
+
+		public override ISchemaInfo SchemaInfo => throw new NotImplementedException();
+
+		public static JsonSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
 		{
-			return new JSONSchema<T>(ParseSchemaInfo(SchemaDefinition, SchemaType.JSON), SchemaDefinition.Pojo);
+			return new JsonSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.JSON));
 		}
 
-		public static JSONSchema<T> Of<T>(Type Pojo)
+		public static JsonSchema<T> Of(T pojo)
 		{
-			return JSONSchema.Of(ISchemaDefinition.builder<T>().withPojo(Pojo).build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
-		public static JSONSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
+		public static JsonSchema<T> Of(T pojo, IDictionary<string, string> properties)
 		{
-			return JSONSchema.Of(ISchemaDefinition.builder<T>().withPojo(Pojo).withProperties(Properties).build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
 
+		public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<object> GetSchema(SchemaInfo schemaInfo)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<sbyte[]> AutoProduceBytes()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<IGenericRecord> AutoConsume()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<IGenericRecord> Auto()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<T1> Json<T1>(ISchemaDefinition<T1> schemaDefinition)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override ISchema<T> Json(Type pojo)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override bool RequireFetchingSchemaInfo()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override bool SupportSchemaVersioning()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void Validate(sbyte[] message)
+		{
+			throw new NotImplementedException();
+		}
+		
+		public override T Decode(IByteBuffer byteBuf)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

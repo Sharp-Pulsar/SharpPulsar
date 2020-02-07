@@ -31,7 +31,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="name"> name of the record. </param>
 		/// <returns> builder to build the schema for a record. </returns>
-		static IRecordSchemaBuilder Record(string Name)
+		static IRecordSchemaBuilder Record(string name)
 		{
 			return DefaultImplementation.newRecordSchemaBuilder(name);
 		}

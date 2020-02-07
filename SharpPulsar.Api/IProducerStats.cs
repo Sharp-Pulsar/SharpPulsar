@@ -47,19 +47,19 @@ namespace SharpPulsar.Api
 		double SendBytesRate {get;}
 
 		/// <returns> the 50th percentile of the send latency in milliseconds for the last interval </returns>
-		double SendLatencyMillis50pct {get;}
+		double SendLatencyMillis50Pct {get;}
 
 		/// <returns> the 75th percentile of the send latency in milliseconds for the last interval </returns>
-		double SendLatencyMillis75pct {get;}
+		double SendLatencyMillis75Pct {get;}
 
 		/// <returns> the 95th percentile of the send latency in milliseconds for the last interval </returns>
-		double SendLatencyMillis95pct {get;}
+		double SendLatencyMillis95Pct {get;}
 
 		/// <returns> the 99th percentile of the send latency in milliseconds for the last interval </returns>
-		double SendLatencyMillis99pct {get;}
+		double SendLatencyMillis99Pct {get;}
 
 		/// <returns> the 99.9th percentile of the send latency in milliseconds for the last interval </returns>
-		double SendLatencyMillis999pct {get;}
+		double SendLatencyMillis999Pct {get;}
 
 		/// <returns> the max send latency in milliseconds for the last interval </returns>
 		double SendLatencyMillisMax {get;}

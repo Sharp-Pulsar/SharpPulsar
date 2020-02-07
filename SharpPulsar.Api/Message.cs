@@ -43,14 +43,14 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="name"> the name of the property to check </param>
 		/// <returns> true if the message has the specified property and false if the properties is not defined </returns>
-		bool HasProperty(string Name);
+		bool HasProperty(string name);
 
 		/// <summary>
 		/// Get the value of a specific property.
 		/// </summary>
 		/// <param name="name"> the name of the property </param>
 		/// <returns> the value of the property or null if the property was not defined </returns>
-		string GetProperty(string Name);
+		string GetProperty(string name);
 
 		/// <summary>
 		/// Get the raw payload of the message.

@@ -1813,7 +1813,7 @@ namespace SharpPulsar.Impl
 
 		private bool IsMessageUndecryptable(PulsarApi.MessageMetadata MsgMetadata)
 		{
-			return (MsgMetadata.EncryptionKeysCount > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.CONSUME);
+			return (MsgMetadata.EncryptionKeysCount > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.Consume);
 		}
 
 		/// <summary>

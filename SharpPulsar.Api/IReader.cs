@@ -52,7 +52,7 @@ namespace SharpPulsar.Api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		Message<T> ReadNext(int Timeout, TimeUnit Unit);
+		Message<T> ReadNext(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Read asynchronously the next message in the topic.
@@ -138,7 +138,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId"> the message id where to reposition the reader </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void Seek(IMessageId MessageId);
+		void Seek(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -151,7 +151,7 @@ namespace SharpPulsar.Api
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
-		void Seek(long Timestamp);
+		void Seek(long timestamp);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message id.
@@ -170,7 +170,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="messageId"> the message id where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(IMessageId MessageId);
+		ValueTask<Void> SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -183,7 +183,7 @@ namespace SharpPulsar.Api
 		/// <param name="timestamp">
 		///            the message publish time where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(long Timestamp);
+		ValueTask<Void> SeekAsync(long timestamp);
 	}
 
 }

@@ -42,14 +42,14 @@ namespace SharpPulsar.Api
 		/// <param name="metadata">
 		///            Additional information needed to identify the key </param>
 		/// <returns> EncryptionKeyInfo with details about the public key </returns>
-		EncryptionKeyInfo GetPublicKey(string KeyName, IDictionary<string, string> Metadata);
+		EncryptionKeyInfo GetPublicKey(string keyName, IDictionary<string, string> metadata);
 
 		/// <param name="keyName">
 		///            Unique name to identify the key </param>
 		/// <param name="metadata">
 		///            Additional information needed to identify the key </param>
 		/// <returns> byte array of the private key value </returns>
-		EncryptionKeyInfo GetPrivateKey(string KeyName, IDictionary<string, string> Metadata);
+		EncryptionKeyInfo GetPrivateKey(string keyName, IDictionary<string, string> metadata);
 
 	}
 

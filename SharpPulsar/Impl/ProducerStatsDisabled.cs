@@ -132,7 +132,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual double SendLatencyMillis50pct
+		public virtual double SendLatencyMillis50Pct
 		{
 			get
 			{
@@ -140,7 +140,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual double SendLatencyMillis75pct
+		public virtual double SendLatencyMillis75Pct
 		{
 			get
 			{
@@ -148,7 +148,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual double SendLatencyMillis95pct
+		public virtual double SendLatencyMillis95Pct
 		{
 			get
 			{
@@ -156,7 +156,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual double SendLatencyMillis99pct
+		public virtual double SendLatencyMillis99Pct
 		{
 			get
 			{
@@ -164,7 +164,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual double SendLatencyMillis999pct
+		public virtual double SendLatencyMillis999Pct
 		{
 			get
 			{

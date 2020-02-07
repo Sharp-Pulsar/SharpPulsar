@@ -28,30 +28,30 @@ namespace SharpPulsar.Api
 		public virtual End {get;}
 
 
-		public Range(int Start, int End)
+		public Range(int start, int end)
 		{
-			if (End < Start)
+			if (end < start)
 			{
 				throw new System.ArgumentException("Range end must >= range start.");
 			}
-			this.Start = Start;
-			this.End = End;
+			this.Start = start;
+			this.End = end;
 		}
 
-		public static Range Of(int Start, int End)
+		public static Range Of(int start, int end)
 		{
-			return new Range(Start, End);
+			return new Range(start, end);
 		}
 
 
 
-		public virtual Range Intersect(Range Range)
+		public virtual Range Intersect(Range range)
 		{
-			int Start = Range.Start > this.Start ? Range.Start : this.Start;
-			int End = Range.End < this.End ? Range.End : this.End;
-			if (End >= Start)
+			int start = range.Start > this.Start ? range.Start : this.Start;
+			int end = range.End < this.End ? range.End : this.End;
+			if (end >= start)
 			{
-				return Range.Of(Start, End);
+				return Range.Of(start, end);
 			}
 			else
 			{

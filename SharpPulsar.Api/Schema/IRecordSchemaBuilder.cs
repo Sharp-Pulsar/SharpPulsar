@@ -33,14 +33,14 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="name"> property name </param>
 		/// <param name="val"> property value </param>
 		/// <returns> record schema builder </returns>
-		IRecordSchemaBuilder Property(string Name, string Val);
+		IRecordSchemaBuilder Property(string name, string val);
 
 		/// <summary>
 		/// Add a field with the given name to the record.
 		/// </summary>
 		/// <param name="fieldName"> name of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		IFieldSchemaBuilder Field(string FieldName);
+		IFieldSchemaBuilder Field(string fieldName);
 
 		/// <summary>
 		/// Add a field with the given name and genericSchema to the record.
@@ -48,20 +48,20 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="fieldName"> name of the field </param>
 		/// <param name="genericSchema"> schema of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		IFieldSchemaBuilder Field(string FieldName, IGenericSchema GenericSchema);
+		IFieldSchemaBuilder Field(string fieldName, IGenericSchema genericSchema);
 
 		/// <summary>
 		/// Add doc to the record schema.
 		/// </summary>
 		/// <param name="doc"> documentation </param>
 		/// <returns> field schema builder </returns>
-		IRecordSchemaBuilder Doc(string Doc);
+		IRecordSchemaBuilder Doc(string doc);
 
 		/// <summary>
 		/// Build the schema info.
 		/// </summary>
 		/// <returns> the schema info. </returns>
-		SchemaInfo Build(SchemaType SchemaType);
+		SchemaInfo Build(SchemaType schemaType);
 
 	}
 

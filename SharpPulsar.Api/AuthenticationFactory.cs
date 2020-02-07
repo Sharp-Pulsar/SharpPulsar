@@ -38,9 +38,9 @@ namespace SharpPulsar.Api
 		/// <param name="token">
 		///            the client auth token </param>
 		/// <returns> the Authentication object initialized with the token credentials </returns>
-		public static IAuthentication Token(string Token)
+		public static IAuthentication Token(string token)
 		{
-			return DefaultImplementation.newAuthenticationToken(Token);
+			return DefaultImplementation.newAuthenticationToken(token);
 		}
 
 		/// <summary>
@@ -49,9 +49,9 @@ namespace SharpPulsar.Api
 		/// <param name="tokenSupplier">
 		///            a supplier of the client auth token </param>
 		/// <returns> the Authentication object initialized with the token credentials </returns>
-		public static IAuthentication Token(Func<string> TokenSupplier)
+		public static IAuthentication Token(Func<string> tokenSupplier)
 		{
-			return DefaultImplementation.newAuthenticationToken(TokenSupplier);
+			return DefaultImplementation.newAuthenticationToken(tokenSupplier);
 		}
 
 		// CHECKSTYLE.OFF: MethodName
@@ -64,9 +64,9 @@ namespace SharpPulsar.Api
 		/// <param name="keyFilePath">
 		///            the path to the TLS client private key </param>
 		/// <returns> the Authentication object initialized with the TLS credentials </returns>
-		public static IAuthentication TLS(string CertFilePath, string KeyFilePath)
+		public static IAuthentication Tls(string certFilePath, string keyFilePath)
 		{
-			return DefaultImplementation.newAuthenticationTLS(CertFilePath, KeyFilePath);
+			return DefaultImplementation.newAuthenticationTLS(certFilePath, keyFilePath);
 		}
 
 		// CHECKSTYLE.ON: MethodName
@@ -81,11 +81,11 @@ namespace SharpPulsar.Api
 		///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
 		/// <returns> instance of the Authentication object </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-		public static IAuthentication Create(string AuthPluginClassName, string AuthParamsString)
+		public static IAuthentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(AuthPluginClassName, AuthParamsString);
+				return DefaultImplementation.createAuthentication(authPluginClassName, authParamsString);
 			}
 			catch (Exception T)
 			{
@@ -100,11 +100,11 @@ namespace SharpPulsar.Api
 		/// <param name="authParams">          map which represents parameters for the Authentication-Plugin </param>
 		/// <returns> instance of the Authentication-Plugin </returns>
 		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-		public static IAuthentication Create(string AuthPluginClassName, IDictionary<string, string> AuthParams)
+		public static IAuthentication Create(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(AuthPluginClassName, AuthParams);
+				return DefaultImplementation.createAuthentication(authPluginClassName, authParams);
 			}
 			catch (Exception T)
 			{

@@ -54,7 +54,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="fieldName"> the field name </param>
 		/// <returns> the value object </returns>
-		object GetField(string FieldName);
+		object GetField(string fieldName);
 
 	}
 

@@ -33,7 +33,7 @@ namespace SharpPulsar.Api
 		/// New consumer with fixed hash range to attach the topic, if new consumer use conflict hash range with
 		/// exits consumers, new consumer will be rejected.
 		/// </summary>
-		STICKY
+		Sticky
 	}
 
 }

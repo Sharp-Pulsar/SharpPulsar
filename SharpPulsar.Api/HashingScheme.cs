@@ -33,7 +33,7 @@ namespace SharpPulsar.Api
 		/// Use Murmur3 hashing function.
 		/// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
 		/// </summary>
-		Murmur3_32Hash
+		Murmur332Hash
 
 	}
 

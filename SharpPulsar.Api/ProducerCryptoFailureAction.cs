@@ -27,12 +27,12 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// This is the default option to fail send if crypto operation fails.
 		/// </summary>
-		FAIL,
+		Fail,
 
 		/// <summary>
 		/// Ignore crypto failure and proceed with sending unencrypted messages.
 		/// </summary>
-		SEND
+		Send
 	}
 
 }

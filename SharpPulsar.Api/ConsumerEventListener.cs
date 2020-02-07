@@ -34,7 +34,7 @@ namespace SharpPulsar.Api
 		///            the id of the partition that became active </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void becameActive(Consumer<?> consumer, int partitionId);
-		void becameActive<T1>(IConsumer<T1> Consumer, int PartitionId);
+		void becameActive<T1>(IConsumer<T1> consumer, int partitionId);
 
 		/// <summary>
 		/// Notified when the consumer group is changed, and the consumer is still inactive or becomes inactive.
@@ -45,7 +45,7 @@ namespace SharpPulsar.Api
 		///            the id of the partition that became inactive </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void becameInactive(Consumer<?> consumer, int partitionId);
-		void becameInactive<T1>(IConsumer<T1> Consumer, int PartitionId);
+		void becameInactive<T1>(IConsumer<T1> consumer, int partitionId);
 
 	}
 

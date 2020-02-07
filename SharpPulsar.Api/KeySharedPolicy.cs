@@ -80,9 +80,9 @@ namespace SharpPulsar.Api
 				this.RangesConflict = new List<Range>();
 			}
 
-			public virtual KeySharedPolicySticky Ranges(params Range[] Ranges)
+			public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
 			{
-				((List<Range>)this.RangesConflict).AddRange(Arrays.asList(Ranges));
+				((List<Range>)this.RangesConflict).AddRange(Arrays.asList(ranges));
 				return this;
 			}
 
@@ -92,19 +92,19 @@ namespace SharpPulsar.Api
 				{
 					throw new System.ArgumentException("Ranges for KeyShared policy must not be empty.");
 				}
-				for (int I = 0; I < RangesConflict.Count; I++)
+				for (int i = 0; i < RangesConflict.Count; i++)
 				{
-					Range Range1 = RangesConflict[I];
-					if (Range1.Start < 0 || Range1.End > DefaultHashRangeSize)
+					Range range1 = RangesConflict[i];
+					if (range1.Start < 0 || range1.End > DefaultHashRangeSize)
 					{
-						throw new System.ArgumentException("Ranges must be [0, 65535] but provided range is " + Range1);
+						throw new System.ArgumentException("Ranges must be [0, 65535] but provided range is " + range1);
 					}
-					for (int J = 0; J < RangesConflict.Count; J++)
+					for (int j = 0; j < RangesConflict.Count; j++)
 					{
-						Range Range2 = RangesConflict[J];
-						if (i != J && Range1.intersect(Range2) != null)
+						Range range2 = RangesConflict[j];
+						if (i != j && range1.intersect(range2) != null)
 						{
-							throw new System.ArgumentException("Ranges for KeyShared policy with overlap between " + Range1 + " and " + Range2);
+							throw new System.ArgumentException("Ranges for KeyShared policy with overlap between " + range1 + " and " + range2);
 						}
 					}
 				}

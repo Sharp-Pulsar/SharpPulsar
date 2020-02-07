@@ -63,15 +63,15 @@ namespace SharpPulsar.Common.Compression
 			
 			switch (compressionType)
 			{
-			case ICompressionType.NONE:
+			case ICompressionType.None:
 				return CompressionType.NONE;
-			case ICompressionType.LZ4:
+			case ICompressionType.Lz4:
 				return CompressionType.LZ4;
-			case ICompressionType.ZLIB:
+			case ICompressionType.Zlib:
 				return CompressionType.ZLIB;
-			case ICompressionType.ZSTD:
+			case ICompressionType.Zstd:
 				return CompressionType.ZSTD;
-			case ICompressionType.SNAPPY:
+			case ICompressionType.Snappy:
 				return CompressionType.SNAPPY;
 
 			default:

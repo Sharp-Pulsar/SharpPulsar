@@ -28,36 +28,18 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// </summary>
 	public abstract class VersionedGenericRecord : IGenericRecord
 	{
-		public abstract object GetField(string FieldName);
-		public abstract object GetField(Field Field);
+		public abstract object GetField(string fieldName);
+		public abstract object GetField(Field field);
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly sbyte[] SchemaVersionConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly IList<Field> FieldsConflict;
-
-		public VersionedGenericRecord(sbyte[] SchemaVersion, IList<Field> Fields)
+        protected VersionedGenericRecord(sbyte[] schemaVersion, IList<Field> fields)
 		{
-			this.SchemaVersionConflict = SchemaVersion;
-			this.FieldsConflict = Fields;
+            SchemaVersion = schemaVersion;
+			Fields = fields;
 		}
 
-		public virtual sbyte[] SchemaVersion
-		{
-			get
-			{
-				return SchemaVersionConflict;
-			}
-		}
+		public virtual sbyte[] SchemaVersion { get; }
 
-		public virtual IList<Field> Fields
-		{
-			get
-			{
-				return FieldsConflict;
-			}
-		}
-
-	}
+        public virtual IList<Field> Fields { get; }
+    }
 
 }

@@ -28,12 +28,12 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// This is the default option to fail consume messages until crypto succeeds.
 		/// </summary>
-		FAIL,
+		Fail,
 
 		/// <summary>
 		/// Message is silently acknowledged and not delivered to the application.
 		/// </summary>
-		DISCARD,
+		Discard,
 
 		/// <summary>
 		/// Deliver the encrypted message to the application. It's the application's responsibility to decrypt the message.
@@ -46,7 +46,7 @@ namespace SharpPulsar.Api
 		/// information in it using which application can decrypt consumed message payload.
 		/// </para>
 		/// </summary>
-		CONSUME
+		Consume
 	}
 
 }

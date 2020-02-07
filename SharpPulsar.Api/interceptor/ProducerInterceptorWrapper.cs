@@ -27,35 +27,35 @@ namespace SharpPulsar.Api.Interceptor
 	/// </summary>
 	public class ProducerInterceptorWrapper<T> : IProducerInterceptor
 	{
-		private readonly IProducerInterceptor innerInterceptor;
+		private readonly IProducerInterceptor _innerInterceptor;
 
-		public ProducerInterceptorWrapper(IProducerInterceptor InnerInterceptor)
+		public ProducerInterceptorWrapper(IProducerInterceptor innerInterceptor)
 		{
-			this.innerInterceptor = InnerInterceptor;
+			this._innerInterceptor = innerInterceptor;
 		}
 
 		public void Dispose()
 		{
-			innerInterceptor.Close();
+			_innerInterceptor.Close();
 		}
 		public void Close()
 		{
-			innerInterceptor.Close();
+			_innerInterceptor.Close();
 		}
 
-		public bool Eligible<T>(Message<T> Message)
+		public bool Eligible<T>(Message<T> message)
 		{
 			return true;
 		}
 
-		public Message<T> BeforeSend<T>(IProducer<T> Producer, Message<T> Message)
+		public Message<T> BeforeSend<T>(IProducer<T> producer, Message<T> message)
 		{
-			return innerInterceptor.BeforeSend(Producer, Message);
+			return _innerInterceptor.BeforeSend(producer, message);
 		}
 
-		public void OnSendAcknowledgement<T>(IProducer<T> Producer, Message<T> Message, IMessageId MsgId, System.Exception Exception)
+		public void OnSendAcknowledgement<T>(IProducer<T> producer, Message<T> message, IMessageId msgId, System.Exception exception)
 		{
-			innerInterceptor.OnSendAcknowledgement(Producer, Message, MsgId, Exception);
+			_innerInterceptor.OnSendAcknowledgement(producer, message, msgId, exception);
 		}
 	}
 

@@ -56,14 +56,14 @@ namespace SharpPulsar.Impl.Schema
 
 		public override FieldSchemaBuilder Field(string FieldName)
 		{
-			FieldSchemaBuilderImpl Field = new FieldSchemaBuilderImpl(FieldName);
+			var Field = new FieldSchemaBuilderImpl(FieldName);
 			fields.Add(Field);
 			return Field;
 		}
 
 		public override FieldSchemaBuilder Field(string FieldName, IGenericSchema GenericSchema)
 		{
-			FieldSchemaBuilderImpl Field = new FieldSchemaBuilderImpl(FieldName, GenericSchema);
+			var Field = new FieldSchemaBuilderImpl(FieldName, GenericSchema);
 			fields.Add(Field);
 			return Field;
 		}
@@ -85,11 +85,11 @@ namespace SharpPulsar.Impl.Schema
 					throw new Exception("Currently only AVRO and JSON record schema is supported");
 			}
 
-			string SchemaNs = NAMESPACE;
-			string SchemaName = DefaultSchemaName;
+			var SchemaNs = NAMESPACE;
+			var SchemaName = DefaultSchemaName;
 			if (!string.ReferenceEquals(name, null))
 			{
-				string[] Split = SplitName(name);
+				var Split = SplitName(name);
 				SchemaNs = Split[0];
 				SchemaName = Split[1];
 			}
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl.Schema
 			org.apache.avro.Schema BaseSchema = org.apache.avro.Schema.createRecord(!string.ReferenceEquals(SchemaName, null) ? SchemaName : DefaultSchemaName, doc, SchemaNs, false);
 
 			IList<org.apache.avro.Schema.Field> AvroFields = new List<org.apache.avro.Schema.Field>();
-			foreach (FieldSchemaBuilderImpl Field in fields)
+			foreach (var Field in fields)
 			{
 				AvroFields.Add(Field.build());
 			}
@@ -111,8 +111,8 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		private static string[] SplitName(string FullName)
 		{
-			string[] Result = new string[2];
-			int IndexLastDot = FullName.LastIndexOf('.');
+			var Result = new string[2];
+			var IndexLastDot = FullName.LastIndexOf('.');
 			if (IndexLastDot >= 0)
 			{
 				Result[0] = FullName.Substring(0, IndexLastDot);

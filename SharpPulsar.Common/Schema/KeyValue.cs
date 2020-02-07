@@ -25,59 +25,59 @@ namespace SharpPulsar.Common.Schema
 	/// <summary>
 	/// A simple KeyValue class.
 	/// </summary>
-	public class KeyValue<K, V>
+	public class KeyValue<TK, TV>
 	{
-		private readonly K key;
-		private readonly V value;
+		private readonly TK _key;
+		private readonly TV _value;
 
-		public KeyValue(K key, V value)
+		public KeyValue(TK key, TV value)
 		{
-			this.key = key;
-			this.value = value;
+			this._key = key;
+			this._value = value;
 		}
 
-		public virtual K Key
+		public virtual TK Key
 		{
 			get
 			{
-				return key;
+				return _key;
 			}
 		}
 
-		public virtual V Value
+		public virtual TV Value
 		{
 			get
 			{
-				return value;
+				return _value;
 			}
 		}
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(key, value);
+			return HashCode.Combine(_key, _value);
 		}
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is KeyValue<K, V>))
+			if (!(obj is KeyValue<TK, TV>))
 			{
 				return false;
 			}
-			KeyValue<K, V> another = (KeyValue<K, V>) obj;
-			return Equals(key, another.key) && Equals(value, another.value);
+			KeyValue<TK, TV> another = (KeyValue<TK, TV>) obj;
+			return Equals(_key, another._key) && Equals(_value, another._value);
 		}
 
 		public override string ToString()
 		{
 			StringBuilder sb = new StringBuilder();
-			sb.Append("(key = \"").Append(key).Append("\", value = \"").Append(value).Append("\")");
+			sb.Append("(key = \"").Append(_key).Append("\", value = \"").Append(_value).Append("\")");
 			return sb.ToString();
 		}
 
 		/// <summary>
 		/// Decoder to decode key/value bytes.
 		/// </summary>
-		public delegate KeyValue<K, V> KeyValueDecoder<K, V>(sbyte[] keyData, sbyte[] valueData);
+		public delegate KeyValue<TK, TV> KeyValueDecoder<TK, TV>(sbyte[] keyData, sbyte[] valueData);
 
 		/// <summary>
 		/// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
@@ -87,7 +87,7 @@ namespace SharpPulsar.Common.Schema
 		/// <param name="value"> value object to encode </param>
 		/// <param name="valueWriter"> a writer to encode value object </param>
 		/// <returns> the encoded bytes array </returns>
-		public static sbyte[] Encode(K key, ISchema<K> keyWriter, V value, ISchema<V> valueWriter)
+		public static sbyte[] Encode(TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
 		{
 			sbyte[] keyBytes = keyWriter.Encode(key);
 			sbyte[] valueBytes = valueWriter.Encode(value);
@@ -102,7 +102,7 @@ namespace SharpPulsar.Common.Schema
 		/// <param name="data"> the encoded bytes </param>
 		/// <param name="decoder"> the decoder to decode encoded key/value bytes </param>
 		/// <returns> the decoded key/value pair </returns>
-		public static KeyValue<K, V> Decode(sbyte[] data, KeyValueDecoder<K, V> decoder)
+		public static KeyValue<TK, TV> Decode(sbyte[] data, KeyValueDecoder<TK, TV> decoder)
 		{
 			ByteBuffer byteBuffer = ByteBuffer.Wrap(data);
 			int keyLength = byteBuffer.Int;

@@ -54,7 +54,7 @@ namespace SharpPulsar.Api
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		IMessageId Send(T Message);
+		IMessageId Send(T message);
 
 		/// <summary>
 		/// Send a message asynchronously.
@@ -74,7 +74,7 @@ namespace SharpPulsar.Api
 		/// <param name="message">
 		///            a byte array with the payload of the message </param>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		ValueTask<IMessageId> SendAsync(T Message);
+		ValueTask<IMessageId> SendAsync(T message);
 
 		/// <summary>
 		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.
@@ -114,7 +114,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
 		/// <seealso cref= #newMessage() </seealso>
-		ITypedMessageBuilder<T> NewMessage(ISchema<T> Schema);
+		ITypedMessageBuilder<T> NewMessage(ISchema<T> schema);
 
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.

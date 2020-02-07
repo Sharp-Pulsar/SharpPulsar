@@ -62,12 +62,12 @@ namespace SharpPulsar.Impl.Conf
 			var Mapper = ThreadLocal;
 			try
 			{
-				string existingConfigJson = Mapper.WriteValueAsString(ExistingData);
-				IDictionary<string, object> existingConfig = (IDictionary<string, object>)Mapper.ReadValue(existingConfigJson, typeof(IDictionary<string, object>));
+				var existingConfigJson = Mapper.WriteValueAsString(ExistingData);
+				var existingConfig = (IDictionary<string, object>)Mapper.ReadValue(existingConfigJson, typeof(IDictionary<string, object>));
 				IDictionary<string, object> newConfig = new Dictionary<string, object>();
 				existingConfig.ToList().ForEach(x=> newConfig.Add(x.Key, x.Value));
 				Config.ToList().ForEach(x => newConfig.Add(x.Key, x.Value));
-				string ConfigJson = Mapper.WriteValueAsString(newConfig);
+				var ConfigJson = Mapper.WriteValueAsString(newConfig);
 				return (T)Mapper.ReadValue(ConfigJson, DataCls);
 			}
 			catch (IOException E)

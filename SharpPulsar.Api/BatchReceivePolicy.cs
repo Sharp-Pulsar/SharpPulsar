@@ -57,12 +57,12 @@ namespace SharpPulsar.Api
 		/// </summary>
 		public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, TimeUnit.MILLISECONDS);
 
-		private BatchReceivePolicy(int MaxNumMessages, int MaxNumBytes, int Timeout, TimeUnit TimeoutUnit)
+		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeUnit timeoutUnit)
 		{
-			this.MaxNumMessages = MaxNumMessages;
-			this.maxNumBytes = MaxNumBytes;
-			this.timeout = Timeout;
-			this.timeoutUnit = TimeoutUnit;
+			this.MaxNumMessages = maxNumMessages;
+			this._maxNumBytes = maxNumBytes;
+			this._timeout = timeout;
+			this._timeoutUnit = timeoutUnit;
 		}
 
 		/// <summary>
@@ -73,21 +73,21 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Max bytes of messages for a single batch receive, 0 or negative means no limit.
 		/// </summary>
-		private readonly int maxNumBytes;
+		private readonly int _maxNumBytes;
 
 		/// <summary>
 		/// timeout for waiting for enough messages(enough number or enough bytes).
 		/// </summary>
-		private readonly int timeout;
-		private readonly TimeUnit timeoutUnit;
+		private readonly int _timeout;
+		private readonly TimeUnit _timeoutUnit;
 
 		public virtual void Verify()
 		{
-			if (MaxNumMessages <= 0 && maxNumBytes <= 0 && timeout <= 0)
+			if (MaxNumMessages <= 0 && _maxNumBytes <= 0 && _timeout <= 0)
 			{
 				throw new System.ArgumentException("At least " + "one of maxNumMessages, maxNumBytes, timeout must be specified.");
 			}
-			if (timeout > 0 && timeoutUnit == null)
+			if (_timeout > 0 && _timeoutUnit == null)
 			{
 				throw new System.ArgumentException("Must set timeout unit for timeout.");
 			}
@@ -97,7 +97,7 @@ namespace SharpPulsar.Api
 		{
 			get
 			{
-				return (timeout > 0 && timeoutUnit != null) ? timeoutUnit.toMillis(timeout) : 0L;
+				return (_timeout > 0 && _timeoutUnit != null) ? _timeoutUnit.toMillis(_timeout) : 0L;
 			}
 		}
 
@@ -106,7 +106,7 @@ namespace SharpPulsar.Api
 		{
 			get
 			{
-				return maxNumBytes;
+				return _maxNumBytes;
 			}
 		}
 
@@ -124,22 +124,22 @@ namespace SharpPulsar.Api
 			internal int TimeoutConflict;
 			internal TimeUnit TimeoutUnit;
 
-			public virtual Builder MaxNumMessages(int MaxNumMessages)
+			public virtual Builder MaxNumMessages(int maxNumMessages)
 			{
-				this.MaxNumMessagesConflict = MaxNumMessages;
+				this.MaxNumMessagesConflict = maxNumMessages;
 				return this;
 			}
 
-			public virtual Builder MaxNumBytes(int MaxNumBytes)
+			public virtual Builder MaxNumBytes(int maxNumBytes)
 			{
-				this.MaxNumBytesConflict = MaxNumBytes;
+				this.MaxNumBytesConflict = maxNumBytes;
 				return this;
 			}
 
-			public virtual Builder Timeout(int Timeout, TimeUnit TimeoutUnit)
+			public virtual Builder Timeout(int timeout, TimeUnit timeoutUnit)
 			{
-				this.TimeoutConflict = Timeout;
-				this.TimeoutUnit = TimeoutUnit;
+				this.TimeoutConflict = timeout;
+				this.TimeoutUnit = timeoutUnit;
 				return this;
 			}
 
@@ -156,7 +156,7 @@ namespace SharpPulsar.Api
 
 		public override string ToString()
 		{
-			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + maxNumBytes + ", timeout=" + timeout + ", timeoutUnit=" + timeoutUnit + '}';
+			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + _maxNumBytes + ", timeout=" + _timeout + ", timeoutUnit=" + _timeoutUnit + '}';
 		}
 	}
 

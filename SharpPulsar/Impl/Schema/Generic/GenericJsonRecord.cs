@@ -1,4 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
+using App.Metrics.Concurrency;
+using Google.Protobuf.Collections;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,53 +24,54 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
-	using Lists = com.google.common.collect.Lists;
 	using Field = Api.Schema.Field;
 
 	/// <summary>
 	/// Generic json record.
 	/// </summary>
 	public class GenericJsonRecord : VersionedGenericRecord
-	{
-
-		internal virtual JsonNode {get;}
-
-		public GenericJsonRecord(sbyte[] SchemaVersion, IList<Field> Fields, JsonNode Jn) : base(SchemaVersion, Fields)
+    {
+        private readonly JsonDocument _jsonDocument;
+		public GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JsonDocument jd) : base(schemaVersion, fields)
 		{
-			this.JsonNode = Jn;
+			_jsonDocument = jd;
 		}
 
 
-		public override object GetField(string FieldName)
+		public override object GetField(string fieldName)
 		{
-			JsonNode Fn = JsonNode.get(FieldName);
-			if (Fn.ContainerNode)
+			var fn = _jsonDocument.RootElement.EnumerateArray().Where(x => !string.IsNullOrWhiteSpace(x.GetProperty(fieldName).GetString()));
+			if (fn.Any())
 			{
-				AtomicInteger Idx = new AtomicInteger(0);
-				IList<Field> Fields = Lists.newArrayList(Fn.fieldNames()).Select(f => new Field(f, Idx.AndIncrement)).ToList();
-				return new GenericJsonRecord(SchemaVersionConflict, Fields, Fn);
+				var idx = new AtomicInteger(0);
+				IList<Field> fields = fn.ToList().Select(f => new Field(){Name = f.GetString(), Index = idx.GetAndIncrement() }).ToList();
+				return new GenericJsonRecord(SchemaVersion, fields, _jsonDocument);
 			}
-			else if (Fn.Boolean)
+			else if (fn.Boolean)
 			{
-				return Fn.asBoolean();
+				return fn.asBoolean();
 			}
-			else if (Fn.Int)
+			else if (fn.Int)
 			{
-				return Fn.asInt();
+				return fn.asInt();
 			}
-			else if (Fn.FloatingPointNumber)
+			else if (fn.FloatingPointNumber)
 			{
-				return Fn.asDouble();
+				return fn.asDouble();
 			}
-			else if (Fn.Double)
+			else if (fn.Double)
 			{
-				return Fn.asDouble();
+				return fn.asDouble();
 			}
 			else
 			{
-				return Fn.asText();
+				return fn.asText();
 			}
+		}
+
+		public override object GetField(Field field)
+		{
+			throw new System.NotImplementedException();
 		}
 	}
 

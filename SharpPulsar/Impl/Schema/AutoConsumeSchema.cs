@@ -1,5 +1,10 @@
 ﻿using System;
 using System.Threading;
+using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Schema.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,54 +26,38 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using SharpPulsar.Api;
-	using SchemaSerializationException = Api.SchemaSerializationException;
-	using IGenericRecord = Api.Schema.IGenericRecord;
-	using SharpPulsar.Api.Schema;
-	using ISchemaInfoProvider = Api.Schema.ISchemaInfoProvider;
-	using GenericSchemaImpl = Generic.GenericSchemaImpl;
-	using Org.Apache.Pulsar.Common.Schema;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class AutoConsumeSchema implements SharpPulsar.api.Schema<SharpPulsar.api.schema.GenericRecord>
 	public class AutoConsumeSchema : ISchema<IGenericRecord>
 	{
 
-		private ISchema<IGenericRecord> schema;
+		private ISchema<IGenericRecord> _schema;
 
-		private string topicName;
+		private string _topicName;
 
-		private string componentName;
+		private string _componentName;
 
-		private ISchemaInfoProvider schemaInfoProvider;
+		private ISchemaInfoProvider _schemaInfoProvider;
 
 		public virtual ISchema<IGenericRecord> Schema
 		{
 			set
 			{
-				this.schema = value;
+				this._schema = value;
 			}
 		}
 
 		private void EnsureSchemaInitialized()
 		{
-			checkState(null != schema, "Schema is not initialized before used");
+			checkState(null != _schema, "Schema is not initialized before used");
 		}
 
-		public override void Validate(sbyte[] Message)
+		public override void Validate(sbyte[] message)
 		{
 			EnsureSchemaInitialized();
 
-			schema.Validate(Message);
+			_schema.Validate(message);
 		}
 
 		public override bool SupportSchemaVersioning()
@@ -76,21 +65,21 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public override sbyte[] Encode(IGenericRecord Message)
+		public override sbyte[] Encode(IGenericRecord message)
 		{
 			EnsureSchemaInitialized();
 
-			return schema.Encode(Message);
+			return _schema.Encode(message);
 		}
 
-		public override IGenericRecord Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		public override IGenericRecord Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
-			if (schema == null)
+			if (_schema == null)
 			{
-				SchemaInfo SchemaInfo = null;
+				SchemaInfo schemaInfo = null;
 				try
 				{
-					SchemaInfo = schemaInfoProvider.LatestSchema.get();
+					schemaInfo = _schemaInfoProvider.LatestSchema.get();
 				}
 				catch (Exception e) when (e is InterruptedException || e is ExecutionException)
 				{
@@ -98,28 +87,28 @@ namespace SharpPulsar.Impl.Schema
 					{
 						Thread.CurrentThread.Interrupt();
 					}
-					log.error("Con't get last schema for topic {} use AutoConsumeSchema", topicName);
+					log.error("Con't get last schema for topic {} use AutoConsumeSchema", _topicName);
 					throw new SchemaSerializationException(e.Cause);
 				}
-				schema = GenerateSchema(SchemaInfo);
-				schema.SchemaInfoProvider = schemaInfoProvider;
-				log.info("Configure {} schema for topic {} : {}", componentName, topicName, SchemaInfo.SchemaDefinition);
+				_schema = GenerateSchema(schemaInfo);
+				_schema.SchemaInfoProvider = _schemaInfoProvider;
+				log.info("Configure {} schema for topic {} : {}", _componentName, _topicName, schemaInfo.SchemaDefinition);
 			}
 			EnsureSchemaInitialized();
-			return schema.Decode(Bytes, SchemaVersion);
+			return _schema.Decode(bytes, schemaVersion);
 		}
 
 		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
-				if (schema == null)
+				if (_schema == null)
 				{
-					this.schemaInfoProvider = value;
+					this._schemaInfoProvider = value;
 				}
 				else
 				{
-					schema.SchemaInfoProvider = value;
+					_schema.SchemaInfoProvider = value;
 				}
 			}
 		}
@@ -128,11 +117,11 @@ namespace SharpPulsar.Impl.Schema
 		{
 			get
 			{
-				if (schema == null)
+				if (_schema == null)
 				{
 					return null;
 				}
-				return schema.SchemaInfo;
+				return _schema.SchemaInfo;
 			}
 		}
 
@@ -141,73 +130,43 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public override void ConfigureSchemaInfo(string TopicName, string ComponentName, SchemaInfo SchemaInfo)
+		public override void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
 		{
-			this.topicName = TopicName;
-			this.componentName = ComponentName;
-			if (SchemaInfo != null)
+			this._topicName = topicName;
+			this._componentName = componentName;
+			if (schemaInfo != null)
 			{
-				IGenericSchema GenericSchema = GenerateSchema(SchemaInfo);
-				Schema = GenericSchema;
-				log.info("Configure {} schema for topic {} : {}", ComponentName, TopicName, SchemaInfo.SchemaDefinition);
+				var genericSchema = GenerateSchema(schemaInfo);
+				Schema = genericSchema;
+				log.info("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
 			}
 		}
 
-		private IGenericSchema GenerateSchema(SchemaInfo SchemaInfo)
+		private IGenericSchema GenerateSchema(SchemaInfo schemaInfo)
 		{
-			if (SchemaInfo.Type != SchemaType.AVRO && SchemaInfo.Type != SchemaType.JSON)
+			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
 			{
 				throw new Exception("Currently auto consume only works for topics with avro or json schemas");
 			}
 			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
 			// to decode the messages.
-			return GenericSchemaImpl.of(SchemaInfo, false);
+			return GenericSchemaImpl.of(schemaInfo, false);
 		}
 
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: public static SharpPulsar.api.Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
-		public static ISchema<object> GetSchema(SchemaInfo SchemaInfo)
+		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
 		{
-			switch (SchemaInfo.Type)
+			switch (schemaInfo.Type)
 			{
-				case SchemaFields.INT8:
-					return ByteSchema.Of();
-				case SchemaFields.INT16:
-					return ShortSchema.Of();
-				case SchemaFields.INT32:
-					return IntSchema.Of();
-				case SchemaFields.INT64:
-					return LongSchema.Of();
-				case SchemaFields.STRING:
+				case SchemaFields.String:
 					return StringSchema.Utf8();
-				case SchemaFields.FLOAT:
-					return FloatSchema.Of();
-				case SchemaFields.DOUBLE:
-					return DoubleSchema.Of();
-				case BOOLEAN:
-					return BooleanSchema.Of();
-				case SchemaFields.BYTES:
+				case SchemaFields.Bytes:
 					return BytesSchema.Of();
-				case SchemaFields.DATE:
-					return DateSchema.Of();
-				case SchemaFields.TIME:
-					return TimeSchema.Of();
-				case SchemaFields.TIMESTAMP:
-					return TimestampSchema.Of();
 				case JSON:
-				case AVRO:
-					return GenericSchemaImpl.of(SchemaInfo);
-				case KEY_VALUE:
-					KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(SchemaInfo);
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: SharpPulsar.api.Schema<?> keySchema = getSchema(kvSchemaInfo.getKey());
-					ISchema<object> KeySchema = GetSchema(KvSchemaInfo.Key);
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: SharpPulsar.api.Schema<?> valueSchema = getSchema(kvSchemaInfo.getValue());
-					ISchema<object> ValueSchema = GetSchema(KvSchemaInfo.Value);
-					return KeyValueSchema.Of(KeySchema, ValueSchema);
+					return GenericSchemaImpl.Of(schemaInfo);
 				default:
-					throw new ArgumentException("Retrieve schema instance from schema info for type '" + SchemaInfo.Type + "' is not supported yet");
+					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}
 		}
 	}

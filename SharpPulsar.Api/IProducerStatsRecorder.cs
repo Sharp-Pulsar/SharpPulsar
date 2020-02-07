@@ -22,13 +22,13 @@ namespace SharpPulsar.Api
 
 	public interface IProducerStatsRecorder : IProducerStats
 	{
-		void UpdateNumMsgsSent(long NumMsgs, long TotalMsgsSize);
+		void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize);
 
 		void IncrementSendFailed();
 
-		void IncrementSendFailed(long NumMsgs);
+		void IncrementSendFailed(long numMsgs);
 
-		void IncrementNumAcksReceived(long LatencyNs);
+		void IncrementNumAcksReceived(long latencyNs);
 
 		void CancelStatsTimeout();
 	}

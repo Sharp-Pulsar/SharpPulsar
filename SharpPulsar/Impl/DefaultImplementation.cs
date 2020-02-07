@@ -171,7 +171,7 @@ namespace SharpPulsar.Impl
 
 		public static ISchema<T> NewJSONSchema<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return JSONSchema<T>.Of(schemaDefinition);
+			return JsonSchema<T>.Of(schemaDefinition);
 		}
 
 		public static ISchema<IGenericRecord> NewAutoConsumeSchema()

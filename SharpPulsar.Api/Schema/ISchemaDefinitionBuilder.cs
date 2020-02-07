@@ -34,14 +34,14 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="alwaysAllowNull"> definition null or not </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull);
+		ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull);
 
 		/// <summary>
 		/// Set schema info properties.
 		/// </summary>
 		/// <param name="properties"> schema info properties </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties);
+		ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Set schema info properties.
@@ -50,7 +50,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="value"> property value
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> AddProperty(string Key, string Value);
+		ISchemaDefinitionBuilder<T> AddProperty(string key, string value);
 
 		/// <summary>
 		/// Set schema of pojo definition.
@@ -58,7 +58,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="pojo"> pojo schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithPojo(Type Pojo);
+		ISchemaDefinitionBuilder<T> WithPojo(T pojo);
 
 		/// <summary>
 		/// Set schema of json definition.
@@ -66,7 +66,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="jsonDefinition"> json schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithJsonDef(string JsonDefinition);
+		ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDefinition);
 
 		/// <summary>
 		/// Set schema whether decode by schema version.
@@ -74,7 +74,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="supportSchemaVersioning"> decode by version
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning);
+		ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning);
 
 		/// <summary>
 		/// Build the schema definition.

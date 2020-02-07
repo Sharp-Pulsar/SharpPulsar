@@ -29,7 +29,7 @@ namespace SharpPulsar.Api
 		/// This interface will be integrated into Authentication interface and be required for all plugins on version 2.0.
 		/// </summary>
 		/// <param name="encodedAuthParamString"> </param>
-		void Configure(string EncodedAuthParamString);
+		void Configure(string encodedAuthParamString);
 	}
 
 }

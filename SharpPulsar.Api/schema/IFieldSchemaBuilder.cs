@@ -32,21 +32,21 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="name"> name of the property </param>
 		/// <param name="val"> value of the property </param>
 		/// <returns> field schema builder </returns>
-		T Property(string Name, string Val);
+		T Property(string name, string val);
 
 		/// <summary>
 		/// The documentation of this field.
 		/// </summary>
 		/// <param name="doc"> documentation </param>
 		/// <returns> field schema builder </returns>
-		T Doc(string Doc);
+		T Doc(string doc);
 
 		/// <summary>
 		/// The optional name aliases of this field.
 		/// </summary>
 		/// <param name="aliases"> the name aliases of this field </param>
 		/// <returns> field schema builder </returns>
-		T Aliases(params string[] Aliases);
+		T Aliases(params string[] aliases);
 
 		/// <summary>
 		/// The type of this field.
@@ -57,7 +57,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="type"> schema type of this field </param>
 		/// <returns> field schema builder </returns>
-		T Type(SchemaType Type);
+		T Type(SchemaType type);
 
 		/// <summary>
 		/// Make this field optional.
@@ -79,7 +79,7 @@ namespace SharpPulsar.Api.Schema
 		/// </para>
 		/// </summary>
 		/// <returns> value </returns>
-		T DefaultValue(object Value);
+		T DefaultValue(object value);
 
 	}
 

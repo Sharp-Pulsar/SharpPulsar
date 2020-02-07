@@ -82,7 +82,7 @@ namespace SharpPulsar.Api
 		///             encodedAuthParamString) which is in EncodedAuthenticationParameterSupport for now and will be
 		///             integrated into this interface. 
 		[Obsolete("This method will be deleted on version 2.0, instead please use configure(String")]
-		void Configure(IDictionary<string, string> AuthParams);
+		void Configure(IDictionary<string, string> authParams);
 
 		/// <summary>
 		/// Initialize the authentication provider.
@@ -93,7 +93,7 @@ namespace SharpPulsar.Api
 		/// An authentication Stage.
 		/// when authentication complete, passed-in authFuture will contains authentication related http request headers.
 		/// </summary>
-		virtual void AuthenticationStage(string RequestUrl, IAuthenticationDataProvider AuthData, IDictionary<string, string> PreviousResHeaders, TaskCompletionSource<object> task)
+		virtual void AuthenticationStage(string requestUrl, IAuthenticationDataProvider authData, IDictionary<string, string> previousResHeaders, TaskCompletionSource<object> task)
 		{
 			task.SetResult(null);
 		}
@@ -101,7 +101,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Add an authenticationStage that will complete along with authFuture.
 		/// </summary>
-		virtual ISet<KeyValuePair<string, string>> NewRequestHeader(string HostName, IAuthenticationDataProvider authData, IDictionary<string, string> previousResHeaders)
+		virtual ISet<KeyValuePair<string, string>> NewRequestHeader(string hostName, IAuthenticationDataProvider authData, IDictionary<string, string> previousResHeaders)
 		{
 			return authData.HttpHeaders;
 		}

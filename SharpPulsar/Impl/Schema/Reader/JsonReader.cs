@@ -1,5 +1,9 @@
 ﻿using System;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,60 +25,52 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Reader
 {
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using SchemaSerializationException = Api.SchemaSerializationException;
-	using SharpPulsar.Api.Schema;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
 
 	public class JsonReader<T> : ISchemaReader<T>
 	{
-		private readonly Type pojo = typeof(T);
-		private readonly ObjectMapper objectMapper;
+		private readonly ObjectMapper _objectMapper;
 
-		public JsonReader(ObjectMapper ObjectMapper, Type Pojo)
+		public JsonReader(ObjectMapper objectMapper)
 		{
-			this.pojo = Pojo;
-			this.objectMapper = ObjectMapper;
+			this._objectMapper = objectMapper;
 		}
 
-		public override T Read(sbyte[] Bytes, int Offset, int Length)
+		public  T Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				return objectMapper.readValue(Bytes, Offset, Length, this.pojo);
+				return (T)_objectMapper.ReadValue((byte[])(Array)bytes, offset, length);
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				throw new SchemaSerializationException(E);
+				throw new SchemaSerializationException(e);
 			}
 		}
 
-		public override T Read(Stream InputStream)
+		public T Read(Stream inputStream)
 		{
 			try
 			{
-				return objectMapper.readValue(InputStream, pojo);
+				return (T)_objectMapper.ReadValue(inputStream);
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				throw new SchemaSerializationException(E);
+				throw new SchemaSerializationException(e);
 			}
 			finally
 			{
 				try
 				{
-					InputStream.Close();
+					inputStream.Close();
 				}
-				catch (IOException E)
+				catch (IOException e)
 				{
-					log.error("JsonReader close inputStream close error", E.Message);
+					Log.LogError("JsonReader close inputStream close error", e.Message);
 				}
 			}
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(JsonReader));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(JsonReader<T>));
 	}
 
 }

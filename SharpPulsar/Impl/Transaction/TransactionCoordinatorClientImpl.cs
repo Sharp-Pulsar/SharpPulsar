@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Transaction
 		private readonly AtomicLong epoch = new AtomicLong(0);
 
 		private static readonly ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> STATE_UPDATER = new ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState>();
-		private volatile TransactionCoordinatorClientState state = TransactionCoordinatorClientState.NONE;
+		private volatile TransactionCoordinatorClientState state = TransactionCoordinatorClientState.None;
 
 		public TransactionCoordinatorClientImpl(IPulsarClient PulsarClient)
 		{
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl.Transaction
 
 		public ValueTask StartAsync()
 		{
-			if (STATE_UPDATER.TryUpdate(this, TransactionCoordinatorClientState.STARTING, TransactionCoordinatorClientState.NONE))
+			if (STATE_UPDATER.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
 			{
 				var tsk = pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).AsTask().ContinueWith(partitionMeta =>
 				{
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl.Transaction
 						handlers[0] = Handler;
 						handlerMap.put(0, Handler);
 					}
-					STATE_UPDATER[this]  = TransactionCoordinatorClientState.READY;
+					STATE_UPDATER[this]  = TransactionCoordinatorClientState.Ready;
 				});
 				return new ValueTask(tsk);
 			}
@@ -122,7 +122,7 @@ namespace SharpPulsar.Impl.Transaction
 		public ValueTask CloseAsync()
 		{
 			TaskCompletionSource<Task> Result = new TaskCompletionSource<Task>();
-			if (State == TransactionCoordinatorClientState.CLOSING || State == TransactionCoordinatorClientState.CLOSED)
+			if (State == TransactionCoordinatorClientState.Closing || State == TransactionCoordinatorClientState.Closed)
 			{
 				log.LogWarning("The transaction meta store is closing or closed, doing nothing.");
 				Result.SetResult(null);

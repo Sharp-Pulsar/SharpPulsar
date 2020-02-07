@@ -92,7 +92,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IProducerBuilder<T> NewProducer<T>(ISchema<T> Schema);
+		IProducerBuilder<T> NewProducer<T>(ISchema<T> schema);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -142,7 +142,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IConsumerBuilder<T> NewConsumer<T>(ISchema<T> Schema);
+		IConsumerBuilder<T> NewConsumer<T>(ISchema<T> schema);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -224,7 +224,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<T> NewReader<T>(ISchema<T> Schema);
+		ReaderBuilder<T> NewReader<T>(ISchema<T> schema);
 
 		/// <summary>
 		/// Update the service URL this client is using.
@@ -238,7 +238,7 @@ namespace SharpPulsar.Api
 		///            the new service URL this client should connect to </param>
 		/// <exception cref="PulsarClientException">
 		///             in case the serviceUrl is not valid </exception>
-		void UpdateServiceUrl(string ServiceUrl);
+		void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Get the list of partitions for a given topic.
@@ -257,7 +257,7 @@ namespace SharpPulsar.Api
 		/// <returns> a future that will yield a list of the topic partitions or <seealso cref="PulsarClientException"/> if there was any
 		///         error in the operation.
 		/// @since 2.3.0 </returns>
-		ValueTask<IList<string>> GetPartitionsForTopic(string Topic);
+		ValueTask<IList<string>> GetPartitionsForTopic(string topic);
 
 		/// <summary>
 		/// Close the PulsarClient and release all the resources.

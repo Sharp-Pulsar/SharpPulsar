@@ -114,7 +114,7 @@ namespace SharpPulsar.Impl
 
 		public IProducerBuilder<sbyte[]> NewProducer()
 		{
-			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
+			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
 		}
 
 		public IProducerBuilder<T> NewProducer<T>(ISchema<T> Schema)
@@ -124,7 +124,7 @@ namespace SharpPulsar.Impl
 
 		public IConsumerBuilder<sbyte[]> NewConsumer()
 		{
-			return new ConsumerBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
+			return new ConsumerBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
 		}
 
 		public IConsumerBuilder<T> NewConsumer<T>(ISchema<T> Schema)
@@ -134,7 +134,7 @@ namespace SharpPulsar.Impl
 
 		public ReaderBuilder<sbyte[]> NewReader()
 		{
-			return new ReaderBuilderImpl<sbyte[]>(this, SchemaFields.BYTES);
+			return new ReaderBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
 		}
 
 		public ReaderBuilder<T> NewReader<T>(ISchema<T> Schema)
@@ -144,7 +144,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ValueTask<IProducer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData Conf)
 		{
-			return CreateProducerAsync(Conf, SchemaFields.BYTES, null);
+			return CreateProducerAsync(Conf, SchemaFields.Bytes, null);
 		}
 
 		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData Conf, ISchema<T> Schema)
@@ -240,7 +240,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ValueTask<IConsumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
-			return SubscribeAsync(Conf, SchemaFields.BYTES, null);
+			return SubscribeAsync(Conf, SchemaFields.Bytes, null);
 		}
 
 		public virtual ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
@@ -359,7 +359,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ValueTask<IConsumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> Conf)
 		{
-			return PatternTopicSubscribeAsync(Conf, SchemaFields.BYTES, null);
+			return PatternTopicSubscribeAsync(Conf, SchemaFields.Bytes, null);
 		}
 
 		private ValueTask<IConsumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> Conf, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors)
@@ -406,7 +406,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ValueTask<IReader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> Conf)
 		{
-			return CreateReaderAsync(Conf, SchemaFields.BYTES);
+			return CreateReaderAsync(Conf, SchemaFields.Bytes);
 		}
 
 		public virtual ValueTask<IReader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> Conf, ISchema<T> Schema)

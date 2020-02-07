@@ -33,7 +33,7 @@ namespace SharpPulsar.Api.Schema
 		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
 		/// </summary>
 		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-		static ISchemaDefinitionBuilder<T> Builder<T>()
+		static ISchemaDefinitionBuilder<T> Builder()
 		{
 			return DefaultImplementation.newSchemaDefinitionBuilder();
 		}

@@ -32,7 +32,7 @@ namespace SharpPulsar.Api.Transaction
 		{
 		}
 
-		public TransactionCoordinatorClientException(string Message) : base(Message)
+		public TransactionCoordinatorClientException(string message) : base(message)
 		{
 		}
 
@@ -46,7 +46,7 @@ namespace SharpPulsar.Api.Transaction
 			{
 			}
 
-			public CoordinatorClientStateException(string Message) : base(Message)
+			public CoordinatorClientStateException(string message) : base(message)
 			{
 			}
 		}
@@ -56,7 +56,7 @@ namespace SharpPulsar.Api.Transaction
 		/// </summary>
 		public class CoordinatorNotFoundException : TransactionCoordinatorClientException
 		{
-			public CoordinatorNotFoundException(string Message) : base(Message)
+			public CoordinatorNotFoundException(string message) : base(message)
 			{
 			}
 		}
@@ -66,7 +66,7 @@ namespace SharpPulsar.Api.Transaction
 		/// </summary>
 		public class InvalidTxnStatusException : TransactionCoordinatorClientException
 		{
-			public InvalidTxnStatusException(string Message) : base(Message)
+			public InvalidTxnStatusException(string message) : base(message)
 			{
 			}
 		}
@@ -77,11 +77,11 @@ namespace SharpPulsar.Api.Transaction
 		public class MetaStoreHandlerNotExistsException : TransactionCoordinatorClientException
 		{
 
-			public MetaStoreHandlerNotExistsException(long TcId) : base("Transaction meta store handler for transaction meta store {} not exists.")
+			public MetaStoreHandlerNotExistsException(long tcId) : base("Transaction meta store handler for transaction meta store {} not exists.")
 			{
 			}
 
-			public MetaStoreHandlerNotExistsException(string Message) : base(Message)
+			public MetaStoreHandlerNotExistsException(string message) : base(message)
 			{
 			}
 		}
@@ -91,11 +91,11 @@ namespace SharpPulsar.Api.Transaction
 		/// </summary>
 		public class MetaStoreHandlerNotReadyException : TransactionCoordinatorClientException
 		{
-			public MetaStoreHandlerNotReadyException(long TcId) : base("Transaction meta store handler for transaction meta store {} not ready now.")
+			public MetaStoreHandlerNotReadyException(long tcId) : base("Transaction meta store handler for transaction meta store {} not ready now.")
 			{
 			}
 
-			public MetaStoreHandlerNotReadyException(string Message) : base(Message)
+			public MetaStoreHandlerNotReadyException(string message) : base(message)
 			{
 			}
 		}
@@ -121,16 +121,16 @@ namespace SharpPulsar.Api.Transaction
 				return new TransactionCoordinatorClientException(T);
 			}
 
-			Exception Cause = T.InnerException;
-			string Msg = Cause.Message;
+			Exception cause = T.InnerException;
+			string msg = cause.Message;
 
-			if (Cause is CoordinatorNotFoundException)
+			if (cause is CoordinatorNotFoundException)
 			{
-				return new CoordinatorNotFoundException(Msg);
+				return new CoordinatorNotFoundException(msg);
 			}
-			else if (Cause is InvalidTxnStatusException)
+			else if (cause is InvalidTxnStatusException)
 			{
-				return new InvalidTxnStatusException(Msg);
+				return new InvalidTxnStatusException(msg);
 			}
 			else
 			{

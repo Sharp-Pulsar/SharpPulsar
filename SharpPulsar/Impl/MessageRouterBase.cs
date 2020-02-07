@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 			case HashingScheme.JavaStringHash:
 				this.Hash = JavaStringHash.Instance;
 				break;
-			case HashingScheme.Murmur3_32Hash:
+			case HashingScheme.Murmur332Hash:
 			default:
 				this.Hash = Murmur3_32Hash.Instance;
 			break;

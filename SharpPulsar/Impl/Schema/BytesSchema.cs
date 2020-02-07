@@ -59,7 +59,7 @@ namespace SharpPulsar.Impl.Schema
 				return null;
 			}
 			int Size = ByteBuf.readableBytes();
-			sbyte[] Bytes = new sbyte[Size];
+			var Bytes = new sbyte[Size];
 
 			ByteBuf.readBytes(Bytes, 0, Size);
 			return Bytes;

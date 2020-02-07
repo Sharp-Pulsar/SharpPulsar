@@ -1,5 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using DotNetty.Codecs.Base64;
+using Google.Protobuf;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Shared;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +28,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
+	/*using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
 	using GsonBuilder = com.google.gson.GsonBuilder;
 	using JsonDeserializationContext = com.google.gson.JsonDeserializationContext;
 	using JsonDeserializer = com.google.gson.JsonDeserializer;
@@ -42,7 +49,7 @@ namespace SharpPulsar.Impl.Schema
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 	using SchemaInfoWithVersion = Org.Apache.Pulsar.Common.Schema.SchemaInfoWithVersion;
 	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using ObjectMapperFactory = Org.Apache.Pulsar.Common.Util.ObjectMapperFactory;
+	using ObjectMapperFactory = Org.Apache.Pulsar.Common.Util.ObjectMapperFactory;*/
 
 
 	/// <summary>
@@ -62,35 +69,35 @@ namespace SharpPulsar.Impl.Schema
 		/// <summary>
 		/// Keeps a map between <seealso cref="SchemaType"/> to a list of java classes that can be used to represent them.
 		/// </summary>
-		private static readonly IDictionary<SchemaType, IList<Type>> SCHEMA_TYPE_CLASSES = new Dictionary<SchemaType, IList<Type>>();
+		private static readonly IDictionary<SchemaType, IList<Type>> SchemaTypeClasses = new Dictionary<SchemaType, IList<Type>>();
 
 		/// <summary>
 		/// Maps the java classes to the corresponding <seealso cref="SchemaType"/>.
 		/// </summary>
-		private static readonly IDictionary<Type, SchemaType> JAVA_CLASS_SCHEMA_TYPES = new Dictionary<Type, SchemaType>();
+		private static readonly IDictionary<Type, SchemaType> JavaClassSchemaTypes = new Dictionary<Type, SchemaType>();
 
 		static SchemaUtils()
 		{
 			// int8
-			SCHEMA_TYPE_CLASSES[SchemaType.INT8] = Arrays.asList(typeof(Byte));
+			SchemaTypeClasses[SchemaType.INT8] = Arrays.asList(typeof(Byte));
 			// int16
-			SCHEMA_TYPE_CLASSES[SchemaType.INT16] = Arrays.asList(typeof(Short));
+			SchemaTypeClasses[SchemaType.INT16] = Arrays.asList(typeof(Short));
 			// int32
-			SCHEMA_TYPE_CLASSES[SchemaType.INT32] = Arrays.asList(typeof(Integer));
+			SchemaTypeClasses[SchemaType.INT32] = Arrays.asList(typeof(Integer));
 			// int64
-			SCHEMA_TYPE_CLASSES[SchemaType.INT64] = Arrays.asList(typeof(Long));
+			SchemaTypeClasses[SchemaType.INT64] = Arrays.asList(typeof(Long));
 			// float
-			SCHEMA_TYPE_CLASSES[SchemaType.FLOAT] = Arrays.asList(typeof(Float));
+			SchemaTypeClasses[SchemaType.FLOAT] = Arrays.asList(typeof(Float));
 			// double
-			SCHEMA_TYPE_CLASSES[SchemaType.DOUBLE] = Arrays.asList(typeof(Double));
+			SchemaTypeClasses[SchemaType.DOUBLE] = Arrays.asList(typeof(Double));
 			// boolean
-			SCHEMA_TYPE_CLASSES[SchemaType.BOOLEAN] = Arrays.asList(typeof(Boolean));
+			SchemaTypeClasses[SchemaType.BOOLEAN] = Arrays.asList(typeof(Boolean));
 			// string
-			SCHEMA_TYPE_CLASSES[SchemaType.STRING] = Arrays.asList(typeof(string));
+			SchemaTypeClasses[SchemaType.STRING] = Arrays.asList(typeof(string));
 			// bytes
-			SCHEMA_TYPE_CLASSES[SchemaType.BYTES] = Arrays.asList(typeof(sbyte[]), typeof(ByteBuffer), typeof(ByteBuf));
+			SchemaTypeClasses[SchemaType.BYTES] = Arrays.asList(typeof(sbyte[]), typeof(ByteBuffer), typeof(ByteBuf));
 			// build the reverse mapping
-			SCHEMA_TYPE_CLASSES.forEach((type, classes) => classes.forEach(clz => JAVA_CLASS_SCHEMA_TYPES.put(clz, type)));
+			SchemaTypeClasses.forEach((type, classes) => classes.forEach(clz => JavaClassSchemaTypes.put(clz, type)));
 		}
 
 		public static void ValidateFieldSchema(string Name, SchemaType Type, object Val)
@@ -100,15 +107,15 @@ namespace SharpPulsar.Impl.Schema
 				return;
 			}
 
-			IList<Type> ExpectedClasses = SCHEMA_TYPE_CLASSES[Type];
+			var ExpectedClasses = SchemaTypeClasses[Type];
 
 			if (null == ExpectedClasses)
 			{
-				throw new Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
+				throw new System.Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
 			}
 
-			bool FoundMatch = false;
-			foreach (Type ExpectedCls in ExpectedClasses)
+			var FoundMatch = false;
+			foreach (var ExpectedCls in ExpectedClasses)
 			{
 				if (ExpectedCls.IsInstanceOfType(Val))
 				{
@@ -119,10 +126,10 @@ namespace SharpPulsar.Impl.Schema
 
 			if (!FoundMatch)
 			{
-				throw new Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
+				throw new System.Exception("Invalid Java object for schema type " + Type + " : " + Val.GetType() + @" for field : """ + Name + @"""");
 			}
 
-			switch (Type.innerEnumValue)
+			switch (Type.InnerEnumValue)
 			{
 				case SchemaType.InnerEnum.INT8:
 				case SchemaType.InnerEnum.INT16:
@@ -134,35 +141,9 @@ namespace SharpPulsar.Impl.Schema
 				case SchemaType.InnerEnum.KEY_VALUE:
 				case SchemaType.InnerEnum.JSON:
 				case SchemaType.InnerEnum.NONE:
-					throw new Exception("Currently " + Type.name() + " is not supported");
+					throw new System.Exception("Currently " + Type.GetType().Name + " is not supported");
 				default:
 					break;
-			}
-		}
-
-		public static object ToAvroObject(object Value)
-		{
-			if (Value != null)
-			{
-				if (Value is ByteBuffer)
-				{
-					ByteBuffer Bb = (ByteBuffer) Value;
-					sbyte[] Bytes = new sbyte[Bb.remaining()];
-					Bb.duplicate().get(Bytes);
-					return Bytes;
-				}
-				else if (Value is ByteBuf)
-				{
-					return ByteBufUtil.getBytes((ByteBuf) Value);
-				}
-				else
-				{
-					return Value;
-				}
-			}
-			else
-			{
-				return null;
 			}
 		}
 
@@ -183,7 +164,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 			else
 			{
-				return Base64.Encoder.encodeToString(SchemaVersionBytes);
+				return Convert.ToBase64String((byte[])(Array)SchemaVersionBytes);
 			}
 
 		}
@@ -193,12 +174,10 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaInfo"> the schema info </param>
 		/// <returns> the jsonified schema info </returns>
-		public static string JsonifySchemaInfo(SchemaInfo SchemaInfo)
-		{
-			GsonBuilder GsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(sbyte[]), new ByteArrayToStringAdapter(SchemaInfo)).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
-
-			return GsonBuilder.create().toJson(SchemaInfo);
-		}
+		public static string JsonifySchemaInfo(SchemaInfo schemaInfo)
+        {
+            return JsonSerializer.Serialize(schemaInfo, new JsonSerializerOptions{WriteIndented = true});
+        }
 
 		/// <summary>
 		/// Jsonify the schema info with verison.
@@ -207,23 +186,19 @@ namespace SharpPulsar.Impl.Schema
 		/// <returns> the jsonified schema info with version </returns>
 		public static string JsonifySchemaInfoWithVersion(SchemaInfoWithVersion SchemaInfoWithVersion)
 		{
-			GsonBuilder GsonBuilder = (new GsonBuilder()).setPrettyPrinting().registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
-
-			return GsonBuilder.create().toJson(SchemaInfoWithVersion);
+            return JsonSerializer.Serialize(SchemaInfoWithVersion, new JsonSerializerOptions { WriteIndented = true });
 		}
 
 		public class SchemaPropertiesSerializer : JsonSerializer<IDictionary<string, string>>
 		{
 
-			public override JsonElement Serialize(IDictionary<string, string> Properties, Type Type, JsonSerializationContext JsonSerializationContext)
+			public override JsonElement Serialize(IDictionary<string, string> properties, Type Type, JsonSerializationContext JsonSerializationContext)
 			{
-				SortedDictionary<string, string> SortedProperties = new SortedDictionary<string, string>();
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET Dictionary equivalent to the Java 'putAll' method:
-				SortedProperties.putAll(Properties);
+				var SortedProperties = new SortedDictionary<string, string>(properties);
 				JsonObject Object = new JsonObject();
 				SortedProperties.forEach((key, value) =>
 				{
-				Object.add(key, new JsonPrimitive(value));
+				    Object.add(key, new JsonPrimitive(value));
 				});
 				return Object;
 			}
@@ -233,12 +208,10 @@ namespace SharpPulsar.Impl.Schema
 		public class SchemaPropertiesDeserializer : JsonDeserializer<IDictionary<string, string>>
 		{
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public java.util.Map<String, String> deserialize(com.google.gson.JsonElement jsonElement, Type type, com.google.gson.JsonDeserializationContext jsonDeserializationContext) throws com.google.gson.JsonParseException
-			public override IDictionary<string, string> Deserialize(JsonElement JsonElement, Type Type, JsonDeserializationContext JsonDeserializationContext)
+            public override IDictionary<string, string> Deserialize(JsonElement JsonElement, Type Type, JsonDeserializationContext JsonDeserializationContext)
 			{
 
-				SortedDictionary<string, string> SortedProperties = new SortedDictionary<string, string>();
+				var SortedProperties = new SortedDictionary<string, string>();
 				JsonElement.AsJsonObject.entrySet().forEach(entry => SortedProperties.put(entry.Key, entry.Value.AsString));
 				return SortedProperties;
 			}
@@ -272,8 +245,8 @@ namespace SharpPulsar.Impl.Schema
 					case SchemaType.InnerEnum.KEY_VALUE:
 						KeyValue<SchemaInfo, SchemaInfo> SchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(SchemaInfo);
 						JsonObject Obj = new JsonObject();
-						string KeyJson = JsonifySchemaInfo(SchemaInfoKeyValue.Key);
-						string ValueJson = JsonifySchemaInfo(SchemaInfoKeyValue.Value);
+						var KeyJson = JsonifySchemaInfo(SchemaInfoKeyValue.Key);
+						var ValueJson = JsonifySchemaInfo(SchemaInfoKeyValue.Value);
 						Obj.add("key", ToJsonObject(KeyJson));
 						Obj.add("value", ToJsonObject(ValueJson));
 						return Obj;
@@ -309,6 +282,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			GsonBuilder GsonBuilder = (new GsonBuilder()).registerTypeHierarchyAdapter(typeof(SchemaInfo), SCHEMAINFO_ADAPTER).registerTypeHierarchyAdapter(typeof(System.Collections.IDictionary), SCHEMA_PROPERTIES_SERIALIZER);
 			return GsonBuilder.create().toJson(KvSchemaInfo);
+			return JsonSerializer.Serialize(KvSchemaInfo)
 		}
 
 		/// <summary>
@@ -340,10 +314,10 @@ namespace SharpPulsar.Impl.Schema
 		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] KeyValueSchemaInfoDataJsonBytes)
 		{
 			JsonObject JsonObject = ToJsonObject(StringHelper.NewString(KeyValueSchemaInfoDataJsonBytes, UTF_8));
-			sbyte[] KeyBytes = GetKeyOrValueSchemaBytes(JsonObject.get("key"));
-			sbyte[] ValueBytes = GetKeyOrValueSchemaBytes(JsonObject.get("value"));
-			int DataLength = 4 + KeyBytes.Length + 4 + ValueBytes.Length;
-			sbyte[] Schema = new sbyte[DataLength];
+			var KeyBytes = GetKeyOrValueSchemaBytes(JsonObject.get("key"));
+			var ValueBytes = GetKeyOrValueSchemaBytes(JsonObject.get("value"));
+			var DataLength = 4 + KeyBytes.Length + 4 + ValueBytes.Length;
+			var Schema = new sbyte[DataLength];
 			//record the key value schema respective length
 			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.heapBuffer(DataLength);
 			ByteBuf.writeInt(KeyBytes.Length).writeBytes(KeyBytes).writeInt(ValueBytes.Length).writeBytes(ValueBytes);

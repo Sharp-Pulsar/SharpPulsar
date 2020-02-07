@@ -38,12 +38,12 @@ namespace SharpPulsar.Api
 		/// </summary>
 		public static readonly SubscriptionInitialPosition Earliest = new SubscriptionInitialPosition("Earliest", InnerEnum.Earliest, 1);
 
-		private static readonly IList<SubscriptionInitialPosition> valueList = new List<SubscriptionInitialPosition>();
+		private static readonly IList<SubscriptionInitialPosition> ValueList = new List<SubscriptionInitialPosition>();
 
 		static SubscriptionInitialPosition()
 		{
-			valueList.Add(Latest);
-			valueList.Add(Earliest);
+			ValueList.Add(Latest);
+			ValueList.Add(Earliest);
 		}
 
 		public enum InnerEnum
@@ -52,45 +52,45 @@ namespace SharpPulsar.Api
 			Earliest
 		}
 
-		public readonly InnerEnum innerEnumValue;
-		private readonly string nameValue;
-		private readonly int ordinalValue;
-		private static int nextOrdinal = 0;
+		public readonly InnerEnum InnerEnumValue;
+		private readonly string _nameValue;
+		private readonly int _ordinalValue;
+		private static int _nextOrdinal = 0;
 
 
 		public Value {get;}
 
-		public SubscriptionInitialPosition(string name, InnerEnum innerEnum, int Value)
+		public SubscriptionInitialPosition(string name, InnerEnum innerEnum, int value)
 		{
-			this.Value = Value;
+			this.Value = value;
 
-			nameValue = name;
-			ordinalValue = nextOrdinal++;
-			innerEnumValue = innerEnum;
+			_nameValue = name;
+			_ordinalValue = _nextOrdinal++;
+			InnerEnumValue = innerEnum;
 		}
 
 
 
 		public static IList<SubscriptionInitialPosition> values()
 		{
-			return valueList;
+			return ValueList;
 		}
 
 		public int ordinal()
 		{
-			return ordinalValue;
+			return _ordinalValue;
 		}
 
 		public override string ToString()
 		{
-			return nameValue;
+			return _nameValue;
 		}
 
 		public static SubscriptionInitialPosition valueOf(string name)
 		{
-			foreach (SubscriptionInitialPosition enumInstance in SubscriptionInitialPosition.valueList)
+			foreach (SubscriptionInitialPosition enumInstance in SubscriptionInitialPosition.ValueList)
 			{
-				if (enumInstance.nameValue == name)
+				if (enumInstance._nameValue == name)
 				{
 					return enumInstance;
 				}

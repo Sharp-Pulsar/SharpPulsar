@@ -25,23 +25,23 @@ namespace SharpPulsar.Api
 	{
 		/// <summary>
 		/// No compression. </summary>
-		NONE,
+		None,
 
 		/// <summary>
 		/// Compress with LZ4 algorithm. Faster but lower compression than ZLib. </summary>
-		LZ4,
+		Lz4,
 
 		/// <summary>
 		/// Compress with ZLib. </summary>
-		ZLIB,
+		Zlib,
 
 		/// <summary>
 		/// Compress with Zstandard codec. </summary>
-		ZSTD,
+		Zstd,
 
 		/// <summary>
 		/// Compress with Snappy codec. </summary>
-		SNAPPY
+		Snappy
 	}
 
 }

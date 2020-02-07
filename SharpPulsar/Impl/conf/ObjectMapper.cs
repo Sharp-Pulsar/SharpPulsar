@@ -1,4 +1,7 @@
 ﻿using System;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 
 /// <summary>
@@ -36,6 +39,11 @@ namespace SharpPulsar.Impl.Conf
 		{
 			return JsonSerializer.Serialize(@object, Options());
 		}
+
+        public byte[] WriteValueAsBytes<T>(T @object)
+        {
+            return JsonSerializer.SerializeToUtf8Bytes(@object, Options());
+        }
 		public ObjectMapper WithOutAttribute<T>(T @object)
 		{
 			return this;
@@ -44,6 +52,24 @@ namespace SharpPulsar.Impl.Conf
 		{
 			return JsonSerializer.Deserialize(existingConfigJson, t);
 		}
+        public object ReadValue(byte[] param, int position, long length)
+        {
+			using var ms = new MemoryStream(param)
+			{
+				Position = position
+			};
+			ms.SetLength(length);
+			IFormatter br = new BinaryFormatter();
+			return br.Deserialize(ms);
+		}
+        public object ReadValue(Stream stream)
+        {
+            using (stream)
+            {
+                IFormatter br = new BinaryFormatter();
+                return br.Deserialize(stream);
+            }
+        }
 	}
 	
 }

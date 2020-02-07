@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl.Conf
 		public MessageRoutingMode MessageRoutingMode;
 		public HashingScheme HashingScheme = HashingScheme.JavaStringHash;
 
-		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.FAIL;
+		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.Fail;
 		public MessageRouter CustomMessageRouter = null;
 
 		public long BatchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
@@ -53,13 +53,13 @@ namespace SharpPulsar.Impl.Conf
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
 		public bool BatchingEnabled = true; // enabled by default
 
-		public BatcherBuilder BatcherBuilder = BatcherBuilderFields.DEFAULT;
+		public BatcherBuilder BatcherBuilder = BatcherBuilderFields.Default;
 
 		public CryptoKeyReader CryptoKeyReader;
 
 		public ISet<string> EncryptionKeys = new SortedSet<string>();
 
-		public ICompressionType CompressionType = ICompressionType.NONE;
+		public ICompressionType CompressionType = ICompressionType.None;
 
 		[NonSerialized]
 		public long?InitialSequenceId = null;
@@ -89,7 +89,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 			try
 			{
-				ProducerConfigurationData C = (ProducerConfigurationData) base.MemberwiseClone();
+				var C = (ProducerConfigurationData) base.MemberwiseClone();
 				C.EncryptionKeys = new SortedSet<string>(EncryptionKeys);
 				C.Properties = new SortedDictionary<string, string>(Properties);
 				return C;
@@ -174,7 +174,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual void SetBatchingMaxPublishDelayMicros(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			long DelayInMs = timeUnit.ToMillis(BatchDelay);
+			var DelayInMs = timeUnit.ToMillis(BatchDelay);
 			if (DelayInMs < 1)
 				throw new System.Exception("configured value for batch delay must be at least 1ms");
 			BatchingMaxPublishDelayMicros = DelayInMs;

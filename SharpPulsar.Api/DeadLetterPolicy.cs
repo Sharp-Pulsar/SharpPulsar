@@ -33,12 +33,12 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
 		/// </summary>
-		private int maxRedeliverCount;
+		private int _maxRedeliverCount;
 
 		/// <summary>
 		/// Name of the topic where the failing messages will be sent.
 		/// </summary>
-		private string deadLetterTopic;
+		private string _deadLetterTopic;
 
 	}
 

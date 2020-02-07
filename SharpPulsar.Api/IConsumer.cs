@@ -114,7 +114,7 @@ namespace SharpPulsar.Api
 		///             if a message listener was defined in the configuration </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> receive(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		Message<T> Receive(int Timeout, TimeUnit Unit);
+		Message<T> Receive(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -155,7 +155,7 @@ namespace SharpPulsar.Api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(Message<?> message) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledge<T1>(Message<T1> Message);
+		void acknowledge<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -166,7 +166,7 @@ namespace SharpPulsar.Api
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(MessageId messageId) throws PulsarClientException;
-		void Acknowledge(IMessageId MessageId);
+		void Acknowledge(IMessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the consumption of <seealso cref="Messages"/>.
@@ -177,7 +177,7 @@ namespace SharpPulsar.Api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledge(Messages<?> messages) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledge<T1>(Messages<T1> Messages);
+		void acknowledge<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -212,7 +212,7 @@ namespace SharpPulsar.Api
 		///            The {@code Message} to be acknowledged </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void negativeAcknowledge(Message<?> message);
-		void negativeAcknowledge<T1>(Message<T1> Message);
+		void negativeAcknowledge<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -235,7 +235,7 @@ namespace SharpPulsar.Api
 		/// </seealso>
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
-		void NegativeAcknowledge(IMessageId MessageId);
+		void NegativeAcknowledge(IMessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the failure to process <seealso cref="Messages"/>.
@@ -270,7 +270,7 @@ namespace SharpPulsar.Api
 		///            The {@code Message} to be acknowledged </param>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: void negativeAcknowledge(Messages<?> messages);
-		void negativeAcknowledge<T1>(Messages<T1> Messages);
+		void negativeAcknowledge<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -293,7 +293,7 @@ namespace SharpPulsar.Api
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledgeCumulative(Message<?> message) throws PulsarClientException;
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-		void acknowledgeCumulative<T1>(Message<T1> Message);
+		void acknowledgeCumulative<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -315,7 +315,7 @@ namespace SharpPulsar.Api
 		///             if the consumer was already closed </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void acknowledgeCumulative(MessageId messageId) throws PulsarClientException;
-		void AcknowledgeCumulative(IMessageId MessageId);
+		void AcknowledgeCumulative(IMessageId messageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -325,7 +325,7 @@ namespace SharpPulsar.Api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.ValueTask<Void> acknowledgeAsync(Message<?> message);
-		ValueTask<Void> acknowledgeAsync<T1>(Message<T1> Message);
+		ValueTask<Void> acknowledgeAsync<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of a single message.
@@ -333,7 +333,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask<Void> AcknowledgeAsync(IMessageId MessageId);
+		ValueTask<Void> AcknowledgeAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Asynchronously acknowledge the consumption of <seealso cref="Messages"/>.
@@ -343,7 +343,7 @@ namespace SharpPulsar.Api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.ValueTask<Void> acknowledgeAsync(Messages<?> messages);
-		ValueTask<Void> acknowledgeAsync<T1>(Messages<T1> Messages);
+		ValueTask<Void> acknowledgeAsync<T1>(Messages<T1> messages);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -358,7 +358,7 @@ namespace SharpPulsar.Api
 		/// <returns> a future that can be used to track the completion of the operation </returns>
 //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
 //ORIGINAL LINE: java.util.concurrent.ValueTask<Void> acknowledgeCumulativeAsync(Message<?> message);
-		ValueTask<Void> acknowledgeCumulativeAsync<T1>(Message<T1> Message);
+		ValueTask<Void> acknowledgeCumulativeAsync<T1>(Message<T1> message);
 
 		/// <summary>
 		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
@@ -371,7 +371,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            The {@code MessageId} to be cumulatively acknowledged </param>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask<Void> AcknowledgeCumulativeAsync(IMessageId MessageId);
+		ValueTask<Void> AcknowledgeCumulativeAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -440,7 +440,7 @@ namespace SharpPulsar.Api
 		///            the message id where to reposition the subscription </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(MessageId messageId) throws PulsarClientException;
-		void Seek(IMessageId MessageId);
+		void Seek(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -449,7 +449,7 @@ namespace SharpPulsar.Api
 		///            the message publish time where to reposition the subscription </param>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: void seek(long timestamp) throws PulsarClientException;
-		void Seek(long Timestamp);
+		void Seek(long timestamp);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message id.
@@ -469,7 +469,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageId">
 		///            the message id where to reposition the subscription </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(IMessageId MessageId);
+		ValueTask<Void> SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -477,7 +477,7 @@ namespace SharpPulsar.Api
 		/// <param name="timestamp">
 		///            the message publish time where to reposition the subscription </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(long Timestamp);
+		ValueTask<Void> SeekAsync(long timestamp);
 
 		/// <summary>
 		/// Get the last message id available available for consume.

@@ -74,7 +74,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="config"> configuration to load </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> LoadConf(IDictionary<string, object> Config);
+		IConsumerBuilder<T> LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Finalize the <seealso cref="Consumer"/> creation by subscribing to the topic.
@@ -116,14 +116,14 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="topicNames"> a set of topic that the consumer will subscribe on </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> Topic(params string[] TopicNames);
+		IConsumerBuilder<T> Topic(params string[] topicNames);
 
 		/// <summary>
 		/// Specify a list of topics that this consumer will subscribe on.
 		/// </summary>
 		/// <param name="topicNames"> a list of topic that the consumer will subscribe on </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> Topics(IList<string> TopicNames);
+		IConsumerBuilder<T> Topics(IList<string> topicNames);
 
 		/// <summary>
 		/// Specify a pattern for topics that this consumer will subscribe on.
@@ -139,7 +139,7 @@ namespace SharpPulsar.Api
 		/// <param name="topicsPattern">
 		///            a regular expression to select a list of topics to subscribe to </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> TopicsPattern(Regex TopicsPattern);
+		IConsumerBuilder<T> TopicsPattern(Regex topicsPattern);
 
 		/// <summary>
 		/// Specify a pattern for topics that this consumer will subscribe on.
@@ -159,7 +159,7 @@ namespace SharpPulsar.Api
 		/// <param name="topicsPattern">
 		///            given regular expression for topics pattern </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> TopicsPattern(string TopicsPattern);
+		IConsumerBuilder<T> TopicsPattern(string topicsPattern);
 
 		/// <summary>
 		/// Specify the subscription name for this consumer.
@@ -171,7 +171,7 @@ namespace SharpPulsar.Api
 		/// <param name="subscriptionName"> the name of the subscription that this consumer should attach to
 		/// </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> SubscriptionName(string SubscriptionName);
+		IConsumerBuilder<T> SubscriptionName(string subscriptionName);
 
 		/// <summary>
 		/// Set the timeout for unacked messages, truncated to the nearest millisecond. The timeout needs to be greater than
@@ -192,7 +192,7 @@ namespace SharpPulsar.Api
 		/// <param name="timeUnit">
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> AckTimeout(long AckTimeout, TimeUnit TimeUnit);
+		IConsumerBuilder<T> AckTimeout(long ackTimeout, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Define the granularity of the ack-timeout redelivery.
@@ -208,7 +208,7 @@ namespace SharpPulsar.Api
 		/// <param name="timeUnit">
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> AckTimeoutTickTime(long TickTime, TimeUnit TimeUnit);
+		IConsumerBuilder<T> AckTimeoutTickTime(long tickTime, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Set the delay to wait before re-delivering messages that have failed to be process.
@@ -224,7 +224,7 @@ namespace SharpPulsar.Api
 		///            unit in which the timeout is provided. </param>
 		/// <returns> the consumer builder instance </returns>
 		/// <seealso cref= Consumer#negativeAcknowledge(Message) </seealso>
-		IConsumerBuilder<T> NegativeAckRedeliveryDelay(long RedeliveryDelay, TimeUnit TimeUnit);
+		IConsumerBuilder<T> NegativeAckRedeliveryDelay(long redeliveryDelay, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Select the subscription type to be used when subscribing to the topic.
@@ -241,7 +241,7 @@ namespace SharpPulsar.Api
 		/// <param name="subscriptionType">
 		///            the subscription type value </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> SubscriptionType(SubscriptionType SubscriptionType);
+		IConsumerBuilder<T> SubscriptionType(SubscriptionType subscriptionType);
 
 		/// <summary>
 		/// Sets a <seealso cref="MessageListener"/> for the consumer
@@ -254,7 +254,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageListener">
 		///            the listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> MessageListener(MessageListener<T> MessageListener);
+		IConsumerBuilder<T> MessageListener(MessageListener<T> messageListener);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/>.
@@ -266,7 +266,7 @@ namespace SharpPulsar.Api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader);
+		IConsumerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Sets the ConsumerCryptoFailureAction to the value specified.
@@ -274,7 +274,7 @@ namespace SharpPulsar.Api
 		/// <param name="action">
 		///            the action the consumer will take in case of decryption failures </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction Action);
+		IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
 
 		/// <summary>
 		/// Sets the size of the consumer receive queue.
@@ -303,7 +303,7 @@ namespace SharpPulsar.Api
 		/// <param name="receiverQueueSize">
 		///            the new receiver queue size value </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> ReceiverQueueSize(int ReceiverQueueSize);
+		IConsumerBuilder<T> ReceiverQueueSize(int receiverQueueSize);
 
 		/// <summary>
 		/// Group the consumer acknowledgments for the specified time.
@@ -321,11 +321,11 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> AcknowledgmentGroupTime(long Delay, TimeUnit Unit);
+		IConsumerBuilder<T> AcknowledgmentGroupTime(long delay, TimeUnit unit);
 
 		/// 
 		/// <param name="replicateSubscriptionState"> </param>
-		IConsumerBuilder<T> ReplicateSubscriptionState(bool ReplicateSubscriptionState);
+		IConsumerBuilder<T> ReplicateSubscriptionState(bool replicateSubscriptionState);
 
 		/// <summary>
 		/// Set the max total receiver queue size across partitons.
@@ -341,7 +341,7 @@ namespace SharpPulsar.Api
 		/// <param name="maxTotalReceiverQueueSizeAcrossPartitions">
 		///            max pending messages across all the partitions </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> MaxTotalReceiverQueueSizeAcrossPartitions(int MaxTotalReceiverQueueSizeAcrossPartitions);
+		IConsumerBuilder<T> MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions);
 
 		/// <summary>
 		/// Set the consumer name.
@@ -353,7 +353,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumerName"> </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> ConsumerName(string ConsumerName);
+		IConsumerBuilder<T> ConsumerName(string consumerName);
 
 		/// <summary>
 		/// Sets a <seealso cref="ConsumerEventListener"/> for the consumer.
@@ -366,7 +366,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumerEventListener">
 		///            the consumer group listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> ConsumerEventListener(ConsumerEventListener ConsumerEventListener);
+		IConsumerBuilder<T> ConsumerEventListener(ConsumerEventListener consumerEventListener);
 
 		/// <summary>
 		/// If enabled, the consumer will read messages from the compacted topic rather than reading the full message backlog
@@ -383,7 +383,7 @@ namespace SharpPulsar.Api
 		/// <param name="readCompacted">
 		///            whether to read from the compacted topic </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> ReadCompacted(bool ReadCompacted);
+		IConsumerBuilder<T> ReadCompacted(bool readCompacted);
 
 		/// <summary>
 		/// Set topics auto discovery period when using a pattern for topics consumer.
@@ -393,7 +393,7 @@ namespace SharpPulsar.Api
 		///            number of minutes between checks for
 		///            new topics matching pattern set with <seealso cref="topicsPattern(string)"/> </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> PatternAutoDiscoveryPeriod(int PeriodInMinutes);
+		IConsumerBuilder<T> PatternAutoDiscoveryPeriod(int periodInMinutes);
 
 		/// <summary>
 		/// <b>Shared subscription</b>
@@ -443,7 +443,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="priorityLevel"> the priority of this consumer </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> PriorityLevel(int PriorityLevel);
+		IConsumerBuilder<T> PriorityLevel(int priorityLevel);
 
 		/// <summary>
 		/// Set a name/value property with this consumer.
@@ -460,7 +460,7 @@ namespace SharpPulsar.Api
 		/// <param name="key"> </param>
 		/// <param name="value"> </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> Property(string Key, string Value);
+		IConsumerBuilder<T> Property(string key, string value);
 
 		/// <summary>
 		/// Add all the properties in the provided map to the consumer.
@@ -472,7 +472,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="properties"> the map with properties </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> Properties(IDictionary<string, string> Properties);
+		IConsumerBuilder<T> Properties(IDictionary<string, string> properties);
 
 		/// <summary>
 		/// Set the <seealso cref="SubscriptionInitialPosition"/> for the consumer.
@@ -480,7 +480,7 @@ namespace SharpPulsar.Api
 		/// <param name="subscriptionInitialPosition">
 		///            the position where to initialize a newly created subscription </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition SubscriptionInitialPosition);
+		IConsumerBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition);
 
 		/// <summary>
 		/// Determines to which topics this consumer should be subscribed to - Persistent, Non-Persistent, or both. Only used
@@ -488,13 +488,13 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="regexSubscriptionMode">
 		///            Pattern subscription mode </param>
-		IConsumerBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode RegexSubscriptionMode);
+		IConsumerBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode regexSubscriptionMode);
 
 		/// <summary>
 		/// Intercept <seealso cref="Consumer"/>.
 		/// </summary>
 		/// <param name="interceptors"> the list of interceptors to intercept the consumer created by this builder. </param>
-		IConsumerBuilder<T> Intercept(params ConsumerInterceptor<T> [] Interceptors);
+		IConsumerBuilder<T> Intercept(params ConsumerInterceptor<T> [] interceptors);
 
 		/// <summary>
 		/// Set dead letter policy for consumer.
@@ -526,7 +526,7 @@ namespace SharpPulsar.Api
 		/// then the ack timeout will be set to 30000 millisecond.
 		/// </para>
 		/// </summary>
-		IConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy DeadLetterPolicy);
+		IConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy);
 
 		/// <summary>
 		/// If enabled, the consumer will auto subscribe for partitions increasement.
@@ -534,7 +534,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="autoUpdate">
 		///            whether to auto update partition increasement </param>
-		IConsumerBuilder<T> AutoUpdatePartitions(bool AutoUpdate);
+		IConsumerBuilder<T> AutoUpdatePartitions(bool autoUpdate);
 
 		/// <summary>
 		/// Set KeyShared subscription policy for consumer.
@@ -561,7 +561,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="keySharedPolicy"> The <seealso cref="KeySharedPolicy"/> want to specify </param>
-		IConsumerBuilder<T> KeySharedPolicy(KeySharedPolicy KeySharedPolicy);
+		IConsumerBuilder<T> KeySharedPolicy(KeySharedPolicy keySharedPolicy);
 
 		/// <summary>
 		/// Set the consumer to include the given position of any reset operation like {@link Consumer#seek(long) or
@@ -584,7 +584,7 @@ namespace SharpPulsar.Api
 		/// </pre>
 		/// </para>
 		/// </summary>
-		IConsumerBuilder<T> BatchReceivePolicy(BatchReceivePolicy BatchReceivePolicy);
+		IConsumerBuilder<T> BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy);
 	}
 
 }
