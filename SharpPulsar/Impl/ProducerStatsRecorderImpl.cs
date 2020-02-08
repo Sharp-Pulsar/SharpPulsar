@@ -7,6 +7,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using DotNetty.Common.Utilities;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,12 +30,11 @@ using System.Threading;
 namespace SharpPulsar.Impl
 {
 	[Serializable]
-	public class ProducerStatsRecorderImpl<T> : Api.IProducerStatsRecorder
+	public sealed class ProducerStatsRecorderImpl<T> : IProducerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;
-		private Timer _stat;
-		internal virtual long StatTimeout { get; set; }
+		internal ITimeout StatTimeout { get; set; }
 		[NonSerialized]
 		private ProducerImpl<object> _producer;
 		[NonSerialized]
@@ -86,9 +86,9 @@ namespace SharpPulsar.Impl
 		{
 			Dec.NumberDecimalSeparator = "0.000";
 			ThroughputFormat.NumberDecimalSeparator = "0.00";
-			this._pulsarClient = pulsarClient;
-			this._statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
-			this._producer = producer;
+			_pulsarClient = pulsarClient;
+			_statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
+			_producer = producer;
 			_numMsgsSent = new StripedLongAdder();
 			_numBytesSent = new StripedLongAdder();
 			_numSendFailed = new StripedLongAdder();
@@ -103,7 +103,7 @@ namespace SharpPulsar.Impl
 
 		private void Init(ProducerConfigurationData conf)
 		{
-			ObjectMapper m = new ObjectMapper();
+			var m = new ObjectMapper();
 
 			try
 			{
@@ -114,70 +114,11 @@ namespace SharpPulsar.Impl
 			{
 				Log.LogError("Failed to dump config info", e);
 			}
-
-			_stat = (timeout) =>
-			{
-
-				if (timeout.Cancelled)
-				{
-					return;
-				}
-
-				try
-				{
-					long now = System.nanoTime();
-					double elapsed = (now - _oldTime) / 1e9;
-					_oldTime = now;
-
-					long currentNumMsgsSent = _numMsgsSent.sumThenReset();
-					long currentNumBytesSent = _numBytesSent.sumThenReset();
-					long currentNumSendFailedMsgs = _numSendFailed.sumThenReset();
-					long currentNumAcksReceived = _numAcksReceived.sumThenReset();
-
-					_totalMsgsSent.Add(currentNumMsgsSent);
-					_totalBytesSent.Add(currentNumBytesSent);
-					_totalSendFailed.Add(currentNumSendFailedMsgs);
-					_totalAcksReceived.Add(currentNumAcksReceived);
-
-					lock (_ds)
-					{
-						_latencyPctValues = _ds.getQuantiles(Percentiles);
-						_ds.Reset();
-					}
-
-					SendMsgsRate = currentNumMsgsSent / elapsed;
-					SendBytesRate = currentNumBytesSent / elapsed;
-
-					if ((currentNumMsgsSent | currentNumSendFailedMsgs | currentNumAcksReceived | currentNumMsgsSent) != 0)
-					{
-
-						for (int i = 0; i < _latencyPctValues.Length; i++)
-						{
-							if (double.IsNaN(_latencyPctValues[i]))
-							{
-								_latencyPctValues[i] = 0;
-							}
-						}
-
-						Log.info("[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " + "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " + "Ack received rate: {} ack/s --- Failed messages: {}", _producer.Topic, _producer.ProducerName, _producer.PendingQueueSize, ThroughputFormat.format(SendMsgsRate), ThroughputFormat.format(SendBytesRate / 1024 / 1024 * 8), Dec.format(_latencyPctValues[0] / 1000.0), Dec.format(_latencyPctValues[2] / 1000.0), Dec.format(_latencyPctValues[3] / 1000.0), Dec.format(_latencyPctValues[4] / 1000.0), Dec.format(_latencyPctValues[5] / 1000.0), ThroughputFormat.format(currentNumAcksReceived / elapsed), currentNumSendFailedMsgs);
-					}
-
-				}
-				catch (Exception e)
-				{
-					Log.error("[{}] [{}]: {}", _producer.Topic, _producer.ProducerName, e.Message);
-				}
-				finally
-				{
-					// schedule the next stat info
-					StatTimeout = _pulsarClient.Timer().newTimeout(_stat, _statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
-				}
-
-			};
-
-			_oldTime = System.nanoTime();
-			StatTimeout = _pulsarClient.Timer().newTimeout(_stat, _statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+			
+			_oldTime = DateTime.Now.Millisecond;
+			StatTimeout = _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
 		}
+
 
 
 		public void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize)
@@ -205,7 +146,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void Reset()
+		public void Reset()
 		{
 			_numMsgsSent.Reset();
 			_numBytesSent.Reset();
@@ -217,7 +158,7 @@ namespace SharpPulsar.Impl
 			_totalAcksReceived.Reset();
 		}
 
-		public virtual void UpdateCumulativeStats(IProducerStats stats)
+		public void UpdateCumulativeStats(IProducerStats stats)
 		{
 			if (stats == null)
 			{
@@ -233,129 +174,111 @@ namespace SharpPulsar.Impl
 			_totalAcksReceived.Add(stats.NumAcksReceived);
 		}
 
-		public virtual long NumMsgsSent
-		{
-			get
-			{
-				return _numMsgsSent.GetValue();
-			}
-		}
+		public long NumMsgsSent => _numMsgsSent.GetValue();
 
-		public virtual long NumBytesSent
-		{
-			get
-			{
-				return _numBytesSent.GetValue();
-			}
-		}
+        public long NumBytesSent => _numBytesSent.GetValue();
 
-		public virtual long NumSendFailed
-		{
-			get
-			{
-				return _numSendFailed.GetValue();
-			}
-		}
+        public long NumSendFailed => _numSendFailed.GetValue();
 
-		public virtual long NumAcksReceived
-		{
-			get
-			{
-				return _numAcksReceived.GetValue();
-			}
-		}
+        public long NumAcksReceived => _numAcksReceived.GetValue();
 
-		public virtual long TotalMsgsSent
-		{
-			get
-			{
-				return _totalMsgsSent.GetValue();
-			}
-		}
+        public long TotalMsgsSent => _totalMsgsSent.GetValue();
 
-		public virtual long TotalBytesSent
-		{
-			get
-			{
-				return _totalBytesSent.GetValue();
-			}
-		}
+        public long TotalBytesSent => _totalBytesSent.GetValue();
 
-		public virtual long TotalSendFailed
-		{
-			get
-			{
-				return _totalSendFailed.GetValue();
-			}
-		}
+        public long TotalSendFailed => _totalSendFailed.GetValue();
 
-		public virtual long TotalAcksReceived
-		{
-			get
-			{
-				return _totalAcksReceived.GetValue();
-			}
-		}
+        public long TotalAcksReceived => _totalAcksReceived.GetValue();
 
 
+        public double SendLatencyMillis50Pct => _latencyPctValues[0];
 
-		public virtual double SendLatencyMillis50Pct
-		{
-			get
-			{
-				return _latencyPctValues[0];
-			}
-		}
+        public double SendLatencyMillis75Pct => _latencyPctValues[1];
 
-		public virtual double SendLatencyMillis75Pct
-		{
-			get
-			{
-				return _latencyPctValues[1];
-			}
-		}
+        public double SendLatencyMillis95Pct => _latencyPctValues[2];
 
-		public virtual double SendLatencyMillis95Pct
-		{
-			get
-			{
-				return _latencyPctValues[2];
-			}
-		}
+        public double SendLatencyMillis99Pct => _latencyPctValues[3];
 
-		public virtual double SendLatencyMillis99Pct
-		{
-			get
-			{
-				return _latencyPctValues[3];
-			}
-		}
+        public double SendLatencyMillis999Pct => _latencyPctValues[4];
 
-		public virtual double SendLatencyMillis999Pct
-		{
-			get
-			{
-				return _latencyPctValues[4];
-			}
-		}
+        public double SendLatencyMillisMax => _latencyPctValues[5];
+        public double OldTime => _oldTime;
 
-		public virtual double SendLatencyMillisMax
-		{
-			get
-			{
-				return _latencyPctValues[5];
-			}
-		}
-
-		public virtual void CancelStatsTimeout()
+		public void CancelStatsTimeout()
 		{
 			if (StatTimeout != null)
 			{
-				StatTimeout.cancel();
+				StatTimeout.Cancel();
 				StatTimeout = null;
 			}
 		}
+        public class StatsTimerTask : ITimerTask
+        {
+            private readonly ProducerStatsRecorderImpl<T> _outerInstance;
 
+            public StatsTimerTask(ProducerStatsRecorderImpl<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
+            public void Run(ITimeout timeout)
+            {
+
+				if (timeout.Canceled)
+				{
+					return;
+				}
+
+				try
+				{
+					long now = DateTime.Now.Millisecond;
+					var elapsed = (now - _outerInstance.OldTime) / 1e9;
+                    _outerInstance._oldTime = now;
+
+					var currentNumMsgsSent = _outerInstance._numMsgsSent.GetAndReset();
+					var currentNumBytesSent = _outerInstance._numBytesSent.GetAndReset();
+					var currentNumSendFailedMsgs = _outerInstance._numSendFailed.GetAndReset();
+					var currentNumAcksReceived = _outerInstance._numAcksReceived.GetAndReset();
+
+                    _outerInstance._totalMsgsSent.Add(currentNumMsgsSent);
+                    _outerInstance._totalBytesSent.Add(currentNumBytesSent);
+                    _outerInstance._totalSendFailed.Add(currentNumSendFailedMsgs);
+                    _outerInstance._totalAcksReceived.Add(currentNumAcksReceived);
+
+					lock (_ds)
+					{
+                        _outerInstance._latencyPctValues = _ds.getQuantiles(Percentiles);
+						_ds.Reset();
+					}
+
+                    _outerInstance.SendMsgsRate = currentNumMsgsSent / elapsed;
+                    _outerInstance.SendBytesRate = currentNumBytesSent / elapsed;
+
+					if ((currentNumMsgsSent | currentNumSendFailedMsgs | currentNumAcksReceived | currentNumMsgsSent) != 0)
+					{
+
+						for (var i = 0; i < _outerInstance._latencyPctValues.Length; i++)
+						{
+							if (double.IsNaN(_outerInstance._latencyPctValues[i]))
+							{
+                                _outerInstance._latencyPctValues[i] = 0;
+							}
+						}
+
+						Log.LogInformation("[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " + "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " + "Ack received rate: {} ack/s --- Failed messages: {}", _outerInstance._producer.Topic, _outerInstance._producer.ProducerName, _outerInstance._producer.PendingQueueSize, _outerInstance.SendMsgsRate.ToString(ThroughputFormat), (_outerInstance.SendBytesRate / 1024 / 1024 * 8).ToString(ThroughputFormat), (_outerInstance._latencyPctValues[0] / 1000.0).ToString(Dec), (_outerInstance._latencyPctValues[2] / 1000.0).ToString(Dec), (_outerInstance._latencyPctValues[3] / 1000.0).ToString(Dec), (_outerInstance._latencyPctValues[4] / 1000.0).ToString(Dec), (_outerInstance._latencyPctValues[5] / 1000.0).ToString(Dec), (currentNumAcksReceived / elapsed).ToString(ThroughputFormat), currentNumSendFailedMsgs);
+					}
+
+				}
+				catch (System.Exception e)
+				{
+					Log.LogError("[{}] [{}]: {}", _outerInstance._producer.Topic, _outerInstance._producer.ProducerName, e.Message);
+				}
+				finally
+				{
+					// schedule the next stat info
+                    _outerInstance.StatTimeout = _outerInstance._pulsarClient.Timer.NewTimeout(this, TimeSpan.FromSeconds(_outerInstance._statsIntervalSeconds));
+				}
+			}
+        }
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
 	}
 

@@ -28,35 +28,29 @@ namespace SharpPulsar.Util
 
 	public class ExecutorProvider
 	{
-		private readonly int numThreads;
+		private readonly int _numThreads;
 		private readonly IList<Task> _executors;
 		private readonly AtomicInt _currentThread = new AtomicInt(0);
 		private readonly CancellationTokenSource _cancellationToken;
 
-		public ExecutorProvider(int NumThreads, Action taskFactory)
+		public ExecutorProvider(int numThreads, Action taskFactory)
 		{
 			_cancellationToken = new CancellationTokenSource();
-			if (NumThreads < 1)
+			if (numThreads < 1)
 				throw new ArgumentException("Number of threads most be greater than 0");
-			this.numThreads = NumThreads;
+			this._numThreads = numThreads;
 			if (taskFactory is null)
 				throw new NullReferenceException("ActionFactory cannot be null");
-			_executors = new List<Task>(NumThreads);
-			for (int I = 0; I < NumThreads; I++)
+			_executors = new List<Task>(numThreads);
+			for (var i = 0; i < numThreads; i++)
 			{
 				_executors.Add(Task.Run(taskFactory, _cancellationToken.Token));
 			}
 		}
 
-		public virtual Task Executor
-		{
-			get
-			{
-				return _executors[(_currentThread.Increment() & int.MaxValue) % numThreads];
-			}
-		}
+		public virtual Task Executor => _executors[(_currentThread.Increment() & int.MaxValue) % _numThreads];
 
-		public virtual void ShutdownNow()
+        public virtual void ShutdownNow()
 		{
 			_cancellationToken.Cancel();
 			_executors.ToList().ForEach(executor => { 

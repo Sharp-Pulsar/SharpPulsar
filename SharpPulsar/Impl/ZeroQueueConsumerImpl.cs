@@ -84,7 +84,7 @@ namespace SharpPulsar.Impl
 			// Just being cautious
 			if (IncomingMessages.size() > 0)
 			{
-				log.error("The incoming message queue should never be greater than 0 when Queue size is 0");
+				Log.error("The incoming message queue should never be greater than 0 when Queue size is 0");
 				IncomingMessages.clear();
 			}
 
@@ -172,15 +172,15 @@ namespace SharpPulsar.Impl
 			StatsConflict.updateNumMsgsReceived(Message);
 			try
 			{
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}][{}] Calling message listener for unqueued message {}", Topic, SubscriptionConflict, Message.MessageId);
+					Log.debug("[{}][{}] Calling message listener for unqueued message {}", Topic, SubscriptionConflict, Message.MessageId);
 				}
 				Listener.received(ZeroQueueConsumerImpl.this, BeforeConsume(Message));
 			}
 			catch (Exception T)
 			{
-				log.error("[{}][{}] Message listener error in processing unqueued message: {}", Topic, SubscriptionConflict, Message.MessageId, T);
+				Log.error("[{}][{}] Message listener error in processing unqueued message: {}", Topic, SubscriptionConflict, Message.MessageId, T);
 			}
 			IncreaseAvailablePermits(Cnx());
 			});
@@ -193,7 +193,7 @@ namespace SharpPulsar.Impl
 
 		public override void ReceiveIndividualMessagesFromBatch(MessageMetadata MsgMetadata, int RedeliveryCount, ByteBuf UncompressedPayload, MessageIdData MessageId, ClientCnx Cnx)
 		{
-			log.warn("Closing consumer [{}]-[{}] due to unsupported received batch-message with zero receiver queue size", SubscriptionConflict, ConsumerNameConflict);
+			Log.warn("Closing consumer [{}]-[{}] due to unsupported received batch-message with zero receiver queue size", SubscriptionConflict, ConsumerNameConflict);
 			// close connection
 			CloseAsync().handle((ok, e) =>
 			{

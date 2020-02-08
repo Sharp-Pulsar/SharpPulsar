@@ -67,13 +67,13 @@ namespace SharpPulsar.Impl
 		private readonly ConcurrentDictionary<long, ConsumerImpl<object>> _consumers = new ConcurrentDictionary<long, ConsumerImpl<object>>(1, 16);
 		private readonly ConcurrentDictionary<long, TransactionMetaStoreHandler> _transactionMetaStoreHandlers = new ConcurrentDictionary<long, TransactionMetaStoreHandler>(1, 16);
 
-		private  TaskCompletionSource<ClientCnx> _connectionTask = new TaskCompletionSource<ClientCnx>();
+		private readonly TaskCompletionSource<ClientCnx> _connectionTask = new TaskCompletionSource<ClientCnx>();
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
 		private readonly Semaphore _pendingLookupRequestSemaphore;
 		private readonly Semaphore _maxLookupRequestSemaphore;
 		private readonly MultithreadEventLoopGroup _eventLoopGroup;
 
-		private static readonly ConcurrentDictionary<ClientCnx, long> _numberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
+		private static readonly ConcurrentDictionary<ClientCnx, long> NumberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
 		private volatile int _numberOfRejectRequests = 0;
 		public static int MaxMessageSize = Commands.DefaultMaxMessageSize;
 
@@ -112,25 +112,26 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, IEventLoopGroup eventLoop) : this(Conf, Commands.CurrentProtocolVersion, eventLoop)
+		public ClientCnx(ClientConfigurationData conf, IEventLoopGroup eventLoop, MultithreadEventLoopGroup eventLoopGroup) : this(conf, Commands.CurrentProtocolVersion, eventLoop, eventLoopGroup)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData Conf, int ProtocolVersion, IEventLoopGroup eventLoop) : base(Conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData conf, int protocolVersion, IEventLoopGroup eventLoop, MultithreadEventLoopGroup eventLoopGroup) : base(conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
 		{
-			if (Conf.MaxLookupRequest < Conf.ConcurrentLookupRequest)
+			if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
 				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
-			_pendingLookupRequestSemaphore = new Semaphore(Conf.ConcurrentLookupRequest, Conf.MaxLookupRequest);
-			_maxLookupRequestSemaphore = new Semaphore(Conf.MaxLookupRequest - Conf.ConcurrentLookupRequest, Conf.MaxLookupRequest);
+			_pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
+			_maxLookupRequestSemaphore = new Semaphore(conf.MaxLookupRequest - conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>>();
-			Authentication = Conf.Authentication;
+			Authentication = conf.Authentication;
 
-			_maxNumberOfRejectedRequestPerConnection = Conf.MaxNumberOfRejectedRequestPerConnection;
-			_operationTimeoutMs = Conf.OperationTimeoutMs;
+			_maxNumberOfRejectedRequestPerConnection = conf.MaxNumberOfRejectedRequestPerConnection;
+			_operationTimeoutMs = conf.OperationTimeoutMs;
 			_state = State.None;
-			_isTlsHostnameVerificationEnable = Conf.TlsHostnameVerificationEnable;
-			_protocolVersion = ProtocolVersion;
-		}
+			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
+			_protocolVersion = protocolVersion;
+            _eventLoopGroup = eventLoopGroup;
+        }
 
 		public Task<BaseCommand> NewConnectCommand()
 		{
@@ -138,13 +139,14 @@ namespace SharpPulsar.Impl
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
-			var authData = AuthenticationDataProvider.Authenticate(AuthData.of(AuthData.auth_data));
+			var authData = AuthenticationDataProvider.Authenticate(Shared.Auth.AuthData.);
 			return Commands.NewConnect(Authentication.AuthMethodName, authData, _protocolVersion, null, _proxyToTargetBrokerAddress, null, null, null);
 		}
 
 		public new void ChannelInactive(IChannelHandlerContext ctx)
 		{
 			base.ChannelInactive(ctx);
+            _eventLoopGroup.Schedule(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs));
 			Log.LogInformation("{} Disconnected", ctx.Channel);
 			if (_connectionTask.Task.IsFaulted)
 			{
@@ -239,11 +241,11 @@ namespace SharpPulsar.Impl
 		public override void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
 			if(authChallenge.Challenge != null)
-			if(authChallenge.Challenge.auth_data != null)
+                if(authChallenge.Challenge.AuthData_ != null)
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				var authData = AuthenticationDataProvider.Authenticate(AuthData.of(authChallenge.Challenge.auth_data));
+				var authData = AuthenticationDataProvider.Authenticate(AuthData.of(authChallenge.Challenge.AuthData_));
 
 						if (!authData.Complete)
 							throw new System.Exception();
@@ -669,7 +671,7 @@ namespace SharpPulsar.Impl
 
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.LogDebug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx().Channel, Success.RequestId, Topics.Count);
+				Log.LogDebug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx().Channel, success.RequestId, topics.Count);
 			}
 
 			_pendingGetTopicsRequests.Remove(requestId, out var requestTask);
@@ -884,15 +886,15 @@ namespace SharpPulsar.Impl
 			}
 			else if (ServerError.TooManyRequests.Equals(Error))
 			{
-				var rejectedRequests = _numberOfRejectedrequestsUpdater[this];
+				var rejectedRequests = NumberOfRejectedrequestsUpdater[this];
 				if (rejectedRequests == 0)
 				{
 					// schedule timer
-					_eventLoopGroup.Schedule(x => _numberOfRejectedrequestsUpdater.TryAdd(this, 0), _rejectedRequestResetTimeSec, TimeSpan.FromSeconds(_rejectedRequestResetTimeSec));
+					_eventLoopGroup.Schedule(x => NumberOfRejectedrequestsUpdater.TryAdd(this, 0), _rejectedRequestResetTimeSec, TimeSpan.FromSeconds(_rejectedRequestResetTimeSec));
 				}
 				else if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
 				{
-					Log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,_numberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
+					Log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,NumberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
 					Ctx().CloseAsync();
 				}
 			}

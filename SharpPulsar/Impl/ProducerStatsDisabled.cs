@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,164 +22,68 @@
 namespace SharpPulsar.Impl
 {
 	[Serializable]
-	public class ProducerStatsDisabled : IProducerStatsRecorder
+	public class ProducerStatsDisabled<T> : IProducerStatsRecorder
 	{
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
-		internal static readonly IProducerStatsRecorder INSTANCE = new ProducerStatsDisabled();
+		internal static readonly IProducerStatsRecorder Instance = new ProducerStatsDisabled<T>();
 
-		public override void IncrementSendFailed()
+		public void IncrementSendFailed()
 		{
 			// Do nothing
 		}
 
-		public override void IncrementSendFailed(long NumMsgs)
+		public void IncrementSendFailed(long numMsgs)
 		{
 			// Do nothing
 		}
 
-		public override void IncrementNumAcksReceived(long LatencyNs)
+		public void IncrementNumAcksReceived(long latencyNs)
 		{
 			// Do nothing
 		}
 
-		public override void UpdateNumMsgsSent(long NumMsgs, long TotalMsgsSize)
+		public void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize)
 		{
 			// Do nothing
 		}
 
-		public override void CancelStatsTimeout()
+		public void CancelStatsTimeout()
 		{
 			// Do nothing
 		}
 
-		public virtual long NumMsgsSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+		public virtual long NumMsgsSent => 0;
 
-		public virtual long NumBytesSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumBytesSent => 0;
 
-		public virtual long NumSendFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumSendFailed => 0;
 
-		public virtual long NumAcksReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumAcksReceived => 0;
 
-		public virtual long TotalMsgsSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalMsgsSent => 0;
 
-		public virtual long TotalBytesSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalBytesSent => 0;
 
-		public virtual long TotalSendFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalSendFailed => 0;
 
-		public virtual long TotalAcksReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalAcksReceived => 0;
 
-		public virtual double SendMsgsRate
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendMsgsRate => 0;
 
-		public virtual double SendBytesRate
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendBytesRate => 0;
 
-		public virtual double SendLatencyMillis50Pct
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendLatencyMillis50Pct => 0;
 
-		public virtual double SendLatencyMillis75Pct
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendLatencyMillis75Pct => 0;
 
-		public virtual double SendLatencyMillis95Pct
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendLatencyMillis95Pct => 0;
 
-		public virtual double SendLatencyMillis99Pct
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendLatencyMillis99Pct => 0;
 
-		public virtual double SendLatencyMillis999Pct
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double SendLatencyMillis999Pct => 0;
 
-		public virtual double SendLatencyMillisMax
-		{
-			get
-			{
-				return 0;
-			}
-		}
-	}
+        public virtual double SendLatencyMillisMax => 0;
+    }
 
 }

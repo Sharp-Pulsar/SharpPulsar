@@ -48,7 +48,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Impl
 {
 
-	public sealed class ProducerImpl<T> : ProducerBase<T>, IConnection
+	public sealed class ProducerImpl<T> : ProducerBase<T>, ITimerTask, IConnection
 	{
 
 		// Producer id, used to identify a producer within a single connection
@@ -61,8 +61,8 @@ namespace SharpPulsar.Impl
 		private readonly BlockingQueue<OpSendMsg<T>> _pendingCallbacks;
 		private readonly Semaphore _semaphore;
 		public State state;
-		private  Timer _sendTimeout;
-		private  Timer _batchMessageAndSendTimeout = null;
+		private  ITimeout _sendTimeout;
+		private ITimeout _batchMessageAndSendTimeout = null;
 		private readonly long _createProducerTimeout;
 		private readonly BatchMessageContainerBase _batchMessageContainer;
 		private TaskCompletionSource<IMessageId> _lastSendTask = new TaskCompletionSource<IMessageId>();
@@ -133,7 +133,9 @@ namespace SharpPulsar.Impl
 						if (!producerCreatedTask.Task.IsCompletedSuccessfully)
 						{
 							log.LogWarning("[{}] [{}] [{}] Failed to add public key cipher.", Topic, HandlerName, ProducerId);
-							producerCreatedTask.SetException(PulsarClientException.Wrap(e, string.Format("The producer {0} of the topic {1} " + "adds the public key cipher was failed", HandlerName, Topic)));
+							producerCreatedTask.SetException(PulsarClientException.Wrap(e,
+                                $"The producer {HandlerName} of the topic {Topic} " +
+                                "adds the public key cipher was failed"));
 						}
 					}
 				}, TimeSpan.FromSeconds(30));
@@ -141,9 +143,9 @@ namespace SharpPulsar.Impl
 			}
 
 			if (Conf.SendTimeoutMs > 0)
-			{
-				_sendTimeout = Client.Timer = new Timer(_=> { var t = this; }, null, (int)Conf.SendTimeoutMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMillis(Conf.SendTimeoutMs));
-			}
+            {
+                _sendTimeout = Client.Timer.NewTimeout(this, TimeSpan.FromTicks(Conf.SendTimeoutMs));
+            }
 
 			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + Client.Configuration.OperationTimeoutMs;
 			if (Conf.BatchingEnabled)
@@ -156,7 +158,7 @@ namespace SharpPulsar.Impl
 			{
 				_batchMessageContainer = null;
 			}
-			Stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>(Client, Conf, this) : ProducerStatsDisabled.INSTANCE;
+			Stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>(Client, Conf, this) : ProducerStatsDisabled<T>.Instance;
 
 			if (!Conf.Properties.Any())
 			{
@@ -751,14 +753,14 @@ namespace SharpPulsar.Impl
 			var timeout = _sendTimeout;
 			if (timeout != null)
 			{
-				timeout.Dispose();
+				timeout.Cancel();
 				_sendTimeout = null;
 			}
 
 			var batchTimeout = _batchMessageAndSendTimeout;
 			if (batchTimeout != null)
 			{
-				batchTimeout.Dispose();
+				batchTimeout.Cancel();
 				_batchMessageAndSendTimeout = null;
 			}
 
@@ -1174,9 +1176,9 @@ namespace SharpPulsar.Impl
 						MsgIdGenerator[this] = LastSequenceId + 1;
 					}
 					if (!ProducerCreatedTask.Task.IsCompletedSuccessfully && BatchMessagingEnabled)
-					{						
-						Client.Timer = new Timer(_=> batchMessageAndSendTask.Run(), null, (int)Conf.BatchingMaxPublishDelayMicros, (int)BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToSecs(Conf.BatchingMaxPublishDelayMicros));
-					}
+                    {
+                        Client.Timer.NewTimeout(new TimerTaskAnonymousInnerClass(this), TimeSpan.FromTicks(Conf.BatchingMaxPublishDelayMicros));
+                    }
 					ResendMessages(cnx);
 				}
 			});
@@ -1287,9 +1289,9 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Process sendTimeout events
 		/// </summary>
-		public void Run()
+		public void Run(ITimeout timeout)
 		{
-			if (Timeout.Cancelled)
+			if (timeout.Canceled)
 			{
 				return;
 			}
@@ -1334,7 +1336,7 @@ namespace SharpPulsar.Impl
 					}
 				}
 
-				_sendTimeout = Client.Timer = new Timer(this, timeToWaitMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+				_sendTimeout = Client.Timer.NewTimeout(this, TimeSpan.FromTicks(timeToWaitMs));
 			}
 		}
 
@@ -1357,7 +1359,7 @@ namespace SharpPulsar.Impl
 						}
 						catch (System.Exception T)
 						{
-							log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, op.sequenceId, T);
+							log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, op.SequenceId, T);
 						}
 						op.Cmd.SafeRelease();
 						op.Recycle();
@@ -1402,34 +1404,38 @@ namespace SharpPulsar.Impl
 			_semaphore.Release(numMessagesInBatch);
 		}
 
-		internal TimerTaskAnonymousInnerClass batchMessageAndSendTask = new TimerTaskAnonymousInnerClass();
+		public class TimerTaskAnonymousInnerClass: ITimerTask
+        {
+            private readonly ProducerImpl<T> _outerInstance;
 
-		public class TimerTaskAnonymousInnerClass
-		{
-
-			public void Run()
+            public TimerTaskAnonymousInnerClass(ProducerImpl<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
+			
+			public void Run(ITimeout timeout)
 			{
-				if (Timeout.Cancelled)
-				{
-					return;
-				}
-				if (log.IsEnabled(LogLevel.Trace))
-				{
-					log.LogTrace("[{}] [{}] Batching the messages from the batch container from timer thread", outerInstance.Topic, outerInstance.HandlerName);
-				}
-				// semaphore acquired when message was enqueued to container
-				lock (_outerInstance)
-				{
-					// If it's closing/closed we need to ignore the send batch timer and not schedule next timeout.
-					if (outerInstance.State == State.Closing || outerInstance.State == State.Closed)
-					{
-						return;
-					}
+                if (timeout.Canceled)
+                {
+                    return;
+                }
+                if (log.IsEnabled(LogLevel.Trace))
+                {
+                    log.LogTrace("[{}] [{}] Batching the messages from the batch container from timer thread", _outerInstance.Topic, _outerInstance.HandlerName);
+                }
+                // semaphore acquired when message was enqueued to container
+                lock (_outerInstance)
+                {
+                    // If it's closing/closed we need to ignore the send batch timer and not schedule next timeout.
+                    if (_outerInstance.GetState() == State.Closing || _outerInstance.GetState() == State.Closed)
+                    {
+                        return;
+                    }
 
-					outerInstance.batchMessageAndSend();
-					// schedule the next batch message task
-					outerInstance.batchMessageAndSendTimeout = outerInstance.ClientConflict.timer().newTimeout(this, outerInstance.Conf.BatchingMaxPublishDelayMicros, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS);
-				}
+                    _outerInstance.BatchMessageAndSend();
+                    // schedule the next batch message task
+                    _outerInstance._batchMessageAndSendTimeout = _outerInstance.Client.Timer.NewTimeout(this, TimeSpan.FromTicks(_outerInstance.Conf.BatchingMaxPublishDelayMicros));
+                }
 			}
 		}
 

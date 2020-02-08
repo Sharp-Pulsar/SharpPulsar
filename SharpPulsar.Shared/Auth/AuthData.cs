@@ -1,5 +1,5 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -18,7 +18,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Shared
+namespace SharpPulsar.Shared.Auth
 {
 	/// <summary>
 	/// Authentication data.
@@ -30,13 +30,7 @@ namespace SharpPulsar.Shared
 
 		public readonly sbyte[] Bytes;
 
-		public bool Complete
-		{
-			get
-			{
-				return Bytes == null;
-			}
-		}
-	}
+		public bool Complete => Bytes == null;
+    }
 
 }

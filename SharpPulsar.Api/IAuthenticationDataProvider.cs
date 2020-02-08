@@ -1,8 +1,8 @@
-﻿using SharpPulsar.Common.Auth;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using SharpPulsar.Shared.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -45,25 +45,13 @@ namespace SharpPulsar.Api
 
 		/// 
 		/// <returns> a client certificate chain, or null if the data are not available </returns>
-		virtual X509Certificate2[] TlsCertificates
-		{
-			get
-			{
-				return null;
-			}
-		}
+		virtual X509Certificate2[] TlsCertificates => null;
 
-		/// 
+        /// 
 		/// <returns> a private key for the client certificate, or null if the data are not available </returns>
-		virtual AsymmetricAlgorithm TlsPrivateKey
-		{
-			get
-			{
-				return null;
-			}
-		}
+		virtual AsymmetricAlgorithm TlsPrivateKey => null;
 
-		/*
+        /*
 		 * HTTP
 		 */
 
@@ -78,25 +66,13 @@ namespace SharpPulsar.Api
 
 		/// 
 		/// <returns> a authentication scheme, or {@code null} if the request will not be authenticated. </returns>
-		virtual string HttpAuthType
-		{
-			get
-			{
-				return null;
-			}
-		}
+		virtual string HttpAuthType => null;
 
-		/// 
+        /// 
 		/// <returns> an enumeration of all the header names </returns>
-		virtual ISet<KeyValuePair<string, string>> HttpHeaders
-		{
-			get
-			{
-				return null;
-			}
-		}
+		virtual ISet<KeyValuePair<string, string>> HttpHeaders => null;
 
-		/*
+        /*
 		 * Command
 		 */
 
@@ -111,15 +87,9 @@ namespace SharpPulsar.Api
 
 		/// 
 		/// <returns> authentication data which will be stored in a command </returns>
-		virtual string CommandData
-		{
-			get
-			{
-				return null;
-			}
-		}
+		virtual string CommandData => null;
 
-		/// <summary>
+        /// <summary>
 		/// For mutual authentication, This method use passed in `data` to evaluate and challenge,
 		/// then returns null if authentication has completed;
 		/// returns authenticated data back to server side, if authentication has not completed.

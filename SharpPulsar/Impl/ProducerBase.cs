@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
 		public abstract bool Connected { get; set; }
-		public  Api.IProducerStatsRecorder Stats { get; set;}
+		public  IProducerStatsRecorder Stats { get; set;}
 		public long LastSequenceId { get; set; }
 		public abstract ValueTask FlushAsync();
 		public abstract string ProducerName { get; set; }
@@ -158,25 +158,12 @@ namespace SharpPulsar.Impl
 
 		public abstract ValueTask CloseAsync();
 
-		public virtual string Topic
-		{
-			get
-			{
-				return Topic;
-			}
-		}
+		public virtual string Topic => Topic;
 
-		public virtual ProducerConfigurationData Configuration
-		{
-			get
-			{
-				return Conf;
-			}
-		}
+        public virtual ProducerConfigurationData Configuration => Conf;
 
-		
 
-		public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
+        public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
 		{
 			return ProducerCreatedTask;
 		}

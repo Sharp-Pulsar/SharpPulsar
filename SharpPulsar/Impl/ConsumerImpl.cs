@@ -1,7 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
+using Microsoft.Extensions.Logging;
+using Pulsar.Common.Auth;
+using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Transaction;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -101,7 +109,7 @@ namespace SharpPulsar.Impl
 			NonDurable
 		}
 
-		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, Task ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
+		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ScheduledThreadPoolExecutor ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{
@@ -239,12 +247,12 @@ namespace SharpPulsar.Impl
 					possibleSendToDeadLetterTopicMessages.Clear();
 				}
 				ClientConflict.cleanupConsumer(ConsumerImpl.this);
-				log.info("[{}][{}] Successfully unsubscribed from topic", Topic, SubscriptionConflict);
+				Log.info("[{}][{}] Successfully unsubscribed from topic", Topic, SubscriptionConflict);
 				State = State.Closed;
 				UnsubscribeFuture.complete(null);
 				}).exceptionally(e =>
 				{
-				log.error("[{}][{}] Failed to unsubscribe: {}", Topic, SubscriptionConflict, e.Cause.Message);
+				Log.error("[{}][{}] Failed to unsubscribe: {}", Topic, SubscriptionConflict, e.Cause.Message);
 				State = State.Ready;
 				UnsubscribeFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("Failed to unsubscribe the subscription {0} of topic {1}", topicName.ToString(), SubscriptionConflict)));
 				return null;
@@ -412,7 +420,7 @@ namespace SharpPulsar.Impl
 				IsAllMsgsAcked = BatchMessageId.ackCumulative();
 			}
 			int OutstandingAcks = 0;
-			if (log.DebugEnabled)
+			if (Log.DebugEnabled)
 			{
 				OutstandingAcks = BatchMessageId.OutstandingAcksInSameBatch;
 			}
@@ -421,9 +429,9 @@ namespace SharpPulsar.Impl
 			// all messages in this batch have been acked
 			if (IsAllMsgsAcked)
 			{
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] can ack message to broker {}, acktype {}, cardinality {}, length {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks, BatchSize);
+					Log.debug("[{}] [{}] can ack message to broker {}, acktype {}, cardinality {}, length {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks, BatchSize);
 				}
 				return true;
 			}
@@ -438,9 +446,9 @@ namespace SharpPulsar.Impl
 				{
 					OnAcknowledge(BatchMessageId, null);
 				}
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] cannot ack message to broker {}, acktype {}, pending acks - {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks);
+					Log.debug("[{}] [{}] cannot ack message to broker {}, acktype {}, pending acks - {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks);
 				}
 			}
 			return false;
@@ -469,9 +477,9 @@ namespace SharpPulsar.Impl
 				if (MarkAckForBatchMessage((BatchMessageIdImpl) MessageId, AckType, Properties))
 				{
 					// all messages in batch have been acked so broker can be acked via sendAcknowledge()
-					if (log.DebugEnabled)
+					if (Log.DebugEnabled)
 					{
-						log.debug("[{}] [{}] acknowledging message - {}, acktype {}", SubscriptionConflict, ConsumerNameConflict, MessageId, AckType);
+						Log.debug("[{}] [{}] acknowledging message - {}, acktype {}", SubscriptionConflict, ConsumerNameConflict, MessageId, AckType);
 					}
 				}
 				else
@@ -539,7 +547,7 @@ namespace SharpPulsar.Impl
 			ClientCnx = Cnx;
 			Cnx.registerConsumer(ConsumerId, this);
 
-			log.info("[{}][{}] Subscribing to topic on cnx {}", Topic, SubscriptionConflict, Cnx.ctx().channel());
+			Log.info("[{}][{}] Subscribing to topic on cnx {}", Topic, SubscriptionConflict, Cnx.ctx().channel());
 
 			long RequestId = ClientConflict.newRequestId();
 
@@ -620,7 +628,7 @@ namespace SharpPulsar.Impl
 				Cnx.channel().close();
 				return null;
 			}
-			log.warn("[{}][{}] Failed to subscribe to topic on {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
+			Log.warn("[{}][{}] Failed to subscribe to topic on {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
 			if (e.Cause is PulsarClientException && ConnectionHandler.isRetriableError((PulsarClientException) e.Cause) && DateTimeHelper.CurrentUnixTimeMillis() < subscribeTimeout)
 			{
 				ReconnectLater(e.Cause);
@@ -632,11 +640,11 @@ namespace SharpPulsar.Impl
 				SubscribeFutureConflict.completeExceptionally(PulsarClientException.wrap(e, string.Format("Failed to subscribe the topic {0} with subscription " + "name {1} when connecting to the broker", topicName.ToString(), SubscriptionConflict)));
 				ClientConflict.cleanupConsumer(this);
 			}
-			else if (e.Cause is TopicDoesNotExistException)
+			else if (e.Cause is PulsarClientException.TopicDoesNotExistException)
 			{
 				State = State.Failed;
 				ClientConflict.cleanupConsumer(this);
-				log.warn("[{}][{}] Closed consumer because topic does not exist anymore {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
+				Log.warn("[{}][{}] Closed consumer because topic does not exist anymore {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
 			}
 			else
 			{
@@ -648,7 +656,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void ConsumerIsReconnectedToBroker(ClientCnx Cnx, int CurrentQueueSize)
 		{
-			log.info("[{}][{}] Subscribed to topic on {} -- consumer: {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress(), ConsumerId);
+			Log.info("[{}][{}] Subscribed to topic on {} -- consumer: {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress(), ConsumerId);
 
 			AVAILABLE_PERMITS_UPDATER.set(this, 0);
 		}
@@ -701,9 +709,9 @@ namespace SharpPulsar.Impl
 		{
 			if (Cnx != null)
 			{
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] Adding {} additional permits", Topic, SubscriptionConflict, NumMessages);
+					Log.debug("[{}] [{}] Adding {} additional permits", Topic, SubscriptionConflict, NumMessages);
 				}
 
 				Cnx.ctx().writeAndFlush(Commands.newFlow(ConsumerId, NumMessages), Cnx.ctx().voidPromise());
@@ -715,7 +723,7 @@ namespace SharpPulsar.Impl
 			if (DateTimeHelper.CurrentUnixTimeMillis() > subscribeTimeout && SubscribeFutureConflict.completeExceptionally(Exception))
 			{
 				State = State.Failed;
-				log.info("[{}] Consumer creation failed for consumer {}", Topic, ConsumerId);
+				Log.info("[{}] Consumer creation failed for consumer {}", Topic, ConsumerId);
 				ClientConflict.cleanupConsumer(this);
 			}
 		}
@@ -730,7 +738,7 @@ namespace SharpPulsar.Impl
 
 			if (!Connected)
 			{
-				log.info("[{}] [{}] Closed Consumer (not connected)", Topic, SubscriptionConflict);
+				Log.info("[{}] [{}] Closed Consumer (not connected)", Topic, SubscriptionConflict);
 				State = State.Closed;
 				CloseConsumerTasks();
 				ClientConflict.cleanupConsumer(this);
@@ -774,7 +782,7 @@ namespace SharpPulsar.Impl
 
 		private void CleanupAtClose(CompletableFuture<Void> CloseFuture)
 		{
-			log.info("[{}] [{}] Closed consumer", Topic, SubscriptionConflict);
+			Log.info("[{}] [{}] Closed consumer", Topic, SubscriptionConflict);
 			State = State.Closed;
 			CloseConsumerTasks();
 			CloseFuture.complete(null);
@@ -843,9 +851,9 @@ namespace SharpPulsar.Impl
 
 		public virtual void MessageReceived(MessageIdData MessageId, int RedeliveryCount, IByteBuffer HeadersAndPayload, ClientCnx Cnx)
 		{
-			if (log.DebugEnabled)
+			if (Log.DebugEnabled)
 			{
-				log.debug("[{}][{}] Received message: {}/{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
+				Log.debug("[{}][{}] Received message: {}/{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
 			}
 
 			if (!VerifyChecksum(HeadersAndPayload, MessageId))
@@ -873,9 +881,9 @@ namespace SharpPulsar.Impl
 			MessageIdImpl MsgId = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
 			if (acknowledgmentsGroupingTracker.IsDuplicate(MsgId))
 			{
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] Ignoring message as it was already being acked earlier by same consumer {}/{}", Topic, SubscriptionConflict, ConsumerNameConflict, MsgId);
+					Log.debug("[{}] [{}] Ignoring message as it was already being acked earlier by same consumer {}/{}", Topic, SubscriptionConflict, ConsumerNameConflict, MsgId);
 				}
 
 				IncreaseAvailablePermits(Cnx, NumMessages);
@@ -909,9 +917,9 @@ namespace SharpPulsar.Impl
 				if (IsResetIncludedAndSameEntryLedger(MessageId) && IsPriorEntryIndex(MessageId.EntryId))
 				{
 					// We need to discard entries that were prior to startMessageId
-					if (log.DebugEnabled)
+					if (Log.DebugEnabled)
 					{
-						log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
+						Log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
 					}
 
 					UncompressedPayload.release();
@@ -980,28 +988,28 @@ namespace SharpPulsar.Impl
 					Message<T> Msg = InternalReceive(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 					if (Msg == null)
 					{
-						if (log.DebugEnabled)
+						if (Log.DebugEnabled)
 						{
-							log.debug("[{}] [{}] Message has been cleared from the queue", Topic, SubscriptionConflict);
+							Log.debug("[{}] [{}] Message has been cleared from the queue", Topic, SubscriptionConflict);
 						}
 						break;
 					}
 					try
 					{
-						if (log.DebugEnabled)
+						if (Log.DebugEnabled)
 						{
-							log.debug("[{}][{}] Calling message listener for message {}", Topic, SubscriptionConflict, Msg.MessageId);
+							Log.debug("[{}][{}] Calling message listener for message {}", Topic, SubscriptionConflict, Msg.MessageId);
 						}
 						Listener.received(ConsumerImpl.this, Msg);
 					}
 					catch (Exception T)
 					{
-						log.error("[{}][{}] Message listener error in processing message: {}", Topic, SubscriptionConflict, Msg.MessageId, T);
+						Log.error("[{}][{}] Message listener error in processing message: {}", Topic, SubscriptionConflict, Msg.MessageId, T);
 					}
 				}
 				catch (PulsarClientException E)
 				{
-					log.warn("[{}] [{}] Failed to dequeue the message for listener", Topic, SubscriptionConflict, E);
+					Log.warn("[{}] [{}] Failed to dequeue the message for listener", Topic, SubscriptionConflict, E);
 					return;
 				}
 			}
@@ -1081,9 +1089,9 @@ namespace SharpPulsar.Impl
 			{
 				for (int I = 0; I < BatchSize; ++I)
 				{
-					if (log.DebugEnabled)
+					if (Log.DebugEnabled)
 					{
-						log.debug("[{}] [{}] processing message num - {} in batch", SubscriptionConflict, ConsumerNameConflict, I);
+						Log.debug("[{}] [{}] processing message num - {} in batch", SubscriptionConflict, ConsumerNameConflict, I);
 					}
 					PulsarApi.SingleMessageMetadata.Builder SingleMessageMetadataBuilder = PulsarApi.SingleMessageMetadata.newBuilder();
 					ByteBuf SingleMessagePayload = Commands.deSerializeSingleMessageInBatch(UncompressedPayload, SingleMessageMetadataBuilder, i, BatchSize);
@@ -1092,9 +1100,9 @@ namespace SharpPulsar.Impl
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
 						// to the startMessageId
-						if (log.DebugEnabled)
+						if (Log.DebugEnabled)
 						{
-							log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
+							Log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
 						}
 						SingleMessagePayload.release();
 						SingleMessageMetadataBuilder.recycle();
@@ -1146,7 +1154,7 @@ namespace SharpPulsar.Impl
 			}
 			catch (IOException)
 			{
-				log.warn("[{}] [{}] unable to obtain message in batch", SubscriptionConflict, ConsumerNameConflict);
+				Log.warn("[{}] [{}] unable to obtain message in batch", SubscriptionConflict, ConsumerNameConflict);
 				DiscardCorruptedMessage(MessageId, Cnx, PulsarApi.CommandAck.ValidationError.BatchDeSerializeError);
 			}
 
@@ -1155,9 +1163,9 @@ namespace SharpPulsar.Impl
 				possibleSendToDeadLetterTopicMessages[BatchMessage] = PossibleToDeadLetter;
 			}
 
-			if (log.DebugEnabled)
+			if (Log.DebugEnabled)
 			{
-				log.debug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", SubscriptionConflict, ConsumerNameConflict, IncomingMessages.size(), IncomingMessages.remainingCapacity());
+				Log.debug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", SubscriptionConflict, ConsumerNameConflict, IncomingMessages.size(), IncomingMessages.remainingCapacity());
 			}
 
 			if (SkippedMessages > 0)
@@ -1287,15 +1295,15 @@ namespace SharpPulsar.Impl
 				switch (Conf.CryptoFailureAction)
 				{
 					case CONSUME:
-						log.warn("[{}][{}][{}] CryptoKeyReader interface is not implemented. Consuming encrypted message.", Topic, SubscriptionConflict, ConsumerNameConflict);
+						Log.warn("[{}][{}][{}] CryptoKeyReader interface is not implemented. Consuming encrypted message.", Topic, SubscriptionConflict, ConsumerNameConflict);
 						return Payload.retain();
 					case DISCARD:
-						log.warn("[{}][{}][{}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict);
+						Log.warn("[{}][{}][{}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict);
 						DiscardMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecryptionError);
 						return null;
 					case FAIL:
 						MessageId M = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-						log.error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
+						Log.error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
 						UnAckedMessageTracker.Add(M);
 						return null;
 				}
@@ -1311,15 +1319,15 @@ namespace SharpPulsar.Impl
 			{
 				case CONSUME:
 					// Note, batch message will fail to consume even if config is set to consume
-					log.warn("[{}][{}][{}][{}] Decryption failed. Consuming encrypted message since config is set to consume.", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
+					Log.warn("[{}][{}][{}][{}] Decryption failed. Consuming encrypted message since config is set to consume.", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
 					return Payload.retain();
 				case DISCARD:
-					log.warn("[{}][{}][{}][{}] Discarding message since decryption failed and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
+					Log.warn("[{}][{}][{}][{}] Discarding message since decryption failed and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
 					DiscardMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecryptionError);
 					return null;
 				case FAIL:
 					MessageId M = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-					log.error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
+					Log.error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
 					UnAckedMessageTracker.Add(M);
 					return null;
 			}
@@ -1335,7 +1343,7 @@ namespace SharpPulsar.Impl
 			if (PayloadSize > ClientCnx.MaxMessageSize)
 			{
 				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
-				log.error("[{}][{}] Got corrupted payload message size {} at {}", Topic, SubscriptionConflict, PayloadSize, MessageId);
+				Log.error("[{}][{}] Got corrupted payload message size {} at {}", Topic, SubscriptionConflict, PayloadSize, MessageId);
 				DiscardCorruptedMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.UncompressedSizeCorruption);
 				return null;
 			}
@@ -1347,7 +1355,7 @@ namespace SharpPulsar.Impl
 			}
 			catch (IOException E)
 			{
-				log.error("[{}][{}] Failed to decompress message with {} at {}: {}", Topic, SubscriptionConflict, CompressionType, MessageId, E.Message, E);
+				Log.error("[{}][{}] Failed to decompress message with {} at {}: {}", Topic, SubscriptionConflict, CompressionType, MessageId, E.Message, E);
 				DiscardCorruptedMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecompressionError);
 				return null;
 			}
@@ -1362,7 +1370,7 @@ namespace SharpPulsar.Impl
 				int ComputedChecksum = computeChecksum(HeadersAndPayload);
 				if (Checksum != ComputedChecksum)
 				{
-					log.error("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId, Checksum.ToString("x"), ComputedChecksum.ToString("x"));
+					Log.error("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId, Checksum.ToString("x"), ComputedChecksum.ToString("x"));
 					return false;
 				}
 			}
@@ -1372,7 +1380,7 @@ namespace SharpPulsar.Impl
 
 		private void DiscardCorruptedMessage(MessageIdData MessageId, ClientCnx CurrentCnx, CommandAck.ValidationError ValidationError)
 		{
-			log.error("[{}][{}] Discarding corrupted message at {}:{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
+			Log.error("[{}][{}] Discarding corrupted message at {}:{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
 			DiscardMessage(MessageId, CurrentCnx, ValidationError);
 		}
 
@@ -1432,19 +1440,19 @@ namespace SharpPulsar.Impl
 				{
 					IncreaseAvailablePermits(Cnx, CurrentSize);
 				}
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] [{}] Redeliver unacked messages and send {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, CurrentSize);
+					Log.debug("[{}] [{}] [{}] Redeliver unacked messages and send {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, CurrentSize);
 				}
 				return;
 			}
 			if (Cnx == null || (State == State.Connecting))
 			{
-				log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
+				Log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
 			}
 			else
 			{
-				log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
+				Log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
 				Cnx.ctx().close();
 			}
 		}
@@ -1489,19 +1497,19 @@ namespace SharpPulsar.Impl
 					IncreaseAvailablePermits(Cnx, MessagesFromQueue);
 				}
 				Builder.recycle();
-				if (log.DebugEnabled)
+				if (Log.DebugEnabled)
 				{
-					log.debug("[{}] [{}] [{}] Redeliver unacked messages and increase {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, MessagesFromQueue);
+					Log.debug("[{}] [{}] [{}] Redeliver unacked messages and increase {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, MessagesFromQueue);
 				}
 				return;
 			}
 			if (Cnx == null || (State == State.Connecting))
 			{
-				log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
+				Log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
 			}
 			else
 			{
-				log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
+				Log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
 				Cnx.ctx().close();
 			}
 		}
@@ -1535,7 +1543,7 @@ namespace SharpPulsar.Impl
 					}
 					catch (Exception E)
 					{
-						log.error("Create dead letter producer exception with topic: {}", deadLetterPolicy.DeadLetterTopic, E);
+						Log.error("Create dead letter producer exception with topic: {}", deadLetterPolicy.DeadLetterTopic, E);
 					}
 				}
 				if (deadLetterProducer != null)
@@ -1551,7 +1559,7 @@ namespace SharpPulsar.Impl
 					}
 					catch (Exception E)
 					{
-						log.error("Send to dead letter topic exception with topic: {}, messageId: {}", deadLetterProducer.Topic, MessageId, E);
+						Log.error("Send to dead letter topic exception with topic: {}, messageId: {}", deadLetterProducer.Topic, MessageId, E);
 					}
 				}
 			}
@@ -1606,11 +1614,11 @@ namespace SharpPulsar.Impl
 			ByteBuf Seek = Commands.newSeek(ConsumerId, RequestId, Timestamp);
 			ClientCnx Cnx = cnx();
 
-			log.info("[{}][{}] Seek subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
+			Log.info("[{}][{}] Seek subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
 
 			Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
 			{
-			log.info("[{}][{}] Successfully reset subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
+			Log.info("[{}][{}] Successfully reset subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
 			acknowledgmentsGroupingTracker.FlushAndClean();
 			LastDequeuedMessage = MessageId.earliest;
 			IncomingMessages.clear();
@@ -1618,7 +1626,7 @@ namespace SharpPulsar.Impl
 			SeekFuture.complete(null);
 			}).exceptionally(e =>
 			{
-			log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
+			Log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
 			SeekFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("Failed to seek the subscription {0} of the topic {1} to the timestamp {2:D}", SubscriptionConflict, topicName.ToString(), Timestamp)));
 			return null;
 		});
@@ -1646,11 +1654,11 @@ namespace SharpPulsar.Impl
 			ByteBuf Seek = Commands.newSeek(ConsumerId, RequestId, MsgId.LedgerId, MsgId.EntryId);
 			ClientCnx Cnx = cnx();
 
-			log.info("[{}][{}] Seek subscription to message id {}", Topic, SubscriptionConflict, MessageId);
+			Log.info("[{}][{}] Seek subscription to message id {}", Topic, SubscriptionConflict, MessageId);
 
 			Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
 			{
-			log.info("[{}][{}] Successfully reset subscription to message id {}", Topic, SubscriptionConflict, MessageId);
+			Log.info("[{}][{}] Successfully reset subscription to message id {}", Topic, SubscriptionConflict, MessageId);
 			acknowledgmentsGroupingTracker.FlushAndClean();
 			LastDequeuedMessage = MessageId;
 			IncomingMessages.clear();
@@ -1658,7 +1666,7 @@ namespace SharpPulsar.Impl
 			SeekFuture.complete(null);
 			}).exceptionally(e =>
 			{
-			log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
+			Log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
 			SeekFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("[{0}][{1}] Failed to seek the subscription {2} of the topic {3} to the message {4}", SubscriptionConflict, topicName.ToString(), MessageId.ToString())));
 			return null;
 		});
@@ -1716,7 +1724,7 @@ namespace SharpPulsar.Impl
 				}
 				}).exceptionally(e =>
 				{
-				log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
+				Log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
 				BooleanFuture.completeExceptionally(e.Cause);
 				return null;
 			});
@@ -1768,15 +1776,15 @@ namespace SharpPulsar.Impl
 
 				long RequestId = ClientConflict.newRequestId();
 				ByteBuf GetLastIdCmd = Commands.newGetLastMessageId(ConsumerId, RequestId);
-				log.info("[{}][{}] Get topic last message Id", Topic, SubscriptionConflict);
+				Log.info("[{}][{}] Get topic last message Id", Topic, SubscriptionConflict);
 
 				Cnx.sendGetLastMessageId(GetLastIdCmd, RequestId).thenAccept((result) =>
 				{
-				log.info("[{}][{}] Successfully getLastMessageId {}:{}", Topic, SubscriptionConflict, result.LedgerId, result.EntryId);
+				Log.info("[{}][{}] Successfully getLastMessageId {}:{}", Topic, SubscriptionConflict, result.LedgerId, result.EntryId);
 				Future.complete(new MessageIdImpl(result.LedgerId, result.EntryId, result.Partition));
 				}).exceptionally(e =>
 				{
-				log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
+				Log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
 				Future.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("The subscription {0} of the topic {1} gets the last message id was failed", SubscriptionConflict, topicName.ToString())));
 				return null;
 			});
@@ -1792,7 +1800,7 @@ namespace SharpPulsar.Impl
 
 				((ScheduledExecutorService) ListenerExecutor).schedule(() =>
 				{
-				log.warn("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, NextDelay);
+				Log.warn("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, NextDelay);
 				RemainingTime.addAndGet(-NextDelay);
 				InternalGetLastMessageIdAsync(Backoff, RemainingTime, Future);
 				}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
@@ -1884,7 +1892,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void SetTerminated()
 		{
-			log.info("[{}] [{}] [{}] Consumer has reached the end of topic", SubscriptionConflict, Topic, ConsumerNameConflict);
+			Log.info("[{}] [{}] [{}] Consumer has reached the end of topic", SubscriptionConflict, Topic, ConsumerNameConflict);
 			hasReachedEndOfTopic = true;
 			if (Listener != null)
 			{
@@ -1945,7 +1953,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerImpl));
+		internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerImpl));
 
 	}
 
