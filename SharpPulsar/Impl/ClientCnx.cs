@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 	{
 
 		protected internal readonly IAuthentication Authentication;
-		private State state;
+		private State _state;
 
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>> _pendingRequests = new ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>>(1, 16);
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>> _pendingLookupRequests = new ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>>(1, 16);
@@ -127,7 +127,7 @@ namespace SharpPulsar.Impl
 
 			_maxNumberOfRejectedRequestPerConnection = Conf.MaxNumberOfRejectedRequestPerConnection;
 			_operationTimeoutMs = Conf.OperationTimeoutMs;
-			state = State.None;
+			_state = State.None;
 			_isTlsHostnameVerificationEnable = Conf.TlsHostnameVerificationEnable;
 			_protocolVersion = ProtocolVersion;
 		}
@@ -142,16 +142,16 @@ namespace SharpPulsar.Impl
 			return Commands.NewConnect(Authentication.AuthMethodName, authData, _protocolVersion, null, _proxyToTargetBrokerAddress, null, null, null);
 		}
 
-		public void ChannelInactive(IChannelHandlerContext Ctx)
+		public new void ChannelInactive(IChannelHandlerContext ctx)
 		{
-			base.ChannelInactive(Ctx);
-			log.LogInformation("{} Disconnected", Ctx.Channel);
+			base.ChannelInactive(ctx);
+			Log.LogInformation("{} Disconnected", ctx.Channel);
 			if (_connectionTask.Task.IsFaulted)
 			{
 				_connectionTask.SetException(new PulsarClientException("Connection already closed"));
 			}
 
-			PulsarClientException e = new PulsarClientException("Disconnected from server at " + Ctx.Channel.RemoteAddress);
+			var e = new PulsarClientException("Disconnected from server at " + ctx.Channel.RemoteAddress);
 
 			// Fail out all the pending ops
 			_pendingRequests.ToList().ForEach(x => x.Value.SetException(e));
@@ -179,21 +179,21 @@ namespace SharpPulsar.Impl
 		}
 
 		// Command Handlers
-		public void ExceptionCaught(IChannelHandlerContext ctx, System.Exception cause)
+		public new void ExceptionCaught(IChannelHandlerContext ctx, System.Exception cause)
 		{
-			if (state != State.Failed)
+			if (_state != State.Failed)
 			{
 				// No need to report stack trace for known exceptions that happen in disconnections
-				log.LogWarning("[{}] Got exception {} : {}", ctx.Channel.RemoteAddress, cause.GetType().Name, cause.Message, IsKnownException(cause) ? null : cause);
-				state = State.Failed;
+				Log.LogWarning("[{}] Got exception {} : {}", ctx.Channel.RemoteAddress, cause.GetType().Name, cause.Message, IsKnownException(cause) ? null : cause);
+				_state = State.Failed;
 			}
 			else
 			{
 				// At default info level, suppress all subsequent exceptions that are thrown when the connection has already
 				// failed
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("[{}] Got exception: {}", ctx.Channel.RemoteAddress, cause.Message, cause);
+					Log.LogDebug("[{}] Got exception: {}", ctx.Channel.RemoteAddress, cause.Message, cause);
 				}
 			}
 
@@ -202,41 +202,41 @@ namespace SharpPulsar.Impl
 
 		public static bool IsKnownException(System.Exception T)
 		{
-			return T is IOException || T is ClosedChannelException;
+			return T is IOException;
 		}
 
-		public  void HandleConnected(CommandConnected connected)
+		public override void HandleConnected(CommandConnected connected)
 		{
 
 			if (_isTlsHostnameVerificationEnable && !string.IsNullOrWhiteSpace(_remoteHostName) && !VerifyTlsHostName(_remoteHostName, Ctx()))
 			{
 				// close the connection if host-verification failed with the broker
-				log.LogWarning("[{}] Failed to verify hostname of {}", Ctx().Channel, _remoteHostName);
+				Log.LogWarning("[{}] Failed to verify hostname of {}", Ctx().Channel, _remoteHostName);
 				Ctx().CloseAsync();
 				return;
 			}
 
-			if(state == State.SentConnectFrame || state == State.Connecting)
-			if (connected.MaxMessageSize > 0)
+			if(_state == State.SentConnectFrame || _state == State.Connecting) 
+                if (connected.MaxMessageSize > 0)
+			    {
+				    if (Log.IsEnabled(LogLevel.Debug))
+				    {
+					    Log.LogDebug("{} Connection has max message size setting, replace old frameDecoder with " + "server frame size {}", Ctx().Channel, connected.MaxMessageSize);
+				    }
+				    MaxMessageSize = connected.MaxMessageSize;
+				    Ctx().Channel.Pipeline.Replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
+			    }
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				if (log.IsEnabled(LogLevel.Debug))
-				{
-					log.LogDebug("{} Connection has max message size setting, replace old frameDecoder with " + "server frame size {}", Ctx().Channel, connected.MaxMessageSize);
-				}
-				MaxMessageSize = connected.MaxMessageSize;
-				Ctx().Channel.Pipeline.Replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
-			}
-			if (log.IsEnabled(LogLevel.Debug))
-			{
-				log.LogDebug("{} Connection is ready", Ctx().Channel);
+				Log.LogDebug("{} Connection is ready", Ctx().Channel);
 			}
 			// set remote protocol version to the correct version before we complete the connection future
 			RemoteEndpointProtocolVersion = connected.ProtocolVersion;
 			_connectionTask.SetResult(null);
-			state = State.Ready;
+			_state = State.Ready;
 		}
 
-		public void HandleAuthChallenge(CommandAuthChallenge authChallenge)
+		public override void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
 			if(authChallenge.Challenge != null)
 			if(authChallenge.Challenge.auth_data != null)
@@ -247,102 +247,96 @@ namespace SharpPulsar.Impl
 
 						if (!authData.Complete)
 							throw new System.Exception();
-					IByteBuffer request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, string.Empty);
+					var request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, string.Empty);
 
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("{} Mutual auth {}", Ctx().Channel, Authentication.AuthMethodName);
+					Log.LogDebug("{} Mutual auth {}", Ctx().Channel, Authentication.AuthMethodName);
 				}
 
 				Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 				{
 					if (writeTask.IsFaulted)
 					{
-						log.LogWarning("{} Failed to send request for mutual auth to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+						Log.LogWarning("{} Failed to send request for mutual auth to broker: {}", Ctx().Channel, writeTask.Exception.Message);
 						_connectionTask.SetException(writeTask.Exception);
 					}
 					});
-				state = State.Connecting;
+				_state = State.Connecting;
 			}
 			catch (System.Exception e)
 			{
-				log.LogError("{} Error mutual verify: {}", Ctx().Channel, e);
+				Log.LogError("{} Error mutual verify: {}", Ctx().Channel, e);
 				_connectionTask.SetException(e);
 				return;
 			}
 		}
 
-		public void HandleSendReceipt(CommandSendReceipt sendReceipt)
+		public override void HandleSendReceipt(CommandSendReceipt sendReceipt)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			long ProducerId = (long)sendReceipt.ProducerId;
-			long SequenceId = (long)sendReceipt.SequenceId;
-			long HighestSequenceId = (long)sendReceipt.HighestSequenceId;
-			long LedgerId = -1;
-			long EntryId = -1;
+			var producerId = (long)sendReceipt.ProducerId;
+			var sequenceId = (long)sendReceipt.SequenceId;
+			var highestSequenceId = (long)sendReceipt.HighestSequenceId;
+			long ledgerId = -1;
+			long entryId = -1;
 			if (sendReceipt.MessageId != null)
 			{
-				LedgerId = (long)sendReceipt.MessageId.ledgerId;
-				EntryId = (long)sendReceipt.MessageId.entryId;
+				ledgerId = (long)sendReceipt.MessageId.LedgerId;
+				entryId = (long)sendReceipt.MessageId.EntryId;
 			}
 
-			if (LedgerId == -1 && EntryId == -1)
+			if (ledgerId == -1 && entryId == -1)
 			{
-				log.LogWarning("[{}] Message has been dropped for non-persistent topic producer-id {}-{}", Ctx().Channel, ProducerId, SequenceId);
+				Log.LogWarning("[{}] Message has been dropped for non-persistent topic producer-id {}-{}", Ctx().Channel, producerId, sequenceId);
 			}
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Got receipt for producer: {} -- msg: {} -- id: {}:{}", Ctx().Channel, ProducerId, SequenceId, LedgerId, EntryId);
+				Log.LogDebug("{} Got receipt for producer: {} -- msg: {} -- id: {}:{}", Ctx().Channel, producerId, sequenceId, ledgerId, entryId);
 			}
 
-			_producers[ProducerId].AckReceived(this, SequenceId, HighestSequenceId, LedgerId, EntryId);
+			_producers[producerId].AckReceived(this, sequenceId, highestSequenceId, ledgerId, entryId);
 		}
 
-		public void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
+		public override void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
 		{
-			if(state != State.Ready)
+			if(_state != State.Ready)
 				return;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received a message from the server: {}", Ctx().Channel, cmdMessage);
+				Log.LogDebug("{} Received a message from the server: {}", Ctx().Channel, cmdMessage);
 			}
-			ConsumerImpl<object> consumer = _consumers[(long)cmdMessage.ConsumerId];
-			if (consumer != null)
-			{
-				consumer.MessageReceived(cmdMessage.MessageId, (int)cmdMessage.RedeliveryCount, headersAndPayload, this);
-			}
-		}
+			var consumer = _consumers[(long)cmdMessage.ConsumerId];
+            consumer?.MessageReceived(cmdMessage.MessageId, (int)cmdMessage.RedeliveryCount, headersAndPayload, this);
+        }
 
-		public void HandleActiveConsumerChange(CommandActiveConsumerChange change)
+		public override void HandleActiveConsumerChange(CommandActiveConsumerChange change)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received a consumer group change message from the server : {}", Ctx().Channel, change);
+				Log.LogDebug("{} Received a consumer group change message from the server : {}", Ctx().Channel, change);
 			}
-			ConsumerImpl<object> consumer = _consumers[(long)change.ConsumerId];
-			if (consumer != null)
-			{
-				consumer.ActiveConsumerChanged(change.IsActive);
-			}
-		}
+			var consumer = _consumers[(long)change.ConsumerId];
+            consumer?.ActiveConsumerChanged(change.IsActive);
+        }
 
-		public void HandleSuccess(CommandSuccess success)
+		public override void HandleSuccess(CommandSuccess success)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received success response from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogDebug("{} Received success response from server: {}", Ctx().Channel, success.RequestId);
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			_pendingRequests.Remove(requestId, out var requestTask);
 			if (requestTask != null)
 			{
@@ -350,41 +344,41 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
+		public override void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received success GetLastMessageId response from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogDebug("{} Received success GetLastMessageId response from server: {}", Ctx().Channel, success.RequestId);
 			}
-			long RequestId = (long)success.RequestId;
-			_pendingGetLastMessageIdRequests.Remove(RequestId, out var requestTask);
+			var requestId = (long)success.RequestId;
+			_pendingGetLastMessageIdRequests.Remove(requestId, out var requestTask);
 			if (requestTask != null)
 			{
 				requestTask.SetResult(success.LastMessageId);
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public void HandleProducerSuccess(CommandProducerSuccess success)
+		public override void HandleProducerSuccess(CommandProducerSuccess success)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received producer success response from server: {} - producer-name: {}", Ctx().Channel, success.RequestId, success.ProducerName);
+				Log.LogDebug("{} Received producer success response from server: {} - producer-name: {}", Ctx().Channel, success.RequestId, success.ProducerName);
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			_pendingRequests.Remove(requestId, out var requestTask);
 			if (requestTask != null)
 			{
@@ -392,43 +386,36 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
+		public override void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
 		{
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("Received Broker lookup response: {}", lookupResult.Response);
+				Log.LogDebug("Received Broker lookup response: {}", lookupResult.Response);
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			var requestTask = GetAndRemovePendingLookupRequest(requestId);
 
 			if (requestTask != null)
 			{
 				if (requestTask.Task.IsFaulted)
 				{
-					if (log.IsEnabled(LogLevel.Debug))
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("{} Request {} already timed-out", Ctx().Channel, lookupResult.RequestId);
+						Log.LogDebug("{} Request {} already timed-out", Ctx().Channel, lookupResult.RequestId);
 					}
 					return;
 				}
 				// Complete future with exception if : Result.response=fail/null
-				if (lookupResult.Response != null || CommandLookupTopicResponse.LookupType.Failed.Equals(lookupResult.Response))
+				if (CommandLookupTopicResponse.Types.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult.Error != null)
-					{
-						CheckServerError(lookupResult.Error, lookupResult.Message);
-						requestTask.SetException(GetPulsarClientException(lookupResult.Error, lookupResult.Message));
-					}
-					else
-					{
-						requestTask.SetException(new PulsarClientException.LookupException("Empty lookup response"));
-					}
-				}
+                    CheckServerError(lookupResult.Error, lookupResult.Message);
+                    requestTask.SetException(GetPulsarClientException(lookupResult.Error, lookupResult.Message));
+                }
 				else
 				{
 					requestTask.SetResult(new LookupDataResult(lookupResult));
@@ -436,43 +423,36 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, lookupResult.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, lookupResult.RequestId);
 			}
 		}
 
-		public void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
+		public override void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("Received Broker Partition response: {}", lookupResult.Partitions);
+				Log.LogDebug("Received Broker Partition response: {}", lookupResult.Partitions);
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			var requestTask = GetAndRemovePendingLookupRequest(requestId);
 
 			if (requestTask != null)
 			{
 				if (requestTask.Task.IsFaulted)
 				{
-					if (log.IsEnabled(LogLevel.Debug))
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("{} Request {} already timed-out", Ctx().Channel, lookupResult.RequestId);
+						Log.LogDebug("{} Request {} already timed-out", Ctx().Channel, lookupResult.RequestId);
 					}
 					return;
 				}
 				// Complete future with exception if : Result.response=fail/null
-				if (lookupResult.Response != null || CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
+				if (CommandPartitionedTopicMetadataResponse.Types.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult.Error != null)
-					{
-						CheckServerError(lookupResult.Error, lookupResult.Message);
-						requestTask.SetException(GetPulsarClientException(lookupResult.Error, lookupResult.Message));
-					}
-					else
-					{
-						requestTask.SetException(new PulsarClientException.LookupException("Empty lookup response"));
-					}
-				}
+                    CheckServerError(lookupResult.Error, lookupResult.Message);
+                    requestTask.SetException(GetPulsarClientException(lookupResult.Error, lookupResult.Message));
+                }
 				else
 				{
 					// return LookupDataResult when Result.response = success/redirect
@@ -481,21 +461,18 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, lookupResult.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, lookupResult.RequestId);
 			}
 		}
 
-		public void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
+		public override void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
 		{
-			long consumerId = (long)commandReachedEndOfTopic.ConsumerId;
+			var consumerId = (long)commandReachedEndOfTopic.ConsumerId;
 
-			log.LogInformation("[{}] Broker notification reached the end of topic: {}", Ctx().Channel.RemoteAddress, consumerId);
-			ConsumerImpl<object> consumer = _consumers[consumerId];
-			if (consumer != null)
-			{
-				consumer.SetTerminated();
-			}
-		}
+			Log.LogInformation("[{}] Broker notification reached the end of topic: {}", Ctx().Channel.RemoteAddress, consumerId);
+			var consumer = _consumers[consumerId];
+            consumer?.SetTerminated();
+        }
 
 		// caller of this method needs to be protected under pendingLookupRequestSemaphore
 		private void AddPendingLookupRequests(long requestId, TaskCompletionSource<LookupDataResult> task)
@@ -522,14 +499,14 @@ namespace SharpPulsar.Impl
 					// schedule a new lookup in.
 					_eventLoopGroup.Execute(() =>
 					{
-						long newId = firstOneWaiting.Key;
+						var newId = firstOneWaiting.Key;
 						var newTask = firstOneWaiting.Value.Value;
 						AddPendingLookupRequests(newId, newTask);
 						Ctx().WriteAndFlushAsync(firstOneWaiting.Value.Key).ContinueWith(writeTask =>
 						{
 							if (writeTask.IsFaulted)
 							{
-								log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, newId, writeTask.Exception.Message);
+								Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, newId, writeTask.Exception.Message);
 								GetAndRemovePendingLookupRequest(newId);
 								newTask.SetException(writeTask.Exception);
 							}
@@ -545,12 +522,12 @@ namespace SharpPulsar.Impl
 			return requestTask;
 		}
 
-		public void HandleSendError(CommandSendError sendError)
+		public override void HandleSendError(CommandSendError sendError)
 		{
-			log.LogWarning("{} Received send error from server: {} : {}", Ctx().Channel, sendError.Error, sendError.Message);
+			Log.LogWarning("{} Received send error from server: {} : {}", Ctx().Channel, sendError.Error, sendError.Message);
 
-			long producerId = (long)sendError.ProducerId;
-			long sequenceId = (long)sendError.SequenceId;
+			var producerId = (long)sendError.ProducerId;
+			var sequenceId = (long)sendError.SequenceId;
 
 			switch (sendError.Error)
 			{
@@ -570,16 +547,16 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void HandleError(CommandError error)
+		public override void HandleError(CommandError error)
 		{
-			if (state != State.SentConnectFrame || state != State.Ready)
+			if (_state != State.SentConnectFrame || _state != State.Ready)
 				return;
 
-			log.LogWarning("{} Received error from server: {}", Ctx().Channel, error.Message);
-			long requestId = (long)error.RequestId;
+			Log.LogWarning("{} Received error from server: {}", Ctx().Channel, error.Message);
+			var requestId = (long)error.RequestId;
 			if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
 			{
-				log.LogWarning("{} Producer creation has been blocked because backlog quota exceeded for producer topic", Ctx().Channel);
+				Log.LogWarning("{} Producer creation has been blocked because backlog quota exceeded for producer topic", Ctx().Channel);
 			}
 			_pendingRequests.Remove(requestId, out var requestTask);
 			if (requestTask != null)
@@ -588,51 +565,45 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, error.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, error.RequestId);
 			}
 		}
 
-		public void HandleCloseProducer(CommandCloseProducer closeProducer)
+		public override void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
-			log.LogInformation("[{}] Broker notification of Closed producer: {}", Ctx().Channel.RemoteAddress, closeProducer.ProducerId);
-			long ProducerId = (long)closeProducer.ProducerId;
-			ProducerImpl<object> producer = _producers[ProducerId];
+			Log.LogInformation("[{}] Broker notification of Closed producer: {}", Ctx().Channel.RemoteAddress, closeProducer.ProducerId);
+			var producerId = (long)closeProducer.ProducerId;
+			var producer = _producers[producerId];
 			if (producer != null)
 			{
 				producer.ConnectionClosed(this);
 			}
 			else
 			{
-				log.LogWarning("Producer with id {} not found while closing producer ", ProducerId);
+				Log.LogWarning("Producer with id {} not found while closing producer ", producerId);
 			}
 		}
 
-		public void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
+		public override void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
-			log.LogInformation("[{}] Broker notification of Closed consumer: {}", Ctx().Channel.RemoteAddress, closeConsumer.ConsumerId);
-			long consumerId = (long)closeConsumer.ConsumerId;
-			ConsumerImpl<object> consumer = _consumers[consumerId];
+			Log.LogInformation("[{}] Broker notification of Closed consumer: {}", Ctx().Channel.RemoteAddress, closeConsumer.ConsumerId);
+			var consumerId = (long)closeConsumer.ConsumerId;
+			var consumer = _consumers[consumerId];
 			if (consumer != null)
 			{
 				consumer.ConnectionClosed(this);
 			}
 			else
 			{
-				log.LogWarning("Consumer with id {} not found while closing consumer ", consumerId);
+				Log.LogWarning("Consumer with id {} not found while closing consumer ", consumerId);
 			}
 		}
 
-		public override bool HandshakeCompleted
-		{
-			get
-			{
-				return state == State.Ready;
-			}
-		}
+		public override bool HandshakeCompleted => _state == State.Ready;
 
-		public virtual TaskCompletionSource<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
+        public virtual TaskCompletionSource<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
 		{
-			TaskCompletionSource<LookupDataResult> task = new TaskCompletionSource<LookupDataResult>();
+			var task = new TaskCompletionSource<LookupDataResult>();
 
 			if (_pendingLookupRequestSemaphore.WaitOne())
 			{
@@ -641,7 +612,7 @@ namespace SharpPulsar.Impl
 				{
 				if (writeTask.IsFaulted)
 				{
-					log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
+					Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
 					GetAndRemovePendingLookupRequest(requestId);
 					task.SetException(writeTask.Exception);
 				}
@@ -649,9 +620,9 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("{} Failed to add lookup-request into pending queue", requestId);
+					Log.LogDebug("{} Failed to add lookup-request into pending queue", requestId);
 				}
 
 				if (_maxLookupRequestSemaphore.WaitOne())
@@ -660,9 +631,9 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					if (log.IsEnabled(LogLevel.Debug))
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("{} Failed to add lookup-request into waiting queue", requestId);
+						Log.LogDebug("{} Failed to add lookup-request into waiting queue", requestId);
 					}
 					task.SetException(new PulsarClientException.TooManyRequestsException(string.Format("Requests number out of config: There are {{{0}}} lookup requests outstanding and {{{1}}} requests pending.", _pendingLookupRequests.Count, _waitingLookupRequests.Count)));
 				}
@@ -679,7 +650,7 @@ namespace SharpPulsar.Impl
 			{
 			if (writeTask.IsFaulted)
 			{
-				log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
+				Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
 				_pendingGetTopicsRequests.Remove(requestId, out listTask);
 				listTask.SetException(writeTask.Exception);
 			}
@@ -688,17 +659,17 @@ namespace SharpPulsar.Impl
 			return listTask;
 		}
 
-		public void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
+		public override void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			var topics = success.Topics;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx().Channel, Success.RequestId, Topics.Count);
+				Log.LogDebug("{} Received get topics of namespace success response from server: {} - topics.size: {}", Ctx().Channel, Success.RequestId, Topics.Count);
 			}
 
 			_pendingGetTopicsRequests.Remove(requestId, out var requestTask);
@@ -708,35 +679,35 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, success.RequestId);
 			}
 		}
 
-		public void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
+		public override void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
 
-			long requestId = (long)commandGetSchemaResponse.RequestId;
+			var requestId = (long)commandGetSchemaResponse.RequestId;
 
 			_pendingGetSchemaRequests.Remove(requestId, out var requestTask);
 			if (requestTask == null)
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, requestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, requestId);
 				return;
 			}
 			requestTask.SetResult(commandGetSchemaResponse);
 		}
 
-		public void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
+		public override void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
-			if (state != State.Ready)
+			if (_state != State.Ready)
 				return;
-			long requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
+			var requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
 			_pendingGetOrCreateSchemaRequests.Remove(requestId, out var requestTask);
 			if (requestTask == null)
 			{
-				log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, requestId);
+				Log.LogWarning("{} Received unknown request id from server: {}", Ctx().Channel, requestId);
 				return;
 			}
 			requestTask.SetResult(commandGetOrCreateSchemaResponse);
@@ -770,13 +741,13 @@ namespace SharpPulsar.Impl
 
 		public virtual async ValueTask<ProducerResponse> SendRequestWithId(IByteBuffer cmd, long requestId)
 		{
-			TaskCompletionSource<ProducerResponse> task = new TaskCompletionSource<ProducerResponse>();
+			var task = new TaskCompletionSource<ProducerResponse>();
 			_pendingRequests.TryAdd(requestId, task);
 			await Ctx().WriteAndFlushAsync(cmd).ContinueWith(writeTask =>
 			{
 				if (writeTask.IsFaulted)
 				{
-					log.LogWarning("{} Failed to send request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					Log.LogWarning("{} Failed to send request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
 					_pendingRequests.TryRemove(requestId, out task);
 				}
 			});
@@ -786,7 +757,7 @@ namespace SharpPulsar.Impl
 
 		public virtual async ValueTask<MessageIdData> SendGetLastMessageId(IByteBuffer request, long requestId)
 		{
-			TaskCompletionSource<MessageIdData> task = new TaskCompletionSource<MessageIdData>();
+			var task = new TaskCompletionSource<MessageIdData>();
 
 			_pendingGetLastMessageIdRequests.TryAdd(requestId, task);
 
@@ -794,7 +765,7 @@ namespace SharpPulsar.Impl
 			{
 				if (writeTask.IsFaulted)
 				{
-					log.LogWarning("{} Failed to send GetLastMessageId request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					Log.LogWarning("{} Failed to send GetLastMessageId request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
 					_pendingGetLastMessageIdRequests.TryRemove(requestId, out task);
 					task.SetException(writeTask.Exception);
 				}
@@ -804,29 +775,24 @@ namespace SharpPulsar.Impl
 		}
 
 		public virtual async ValueTask<SchemaInfo> SendGetSchema(IByteBuffer request, long requestId)
-		{
-			CommandGetSchemaResponse result = await SendGetRawSchema(request, requestId);
-			if(result.ErrorCode != null)
-			{
-				var rc = result.ErrorCode;
-				if(rc == ServerError.TopicNotFound)
-				{
-					throw new NullReferenceException("TopicNotFound");
-				}
-				else
-				{
-					throw GetPulsarClientException(rc, result.ErrorMessage);
-				}
-			}
-			else
-			{
-				return SchemaInfoUtil.NewSchemaInfo(result.Schema);
-			}
-		}
+        {
+            var result = await SendGetRawSchema(request, requestId);
+            {
+                var rc = result.ErrorCode;
+                if(rc == ServerError.TopicNotFound)
+                {
+                    throw new NullReferenceException("TopicNotFound");
+                }
+                else
+                {
+                    throw GetPulsarClientException(rc, result.ErrorMessage);
+                }
+            }
+        }
 
 		public virtual async ValueTask<CommandGetSchemaResponse> SendGetRawSchema(IByteBuffer request, long requestId)
 		{
-			TaskCompletionSource<CommandGetSchemaResponse> task = new TaskCompletionSource<CommandGetSchemaResponse>();
+			var task = new TaskCompletionSource<CommandGetSchemaResponse>();
 
 			_pendingGetSchemaRequests.GetOrAdd(requestId, task);
 
@@ -834,7 +800,7 @@ namespace SharpPulsar.Impl
 			{
 			if (writeTask.IsFaulted)
 			{
-				log.LogWarning("{} Failed to send GetSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+				Log.LogWarning("{} Failed to send GetSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
 				_pendingGetLastMessageIdRequests.TryRemove(requestId, out var t);
 				task.SetException(writeTask.Exception);
 			}
@@ -845,70 +811,56 @@ namespace SharpPulsar.Impl
 
 		public virtual async ValueTask<sbyte[]> SendGetOrCreateSchema(IByteBuffer request, long requestId)
 		{
-			TaskCompletionSource<CommandGetOrCreateSchemaResponse> task = new TaskCompletionSource<CommandGetOrCreateSchemaResponse>();
+			var task = new TaskCompletionSource<CommandGetOrCreateSchemaResponse>();
 			_pendingGetOrCreateSchemaRequests.TryAdd(requestId, task);
 			await Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 			{
 				if (writeTask.IsFaulted)
 				{
-					log.LogWarning("{} Failed to send GetOrCreateSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+					Log.LogWarning("{} Failed to send GetOrCreateSchema request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
 					_pendingGetOrCreateSchemaRequests.TryRemove(requestId, out var t);
 					task.SetException(writeTask.Exception);
 				}
 			});
 			var response = task.Task.Result;
-			if (response.ErrorCode != null)
-			{
-				ServerError rc = response.ErrorCode;
-				if (rc == ServerError.TopicNotFound)
-				{
-					return SchemaVersionFields.Empty.Bytes();
-				}
-				else
-				{
-					throw GetPulsarClientException(rc, response.ErrorMessage);
-				}
-			}
-			else
-			{
-				return (sbyte[])(object)response.SchemaVersion;
-			}
-		}
+            {
+                var rc = response.ErrorCode;
+                if (rc == ServerError.TopicNotFound)
+                {
+                    return SchemaVersionFields.Empty.Bytes();
+                }
+                else
+                {
+                    throw GetPulsarClientException(rc, response.ErrorMessage);
+                }
+            }
+        }
 
-		public void HandleNewTxnResponse(CommandNewTxnResponse command)
+		public override void HandleNewTxnResponse(CommandNewTxnResponse command)
 		{
-			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
-			if (handler != null)
-			{
-				handler.HandleNewTxnResponse(command);
-			}
-		}
+			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            handler?.HandleNewTxnResponse(command);
+        }
 
-		public void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
+		public override void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
 		{
-			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
-			if (handler != null)
-			{
-				handler.HandleAddPublishPartitionToTxnResponse(command);
-			}
-		}
+			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            handler?.HandleAddPublishPartitionToTxnResponse(command);
+        }
 
-		public void HandleEndTxnResponse(CommandEndTxnResponse command)
+		public override void HandleEndTxnResponse(CommandEndTxnResponse command)
 		{
-			TransactionMetaStoreHandler handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
-			if (handler != null)
-			{
-				handler.HandleEndTxnResponse(command);
-			}
-		}
+			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            handler?.HandleEndTxnResponse(command);
+        }
 
 		private TransactionMetaStoreHandler CheckAndGetTransactionMetaStoreHandler(long TcId)
 		{
-			TransactionMetaStoreHandler handler = _transactionMetaStoreHandlers[TcId];
+			var handler = _transactionMetaStoreHandlers[TcId];
 			if (handler == null)
 			{
 				Channel().CloseAsync();
-				log.LogWarning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
+				Log.LogWarning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
 			}
 			return handler;
 		}
@@ -927,12 +879,12 @@ namespace SharpPulsar.Impl
 		{
 			if (ServerError.ServiceNotReady.Equals(Error))
 			{
-				log.LogError("{} Close connection because received internal-server error {}", Ctx().Channel, ErrMsg);
+				Log.LogError("{} Close connection because received internal-server error {}", Ctx().Channel, ErrMsg);
 				Ctx().CloseAsync();
 			}
 			else if (ServerError.TooManyRequests.Equals(Error))
 			{
-				long rejectedRequests = _numberOfRejectedrequestsUpdater[this];
+				var rejectedRequests = _numberOfRejectedrequestsUpdater[this];
 				if (rejectedRequests == 0)
 				{
 					// schedule timer
@@ -940,7 +892,7 @@ namespace SharpPulsar.Impl
 				}
 				else if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
 				{
-					log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,_numberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
+					Log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,_numberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
 					Ctx().CloseAsync();
 				}
 			}
@@ -965,16 +917,16 @@ namespace SharpPulsar.Impl
 		/// <returns> true if hostname is verified else return false </returns>
 		private bool VerifyTlsHostName(string Hostname, IChannelHandlerContext Ctx)
 		{
-			IChannelHandler sslHandler = Ctx.Channel.Pipeline.Get("tls");
+			var sslHandler = Ctx.Channel.Pipeline.Get("tls");
 
 			if (sslHandler != null)
 			{
 				var sslSession = ((TlsHandler) sslHandler);
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, sslSession.CipherSuite, SslSession.Protocol);
+					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, sslSession.CipherSuite, SslSession.Protocol);
 				}
-				DefaultNameResolver y = new DefaultNameResolver();
+				var y = new DefaultNameResolver();
 
 				return new  HOSTNAME_VERIFIER.verify(Hostname, SslSession);
 			}
@@ -1008,23 +960,14 @@ namespace SharpPulsar.Impl
 
 		public virtual IPEndPoint TargetBroker
 		{
-			set
-			{
-				_proxyToTargetBrokerAddress = string.Format("{0}:{1:D}", value.Address.ToString(), value.Port);
-			}
-		}
+			set => _proxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
+        }
 
 		 public virtual string RemoteHostName
 		 {
-			get
-			{
-				return _remoteHostName;
-			}
-			 set
-			 {
-				_remoteHostName = value;
-			 }
-		 }
+			get => _remoteHostName;
+            set => _remoteHostName = value;
+         }
 
 
 		private PulsarClientException GetPulsarClientException(ServerError error, string ErrorMsg)
@@ -1086,7 +1029,7 @@ namespace SharpPulsar.Impl
 				if (requestTask != null && !requestTask.Task.IsCompleted)
 				{
 					requestTask.SetException(new PulsarClientException.TimeoutException(request.RequestId + " lookup request timedout after ms " + _operationTimeoutMs));
-					log.LogWarning("{} request {} timed out after {} ms", Ctx().Channel, request.RequestId, _operationTimeoutMs);
+					Log.LogWarning("{} request {} timed out after {} ms", Ctx().Channel, request.RequestId, _operationTimeoutMs);
 				}
 				else
 				{
@@ -1095,7 +1038,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<ClientCnx>();
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ClientCnx>();
 	}
 
 }

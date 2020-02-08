@@ -105,16 +105,16 @@ namespace SharpPulsar.Impl.Schema
 				//return readerCache.get(BytesSchemaVersion.Of(SchemaVersion)).read(new ByteBufInputStream(ByteBuf));
                 return new ByteBufInputStream(byteBuf);
             }
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode(schemaVersion), E);
+				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode(schemaVersion), e);
 				throw new System.Exception("Can't get generic schema for topic " + _schemaInfoProvider.TopicName);
 			}
 		}
 
-		public override SchemaInfo SchemaInfo => _schemaInfo;
+		public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        protected internal static Avro.Schema CreateAvroSchema<T>(ISchemaDefinition<T> schemaDefinition)
+        protected internal static Avro.Schema CreateAvroSchema(ISchemaDefinition<T> schemaDefinition)
 		{
 			var pojo = schemaDefinition.Pojo;
 
@@ -124,7 +124,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 			else if (pojo != null)
 			{
-				return schemaDefinition.AlwaysAllowNull ? ReflectData.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
+				return schemaDefinition.AlwaysAllowNull ? Avro ReflectData.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
 			}
 			else
 			{
@@ -152,25 +152,25 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		public abstract ISchemaReader<T> LoadReader(BytesSchemaVersion SchemaVersion);
+		public abstract ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async
 		/// </summary>
-		public virtual SchemaInfo GetSchemaInfoByVersion(sbyte[] SchemaVersion)
+		public virtual SchemaInfo GetSchemaInfoByVersion(sbyte[] schemaVersion)
 		{
 			try
 			{
-				return (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(SchemaVersion).Result;
+				return (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(schemaVersion).Result;
 			}
-			catch (ThreadInterruptedException E)
+			catch (ThreadInterruptedException e)
 			{
 				Thread.CurrentThread.Interrupt();
-				throw new SerializationException("Interrupted at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(SchemaVersion), E);
+				throw new SerializationException("Interrupted at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(schemaVersion), e);
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw new SerializationException("Failed at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(SchemaVersion), E.InnerException);
+				throw new SerializationException("Failed at fetching schema info for " + SchemaUtils.GetStringSchemaVersion(schemaVersion), e.InnerException);
 			}
 		}
 

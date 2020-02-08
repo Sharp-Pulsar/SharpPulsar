@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
@@ -48,11 +49,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_fields = fields;
 			_schemaVersion = schemaVersion;
 		}
-		public override GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
+		public GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				JsonNode jn = _objectMapper.readTree(StringHelper.NewString(bytes, offset, length, UTF_8));
+				JsonNode jn = _objectMapper.ReadValue(StringHelper.NewString(bytes, offset, length, Encoding.UTF8.EncodingName), o);
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)
@@ -61,11 +62,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public override IGenericRecord Read(Stream inputStream)
+		public IGenericRecord Read(Stream inputStream)
 		{
 			try
 			{
-				JsonNode jn = _objectMapper.ReadTree(inputStream);
+				JsonNode jn = _objectMapper.ReadValue(inputStream);
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)

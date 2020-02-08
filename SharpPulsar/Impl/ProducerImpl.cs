@@ -48,89 +48,85 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Impl
 {
 
-	public class ProducerImpl<T> : ProducerBase<T>, IConnection
+	public sealed class ProducerImpl<T> : ProducerBase<T>, IConnection
 	{
 
 		// Producer id, used to identify a producer within a single connection
-		protected internal readonly long ProducerId;
+        internal readonly long ProducerId;
 
 		// Variable is used through the atomic updater
-		public static ConcurrentDictionary<ProducerImpl<T>, long> msgIdGenerator = new ConcurrentDictionary<ProducerImpl<T>, long>();
+		public static ConcurrentDictionary<ProducerImpl<T>, long> MsgIdGenerator = new ConcurrentDictionary<ProducerImpl<T>, long>();
 
-		private readonly BlockingQueue<OpSendMsg> pendingMessages;
-		private readonly BlockingQueue<OpSendMsg> pendingCallbacks;
-		private readonly Semaphore semaphore;
+		private readonly BlockingQueue<OpSendMsg<T>> _pendingMessages;
+		private readonly BlockingQueue<OpSendMsg<T>> _pendingCallbacks;
+		private readonly Semaphore _semaphore;
 		public State state;
-		private  Timer sendTimeout;
-		private  Timer batchMessageAndSendTimeout = null;
-		private long createProducerTimeout;
-		private readonly BatchMessageContainerBase batchMessageContainer;
-		private TaskCompletionSource<IMessageId> lastSendTask = new TaskCompletionSource<IMessageId>();
-		// Globally unique producer name
-		internal string _handlerName;
-		private bool _userProvidedProducerName = false;
+		private  Timer _sendTimeout;
+		private  Timer _batchMessageAndSendTimeout = null;
+		private readonly long _createProducerTimeout;
+		private readonly BatchMessageContainerBase _batchMessageContainer;
+		private TaskCompletionSource<IMessageId> _lastSendTask = new TaskCompletionSource<IMessageId>();
+		private readonly bool _userProvidedProducerName = false;
 
-		private string connectionId;
-		private string connectedSince;
-		private readonly int partitionIndex;
+		private string _connectionId;
+		private string _connectedSince;
+		private readonly int _partitionIndex;
 
-		private readonly CompressionCodec compressor;
+		private readonly CompressionCodec _compressor;
 
-		protected internal long LastSequenceIdPushed;
+        internal long LastSequenceIdPushed;
 
-		private MessageCrypto msgCrypto = null;
-		private IScheduledTask keyGeneratorTask = null;
+		private readonly MessageCrypto _msgCrypto = null;
+		private readonly IScheduledTask _keyGeneratorTask = null;
 
-		private readonly IDictionary<string, string> metadata;
+		private readonly IDictionary<string, string> _metadata;
 
-		private Option<sbyte[]> _schemaVersion;
+		private sbyte[] _schemaVersion;
 
 		public  ConnectionHandler ConnectionHandler;
-		private TaskCompletionSource<IProducer<T>> _producerCreatedTask;
 
 
 		//private static readonly AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerImpl), "msgIdGenerator");
 
-		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, int partitionindex, ISchema<T> schema, ProducerInterceptors Interceptors) : base(client, topic, conf, producerCreatedTask, schema, Interceptors)
+		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, int partitionindex, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
 		{
 			ProducerId = Client.NewProducerId();
-			_handlerName = conf.ProducerName;
-			if (!string.IsNullOrWhiteSpace(_handlerName))
+			HandlerName = conf.ProducerName;
+			if (!string.IsNullOrWhiteSpace(HandlerName))
 			{
 				_userProvidedProducerName = true;
 			}
-			partitionIndex = partitionindex;
-			pendingMessages = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
-			pendingCallbacks = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
-			semaphore = new Semaphore(0, conf.MaxPendingMessages);
+			_partitionIndex = partitionindex;
+			_pendingMessages = new BlockingQueue<OpSendMsg<T>>(conf.MaxPendingMessages);
+			_pendingCallbacks = new BlockingQueue<OpSendMsg<T>>(conf.MaxPendingMessages);
+			_semaphore = new Semaphore(0, conf.MaxPendingMessages);
 
-			compressor = CompressionCodecProvider.GetCompressionCodec(Conf.CompressionType);
-			_producerCreatedTask = producerCreatedTask;
+			_compressor = CompressionCodecProvider.GetCompressionCodec(Conf.CompressionType);
 			if (Conf.InitialSequenceId != null)
 			{
-				long InitialSequenceId = (long)Conf.InitialSequenceId;
-				LastSequenceId = InitialSequenceId;
-				LastSequenceIdPushed = InitialSequenceId;
-				msgIdGenerator.TryAdd(this, InitialSequenceId + 1L);
+				var initialSequenceId = (long)Conf.InitialSequenceId;
+				LastSequenceId = initialSequenceId;
+				LastSequenceIdPushed = initialSequenceId;
+				MsgIdGenerator.TryAdd(this, initialSequenceId + 1L);
 			}
 			else
 			{
 				LastSequenceId = -1L;
 				LastSequenceIdPushed = -1L;
-				msgIdGenerator.TryAdd(this, 0L);
+				MsgIdGenerator.TryAdd(this, 0L);
 			}
 
 			if (Conf.EncryptionEnabled)
 			{
-				string LogCtx = "[" + Topic + "] [" + HandlerName + "] [" + ProducerId + "]";
-				msgCrypto = new MessageCrypto(LogCtx, true);
+				var logCtx = "[" + Topic + "] [" + HandlerName + "] [" + ProducerId + "]";
+				_msgCrypto = new MessageCrypto(logCtx, true);
 
 				// Regenerate data key cipher at fixed interval
-				keyGeneratorTask = Client.EventLoopGroup.Schedule(() =>
+				_keyGeneratorTask = Client.EventLoopGroup.Schedule(() =>
 				{
 					try
 					{
-						msgCrypto.AddPublicKeyCipher(Conf.EncryptionKeys, Conf.CryptoKeyReader);
+						_msgCrypto.AddPublicKeyCipher(Conf.EncryptionKeys, Conf.CryptoKeyReader);
 					}
 					catch (CryptoException e)
 					{
@@ -146,40 +142,29 @@ namespace SharpPulsar.Impl
 
 			if (Conf.SendTimeoutMs > 0)
 			{
-				sendTimeout = Client.Timer = new Timer(_=> { var t = this; }, null, (int)Conf.SendTimeoutMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMillis(Conf.SendTimeoutMs));
+				_sendTimeout = Client.Timer = new Timer(_=> { var t = this; }, null, (int)Conf.SendTimeoutMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMillis(Conf.SendTimeoutMs));
 			}
 
-			createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + Client.Configuration.OperationTimeoutMs;
+			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + Client.Configuration.OperationTimeoutMs;
 			if (Conf.BatchingEnabled)
 			{
-				BatcherBuilder ContainerBuilder = Conf.BatcherBuilder;
-				if (ContainerBuilder == null)
-				{
-					ContainerBuilder = BatcherBuilderFields.Default;
-				}
-				batchMessageContainer = (BatchMessageContainerBase)ContainerBuilder.Build();
-				batchMessageContainer.Producer = this;
+				var containerBuilder = Conf.BatcherBuilder ?? BatcherBuilderFields.Default;
+                _batchMessageContainer = (BatchMessageContainerBase)containerBuilder.Build();
+				_batchMessageContainer.Producer = this;
 			}
 			else
 			{
-				batchMessageContainer = null;
+				_batchMessageContainer = null;
 			}
-			if (Client.Configuration.StatsIntervalSeconds > 0)
-			{
-				Stats = new ProducerStatsRecorderImpl<T>(Client, Conf, this);
-			}
-			else
-			{
-				Stats = ProducerStatsDisabled.INSTANCE;
-			}
+			Stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>(Client, Conf, this) : ProducerStatsDisabled.INSTANCE;
 
 			if (!Conf.Properties.Any())
 			{
-				metadata = new Dictionary<string,string>();
+				_metadata = new Dictionary<string,string>();
 			}
 			else
 			{
-				metadata = new SortedDictionary<string, string>(Conf.Properties);
+				_metadata = new SortedDictionary<string, string>(Conf.Properties);
 			}
 
 			ConnectionHandler = new ConnectionHandler(this, new BackoffBuilder()
@@ -189,52 +174,44 @@ namespace SharpPulsar.Impl
 		}
 
 
-		private bool BatchMessagingEnabled
-		{
-			get
-			{
-				return Conf.BatchingEnabled;
-			}
-		}
+		private bool BatchMessagingEnabled => Conf.BatchingEnabled;
 
-		private bool IsMultiSchemaEnabled(bool AutoEnable)
+        private bool IsMultiSchemaEnabled(bool autoEnable)
 		{
 			if (MultiSchemaMode != MultiSchemaMode.Auto)
 			{
 				return MultiSchemaMode == MultiSchemaMode.Enabled;
 			}
-			if (AutoEnable)
-			{
-				MultiSchemaMode = MultiSchemaMode.Enabled;
-				return true;
-			}
-			return false;
-		}
+
+            if (!autoEnable) return false;
+            MultiSchemaMode = MultiSchemaMode.Enabled;
+            return true;
+        }
 
 
 		public override TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> Message)
 		{
 
-			TaskCompletionSource<IMessageId> task = new TaskCompletionSource<IMessageId>();
-			MessageImpl<T> InterceptorMessage = (MessageImpl<T>) BeforeSend(Message);
+			var task = new TaskCompletionSource<IMessageId>();
+			var interceptorMessage = (MessageImpl<T>) BeforeSend(Message);
 			//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
-			InterceptorMessage.DataBuffer.Retain();
+			interceptorMessage.DataBuffer.Retain();
 			if (Interceptors != null)
 			{
 				//InterceptorMessage.Properties;
 			}
-			SendAsync(InterceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, InterceptorMessage));
+			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, interceptorMessage));
 			return task;
 		}
 
-		public class SendCallbackAnonymousInnerClass<S> : SendCallback
+		public class SendCallbackAnonymousInnerClass<TS> : SendCallback
 		{
-			private readonly ProducerImpl<S> _outerInstance;
+			private readonly ProducerImpl<TS> _outerInstance;
 
-			private TaskCompletionSource<IMessageId> _task;
-			private MessageImpl<S> _interceptorMessage;
+            private TaskCompletionSource<IMessageId> _task;
+			private readonly MessageImpl<TS> _interceptorMessage;
 
-			public SendCallbackAnonymousInnerClass(ProducerImpl<S> outerInstance, TaskCompletionSource<IMessageId> task, MessageImpl<S> interceptorMessage)
+			public SendCallbackAnonymousInnerClass(ProducerImpl<TS> outerInstance, TaskCompletionSource<IMessageId> task, MessageImpl<TS> interceptorMessage)
 			{
 				_outerInstance = outerInstance;
 				_task = task;
@@ -245,34 +222,16 @@ namespace SharpPulsar.Impl
 			}
 
 			internal SendCallback NextCallback;
-			internal MessageImpl<S> NextMsg;
+			internal MessageImpl<TS> NextMsg;
 			internal long CreatedAt;
 
-			public TaskCompletionSource<IMessageId> Task
-			{
-				get
-				{
-					return _task;
-				}
-			}
+			public TaskCompletionSource<IMessageId> Task => _task;
 
-			public SendCallback NextSendCallback
-			{
-				get
-				{
-					return NextCallback;
-				}
-			}
+            public SendCallback NextSendCallback => NextCallback;
 
-			public MessageImpl<object> NextMessage
-			{
-				get
-				{
-					return NextMsg;
-				}
-			}
+            public MessageImpl<object> NextMessage => NextMsg;
 
-			public void SendComplete(System.Exception e)
+            public void SendComplete(System.Exception e)
 			{
 				try
 				{
@@ -296,22 +255,22 @@ namespace SharpPulsar.Impl
 
 				while (NextCallback != null)
 				{
-					SendCallback SendCallback = NextCallback;
-					var Msg = NextMsg;
+					var sendCallback = NextCallback;
+					var msg = NextMsg;
 					//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
 					try
 					{
-						Msg.DataBuffer.Retain();
+						msg.DataBuffer.Retain();
 						if (e != null)
 						{
 							_outerInstance.Stats.IncrementSendFailed();
-							_outerInstance.OnSendAcknowledgement(Msg, null, e);
-							SendCallback.Task.SetException(e);
+							_outerInstance.OnSendAcknowledgement(msg, null, e);
+							sendCallback.Task.SetException(e);
 						}
 						else
 						{
-							_outerInstance.OnSendAcknowledgement(Msg, Msg.MessageId, null);
-							SendCallback.Task.SetResult(Msg.MessageId);
+							_outerInstance.OnSendAcknowledgement(msg, msg.MessageId, null);
+							sendCallback.Task.SetResult(msg.MessageId);
 							_outerInstance.Stats.IncrementNumAcksReceived(DateTime.Now.Millisecond - CreatedAt);
 						}
 						NextMsg = NextCallback.NextMessage;
@@ -319,15 +278,15 @@ namespace SharpPulsar.Impl
 					}
 					finally
 					{
-						Msg.DataBuffer.Release();
+						msg.DataBuffer.Release();
 					}
 				}
 			}
 
-			public void AddCallback<T1>(MessageImpl<T1> Msg, SendCallback Scb)
+			public void AddCallback<T1>(MessageImpl<T1> msg, SendCallback scb)
 			{
-				NextMsg = (MessageImpl<object>)Msg;
-				NextCallback = Scb;
+				NextMsg = (MessageImpl<object>)msg;
+				NextCallback = scb;
 			}
 		}
 
@@ -339,58 +298,58 @@ namespace SharpPulsar.Impl
 		{
 			return (ProducerImpl<object>)Convert.ChangeType(v, typeof(ProducerImpl<object>));
 		}
-		public virtual void SendAsync<T1>(Message<T1> Message, SendCallback Callback)
+		public void SendAsync<T1>(Message<T1> message, SendCallback callback)
 		{
-			if (Message is MessageImpl<T1>)
+			if (message is MessageImpl<T1>)
 				return;
 
-			if (!IsValidProducerState(Callback))
+			if (!IsValidProducerState(callback))
 			{
 				return;
 			}
 
-			if (!CanEnqueueRequest(Callback))
+			if (!CanEnqueueRequest(callback))
 			{
 				return;
 			}
 
-			MessageImpl<object> Msg = (MessageImpl<object>) Message;
-			MessageMetadata.Builder MsgMetadataBuilder = Msg.MessageBuilder;
-			IByteBuffer Payload = Msg.DataBuffer;
+			var msg = (MessageImpl<object>) message;
+			var msgMetadataBuilder = msg.MessageBuilder;
+			var payload = msg.DataBuffer;
 
 			// If compression is enabled, we are compressing, otherwise it will simply use the same buffer
-			int UncompressedSize = Payload.ReadableBytes;
-			IByteBuffer CompressedPayload = Payload;
+			var uncompressedSize = payload.ReadableBytes;
+			var compressedPayload = payload;
 			// Batch will be compressed when closed
 			// If a message has a delayed delivery time, we'll always send it individually
-			if (!BatchMessagingEnabled || MsgMetadataBuilder.HasDeliverAtTime())
+			if (!BatchMessagingEnabled || msgMetadataBuilder.HasDeliverAtTime())
 			{
-				CompressedPayload = compressor.Encode(Payload);
-				Payload.Release();
+				compressedPayload = _compressor.Encode(payload);
+				payload.Release();
 
 				// validate msg-size (For batching this will be check at the batch completion size)
-				int CompressedSize = CompressedPayload.ReadableBytes;
-				if (CompressedSize > ClientCnx.MaxMessageSize)
+				var compressedSize = compressedPayload.ReadableBytes;
+				if (compressedSize > ClientCnx.MaxMessageSize)
 				{
-					CompressedPayload.Release();
-					string CompressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.None) ? "Compressed" : "";
-					PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, CompressedStr, CompressedSize, ClientCnx.MaxMessageSize));
-					Callback.SendComplete(InvalidMessageException);
+					compressedPayload.Release();
+					var compressedStr = (!BatchMessagingEnabled && Conf.CompressionType != ICompressionType.None) ? "Compressed" : "";
+					var invalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s sends a %s message with %d bytes that exceeds %d bytes", HandlerName, Topic, compressedStr, compressedSize, ClientCnx.MaxMessageSize));
+					callback.SendComplete(invalidMessageException);
 					return;
 				}
 			}
 
-			if (!Msg.Replicated && MsgMetadataBuilder.HasProducerName())
+			if (!msg.Replicated && msgMetadataBuilder.HasProducerName())
 			{
-				PulsarClientException.InvalidMessageException InvalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s can not reuse the same message", HandlerName, Topic));
-				Callback.SendComplete(InvalidMessageException);
-				CompressedPayload.Release();
+				var invalidMessageException = new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s can not reuse the same message", HandlerName, Topic));
+				callback.SendComplete(invalidMessageException);
+				compressedPayload.Release();
 				return;
 			}
 
-			if (!PopulateMessageSchema(Msg, Callback))
+			if (!PopulateMessageSchema(msg, callback))
 			{
-				CompressedPayload.Release();
+				compressedPayload.Release();
 				return;
 			}
 
@@ -398,56 +357,56 @@ namespace SharpPulsar.Impl
 			{
 				lock (this)
 				{
-					long SequenceId;
-					if (!MsgMetadataBuilder.HasSequenceId())
+					long sequenceId;
+					if (!msgMetadataBuilder.HasSequenceId())
 					{
-						SequenceId = msgIdGenerator[this]; //msgIdGeneratorUpdater.getAndIncrement(this);
-						msgIdGenerator[this]++;
-						MsgMetadataBuilder.SetSequenceId(SequenceId);
+						sequenceId = MsgIdGenerator[this]; //msgIdGeneratorUpdater.getAndIncrement(this);
+						MsgIdGenerator[this]++;
+						msgMetadataBuilder.SetSequenceId(sequenceId);
 					}
 					else
 					{
-						SequenceId = MsgMetadataBuilder.GetSequenceId();
+						sequenceId = msgMetadataBuilder.GetSequenceId();
 					}
-					if (!MsgMetadataBuilder.HasPublishTime())
+					if (!msgMetadataBuilder.HasPublishTime())
 					{
-						MsgMetadataBuilder.SetPublishTime(Client.ClientClock.Millisecond);
+						msgMetadataBuilder.SetPublishTime(Client.ClientClock.Millisecond);
 
-						if(MsgMetadataBuilder.HasProducerName())
-							MsgMetadataBuilder.SetProducerName(HandlerName);
+						if(msgMetadataBuilder.HasProducerName())
+							msgMetadataBuilder.SetProducerName(HandlerName);
 
 						if (Conf.CompressionType != ICompressionType.None)
 						{
-							MsgMetadataBuilder.SetCompression(CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType));
+							msgMetadataBuilder.SetCompression(CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType));
 						}
-						MsgMetadataBuilder.SetUncompressedSize(UncompressedSize);
+						msgMetadataBuilder.SetUncompressedSize(uncompressedSize);
 					}
-					if (CanAddToBatch(Msg))
+					if (CanAddToBatch(msg))
 					{
-						if (CanAddToCurrentBatch(Msg))
+						if (CanAddToCurrentBatch(msg))
 						{
 							// should trigger complete the batch message, new message will add to a new batch and new batch
 							// sequence id use the new message, so that broker can handle the message duplication
-							if (SequenceId <= LastSequenceIdPushed)
+							if (sequenceId <= LastSequenceIdPushed)
 							{
-								if (SequenceId <= LastSequenceId)
+								if (sequenceId <= LastSequenceId)
 								{
-									log.LogWarning("Message with sequence id {} is definitely a duplicate", SequenceId);
+									log.LogWarning("Message with sequence id {} is definitely a duplicate", sequenceId);
 								}
 								else
 								{
-									log.LogInformation("Message with sequence id {} might be a duplicate but cannot be determined at this time.", SequenceId);
+									log.LogInformation("Message with sequence id {} might be a duplicate but cannot be determined at this time.", sequenceId);
 								}
-								DoBatchSendAndAdd(Msg, Callback, Payload);
+								DoBatchSendAndAdd(msg, callback, payload);
 							}
 							else
 							{
 								// handle boundary cases where message being added would exceed
 								// batch size and/or max message size
-								bool IsBatchFull = batchMessageContainer.Add(Msg, Callback);
-								lastSendTask = Callback.Task;
-								Payload.Release();
-								if (IsBatchFull)
+								var isBatchFull = _batchMessageContainer.Add(msg, callback);
+								_lastSendTask = callback.Task;
+								payload.Release();
+								if (isBatchFull)
 								{
 									BatchMessageAndSend();
 								}
@@ -455,183 +414,189 @@ namespace SharpPulsar.Impl
 						}
 						else
 						{
-							DoBatchSendAndAdd(Msg, Callback, Payload);
+							DoBatchSendAndAdd(msg, callback, payload);
 						}
 					}
 					else
 					{
-						IByteBuffer EncryptedPayload = EncryptMessage(MsgMetadataBuilder, CompressedPayload);
+						var encryptedPayload = EncryptMessage(msgMetadataBuilder, compressedPayload);
 						// When publishing during replication, we need to set the correct number of message in batch
 						// This is only used in tracking the publish rate stats
-						int NumMessages = Msg.MessageBuilder.HasNumMessagesInBatch() ? Msg.MessageBuilder.NumMessagesInBatch : 1;
-						OpSendMsg Op;
-						var schemaState = (int)Msg.GetSchemaState();
+						var numMessages = msg.MessageBuilder.HasNumMessagesInBatch() ? msg.MessageBuilder.NumMessagesInBatch : 1;
+						OpSendMsg<T> op;
+						var schemaState = (int)msg.GetSchemaState();
 						if (schemaState  == 1)
 						{
-							MessageMetadata MsgMetadata = MsgMetadataBuilder.Build();
-							ByteBufPair Cmd = SendMessage(ProducerId, SequenceId, NumMessages, MsgMetadata, EncryptedPayload);
-							Op = OpSendMsg.Create(Msg, Cmd, SequenceId, Callback);
-							MsgMetadataBuilder.Recycle();
-							MsgMetadata.Recycle();
+							var msgMetadata = msgMetadataBuilder.Build();
+							var cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+							op = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
+							msgMetadataBuilder.Recycle();
+							msgMetadata.Recycle();
 						}
 						else
 						{
-							Op = OpSendMsg.Create(Msg, null, SequenceId, Callback);
-							Op.RePopulate = () =>
+							op = OpSendMsg<T>.Create(msg, null, sequenceId, callback);
+							op.RePopulate = () =>
 							{
-								MessageMetadata MsgMetadata = MsgMetadataBuilder.Build();
-								Op.Cmd = SendMessage(ProducerId, SequenceId, NumMessages, MsgMetadata, EncryptedPayload);
-								MsgMetadataBuilder.Recycle();
-								MsgMetadata.Recycle();
+								var msgMetadata = msgMetadataBuilder.Build();
+								op.Cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+								msgMetadataBuilder.Recycle();
+								msgMetadata.Recycle();
 							};
 						}
-						Op.NumMessagesInBatch = NumMessages;
-						Op.BatchSizeByte = EncryptedPayload.ReadableBytes;
-						lastSendTask = Callback.Task;
-						ProcessOpSendMsg(Op);
+						op.NumMessagesInBatch = numMessages;
+						op.BatchSizeByte = encryptedPayload.ReadableBytes;
+						_lastSendTask = callback.Task;
+						ProcessOpSendMsg(op);
 					}
 				}
 			}
-			catch (PulsarClientException E)
+			catch (PulsarClientException e)
 			{
-				semaphore.Release();
-				Callback.SendComplete(E);
+				_semaphore.Release();
+				callback.SendComplete(e);
 			}
 			catch (System.Exception T)
 			{
-				semaphore.Release();
-				Callback.SendComplete(new PulsarClientException(T.Message));
+				_semaphore.Release();
+				callback.SendComplete(new PulsarClientException(T.Message));
 			}
 		}
 
-		private bool PopulateMessageSchema(MessageImpl<object> Msg, SendCallback Callback)
+		private bool PopulateMessageSchema(MessageImpl<object> msg, SendCallback callback)
 		{
-			MessageMetadata.Builder MsgMetadataBuilder = Msg.MessageBuilder;
-			if (Msg.Schema == Schema)
+			var msgMetadataBuilder = msg.MessageBuilder;
+            var schemaHash = SchemaHash.Of(msg.Schema);
+            var schemaVersion = SchemaCache[schemaHash];
+			if (msg.Schema == Schema)
 			{
-				schemaVersion.ifPresent(v => MsgMetadataBuilder.setSchemaVersion(ByteString.copyFrom(v)));
-				Msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+				if(schemaVersion != null)
+                    msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
+				msg.SetSchemaState(MessageImpl<object>.SchemaState.Ready);
 				return true;
 			}
 			if (!IsMultiSchemaEnabled(true))
 			{
-				Callback.SendComplete(new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s is disabled the `MultiSchema`", HandlerName, Topic)));
+				callback.SendComplete(new PulsarClientException.InvalidMessageException(string.Format("The producer %s of the topic %s is disabled the `MultiSchema`", HandlerName, Topic)));
 				return false;
 			}
-			SchemaHash SchemaHash = SchemaHash.of(Msg.Schema);
-			sbyte[] SchemaVersion = SchemaCache.get(SchemaHash);
-			if (SchemaVersion != null)
-			{
-				MsgMetadataBuilder.SchemaVersion = ByteString.CopyFrom(SchemaVersion);
-				Msg.setSchemaState(MessageImpl.SchemaState.Ready);
-			}
-			return true;
+
+            if (schemaVersion == null) return true;
+            msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
+            msg.SetSchemaState(MessageImpl<object>.SchemaState.Ready);
+            return true;
 		}
 
-		private bool RePopulateMessageSchema(MessageImpl<T> Msg)
+		private bool RePopulateMessageSchema(MessageImpl<T> msg)
 		{
-			SchemaHash schemaHash = SchemaHash.Of(Msg.Schema);
-			sbyte[] SchemaVersion = SchemaCache.Get(SchemaHash);
-			if (SchemaVersion == null)
+			var schemaHash = SchemaHash.Of(msg.Schema);
+			var schemaVersion = SchemaCache[schemaHash];
+			if (schemaVersion == null)
 			{
 				return false;
 			}
-			Msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(SchemaVersion));
-			Msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
+			msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
+			msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
 			return true;
 		}
 
-		private void TryRegisterSchema(ClientCnx Cnx, MessageImpl<T> Msg, SendCallback Callback)
+		private void TryRegisterSchema(ClientCnx cnx, MessageImpl<T> msg, SendCallback callback)
 		{
 			if (!ChangeToRegisteringSchemaState())
 			{
 				return;
 			}
-			SchemaInfo SchemaInfo = Optional.ofNullable(Msg.Schema).map(Schema.getSchemaInfo).filter(si => si.Type.Value > 0).orElse(SchemaFields.Bytes.SchemaInfo);
-			GetOrCreateSchemaAsync(Cnx, SchemaInfo).handle((v, ex) =>
+
+            SchemaInfo schemaInfo = null;
+            if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
+            {
+                schemaInfo = (SchemaInfo) msg.Schema.SchemaInfo;
+            }
+            else
+            {
+                schemaInfo = (SchemaInfo)SchemaFields.Bytes.SchemaInfo;
+
+            }
+            
+			GetOrCreateSchemaAsync(cnx, schemaInfo).AsTask().ContinueWith(task =>
 			{
-				if (ex != null)
+				if (task.Exception != null)
 				{
-					Exception T = FutureUtil.unwrapCompletionException(ex);
-					log.LogWarning("[{}] [{}] GetOrCreateSchema error", Topic, HandlerName, T);
-					if (T is PulsarClientException.IncompatibleSchemaException)
-					{
-						Msg.setSchemaState(MessageImpl.SchemaState.Broken);
-						Callback.sendComplete((PulsarClientException.IncompatibleSchemaException)T);
-					}
-				}
+					log.LogWarning("[{}] [{}] GetOrCreateSchema error", Topic, HandlerName, task.Exception);
+                }
 				else
 				{
 					log.LogWarning("[{}] [{}] GetOrCreateSchema succeed", Topic, HandlerName);
-					SchemaHash SchemaHash = SchemaHash.of(Msg.Schema);
-					SchemaCache.putIfAbsent(SchemaHash, v);
-					Msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(v);
-					Msg.setSchemaState(MessageImpl.SchemaState.Ready);
+					var schemaHash = SchemaHash.Of(msg.Schema);
+                    if (!SchemaCache.ContainsKey(schemaHash))
+                    {
+                        SchemaCache[schemaHash] = task.Result;
+
+                    }
+					msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)task.Result));
+					msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
 				}
 			});
-			Cnx.Ctx().Channel.EventLoop.Execute(() =>
+			cnx.Ctx().Channel.EventLoop.Execute(() =>
 			{
 				lock (this)
 				{
-					RecoverProcessOpSendMsgFrom(Cnx, Msg);
+					RecoverProcessOpSendMsgFrom(cnx, msg);
 				}
 			});
 		}
 
-		private ValueTask<sbyte[]> GetOrCreateSchemaAsync(ClientCnx Cnx, SchemaInfo SchemaInfo)
+		private ValueTask<sbyte[]> GetOrCreateSchemaAsync(ClientCnx cnx, SchemaInfo schemaInfo)
 		{
-			if (!Commands.PeerSupportsGetOrCreateSchema(Cnx.RemoteEndpointProtocolVersion))
+			if (!Commands.PeerSupportsGetOrCreateSchema(cnx.RemoteEndpointProtocolVersion))
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.NotSupportedException(string.Format("The command `GetOrCreateSchema` is not supported for the protocol version %d. " + "The producer is %s, topic is %s", Cnx.RemoteEndpointProtocolVersion, HandlerName, Topic)));
+				return new ValueTask<sbyte[]>(Task.FromException<sbyte[]>(new PulsarClientException.NotSupportedException(string.Format("The command `GetOrCreateSchema` is not supported for the protocol version %d. " + "The producer is %s, topic is %s", cnx.RemoteEndpointProtocolVersion, HandlerName, Topic))));
 			}
-			long RequestId = Client.NewRequestId();
-			IByteBuffer Request = Commands.NewGetOrCreateSchema(RequestId, Topic, SchemaInfo);
+			var requestId = Client.NewRequestId();
+			var request = Commands.NewGetOrCreateSchema(requestId, Topic, schemaInfo);
 			log.LogInformation("[{}] [{}] GetOrCreateSchema request", Topic, HandlerName);
-			return Cnx.SendGetOrCreateSchema(Request, RequestId);
+			return cnx.SendGetOrCreateSchema(request, requestId);
 		}
 
-		public virtual IByteBuffer EncryptMessage(MessageMetadata.Builder MsgMetadata, IByteBuffer CompressedPayload)
+		public IByteBuffer EncryptMessage(MessageMetadata.Builder msgMetadata, IByteBuffer compressedPayload)
 		{
 
-			IByteBuffer EncryptedPayload = CompressedPayload;
-			if (!Conf.EncryptionEnabled || msgCrypto == null)
+			var encryptedPayload = compressedPayload;
+			if (!Conf.EncryptionEnabled || _msgCrypto == null)
 			{
-				return EncryptedPayload;
+				return encryptedPayload;
 			}
 			try
 			{
-				EncryptedPayload = msgCrypto.Encrypt(Conf.EncryptionKeys, Conf.CryptoKeyReader, MsgMetadata, CompressedPayload);
+				encryptedPayload = _msgCrypto.Encrypt(Conf.EncryptionKeys, Conf.CryptoKeyReader, msgMetadata, compressedPayload);
 			}
-			catch (PulsarClientException E)
+			catch (PulsarClientException e)
 			{
 				// Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
-				if (Conf.CryptoFailureAction == ProducerCryptoFailureAction.Send)
-				{
-					log.LogWarning("[{}] [{}] Failed to encrypt message {}. Proceeding with publishing unencrypted message", Topic, HandlerName, E.Message);
-					return CompressedPayload;
-				}
-				throw E;
-			}
-			return EncryptedPayload;
+                if (Conf.CryptoFailureAction != ProducerCryptoFailureAction.Send) throw e;
+                log.LogWarning("[{}] [{}] Failed to encrypt message {}. Proceeding with publishing unencrypted message", Topic, HandlerName, e.Message);
+                return compressedPayload;
+            }
+			return encryptedPayload;
 		}
 
-		public virtual ByteBufPair SendMessage(long ProducerId, long SequenceId, int NumMessages, MessageMetadata MsgMetadata, IByteBuffer CompressedPayload)
+		public ByteBufPair SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
 		{
-			return Commands.NewSend(ProducerId, SequenceId, NumMessages, ChecksumType, MsgMetadata, CompressedPayload);
+			return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
 		}
 
-		public virtual ByteBufPair SendMessage(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessages, MessageMetadata MsgMetadata, IByteBuffer CompressedPayload)
+		public ByteBufPair SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
 		{
-			return Commands.NewSend(ProducerId, LowestSequenceId, HighestSequenceId, NumMessages, ChecksumType, MsgMetadata, CompressedPayload);
+			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
 		}
 
-		private Commands.ChecksumType? ChecksumType
+		private Commands.ChecksumType ChecksumType
 		{
 			get
 			{
 				if (ConnectionHandler.ClientCnx == null || ConnectionHandler.ClientCnx.RemoteEndpointProtocolVersion >= BrokerChecksumSupportedVersion())
 				{
-					return Commands.ChecksumType.Crc32c;
+					return Commands.ChecksumType.Crc32C;
 				}
 				else
 				{
@@ -640,37 +605,37 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private bool CanAddToBatch<T1>(MessageImpl<T1> Msg)
+		private bool CanAddToBatch<T1>(MessageImpl<T1> msg)
 		{
-			return Msg.GetSchemaState() == MessageImpl.SchemaState.Ready && BatchMessagingEnabled && !Msg.MessageBuilder.hasDeliverAtTime();
+			return msg.GetSchemaState() == MessageImpl<T1>.SchemaState.Ready && BatchMessagingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
 		}
 
-		private bool CanAddToCurrentBatch<T1>(MessageImpl<T1> Msg)
+		private bool CanAddToCurrentBatch<T1>(MessageImpl<T1> msg)
 		{
-			return batchMessageContainer.HaveEnoughSpace(Msg) && (!IsMultiSchemaEnabled(false) || batchMessageContainer.HasSameSchema(Msg));
+			return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
 		}
 
-		private void DoBatchSendAndAdd<T1>(MessageImpl<T1> Msg, SendCallback Callback, IByteBuffer Payload)
+		private void DoBatchSendAndAdd<T1>(MessageImpl<T1> msg, SendCallback callback, IReferenceCounted payload)
 		{
 			if (log.IsEnabled(LogLevel.Debug))
 			{
-				log.log.LogDebug("[{}] [{}] Closing out batch to accommodate large message with size {}", Topic, HandlerName, Msg.DataBuffer.readableBytes());
+				log.LogDebug("[{}] [{}] Closing out batch to accommodate large message with size {}", Topic, HandlerName, msg.DataBuffer.ReadableBytes);
 			}
 			try
 			{
 				BatchMessageAndSend();
-				batchMessageContainer.Add(Msg, Callback);
-				lastSendTask = Callback.Task;
+				_batchMessageContainer.Add(msg, callback);
+				_lastSendTask = callback.Task;
 			}
 			finally
 			{
-				Payload.Release();
+				payload.Release();
 			}
 		}
 
-		private bool IsValidProducerState(SendCallback Callback)
+		private bool IsValidProducerState(SendCallback callback)
 		{
-			switch (state)
+			switch (GetState())
 			{
 				case State.Ready:
 					// OK
@@ -681,41 +646,41 @@ namespace SharpPulsar.Impl
 					return true;
 				case State.Closing:
 				case State.Closed:
-					Callback.SendComplete(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+					callback.SendComplete(new PulsarClientException.AlreadyClosedException("Producer already closed"));
 					return false;
 				case State.Terminated:
-					Callback.SendComplete(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+					callback.SendComplete(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
 					return false;
 				case State.Failed:
 				case State.Uninitialized:
 				default:
-					Callback.SendComplete(new PulsarClientException.NotConnectedException());
+					callback.SendComplete(new PulsarClientException.NotConnectedException());
 					return false;
 			}
 		}
 
-		private bool CanEnqueueRequest(SendCallback Callback)
+		private bool CanEnqueueRequest(SendCallback callback)
 		{
 			try
 			{
 				if (Conf.BlockIfQueueFull)
 				{
-					semaphore.WaitOne();
+					_semaphore.WaitOne();
 				}
 				else
 				{
-					if (!semaphore.WaitOne())
+					if (!_semaphore.WaitOne())
 					{
-						Callback.SendComplete(new PulsarClientException.ProducerQueueIsFullError("Producer send queue is full"));
+						callback.SendComplete(new PulsarClientException.ProducerQueueIsFullError("Producer send queue is full"));
 						return false;
 					}
 				}
-				semaphore.Release();
+				_semaphore.Release();
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
 				Thread.CurrentThread.Interrupt();
-				Callback.SendComplete(E);
+				callback.SendComplete(e);
 				return false;
 			}
 
@@ -729,14 +694,14 @@ namespace SharpPulsar.Impl
 			internal long SequenceId;
 			internal ClientCnx Cnx;
 
-			internal static WriteInEventLoopCallback Create<T1>(ProducerImpl<T1> Producer, ClientCnx Cnx, OpSendMsg Op)
+			internal static WriteInEventLoopCallback Create<T1>(ProducerImpl<T1> producer, ClientCnx cnx, OpSendMsg<T> op)
 			{
-				WriteInEventLoopCallback C = _pool.Take();
-				C.Producer = Producer;
-				C.Cnx = Cnx;
-				C.SequenceId = Op.SequenceId;
-				C.Cmd = Op.Cmd;
-				return C;
+				var c = Pool.Take();
+				c.Producer = producer;
+				c.Cnx = cnx;
+				c.SequenceId = op.SequenceId;
+				c.Cmd = op.Cmd;
+				return c;
 			}
 
 			public void Run()
@@ -762,95 +727,88 @@ namespace SharpPulsar.Impl
 				Cnx = null;
 				Cmd = null;
 				SequenceId = -1;
-				_handle.Release(this);
+				Handle.Release(this);
 			}
 
-			internal static ThreadLocalPool<WriteInEventLoopCallback> _pool = new ThreadLocalPool<WriteInEventLoopCallback>(handle => new WriteInEventLoopCallback(handle), 1, true);
+			internal static ThreadLocalPool<WriteInEventLoopCallback> Pool = new ThreadLocalPool<WriteInEventLoopCallback>(handle => new WriteInEventLoopCallback(handle), 1, true);
 
-			internal ThreadLocalPool.Handle _handle;
+			internal ThreadLocalPool.Handle Handle;
 			private WriteInEventLoopCallback(ThreadLocalPool.Handle handle)
 			{
-				_handle = handle;
+				Handle = handle;
 			}
 		}
 
-		public ValueTask CloseAsync()
+		public override ValueTask CloseAsync()
 		{
-			State? CurrentState = GetAndUpdateState(state =>
-			{
-				if (state == State.Closed)
-				{
-					return state;
-				}
-				return State.Closing;
-			});
+			State? currentState = GetAndUpdateState(state1 => state1 == State.Closed ? state1 : State.Closing);
 
-			if (CurrentState == State.Closed || CurrentState == State.Closing)
+			if (currentState == State.Closed || currentState == State.Closing)
 			{
 				return new ValueTask(Task.CompletedTask);
 			}
 
-			Timer Timeout = sendTimeout;
-			if (Timeout != null)
+			var timeout = _sendTimeout;
+			if (timeout != null)
 			{
-				Timeout.Dispose();
-				sendTimeout = null;
+				timeout.Dispose();
+				_sendTimeout = null;
 			}
 
-			var BatchTimeout = batchMessageAndSendTimeout;
-			if (BatchTimeout != null)
+			var batchTimeout = _batchMessageAndSendTimeout;
+			if (batchTimeout != null)
 			{
-				BatchTimeout.Dispose();
-				batchMessageAndSendTimeout = null;
+				batchTimeout.Dispose();
+				_batchMessageAndSendTimeout = null;
 			}
 
-			if (keyGeneratorTask != null && !keyGeneratorTask.Cancel())
+			if (_keyGeneratorTask != null && !_keyGeneratorTask.Cancel())
 			{
-				keyGeneratorTask.Cancel();
+				_keyGeneratorTask.Cancel();
 			}
 
 			Stats.CancelStatsTimeout();
 
-			ClientCnx Cnx = ConnectionHandler.Cnx();
-			if (Cnx == null || CurrentState != State.Ready)
+			var cnx = ConnectionHandler.Cnx();
+			if (cnx == null || currentState != State.Ready)
 			{
 				log.LogInformation("[{}] [{}] Closed Producer (not connected)", Topic, HandlerName);
 				lock (this)
 				{
-					state = State.Closed;
+					ChangeToState(State.Closed);
 					Client.CleanupProducer(this);
-					PulsarClientException Ex = new PulsarClientException.AlreadyClosedException(string.Format("The producer %s of the topic %s was already closed when closing the producers", HandlerName, Topic));
-					pendingMessages.ToList().ForEach(msg =>
+					PulsarClientException ex = new PulsarClientException.AlreadyClosedException(string.Format("The producer %s of the topic %s was already closed when closing the producers", HandlerName, Topic));
+					_pendingMessages.ToList().ForEach(msg =>
 					{
-						msg.Callback.SendComplete(Ex);
+						msg.Callback.SendComplete(ex);
 						msg.Cmd.Release();
 						msg.Recycle();
 					});
-					pendingMessages.Clear();
+					_pendingMessages.Clear();
 				}
 
 				return new ValueTask(Task.CompletedTask);
 			}
 
-			long RequestId = Client.NewRequestId();
-			IByteBuffer Cmd = Commands.NewCloseProducer(ProducerId, RequestId);
+			var requestId = Client.NewRequestId();
+			var cmd = Commands.NewCloseProducer(ProducerId, requestId);
 
-			TaskCompletionSource closeTask = new TaskCompletionSource();
-			Cnx.SendRequestWithId(Cmd, RequestId).AsTask().ContinueWith((v) =>
+			var closeTask = new TaskCompletionSource();
+			cnx.SendRequestWithId(cmd, requestId).AsTask().ContinueWith((v) =>
 			{
-				Cnx.RemoveProducer(ProducerId);
-				if (v.Exception == null || !Cnx.Ctx().Channel.Active)
+				cnx.RemoveProducer(ProducerId);
+				if (v.Exception == null || !cnx.Ctx().Channel.Active)
 				{
 					lock (this)
 					{
 						log.LogInformation("[{}] [{}] Closed Producer", Topic, HandlerName);
-						state = State.Closed;
-						pendingMessages.ToList().ForEach(msg =>
+                        ChangeToState(State.Closed);
+						_pendingMessages.ToList().ForEach(msg =>
 						{
 							msg.Cmd.Release();
 							msg.Recycle();
 						});
-						pendingMessages.Clear();
+						_pendingMessages.Clear();
 					}
 					closeTask.SetResult(-1);
 						Client.CleanupProducer(this);
@@ -865,118 +823,114 @@ namespace SharpPulsar.Impl
 		}
 
 		public override bool Connected
+        {
+            get => ConnectionHandler.ClientCnx != null && (GetState() == State.Ready);
+            set => ChangeToState(State.Closed);
+        }
+
+        public bool Writable
 		{
 			get
 			{
-				return ConnectionHandler.ClientCnx != null && (state == State.Ready);
+				var cnx = ConnectionHandler.ClientCnx;
+				return cnx != null && cnx.Channel().IsWritable;
 			}
 		}
 
-		public virtual bool Writable
+		public void Terminated(ClientCnx cnx)
 		{
-			get
-			{
-				ClientCnx Cnx = ConnectionHandler.ClientCnx;
-				return Cnx != null && Cnx.Channel().IsWritable;
-			}
-		}
-
-		public virtual void Terminated(ClientCnx Cnx)
-		{
-			State PreviousState = GetAndUpdateState(state => (state == State.Closed ? State.Closed : State.Terminated));
-			if (PreviousState != State.Terminated && PreviousState != State.Closed)
+			var previousState = GetAndUpdateState(state1 => (state1 == State.Closed ? State.Closed : State.Terminated));
+			if (previousState != State.Terminated && previousState != State.Closed)
 			{
 				log.LogInformation("[{}] [{}] The topic has been terminated", Topic, HandlerName);
 				ClientCnx = null;
 
-				FailPendingMessages(Cnx, new PulsarClientException.TopicTerminatedException(string.Format("The topic %s that the producer %s produces to has been terminated", Topic, HandlerName)));
+				FailPendingMessages(cnx, new PulsarClientException.TopicTerminatedException(string.Format("The topic %s that the producer %s produces to has been terminated", Topic, HandlerName)));
 			}
 		}
 
-		public virtual void AckReceived(ClientCnx Cnx, long SequenceId, long HighestSequenceId, long LedgerId, long EntryId)
+		public void AckReceived(ClientCnx cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
 		{
-			OpSendMsg Op = null;
-			bool Callback = false;
+			OpSendMsg<T> op = null;
+			var callback = false;
 			lock (this)
 			{
-				Op = pendingMessages.Peek();
-				if (Op == null)
+				op = _pendingMessages.Peek();
+				if (op == null)
 				{
 					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("[{}] [{}] Got ack for timed out msg {} - {}", Topic, HandlerName, SequenceId, HighestSequenceId);
+						log.LogDebug("[{}] [{}] Got ack for timed out msg {} - {}", Topic, HandlerName, sequenceId, highestSequenceId);
 					}
 					return;
 				}
 
-				if (SequenceId > Op.SequenceId)
+				if (sequenceId > op.SequenceId)
 				{
-					log.LogWarning("[{}] [{}] Got ack for msg. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, HandlerName, Op.SequenceId, Op.HighestSequenceId, SequenceId, HighestSequenceId, pendingMessages.size());
+					log.LogWarning("[{}] [{}] Got ack for msg. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, HandlerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId, _pendingMessages.Count);
 					// Force connection closing so that messages can be re-transmitted in a new connection
-					Cnx.Channel().CloseAsync();
+					cnx.Channel().CloseAsync();
 				}
-				else if (SequenceId < Op.SequenceId)
+				else if (sequenceId < op.SequenceId)
 				{
 					// Ignoring the ack since it's referring to a message that has already timed out.
 					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("[{}] [{}] Got ack for timed out msg. expecting: {} - {} - got: {} - {}", Topic, HandlerName, Op.SequenceId, Op.HighestSequenceId, SequenceId, HighestSequenceId);
+						log.LogDebug("[{}] [{}] Got ack for timed out msg. expecting: {} - {} - got: {} - {}", Topic, HandlerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId);
 					}
 				}
 				else
 				{
 					// Add check `sequenceId >= highestSequenceId` for backward compatibility.
-					if (SequenceId >= HighestSequenceId || HighestSequenceId == Op.HighestSequenceId)
+					if (sequenceId >= highestSequenceId || highestSequenceId == op.HighestSequenceId)
 					{
 						// Message was persisted correctly
 						if (log.IsEnabled(LogLevel.Debug))
 						{
-							log.LogDebug("[{}] [{}] Received ack for msg {} ", Topic, HandlerName, SequenceId);
+							log.LogDebug("[{}] [{}] Received ack for msg {} ", Topic, HandlerName, sequenceId);
 						}
-						pendingMessages.Dequeue();
-						ReleaseSemaphoreForSendOp(Op);
-						Callback = true;
-						pendingCallbacks.Enqueue(Op);
+						_pendingMessages.Dequeue();
+						ReleaseSemaphoreForSendOp(op);
+						callback = true;
+						_pendingCallbacks.Enqueue(op);
 					}
 					else
 					{
-						log.LogWarning("[{}] [{}] Got ack for batch msg error. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, HandlerName, Op.SequenceId, Op.HighestSequenceId, SequenceId, HighestSequenceId, pendingMessages.size());
+						log.LogWarning("[{}] [{}] Got ack for batch msg error. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, HandlerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId, _pendingMessages.Count);
 						// Force connection closing so that messages can be re-transmitted in a new connection
-						Cnx.Channel().CloseAsync();
+						cnx.Channel().CloseAsync();
 					}
 				}
 			}
-			if (Callback)
+			if (callback)
 			{
-				Op = pendingCallbacks.Peek();
-				if (Op != null)
-				{
-					LastSequenceId = Math.Max(LastSequenceId, GetHighestSequenceId(Op));
-					Op.SetMessageId(LedgerId, EntryId, partitionIndex);
-					try
-					{
-						// Need to protect ourselves from any exception being thrown in the future handler from the
-						// application
-						Op.Callback.SendComplete(null);
-					}
-					catch (System.Exception T)
-					{
-						log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, SequenceId, T);
-					}
-					ReferenceCountUtil.SafeRelease(Op.Cmd);
-					Op.Recycle();
-				}
-			}
+				op = _pendingCallbacks.Peek();
+                if (op == null) return;
+                LastSequenceId = Math.Max(LastSequenceId, GetHighestSequenceId(op));
+                op.SetMessageId(ledgerId, entryId, _partitionIndex);
+                try
+                {
+                    // Need to protect ourselves from any exception being thrown in the future handler from the
+                    // application
+                    op.Callback.SendComplete(null);
+                }
+                catch (System.Exception T)
+                {
+                    log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, sequenceId, T);
+                }
+                op.Cmd.SafeRelease();
+                op.Recycle();
+            }
 		}
 
-		private long GetHighestSequenceId(OpSendMsg Op)
+		private long GetHighestSequenceId(OpSendMsg<T> op)
 		{
-			return Math.Max(Op.HighestSequenceId, Op.SequenceId);
+			return Math.Max(op.HighestSequenceId, op.SequenceId);
 		}
 
-		private void ReleaseSemaphoreForSendOp(OpSendMsg Op)
+		private void ReleaseSemaphoreForSendOp(OpSendMsg<T> op)
 		{
-			semaphore.Release(BatchMessagingEnabled ? Op.NumMessagesInBatchConflict : 1);
+			_semaphore.Release(BatchMessagingEnabled ? op.NumMessagesInBatch : 1);
 		}
 
 		/// <summary>
@@ -991,46 +945,46 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="cnx"> </param>
 		/// <param name="sequenceId"> </param>
-		public virtual void RecoverChecksumError(ClientCnx Cnx, long SequenceId)
+		public void RecoverChecksumError(ClientCnx cnx, long sequenceId)
 		{
 			lock (this)
 			{
-				OpSendMsg Op = pendingMessages.Peek();
-				if (Op == null)
+				var op = _pendingMessages.Peek();
+				if (op == null)
 				{
 					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("[{}] [{}] Got send failure for timed out msg {}", Topic, HandlerName, SequenceId);
+						log.LogDebug("[{}] [{}] Got send failure for timed out msg {}", Topic, HandlerName, sequenceId);
 					}
 				}
 				else
 				{
-					long ExpectedSequenceId = GetHighestSequenceId(Op);
-					if (SequenceId == ExpectedSequenceId)
+					var expectedSequenceId = GetHighestSequenceId(op);
+					if (sequenceId == expectedSequenceId)
 					{
-						bool Corrupted = !VerifyLocalBufferIsNotCorrupted(Op);
-						if (Corrupted)
+						var corrupted = !VerifyLocalBufferIsNotCorrupted(op);
+						if (corrupted)
 						{
 							// remove message from pendingMessages queue and fail callback
-							pendingMessages.Dequeue();
-							ReleaseSemaphoreForSendOp(Op);
+							_pendingMessages.Dequeue();
+							ReleaseSemaphoreForSendOp(op);
 							try
 							{
-								Op.Callback.SendComplete(new PulsarClientException.ChecksumException(string.Format("The checksum of the message which is produced by producer %s to the topic " + "%s is corrupted", HandlerName, Topic)));
+								op.Callback.SendComplete(new PulsarClientException.ChecksumException(string.Format("The checksum of the message which is produced by producer %s to the topic " + "%s is corrupted", HandlerName, Topic)));
 							}
 							catch (System.Exception T)
 							{
-								log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, SequenceId, T);
+								log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, sequenceId, T);
 							}
-							ReferenceCountUtil.SafeRelease(Op.Cmd);
-							Op.Recycle();
+							op.Cmd.SafeRelease();
+							op.Recycle();
 							return;
 						}
 						else
 						{
 							if (log.IsEnabled(LogLevel.Debug))
 							{
-								log.LogDebug("[{}] [{}] Message is not corrupted, retry send-message with sequenceId {}", Topic, HandlerName, SequenceId);
+								log.LogDebug("[{}] [{}] Message is not corrupted, retry send-message with sequenceId {}", Topic, HandlerName, sequenceId);
 							}
 						}
         
@@ -1039,12 +993,12 @@ namespace SharpPulsar.Impl
 					{
 						if (log.IsEnabled(LogLevel.Debug))
 						{
-							log.LogDebug("[{}] [{}] Corrupt message is already timed out {}", Topic, HandlerName, SequenceId);
+							log.LogDebug("[{}] [{}] Corrupt message is already timed out {}", Topic, HandlerName, sequenceId);
 						}
 					}
 				}
 				// as msg is not corrupted : let producer resend pending-messages again including checksum failed message
-				ResendMessages(Cnx);
+				ResendMessages(cnx);
 			}
 		}
 
@@ -1055,201 +1009,142 @@ namespace SharpPulsar.Impl
 		/// <param name="op"> </param>
 		/// <returns> returns true only if message is not modified and computed-checksum is same as previous checksum else
 		///         return false that means that message is corrupted. Returns true if checksum is not present. </returns>
-		public virtual bool VerifyLocalBufferIsNotCorrupted(OpSendMsg Op)
+		public bool VerifyLocalBufferIsNotCorrupted(OpSendMsg<T> op)
 		{
-			ByteBufPair Msg = Op.Cmd;
+			var msg = op.Cmd;
 
-			if (Msg != null)
+			if (msg != null)
 			{
-				IByteBuffer HeaderFrame = Msg.First;
-				HeaderFrame.MarkReaderIndex();
+				var headerFrame = msg.First;
+				headerFrame.MarkReaderIndex();
 				try
 				{
 					// skip bytes up to checksum index
-					HeaderFrame.SkipBytes(4); // skip [total-size]
-					int CmdSize = (int) HeaderFrame.ReadUnsignedInt();
-					HeaderFrame.SkipBytes(CmdSize);
+					headerFrame.SkipBytes(4); // skip [total-size]
+					var cmdSize = (int) headerFrame.ReadUnsignedInt();
+					headerFrame.SkipBytes(cmdSize);
 					// verify if checksum present
-					if (Commands.HasChecksum(HeaderFrame))
+					if (Commands.HasChecksum(headerFrame))
 					{
-						int Checksum = Commands.ReadChecksum(HeaderFrame);
+						var checksum = Commands.ReadChecksum(headerFrame);
 						// msg.readerIndex is already at header-payload index, Recompute checksum for headers-payload
-						int MetadataChecksum = Commands.ComputeChecksum(HeaderFrame);
-						long ComputedChecksum = ResumeChecksum(MetadataChecksum, Msg.Second);
-						return Checksum == ComputedChecksum;
+						int metadataChecksum = Commands.ComputeChecksum(headerFrame);
+						long computedChecksum = ResumeChecksum(metadataChecksum, msg.Second);
+						return checksum == computedChecksum;
 					}
 					else
 					{
-						log.LogWarning("[{}] [{}] checksum is not present into message with id {}", Topic, HandlerName, Op.SequenceId);
+						log.LogWarning("[{}] [{}] checksum is not present into message with id {}", Topic, HandlerName, op.SequenceId);
 					}
 				}
 				finally
 				{
-					HeaderFrame.ResetReaderIndex();
+					headerFrame.ResetReaderIndex();
 				}
 				return true;
 			}
 			else
 			{
-				log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (Op.Cmd == null ? null : Op.Cmd.GetType().FullName));
+				log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (op.Cmd == null ? null : op.Cmd.GetType().FullName));
 				return false;
 			}
 		}
 
-		public sealed class OpSendMsg
+        public void ConnectionOpened(ClientCnx cnx)
 		{
-			internal MessageImpl<object> Msg;
-			internal IList<MessageImpl<object>> Msgs;
-			internal ByteBufPair Cmd;
-			internal SendCallback Callback;
-			internal ThreadStart RePopulate;
-			internal long SequenceId;
-			internal long CreatedAt;
-			internal long BatchSizeByteConflict = 0;
-			internal int NumMessagesInBatchConflict = 1;
-			internal long HighestSequenceId;
-
-			internal static OpSendMsg Create(MessageImpl<T> Msg, ByteBufPair Cmd, long SequenceId, SendCallback Callback)
-			{
-				OpSendMsg Op = _pool.Take();
-				Op.Msg = Msg;
-				Op.Cmd = Cmd;
-				Op.Callback = Callback;
-				Op.SequenceId = SequenceId;
-				Op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
-				return Op;
-			}
-
-			internal static OpSendMsg Create(IList<MessageImpl<T>> Msgs, ByteBufPair Cmd, long SequenceId, SendCallback Callback)
-			{
-				OpSendMsg Op = _pool.Take();
-				Op.Msgs = (IList<MessageImpl<object>>)Msgs;
-				Op.Cmd = Cmd;
-				Op.Callback = Callback;
-				Op.SequenceId = SequenceId;
-				Op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
-				return Op;
-			}
-
-			internal static OpSendMsg Create(IList<MessageImpl<T>> Msgs, ByteBufPair Cmd, long LowestSequenceId, long HighestSequenceId, SendCallback Callback)
-			{
-				OpSendMsg Op = _pool.Take();
-				Op.Msgs = (IList<MessageImpl<object>>)Msgs;
-				Op.Cmd = Cmd;
-				Op.Callback = Callback;
-				Op.SequenceId = LowestSequenceId;
-				Op.HighestSequenceId = HighestSequenceId;
-				Op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
-				return Op;
-			}
-
-			public void Recycle()
-			{
-				Msg = null;
-				Msgs = null;
-				Cmd = null;
-				Callback = null;
-				RePopulate = null;
-				SequenceId = -1L;
-				CreatedAt = -1L;
-				HighestSequenceId = -1L;
-				_handle.Release(this);
-			}
-
-			public int NumMessagesInBatch
-			{
-				set
-				{
-					NumMessagesInBatchConflict = value;
-				}
-			}
-
-			public long BatchSizeByte
-			{
-				set
-				{
-					BatchSizeByteConflict = value;
-				}
-			}
-
-			public void SetMessageId(long LedgerId, long EntryId, int PartitionIndex)
-			{
-				if (Msg != null)
-				{
-					Msg.SetMessageId(new MessageIdImpl(LedgerId, EntryId, PartitionIndex));
-				}
-				else
-				{
-					for (int BatchIndex = 0; BatchIndex < Msgs.Count; BatchIndex++)
-					{
-						Msgs[BatchIndex].SetMessageId(new BatchMessageIdImpl(LedgerId, EntryId, PartitionIndex, BatchIndex));
-					}
-				}
-			}
-
-			internal static ThreadLocalPool<OpSendMsg> _pool = new ThreadLocalPool<OpSendMsg>(handle => new OpSendMsg(handle), 1, true);
-
-			internal ThreadLocalPool.Handle _handle;
-			private OpSendMsg(ThreadLocalPool.Handle handle)
-			{
-				_handle = handle;
-			}
-		}
-
-		public void ConnectionOpened(ClientCnx cnx)
-		{
-			var Cnx = cnx;
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
-			ConnectionHandler.ClientCnx = Cnx;
-			Cnx.RegisterProducer(ProducerId, this);
+			ConnectionHandler.ClientCnx = cnx;
+			cnx.RegisterProducer(ProducerId, this);
 
-			log.LogInformation("[{}] [{}] Creating producer on cnx {}", Topic, HandlerName, Cnx.Ctx().Channel);
+			log.LogInformation("[{}] [{}] Creating producer on cnx {}", Topic, HandlerName, cnx.Ctx().Channel);
 
-			long RequestId = Client.NewRequestId();
+			var requestId = Client.NewRequestId();
 
-			SchemaInfo SchemaInfo = null;
-			if (Schema != null)
-			{
-				if (Schema.SchemaInfo != null)
-				{
-					if (Schema.SchemaInfo.Type == SchemaType.JSON)
-					{
-						// for backwards compatibility purposes
-						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
-						// but now we have standardized on every schema to generate an Avro based schema
-						if (Commands.PeerSupportJsonSchemaAvroFormat(Cnx.RemoteEndpointProtocolVersion))
-						{
-							SchemaInfo = (SchemaInfo)Schema.SchemaInfo;
-						}
-						else if (Schema is JsonSchema<T>)
-						{
-							JsonSchema<T> JsonSchema = (JsonSchema<T>) Schema;
-							SchemaInfo = JsonSchema.BackwardsCompatibleJsonSchemaInfo;
-						}
-						else
-						{
-							SchemaInfo = (SchemaInfo)Schema.SchemaInfo;
-						}
-					}
-					else if (Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
-					{
-						// don't set schema info for Schema.BYTES
-						SchemaInfo = null;
-					}
-					else
-					{
-						SchemaInfo = (SchemaInfo)Schema.SchemaInfo;
-					}
-				}
-			}
+			SchemaInfo schemaInfo = null;
+            if (Schema?.SchemaInfo != null)
+            {
+                if (Schema.SchemaInfo.Type == SchemaType.JSON)
+                {
+                    // for backwards compatibility purposes
+                    // JSONSchema originally generated a schema for pojo based of of the JSON schema standard
+                    // but now we have standardized on every schema to generate an Avro based schema
+                    if (Commands.PeerSupportJsonSchemaAvroFormat(cnx.RemoteEndpointProtocolVersion))
+                    {
+                        schemaInfo = (SchemaInfo)Schema.SchemaInfo;
+                    }
+                    else if (Schema is JsonSchema<T> jsonSchema)
+                    {
+                        schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
+                    }
+                    else
+                    {
+                        schemaInfo = (SchemaInfo)Schema.SchemaInfo;
+                    }
+                }
+                else if (Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
+                {
+                    // don't set schema info for Schema.BYTES
+                    schemaInfo = null;
+                }
+                else
+                {
+                    schemaInfo = (SchemaInfo)Schema.SchemaInfo;
+                }
+            }
 
-			Cnx.SendRequestWithId(Commands.NewProducer(Topic, ProducerId, RequestId, HandlerName, Conf.EncryptionEnabled, metadata, SchemaInfo, ConnectionHandler.Epoch, _userProvidedProducerName), RequestId)
+            cnx.SendRequestWithId(Commands.NewProducer(Topic, ProducerId, requestId, HandlerName, Conf.EncryptionEnabled, _metadata, schemaInfo, ConnectionHandler.Epoch, _userProvidedProducerName), requestId)
 		    .AsTask().ContinueWith(task =>
 			{
+                if (task.IsFaulted)
+                {
+                    System.Exception cause = task.Exception;
+                    cnx.RemoveProducer(ProducerId);
+                    if (GetState() == State.Closing || GetState() == State.Closed)
+                    {
+                        cnx.Channel().CloseAsync();
+                        //return null;
+                    }
+                    log.LogError("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, cause.Message);
+                    if (cause is PulsarClientException.ProducerBlockedQuotaExceededException)
+                    {
+                        lock (this)
+                        {
+                            log.LogWarning("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
+                            if (log.IsEnabled(LogLevel.Debug))
+                            {
+                                log.LogDebug("[{}] [{}] Pending messages: {}", Topic, HandlerName, _pendingMessages.Count);
+                            }
+                            PulsarClientException bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(string.Format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
+                            FailPendingMessages(cnx, bqe);
+                        }
+                    }
+                    else if (cause is PulsarClientException.ProducerBlockedQuotaExceededError)
+                    {
+                        log.LogWarning("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
+                    }
+                    if (cause is PulsarClientException.TopicTerminatedException)
+                    {
+                        ChangeToState(State.Terminated);
+                        FailPendingMessages(cnx, (PulsarClientException)cause);
+                        ProducerCreatedTask.SetException(cause);
+                        Client.CleanupProducer(this);
+                    }
+                    else if (ProducerCreatedTask.Task.IsCompletedSuccessfully || (cause is PulsarClientException exception && ConnectionHandler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
+                    {
+                        ReconnectLater(cause);
+                    }
+                    else
+                    {
+                        ChangeToState(State.Failed);
+                        ProducerCreatedTask.SetException(cause);
+                        Client.CleanupProducer(this);
+                    }
+                    return;
+				}
 				var response = task.Result;
-				string ProducerName = response.ProducerName;
-				long lastSequenceId = response.LastSequenceId;
+				var producerName = response.ProducerName;
+				var lastSequenceId = response.LastSequenceId;
 				var schemaVersion = response.SchemaVersion;
 				if(schemaVersion != null)
 				{
@@ -1258,121 +1153,75 @@ namespace SharpPulsar.Impl
 				
 				lock (this)
 				{
-					if (state == State.Closing || state == State.Closed)
+					if (GetState() == State.Closing || GetState() == State.Closed)
 					{
-						Cnx.RemoveProducer(ProducerId);
-						Cnx.Channel().CloseAsync();
+						cnx.RemoveProducer(ProducerId);
+						cnx.Channel().CloseAsync();
 						return;
 					}
 					ResetBackoff();
-					log.LogInformation("[{}] [{}] Created producer on cnx {}", Topic, ProducerName, Cnx.Ctx().Channel);
-					connectionId = Cnx.Ctx().Channel.ToString();
-					connectedSince = DateFormatter.now();
-					if (string.ReferenceEquals(HandlerName, null))
+					log.LogInformation("[{}] [{}] Created producer on cnx {}", Topic, producerName, cnx.Ctx().Channel);
+					_connectionId = cnx.Ctx().Channel.ToString();
+					_connectedSince = DateFormatter.now();
+					if (HandlerName is null)
 					{
 					
-						HandlerName = ProducerName;
+						HandlerName = producerName;
 					}
-					if (msgIdGenerator[this] == 0 && Conf.InitialSequenceId == null)
+					if (MsgIdGenerator[this] == 0 && Conf.InitialSequenceId == null)
 					{
 						LastSequenceId = lastSequenceId;
-						msgIdGenerator[this] = LastSequenceId + 1;
+						MsgIdGenerator[this] = LastSequenceId + 1;
 					}
-					if (!_producerCreatedTask.Task.IsCompletedSuccessfully && BatchMessagingEnabled)
+					if (!ProducerCreatedTask.Task.IsCompletedSuccessfully && BatchMessagingEnabled)
 					{						
 						Client.Timer = new Timer(_=> batchMessageAndSendTask.Run(), null, (int)Conf.BatchingMaxPublishDelayMicros, (int)BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToSecs(Conf.BatchingMaxPublishDelayMicros));
 					}
-					ResendMessages(Cnx);
+					ResendMessages(cnx);
 				}
-			}).exceptionally(e =>
-			{
-				Exception Cause = e.Cause;
-				Cnx.removeProducer(ProducerId);
-				if (State == State.Closing || State == State.Closed)
-				{
-					Cnx.channel().close();
-					return null;
-				}
-				log.error("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, Cause.Message);
-				if (Cause is PulsarClientException.ProducerBlockedQuotaExceededException)
-				{
-					lock (this)
-					{
-						log.LogWarning("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
-						if (log.IsEnabled(LogLevel.Debug))
-						{
-							log.LogDebug("[{}] [{}] Pending messages: {}", Topic, HandlerName, pendingMessages.size());
-						}
-						PulsarClientException Bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
-						FailPendingMessages(cnx(), Bqe);
-					}
-				}
-				else if (Cause is PulsarClientException.ProducerBlockedQuotaExceededError)
-				{
-					log.LogWarning("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
-				}
-				if (Cause is PulsarClientException.TopicTerminatedException)
-				{
-					State = State.Terminated;
-					FailPendingMessages(cnx(), (PulsarClientException) Cause);
-					ProducerCreatedFutureConflict.completeExceptionally(Cause);
-					ClientConflict.cleanupProducer(this);
-				}
-				else if (ProducerCreatedFutureConflict.Done || (Cause is PulsarClientException && ConnectionHandler.IsRetriableError((PulsarClientException) Cause) && DateTimeHelper.CurrentUnixTimeMillis() < createProducerTimeout))
-				{
-					ReconnectLater(Cause);
-				}
-				else
-				{
-					State = State.Failed;
-					ProducerCreatedFutureConflict.completeExceptionally(Cause);
-					ClientConflict.cleanupProducer(this);
-				}
-				return null;
 			});
 		}
 	
-		public void ConnectionFailed(PulsarClientException Exception)
+		public void ConnectionFailed(PulsarClientException exception)
 		{
-			if (DateTimeHelper.CurrentUnixTimeMillis() > createProducerTimeout && ProducerCreatedFutureConflict.completeExceptionally(Exception))
-			{
-				log.LogInformation("[{}] Producer creation failed for producer {}", Topic, ProducerId);
-				State = State.Failed;
-				ClientConflict.cleanupProducer(this);
-			}
-		}
+            if (DateTimeHelper.CurrentUnixTimeMillis() <= _createProducerTimeout ||
+                !ProducerCreatedTask.TrySetException(exception)) return;
+            log.LogInformation("[{}] Producer creation failed for producer {}", Topic, ProducerId);
+           ChangeToState(State.Failed);
+            Client.CleanupProducer(this);
+        }
 
-		private void ResendMessages(ClientCnx Cnx)
+		private void ResendMessages(ClientCnx cnx)
 		{
-			Cnx.Ctx().Channel.EventLoop.Execute(() =>
+			cnx.Ctx().Channel.EventLoop.Execute(() =>
 			{
 			lock (this)
 			{
-				if (state == State.Closing || State == State.Closed)
+				if (GetState() == State.Closing || GetState() == State.Closed)
 				{
-					Cnx.Channel().CloseAsync();
+					cnx.Channel().CloseAsync();
 					return;
 				}
-				int MessagesToResend = pendingMessages.Count();
-				if (MessagesToResend == 0)
+				var messagesToResend = _pendingMessages.Count();
+				if (messagesToResend == 0)
 				{
 					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("[{}] [{}] No pending messages to resend {}", Topic, HandlerName, MessagesToResend);
+						log.LogDebug("[{}] [{}] No pending messages to resend {}", Topic, HandlerName, messagesToResend);
 					}
 					if (ChangeToReadyState())
 					{
-						ProducerCreatedFutureConflict.complete(ProducerImpl.this);
+						ProducerCreatedTask.SetResult(this);
 						return;
 					}
 					else
 					{
-						Cnx.channel().close();
+						cnx.Channel().CloseAsync();
 						return;
 					}
 				}
-				log.LogInformation("[{}] [{}] Re-Sending {} messages to server", Topic, HandlerName, MessagesToResend);
-				RecoverProcessOpSendMsgFrom(Cnx, null);
+				log.LogInformation("[{}] [{}] Re-Sending {} messages to server", Topic, HandlerName, messagesToResend);
+				RecoverProcessOpSendMsgFrom(cnx, null);
 			}
 			});
 		}
@@ -1381,55 +1230,55 @@ namespace SharpPulsar.Impl
 		/// Strips checksum from <seealso cref="OpSendMsg"/> command if present else ignore it.
 		/// </summary>
 		/// <param name="op"> </param>
-		private void StripChecksum(OpSendMsg Op)
+		private void StripChecksum(OpSendMsg<T> op)
 		{
-			int TotalMsgBufSize = Op.Cmd.ReadableBytes();
-			ByteBufPair Msg = Op.Cmd;
-			if (Msg != null)
+			var totalMsgBufSize = op.Cmd.ReadableBytes();
+			var msg = op.Cmd;
+			if (msg != null)
 			{
-				IByteBuffer HeaderFrame = Msg.First;
-				HeaderFrame.MarkReaderIndex();
+				var headerFrame = msg.First;
+				headerFrame.MarkReaderIndex();
 				try
 				{
-					HeaderFrame.SkipBytes(4); // skip [total-size]
-					int CmdSize = (int) HeaderFrame.ReadUnsignedInt();
+					headerFrame.SkipBytes(4); // skip [total-size]
+					var cmdSize = (int) headerFrame.ReadUnsignedInt();
 
 					// verify if checksum present
-					HeaderFrame.SkipBytes(CmdSize);
+					headerFrame.SkipBytes(cmdSize);
 
-					if (!Commands.HasChecksum(HeaderFrame))
+					if (!Commands.HasChecksum(headerFrame))
 					{
 						return;
 					}
 
-					int HeaderSize = 4 + 4 + CmdSize; // [total-size] [cmd-length] [cmd-size]
-					int ChecksumSize = 4 + 2; // [magic-number] [checksum-size]
-					int ChecksumMark = (HeaderSize + ChecksumSize); // [header-size] [checksum-size]
-					int MetaPayloadSize = (TotalMsgBufSize - ChecksumMark); // metadataPayload = totalSize - checksumMark
-					int NewTotalFrameSizeLength = 4 + CmdSize + MetaPayloadSize; // new total-size without checksum
-					HeaderFrame.ResetReaderIndex();
-					int HeaderFrameSize = HeaderFrame.ReadableBytes;
+					var headerSize = 4 + 4 + cmdSize; // [total-size] [cmd-length] [cmd-size]
+					var checksumSize = 4 + 2; // [magic-number] [checksum-size]
+					var checksumMark = (headerSize + checksumSize); // [header-size] [checksum-size]
+					var metaPayloadSize = (totalMsgBufSize - checksumMark); // metadataPayload = totalSize - checksumMark
+					var newTotalFrameSizeLength = 4 + cmdSize + metaPayloadSize; // new total-size without checksum
+					headerFrame.ResetReaderIndex();
+					var headerFrameSize = headerFrame.ReadableBytes;
 
-					HeaderFrame.SetInt(0, NewTotalFrameSizeLength); // rewrite new [total-size]
-					IByteBuffer Metadata = HeaderFrame.Slice(ChecksumMark, HeaderFrameSize - ChecksumMark); // sliced only
+					headerFrame.SetInt(0, newTotalFrameSizeLength); // rewrite new [total-size]
+					var metadata = headerFrame.Slice(checksumMark, headerFrameSize - checksumMark); // sliced only
 																										// metadata
-					HeaderFrame.SetWriterIndex(HeaderSize); // set headerFrame write-index to overwrite metadata over checksum
-					Metadata.ReadBytes(HeaderFrame, Metadata.ReadableBytes);
-					HeaderFrame.AdjustCapacity(HeaderFrameSize - ChecksumSize); // reduce capacity by removed checksum bytes
+					headerFrame.SetWriterIndex(headerSize); // set headerFrame write-index to overwrite metadata over checksum
+					metadata.ReadBytes(headerFrame, metadata.ReadableBytes);
+					headerFrame.AdjustCapacity(headerFrameSize - checksumSize); // reduce capacity by removed checksum bytes
 				}
 				finally
 				{
-					HeaderFrame.ResetReaderIndex();
+					headerFrame.ResetReaderIndex();
 				}
 			}
 			else
 			{
 
-				log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (Op.Cmd == null ? null : Op.Cmd.GetType().FullName));
+				log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (op.Cmd == null ? null : op.Cmd.GetType().FullName));
 			}
 		}
 
-		public virtual int BrokerChecksumSupportedVersion()
+		public int BrokerChecksumSupportedVersion()
 		{
 			return (int)ProtocolVersion.V6;
 		}
@@ -1445,47 +1294,47 @@ namespace SharpPulsar.Impl
 				return;
 			}
 
-			long TimeToWaitMs;
+			long timeToWaitMs;
 
 			lock (this)
 			{
 				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if (state == State.Closing || state == State.Closed)
+				if (GetState() == State.Closing || GetState() == State.Closed)
 				{
 					return;
 				}
 
-				OpSendMsg FirstMsg = pendingMessages.Peek();
-				if (FirstMsg == null)
+				var firstMsg = _pendingMessages.Peek();
+				if (firstMsg == null)
 				{
 					// If there are no pending messages, reset the timeout to the configured value.
-					TimeToWaitMs = Conf.SendTimeoutMs;
+					timeToWaitMs = Conf.SendTimeoutMs;
 				}
 				else
 				{
 					// If there is at least one message, calculate the diff between the message timeout and the current
 					// time.
-					long Diff = (FirstMsg.CreatedAt + Conf.SendTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
-					if (Diff <= 0)
+					var diff = (firstMsg.CreatedAt + Conf.SendTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
+					if (diff <= 0)
 					{
 						// The diff is less than or equal to zero, meaning that the message has been timed out.
 						// Set the callback to timeout on every message, then clear the pending queue.
-						log.LogInformation("[{}] [{}] Message send timed out. Failing {} messages", Topic, HandlerName, pendingMessages.size());
+						log.LogInformation("[{}] [{}] Message send timed out. Failing {} messages", Topic, HandlerName, _pendingMessages.Count);
 
-						PulsarClientException Te = new PulsarClientException.TimeoutException(format("The producer %s can not send message to the topic %s within given timeout", HandlerName, Topic));
-						FailPendingMessages(Cnx(), Te);
-						Stats.IncrementSendFailed(pendingMessages.size());
+						PulsarClientException te = new PulsarClientException.TimeoutException(string.Format("The producer %s can not send message to the topic %s within given timeout", HandlerName, Topic));
+						FailPendingMessages(Cnx(), te);
+						Stats.IncrementSendFailed(_pendingMessages.Count);
 						// Since the pending queue is cleared now, set timer to expire after configured value.
-						TimeToWaitMs = Conf.SendTimeoutMs;
+						timeToWaitMs = Conf.SendTimeoutMs;
 					}
 					else
 					{
 						// The diff is greater than zero, set the timeout to the diff value
-						TimeToWaitMs = Diff;
+						timeToWaitMs = diff;
 					}
 				}
 
-				sendTimeout = ClientConflict.timer().newTimeout(this, TimeToWaitMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+				_sendTimeout = Client.Timer = new Timer(this, timeToWaitMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 			}
 		}
 
@@ -1493,33 +1342,33 @@ namespace SharpPulsar.Impl
 		/// This fails and clears the pending messages with the given exception. This method should be called from within the
 		/// ProducerImpl object mutex.
 		/// </summary>
-		private void FailPendingMessages(ClientCnx Cnx, PulsarClientException Ex)
+		private void FailPendingMessages(ClientCnx cnx, PulsarClientException ex)
 		{
-			if (Cnx == null)
+			if (cnx == null)
 			{
-				AtomicInt ReleaseCount = new AtomicInt();
-				bool BatchMessagingEnabled = BatchMessagingEnabled;
-				pendingMessages.ToList().ForEach(op =>
+				var releaseCount = new AtomicInt();
+				bool batchMessagingEnabled = BatchMessagingEnabled;
+				_pendingMessages.ToList().ForEach(op =>
 				{
-						ReleaseCount.AddAndGet(BatchMessagingEnabled ? op.NumMessagesInBatch: 1);
+						releaseCount.AddAndGet(batchMessagingEnabled ? op.NumMessagesInBatch: 1);
 						try
 						{
-							op.Callback.SendComplete(Ex);
+							op.Callback.SendComplete(ex);
 						}
 						catch (System.Exception T)
 						{
 							log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, HandlerName, op.sequenceId, T);
 						}
-						ReferenceCountUtil.SafeRelease(op.Cmd);
+						op.Cmd.SafeRelease();
 						op.Recycle();
 				});
 
-				pendingMessages.Clear();
-				pendingCallbacks.Clear();
-				semaphore.Release(ReleaseCount.Get());
-				if (BatchMessagingEnabled)
+				_pendingMessages.Clear();
+				_pendingCallbacks.Clear();
+				_semaphore.Release(releaseCount.Get());
+				if (batchMessagingEnabled)
 				{
-					FailPendingBatchMessages(Ex);
+					FailPendingBatchMessages(ex);
 				}
 
 			}
@@ -1527,11 +1376,11 @@ namespace SharpPulsar.Impl
 			{
 				// If we have a connection, we schedule the callback and recycle on the event loop thread to avoid any
 				// race condition since we also write the message on the socket from this thread
-				Cnx.Ctx().Channel.EventLoop.Execute(() =>
+				cnx.Ctx().Channel.EventLoop.Execute(() =>
 				{
 					lock(this)
 					{
-						FailPendingMessages(null, Ex);
+						FailPendingMessages(null, ex);
 					}
 				});
 			}
@@ -1541,16 +1390,16 @@ namespace SharpPulsar.Impl
 		/// fail any pending batch messages that were enqueued, however batch was not closed out
 		/// 
 		/// </summary>
-		private void FailPendingBatchMessages(PulsarClientException Ex)
+		private void FailPendingBatchMessages(PulsarClientException ex)
 		{
-			if (batchMessageContainer.Empty)
+			if (_batchMessageContainer.Empty)
 			{
 				return;
 			}
 
-			int NumMessagesInBatch = batchMessageContainer.NumMessagesInBatch;
-			batchMessageContainer.Discard(Ex);
-			semaphore.Release(NumMessagesInBatch);
+			var numMessagesInBatch = _batchMessageContainer.NumMessagesInBatch;
+			_batchMessageContainer.Discard(ex);
+			_semaphore.Release(numMessagesInBatch);
 		}
 
 		internal TimerTaskAnonymousInnerClass batchMessageAndSendTask = new TimerTaskAnonymousInnerClass();
@@ -1614,261 +1463,224 @@ namespace SharpPulsar.Impl
 		{
 			if (log.IsEnabled(LogLevel.Trace))
 			{
-				log.LogTrace("[{}] [{}] Batching the messages from the batch container with {} messages", Topic, HandlerName, batchMessageContainer.NumMessagesInBatch);
+				log.LogTrace("[{}] [{}] Batching the messages from the batch container with {} messages", Topic, HandlerName, _batchMessageContainer.NumMessagesInBatch);
 			}
-			if (!batchMessageContainer.Empty)
+			if (!_batchMessageContainer.Empty)
 			{
 				try
 				{
-					IList<OpSendMsg> OpSendMsgs = new List<OpSendMsg>();
-					if (batchMessageContainer.MultiBatches)
+					IList<OpSendMsg<T>> opSendMsgs;
+					opSendMsgs = _batchMessageContainer.MultiBatches ? _batchMessageContainer.CreateOpSendMsgs<T>() : new List<OpSendMsg<T>>{ _batchMessageContainer.CreateOpSendMsg<T>()};
+					_batchMessageContainer.Clear();
+					foreach (var opSendMsg in opSendMsgs)
 					{
-						//OpSendMsgs = batchMessageContainer.CreateOpSendMsgs();
-					}
-					else
-					{
-						//OpSendMsgs = new List<OpSendMsg>(batchMessageContainer.CreateOpSendMsg());
-						//OpSendMsgs.Add()
-					}
-					batchMessageContainer.Clear();
-					foreach (OpSendMsg OpSendMsg in OpSendMsgs)
-					{
-						ProcessOpSendMsg(OpSendMsg);
+						ProcessOpSendMsg(opSendMsg);
 					}
 				}
 				catch (PulsarClientException)
 				{
 					Thread.CurrentThread.Interrupt();
-					semaphore.Release(batchMessageContainer.NumMessagesInBatch);
+					_semaphore.Release(_batchMessageContainer.NumMessagesInBatch);
 				}
 				catch (System.Exception T)
 				{
-					semaphore.Release(batchMessageContainer.NumMessagesInBatch);
+					_semaphore.Release(_batchMessageContainer.NumMessagesInBatch);
 					log.LogWarning("[{}] [{}] error while create opSendMsg by batch message container", Topic, HandlerName, T);
 				}
 			}
 		}
 
-		private void ProcessOpSendMsg(OpSendMsg Op)
+		private void ProcessOpSendMsg(OpSendMsg<T> op)
 		{
-			if (Op == null)
+			if (op == null)
 			{
 				return;
 			}
 			try
 			{
-				if (Op.Msg != null && BatchMessagingEnabled)
+				if (op.Msg != null && BatchMessagingEnabled)
 				{
 					BatchMessageAndSend();
 				}
-				pendingMessages.Enqueue(Op);
-				if (Op.Msg != null)
+				_pendingMessages.Enqueue(op);
+				if (op.Msg != null)
 				{
-					LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(Op));
+					LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
 				}
-				ClientCnx Cnx = ConnectionHandler.Cnx();
+				var cnx = ConnectionHandler.Cnx();
 				if (Connected)
 				{
-					if (Op.Msg != null && Op.Msg.GetSchemaState() == 0)
+					if (op.Msg != null && op.Msg.GetSchemaState() == 0)
 					{
-						TryRegisterSchema(Cnx, Op.Msg, Op.Callback);
+						TryRegisterSchema(cnx, op.Msg, op.Callback);
 						return;
 					}
 					// If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
 					// connection is established
-					Op.Cmd.Retain();
-					Cnx.Ctx().Channel.EventLoop.Execute(WriteInEventLoopCallback.Create(this, Cnx, Op));
-					Stats.UpdateNumMsgsSent(Op.NumMessagesInBatchConflict, Op.BatchSizeByteConflict);
+					op.Cmd.Retain();
+					cnx.Ctx().Channel.EventLoop.Execute(WriteInEventLoopCallback.Create(this, cnx, op));
+					Stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
 				}
 				else
 				{
 					if (log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("[{}] [{}] Connection is not ready -- sequenceId {}", Topic, HandlerName, Op.SequenceId);
+						log.LogDebug("[{}] [{}] Connection is not ready -- sequenceId {}", Topic, HandlerName, op.SequenceId);
 					}
 				}
 			}
-			catch (ThreadInterruptedException Ie)
+			catch (ThreadInterruptedException ie)
 			{
 				Thread.CurrentThread.Interrupt();
-				ReleaseSemaphoreForSendOp(Op);
-				if (Op != null)
-				{
-					Op.Callback.SendComplete(new PulsarClientException(Ie.Message));
-				}
-			}
+				ReleaseSemaphoreForSendOp(op);
+                op.Callback.SendComplete(new PulsarClientException(ie.Message));
+            }
 			catch (System.Exception T)
 			{
-				ReleaseSemaphoreForSendOp(Op);
+				ReleaseSemaphoreForSendOp(op);
 				log.LogWarning("[{}] [{}] error while closing out batch -- {}", Topic, HandlerName, T);
-				if (Op != null)
-				{
-					Op.Callback.SendComplete(new PulsarClientException(T));
-				}
-			}
+                op.Callback.SendComplete(new PulsarClientException(T.Message));
+            }
 		}
 
-		private void RecoverProcessOpSendMsgFrom(ClientCnx Cnx, MessageImpl<object> From)
+		private void RecoverProcessOpSendMsgFrom(ClientCnx cnx, MessageImpl<object> @from)
 		{
-			bool StripChecksum = Cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
-			IEnumerator<OpSendMsg> MsgIterator = pendingMessages.GetEnumerator();
-			OpSendMsg PendingRegisteringOp = null;
-			while (MsgIterator.MoveNext())
+			var stripChecksum = cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
+            using var msgIterator = _pendingMessages.GetEnumerator();
+			OpSendMsg<T> pendingRegisteringOp = null;
+			while (msgIterator.MoveNext())
 			{
-				OpSendMsg Op = MsgIterator.Current;
-				if (From != null)
+				var op = msgIterator.Current;
+				if (@from != null)
 				{
-					if (Op.Msg == From)
+					if (op != null && op.Msg == @from)
 					{
-						From = null;
+						@from = null;
 					}
 					else
 					{
 						continue;
 					}
 				}
-				if (Op.Msg != null)
+				if (op?.Msg != null)
 				{
-					if ((int)Op.Msg.GetSchemaState() == 0)
+					if (op.Msg.GetSchemaState() == 0)
 					{
-						if (!RePopulateMessageSchema(Op.Msg))
+						if (!RePopulateMessageSchema(op.Msg))
 						{
-							PendingRegisteringOp = Op;
+							pendingRegisteringOp = op;
 							break;
 						}
 					}
-					else if ((int)Op.Msg.GetSchemaState() ==  2)
+					else if (op != null && (int)op.Msg.GetSchemaState() ==  2)
 					{
-						Op.Recycle();
-						MsgIterator.Remove(MsgIterator.Current);
+						op.Recycle();
+						msgIterator.Remove(msgIterator.Current);
 						continue;
 					}
 				}
-				if (Op.Cmd == null)
+				if (op.Cmd == null)
 				{
-					if(Op.RePopulate == null)
-						Op.RePopulate.Invoke();
-				}
-				if (StripChecksum)
+					if(op.RePopulate == null)
+                    {
+                        op.RePopulate?.Invoke();
+                    }
+                }
+				if (stripChecksum)
 				{
-					stripChecksum(Op);
+					StripChecksum(op);
 				}
-				Op.Cmd.Retain();
-				if (log.IsEnabled(LogLevel.Debug))
-				{
-					log.LogDebug("[{}] [{}] Re-Sending message in cnx {}, sequenceId {}", Topic, HandlerName, Cnx.Channel(), Op.SequenceId);
-				}
-				Cnx.Ctx().WriteAsync(Op.Cmd);
-				Stats.UpdateNumMsgsSent(Op.NumMessagesInBatchConflict, Op.BatchSizeByteConflict);
+
+                if (op.Cmd != null)
+                {
+                    op.Cmd.Retain();
+                    if (log.IsEnabled(LogLevel.Debug))
+                    {
+                        log.LogDebug("[{}] [{}] Re-Sending message in cnx {}, sequenceId {}", Topic, HandlerName,
+                            cnx.Channel(), op.SequenceId);
+                    }
+
+                    cnx.Ctx().WriteAsync(op.Cmd);
+                }
+
+                Stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
 			}
-			Cnx.Ctx().Flush();
+			cnx.Ctx().Flush();
 			if (!ChangeToReadyState())
 			{
 				// Producer was closed while reconnecting, close the connection to make sure the broker
 				// drops the producer on its side
-				Cnx.Channel().CloseAsync();
+				cnx.Channel().CloseAsync();
 				return;
 			}
-			if (PendingRegisteringOp != null)
+			if (pendingRegisteringOp != null)
 			{
-				TryRegisterSchema(Cnx, PendingRegisteringOp.Msg, PendingRegisteringOp.Callback);
+				TryRegisterSchema(cnx, pendingRegisteringOp.Msg, pendingRegisteringOp.Callback);
 			}
 		}
 
-		public virtual long DelayInMillis
+		public long DelayInMillis
 		{
 			get
 			{
-				OpSendMsg FirstMsg = pendingMessages.Peek();
-				if (FirstMsg != null)
+				var firstMsg = _pendingMessages.Peek();
+				if (firstMsg != null)
 				{
-					return DateTimeHelper.CurrentUnixTimeMillis() - FirstMsg.CreatedAt;
+					return DateTimeHelper.CurrentUnixTimeMillis() - firstMsg.CreatedAt;
 				}
 				return 0L;
 			}
 		}
 
-		public virtual string ConnectionId
-		{
-			get
-			{
-				return Cnx() != null ? connectionId : null;
-			}
-		}
+		public string ConnectionId => Cnx() != null ? _connectionId : null;
 
-		public virtual string ConnectedSince
-		{
-			get
-			{
-				return Cnx() != null ? connectedSince : null;
-			}
-		}
+        public string ConnectedSince => Cnx() != null ? _connectedSince : null;
 
-		public virtual int PendingQueueSize
-		{
-			get
-			{
-				return pendingMessages.Count;
-			}
-		}
+        public int PendingQueueSize => _pendingMessages.Count;
 
 
-		public override string ProducerName
-		{
-			get
-			{
-				return HandlerName;
-			}
-		}
+        public override string ProducerName
+        {
+            get => HandlerName;
+            set => HandlerName = value;
+        }
 
-		// wrapper for connection methods
-		public virtual ClientCnx Cnx()
+        // wrapper for connection methods
+		public ClientCnx Cnx()
 		{
 			return ConnectionHandler.Cnx();
 		}
 
-		public virtual void ResetBackoff()
+		public void ResetBackoff()
 		{
 			ConnectionHandler.ResetBackoff();
 		}
 
-		public virtual void ConnectionClosed(ClientCnx Cnx)
+		public void ConnectionClosed(ClientCnx Cnx)
 		{
 			ConnectionHandler.ConnectionClosed(Cnx);
 		}
 
-		public virtual ClientCnx ClientCnx
+		public ClientCnx ClientCnx
 		{
-			get
-			{
-				return ConnectionHandler.ClientCnx;
-			}
-			set
-			{
-				ConnectionHandler.ClientCnx = value;
-			}
-		}
+			get => ConnectionHandler.ClientCnx;
+            set => ConnectionHandler.ClientCnx = value;
+        }
 
 
-		public virtual void ReconnectLater(System.Exception Exception)
+		public void ReconnectLater(System.Exception Exception)
 		{
 			ConnectionHandler.ReconnectLater(Exception);
 		}
 
-		public virtual void GrabCnx()
+		public void GrabCnx()
 		{
 			ConnectionHandler.GrabCnx();
 		}
 
-		public virtual Semaphore Semaphore
-		{
-			get
-			{
-				return semaphore;
-			}
-		}
+		public Semaphore Semaphore => _semaphore;
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(ProducerImpl<T>));
+        private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(ProducerImpl<T>));
 	}
 
 }

@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		
         public abstract  ISchema<T> KvBytes<T>();
 		
-        public abstract ISchema<T> JSON<T>(Type pojo);
+        public abstract ISchema<T> Json<T>(Type pojo);
         public abstract override bool RequireFetchingSchemaInfo();
 		public abstract override bool SupportSchemaVersioning();
 		public abstract override void Validate(sbyte[] message);
@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		// allows decoding the messages using the schema associated with the messages.
 		protected internal readonly bool UseProvidedSchemaAsReaderSchema;
 
-		public GenericSchemaImpl(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
+        protected GenericSchemaImpl(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
 		{
 
 			Fields = Schema.Fields.Select(f => new Field() { Name = f.Name, Index = f.Pos}).ToList();

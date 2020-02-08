@@ -32,15 +32,13 @@ namespace SharpPulsar.Impl
 	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
 	{
 		public abstract bool Connected { get; set; }
-		public abstract IProducerStatsRecorder Stats { get; set;}
-		public abstract long LastSequenceId { get; set; }
+		public  Api.IProducerStatsRecorder Stats { get; set;}
+		public long LastSequenceId { get; set; }
 		public abstract ValueTask FlushAsync();
-		public abstract TaskCompletionSource<IMessageId> SendAsync(sbyte[] Message);
-		public abstract IMessageId Send(sbyte[] Message);
 		public abstract string ProducerName { get; set; }
 		public MultiSchemaMode MultiSchemaMode;
 
-		protected internal readonly TaskCompletionSource<IProducer<T>> _producerCreatedTask;
+		protected internal readonly TaskCompletionSource<IProducer<T>> ProducerCreatedTask;
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ProducerInterceptors Interceptors;
@@ -48,30 +46,30 @@ namespace SharpPulsar.Impl
 		public MultiSchemaMode ProducerMultiSchemaMode;
 
 
-		public ProducerBase(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, TaskCompletionSource<IProducer<T>> ProducerCreatedFuture, ISchema<T> schema, ProducerInterceptors Interceptors) : base(Client, Topic)
+        protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
 		{
-			Stats = new ProducerStatsRecorderImpl<T>(Client, Conf, (ProducerImpl<T>)ProducerCreatedFuture.Task.Result);
-			_producerCreatedTask = ProducerCreatedFuture;
-			this.Conf = Conf;
-			this.Schema = schema;
-			this.Interceptors = Interceptors;
-			this.SchemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
-			if (!Conf.MultiSchema)
+			Stats = new ProducerStatsRecorderImpl<T>(client, conf, (ProducerImpl<T>)producerCreatedFuture.Task.Result);
+			ProducerCreatedTask = producerCreatedFuture;
+			Conf = conf;
+			Schema = schema;
+			Interceptors = interceptors;
+			SchemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
+			if (!conf.MultiSchema)
 			{
 				ProducerMultiSchemaMode = MultiSchemaMode.Disabled;
 			}
 		}
 		
-		public IMessageId Send(T Message)
+		public IMessageId Send(T message)
 		{
-			return NewMessage().Value(Message).Send();
+			return NewMessage().Value(message).Send();
 		}
 
-		public async ValueTask<IMessageId> SendAsync(T Message)
+		public async ValueTask<IMessageId> SendAsync(T message)
 		{
 			try
 			{
-				return await NewMessage().Value(Message).SendAsync();
+				return await NewMessage().Value(message).SendAsync();
 			}
 			catch (SchemaSerializationException e)
 			{
@@ -79,9 +77,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual TaskCompletionSource<IMessageId> SendAsync(Message<T> Message)
+		public virtual TaskCompletionSource<IMessageId> SendAsync(Message<T> message)
 		{
-			return InternalSendAsync(Message);
+			return InternalSendAsync(message);
 		}
 
 		public  ITypedMessageBuilder<T> NewMessage()
@@ -100,27 +98,24 @@ namespace SharpPulsar.Impl
 		// @Override
 		public virtual ITypedMessageBuilder<T> NewMessage(ITransaction txn)
 		{
-			if(txn is TransactionImpl)
-			{
-				// check the producer has proper settings to send transactional messages
-				if (Conf.SendTimeoutMs > 0)
-				{
-					throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
-				}
+            if (!(txn is TransactionImpl impl)) throw new ArgumentException("Only transactional messages supported");
+            // check the producer has proper settings to send transactional messages
+            if (Conf.SendTimeoutMs > 0)
+            {
+                throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
+            }
 
-				return new TypedMessageBuilderImpl<T>(this, Schema, (TransactionImpl)txn);
-			}
-			throw new ArgumentException("Only transactional messages supported");
+            return new TypedMessageBuilderImpl<T>(this, Schema, impl);
 
-		}
+        }
 
-		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> Message);
-		public virtual IMessageId Send(Message<T> Message)
+		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> message);
+		public virtual IMessageId Send(Message<T> message)
 		{
 			try
 			{
 				// enqueue the message to the buffer
-				TaskCompletionSource<IMessageId> sendTask = InternalSendAsync(Message);
+				var sendTask = InternalSendAsync(message);
 
 				if (!sendTask.Task.IsCompleted)
 				{
@@ -130,9 +125,9 @@ namespace SharpPulsar.Impl
 
 				return sendTask.Task.Result ;
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.Unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
@@ -142,9 +137,9 @@ namespace SharpPulsar.Impl
 			{
 				FlushAsync();
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.Unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
@@ -155,9 +150,9 @@ namespace SharpPulsar.Impl
 			{
 				CloseAsync();
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.Unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
@@ -183,7 +178,7 @@ namespace SharpPulsar.Impl
 
 		public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
 		{
-			return _producerCreatedTask;
+			return ProducerCreatedTask;
 		}
 
 		public virtual Message<T> BeforeSend(Message<T> message)

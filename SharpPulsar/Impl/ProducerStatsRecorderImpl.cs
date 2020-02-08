@@ -29,93 +29,93 @@ using System.Threading;
 namespace SharpPulsar.Impl
 {
 	[Serializable]
-	public class ProducerStatsRecorderImpl<T> : IProducerStatsRecorder
+	public class ProducerStatsRecorderImpl<T> : Api.IProducerStatsRecorder
 	{
 
-		private const long SerialVersionUID = 1L;
-		private Timer stat;
+		private const long SerialVersionUid = 1L;
+		private Timer _stat;
 		internal virtual long StatTimeout { get; set; }
 		[NonSerialized]
-		private ProducerImpl<object> producer;
+		private ProducerImpl<object> _producer;
 		[NonSerialized]
-		private PulsarClientImpl pulsarClient;
-		private long oldTime;
-		private long statsIntervalSeconds;
+		private PulsarClientImpl _pulsarClient;
+		private long _oldTime;
+		private long _statsIntervalSeconds;
 		[NonSerialized]
-		private readonly StripedLongAdder numMsgsSent;
+		private readonly StripedLongAdder _numMsgsSent;
 		[NonSerialized]
-		private readonly StripedLongAdder numBytesSent;
+		private readonly StripedLongAdder _numBytesSent;
 		[NonSerialized]
-		private readonly StripedLongAdder numSendFailed;
+		private readonly StripedLongAdder _numSendFailed;
 		[NonSerialized]
-		private readonly StripedLongAdder numAcksReceived;
+		private readonly StripedLongAdder _numAcksReceived;
 		[NonSerialized]
-		private readonly StripedLongAdder totalMsgsSent;
+		private readonly StripedLongAdder _totalMsgsSent;
 		[NonSerialized]
-		private readonly StripedLongAdder totalBytesSent;
+		private readonly StripedLongAdder _totalBytesSent;
 		[NonSerialized]
-		private readonly StripedLongAdder totalSendFailed;
+		private readonly StripedLongAdder _totalSendFailed;
 		[NonSerialized]
-		private readonly StripedLongAdder totalAcksReceived;
-		private static readonly NumberFormatInfo DEC = new NumberFormatInfo();
-		private static readonly NumberFormatInfo THROUGHPUT_FORMAT = new NumberFormatInfo();
-		private readonly DoublesSketch ds;
+		private readonly StripedLongAdder _totalAcksReceived;
+		private static readonly NumberFormatInfo Dec = new NumberFormatInfo();
+		private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
+		private readonly DoublesSketch _ds;
 
-		public long SendMsgsRate { get; set; }
-		public long SendBytesRate { get; set; }
-		private volatile double[] latencyPctValues;
+		public double SendMsgsRate { get; set; }
+		public double SendBytesRate { get; set; }
+		private volatile double[] _latencyPctValues;
 
-		private static readonly double[] PERCENTILES = new double[] { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
+		private static readonly double[] Percentiles = new double[] { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
 
 		public ProducerStatsRecorderImpl()
 		{
-			DEC.NumberDecimalSeparator = "0.000";
-			THROUGHPUT_FORMAT.NumberDecimalSeparator = "0.00";
-			numMsgsSent = new StripedLongAdder();
-			numBytesSent = new StripedLongAdder();
-			numSendFailed = new StripedLongAdder();
-			numAcksReceived = new StripedLongAdder();
-			totalMsgsSent = new StripedLongAdder();
-			totalBytesSent = new StripedLongAdder();
-			totalSendFailed = new StripedLongAdder();
-			totalAcksReceived = new StripedLongAdder();
-			ds = DoublesSketch.builder().build(256);
+			Dec.NumberDecimalSeparator = "0.000";
+			ThroughputFormat.NumberDecimalSeparator = "0.00";
+			_numMsgsSent = new StripedLongAdder();
+			_numBytesSent = new StripedLongAdder();
+			_numSendFailed = new StripedLongAdder();
+			_numAcksReceived = new StripedLongAdder();
+			_totalMsgsSent = new StripedLongAdder();
+			_totalBytesSent = new StripedLongAdder();
+			_totalSendFailed = new StripedLongAdder();
+			_totalAcksReceived = new StripedLongAdder();
+			_ds = DoublesSketch.builder().build(256);
 		}
 
-		public ProducerStatsRecorderImpl(PulsarClientImpl PulsarClient, ProducerConfigurationData Conf, ProducerImpl<T> Producer)
+		public ProducerStatsRecorderImpl(PulsarClientImpl pulsarClient, ProducerConfigurationData conf, ProducerImpl<T> producer)
 		{
-			DEC.NumberDecimalSeparator = "0.000";
-			THROUGHPUT_FORMAT.NumberDecimalSeparator = "0.00";
-			this.pulsarClient = PulsarClient;
-			this.statsIntervalSeconds = PulsarClient.Configuration.StatsIntervalSeconds;
-			this.producer = Producer;
-			numMsgsSent = new StripedLongAdder();
-			numBytesSent = new StripedLongAdder();
-			numSendFailed = new StripedLongAdder();
-			numAcksReceived = new StripedLongAdder();
-			totalMsgsSent = new StripedLongAdder();
-			totalBytesSent = new StripedLongAdder();
-			totalSendFailed = new StripedLongAdder();
-			totalAcksReceived = new StripedLongAdder();
-			ds = DoublesSketch.builder().build(256);
-			Init(Conf);
+			Dec.NumberDecimalSeparator = "0.000";
+			ThroughputFormat.NumberDecimalSeparator = "0.00";
+			this._pulsarClient = pulsarClient;
+			this._statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
+			this._producer = producer;
+			_numMsgsSent = new StripedLongAdder();
+			_numBytesSent = new StripedLongAdder();
+			_numSendFailed = new StripedLongAdder();
+			_numAcksReceived = new StripedLongAdder();
+			_totalMsgsSent = new StripedLongAdder();
+			_totalBytesSent = new StripedLongAdder();
+			_totalSendFailed = new StripedLongAdder();
+			_totalAcksReceived = new StripedLongAdder();
+			_ds = DoublesSketch.builder().build(256);
+			Init(conf);
 		}
 
-		private void Init(ProducerConfigurationData Conf)
+		private void Init(ProducerConfigurationData conf)
 		{
-			ObjectMapper M = new ObjectMapper();
+			ObjectMapper m = new ObjectMapper();
 
 			try
 			{
-				log.info("Starting Pulsar producer perf with config: {}", M.WriteValueAsString(Conf));
+				Log.LogInformation("Starting Pulsar producer perf with config: {}", m.WriteValueAsString(conf));
 				//log.info("Pulsar client config: {}", W.withoutAttribute("authentication").writeValueAsString(pulsarClient.Configuration));
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				log.error("Failed to dump config info", E);
+				Log.LogError("Failed to dump config info", e);
 			}
 
-			stat = (timeout) =>
+			_stat = (timeout) =>
 			{
 
 				if (timeout.Cancelled)
@@ -125,119 +125,119 @@ namespace SharpPulsar.Impl
 
 				try
 				{
-					long Now = System.nanoTime();
-					double Elapsed = (Now - oldTime) / 1e9;
-					oldTime = Now;
+					long now = System.nanoTime();
+					double elapsed = (now - _oldTime) / 1e9;
+					_oldTime = now;
 
-					long CurrentNumMsgsSent = numMsgsSent.sumThenReset();
-					long CurrentNumBytesSent = numBytesSent.sumThenReset();
-					long CurrentNumSendFailedMsgs = numSendFailed.sumThenReset();
-					long CurrentNumAcksReceived = numAcksReceived.sumThenReset();
+					long currentNumMsgsSent = _numMsgsSent.sumThenReset();
+					long currentNumBytesSent = _numBytesSent.sumThenReset();
+					long currentNumSendFailedMsgs = _numSendFailed.sumThenReset();
+					long currentNumAcksReceived = _numAcksReceived.sumThenReset();
 
-					totalMsgsSent.Add(CurrentNumMsgsSent);
-					totalBytesSent.Add(CurrentNumBytesSent);
-					totalSendFailed.Add(CurrentNumSendFailedMsgs);
-					totalAcksReceived.Add(CurrentNumAcksReceived);
+					_totalMsgsSent.Add(currentNumMsgsSent);
+					_totalBytesSent.Add(currentNumBytesSent);
+					_totalSendFailed.Add(currentNumSendFailedMsgs);
+					_totalAcksReceived.Add(currentNumAcksReceived);
 
-					lock (ds)
+					lock (_ds)
 					{
-						latencyPctValues = ds.getQuantiles(PERCENTILES);
-						ds.Reset();
+						_latencyPctValues = _ds.getQuantiles(Percentiles);
+						_ds.Reset();
 					}
 
-					SendMsgsRate = CurrentNumMsgsSent / Elapsed;
-					SendBytesRate = CurrentNumBytesSent / Elapsed;
+					SendMsgsRate = currentNumMsgsSent / elapsed;
+					SendBytesRate = currentNumBytesSent / elapsed;
 
-					if ((CurrentNumMsgsSent | CurrentNumSendFailedMsgs | CurrentNumAcksReceived | CurrentNumMsgsSent) != 0)
+					if ((currentNumMsgsSent | currentNumSendFailedMsgs | currentNumAcksReceived | currentNumMsgsSent) != 0)
 					{
 
-						for (int I = 0; I < latencyPctValues.Length; I++)
+						for (int i = 0; i < _latencyPctValues.Length; i++)
 						{
-							if (double.IsNaN(latencyPctValues[I]))
+							if (double.IsNaN(_latencyPctValues[i]))
 							{
-								latencyPctValues[I] = 0;
+								_latencyPctValues[i] = 0;
 							}
 						}
 
-						log.info("[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " + "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " + "Ack received rate: {} ack/s --- Failed messages: {}", producer.Topic, producer.ProducerName, producer.PendingQueueSize, THROUGHPUT_FORMAT.format(SendMsgsRate), THROUGHPUT_FORMAT.format(SendBytesRate / 1024 / 1024 * 8), DEC.format(latencyPctValues[0] / 1000.0), DEC.format(latencyPctValues[2] / 1000.0), DEC.format(latencyPctValues[3] / 1000.0), DEC.format(latencyPctValues[4] / 1000.0), DEC.format(latencyPctValues[5] / 1000.0), THROUGHPUT_FORMAT.format(CurrentNumAcksReceived / Elapsed), CurrentNumSendFailedMsgs);
+						Log.info("[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " + "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " + "Ack received rate: {} ack/s --- Failed messages: {}", _producer.Topic, _producer.ProducerName, _producer.PendingQueueSize, ThroughputFormat.format(SendMsgsRate), ThroughputFormat.format(SendBytesRate / 1024 / 1024 * 8), Dec.format(_latencyPctValues[0] / 1000.0), Dec.format(_latencyPctValues[2] / 1000.0), Dec.format(_latencyPctValues[3] / 1000.0), Dec.format(_latencyPctValues[4] / 1000.0), Dec.format(_latencyPctValues[5] / 1000.0), ThroughputFormat.format(currentNumAcksReceived / elapsed), currentNumSendFailedMsgs);
 					}
 
 				}
-				catch (Exception E)
+				catch (Exception e)
 				{
-					log.error("[{}] [{}]: {}", producer.Topic, producer.ProducerName, E.Message);
+					Log.error("[{}] [{}]: {}", _producer.Topic, _producer.ProducerName, e.Message);
 				}
 				finally
 				{
 					// schedule the next stat info
-					StatTimeout = pulsarClient.Timer().newTimeout(stat, statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+					StatTimeout = _pulsarClient.Timer().newTimeout(_stat, _statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 				}
 
 			};
 
-			oldTime = System.nanoTime();
-			StatTimeout = pulsarClient.Timer().newTimeout(stat, statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+			_oldTime = System.nanoTime();
+			StatTimeout = _pulsarClient.Timer().newTimeout(_stat, _statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 		}
 
 
-		public void UpdateNumMsgsSent(long NumMsgs, long TotalMsgsSize)
+		public void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize)
 		{
-			numMsgsSent.Add(NumMsgs);
-			numBytesSent.Add(TotalMsgsSize);
+			_numMsgsSent.Add(numMsgs);
+			_numBytesSent.Add(totalMsgsSize);
 		}
 
 		public void IncrementSendFailed()
 		{
-			numSendFailed.Increment();
+			_numSendFailed.Increment();
 		}
 
-		public void IncrementSendFailed(long NumMsgs)
+		public void IncrementSendFailed(long numMsgs)
 		{
-			numSendFailed.Add(NumMsgs);
+			_numSendFailed.Add(numMsgs);
 		}
 
-		public void IncrementNumAcksReceived(long LatencyNs)
+		public void IncrementNumAcksReceived(long latencyNs)
 		{
-			numAcksReceived.Increment();
-			lock (ds)
+			_numAcksReceived.Increment();
+			lock (_ds)
 			{
-				ds.update(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(LatencyNs));
+				_ds.update(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(latencyNs));
 			}
 		}
 
 		public virtual void Reset()
 		{
-			numMsgsSent.Reset();
-			numBytesSent.Reset();
-			numSendFailed.Reset();
-			numAcksReceived.Reset();
-			totalMsgsSent.Reset();
-			totalBytesSent.Reset();
-			totalSendFailed.Reset();
-			totalAcksReceived.Reset();
+			_numMsgsSent.Reset();
+			_numBytesSent.Reset();
+			_numSendFailed.Reset();
+			_numAcksReceived.Reset();
+			_totalMsgsSent.Reset();
+			_totalBytesSent.Reset();
+			_totalSendFailed.Reset();
+			_totalAcksReceived.Reset();
 		}
 
-		public virtual void UpdateCumulativeStats(IProducerStats Stats)
+		public virtual void UpdateCumulativeStats(IProducerStats stats)
 		{
-			if (Stats == null)
+			if (stats == null)
 			{
 				return;
 			}
-			numMsgsSent.Add(Stats.NumMsgsSent);
-			numBytesSent.Add(Stats.NumBytesSent);
-			numSendFailed.Add(Stats.NumSendFailed);
-			numAcksReceived.Add(Stats.NumAcksReceived);
-			totalMsgsSent.Add(Stats.NumMsgsSent);
-			totalBytesSent.Add(Stats.NumBytesSent);
-			totalSendFailed.Add(Stats.NumSendFailed);
-			totalAcksReceived.Add(Stats.NumAcksReceived);
+			_numMsgsSent.Add(stats.NumMsgsSent);
+			_numBytesSent.Add(stats.NumBytesSent);
+			_numSendFailed.Add(stats.NumSendFailed);
+			_numAcksReceived.Add(stats.NumAcksReceived);
+			_totalMsgsSent.Add(stats.NumMsgsSent);
+			_totalBytesSent.Add(stats.NumBytesSent);
+			_totalSendFailed.Add(stats.NumSendFailed);
+			_totalAcksReceived.Add(stats.NumAcksReceived);
 		}
 
 		public virtual long NumMsgsSent
 		{
 			get
 			{
-				return numMsgsSent.GetValue();
+				return _numMsgsSent.GetValue();
 			}
 		}
 
@@ -245,7 +245,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return numBytesSent.GetValue();
+				return _numBytesSent.GetValue();
 			}
 		}
 
@@ -253,7 +253,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return numSendFailed.GetValue();
+				return _numSendFailed.GetValue();
 			}
 		}
 
@@ -261,7 +261,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return numAcksReceived.GetValue();
+				return _numAcksReceived.GetValue();
 			}
 		}
 
@@ -269,7 +269,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return totalMsgsSent.GetValue();
+				return _totalMsgsSent.GetValue();
 			}
 		}
 
@@ -277,7 +277,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return totalBytesSent.GetValue();
+				return _totalBytesSent.GetValue();
 			}
 		}
 
@@ -285,7 +285,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return totalSendFailed.GetValue();
+				return _totalSendFailed.GetValue();
 			}
 		}
 
@@ -293,7 +293,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return totalAcksReceived.GetValue();
+				return _totalAcksReceived.GetValue();
 			}
 		}
 
@@ -303,7 +303,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[0];
+				return _latencyPctValues[0];
 			}
 		}
 
@@ -311,7 +311,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[1];
+				return _latencyPctValues[1];
 			}
 		}
 
@@ -319,7 +319,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[2];
+				return _latencyPctValues[2];
 			}
 		}
 
@@ -327,7 +327,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[3];
+				return _latencyPctValues[3];
 			}
 		}
 
@@ -335,7 +335,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[4];
+				return _latencyPctValues[4];
 			}
 		}
 
@@ -343,7 +343,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return latencyPctValues[5];
+				return _latencyPctValues[5];
 			}
 		}
 
@@ -356,7 +356,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
 	}
 
 }

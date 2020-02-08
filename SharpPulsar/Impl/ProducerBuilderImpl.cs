@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Exception;
+using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
@@ -31,34 +32,34 @@ namespace SharpPulsar.Impl
 	public class ProducerBuilderImpl<T> : IProducerBuilder<T>
 	{
 
-		private readonly PulsarClientImpl client;
-		private ProducerConfigurationData conf;
-		private ISchema<T> schema;
-		private IList<IProducerInterceptor> interceptorList;
-		public ProducerBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ProducerConfigurationData(), Schema)
+		private readonly PulsarClientImpl _client;
+		private ProducerConfigurationData _conf;
+		private ISchema<T> _schema;
+		private IList<IProducerInterceptor> _interceptorList;
+		public ProducerBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ProducerConfigurationData(), schema)
 		{
 		}
 
-		private ProducerBuilderImpl(PulsarClientImpl Client, ProducerConfigurationData Conf, ISchema<T> Schema)
+		private ProducerBuilderImpl(PulsarClientImpl client, ProducerConfigurationData conf, ISchema<T> schema)
 		{
-			this.client = Client;
-			this.conf = Conf;
-			this.schema = Schema;
+			_client = client;
+			_conf = conf;
+			_schema = schema;
 		}
 
 		/// <summary>
 		/// Allow to schema in builder implementation
 		/// @return
 		/// </summary>
-		public virtual IProducerBuilder<T> Schema(ISchema<T> Schema)
+		public virtual IProducerBuilder<T> Schema(ISchema<T> schema)
 		{
-			this.schema = Schema;
+			_schema = schema;
 			return this;
 		}
 
 		public IProducerBuilder<T> Clone()
 		{
-			return new ProducerBuilderImpl<T>(client, conf.Clone(), schema);
+			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
 
 		public IProducer<T> Create()
@@ -67,15 +68,15 @@ namespace SharpPulsar.Impl
 			{
 				return CreateAsync().Result;
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.Unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
 		public ValueTask<IProducer<T>> CreateAsync()
 		{
-			if (conf.TopicName == null)
+			if (_conf.TopicName == null)
 			{
 				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new ArgumentException("Topic name must be set on the producer builder")));
 			}
@@ -84,208 +85,218 @@ namespace SharpPulsar.Impl
 			{
 				SetMessageRoutingMode();
 			}
-			catch (PulsarClientException Pce)
+			catch (PulsarClientException pce)
 			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(Pce));
+				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(pce));
 			}
 
-			return interceptorList == null || interceptorList.Count == 0 ? client.CreateProducerAsync(conf, schema, null) : client.CreateProducerAsync(conf, schema, new ProducerInterceptors(interceptorList));
+			return _interceptorList == null || _interceptorList.Count == 0 ? _client.CreateProducerAsync(_conf, _schema, null) : _client.CreateProducerAsync(_conf, _schema, new ProducerInterceptors(_interceptorList));
 		}
 
-		public IProducerBuilder<T> LoadConf(IDictionary<string, object> Config)
+		public IProducerBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			conf = ConfigurationDataUtils.LoadData(Config, conf, typeof(ProducerConfigurationData));
+			_conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ProducerConfigurationData));
 			return this;
 		}
 
-		public IProducerBuilder<T> Topic(string TopicName)
+		public IProducerBuilder<T> Topic(string topicName)
 		{
-			if(string.IsNullOrWhiteSpace(TopicName))
+			if(string.IsNullOrWhiteSpace(topicName))
 				throw new ArgumentNullException("topicName cannot be blank");
-			conf.TopicName = TopicName.Trim();
+			_conf.TopicName = topicName.Trim();
 			return this;
 		}
 
-		public IProducerBuilder<T> ProducerName(string ProducerName)
+		public IProducerBuilder<T> ProducerName(string producerName)
 		{
-			conf.ProducerName = ProducerName;
+			_conf.ProducerName = producerName;
 			return this;
 		}
 
-		public IProducerBuilder<T> SendTimeout(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IProducerBuilder<T> SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			conf.SetSendTimeoutMs(SendTimeout, Unit);
+			_conf.SetSendTimeoutMs(sendTimeout, unit);
 			return this;
 		}
 
-		public IProducerBuilder<T> MaxPendingMessages(int MaxPendingMessages)
+		public IProducerBuilder<T> MaxPendingMessages(int maxPendingMessages)
 		{
-			conf.MaxPendingMessages = MaxPendingMessages;
+			_conf.MaxPendingMessages = maxPendingMessages;
 			return this;
 		}
 
-		public IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int MaxPendingMessagesAcrossPartitions)
+		public IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
 		{
-			conf.MaxPendingMessagesAcrossPartitions = MaxPendingMessagesAcrossPartitions;
+			_conf.MaxPendingMessagesAcrossPartitions = maxPendingMessagesAcrossPartitions;
 			return this;
 		}
 
-		public IProducerBuilder<T> BlockIfQueueFull(bool BlockIfQueueFull)
+		public IProducerBuilder<T> BlockIfQueueFull(bool blockIfQueueFull)
 		{
 			//conf.q.BlockIfQueueFull = BlockIfQueueFull;
 			return this;
 		}
 
-		public IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode MessageRouteMode)
+		public IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode messageRouteMode)
 		{
-			conf.MessageRoutingMode = MessageRouteMode;
+			_conf.MessageRoutingMode = messageRouteMode;
 			return this;
 		}
 
-		public IProducerBuilder<T> CompressionType(ICompressionType CompressionType)
+		public IProducerBuilder<T> CompressionType(ICompressionType compressionType)
 		{
-			conf.CompressionType = CompressionType;
+			_conf.CompressionType = compressionType;
 			return this;
 		}
 
-		public IProducerBuilder<T> HashingScheme(HashingScheme HashingScheme)
+		public IProducerBuilder<T> HashingScheme(HashingScheme hashingScheme)
 		{
-			conf.HashingScheme = HashingScheme;
+			_conf.HashingScheme = hashingScheme;
 			return this;
 		}
 
-		public IProducerBuilder<T> MessageRouter(MessageRouter MessageRouter)
+		public IProducerBuilder<T> MessageRouter(MessageRouter messageRouter)
 		{
-			conf.CustomMessageRouter = MessageRouter;
+			_conf.CustomMessageRouter = messageRouter;
 			return this;
 		}
 
-		public IProducerBuilder<T> EnableBatching(bool BatchMessagesEnabled)
+		public IProducerBuilder<T> EnableBatching(bool batchMessagesEnabled)
 		{
-			conf.BatchingEnabled = BatchMessagesEnabled;
+			_conf.BatchingEnabled = batchMessagesEnabled;
 			return this;
 		}
 
-		public IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader)
+		public IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
 		{
-			conf.CryptoKeyReader = CryptoKeyReader;
+			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public IProducerBuilder<T> AddEncryptionKey(string Key)
+		public IProducerBuilder<T> AddEncryptionKey(string key)
 		{
-			if(string.IsNullOrWhiteSpace(Key))
+			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentNullException("Encryption key cannot be blank");
-			conf.EncryptionKeys.Add(Key);
+			_conf.EncryptionKeys.Add(key);
 			return this;
 		}
 
-		public IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction Action)
+		public IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
-			conf.CryptoFailureAction = Action;
+			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxPublishDelay(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public IProducerBuilder<T> BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			conf.SetBatchingMaxPublishDelayMicros(BatchDelay, timeUnit);
+			_conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
 			return this;
 		}
 
-		public IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int Frequency)
+		public IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
 		{
-			conf.BatchingPartitionSwitchFrequencyByPublishDelay = Frequency;
+			_conf.BatchingPartitionSwitchFrequencyByPublishDelay = frequency;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxMessages(int BatchMessagesMaxMessagesPerBatch)
+		public IProducerBuilder<T> BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
 		{
-			conf.BatchingMaxMessages = BatchMessagesMaxMessagesPerBatch;
+			_conf.BatchingMaxMessages = batchMessagesMaxMessagesPerBatch;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxBytes(int BatchingMaxBytes)
+		public IProducerBuilder<T> BatchingMaxBytes(int batchingMaxBytes)
 		{
-			conf.BatchingMaxBytes = BatchingMaxBytes;
+			_conf.BatchingMaxBytes = batchingMaxBytes;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatcherBuilder(BatcherBuilder BatcherBuilder)
+		public IProducerBuilder<T> BatcherBuilder(BatcherBuilder batcherBuilder)
 		{
-			conf.BatcherBuilder = BatcherBuilder;
+			_conf.BatcherBuilder = batcherBuilder;
 			return this;
 		}
 
 
-		public IProducerBuilder<T> InitialSequenceId(long InitialSequenceId)
+		public IProducerBuilder<T> InitialSequenceId(long initialSequenceId)
 		{
-			conf.InitialSequenceId = InitialSequenceId;
+			_conf.InitialSequenceId = initialSequenceId;
 			return this;
 		}
 
-		public IProducerBuilder<T> Property(string Key, string Value)
+		public IProducerBuilder<T> Property(string key, string value)
 		{
-			if(string.IsNullOrWhiteSpace(Key) && string.IsNullOrWhiteSpace(Value))
+			if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
 				throw new ArgumentNullException("property key/value cannot be blank");
-			conf.Properties.Add(Key, Value);
+			_conf.Properties.Add(key, value);
 			return this;
 		}
 
-		public IProducerBuilder<T> Properties(IDictionary<string, string> Properties)
+		public IProducerBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			if(Properties.Count < 1)
+			if(properties.Count < 1)
 				throw new ArgumentNullException("properties cannot be empty");
-			Properties.SetOfKeyValuePairs().forEach(entry => checkArgument(StringUtils.isNotBlank(entry.Key) && StringUtils.isNotBlank(entry.Value), "properties' key/value cannot be blank"));
-			Properties.ToList().ForEach(x => conf.Properties.Add(x.Key, x.Value));
+			properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
+            {
+                var (key, value) = entry;
+                if (string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
+                {
+                    throw new NullReferenceException("properties' key/value cannot be blank");
+                }
+                else
+                {
+					_conf.Properties.Add(key, value);
+				}
+            });
 			return this;
 		}
 
-		public IProducerBuilder<T> Intercept(params IProducerInterceptor[] Interceptors)
+		public IProducerBuilder<T> Intercept(params IProducerInterceptor[] interceptors)
 		{
-			if (interceptorList == null)
+			if (_interceptorList == null)
 			{
-				interceptorList = new List<IProducerInterceptor>();
+				_interceptorList = new List<IProducerInterceptor>();
 			}
-			((List<IProducerInterceptor>)interceptorList).AddRange(Interceptors.ToArray());
+			((List<IProducerInterceptor>)_interceptorList).AddRange(interceptors.ToArray());
 			return this;
 		}
 
-		public IProducerBuilder<T> AutoUpdatePartitions(bool AutoUpdate)
+		public IProducerBuilder<T> AutoUpdatePartitions(bool autoUpdate)
 		{
-			conf.AutoUpdatePartitions = AutoUpdate;
+			_conf.AutoUpdatePartitions = autoUpdate;
 			return this;
 		}
 
-		public IProducerBuilder<T> EnableMultiSchema(bool MultiSchema)
+		public IProducerBuilder<T> EnableMultiSchema(bool multiSchema)
 		{
-			conf.MultiSchema = MultiSchema;
+			_conf.MultiSchema = multiSchema;
 			return this;
 		}
 
 		private void SetMessageRoutingMode()
 		{
-			if (conf.MessageRoutingMode == null && conf.CustomMessageRouter == null)
+			if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter == null)
 			{
 				MessageRoutingMode(Api.MessageRoutingMode.RoundRobinPartition);
 			}
-			else if (conf.MessageRoutingMode == null && conf.CustomMessageRouter != null)
+			else if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter != null)
 			{
 				MessageRoutingMode(Api.MessageRoutingMode.CustomPartition);
 			}
-			else if ((conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && conf.CustomMessageRouter == null) || (conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && conf.CustomMessageRouter != null))
+			else if ((_conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter == null) || (_conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter != null))
 			{
 				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + Api.MessageRoutingMode.CustomPartition);
 			}
 		}
 
-		public string ToString()
+		public override string ToString()
 		{
-			return conf != null ? conf.ToString() : null;
+			return _conf?.ToString();
 		}
 
 		object ICloneable.Clone()
 		{
-			return new ProducerBuilderImpl<T>(client, conf.Clone(), schema);
+			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
 	}
 

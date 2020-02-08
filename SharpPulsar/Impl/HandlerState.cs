@@ -22,8 +22,7 @@ namespace SharpPulsar.Impl
 
 	public abstract class HandlerState
 	{
-		protected internal readonly PulsarClientImpl _client;
-		protected internal readonly string Topic;
+        protected internal readonly string Topic;
 
 		private static readonly ConcurrentDictionary<HandlerState, State> StateUpdater = new ConcurrentDictionary<HandlerState, State>();
 		
@@ -40,10 +39,10 @@ namespace SharpPulsar.Impl
 			RegisteringSchema // Handler is registering schema
 		}
 
-		public HandlerState(PulsarClientImpl Client, string Topic)
+        protected HandlerState(PulsarClientImpl client, string topic)
 		{
-			_client = Client;
-			this.Topic = Topic;
+			Client = client;
+			this.Topic = topic;
 			StateUpdater[this] =  State.Uninitialized;
 		}
 
@@ -52,7 +51,10 @@ namespace SharpPulsar.Impl
 		{
 			return (StateUpdater.TryUpdate(this, State.Ready, State.Uninitialized) || StateUpdater.TryUpdate(this, State.Ready, State.Connecting) || StateUpdater.TryUpdate(this, State.Ready, State.RegisteringSchema));
 		}
-
+        public virtual void ChangeToState(State state)
+        {
+            StateUpdater[this] = state;
+        }
 		public virtual bool ChangeToRegisteringSchemaState()
 		{
 			return StateUpdater.TryUpdate(this, State.RegisteringSchema, State.Ready);
@@ -63,29 +65,23 @@ namespace SharpPulsar.Impl
 			return StateUpdater[this];
 		}
 
-		public virtual void SetState(State S)
+		public virtual void SetState(State s)
 		{
-			StateUpdater[this] =  S;
+			StateUpdater[this] =  s;
 		}
 
-		public abstract string HandlerName { get; set; }
+		public string HandlerName { get; set; }
 
-		public virtual State GetAndUpdateState(in System.Func<State, State> Updater)
+		public virtual State GetAndUpdateState(in System.Func<State, State> updater)
 		{
 			var oldState = StateUpdater[this];
-			var newState = Updater.Invoke(oldState);
+			var newState = updater.Invoke(oldState);
 			if (StateUpdater.TryUpdate(this, newState, oldState))
 				return newState;
 			return State.Uninitialized;
 		}
 
-		public virtual PulsarClientImpl Client
-		{
-			get
-			{
-				return _client;
-			}
-		}
-	}
+		public PulsarClientImpl Client { get; set; }
+    }
 
 }

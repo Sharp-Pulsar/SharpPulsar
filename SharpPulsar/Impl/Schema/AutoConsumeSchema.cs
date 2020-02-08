@@ -153,8 +153,6 @@ namespace SharpPulsar.Impl.Schema
 			return GenericSchemaImpl.of(schemaInfo, false);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: public static SharpPulsar.api.Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo)
 		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
 		{
 			switch (schemaInfo.Type)

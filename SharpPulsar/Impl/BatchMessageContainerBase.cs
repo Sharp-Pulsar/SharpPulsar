@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
 		/// <returns> list of OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 		/// 
-		IList<OpSendMsg> CreateOpSendMsgs();
+		IList<OpSendMsg<T>> CreateOpSendMsgs<T>();
 
 		/// <summary>
 		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
@@ -71,7 +71,7 @@ namespace SharpPulsar.Impl
 		/// <returns> OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 		/// 
-		OpSendMsg CreateOpSendMsg();
+		OpSendMsg<T> CreateOpSendMsg<T>();
 	}
 
 }

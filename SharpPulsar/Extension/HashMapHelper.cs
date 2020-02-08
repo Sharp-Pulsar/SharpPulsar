@@ -3,7 +3,7 @@
 //	This class is used to replace calls to some Java HashMap or Hashtable methods.
 //---------------------------------------------------------------------------------------------------------
 using System.Collections.Generic;
-namespace SharpPulsar.Common
+namespace SharpPulsar.Extension
 {
 	internal static class HashMapHelper
 	{

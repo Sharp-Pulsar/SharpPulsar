@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
-using App.Metrics.Concurrency;
-using Google.Protobuf.Collections;
 using System.Linq;
 
 /// <summary>
@@ -41,33 +39,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 		public override object GetField(string fieldName)
 		{
 			var fn = _jsonDocument.RootElement.EnumerateArray().Where(x => !string.IsNullOrWhiteSpace(x.GetProperty(fieldName).GetString()));
-			if (fn.Any())
-			{
-				var idx = new AtomicInteger(0);
-				IList<Field> fields = fn.ToList().Select(f => new Field(){Name = f.GetString(), Index = idx.GetAndIncrement() }).ToList();
-				return new GenericJsonRecord(SchemaVersion, fields, _jsonDocument);
-			}
-			else if (fn.Boolean)
-			{
-				return fn.asBoolean();
-			}
-			else if (fn.Int)
-			{
-				return fn.asInt();
-			}
-			else if (fn.FloatingPointNumber)
-			{
-				return fn.asDouble();
-			}
-			else if (fn.Double)
-			{
-				return fn.asDouble();
-			}
-			else
-			{
-				return fn.asText();
-			}
-		}
+            var jsonElements = fn as JsonElement[] ?? fn.ToArray();
+            return jsonElements;
+        }
 
 		public override object GetField(Field field)
 		{

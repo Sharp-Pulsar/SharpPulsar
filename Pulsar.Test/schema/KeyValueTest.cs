@@ -83,8 +83,7 @@ namespace org.apache.pulsar.common.schema
 			};
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "schemas") public void testAllSchemas(java.util.Map<org.apache.pulsar.client.api.Schema, java.util.List<Object>> schemas)
+        //ORIGINAL LINE: @Test(dataProvider = "schemas") public void testAllSchemas(java.util.Map<org.apache.pulsar.client.api.Schema, java.util.List<Object>> schemas)
 		public virtual void testAllSchemas(IDictionary<Schema, IList<object>> schemas)
 		{
 			foreach (KeyValuePair<Schema, IList<object>> keyEntry in schemas.SetOfKeyValuePairs())

@@ -47,6 +47,10 @@ namespace SharpPulsar.Impl.Schema
 
 		public virtual ISchema<T> Schema
 		{
+            get
+            {
+                return this.schema;
+            }
 			set
 			{
 				this.schema = value;

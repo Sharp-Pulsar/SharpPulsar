@@ -47,69 +47,69 @@ namespace SharpPulsar.Protocol
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
 
-		public const short MagicCrc32c = 0x0e01;
+		public const short MagicCrc32C = 0x0e01;
 		private const int ChecksumSize = 4;
 		
-		public static IByteBuffer NewConnect(string AuthMethodName, string AuthData, string LibVersion)
+		public static IByteBuffer NewConnect(string authMethodName, string authData, string libVersion)
 		{
-			return NewConnect(AuthMethodName, AuthData, CurrentProtocolVersion, LibVersion, null, null, null, null);
+			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);
 		}
 
-		public static IByteBuffer NewConnect(string AuthMethodName, string AuthData, string LibVersion, string TargetBroker)
+		public static IByteBuffer NewConnect(string authMethodName, string authData, string libVersion, string targetBroker)
 		{
-			return NewConnect(AuthMethodName, AuthData, CurrentProtocolVersion, LibVersion, TargetBroker, null, null, null);
+			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, null, null, null);
 		}
 
-		public static IByteBuffer NewConnect(string AuthMethodName, string AuthData, string LibVersion, string TargetBroker, string OriginalPrincipal, string ClientAuthData, string ClientAuthMethod)
+		public static IByteBuffer NewConnect(string authMethodName, string authData, string libVersion, string targetBroker, string originalPrincipal, string clientAuthData, string clientAuthMethod)
 		{
-			return NewConnect(AuthMethodName, AuthData, CurrentProtocolVersion, LibVersion, TargetBroker, OriginalPrincipal, ClientAuthData, ClientAuthMethod);
+			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, originalPrincipal, clientAuthData, clientAuthMethod);
 		}
 
-		public static IByteBuffer NewConnect(string AuthMethodName, string authData, int ProtocolVersion, string LibVersion, string TargetBroker, string OriginalPrincipal, string OriginalAuthData, string OriginalAuthMethod)
+		public static IByteBuffer NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
-			CommandConnect.Builder ConnectBuilder = CommandConnect.NewBuilder();
-			ConnectBuilder.SetClientVersion(!string.ReferenceEquals(LibVersion, null) ? LibVersion : "Pulsar Client");
-			ConnectBuilder.SetAuthMethodName(AuthMethodName);
+			CommandConnect.Builder connectBuilder = CommandConnect.NewBuilder();
+			connectBuilder.SetClientVersion(!string.ReferenceEquals(libVersion, null) ? libVersion : "Pulsar Client");
+			connectBuilder.SetAuthMethodName(authMethodName);
 
-			if ("ycav1".Equals(AuthMethodName))
+			if ("ycav1".Equals(authMethodName))
 			{
 				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
 				// name. An example would be in broker-to-broker replication. We need to make sure the clients are still
 				// passing both the enum and the string until all brokers are upgraded.
-				ConnectBuilder.SetAuthMethod(AuthMethod.YcaV1);
+				connectBuilder.SetAuthMethod(AuthMethod.YcaV1);
 			}
 
-			if (!string.ReferenceEquals(TargetBroker, null))
+			if (!string.ReferenceEquals(targetBroker, null))
 			{
 				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				ConnectBuilder.SetProxyToBrokerUrl(TargetBroker);
+				connectBuilder.SetProxyToBrokerUrl(targetBroker);
 			}
 
 			if (!string.ReferenceEquals(authData, null))
 			{
-				ConnectBuilder.SetAuthData(ByteString.CopyFromUtf8(authData));
+				connectBuilder.SetAuthData(ByteString.CopyFromUtf8(authData));
 			}
 
-			if (!string.ReferenceEquals(OriginalPrincipal, null))
+			if (!string.ReferenceEquals(originalPrincipal, null))
 			{
-				ConnectBuilder.SetOriginalPrincipal(OriginalPrincipal);
+				connectBuilder.SetOriginalPrincipal(originalPrincipal);
 			}
 
-			if (!string.ReferenceEquals(OriginalAuthData, null))
+			if (!string.ReferenceEquals(originalAuthData, null))
 			{
-				ConnectBuilder.SetOriginalAuthData(OriginalAuthData);
+				connectBuilder.SetOriginalAuthData(originalAuthData);
 			}
 
-			if (!string.ReferenceEquals(OriginalAuthMethod, null))
+			if (!string.ReferenceEquals(originalAuthMethod, null))
 			{
-				ConnectBuilder.SetOriginalAuthMethod(OriginalAuthMethod);
+				connectBuilder.SetOriginalAuthMethod(originalAuthMethod);
 			}
-			ConnectBuilder.SetProtocolVersion(ProtocolVersion);
-			CommandConnect Connect = ConnectBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(Connect));
-			Connect.Recycle();
-			ConnectBuilder.Recycle();
-			return Res;
+			connectBuilder.SetProtocolVersion(protocolVersion);
+			CommandConnect connect = connectBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
+			connect.Recycle();
+			connectBuilder.Recycle();
+			return res;
 		}
 
 		public static IByteBuffer NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
@@ -146,154 +146,154 @@ namespace SharpPulsar.Protocol
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			CommandConnect connect = connectBuilder.Build();
 			
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
 			connect.Recycle();
 			connectBuilder.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewConnected(int ClientProtocoVersion)
+		public static IByteBuffer NewConnected(int clientProtocoVersion)
 		{
-			return NewConnected(ClientProtocoVersion, InvalidMaxMessageSize);
+			return NewConnected(clientProtocoVersion, InvalidMaxMessageSize);
 		}
 
-		public static IByteBuffer NewConnected(int ClientProtocolVersion, int MaxMessageSize)
+		public static IByteBuffer NewConnected(int clientProtocolVersion, int maxMessageSize)
 		{
-			CommandConnected.Builder ConnectedBuilder = CommandConnected.NewBuilder();
-			ConnectedBuilder.SetServerVersion("Pulsar Server");
-			if (InvalidMaxMessageSize != MaxMessageSize)
+			CommandConnected.Builder connectedBuilder = CommandConnected.NewBuilder();
+			connectedBuilder.SetServerVersion("Pulsar Server");
+			if (InvalidMaxMessageSize != maxMessageSize)
 			{
-				ConnectedBuilder.SetMaxMessageSize(MaxMessageSize);
+				connectedBuilder.SetMaxMessageSize(maxMessageSize);
 			}
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
 			int currentProtocolVersion = CurrentProtocolVersion;
-			int VersionToAdvertise = Math.Min(CurrentProtocolVersion, ClientProtocolVersion);
+			int versionToAdvertise = Math.Min(CurrentProtocolVersion, clientProtocolVersion);
 
-			CommandConnected Connected = ConnectedBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connected).SetConnected(ConnectedBuilder));
-			Connected.Recycle();
-			ConnectedBuilder.Recycle();
-			return Res;
+			CommandConnected connected = connectedBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connected).SetConnected(connectedBuilder));
+			connected.Recycle();
+			connectedBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewAuthChallenge(string AuthMethod, AuthData BrokerData, int ClientProtocolVersion)
+		public static IByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
 		{
-			CommandAuthChallenge.Builder ChallengeBuilder = CommandAuthChallenge.NewBuilder();
+			CommandAuthChallenge.Builder challengeBuilder = CommandAuthChallenge.NewBuilder();
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
 			int currentProtocolVersion = CurrentProtocolVersion;
-			int VersionToAdvertise = Math.Min(CurrentProtocolVersion, ClientProtocolVersion);
+			int versionToAdvertise = Math.Min(CurrentProtocolVersion, clientProtocolVersion);
 
-			ChallengeBuilder.SetProtocolVersion(VersionToAdvertise);
+			challengeBuilder.SetProtocolVersion(versionToAdvertise);
 
-			CommandAuthChallenge Challenge = ChallengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(BrokerData.AuthData_).SetAuthMethodName(AuthMethod).Build()).Build();
+			CommandAuthChallenge challenge = challengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(brokerData.AuthData_).SetAuthMethodName(authMethod).Build()).Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthChallenge).SetAuthChallenge(Challenge));
-			Challenge.Recycle();
-			ChallengeBuilder.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthChallenge).SetAuthChallenge(challenge));
+			challenge.Recycle();
+			challengeBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewAuthResponse(string AuthMethod, AuthData ClientData, int ClientProtocolVersion, string ClientVersion)
+		public static IByteBuffer NewAuthResponse(string authMethod, AuthData clientData, int clientProtocolVersion, string clientVersion)
 		{
-			CommandAuthResponse.Builder ResponseBuilder = CommandAuthResponse.NewBuilder();
+			CommandAuthResponse.Builder responseBuilder = CommandAuthResponse.NewBuilder();
 
-			ResponseBuilder.SetClientVersion(!string.ReferenceEquals(ClientVersion, null) ? ClientVersion : "Pulsar Client");
-			ResponseBuilder.SetProtocolVersion(ClientProtocolVersion);
+			responseBuilder.SetClientVersion(!string.ReferenceEquals(clientVersion, null) ? clientVersion : "Pulsar Client");
+			responseBuilder.SetProtocolVersion(clientProtocolVersion);
 
-			CommandAuthResponse Response = ResponseBuilder.SetResponse(AuthData.NewBuilder().SetAuthData(ClientData.AuthData_).SetAuthMethodName(AuthMethod).Build()).Build();
+			CommandAuthResponse response = responseBuilder.SetResponse(AuthData.NewBuilder().SetAuthData(clientData.AuthData_).SetAuthMethodName(authMethod).Build()).Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthResponse).SetAuthResponse(Response));
-			Response.Recycle();
-			ResponseBuilder.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthResponse).SetAuthResponse(response));
+			response.Recycle();
+			responseBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewSuccess(long RequestId)
+		public static IByteBuffer NewSuccess(long requestId)
 		{
-			CommandSuccess.Builder SuccessBuilder = CommandSuccess.NewBuilder();
-			SuccessBuilder.SetRequestId(RequestId);
-			CommandSuccess Success = SuccessBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Success).SetSuccess(Success));
-			SuccessBuilder.Recycle();
-			Success.Recycle();
-			return Res;
+			CommandSuccess.Builder successBuilder = CommandSuccess.NewBuilder();
+			successBuilder.SetRequestId(requestId);
+			CommandSuccess success = successBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Success).SetSuccess(success));
+			successBuilder.Recycle();
+			success.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewProducerSuccess(long RequestId, string ProducerName, SchemaVersion SchemaVersion)
+		public static IByteBuffer NewProducerSuccess(long requestId, string producerName, SchemaVersion schemaVersion)
 		{
-			return NewProducerSuccess(RequestId, ProducerName, -1, SchemaVersion);
+			return NewProducerSuccess(requestId, producerName, -1, schemaVersion);
 		}
 
-		public static IByteBuffer NewProducerSuccess(long RequestId, string ProducerName, long LastSequenceId, SchemaVersion SchemaVersion)
+		public static IByteBuffer NewProducerSuccess(long requestId, string producerName, long lastSequenceId, SchemaVersion schemaVersion)
 		{
-			CommandProducerSuccess.Builder ProducerSuccessBuilder = CommandProducerSuccess.NewBuilder();
-			ProducerSuccessBuilder.SetRequestId(RequestId);
-			ProducerSuccessBuilder.SetProducerName(ProducerName);
-			ProducerSuccessBuilder.SetLastSequenceId(LastSequenceId);
-			ProducerSuccessBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)SchemaVersion.Bytes()));
-			CommandProducerSuccess ProducerSuccess = ProducerSuccessBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ProducerSuccess).SetProducerSuccess(ProducerSuccess));
-			ProducerSuccess.Recycle();
-			ProducerSuccessBuilder.Recycle();
-			return Res;
+			CommandProducerSuccess.Builder producerSuccessBuilder = CommandProducerSuccess.NewBuilder();
+			producerSuccessBuilder.SetRequestId(requestId);
+			producerSuccessBuilder.SetProducerName(producerName);
+			producerSuccessBuilder.SetLastSequenceId(lastSequenceId);
+			producerSuccessBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion.Bytes()));
+			CommandProducerSuccess producerSuccess = producerSuccessBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ProducerSuccess).SetProducerSuccess(producerSuccess));
+			producerSuccess.Recycle();
+			producerSuccessBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewError(long RequestId, ServerError Error, string Message)
+		public static IByteBuffer NewError(long requestId, ServerError error, string message)
 		{
-			CommandError.Builder CmdErrorBuilder = CommandError.NewBuilder();
-			CmdErrorBuilder.SetRequestId(RequestId);
-			CmdErrorBuilder.SetError(Error);
-			CmdErrorBuilder.SetMessage(Message);
-			CommandError CmdError = CmdErrorBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Error).SetError(CmdError));
-			CmdError.Recycle();
-			CmdErrorBuilder.Recycle();
-			return Res;
+			CommandError.Builder cmdErrorBuilder = CommandError.NewBuilder();
+			cmdErrorBuilder.SetRequestId(requestId);
+			cmdErrorBuilder.SetError(error);
+			cmdErrorBuilder.SetMessage(message);
+			CommandError cmdError = cmdErrorBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Error).SetError(cmdError));
+			cmdError.Recycle();
+			cmdErrorBuilder.Recycle();
+			return res;
 
 		}
 
-		public static IByteBuffer NewSendReceipt(long ProducerId, long SequenceId, long HighestId, long LedgerId, long EntryId)
+		public static IByteBuffer NewSendReceipt(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
 		{
-			CommandSendReceipt.Builder SendReceiptBuilder = CommandSendReceipt.NewBuilder();
-			SendReceiptBuilder.SetProducerId(ProducerId);
-			SendReceiptBuilder.SetSequenceId(SequenceId);
-			SendReceiptBuilder.SetHighestSequenceId(HighestId);
-			MessageIdData.Builder MessageIdBuilder = MessageIdData.NewBuilder();
-			MessageIdBuilder.LedgerId = LedgerId;
-			MessageIdBuilder.EntryId = EntryId;
-			MessageIdData MessageId = MessageIdBuilder.Build();
-			SendReceiptBuilder.SetMessageId(MessageId);
-			CommandSendReceipt SendReceipt = SendReceiptBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendReceipt).SetSendReceipt(SendReceipt));
-			MessageIdBuilder.Recycle();
-			MessageId.Recycle();
-			SendReceiptBuilder.Recycle();
-			SendReceipt.Recycle();
-			return Res;
+			CommandSendReceipt.Builder sendReceiptBuilder = CommandSendReceipt.NewBuilder();
+			sendReceiptBuilder.SetProducerId(producerId);
+			sendReceiptBuilder.SetSequenceId(sequenceId);
+			sendReceiptBuilder.SetHighestSequenceId(highestId);
+			MessageIdData.Builder messageIdBuilder = MessageIdData.NewBuilder();
+			messageIdBuilder.LedgerId = ledgerId;
+			messageIdBuilder.EntryId = entryId;
+			MessageIdData messageId = messageIdBuilder.Build();
+			sendReceiptBuilder.SetMessageId(messageId);
+			CommandSendReceipt sendReceipt = sendReceiptBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendReceipt).SetSendReceipt(sendReceipt));
+			messageIdBuilder.Recycle();
+			messageId.Recycle();
+			sendReceiptBuilder.Recycle();
+			sendReceipt.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewSendError(long ProducerId, long SequenceId, ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
 		{
-			CommandSendError.Builder SendErrorBuilder = CommandSendError.NewBuilder();
-			SendErrorBuilder.SetProducerId(ProducerId);
-			SendErrorBuilder.SetSequenceId(SequenceId);
-			SendErrorBuilder.SetError(Error);
-			SendErrorBuilder.SetMessage(ErrorMsg);
-			CommandSendError SendError = SendErrorBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendError).SetSendError(SendError));
-			SendErrorBuilder.Recycle();
-			SendError.Recycle();
-			return Res;
+			CommandSendError.Builder sendErrorBuilder = CommandSendError.NewBuilder();
+			sendErrorBuilder.SetProducerId(producerId);
+			sendErrorBuilder.SetSequenceId(sequenceId);
+			sendErrorBuilder.SetError(error);
+			sendErrorBuilder.SetMessage(errorMsg);
+			CommandSendError sendError = sendErrorBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendError).SetSendError(sendError));
+			sendErrorBuilder.Recycle();
+			sendError.Recycle();
+			return res;
 		}
 
 
-		public static bool HasChecksum(IByteBuffer Buffer)
+		public static bool HasChecksum(IByteBuffer buffer)
 		{
-			return Buffer.GetShort(Buffer.ReaderIndex) == MagicCrc32c;
+			return buffer.GetShort(buffer.ReaderIndex) == MagicCrc32C;
 		}
 
 		/// <summary>
@@ -302,323 +302,323 @@ namespace SharpPulsar.Protocol
 		/// <para>Note: This method assume the checksum presence was already verified before.
 		/// </para>
 		/// </summary>
-		public static int ReadChecksum(IByteBuffer Buffer)
+		public static int ReadChecksum(IByteBuffer buffer)
 		{
-			Buffer.SkipBytes(2); //skip magic bytes
-			return Buffer.ReadInt();
+			buffer.SkipBytes(2); //skip magic bytes
+			return buffer.ReadInt();
 		}
 
-		public static void SkipChecksumIfPresent(IByteBuffer Buffer)
+		public static void SkipChecksumIfPresent(IByteBuffer buffer)
 		{
-			if (HasChecksum(Buffer))
+			if (HasChecksum(buffer))
 			{
-				ReadChecksum(Buffer);
+				ReadChecksum(buffer);
 			}
 		}
 
-		public static MessageMetadata ParseMessageMetadata(IByteBuffer Buffer)
+		public static MessageMetadata ParseMessageMetadata(IByteBuffer buffer)
 		{
 			try
 			{
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
-				SkipChecksumIfPresent(Buffer);
-				int MetadataSize = (int) Buffer.ReadUnsignedInt();
+				SkipChecksumIfPresent(buffer);
+				int metadataSize = (int) buffer.ReadUnsignedInt();
 
-				int WriterIndex = Buffer.WriterIndex;
-				Buffer.SetWriterIndex(Buffer.ReaderIndex + MetadataSize);
-				ByteBufCodedInputStream Stream = ByteBufCodedInputStream.Get(Buffer);
-				MessageMetadata.Builder MessageMetadataBuilder = MessageMetadata.NewBuilder();
-				MessageMetadata Res = ((MessageMetadata.Builder)MessageMetadataBuilder.MergeFrom(Stream, null)).Build();
-				Buffer.SetWriterIndex(WriterIndex);
-				MessageMetadataBuilder.Recycle();
-				Stream.Recycle();
-				return Res;
+				int writerIndex = buffer.WriterIndex;
+				buffer.SetWriterIndex(buffer.ReaderIndex + metadataSize);
+				ByteBufCodedInputStream stream = ByteBufCodedInputStream.Get(buffer);
+				MessageMetadata.Builder messageMetadataBuilder = MessageMetadata.NewBuilder();
+				MessageMetadata res = ((MessageMetadata.Builder)messageMetadataBuilder.MergeFrom(stream, null)).Build();
+				buffer.SetWriterIndex(writerIndex);
+				messageMetadataBuilder.Recycle();
+				stream.Recycle();
+				return res;
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				throw new System.Exception(E.Message, E);
+				throw new System.Exception(e.Message, e);
 			}
 		}
 
-		public static void SkipMessageMetadata(IByteBuffer Buffer)
+		public static void SkipMessageMetadata(IByteBuffer buffer)
 		{
 			// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
 			// metadata
-			SkipChecksumIfPresent(Buffer);
-			int MetadataSize = (int) Buffer.ReadUnsignedInt();
-			Buffer.SkipBytes(MetadataSize);
+			SkipChecksumIfPresent(buffer);
+			int metadataSize = (int) buffer.ReadUnsignedInt();
+			buffer.SkipBytes(metadataSize);
 		}
 
-		public static ByteBufPair NewMessage(long ConsumerId, MessageIdData MessageId, int RedeliveryCount, IByteBuffer MetadataAndPayload)
+		public static ByteBufPair NewMessage(long consumerId, MessageIdData messageId, int redeliveryCount, IByteBuffer metadataAndPayload)
 		{
-			CommandMessage.Builder MsgBuilder = CommandMessage.NewBuilder();
-			MsgBuilder.SetConsumerId(ConsumerId);
-			MsgBuilder.SetMessageId(MessageId);
-			if (RedeliveryCount > 0)
+			CommandMessage.Builder msgBuilder = CommandMessage.NewBuilder();
+			msgBuilder.SetConsumerId(consumerId);
+			msgBuilder.SetMessageId(messageId);
+			if (redeliveryCount > 0)
 			{
-				MsgBuilder.SetRedeliveryCount(RedeliveryCount);
+				msgBuilder.SetRedeliveryCount(redeliveryCount);
 			}
-			CommandMessage Msg = MsgBuilder.Build();
-			BaseCommand.Builder CmdBuilder = BaseCommand.NewBuilder();
-			BaseCommand Cmd = CmdBuilder.SetType(BaseCommand.Types.Type.Message).SetMessage(Msg).Build();
+			CommandMessage msg = msgBuilder.Build();
+			BaseCommand.Builder cmdBuilder = BaseCommand.NewBuilder();
+			BaseCommand cmd = cmdBuilder.SetType(BaseCommand.Types.Type.Message).SetMessage(msg).Build();
 
-			ByteBufPair Res = SerializeCommandMessageWithSize(Cmd, MetadataAndPayload);
-			Cmd.Recycle();
-			CmdBuilder.Recycle();
-			Msg.Recycle();
-			MsgBuilder.Recycle();
-			return Res;
+			ByteBufPair res = SerializeCommandMessageWithSize(cmd, metadataAndPayload);
+			cmd.Recycle();
+			cmdBuilder.Recycle();
+			msg.Recycle();
+			msgBuilder.Recycle();
+			return res;
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessaegs, ChecksumType checksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, IByteBuffer payload)
 		{
-			return NewSend(ProducerId, SequenceId, NumMessaegs, 0, 0, checksumType, MessageMetadata, Payload);
+			return NewSend(producerId, sequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessaegs, ChecksumType checksumType, MessageMetadata MessageMetadata, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, IByteBuffer payload)
 		{
-			return NewSend(ProducerId, LowestSequenceId, HighestSequenceId, NumMessaegs, 0, 0, checksumType, MessageMetadata, Payload);
+			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long SequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, MessageMetadata MessageData, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, MessageMetadata messageData, IByteBuffer payload)
 		{
-			CommandSend.Builder SendBuilder = CommandSend.NewBuilder();
-			SendBuilder.SetProducerId(ProducerId);
-			SendBuilder.SetSequenceId(SequenceId);
-			if (NumMessages > 1)
+			CommandSend.Builder sendBuilder = CommandSend.NewBuilder();
+			sendBuilder.SetProducerId(producerId);
+			sendBuilder.SetSequenceId(sequenceId);
+			if (numMessages > 1)
 			{
-				SendBuilder.SetNumMessages(NumMessages);
+				sendBuilder.SetNumMessages(numMessages);
 			}
-			if (TxnIdLeastBits > 0)
+			if (txnIdLeastBits > 0)
 			{
-				SendBuilder.SetTxnidLeastBits(TxnIdLeastBits);
+				sendBuilder.SetTxnidLeastBits(txnIdLeastBits);
 			}
-			if (TxnIdMostBits > 0)
+			if (txnIdMostBits > 0)
 			{
-				SendBuilder.SetTxnidMostBits(TxnIdMostBits);
+				sendBuilder.SetTxnidMostBits(txnIdMostBits);
 			}
-			CommandSend Send = SendBuilder.Build();
+			CommandSend send = sendBuilder.Build();
 
-			ByteBufPair Res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(Send), ChecksumType, MessageData, Payload);
-			Send.Recycle();
-			SendBuilder.Recycle();
-			return Res;
+			ByteBufPair res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send), checksumType, messageData, payload);
+			send.Recycle();
+			sendBuilder.Recycle();
+			return res;
 		}
 
-		public static ByteBufPair NewSend(long ProducerId, long LowestSequenceId, long HighestSequenceId, int NumMessages, long TxnIdLeastBits, long TxnIdMostBits, ChecksumType ChecksumType, MessageMetadata MessageData, IByteBuffer Payload)
+		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, MessageMetadata messageData, IByteBuffer payload)
 		{
-			CommandSend.Builder SendBuilder = CommandSend.NewBuilder();
-			SendBuilder.SetProducerId(ProducerId);
-			SendBuilder.SetSequenceId(LowestSequenceId);
-			SendBuilder.SetHighestSequenceId(HighestSequenceId);
-			if (NumMessages > 1)
+			CommandSend.Builder sendBuilder = CommandSend.NewBuilder();
+			sendBuilder.SetProducerId(producerId);
+			sendBuilder.SetSequenceId(lowestSequenceId);
+			sendBuilder.SetHighestSequenceId(highestSequenceId);
+			if (numMessages > 1)
 			{
-				SendBuilder.SetNumMessages(NumMessages);
+				sendBuilder.SetNumMessages(numMessages);
 			}
-			if (TxnIdLeastBits > 0)
+			if (txnIdLeastBits > 0)
 			{
-				SendBuilder.SetTxnidLeastBits(TxnIdLeastBits);
+				sendBuilder.SetTxnidLeastBits(txnIdLeastBits);
 			}
-			if (TxnIdMostBits > 0)
+			if (txnIdMostBits > 0)
 			{
-				SendBuilder.SetTxnidMostBits(TxnIdMostBits);
+				sendBuilder.SetTxnidMostBits(txnIdMostBits);
 			}
-			CommandSend Send = SendBuilder.Build();
+			CommandSend send = sendBuilder.Build();
 
-			ByteBufPair Res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(Send), ChecksumType, MessageData, Payload);
-			Send.Recycle();
-			SendBuilder.Recycle();
-			return Res;
+			ByteBufPair res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send), checksumType, messageData, payload);
+			send.Recycle();
+			sendBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, long ResetStartMessageBackInSeconds)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
 		{
-			return NewSubscribe(Topic, Subscription, ConsumerId, RequestId, SubType, PriorityLevel, ConsumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, ResetStartMessageBackInSeconds, null, true);
+			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, CommandSubscribe.Types.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
-					return NewSubscribe(Topic, Subscription, ConsumerId, RequestId, SubType, PriorityLevel, ConsumerName, IsDurable, StartMessageId, Metadata, ReadCompacted, IsReplicated, SubscriptionInitialPosition, StartMessageRollbackDurationInSec, SchemaInfo, CreateTopicIfDoesNotExist, null);
+					return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
 
-		public static IByteBuffer NewSubscribe(string Topic, string Subscription, long ConsumerId, long RequestId, CommandSubscribe.Types.SubType SubType, int PriorityLevel, string ConsumerName, bool IsDurable, MessageIdData StartMessageId, IDictionary<string, string> Metadata, bool ReadCompacted, bool IsReplicated, CommandSubscribe.Types.InitialPosition SubscriptionInitialPosition, long StartMessageRollbackDurationInSec, SchemaInfo SchemaInfo, bool CreateTopicIfDoesNotExist, KeySharedPolicy KeySharedPolicy)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
 		{
-			CommandSubscribe.Builder SubscribeBuilder = CommandSubscribe.NewBuilder();
-			SubscribeBuilder.SetTopic(Topic);
-			SubscribeBuilder.SetSubscription(Subscription);
-			SubscribeBuilder.SetSubType(SubType);
-			SubscribeBuilder.SetConsumerId(ConsumerId);
-			SubscribeBuilder.SetConsumerName(ConsumerName);
-			SubscribeBuilder.SetRequestId(RequestId);
-			SubscribeBuilder.SetPriorityLevel(PriorityLevel);
-			SubscribeBuilder.SetDurable(IsDurable);
-			SubscribeBuilder.SetReadCompacted(ReadCompacted);
-			SubscribeBuilder.SetInitialPosition(SubscriptionInitialPosition);
-			SubscribeBuilder.SetReplicateSubscriptionState(IsReplicated);
-			SubscribeBuilder.SetForceTopicCreation(CreateTopicIfDoesNotExist);
+			CommandSubscribe.Builder subscribeBuilder = CommandSubscribe.NewBuilder();
+			subscribeBuilder.SetTopic(topic);
+			subscribeBuilder.SetSubscription(subscription);
+			subscribeBuilder.SetSubType(subType);
+			subscribeBuilder.SetConsumerId(consumerId);
+			subscribeBuilder.SetConsumerName(consumerName);
+			subscribeBuilder.SetRequestId(requestId);
+			subscribeBuilder.SetPriorityLevel(priorityLevel);
+			subscribeBuilder.SetDurable(isDurable);
+			subscribeBuilder.SetReadCompacted(readCompacted);
+			subscribeBuilder.SetInitialPosition(subscriptionInitialPosition);
+			subscribeBuilder.SetReplicateSubscriptionState(isReplicated);
+			subscribeBuilder.SetForceTopicCreation(createTopicIfDoesNotExist);
 
-			if (KeySharedPolicy != null)
+			if (keySharedPolicy != null)
 			{
-				switch (KeySharedPolicy.KeySharedMode)
+				switch (keySharedPolicy.KeySharedMode)
 				{
 					case Common.Enum.KeySharedMode.AUTO_SPLIT:
-						SubscribeBuilder.SetKeySharedMeta(KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.AutoSplit));
+						subscribeBuilder.SetKeySharedMeta(KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.AutoSplit));
 						break;
 					case Common.Enum.KeySharedMode.STICKY:
-						KeySharedMeta.Builder Builder = KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.Sticky);
-						IList<Common.Entity.Range> Ranges = ((KeySharedPolicy.KeySharedPolicySticky) KeySharedPolicy).GetRanges;
-						foreach (var Range in Ranges)
+						KeySharedMeta.Builder builder = KeySharedMeta.NewBuilder().SetKeySharedMode(KeySharedMode.Sticky);
+						IList<Common.Entity.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky) keySharedPolicy).GetRanges;
+						foreach (var range in ranges)
 						{
-							Builder.AddHashRanges(IntRange.NewBuilder().SetStart(Range.Start).SetEnd(Range.End));
+							builder.AddHashRanges(IntRange.NewBuilder().SetStart(range.Start).SetEnd(range.End));
 						}
-						SubscribeBuilder.SetKeySharedMeta(Builder);
+						subscribeBuilder.SetKeySharedMeta(builder);
 						break;
 				}
 			}
 
-			if (StartMessageId != null)
+			if (startMessageId != null)
 			{
-				SubscribeBuilder.SetStartMessageId(StartMessageId);
+				subscribeBuilder.SetStartMessageId(startMessageId);
 			}
-			if (StartMessageRollbackDurationInSec > 0)
+			if (startMessageRollbackDurationInSec > 0)
 			{
-				SubscribeBuilder.SetStartMessageRollbackDurationSec(StartMessageRollbackDurationInSec);
+				subscribeBuilder.SetStartMessageRollbackDurationSec(startMessageRollbackDurationInSec);
 			}
-			SubscribeBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(Metadata));
+			subscribeBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(metadata));
 
-			Proto.Schema Schema = null;
-			if (SchemaInfo != null)
+			Proto.Schema schema = null;
+			if (schemaInfo != null)
 			{
-				Schema = GetSchema(SchemaInfo);
-				SubscribeBuilder.SetSchema(Schema);
+				schema = GetSchema(schemaInfo);
+				subscribeBuilder.SetSchema(schema);
 			}
 
-			CommandSubscribe Subscribe = SubscribeBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Subscribe).SetSubscribe(Subscribe));
-			SubscribeBuilder.Recycle();
-			Subscribe.Recycle();
-			if (null != Schema)
+			CommandSubscribe subscribe = subscribeBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Subscribe).SetSubscribe(subscribe));
+			subscribeBuilder.Recycle();
+			subscribe.Recycle();
+			if (null != schema)
 			{
-				Schema.Recycle();
+				schema.Recycle();
 			}
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewUnsubscribe(long ConsumerId, long RequestId)
+		public static IByteBuffer NewUnsubscribe(long consumerId, long requestId)
 		{
-			CommandUnsubscribe.Builder UnsubscribeBuilder = CommandUnsubscribe.NewBuilder();
-			UnsubscribeBuilder.SetConsumerId(ConsumerId);
-			UnsubscribeBuilder.SetRequestId(RequestId);
-			CommandUnsubscribe Unsubscribe = UnsubscribeBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Unsubscribe).SetUnsubscribe(Unsubscribe));
-			UnsubscribeBuilder.Recycle();
-			Unsubscribe.Recycle();
-			return Res;
+			CommandUnsubscribe.Builder unsubscribeBuilder = CommandUnsubscribe.NewBuilder();
+			unsubscribeBuilder.SetConsumerId(consumerId);
+			unsubscribeBuilder.SetRequestId(requestId);
+			CommandUnsubscribe unsubscribe = unsubscribeBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Unsubscribe).SetUnsubscribe(unsubscribe));
+			unsubscribeBuilder.Recycle();
+			unsubscribe.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewActiveConsumerChange(long ConsumerId, bool IsActive)
+		public static IByteBuffer NewActiveConsumerChange(long consumerId, bool isActive)
 		{
-			CommandActiveConsumerChange.Builder ChangeBuilder = CommandActiveConsumerChange.NewBuilder().SetConsumerId(ConsumerId).SetIsActive(IsActive);
+			CommandActiveConsumerChange.Builder changeBuilder = CommandActiveConsumerChange.NewBuilder().SetConsumerId(consumerId).SetIsActive(isActive);
 
-			CommandActiveConsumerChange Change = ChangeBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ActiveConsumerChange).SetActiveConsumerChange(Change));
-			ChangeBuilder.Recycle();
-			Change.Recycle();
-			return Res;
+			CommandActiveConsumerChange change = changeBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ActiveConsumerChange).SetActiveConsumerChange(change));
+			changeBuilder.Recycle();
+			change.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewSeek(long ConsumerId, long RequestId, long LedgerId, long EntryId)
+		public static IByteBuffer NewSeek(long consumerId, long requestId, long ledgerId, long entryId)
 		{
-			CommandSeek.Builder SeekBuilder = CommandSeek.NewBuilder();
-			SeekBuilder.SetConsumerId(ConsumerId);
-			SeekBuilder.SetRequestId(RequestId);
+			CommandSeek.Builder seekBuilder = CommandSeek.NewBuilder();
+			seekBuilder.SetConsumerId(consumerId);
+			seekBuilder.SetRequestId(requestId);
 
-			MessageIdData.Builder MessageIdBuilder = MessageIdData.NewBuilder();
-			MessageIdBuilder.LedgerId = LedgerId;
-			MessageIdBuilder.EntryId = EntryId;
-			MessageIdData MessageId = MessageIdBuilder.Build();
-			SeekBuilder.SetMessageId(MessageId);
+			MessageIdData.Builder messageIdBuilder = MessageIdData.NewBuilder();
+			messageIdBuilder.LedgerId = ledgerId;
+			messageIdBuilder.EntryId = entryId;
+			MessageIdData messageId = messageIdBuilder.Build();
+			seekBuilder.SetMessageId(messageId);
 
-			CommandSeek Seek = SeekBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(Seek));
-			MessageId.Recycle();
-			MessageIdBuilder.Recycle();
-			SeekBuilder.Recycle();
-			Seek.Recycle();
-			return Res;
+			CommandSeek seek = seekBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
+			messageId.Recycle();
+			messageIdBuilder.Recycle();
+			seekBuilder.Recycle();
+			seek.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewSeek(long ConsumerId, long RequestId, long Timestamp)
+		public static IByteBuffer NewSeek(long consumerId, long requestId, long timestamp)
 		{
-			CommandSeek.Builder SeekBuilder = CommandSeek.NewBuilder();
-			SeekBuilder.SetConsumerId(ConsumerId);
-			SeekBuilder.SetRequestId(RequestId);
+			CommandSeek.Builder seekBuilder = CommandSeek.NewBuilder();
+			seekBuilder.SetConsumerId(consumerId);
+			seekBuilder.SetRequestId(requestId);
 
-			SeekBuilder.SetMessagePublishTime(Timestamp);
+			seekBuilder.SetMessagePublishTime(timestamp);
 
-			CommandSeek Seek = SeekBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(Seek));
+			CommandSeek seek = seekBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
 
-			SeekBuilder.Recycle();
-			Seek.Recycle();
-			return Res;
+			seekBuilder.Recycle();
+			seek.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewCloseConsumer(long ConsumerId, long RequestId)
+		public static IByteBuffer NewCloseConsumer(long consumerId, long requestId)
 		{
-			CommandCloseConsumer.Builder CloseConsumerBuilder = CommandCloseConsumer.NewBuilder();
-			CloseConsumerBuilder.SetConsumerId(ConsumerId);
-			CloseConsumerBuilder.SetRequestId(RequestId);
-			CommandCloseConsumer CloseConsumer = CloseConsumerBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseConsumer).SetCloseConsumer(CloseConsumer));
-			CloseConsumerBuilder.Recycle();
-			CloseConsumer.Recycle();
-			return Res;
+			CommandCloseConsumer.Builder closeConsumerBuilder = CommandCloseConsumer.NewBuilder();
+			closeConsumerBuilder.SetConsumerId(consumerId);
+			closeConsumerBuilder.SetRequestId(requestId);
+			CommandCloseConsumer closeConsumer = closeConsumerBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseConsumer).SetCloseConsumer(closeConsumer));
+			closeConsumerBuilder.Recycle();
+			closeConsumer.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewReachedEndOfTopic(long ConsumerId)
+		public static IByteBuffer NewReachedEndOfTopic(long consumerId)
 		{
-			CommandReachedEndOfTopic.Builder ReachedEndOfTopicBuilder = CommandReachedEndOfTopic.NewBuilder();
-			ReachedEndOfTopicBuilder.SetConsumerId(ConsumerId);
-			CommandReachedEndOfTopic ReachedEndOfTopic = ReachedEndOfTopicBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ReachedEndOfTopic).SetReachedEndOfTopic(ReachedEndOfTopic));
-			ReachedEndOfTopicBuilder.Recycle();
-			ReachedEndOfTopic.Recycle();
-			return Res;
+			CommandReachedEndOfTopic.Builder reachedEndOfTopicBuilder = CommandReachedEndOfTopic.NewBuilder();
+			reachedEndOfTopicBuilder.SetConsumerId(consumerId);
+			CommandReachedEndOfTopic reachedEndOfTopic = reachedEndOfTopicBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ReachedEndOfTopic).SetReachedEndOfTopic(reachedEndOfTopic));
+			reachedEndOfTopicBuilder.Recycle();
+			reachedEndOfTopic.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewCloseProducer(long ProducerId, long RequestId)
+		public static IByteBuffer NewCloseProducer(long producerId, long requestId)
 		{
-			CommandCloseProducer.Builder CloseProducerBuilder = CommandCloseProducer.NewBuilder();
-			CloseProducerBuilder.SetProducerId(ProducerId);
-			CloseProducerBuilder.SetRequestId(RequestId);
-			CommandCloseProducer CloseProducer = CloseProducerBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseProducer).SetCloseProducer(CloseProducerBuilder));
-			CloseProducerBuilder.Recycle();
-			CloseProducer.Recycle();
-			return Res;
+			CommandCloseProducer.Builder closeProducerBuilder = CommandCloseProducer.NewBuilder();
+			closeProducerBuilder.SetProducerId(producerId);
+			closeProducerBuilder.SetRequestId(requestId);
+			CommandCloseProducer closeProducer = closeProducerBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseProducer).SetCloseProducer(closeProducerBuilder));
+			closeProducerBuilder.Recycle();
+			closeProducer.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewProducer(string Topic, long ProducerId, long RequestId, string ProducerName, IDictionary<string, string> Metadata)
+		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata)
 		{
-			return NewProducer(Topic, ProducerId, RequestId, ProducerName, false, Metadata);
+			return NewProducer(topic, producerId, requestId, producerName, false, metadata);
 		}
 
-		public static IByteBuffer NewProducer(string Topic, long ProducerId, long RequestId, string ProducerName, bool Encrypted, IDictionary<string, string> Metadata)
+		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata)
 		{
-			return NewProducer(Topic, ProducerId, RequestId, ProducerName, Encrypted, Metadata, null, 0, false);
+			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false);
 		}
 
-		private static Proto.Schema.Types.Type GetSchemaType(SchemaType Type)
+		private static Proto.Schema.Types.Type GetSchemaType(SchemaType type)
 		{
-			if (Type.Value < 0)
+			if (type.Value < 0)
 			{
 				return Proto.Schema.Types.Type.None;
 			}
 			else
 			{
-				return Enum.GetValues(typeof(Proto.Schema.Types.Type)).Cast<Proto.Schema.Types.Type>().ToList()[Type.Value];
+				return Enum.GetValues(typeof(Proto.Schema.Types.Type)).Cast<Proto.Schema.Types.Type>().ToList()[type.Value];
 			}
 		}
 
@@ -646,640 +646,640 @@ namespace SharpPulsar.Protocol
 				return SchemaType.ValueOf(type.Value);
 			}
 		}
-		private static Proto.Schema GetSchema(SchemaInfo SchemaInfo)
+		private static Proto.Schema GetSchema(SchemaInfo schemaInfo)
 		{
-			Proto.Schema.Builder Builder = Proto.Schema.NewBuilder().SetName(SchemaInfo.Name).SetSchemaData(ByteString.CopyFrom((byte[])(Array)SchemaInfo.Schema)).SetType(GetSchemaType(SchemaInfo.Type)).AddAllProperties(SchemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
-			Proto.Schema Schema = Builder.Build();
-			Builder.Recycle();
-			return Schema;
+			Proto.Schema.Builder builder = Proto.Schema.NewBuilder().SetName(schemaInfo.Name).SetSchemaData(ByteString.CopyFrom((byte[])(Array)schemaInfo.Schema)).SetType(GetSchemaType(schemaInfo.Type)).AddAllProperties(schemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
+			Proto.Schema schema = builder.Build();
+			builder.Recycle();
+			return schema;
 		}
 
-		public static IByteBuffer NewProducer(string Topic, long ProducerId, long RequestId, string ProducerName, bool Encrypted, IDictionary<string, string> Metadata, SchemaInfo SchemaInfo, long Epoch, bool UserProvidedProducerName)
+		public static IByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
 		{
-			CommandProducer.Builder ProducerBuilder = CommandProducer.NewBuilder();
-			ProducerBuilder.SetTopic(Topic);
-			ProducerBuilder.SetProducerId(ProducerId);
-			ProducerBuilder.SetRequestId(RequestId);
-			ProducerBuilder.SetEpoch(Epoch);
-			if (!string.ReferenceEquals(ProducerName, null))
+			CommandProducer.Builder producerBuilder = CommandProducer.NewBuilder();
+			producerBuilder.SetTopic(topic);
+			producerBuilder.SetProducerId(producerId);
+			producerBuilder.SetRequestId(requestId);
+			producerBuilder.SetEpoch(epoch);
+			if (!string.ReferenceEquals(producerName, null))
 			{
-				ProducerBuilder.SetProducerName(ProducerName);
+				producerBuilder.SetProducerName(producerName);
 			}
-			ProducerBuilder.SetUserProvidedProducerName(UserProvidedProducerName);
-			ProducerBuilder.SetEncrypted(Encrypted);
+			producerBuilder.SetUserProvidedProducerName(userProvidedProducerName);
+			producerBuilder.SetEncrypted(encrypted);
 
-			ProducerBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(Metadata));
+			producerBuilder.AddAllMetadata(CommandUtils.ToKeyValueList(metadata));
 
-			if (null != SchemaInfo)
+			if (null != schemaInfo)
 			{
-				ProducerBuilder.SetSchema(GetSchema(SchemaInfo));
-			}
-
-			CommandProducer Producer = ProducerBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Producer).SetProducer(Producer));
-			ProducerBuilder.Recycle();
-			Producer.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewPartitionMetadataResponse(ServerError Error, string ErrorMsg, long RequestId)
-		{
-			CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
-			PartitionMetadataResponseBuilder.SetRequestId(RequestId);
-			PartitionMetadataResponseBuilder.SetError(Error);
-			PartitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Failed);
-			if (!string.ReferenceEquals(ErrorMsg, null))
-			{
-				PartitionMetadataResponseBuilder.SetMessage(ErrorMsg);
+				producerBuilder.SetSchema(GetSchema(schemaInfo));
 			}
 
-			CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(PartitionMetadataResponse));
-			PartitionMetadataResponseBuilder.Recycle();
-			PartitionMetadataResponse.Recycle();
-			return Res;
+			CommandProducer producer = producerBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Producer).SetProducer(producer));
+			producerBuilder.Recycle();
+			producer.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewPartitionMetadataRequest(string Topic, long RequestId)
+		public static IByteBuffer NewPartitionMetadataResponse(ServerError error, string errorMsg, long requestId)
 		{
-			CommandPartitionedTopicMetadata.Builder PartitionMetadataBuilder = CommandPartitionedTopicMetadata.NewBuilder();
-			PartitionMetadataBuilder.SetTopic(Topic);
-			PartitionMetadataBuilder.SetRequestId(RequestId);
-			CommandPartitionedTopicMetadata PartitionMetadata = PartitionMetadataBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadata).SetPartitionMetadata(PartitionMetadata));
-			PartitionMetadataBuilder.Recycle();
-			PartitionMetadata.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewPartitionMetadataResponse(int Partitions, long RequestId)
-		{
-			CommandPartitionedTopicMetadataResponse.Builder PartitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
-			PartitionMetadataResponseBuilder.SetPartitions(Partitions);
-			PartitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Success);
-			PartitionMetadataResponseBuilder.SetRequestId(RequestId);
-
-			CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = PartitionMetadataResponseBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(PartitionMetadataResponse));
-			PartitionMetadataResponseBuilder.Recycle();
-			PartitionMetadataResponse.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewLookup(string Topic, bool Authoritative, long RequestId)
-		{
-			CommandLookupTopic.Builder LookupTopicBuilder = CommandLookupTopic.NewBuilder();
-			LookupTopicBuilder.SetTopic(Topic);
-			LookupTopicBuilder.SetRequestId(RequestId);
-			LookupTopicBuilder.SetAuthoritative(Authoritative);
-			CommandLookupTopic LookupBroker = LookupTopicBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Lookup).SetLookupTopic(LookupBroker));
-			LookupTopicBuilder.Recycle();
-			LookupBroker.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewLookupResponse(string BrokerServiceUrl, string BrokerServiceUrlTls, bool Authoritative, CommandLookupTopicResponse.Types.LookupType Response, long RequestId, bool ProxyThroughServiceUrl)
-		{
-			CommandLookupTopicResponse.Builder CommandLookupTopicResponseBuilder = CommandLookupTopicResponse.NewBuilder();
-			CommandLookupTopicResponseBuilder.SetBrokerServiceUrl(BrokerServiceUrl);
-			if (!string.ReferenceEquals(BrokerServiceUrlTls, null))
+			CommandPartitionedTopicMetadataResponse.Builder partitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+			partitionMetadataResponseBuilder.SetRequestId(requestId);
+			partitionMetadataResponseBuilder.SetError(error);
+			partitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Failed);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				CommandLookupTopicResponseBuilder.SetBrokerServiceUrlTls(BrokerServiceUrlTls);
+				partitionMetadataResponseBuilder.SetMessage(errorMsg);
 			}
-			CommandLookupTopicResponseBuilder.SetResponse(Response);
-			CommandLookupTopicResponseBuilder.SetRequestId(RequestId);
-			CommandLookupTopicResponseBuilder.SetAuthoritative(Authoritative);
-			CommandLookupTopicResponseBuilder.SetProxyThroughServiceUrl(ProxyThroughServiceUrl);
 
-			CommandLookupTopicResponse commandLookupTopicResponse = CommandLookupTopicResponseBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(commandLookupTopicResponse));
-			CommandLookupTopicResponseBuilder.Recycle();
+			CommandPartitionedTopicMetadataResponse partitionMetadataResponse = partitionMetadataResponseBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(partitionMetadataResponse));
+			partitionMetadataResponseBuilder.Recycle();
+			partitionMetadataResponse.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewPartitionMetadataRequest(string topic, long requestId)
+		{
+			CommandPartitionedTopicMetadata.Builder partitionMetadataBuilder = CommandPartitionedTopicMetadata.NewBuilder();
+			partitionMetadataBuilder.SetTopic(topic);
+			partitionMetadataBuilder.SetRequestId(requestId);
+			CommandPartitionedTopicMetadata partitionMetadata = partitionMetadataBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadata).SetPartitionMetadata(partitionMetadata));
+			partitionMetadataBuilder.Recycle();
+			partitionMetadata.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewPartitionMetadataResponse(int partitions, long requestId)
+		{
+			CommandPartitionedTopicMetadataResponse.Builder partitionMetadataResponseBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+			partitionMetadataResponseBuilder.SetPartitions(partitions);
+			partitionMetadataResponseBuilder.SetResponse(CommandPartitionedTopicMetadataResponse.Types.LookupType.Success);
+			partitionMetadataResponseBuilder.SetRequestId(requestId);
+
+			CommandPartitionedTopicMetadataResponse partitionMetadataResponse = partitionMetadataResponseBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadataResponse).SetPartitionMetadataResponse(partitionMetadataResponse));
+			partitionMetadataResponseBuilder.Recycle();
+			partitionMetadataResponse.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewLookup(string topic, bool authoritative, long requestId)
+		{
+			CommandLookupTopic.Builder lookupTopicBuilder = CommandLookupTopic.NewBuilder();
+			lookupTopicBuilder.SetTopic(topic);
+			lookupTopicBuilder.SetRequestId(requestId);
+			lookupTopicBuilder.SetAuthoritative(authoritative);
+			CommandLookupTopic lookupBroker = lookupTopicBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Lookup).SetLookupTopic(lookupBroker));
+			lookupTopicBuilder.Recycle();
+			lookupBroker.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewLookupResponse(string brokerServiceUrl, string brokerServiceUrlTls, bool authoritative, CommandLookupTopicResponse.Types.LookupType response, long requestId, bool proxyThroughServiceUrl)
+		{
+			CommandLookupTopicResponse.Builder commandLookupTopicResponseBuilder = CommandLookupTopicResponse.NewBuilder();
+			commandLookupTopicResponseBuilder.SetBrokerServiceUrl(brokerServiceUrl);
+			if (!string.ReferenceEquals(brokerServiceUrlTls, null))
+			{
+				commandLookupTopicResponseBuilder.SetBrokerServiceUrlTls(brokerServiceUrlTls);
+			}
+			commandLookupTopicResponseBuilder.SetResponse(response);
+			commandLookupTopicResponseBuilder.SetRequestId(requestId);
+			commandLookupTopicResponseBuilder.SetAuthoritative(authoritative);
+			commandLookupTopicResponseBuilder.SetProxyThroughServiceUrl(proxyThroughServiceUrl);
+
+			CommandLookupTopicResponse commandLookupTopicResponse = commandLookupTopicResponseBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(commandLookupTopicResponse));
+			commandLookupTopicResponseBuilder.Recycle();
 			commandLookupTopicResponse.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewLookupErrorResponse(ServerError Error, string ErrorMsg, long RequestId)
+		public static IByteBuffer NewLookupErrorResponse(ServerError error, string errorMsg, long requestId)
 		{
-			CommandLookupTopicResponse.Builder ConnectionBuilder = CommandLookupTopicResponse.NewBuilder();
-			ConnectionBuilder.SetRequestId(RequestId);
-			ConnectionBuilder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandLookupTopicResponse.Builder connectionBuilder = CommandLookupTopicResponse.NewBuilder();
+			connectionBuilder.SetRequestId(requestId);
+			connectionBuilder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				ConnectionBuilder.SetMessage(ErrorMsg);
+				connectionBuilder.SetMessage(errorMsg);
 			}
-			ConnectionBuilder.SetResponse(CommandLookupTopicResponse.Types.LookupType.Failed);
+			connectionBuilder.SetResponse(CommandLookupTopicResponse.Types.LookupType.Failed);
 
-			CommandLookupTopicResponse ConnectionBroker = ConnectionBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(ConnectionBroker));
-			ConnectionBuilder.Recycle();
-			ConnectionBroker.Recycle();
-			return Res;
+			CommandLookupTopicResponse connectionBroker = connectionBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.LookupResponse).SetLookupTopicResponse(connectionBroker));
+			connectionBuilder.Recycle();
+			connectionBroker.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewMultiMessageAck(long ConsumerId, IList<KeyValuePair<long, long>> Entries)
+		public static IByteBuffer NewMultiMessageAck(long consumerId, IList<KeyValuePair<long, long>> entries)
 		{
-			CommandAck.Builder AckBuilder = CommandAck.NewBuilder();
-			AckBuilder.SetConsumerId(ConsumerId);
-			AckBuilder.SetAckType(CommandAck.Types.AckType.Individual);
+			CommandAck.Builder ackBuilder = CommandAck.NewBuilder();
+			ackBuilder.SetConsumerId(consumerId);
+			ackBuilder.SetAckType(CommandAck.Types.AckType.Individual);
 
-			int EntriesCount = Entries.Count;
-			for (int I = 0; I < EntriesCount; I++)
+			int entriesCount = entries.Count;
+			for (int i = 0; i < entriesCount; i++)
 			{
-				long LedgerId = Entries[I].Key;
-				long EntryId = Entries[I].Value;
+				long ledgerId = entries[i].Key;
+				long entryId = entries[i].Value;
 
-				MessageIdData.Builder MessageIdDataBuilder = MessageIdData.NewBuilder();
-				MessageIdDataBuilder.LedgerId = LedgerId;
-				MessageIdDataBuilder.EntryId = EntryId;
-				MessageIdData messageIdData = MessageIdDataBuilder.Build();
-				AckBuilder.AddMessageId(messageIdData);
+				MessageIdData.Builder messageIdDataBuilder = MessageIdData.NewBuilder();
+				messageIdDataBuilder.LedgerId = ledgerId;
+				messageIdDataBuilder.EntryId = entryId;
+				MessageIdData messageIdData = messageIdDataBuilder.Build();
+				ackBuilder.AddMessageId(messageIdData);
 
-				MessageIdDataBuilder.Recycle();
+				messageIdDataBuilder.Recycle();
 			}
 
-			CommandAck Ack = AckBuilder.Build();
+			CommandAck ack = ackBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(Ack));
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
 
-			for (int I = 0; I < EntriesCount; I++)
+			for (int i = 0; i < entriesCount; i++)
 			{
-				Ack.GetMessageId(I).Recycle();
+				ack.GetMessageId(i).Recycle();
 			}
-			Ack.Recycle();
-			AckBuilder.Recycle();
-			return Res;
+			ack.Recycle();
+			ackBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, CommandAck.Types.AckType AckType, CommandAck.Types.ValidationError ValidationError, IDictionary<string, long> Properties)
+		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties)
 		{
-			return NewAck(ConsumerId, LedgerId, EntryId, AckType, ValidationError, Properties, 0, 0);
+			return NewAck(consumerId, ledgerId, entryId, ackType, validationError, properties, 0, 0);
 		}
 
-		public static IByteBuffer NewAck(long ConsumerId, long LedgerId, long EntryId, CommandAck.Types.AckType AckType, CommandAck.Types.ValidationError ValidationError, IDictionary<string, long> Properties, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandAck.Builder AckBuilder = CommandAck.NewBuilder();
-			AckBuilder.SetConsumerId(ConsumerId);
-			AckBuilder.SetAckType(AckType);
-			MessageIdData.Builder MessageIdDataBuilder = MessageIdData.NewBuilder();
-			MessageIdDataBuilder.LedgerId = LedgerId;
-			MessageIdDataBuilder.EntryId = EntryId;
-			MessageIdData messageIdData = MessageIdDataBuilder.Build();
-			AckBuilder.AddMessageId(messageIdData);
-			if (ValidationError != null)
+			CommandAck.Builder ackBuilder = CommandAck.NewBuilder();
+			ackBuilder.SetConsumerId(consumerId);
+			ackBuilder.SetAckType(ackType);
+			MessageIdData.Builder messageIdDataBuilder = MessageIdData.NewBuilder();
+			messageIdDataBuilder.LedgerId = ledgerId;
+			messageIdDataBuilder.EntryId = entryId;
+			MessageIdData messageIdData = messageIdDataBuilder.Build();
+			ackBuilder.AddMessageId(messageIdData);
+			if (validationError != null)
 			{
-				AckBuilder.SetValidationError(ValidationError);
+				ackBuilder.SetValidationError(validationError);
 			}
-			if (TxnIdMostBits > 0)
+			if (txnIdMostBits > 0)
 			{
-				AckBuilder.SetTxnidMostBits(TxnIdMostBits);
+				ackBuilder.SetTxnidMostBits(txnIdMostBits);
 			}
-			if (TxnIdLeastBits > 0)
+			if (txnIdLeastBits > 0)
 			{
-				AckBuilder.SetTxnidLeastBits(TxnIdLeastBits);
+				ackBuilder.SetTxnidLeastBits(txnIdLeastBits);
 			}
-			foreach (KeyValuePair<string, long> E in Properties.SetOfKeyValuePairs())
+			foreach (KeyValuePair<string, long> e in properties.SetOfKeyValuePairs())
 			{
-				AckBuilder.AddProperties(KeyLongValue.NewBuilder().SetKey(E.Key).SetValue(E.Value).Build());
+				ackBuilder.AddProperties(KeyLongValue.NewBuilder().SetKey(e.Key).SetValue(e.Value).Build());
 			}
-			CommandAck Ack = AckBuilder.Build();
+			CommandAck ack = ackBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(Ack));
-			Ack.Recycle();
-			AckBuilder.Recycle();
-			MessageIdDataBuilder.Recycle();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
+			ack.Recycle();
+			ackBuilder.Recycle();
+			messageIdDataBuilder.Recycle();
 			messageIdData.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewAckResponse(long ConsumerId, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAckResponse(long consumerId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandAckResponse.Builder CommandAckResponseBuilder = CommandAckResponse.NewBuilder();
-			CommandAckResponseBuilder.SetConsumerId(ConsumerId);
-			CommandAckResponseBuilder.SetTxnidLeastBits(TxnIdLeastBits);
-			CommandAckResponseBuilder.SetTxnidMostBits(TxnIdMostBits);
-			CommandAckResponse commandAckResponse = CommandAckResponseBuilder.Build();
+			CommandAckResponse.Builder commandAckResponseBuilder = CommandAckResponse.NewBuilder();
+			commandAckResponseBuilder.SetConsumerId(consumerId);
+			commandAckResponseBuilder.SetTxnidLeastBits(txnIdLeastBits);
+			commandAckResponseBuilder.SetTxnidMostBits(txnIdMostBits);
+			CommandAckResponse commandAckResponse = commandAckResponseBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(commandAckResponse));
-			CommandAckResponseBuilder.Recycle();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(commandAckResponse));
+			commandAckResponseBuilder.Recycle();
 			commandAckResponse.Recycle();
 
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewAckErrorResponse(ServerError Error, string ErrorMsg, long ConsumerId)
+		public static IByteBuffer NewAckErrorResponse(ServerError error, string errorMsg, long consumerId)
 		{
-			CommandAckResponse.Builder AckErrorBuilder = CommandAckResponse.NewBuilder();
-			AckErrorBuilder.SetConsumerId(ConsumerId);
-			AckErrorBuilder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandAckResponse.Builder ackErrorBuilder = CommandAckResponse.NewBuilder();
+			ackErrorBuilder.SetConsumerId(consumerId);
+			ackErrorBuilder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				AckErrorBuilder.SetMessage(ErrorMsg);
+				ackErrorBuilder.SetMessage(errorMsg);
 			}
 
-			CommandAckResponse Response = AckErrorBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(Response));
+			CommandAckResponse response = ackErrorBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AckResponse).SetAckResponse(response));
 
-			AckErrorBuilder.Recycle();
-			Response.Recycle();
+			ackErrorBuilder.Recycle();
+			response.Recycle();
 
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewFlow(long ConsumerId, int MessagePermits)
+		public static IByteBuffer NewFlow(long consumerId, int messagePermits)
 		{
-			CommandFlow.Builder FlowBuilder = CommandFlow.NewBuilder();
-			FlowBuilder.SetConsumerId(ConsumerId);
-			FlowBuilder.SetMessagePermits(MessagePermits);
-			CommandFlow Flow = FlowBuilder.Build();
+			CommandFlow.Builder flowBuilder = CommandFlow.NewBuilder();
+			flowBuilder.SetConsumerId(consumerId);
+			flowBuilder.SetMessagePermits(messagePermits);
+			CommandFlow flow = flowBuilder.Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Flow).SetFlow(FlowBuilder));
-			Flow.Recycle();
-			FlowBuilder.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Flow).SetFlow(flowBuilder));
+			flow.Recycle();
+			flowBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long ConsumerId)
+		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId)
 		{
-			CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
-			RedeliverBuilder.SetConsumerId(ConsumerId);
-			CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(RedeliverBuilder));
-			Redeliver.Recycle();
-			RedeliverBuilder.Recycle();
-			return Res;
+			CommandRedeliverUnacknowledgedMessages.Builder redeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+			redeliverBuilder.SetConsumerId(consumerId);
+			CommandRedeliverUnacknowledgedMessages redeliver = redeliverBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
+			redeliver.Recycle();
+			redeliverBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long ConsumerId, IList<MessageIdData> MessageIds)
+		public static IByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId, IList<MessageIdData> messageIds)
 		{
-			CommandRedeliverUnacknowledgedMessages.Builder RedeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
-			RedeliverBuilder.SetConsumerId(ConsumerId);
-			RedeliverBuilder.AddAllMessageIds(MessageIds);
-			CommandRedeliverUnacknowledgedMessages Redeliver = RedeliverBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(RedeliverBuilder));
-			Redeliver.Recycle();
-			RedeliverBuilder.Recycle();
-			return Res;
+			CommandRedeliverUnacknowledgedMessages.Builder redeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+			redeliverBuilder.SetConsumerId(consumerId);
+			redeliverBuilder.AddAllMessageIds(messageIds);
+			CommandRedeliverUnacknowledgedMessages redeliver = redeliverBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
+			redeliver.Recycle();
+			redeliverBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewConsumerStatsResponse(ServerError ServerError, string ErrMsg, long RequestId)
+		public static IByteBuffer NewConsumerStatsResponse(ServerError serverError, string errMsg, long requestId)
 		{
-			CommandConsumerStatsResponse.Builder CommandConsumerStatsResponseBuilder = CommandConsumerStatsResponse.NewBuilder();
-			CommandConsumerStatsResponseBuilder.SetRequestId(RequestId);
-			CommandConsumerStatsResponseBuilder.SetErrorMessage(ErrMsg);
-			CommandConsumerStatsResponseBuilder.SetErrorCode(ServerError);
+			CommandConsumerStatsResponse.Builder commandConsumerStatsResponseBuilder = CommandConsumerStatsResponse.NewBuilder();
+			commandConsumerStatsResponseBuilder.SetRequestId(requestId);
+			commandConsumerStatsResponseBuilder.SetErrorMessage(errMsg);
+			commandConsumerStatsResponseBuilder.SetErrorCode(serverError);
 
-			CommandConsumerStatsResponse commandConsumerStatsResponse = CommandConsumerStatsResponseBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(CommandConsumerStatsResponseBuilder));
+			CommandConsumerStatsResponse commandConsumerStatsResponse = commandConsumerStatsResponseBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(commandConsumerStatsResponseBuilder));
 			commandConsumerStatsResponse.Recycle();
-			CommandConsumerStatsResponseBuilder.Recycle();
-			return Res;
+			commandConsumerStatsResponseBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewConsumerStatsResponse(CommandConsumerStatsResponse.Builder Builder)
+		public static IByteBuffer NewConsumerStatsResponse(CommandConsumerStatsResponse.Builder builder)
 		{
-			CommandConsumerStatsResponse CommandConsumerStatsResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(Builder));
-			CommandConsumerStatsResponse.Recycle();
-			Builder.Recycle();
-			return Res;
+			CommandConsumerStatsResponse commandConsumerStatsResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ConsumerStatsResponse).SetConsumerStatsResponse(builder));
+			commandConsumerStatsResponse.Recycle();
+			builder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string Namespace, long RequestId, CommandGetTopicsOfNamespace.Types.Mode Mode)
+		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Types.Mode mode)
 		{
-			CommandGetTopicsOfNamespace.Builder TopicsBuilder = CommandGetTopicsOfNamespace.NewBuilder();
-			TopicsBuilder.SetNamespace(Namespace).SetRequestId(RequestId).SetMode(Mode);
+			CommandGetTopicsOfNamespace.Builder topicsBuilder = CommandGetTopicsOfNamespace.NewBuilder();
+			topicsBuilder.SetNamespace(@namespace).SetRequestId(requestId).SetMode(mode);
 
-			CommandGetTopicsOfNamespace TopicsCommand = TopicsBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(TopicsCommand));
-			TopicsBuilder.Recycle();
-			TopicsCommand.Recycle();
-			return Res;
+			CommandGetTopicsOfNamespace topicsCommand = topicsBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(topicsCommand));
+			topicsBuilder.Recycle();
+			topicsCommand.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetTopicsOfNamespaceResponse(IList<string> Topics, long RequestId)
+		public static IByteBuffer NewGetTopicsOfNamespaceResponse(IList<string> topics, long requestId)
 		{
-			CommandGetTopicsOfNamespaceResponse.Builder TopicsResponseBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
+			CommandGetTopicsOfNamespaceResponse.Builder topicsResponseBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
 
-			TopicsResponseBuilder.SetRequestId(RequestId).AddAllTopics(Topics);
+			topicsResponseBuilder.SetRequestId(requestId).AddAllTopics(topics);
 
-			CommandGetTopicsOfNamespaceResponse TopicsOfNamespaceResponse = TopicsResponseBuilder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespaceResponse).SetGetTopicsOfNamespaceResponse(TopicsOfNamespaceResponse));
+			CommandGetTopicsOfNamespaceResponse topicsOfNamespaceResponse = topicsResponseBuilder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespaceResponse).SetGetTopicsOfNamespaceResponse(topicsOfNamespaceResponse));
 
-			TopicsResponseBuilder.Recycle();
-			TopicsOfNamespaceResponse.Recycle();
-			return Res;
+			topicsResponseBuilder.Recycle();
+			topicsOfNamespaceResponse.Recycle();
+			return res;
 		}
 
-		private static readonly IByteBuffer cmdPing;
+		private static readonly IByteBuffer CmdPing;
 
 		static Commands()
 		{
-			IByteBuffer SerializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ping).SetPing(CommandPing.DefaultInstance));
-			cmdPing = Unpooled.CopiedBuffer(SerializedCmdPing);
-			SerializedCmdPing.Release();
-			IByteBuffer SerializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Pong).SetPong(CommandPong.DefaultInstance));
-			cmdPong = Unpooled.CopiedBuffer(SerializedCmdPong);
-			SerializedCmdPong.Release();
+			IByteBuffer serializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ping).SetPing(CommandPing.DefaultInstance));
+			CmdPing = Unpooled.CopiedBuffer(serializedCmdPing);
+			serializedCmdPing.Release();
+			IByteBuffer serializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Pong).SetPong(CommandPong.DefaultInstance));
+			CmdPong = Unpooled.CopiedBuffer(serializedCmdPong);
+			serializedCmdPong.Release();
 		}
 
 		internal static IByteBuffer NewPing()
 		{
-			return cmdPing.RetainedDuplicate();
+			return CmdPing.RetainedDuplicate();
 		}
 
-		private static readonly IByteBuffer cmdPong;
+		private static readonly IByteBuffer CmdPong;
 
 
 		internal static IByteBuffer NewPong()
 		{
-			return cmdPong.RetainedDuplicate();
+			return CmdPong.RetainedDuplicate();
 		}
 
-		public static IByteBuffer NewGetLastMessageId(long ConsumerId, long RequestId)
+		public static IByteBuffer NewGetLastMessageId(long consumerId, long requestId)
 		{
-			CommandGetLastMessageId.Builder CmdBuilder = CommandGetLastMessageId.NewBuilder();
-			CmdBuilder.SetConsumerId(ConsumerId).SetRequestId(RequestId);
+			CommandGetLastMessageId.Builder cmdBuilder = CommandGetLastMessageId.NewBuilder();
+			cmdBuilder.SetConsumerId(consumerId).SetRequestId(requestId);
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageId).SetGetLastMessageId(CmdBuilder.Build()));
-			CmdBuilder.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageId).SetGetLastMessageId(cmdBuilder.Build()));
+			cmdBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetLastMessageIdResponse(long RequestId, MessageIdData MessageIdData)
+		public static IByteBuffer NewGetLastMessageIdResponse(long requestId, MessageIdData messageIdData)
 		{
-			CommandGetLastMessageIdResponse.Builder Response = CommandGetLastMessageIdResponse.NewBuilder().SetLastMessageId(MessageIdData).SetRequestId(RequestId);
+			CommandGetLastMessageIdResponse.Builder response = CommandGetLastMessageIdResponse.NewBuilder().SetLastMessageId(messageIdData).SetRequestId(requestId);
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageIdResponse).SetGetLastMessageIdResponse(Response.Build()));
-			Response.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageIdResponse).SetGetLastMessageIdResponse(response.Build()));
+			response.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetSchema(long RequestId, string Topic, SchemaVersion Version)
+		public static IByteBuffer NewGetSchema(long requestId, string topic, SchemaVersion version)
 		{
-			CommandGetSchema.Builder Schema = CommandGetSchema.NewBuilder().SetRequestId(RequestId);
-			Schema.SetTopic(Topic);
-			if (Version != null)
+			CommandGetSchema.Builder schema = CommandGetSchema.NewBuilder().SetRequestId(requestId);
+			schema.SetTopic(topic);
+			if (version != null)
 			{
-				Schema.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)Version.Bytes()));
+				schema.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)version.Bytes()));
 			}
 
-			CommandGetSchema GetSchema = Schema.Build();
+			CommandGetSchema getSchema = schema.Build();
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchema).SetGetSchema(GetSchema));
-			Schema.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchema).SetGetSchema(getSchema));
+			schema.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetSchemaResponse(long RequestId, CommandGetSchemaResponse Response)
+		public static IByteBuffer NewGetSchemaResponse(long requestId, CommandGetSchemaResponse response)
 		{
-			CommandGetSchemaResponse.Builder SchemaResponseBuilder = CommandGetSchemaResponse.NewBuilder(Response).SetRequestId(RequestId);
+			CommandGetSchemaResponse.Builder schemaResponseBuilder = CommandGetSchemaResponse.NewBuilder(response).SetRequestId(requestId);
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponseBuilder.Build()));
-			SchemaResponseBuilder.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(schemaResponseBuilder.Build()));
+			schemaResponseBuilder.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetSchemaResponse(long RequestId, SchemaInfo Schema, SchemaVersion Version)
+		public static IByteBuffer NewGetSchemaResponse(long requestId, SchemaInfo schema, SchemaVersion version)
 		{
-			CommandGetSchemaResponse.Builder SchemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(RequestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)Version.Bytes())).SetSchema(GetSchema(Schema));
+			CommandGetSchemaResponse.Builder schemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(requestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)version.Bytes())).SetSchema(GetSchema(schema));
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponse.Build()));
-			SchemaResponse.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(schemaResponse.Build()));
+			schemaResponse.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetSchemaResponseError(long RequestId, ServerError Error, string ErrorMessage)
+		public static IByteBuffer NewGetSchemaResponseError(long requestId, ServerError error, string errorMessage)
 		{
-			CommandGetSchemaResponse.Builder SchemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(RequestId).SetErrorCode(Error).SetErrorMessage(ErrorMessage);
+			CommandGetSchemaResponse.Builder schemaResponse = CommandGetSchemaResponse.NewBuilder().SetRequestId(requestId).SetErrorCode(error).SetErrorMessage(errorMessage);
 
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(SchemaResponse.Build()));
-			SchemaResponse.Recycle();
-			return Res;
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchemaResponse).SetGetSchemaResponse(schemaResponse.Build()));
+			schemaResponse.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetOrCreateSchema(long RequestId, string Topic, SchemaInfo SchemaInfo)
+		public static IByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
 		{
-			CommandGetOrCreateSchema GetOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(RequestId).SetTopic(Topic).SetSchema(GetSchema(SchemaInfo).ToBuilder()).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchema).SetGetOrCreateSchema(GetOrCreateSchema));
-			GetOrCreateSchema.Recycle();
-			return Res;
+			CommandGetOrCreateSchema getOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(requestId).SetTopic(topic).SetSchema(GetSchema(schemaInfo).ToBuilder()).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchema).SetGetOrCreateSchema(getOrCreateSchema));
+			getOrCreateSchema.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetOrCreateSchemaResponse(long RequestId, SchemaVersion SchemaVersion)
+		public static IByteBuffer NewGetOrCreateSchemaResponse(long requestId, SchemaVersion schemaVersion)
 		{
-			CommandGetOrCreateSchemaResponse.Builder SchemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(RequestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)SchemaVersion.Bytes()));
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(SchemaResponse.Build()));
-			SchemaResponse.Recycle();
-			return Res;
+			CommandGetOrCreateSchemaResponse.Builder schemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(requestId).SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion.Bytes()));
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(schemaResponse.Build()));
+			schemaResponse.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewGetOrCreateSchemaResponseError(long RequestId, ServerError Error, string ErrorMessage)
+		public static IByteBuffer NewGetOrCreateSchemaResponseError(long requestId, ServerError error, string errorMessage)
 		{
-			CommandGetOrCreateSchemaResponse.Builder SchemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(RequestId).SetErrorCode(Error).SetErrorMessage(ErrorMessage);
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(SchemaResponse.Build()));
-			SchemaResponse.Recycle();
-			return Res;
+			CommandGetOrCreateSchemaResponse.Builder schemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder().SetRequestId(requestId).SetErrorCode(error).SetErrorMessage(errorMessage);
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchemaResponse).SetGetOrCreateSchemaResponse(schemaResponse.Build()));
+			schemaResponse.Recycle();
+			return res;
 		}
 
 		// ---- transaction related ----
 
-		public static IByteBuffer NewTxn(long TcId, long RequestId, long TtlSeconds)
+		public static IByteBuffer NewTxn(long tcId, long requestId, long ttlSeconds)
 		{
-			CommandNewTxn CommandNewTxn = CommandNewTxn.NewBuilder().SetTcId(TcId).SetRequestId(RequestId).SetTxnTtlSeconds(TtlSeconds).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxn).SetNewTxn(CommandNewTxn));
-			CommandNewTxn.Recycle();
-			return Res;
+			CommandNewTxn commandNewTxn = CommandNewTxn.NewBuilder().SetTcId(tcId).SetRequestId(requestId).SetTxnTtlSeconds(ttlSeconds).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxn).SetNewTxn(commandNewTxn));
+			commandNewTxn.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandNewTxnResponse CommandNewTxnResponse = CommandNewTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidMostBits(TxnIdMostBits).SetTxnidLeastBits(TxnIdLeastBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(CommandNewTxnResponse));
-			CommandNewTxnResponse.Recycle();
+			CommandNewTxnResponse commandNewTxnResponse = CommandNewTxnResponse.NewBuilder().SetRequestId(requestId).SetTxnidMostBits(txnIdMostBits).SetTxnidLeastBits(txnIdLeastBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(commandNewTxnResponse));
+			commandNewTxnResponse.Recycle();
 
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			CommandNewTxnResponse.Builder Builder = CommandNewTxnResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetTxnidMostBits(TxnIdMostBits);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandNewTxnResponse.Builder builder = CommandNewTxnResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetTxnidMostBits(txnIdMostBits);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				Builder.SetMessage(ErrorMsg);
+				builder.SetMessage(errorMsg);
 			}
-			CommandNewTxnResponse ErrorResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(ErrorResponse));
-			Builder.Recycle();
-			ErrorResponse.Recycle();
+			CommandNewTxnResponse errorResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxnResponse).SetNewTxnResponse(errorResponse));
+			builder.Recycle();
+			errorResponse.Recycle();
 
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewAddPartitionToTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandAddPartitionToTxn CommandAddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxn).SetAddPartitionToTxn(CommandAddPartitionToTxn));
-			CommandAddPartitionToTxn.Recycle();
-			return Res;
+			CommandAddPartitionToTxn commandAddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxn).SetAddPartitionToTxn(commandAddPartitionToTxn));
+			commandAddPartitionToTxn.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewAddPartitionToTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAddPartitionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandAddPartitionToTxnResponse CommandAddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse));
-			CommandAddPartitionToTxnResponse.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewAddPartitionToTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
-		{
-			CommandAddPartitionToTxnResponse.Builder Builder = CommandAddPartitionToTxnResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetTxnidMostBits(TxnIdMostBits);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
-			{
-				Builder.SetMessage(ErrorMsg);
-			}
-			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
-			Builder.Recycle();
+			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
 			commandAddPartitionToTxnResponse.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewAddSubscriptionToTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, IList<Subscription> Subscription)
+		public static IByteBuffer NewAddPartitionToTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			CommandAddSubscriptionToTxn CommandAddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).AddAllSubscription(Subscription).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn));
-			CommandAddSubscriptionToTxn.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewAddSubscriptionToTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
-		{
-			CommandAddSubscriptionToTxnResponse Command = CommandAddSubscriptionToTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(Command));
-			Command.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewAddSubscriptionToTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
-		{
-			CommandAddSubscriptionToTxnResponse.Builder Builder = CommandAddSubscriptionToTxnResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetTxnidMostBits(TxnIdMostBits);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandAddPartitionToTxnResponse.Builder builder = CommandAddPartitionToTxnResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetTxnidMostBits(txnIdMostBits);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				Builder.SetMessage(ErrorMsg);
+				builder.SetMessage(errorMsg);
 			}
-			CommandAddSubscriptionToTxnResponse ErrorResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(ErrorResponse));
-			Builder.Recycle();
-			ErrorResponse.Recycle();
-			return Res;
+			CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxnResponse).SetAddPartitionToTxnResponse(commandAddPartitionToTxnResponse));
+			builder.Recycle();
+			commandAddPartitionToTxnResponse.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewEndTxn(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, TxnAction TxnAction)
+		public static IByteBuffer NewAddSubscriptionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, IList<Subscription> subscription)
 		{
-			CommandEndTxn CommandEndTxn = CommandEndTxn.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetTxnAction(TxnAction).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxn).SetEndTxn(CommandEndTxn));
-			CommandEndTxn.Recycle();
-			return Res;
+			CommandAddSubscriptionToTxn commandAddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).AddAllSubscription(subscription).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(commandAddSubscriptionToTxn));
+			commandAddSubscriptionToTxn.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewEndTxnResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
+		public static IByteBuffer NewAddSubscriptionToTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
-			CommandEndTxnResponse CommandEndTxnResponse = CommandEndTxnResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(CommandEndTxnResponse));
-			CommandEndTxnResponse.Recycle();
-			return Res;
+			CommandAddSubscriptionToTxnResponse command = CommandAddSubscriptionToTxnResponse.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(command));
+			command.Recycle();
+			return res;
 		}
 
-		public static IByteBuffer NewEndTxnResponse(long RequestId, long TxnIdMostBits, ServerError Error, string ErrorMsg)
+		public static IByteBuffer NewAddSubscriptionToTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			CommandEndTxnResponse.Builder Builder = CommandEndTxnResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetTxnidMostBits(TxnIdMostBits);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandAddSubscriptionToTxnResponse.Builder builder = CommandAddSubscriptionToTxnResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetTxnidMostBits(txnIdMostBits);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				Builder.SetMessage(ErrorMsg);
+				builder.SetMessage(errorMsg);
 			}
-			CommandEndTxnResponse commandEndTxnResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(commandEndTxnResponse));
-			Builder.Recycle();
+			CommandAddSubscriptionToTxnResponse errorResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxnResponse).SetAddSubscriptionToTxnResponse(errorResponse));
+			builder.Recycle();
+			errorResponse.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
+		{
+			CommandEndTxn commandEndTxn = CommandEndTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTxnAction(txnAction).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxn).SetEndTxn(commandEndTxn));
+			commandEndTxn.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		{
+			CommandEndTxnResponse commandEndTxnResponse = CommandEndTxnResponse.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(commandEndTxnResponse));
 			commandEndTxnResponse.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewEndTxnOnPartition(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, string Topic, TxnAction TxnAction)
+		public static IByteBuffer NewEndTxnResponse(long requestId, long txnIdMostBits, ServerError error, string errorMsg)
 		{
-			CommandEndTxnOnPartition.Builder TxnEndOnPartition = CommandEndTxnOnPartition.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetTopic(Topic).SetTxnAction(TxnAction);
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartition).SetEndTxnOnPartition(TxnEndOnPartition));
-			TxnEndOnPartition.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewEndTxnOnPartitionResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
-		{
-			CommandEndTxnOnPartitionResponse CommandEndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse));
-			CommandEndTxnOnPartitionResponse.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewEndTxnOnPartitionResponse(long RequestId, ServerError Error, string ErrorMsg)
-		{
-			CommandEndTxnOnPartitionResponse.Builder Builder = CommandEndTxnOnPartitionResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandEndTxnResponse.Builder builder = CommandEndTxnResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetTxnidMostBits(txnIdMostBits);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				Builder.SetMessage(ErrorMsg);
+				builder.SetMessage(errorMsg);
 			}
-			CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
-			Builder.Recycle();
+			CommandEndTxnResponse commandEndTxnResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnResponse).SetEndTxnResponse(commandEndTxnResponse));
+			builder.Recycle();
+			commandEndTxnResponse.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction)
+		{
+			CommandEndTxnOnPartition.Builder txnEndOnPartition = CommandEndTxnOnPartition.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTopic(topic).SetTxnAction(txnAction);
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartition).SetEndTxnOnPartition(txnEndOnPartition));
+			txnEndOnPartition.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnOnPartitionResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		{
+			CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
 			commandEndTxnOnPartitionResponse.Recycle();
-			return Res;
+			return res;
 		}
 
-		public static IByteBuffer NewEndTxnOnSubscription(long RequestId, long TxnIdLeastBits, long TxnIdMostBits, Subscription Subscription, TxnAction TxnAction)
+		public static IByteBuffer NewEndTxnOnPartitionResponse(long requestId, ServerError error, string errorMsg)
 		{
-			CommandEndTxnOnSubscription CommandEndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).SetSubscription(Subscription).SetTxnAction(TxnAction).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(CommandEndTxnOnSubscription));
-			CommandEndTxnOnSubscription.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long RequestId, long TxnIdLeastBits, long TxnIdMostBits)
-		{
-			CommandEndTxnOnSubscriptionResponse Response = CommandEndTxnOnSubscriptionResponse.NewBuilder().SetRequestId(RequestId).SetTxnidLeastBits(TxnIdLeastBits).SetTxnidMostBits(TxnIdMostBits).Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(Response));
-			Response.Recycle();
-			return Res;
-		}
-
-		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long RequestId, ServerError Error, string ErrorMsg)
-		{
-			CommandEndTxnOnSubscriptionResponse.Builder Builder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
-			Builder.SetRequestId(RequestId);
-			Builder.SetError(Error);
-			if (!string.ReferenceEquals(ErrorMsg, null))
+			CommandEndTxnOnPartitionResponse.Builder builder = CommandEndTxnOnPartitionResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
 			{
-				Builder.SetMessage(ErrorMsg);
+				builder.SetMessage(errorMsg);
 			}
-			CommandEndTxnOnSubscriptionResponse Response = Builder.Build();
-			IByteBuffer Res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(Response));
-			Builder.Recycle();
-			Response.Recycle();
-			return Res;
+			CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartitionResponse).SetEndTxnOnPartitionResponse(commandEndTxnOnPartitionResponse));
+			builder.Recycle();
+			commandEndTxnOnPartitionResponse.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction)
+		{
+			CommandEndTxnOnSubscription commandEndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetSubscription(subscription).SetTxnAction(txnAction).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(commandEndTxnOnSubscription));
+			commandEndTxnOnSubscription.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		{
+			CommandEndTxnOnSubscriptionResponse response = CommandEndTxnOnSubscriptionResponse.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(response));
+			response.Recycle();
+			return res;
+		}
+
+		public static IByteBuffer NewEndTxnOnSubscriptionResponse(long requestId, ServerError error, string errorMsg)
+		{
+			CommandEndTxnOnSubscriptionResponse.Builder builder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
+			builder.SetRequestId(requestId);
+			builder.SetError(error);
+			if (!string.ReferenceEquals(errorMsg, null))
+			{
+				builder.SetMessage(errorMsg);
+			}
+			CommandEndTxnOnSubscriptionResponse response = builder.Build();
+			IByteBuffer res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscriptionResponse).SetEndTxnOnSubscriptionResponse(response));
+			builder.Recycle();
+			response.Recycle();
+			return res;
 		}
 
 		public static IByteBuffer SerializeWithSize(BaseCommand.Builder cmdBuilder)
@@ -1319,233 +1319,233 @@ namespace SharpPulsar.Protocol
 			return buf;
 		}
 
-		private static ByteBufPair SerializeCommandSendWithSize(BaseCommand.Builder CmdBuilder, ChecksumType ChecksumType, MessageMetadata MsgMetadata, IByteBuffer Payload)
+		private static ByteBufPair SerializeCommandSendWithSize(BaseCommand.Builder cmdBuilder, ChecksumType checksumType, MessageMetadata msgMetadata, IByteBuffer payload)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
 
-			BaseCommand Cmd = CmdBuilder.Build();
-			int CmdSize = Cmd.SerializedSize;
-			int MsgMetadataSize = MsgMetadata.CalculateSize();
-			int PayloadSize = Payload.ReadableBytes;
-			int MagicAndChecksumLength = ChecksumType.Crc32c.Equals(ChecksumType) ? (2 + 4) : 0;
-			bool IncludeChecksum = MagicAndChecksumLength > 0;
+			BaseCommand cmd = cmdBuilder.Build();
+			int cmdSize = cmd.SerializedSize;
+			int msgMetadataSize = msgMetadata.CalculateSize();
+			int payloadSize = payload.ReadableBytes;
+			int magicAndChecksumLength = ChecksumType.Crc32C.Equals(checksumType) ? (2 + 4) : 0;
+			bool includeChecksum = magicAndChecksumLength > 0;
 			// cmdLength + cmdSize + magicLength +
 			// checksumSize + msgMetadataLength +
 			// msgMetadataSize
-			int HeaderContentSize = 4 + CmdSize + MagicAndChecksumLength + 4 + MsgMetadataSize;
-			int TotalSize = HeaderContentSize + PayloadSize;
-			int HeadersSize = 4 + HeaderContentSize; // totalSize + headerLength
-			int ChecksumReaderIndex = -1;
+			int headerContentSize = 4 + cmdSize + magicAndChecksumLength + 4 + msgMetadataSize;
+			int totalSize = headerContentSize + payloadSize;
+			int headersSize = 4 + headerContentSize; // totalSize + headerLength
+			int checksumReaderIndex = -1;
 
-			IByteBuffer Headers = PooledByteBufferAllocator.Default.Buffer(HeadersSize, HeadersSize);
-			Headers.WriteInt(TotalSize); // External frame
+			IByteBuffer headers = PooledByteBufferAllocator.Default.Buffer(headersSize, headersSize);
+			headers.WriteInt(totalSize); // External frame
 
 			try
 			{
 				// Write cmd
-				Headers.WriteInt(CmdSize);
+				headers.WriteInt(cmdSize);
 
-				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(Headers);
-				Cmd.WriteTo(OutStream);
-				Cmd.Recycle();
-				CmdBuilder.Recycle();
+				ByteBufCodedOutputStream outStream = ByteBufCodedOutputStream.Get(headers);
+				cmd.WriteTo(outStream);
+				cmd.Recycle();
+				cmdBuilder.Recycle();
 
 				//Create checksum placeholder
-				if (IncludeChecksum)
+				if (includeChecksum)
 				{
-					Headers.WriteShort(MagicCrc32c);
-					ChecksumReaderIndex = Headers.WriterIndex;
-					Headers.SetWriterIndex(Headers.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
+					headers.WriteShort(MagicCrc32C);
+					checksumReaderIndex = headers.WriterIndex;
+					headers.SetWriterIndex(headers.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
 				}
 
 				// Write metadata
-				Headers.WriteInt(MsgMetadataSize);
-				MsgMetadata.WriteTo(OutStream);
-				OutStream.Recycle();
+				headers.WriteInt(msgMetadataSize);
+				msgMetadata.WriteTo(outStream);
+				outStream.Recycle();
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// This is in-memory serialization, should not fail
-				throw new System.Exception(E.Message);
+				throw new System.Exception(e.Message);
 			}
 
-			ByteBufPair Command = ByteBufPair.Get(Headers, Payload);
+			ByteBufPair command = ByteBufPair.Get(headers, payload);
 
 			// write checksum at created checksum-placeholder
-			if (IncludeChecksum)
+			if (includeChecksum)
 			{
-				Headers.MarkReaderIndex();
-				Headers.SetReaderIndex(ChecksumReaderIndex + ChecksumSize);
-				int MetadataChecksum = ComputeChecksum(Headers);
-				int ComputedChecksum = ResumeChecksum(MetadataChecksum, Payload);
+				headers.MarkReaderIndex();
+				headers.SetReaderIndex(checksumReaderIndex + ChecksumSize);
+				int metadataChecksum = ComputeChecksum(headers);
+				int computedChecksum = ResumeChecksum(metadataChecksum, payload);
 				// set computed checksum
-				Headers.SetInt(ChecksumReaderIndex, ComputedChecksum);
-				Headers.ResetReaderIndex();
+				headers.SetInt(checksumReaderIndex, computedChecksum);
+				headers.ResetReaderIndex();
 			}
-			return Command;
+			return command;
 		}
 
-		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType ChecksumType, MessageMetadata MsgMetadata, IByteBuffer Payload)
+		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType checksumType, MessageMetadata msgMetadata, IByteBuffer payload)
 		{
 			// / Wire format
 			// [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-			int MsgMetadataSize = MsgMetadata.SerializedSize;
-			int PayloadSize = Payload.ReadableBytes;
-			int MagicAndChecksumLength = ChecksumType.Crc32c.Equals(ChecksumType) ? (2 + 4) : 0;
-			bool IncludeChecksum = MagicAndChecksumLength > 0;
-			int HeaderContentSize = MagicAndChecksumLength + 4 + MsgMetadataSize; // magicLength +
+			int msgMetadataSize = msgMetadata.SerializedSize;
+			int payloadSize = payload.ReadableBytes;
+			int magicAndChecksumLength = ChecksumType.Crc32C.Equals(checksumType) ? (2 + 4) : 0;
+			bool includeChecksum = magicAndChecksumLength > 0;
+			int headerContentSize = magicAndChecksumLength + 4 + msgMetadataSize; // magicLength +
 																				  // checksumSize + msgMetadataLength +
 																				  // msgMetadataSize
-			int ChecksumReaderIndex = -1;
-			int TotalSize = HeaderContentSize + PayloadSize;
+			int checksumReaderIndex = -1;
+			int totalSize = headerContentSize + payloadSize;
 
-			IByteBuffer MetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(TotalSize, TotalSize);
+			IByteBuffer metadataAndPayload = PooledByteBufferAllocator.Default.Buffer(totalSize, totalSize);
 			try
 			{
-				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(MetadataAndPayload);
+				ByteBufCodedOutputStream outStream = ByteBufCodedOutputStream.Get(metadataAndPayload);
 
 				//Create checksum placeholder
-				if (IncludeChecksum)
+				if (includeChecksum)
 				{
-					MetadataAndPayload.WriteShort(MagicCrc32c);
-					ChecksumReaderIndex = MetadataAndPayload.WriterIndex;
-					MetadataAndPayload.SetWriterIndex(MetadataAndPayload.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
+					metadataAndPayload.WriteShort(MagicCrc32C);
+					checksumReaderIndex = metadataAndPayload.WriterIndex;
+					metadataAndPayload.SetWriterIndex(metadataAndPayload.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
 				}
 
 				// Write metadata
-				MetadataAndPayload.WriteInt(MsgMetadataSize);
-				MsgMetadata.WriteTo(OutStream);
-				OutStream.Recycle();
+				metadataAndPayload.WriteInt(msgMetadataSize);
+				msgMetadata.WriteTo(outStream);
+				outStream.Recycle();
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// This is in-memory serialization, should not fail
-				throw new System.Exception(E.Message, E);
+				throw new System.Exception(e.Message, e);
 			}
 
 			// write checksum at created checksum-placeholder
-			if (IncludeChecksum)
+			if (includeChecksum)
 			{
-				MetadataAndPayload.MarkReaderIndex();
-				MetadataAndPayload.SetReaderIndex(ChecksumReaderIndex + ChecksumSize);
-				int MetadataChecksum = ComputeChecksum(MetadataAndPayload);
-				int ComputedChecksum = ResumeChecksum(MetadataChecksum, Payload);
+				metadataAndPayload.MarkReaderIndex();
+				metadataAndPayload.SetReaderIndex(checksumReaderIndex + ChecksumSize);
+				int metadataChecksum = ComputeChecksum(metadataAndPayload);
+				int computedChecksum = ResumeChecksum(metadataChecksum, payload);
 				// set computed checksum
-				MetadataAndPayload.SetInt(ChecksumReaderIndex, ComputedChecksum);
-				MetadataAndPayload.ResetReaderIndex();
+				metadataAndPayload.SetInt(checksumReaderIndex, computedChecksum);
+				metadataAndPayload.ResetReaderIndex();
 			}
-			MetadataAndPayload.WriteBytes(Payload);
+			metadataAndPayload.WriteBytes(payload);
 
-			return MetadataAndPayload;
+			return metadataAndPayload;
 		}
 
-		public static long InitBatchMessageMetadata(MessageMetadata.Builder Builder)
+		public static long InitBatchMessageMetadata(MessageMetadata.Builder builder)
 		{
 			MessageMetadata.Builder messageMetadata = MessageMetadata.NewBuilder();
-			messageMetadata.SetPublishTime(Builder._publishTime);
-			messageMetadata.SetProducerName(Builder.GetProducerName());
-			messageMetadata.SetSequenceId(Builder._sequenceId);
-			if (Builder.HasReplicatedFrom())
+			messageMetadata.SetPublishTime(builder._publishTime);
+			messageMetadata.SetProducerName(builder.GetProducerName());
+			messageMetadata.SetSequenceId(builder._sequenceId);
+			if (builder.HasReplicatedFrom())
 			{
-				messageMetadata.SetReplicatedFrom(Builder.GetReplicatedFrom());
+				messageMetadata.SetReplicatedFrom(builder.GetReplicatedFrom());
 			}
-			if (Builder.ReplicateToCount > 0)
+			if (builder.ReplicateToCount > 0)
 			{
-				messageMetadata.AddAllReplicateTo(Builder.ReplicateToList);
+				messageMetadata.AddAllReplicateTo(builder.ReplicateToList);
 			}
-			if (Builder.HasSchemaVersion())
+			if (builder.HasSchemaVersion())
 			{
-				messageMetadata.SetSchemaVersion(Builder._schemaVersion);
+				messageMetadata.SetSchemaVersion(builder._schemaVersion);
 			}
-			return Builder._sequenceId;
+			return builder._sequenceId;
 		}
 
-		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata.Builder SingleMessageMetadataBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
+		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata.Builder singleMessageMetadataBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
 		{
-			int PayLoadSize = Payload.ReadableBytes;
-			SingleMessageMetadata SingleMessageMetadata = SingleMessageMetadataBuilder.SetPayloadSize(PayLoadSize).Build();
+			int payLoadSize = payload.ReadableBytes;
+			SingleMessageMetadata singleMessageMetadata = singleMessageMetadataBuilder.SetPayloadSize(payLoadSize).Build();
 			// serialize meta-data size, meta-data and payload for single message in batch
-			int SingleMsgMetadataSize = SingleMessageMetadata.CalculateSize();
+			int singleMsgMetadataSize = singleMessageMetadata.CalculateSize();
 			try
 			{
-				BatchBuffer.WriteInt(SingleMsgMetadataSize);
-				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(BatchBuffer);
-				SingleMessageMetadata.WriteTo(OutStream);
-				SingleMessageMetadata.Recycle();
-				OutStream.Recycle();
+				batchBuffer.WriteInt(singleMsgMetadataSize);
+				ByteBufCodedOutputStream outStream = ByteBufCodedOutputStream.Get(batchBuffer);
+				singleMessageMetadata.WriteTo(outStream);
+				singleMessageMetadata.Recycle();
+				outStream.Recycle();
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				throw new System.Exception(E.Message, E);
+				throw new System.Exception(e.Message, e);
 			}
-			return BatchBuffer.WriteBytes(Payload);
+			return batchBuffer.WriteBytes(payload);
 		}
 
-		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(MessageMetadata.Builder MsgBuilder, IByteBuffer Payload, IByteBuffer BatchBuffer)
+		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(MessageMetadata.Builder msgBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
 		{
 
 			// build single message meta-data
-			SingleMessageMetadata.Builder SingleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
-			if (MsgBuilder.HasPartitionKey())
+			SingleMessageMetadata.Builder singleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
+			if (msgBuilder.HasPartitionKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetPartitionKey(MsgBuilder.GetPartitionKey()).SetPartitionKeyB64Encoded(MsgBuilder.PartitionKeyB64Encoded);
+				singleMessageMetadataBuilder = singleMessageMetadataBuilder.SetPartitionKey(msgBuilder.GetPartitionKey()).SetPartitionKeyB64Encoded(msgBuilder.PartitionKeyB64Encoded);
 			}
-			if (MsgBuilder.HasOrderingKey())
+			if (msgBuilder.HasOrderingKey())
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.SetOrderingKey(MsgBuilder.GetOrderingKey().ToByteArray());
+				singleMessageMetadataBuilder = singleMessageMetadataBuilder.SetOrderingKey(msgBuilder.GetOrderingKey().ToByteArray());
 			}
-			if (MsgBuilder.PropertiesList.Count > 0)
+			if (msgBuilder.PropertiesList.Count > 0)
 			{
-				SingleMessageMetadataBuilder = SingleMessageMetadataBuilder.AddAllProperties(MsgBuilder.PropertiesList);
-			}
-
-			if (MsgBuilder.HasEventTime())
-			{
-				SingleMessageMetadataBuilder.SetEventTime(MsgBuilder.EventTime);
+				singleMessageMetadataBuilder = singleMessageMetadataBuilder.AddAllProperties(msgBuilder.PropertiesList);
 			}
 
-			if (MsgBuilder.HasSequenceId())
+			if (msgBuilder.HasEventTime())
 			{
-				SingleMessageMetadataBuilder.SetSequenceId(MsgBuilder.SequenceId());
+				singleMessageMetadataBuilder.SetEventTime(msgBuilder.EventTime);
+			}
+
+			if (msgBuilder.HasSequenceId())
+			{
+				singleMessageMetadataBuilder.SetSequenceId(msgBuilder.SequenceId());
 			}
 
 			try
 			{
-				return SerializeSingleMessageInBatchWithPayload(SingleMessageMetadataBuilder, Payload, BatchBuffer);
+				return SerializeSingleMessageInBatchWithPayload(singleMessageMetadataBuilder, payload, batchBuffer);
 			}
 			finally
 			{
-				SingleMessageMetadataBuilder.Recycle();
+				singleMessageMetadataBuilder.Recycle();
 			}
 		}
 
-		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer UncompressedPayload, SingleMessageMetadata.Builder SingleMessageMetadataBuilder, int Index, int BatchSize)
+		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer uncompressedPayload, SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize)
 		{
-			int SingleMetaSize = (int) UncompressedPayload.ReadUnsignedInt();
-			int WriterIndex = UncompressedPayload.WriterIndex;
-			int BeginIndex = UncompressedPayload.ReaderIndex + SingleMetaSize;
-			UncompressedPayload.SetWriterIndex(BeginIndex);
-			ByteBufCodedInputStream Stream = ByteBufCodedInputStream.Get(UncompressedPayload);
-			SingleMessageMetadataBuilder.MergeFrom(Stream, null);
-			Stream.Recycle();
+			int singleMetaSize = (int) uncompressedPayload.ReadUnsignedInt();
+			int writerIndex = uncompressedPayload.WriterIndex;
+			int beginIndex = uncompressedPayload.ReaderIndex + singleMetaSize;
+			uncompressedPayload.SetWriterIndex(beginIndex);
+			ByteBufCodedInputStream stream = ByteBufCodedInputStream.Get(uncompressedPayload);
+			singleMessageMetadataBuilder.MergeFrom(stream, null);
+			stream.Recycle();
 
-			int SingleMessagePayloadSize = SingleMessageMetadataBuilder.PayloadSize;
+			int singleMessagePayloadSize = singleMessageMetadataBuilder.PayloadSize;
 
-			int ReaderIndex = UncompressedPayload.ReaderIndex;
-			IByteBuffer SingleMessagePayload = UncompressedPayload.RetainedSlice(ReaderIndex, SingleMessagePayloadSize);
-			UncompressedPayload.SetWriterIndex(WriterIndex);
+			int readerIndex = uncompressedPayload.ReaderIndex;
+			IByteBuffer singleMessagePayload = uncompressedPayload.RetainedSlice(readerIndex, singleMessagePayloadSize);
+			uncompressedPayload.SetWriterIndex(writerIndex);
 
 			// reader now points to beginning of payload read; so move it past message payload just read
-			if (Index < BatchSize)
+			if (index < batchSize)
 			{
-				UncompressedPayload.SetReaderIndex(ReaderIndex + SingleMessagePayloadSize);
+				uncompressedPayload.SetReaderIndex(readerIndex + singleMessagePayloadSize);
 			}
 
-			return SingleMessagePayload;
+			return singleMessagePayload;
 		}
 
-		private static ByteBufPair SerializeCommandMessageWithSize(BaseCommand Cmd, IByteBuffer MetadataAndPayload)
+		private static ByteBufPair SerializeCommandMessageWithSize(BaseCommand cmd, IByteBuffer metadataAndPayload)
 		{
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
@@ -1553,56 +1553,56 @@ namespace SharpPulsar.Protocol
 			// metadataAndPayload contains from magic-number to the payload included
 
 
-			int CmdSize = Cmd.SerializedSize;
-			int TotalSize = 4 + CmdSize + MetadataAndPayload.ReadableBytes;
-			int HeadersSize = 4 + 4 + CmdSize;
+			int cmdSize = cmd.SerializedSize;
+			int totalSize = 4 + cmdSize + metadataAndPayload.ReadableBytes;
+			int headersSize = 4 + 4 + cmdSize;
 
-			IByteBuffer Headers = PooledByteBufferAllocator.Default.Buffer(HeadersSize);
-			Headers.WriteInt(TotalSize); // External frame
+			IByteBuffer headers = PooledByteBufferAllocator.Default.Buffer(headersSize);
+			headers.WriteInt(totalSize); // External frame
 
 			try
 			{
 				// Write cmd
-				Headers.WriteInt(CmdSize);
+				headers.WriteInt(cmdSize);
 
-				ByteBufCodedOutputStream OutStream = ByteBufCodedOutputStream.Get(Headers);
-				Cmd.WriteTo(OutStream);
-				OutStream.Recycle();
+				ByteBufCodedOutputStream outStream = ByteBufCodedOutputStream.Get(headers);
+				cmd.WriteTo(outStream);
+				outStream.Recycle();
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// This is in-memory serialization, should not fail
-				throw new System.Exception(E.Message);
+				throw new System.Exception(e.Message);
 			}
 
-			return (ByteBufPair) ByteBufPair.Get(Headers, MetadataAndPayload);
+			return (ByteBufPair) ByteBufPair.Get(headers, metadataAndPayload);
 		}
 
-		public static int GetNumberOfMessagesInBatch(IByteBuffer MetadataAndPayload, string Subscription, long ConsumerId)
+		public static int GetNumberOfMessagesInBatch(IByteBuffer metadataAndPayload, string subscription, long consumerId)
 		{
-			MessageMetadata MsgMetadata = PeekMessageMetadata(MetadataAndPayload, Subscription, ConsumerId);
-			if (MsgMetadata == null)
+			MessageMetadata msgMetadata = PeekMessageMetadata(metadataAndPayload, subscription, consumerId);
+			if (msgMetadata == null)
 			{
 				return -1;
 			}
 			else
 			{
-				int NumMessagesInBatch = MsgMetadata.NumMessagesInBatch;
-				MsgMetadata.Recycle();
-				return NumMessagesInBatch;
+				int numMessagesInBatch = msgMetadata.NumMessagesInBatch;
+				msgMetadata.Recycle();
+				return numMessagesInBatch;
 			}
 		}
 
-		public static MessageMetadata PeekMessageMetadata(IByteBuffer MetadataAndPayload, string Subscription, long ConsumerId)
+		public static MessageMetadata PeekMessageMetadata(IByteBuffer metadataAndPayload, string subscription, long consumerId)
 		{
 			try
 			{
 				// save the reader index and restore after parsing
-				int ReaderIdx = MetadataAndPayload.ReaderIndex;
-				MessageMetadata Metadata = ParseMessageMetadata(MetadataAndPayload);
-				MetadataAndPayload.SetReaderIndex(ReaderIdx);
+				int readerIdx = metadataAndPayload.ReaderIndex;
+				MessageMetadata metadata = ParseMessageMetadata(metadataAndPayload);
+				metadataAndPayload.SetReaderIndex(readerIdx);
 
-				return Metadata;
+				return metadata;
 			}
 			catch (System.Exception T)
 			{
@@ -1626,33 +1626,33 @@ namespace SharpPulsar.Protocol
 		/// </summary>
 		public enum ChecksumType
 		{
-			Crc32c,
+			Crc32C,
 			None
 		}
 
-		public static bool PeerSupportsGetLastMessageId(int PeerVersion)
+		public static bool PeerSupportsGetLastMessageId(int peerVersion)
 		{
-			return PeerVersion >= (int)ProtocolVersion.V12;
+			return peerVersion >= (int)ProtocolVersion.V12;
 		}
 
-		public static bool PeerSupportsActiveConsumerListener(int PeerVersion)
+		public static bool PeerSupportsActiveConsumerListener(int peerVersion)
 		{
-			return PeerVersion >= (int)ProtocolVersion.V12;
+			return peerVersion >= (int)ProtocolVersion.V12;
 		}
 
-		public static bool PeerSupportsMultiMessageAcknowledgment(int PeerVersion)
+		public static bool PeerSupportsMultiMessageAcknowledgment(int peerVersion)
 		{
-			return PeerVersion >= (int)ProtocolVersion.V12;
+			return peerVersion >= (int)ProtocolVersion.V12;
 		}
 
-		public static bool PeerSupportJsonSchemaAvroFormat(int PeerVersion)
+		public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
 		{
-			return PeerVersion >= (int)ProtocolVersion.V13;
+			return peerVersion >= (int)ProtocolVersion.V13;
 		}
 
-		public static bool PeerSupportsGetOrCreateSchema(int PeerVersion)
+		public static bool PeerSupportsGetOrCreateSchema(int peerVersion)
 		{
-			return PeerVersion >= (int)ProtocolVersion.V15;
+			return peerVersion >= (int)ProtocolVersion.V15;
 		}
 	}
 
