@@ -37,21 +37,15 @@ namespace SharpPulsar.Protocol
 		private readonly long keepAliveIntervalSeconds;
 		private bool waitingForPingResponse = false;
 		private IScheduledTask keepAliveTask;
-		private IChannelHandlerContext _context;
+        protected internal IChannelHandlerContext Context;
 
 		public virtual int RemoteEndpointProtocolVersion
 		{
-			set 
-			{
-				_remoteEndpointProtocolVersion = value;
-			}
-			get
-			{
-				return _remoteEndpointProtocolVersion;
-			}
-		}
+			set => _remoteEndpointProtocolVersion = value;
+            get => _remoteEndpointProtocolVersion;
+        }
 
-		public PulsarHandler(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
+        protected PulsarHandler(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			this.keepAliveIntervalSeconds = unit.ToSecs(keepAliveInterval);
 		}
@@ -61,14 +55,14 @@ namespace SharpPulsar.Protocol
 			waitingForPingResponse = false;
 		}
 
-		public void ChannelActive(IChannelHandlerContext ctx)
+		public new void ChannelActive(IChannelHandlerContext ctx)
 		{
 			RemoteAddress = ctx.Channel.RemoteAddress;
-			_context = ctx;
+			Context = ctx;
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("[{}] Scheduling keep-alive task every {} s", ctx.Channel, keepAliveIntervalSeconds);
+				Log.LogDebug("[{}] Scheduling keep-alive task every {} s", ctx.Channel, keepAliveIntervalSeconds);
 			}
 			if (keepAliveIntervalSeconds > 0)
 			{
@@ -76,19 +70,19 @@ namespace SharpPulsar.Protocol
 			}
 		}
 
-		public void ChannelInactive(IChannelHandlerContext ctx)
+		public new void ChannelInactive(IChannelHandlerContext ctx)
 		{
 			CancelKeepAliveTask();
 		}
 
-		public void HandlePing(CommandPing ping)
+		public override void HandlePing(CommandPing ping)
 		{
 			// Immediately reply success to ping requests
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("[{}] Replying back to ping message", _context.Channel);
+				Log.LogDebug("[{}] Replying back to ping message", Context.Channel);
 			}
-			_context.WriteAndFlushAsync(Commands.NewPong());
+			Context.WriteAndFlushAsync(Commands.NewPong());
 		}
 
 		public override void HandlePong(CommandPong Pong)
@@ -97,56 +91,54 @@ namespace SharpPulsar.Protocol
 
 		private void HandleKeepAliveTimeout()
 		{
-			if (!_context.Channel.Open)
+			if (!Context.Channel.Open)
 			{
 				return;
 			}
 
 			if (!HandshakeCompleted)
 			{
-				log.LogWarning("[{}] Pulsar Handshake was not completed within timeout, closing connection", _context.Channel);
-				_context.CloseAsync();
+				Log.LogWarning("[{}] Pulsar Handshake was not completed within timeout, closing connection", Context.Channel);
+				Context.CloseAsync();
 			}
-			else if (waitingForPingResponse && _context.Channel.Configuration.AutoRead)
+			else if (waitingForPingResponse && Context.Channel.Configuration.AutoRead)
 			{
 				// We were waiting for a response and another keep-alive just completed.
 				// If auto-read was disabled, it means we stopped reading from the connection, so we might receive the Ping
 				// response later and thus not enforce the strict timeout here.
-				log.LogWarning("[{}] Forcing connection to close after keep-alive timeout", _context.Channel);
-				_context.CloseAsync();
+				Log.LogWarning("[{}] Forcing connection to close after keep-alive timeout", Context.Channel);
+				Context.CloseAsync();
 			}
 			else if (_remoteEndpointProtocolVersion >= (int)ProtocolVersion.V1)
 			{
 				// Send keep alive probe to peer only if it supports the ping/pong commands, added in v1
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("[{}] Sending ping message", _context.Channel);
+					Log.LogDebug("[{}] Sending ping message", Context.Channel);
 				}
 				waitingForPingResponse = true;
-				_context.WriteAndFlushAsync(Commands.NewPing());
+				Context.WriteAndFlushAsync(Commands.NewPing());
 			}
 			else
 			{
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("[{}] Peer doesn't support keep-alive", _context.Channel);
+					Log.LogDebug("[{}] Peer doesn't support keep-alive", Context.Channel);
 				}
 			}
 		}
 
 		public virtual void CancelKeepAliveTask()
 		{
-			if (keepAliveTask != null)
-			{
-				keepAliveTask.Cancel();
-				keepAliveTask = null;
-			}
-		}
+            if (keepAliveTask == null) return;
+            keepAliveTask.Cancel();
+            keepAliveTask = null;
+        }
 
 		/// <returns> true if the connection is ready to use, meaning the Pulsar handshake was already completed </returns>
 		public abstract bool HandshakeCompleted { get; }
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(PulsarHandler));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarHandler));
 	}
 
 }

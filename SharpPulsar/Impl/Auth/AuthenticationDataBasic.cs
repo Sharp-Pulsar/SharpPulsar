@@ -26,14 +26,13 @@ namespace SharpPulsar.Impl.Auth
 {
 	public class AuthenticationDataBasic : IAuthenticationDataProvider
 	{
-		private const string HTTP_HEADER_NAME = "Authorization";
-		private string httpAuthToken;
-		private string commandAuthToken;
+		private const string HttpHeaderName = "Authorization";
+		private readonly string _httpAuthToken;
 
-		public AuthenticationDataBasic(string userId, string password)
+        public AuthenticationDataBasic(string userId, string password)
 		{
-			httpAuthToken = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(userId + ":" + password));
-			commandAuthToken = userId + ":" + password;
+			_httpAuthToken = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(userId + ":" + password));
+			CommandData = userId + ":" + password;
 		}
 
 		public bool HasDataForHttp()
@@ -47,7 +46,7 @@ namespace SharpPulsar.Impl.Auth
 			{
 				IDictionary<string, string> headers = new Dictionary<string, string>
 				{
-					[HTTP_HEADER_NAME] = httpAuthToken
+					[HttpHeaderName] = _httpAuthToken
 				};
 				return new HashSet<KeyValuePair<string, string>>(headers);
 			}
@@ -58,13 +57,7 @@ namespace SharpPulsar.Impl.Auth
 			return true;
 		}
 
-		public string CommandData
-		{
-			get
-			{
-				return commandAuthToken;
-			}
-		}
-	}
+		public string CommandData { get; }
+    }
 
 }

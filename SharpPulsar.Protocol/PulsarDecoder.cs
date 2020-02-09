@@ -33,355 +33,355 @@ namespace SharpPulsar.Protocol
     /// </summary>
     public abstract class PulsarDecoder : IChannelHandler
 	{
-		public void Read(IChannelHandlerContext ctx, object Msg)
+		public void Read(IChannelHandlerContext ctx, object msg)
 		{
 			// Get a buffer that contains the full frame
-			IByteBuffer buffer = (IByteBuffer) Msg;
-			BaseCommand Cmd = null;
-			BaseCommand.Builder CmdBuilder = null;
+			IByteBuffer buffer = (IByteBuffer) msg;
+			BaseCommand cmd = null;
+			BaseCommand.Builder cmdBuilder = null;
 
 			try
 			{
 				// De-serialize the command
-				int CmdSize = (int) buffer.ReadUnsignedInt();
-				int WriterIndex = buffer.WriterIndex;
-				buffer.SetWriterIndex(buffer.ReaderIndex + CmdSize);
-				ByteBufCodedInputStream CmdInputStream = ByteBufCodedInputStream.Get(buffer);
-				CmdBuilder = BaseCommand.NewBuilder();
-				Cmd = CmdBuilder.MergeFrom(CmdInputStream, null).Build();
-				buffer.SetWriterIndex(WriterIndex);
+				int cmdSize = (int) buffer.ReadUnsignedInt();
+				int writerIndex = buffer.WriterIndex;
+				buffer.SetWriterIndex(buffer.ReaderIndex + cmdSize);
+				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.Get(buffer);
+				cmdBuilder = BaseCommand.NewBuilder();
+				cmd = cmdBuilder.MergeFrom(cmdInputStream, null).Build();
+				buffer.SetWriterIndex(writerIndex);
 
-				CmdInputStream.Recycle();
+				cmdInputStream.Recycle();
 
-				if (log.IsEnabled(LogLevel.Debug))
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.LogDebug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, Cmd.Type);
+					Log.LogDebug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, cmd.Type);
 				}
 
 				MessageReceived();
 
-				switch (Cmd.Type)
+				switch (cmd.Type)
 				{
 				case BaseCommand.Types.Type.PartitionedMetadata:
-					if(Cmd.HasPartitionMetadata)
-						HandlePartitionMetadataRequest(Cmd.PartitionMetadata);
-					Cmd.PartitionMetadata.Recycle();
+					if(cmd.HasPartitionMetadata)
+						HandlePartitionMetadataRequest(cmd.PartitionMetadata);
+					cmd.PartitionMetadata.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.PartitionedMetadataResponse:
-					if(Cmd.HasPartitionMetadataResponse)
-						HandlePartitionResponse(Cmd.PartitionMetadataResponse);
-					Cmd.PartitionMetadataResponse.Recycle();
+					if(cmd.HasPartitionMetadataResponse)
+						HandlePartitionResponse(cmd.PartitionMetadataResponse);
+					cmd.PartitionMetadataResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Lookup:
-					if(Cmd.HasLookupTopic)
-						HandleLookup(Cmd.LookupTopic);
-					Cmd.LookupTopic.Recycle();
+					if(cmd.HasLookupTopic)
+						HandleLookup(cmd.LookupTopic);
+					cmd.LookupTopic.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.LookupResponse:
-					if(Cmd.HasLookupTopicResponse)
-						HandleLookupResponse(Cmd.LookupTopicResponse);
-					Cmd.LookupTopicResponse.Recycle();
+					if(cmd.HasLookupTopicResponse)
+						HandleLookupResponse(cmd.LookupTopicResponse);
+					cmd.LookupTopicResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Ack:
-					if(Cmd.HasAck)
-					HandleAck(Cmd.Ack);
-					for (int I = 0; I < Cmd.Ack.MessageId.Count; I++)
+					if(cmd.HasAck)
+					HandleAck(cmd.Ack);
+					for (int i = 0; i < cmd.Ack.MessageId.Count; i++)
 					{
-						Cmd.Ack.GetMessageId(I).Recycle();
+						cmd.Ack.GetMessageId(i).Recycle();
 					}
-					Cmd.Ack.Recycle();
+					cmd.Ack.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.CloseConsumer:
-					if(Cmd.HasCloseConsumer)
-						HandleCloseConsumer(Cmd.CloseConsumer);
-					Cmd.CloseConsumer.Recycle();
+					if(cmd.HasCloseConsumer)
+						HandleCloseConsumer(cmd.CloseConsumer);
+					cmd.CloseConsumer.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.CloseProducer:
-					if(Cmd.HasCloseProducer)
-						HandleCloseProducer(Cmd.CloseProducer);
-					Cmd.CloseProducer.Recycle();
+					if(cmd.HasCloseProducer)
+						HandleCloseProducer(cmd.CloseProducer);
+					cmd.CloseProducer.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Connect:
-					if(Cmd.HasConnect)
-						HandleConnect(Cmd.Connect);
-					Cmd.Connect.Recycle();
+					if(cmd.HasConnect)
+						HandleConnect(cmd.Connect);
+					cmd.Connect.Recycle();
 					break;
 				case BaseCommand.Types.Type.Connected:
-					if(Cmd.HasConnected)
-						HandleConnected(Cmd.Connected);
-					Cmd.Connected.Recycle();
+					if(cmd.HasConnected)
+						HandleConnected(cmd.Connected);
+					cmd.Connected.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Error:
-					if(Cmd.HasError)
-						HandleError(Cmd.Error);
-					Cmd.Error.Recycle();
+					if(cmd.HasError)
+						HandleError(cmd.Error);
+					cmd.Error.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Flow:
-					if(Cmd.HasFlow)
-						HandleFlow(Cmd.Flow);
-					Cmd.Flow.Recycle();
+					if(cmd.HasFlow)
+						HandleFlow(cmd.Flow);
+					cmd.Flow.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Message:
 				{
-					if(Cmd.HasMessage)
-						HandleMessage(Cmd.Message, buffer);
-					Cmd.Message.Recycle();
+					if(cmd.HasMessage)
+						HandleMessage(cmd.Message, buffer);
+					cmd.Message.Recycle();
 					break;
 				}
 				case BaseCommand.Types.Type.Producer:
-					if(Cmd.HasProducer)
-						HandleProducer(Cmd.Producer);
-					Cmd.Producer.Recycle();
+					if(cmd.HasProducer)
+						HandleProducer(cmd.Producer);
+					cmd.Producer.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Send:
 				{
-					if(Cmd.HasSend)
+					if(cmd.HasSend)
 							{
 								// Store a buffer marking the content + headers
 								IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
-								HandleSend(Cmd.Send, headersAndPayload);
+								HandleSend(cmd.Send, headersAndPayload);
 							}
 					
-					Cmd.Send.Recycle();
+					cmd.Send.Recycle();
 					break;
 				}
 				case BaseCommand.Types.Type.SendError:
-					if(Cmd.HasSendError)
-						HandleSendError(Cmd.SendError);
-					Cmd.SendError.Recycle();
+					if(cmd.HasSendError)
+						HandleSendError(cmd.SendError);
+					cmd.SendError.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.SendReceipt:
-					if(Cmd.HasSendReceipt)
-						HandleSendReceipt(Cmd.SendReceipt);
-					Cmd.SendReceipt.Recycle();
+					if(cmd.HasSendReceipt)
+						HandleSendReceipt(cmd.SendReceipt);
+					cmd.SendReceipt.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Subscribe:
-					if(Cmd.HasSubscribe)
-						HandleSubscribe(Cmd.Subscribe);
-					Cmd.Subscribe.Recycle();
+					if(cmd.HasSubscribe)
+						HandleSubscribe(cmd.Subscribe);
+					cmd.Subscribe.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Success:
-					if(Cmd.HasSuccess)
-						HandleSuccess(Cmd.Success);
-					Cmd.Success.Recycle();
+					if(cmd.HasSuccess)
+						HandleSuccess(cmd.Success);
+					cmd.Success.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.ProducerSuccess:
-					if(Cmd.HasProducerSuccess)
-						HandleProducerSuccess(Cmd.ProducerSuccess);
-					Cmd.ProducerSuccess.Recycle();
+					if(cmd.HasProducerSuccess)
+						HandleProducerSuccess(cmd.ProducerSuccess);
+					cmd.ProducerSuccess.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Unsubscribe:
-					if(Cmd.HasUnsubscribe)
-						HandleUnsubscribe(Cmd.Unsubscribe);
-					Cmd.Unsubscribe.Recycle();
+					if(cmd.HasUnsubscribe)
+						HandleUnsubscribe(cmd.Unsubscribe);
+					cmd.Unsubscribe.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Seek:
-					if(Cmd.HasSeek)
-						HandleSeek(Cmd.Seek);
-					Cmd.Seek.Recycle();
+					if(cmd.HasSeek)
+						HandleSeek(cmd.Seek);
+					cmd.Seek.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Ping:
-					if(Cmd.HasPing)
-						HandlePing(Cmd.Ping);
-					Cmd.Ping.Recycle();
+					if(cmd.HasPing)
+						HandlePing(cmd.Ping);
+					cmd.Ping.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.Pong:
-					if(Cmd.HasPong)
-						HandlePong(Cmd.Pong);
-					Cmd.Pong.Recycle();
+					if(cmd.HasPong)
+						HandlePong(cmd.Pong);
+					cmd.Pong.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
-					if(Cmd.HasRedeliverUnacknowledgedMessages)
-						HandleRedeliverUnacknowledged(Cmd.RedeliverUnacknowledgedMessages);
-					Cmd.RedeliverUnacknowledgedMessages.Recycle();
+					if(cmd.HasRedeliverUnacknowledgedMessages)
+						HandleRedeliverUnacknowledged(cmd.RedeliverUnacknowledgedMessages);
+					cmd.RedeliverUnacknowledgedMessages.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.ConsumerStats:
-					if(Cmd.HasConsumerStats)
-						HandleConsumerStats(Cmd.ConsumerStats);
-					Cmd.ConsumerStats.Recycle();
+					if(cmd.HasConsumerStats)
+						HandleConsumerStats(cmd.ConsumerStats);
+					cmd.ConsumerStats.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.ConsumerStatsResponse:
-					if(Cmd.HasConsumerStatsResponse)
-						HandleConsumerStatsResponse(Cmd.ConsumerStatsResponse);
-					Cmd.ConsumerStatsResponse.Recycle();
+					if(cmd.HasConsumerStatsResponse)
+						HandleConsumerStatsResponse(cmd.ConsumerStatsResponse);
+					cmd.ConsumerStatsResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.ReachedEndOfTopic:
-					if(Cmd.HasReachedEndOfTopic)
-						HandleReachedEndOfTopic(Cmd.ReachedEndOfTopic);
-					Cmd.ReachedEndOfTopic.Recycle();
+					if(cmd.HasReachedEndOfTopic)
+						HandleReachedEndOfTopic(cmd.ReachedEndOfTopic);
+					cmd.ReachedEndOfTopic.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetLastMessageId:
-					if(Cmd.HasGetLastMessageId)
-						HandleGetLastMessageId(Cmd.GetLastMessageId);
-					Cmd.GetLastMessageId.Recycle();
+					if(cmd.HasGetLastMessageId)
+						HandleGetLastMessageId(cmd.GetLastMessageId);
+					cmd.GetLastMessageId.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetLastMessageIdResponse:
-					if(Cmd.HasGetLastMessageIdResponse)
-						HandleGetLastMessageIdSuccess(Cmd.GetLastMessageIdResponse);
-					Cmd.GetLastMessageIdResponse.Recycle();
+					if(cmd.HasGetLastMessageIdResponse)
+						HandleGetLastMessageIdSuccess(cmd.GetLastMessageIdResponse);
+					cmd.GetLastMessageIdResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.ActiveConsumerChange:
-						HandleActiveConsumerChange(Cmd.ActiveConsumerChange);
-					Cmd.ActiveConsumerChange.Recycle();
+						HandleActiveConsumerChange(cmd.ActiveConsumerChange);
+					cmd.ActiveConsumerChange.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetTopicsOfNamespace:
-					if(Cmd.HasGetTopicsOfNamespace)
-						HandleGetTopicsOfNamespace(Cmd.GetTopicsOfNamespace);
-					Cmd.GetTopicsOfNamespace.Recycle();
+					if(cmd.HasGetTopicsOfNamespace)
+						HandleGetTopicsOfNamespace(cmd.GetTopicsOfNamespace);
+					cmd.GetTopicsOfNamespace.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
-					if(Cmd.HasGetTopicsOfNamespaceResponse)
-						HandleGetTopicsOfNamespaceSuccess(Cmd.GetTopicsOfNamespaceResponse);
-					Cmd.GetTopicsOfNamespaceResponse.Recycle();
+					if(cmd.HasGetTopicsOfNamespaceResponse)
+						HandleGetTopicsOfNamespaceSuccess(cmd.GetTopicsOfNamespaceResponse);
+					cmd.GetTopicsOfNamespaceResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetSchema:
-					if(Cmd.HasGetSchema)
-						HandleGetSchema(Cmd.GetSchema);
-					Cmd.GetSchema.Recycle();
+					if(cmd.HasGetSchema)
+						HandleGetSchema(cmd.GetSchema);
+					cmd.GetSchema.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetSchemaResponse:
-					if(Cmd.HasGetSchemaResponse)
-					HandleGetSchemaResponse(Cmd.GetSchemaResponse);
-					Cmd.GetSchemaResponse.Recycle();
+					if(cmd.HasGetSchemaResponse)
+					HandleGetSchemaResponse(cmd.GetSchemaResponse);
+					cmd.GetSchemaResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetOrCreateSchema:
-					if(Cmd.HasGetOrCreateSchema)
-						HandleGetOrCreateSchema(Cmd.GetOrCreateSchema);
-					Cmd.GetOrCreateSchema.Recycle();
+					if(cmd.HasGetOrCreateSchema)
+						HandleGetOrCreateSchema(cmd.GetOrCreateSchema);
+					cmd.GetOrCreateSchema.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
-					if(Cmd.HasGetOrCreateSchemaResponse)
-						HandleGetOrCreateSchemaResponse(Cmd.GetOrCreateSchemaResponse);
-					Cmd.GetOrCreateSchemaResponse.Recycle();
+					if(cmd.HasGetOrCreateSchemaResponse)
+						HandleGetOrCreateSchemaResponse(cmd.GetOrCreateSchemaResponse);
+					cmd.GetOrCreateSchemaResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AuthChallenge:
-					if(Cmd.HasAuthChallenge)
-						HandleAuthChallenge(Cmd.AuthChallenge);
-					Cmd.AuthChallenge.Recycle();
+					if(cmd.HasAuthChallenge)
+						HandleAuthChallenge(cmd.AuthChallenge);
+					cmd.AuthChallenge.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AuthResponse:
-					if(Cmd.HasAuthResponse)
-						HandleAuthResponse(Cmd.AuthResponse);
-					Cmd.AuthResponse.Recycle();
+					if(cmd.HasAuthResponse)
+						HandleAuthResponse(cmd.AuthResponse);
+					cmd.AuthResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.NewTxn:
-					if(Cmd.HasNewTxn)
-						HandleNewTxn(Cmd.NewTxn);
-					Cmd.NewTxn.Recycle();
+					if(cmd.HasNewTxn)
+						HandleNewTxn(cmd.NewTxn);
+					cmd.NewTxn.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.NewTxnResponse:
-					if(Cmd.HasNewTxnResponse)
-						HandleNewTxnResponse(Cmd.NewTxnResponse);
-					Cmd.NewTxnResponse.Recycle();
+					if(cmd.HasNewTxnResponse)
+						HandleNewTxnResponse(cmd.NewTxnResponse);
+					cmd.NewTxnResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AddPartitionToTxn:
-					if(Cmd.HasAddPartitionToTxn)
-						HandleAddPartitionToTxn(Cmd.AddPartitionToTxn);
-					Cmd.AddPartitionToTxn.Recycle();
+					if(cmd.HasAddPartitionToTxn)
+						HandleAddPartitionToTxn(cmd.AddPartitionToTxn);
+					cmd.AddPartitionToTxn.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AddPartitionToTxnResponse:
-					if(Cmd.HasAddPartitionToTxnResponse)
-						HandleAddPartitionToTxnResponse(Cmd.AddPartitionToTxnResponse);
-					Cmd.AddPartitionToTxnResponse.Recycle();
+					if(cmd.HasAddPartitionToTxnResponse)
+						HandleAddPartitionToTxnResponse(cmd.AddPartitionToTxnResponse);
+					cmd.AddPartitionToTxnResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AddSubscriptionToTxn:
-					if(Cmd.HasAddSubscriptionToTxn)
-						HandleAddSubscriptionToTxn(Cmd.AddSubscriptionToTxn);
-					Cmd.AddSubscriptionToTxn.Recycle();
+					if(cmd.HasAddSubscriptionToTxn)
+						HandleAddSubscriptionToTxn(cmd.AddSubscriptionToTxn);
+					cmd.AddSubscriptionToTxn.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
-					if(Cmd.HasAddSubscriptionToTxnResponse)
-						HandleAddSubscriptionToTxnResponse(Cmd.AddSubscriptionToTxnResponse);
-					Cmd.AddSubscriptionToTxnResponse.Recycle();
+					if(cmd.HasAddSubscriptionToTxnResponse)
+						HandleAddSubscriptionToTxnResponse(cmd.AddSubscriptionToTxnResponse);
+					cmd.AddSubscriptionToTxnResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxn:
-					if(Cmd.HasEndTxn)
-						HandleEndTxn(Cmd.EndTxn);
-					Cmd.EndTxn.Recycle();
+					if(cmd.HasEndTxn)
+						HandleEndTxn(cmd.EndTxn);
+					cmd.EndTxn.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxnResponse:
-					if(Cmd.HasEndTxnResponse)
-						HandleEndTxnResponse(Cmd.EndTxnResponse);
-					Cmd.EndTxnResponse.Recycle();
+					if(cmd.HasEndTxnResponse)
+						HandleEndTxnResponse(cmd.EndTxnResponse);
+					cmd.EndTxnResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxnOnPartition:
-					if(Cmd.HasEndTxnOnPartition)
-						HandleEndTxnOnPartition(Cmd.EndTxnOnPartition);
-					Cmd.EndTxnOnPartition.Recycle();
+					if(cmd.HasEndTxnOnPartition)
+						HandleEndTxnOnPartition(cmd.EndTxnOnPartition);
+					cmd.EndTxnOnPartition.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
-					if(Cmd.HasEndTxnOnPartitionResponse)
-						HandleEndTxnOnPartitionResponse(Cmd.EndTxnOnPartitionResponse);
-					Cmd.EndTxnOnPartitionResponse.Recycle();
+					if(cmd.HasEndTxnOnPartitionResponse)
+						HandleEndTxnOnPartitionResponse(cmd.EndTxnOnPartitionResponse);
+					cmd.EndTxnOnPartitionResponse.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxnOnSubscription:
-					if(Cmd.HasEndTxnOnSubscription)
-						HandleEndTxnOnSubscription(Cmd.EndTxnOnSubscription);
-					Cmd.EndTxnOnSubscription.Recycle();
+					if(cmd.HasEndTxnOnSubscription)
+						HandleEndTxnOnSubscription(cmd.EndTxnOnSubscription);
+					cmd.EndTxnOnSubscription.Recycle();
 					break;
 
 				case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
-					if(Cmd.HasEndTxnOnSubscriptionResponse)
-						HandleEndTxnOnSubscriptionResponse(Cmd.EndTxnOnSubscriptionResponse);
-					Cmd.EndTxnOnSubscriptionResponse.Recycle();
+					if(cmd.HasEndTxnOnSubscriptionResponse)
+						HandleEndTxnOnSubscriptionResponse(cmd.EndTxnOnSubscriptionResponse);
+					cmd.EndTxnOnSubscriptionResponse.Recycle();
 					break;
 				}
 			}
 			finally
 			{
-				if (CmdBuilder != null)
+				if (cmdBuilder != null)
 				{
-					CmdBuilder.Recycle();
+					cmdBuilder.Recycle();
 				}
 
-				if (Cmd != null)
+				if (cmd != null)
 				{
-					Cmd.Recycle();
+					cmd.Recycle();
 				}
 
 				buffer.Release();
@@ -390,251 +390,251 @@ namespace SharpPulsar.Protocol
 
 		public abstract void MessageReceived();
 
-		public virtual void HandlePartitionMetadataRequest(CommandPartitionedTopicMetadata Response)
+		public virtual void HandlePartitionMetadataRequest(CommandPartitionedTopicMetadata response)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse Response)
+		public virtual void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse response)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleLookup(CommandLookupTopic Lookup)
+		public virtual void HandleLookup(CommandLookupTopic lookup)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleLookupResponse(CommandLookupTopicResponse Connection)
+		public virtual void HandleLookupResponse(CommandLookupTopicResponse connection)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleConnect(CommandConnect Connect)
+		public virtual void HandleConnect(CommandConnect connect)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleConnected(CommandConnected Connected)
+		public virtual void HandleConnected(CommandConnected connected)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSubscribe(CommandSubscribe Subscribe)
+		public virtual void HandleSubscribe(CommandSubscribe subscribe)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleProducer(CommandProducer Producer)
+		public virtual void HandleProducer(CommandProducer producer)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSend(CommandSend Send, IByteBuffer HeadersAndPayload)
+		public virtual void HandleSend(CommandSend send, IByteBuffer headersAndPayload)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSendReceipt(CommandSendReceipt SendReceipt)
+		public virtual void HandleSendReceipt(CommandSendReceipt sendReceipt)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSendError(CommandSendError SendError)
+		public virtual void HandleSendError(CommandSendError sendError)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleMessage(CommandMessage CmdMessage, IByteBuffer HeadersAndPayload)
+		public virtual void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAck(CommandAck Ack)
+		public virtual void HandleAck(CommandAck ack)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleFlow(CommandFlow Flow)
+		public virtual void HandleFlow(CommandFlow flow)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleRedeliverUnacknowledged(CommandRedeliverUnacknowledgedMessages Redeliver)
+		public virtual void HandleRedeliverUnacknowledged(CommandRedeliverUnacknowledgedMessages redeliver)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleUnsubscribe(CommandUnsubscribe Unsubscribe)
+		public virtual void HandleUnsubscribe(CommandUnsubscribe unsubscribe)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSeek(CommandSeek Seek)
+		public virtual void HandleSeek(CommandSeek seek)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleActiveConsumerChange(CommandActiveConsumerChange Change)
+		public virtual void HandleActiveConsumerChange(CommandActiveConsumerChange change)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleSuccess(CommandSuccess Success)
+		public virtual void HandleSuccess(CommandSuccess success)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleProducerSuccess(CommandProducerSuccess Success)
+		public virtual void HandleProducerSuccess(CommandProducerSuccess success)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleError(CommandError Error)
+		public virtual void HandleError(CommandError error)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleCloseProducer(CommandCloseProducer CloseProducer)
+		public virtual void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleCloseConsumer(CommandCloseConsumer CloseConsumer)
+		public virtual void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandlePing(CommandPing Ping)
+		public virtual void HandlePing(CommandPing ping)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandlePong(CommandPong Pong)
+		public virtual void HandlePong(CommandPong pong)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleConsumerStats(CommandConsumerStats CommandConsumerStats)
+		public virtual void HandleConsumerStats(CommandConsumerStats commandConsumerStats)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleConsumerStatsResponse(CommandConsumerStatsResponse CommandConsumerStatsResponse)
+		public virtual void HandleConsumerStatsResponse(CommandConsumerStatsResponse commandConsumerStatsResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleReachedEndOfTopic(CommandReachedEndOfTopic CommandReachedEndOfTopic)
+		public virtual void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetLastMessageId(CommandGetLastMessageId GetLastMessageId)
+		public virtual void HandleGetLastMessageId(CommandGetLastMessageId getLastMessageId)
 		{
 			throw new NotSupportedException();
 		}
-		public virtual void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse Success)
-		{
-			throw new NotSupportedException();
-		}
-
-		public virtual void HandleGetTopicsOfNamespace(CommandGetTopicsOfNamespace CommandGetTopicsOfNamespace)
+		public virtual void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse Response)
+		public virtual void HandleGetTopicsOfNamespace(CommandGetTopicsOfNamespace commandGetTopicsOfNamespace)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetSchema(CommandGetSchema CommandGetSchema)
+		public virtual void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse response)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetSchemaResponse(CommandGetSchemaResponse CommandGetSchemaResponse)
+		public virtual void HandleGetSchema(CommandGetSchema commandGetSchema)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetOrCreateSchema(CommandGetOrCreateSchema CommandGetOrCreateSchema)
+		public virtual void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse CommandGetOrCreateSchemaResponse)
+		public virtual void HandleGetOrCreateSchema(CommandGetOrCreateSchema commandGetOrCreateSchema)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAuthResponse(CommandAuthResponse CommandAuthResponse)
+		public virtual void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAuthChallenge(CommandAuthChallenge CommandAuthChallenge)
+		public virtual void HandleAuthResponse(CommandAuthResponse commandAuthResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleNewTxn(CommandNewTxn CommandNewTxn)
+		public virtual void HandleAuthChallenge(CommandAuthChallenge commandAuthChallenge)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleNewTxnResponse(CommandNewTxnResponse CommandNewTxnResponse)
+		public virtual void HandleNewTxn(CommandNewTxn commandNewTxn)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAddPartitionToTxn(CommandAddPartitionToTxn CommandAddPartitionToTxn)
+		public virtual void HandleNewTxnResponse(CommandNewTxnResponse commandNewTxnResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse CommandAddPartitionToTxnResponse)
+		public virtual void HandleAddPartitionToTxn(CommandAddPartitionToTxn commandAddPartitionToTxn)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAddSubscriptionToTxn(CommandAddSubscriptionToTxn CommandAddSubscriptionToTxn)
+		public virtual void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse commandAddPartitionToTxnResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse CommandAddSubscriptionToTxnResponse)
+		public virtual void HandleAddSubscriptionToTxn(CommandAddSubscriptionToTxn commandAddSubscriptionToTxn)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxn(CommandEndTxn CommandEndTxn)
+		public virtual void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse commandAddSubscriptionToTxnResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxnResponse(CommandEndTxnResponse CommandEndTxnResponse)
+		public virtual void HandleEndTxn(CommandEndTxn commandEndTxn)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxnOnPartition(CommandEndTxnOnPartition CommandEndTxnOnPartition)
+		public virtual void HandleEndTxnResponse(CommandEndTxnResponse commandEndTxnResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse CommandEndTxnOnPartitionResponse)
+		public virtual void HandleEndTxnOnPartition(CommandEndTxnOnPartition commandEndTxnOnPartition)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxnOnSubscription(CommandEndTxnOnSubscription CommandEndTxnOnSubscription)
+		public virtual void HandleEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse commandEndTxnOnPartitionResponse)
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual void HandleEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse CommandEndTxnOnSubscriptionResponse)
+		public virtual void HandleEndTxnOnSubscription(CommandEndTxnOnSubscription commandEndTxnOnSubscription)
+		{
+			throw new NotSupportedException();
+		}
+
+		public virtual void HandleEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse commandEndTxnOnSubscriptionResponse)
 		{
 			throw new NotSupportedException();
 		}
@@ -734,7 +734,7 @@ namespace SharpPulsar.Protocol
 			throw new NotImplementedException();
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(PulsarDecoder));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarDecoder));
 	}
 
 }

@@ -1,7 +1,6 @@
 ﻿using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Protocol;
-using SharpPulsar.Util.Collections;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,20 +9,18 @@ using SharpPulsar.Protocol.Proto;
 using System.Collections.Concurrent;
 using System.Threading;
 using DotNetty.Transport.Channels;
-using SharpPulsar.Util.Atomic;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Exception;
 using System.Net;
 using System.Linq;
 using DotNetty.Codecs;
-using Optional;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 using Microsoft.Extensions.Logging;
 using DotNetty.Handlers.Tls;
 using System.IO;
-using DotNetty.Transport.Libuv;
 using DotNetty.Transport.Bootstrapping;
+using Google.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -74,7 +71,7 @@ namespace SharpPulsar.Impl
 		private readonly MultithreadEventLoopGroup _eventLoopGroup;
 
 		private static readonly ConcurrentDictionary<ClientCnx, long> NumberOfRejectedrequestsUpdater = new ConcurrentDictionary<ClientCnx, long>();
-		private volatile int _numberOfRejectRequests = 0;
+        public volatile int NumberOfRejectRequests = 0;
 		public static int MaxMessageSize = Commands.DefaultMaxMessageSize;
 
 		private readonly int _maxNumberOfRejectedRequestPerConnection;
@@ -82,9 +79,9 @@ namespace SharpPulsar.Impl
 		private readonly int _protocolVersion;
 		private readonly long _operationTimeoutMs;
 
-		protected internal string _proxyToTargetBrokerAddress;
+		protected internal string ProxyToTargetBrokerAddress;
 		protected internal string _remoteHostName;
-		private bool _isTlsHostnameVerificationEnable;
+		private readonly bool _isTlsHostnameVerificationEnable;
 
 		private CancellationTokenSource _timeoutTask;
 
@@ -133,14 +130,16 @@ namespace SharpPulsar.Impl
             _eventLoopGroup = eventLoopGroup;
         }
 
-		public Task<BaseCommand> NewConnectCommand()
+		public IByteBuffer NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
-			var authData = AuthenticationDataProvider.Authenticate(Shared.Auth.AuthData.);
-			return Commands.NewConnect(Authentication.AuthMethodName, authData, _protocolVersion, null, _proxyToTargetBrokerAddress, null, null, null);
+            var authData =  AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(Shared.Auth.AuthData.InitAuthData));
+            
+            var auth = AuthData.NewBuilder().SetAuthData(ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
+            return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 
 		public new void ChannelInactive(IChannelHandlerContext ctx)
@@ -239,17 +238,20 @@ namespace SharpPulsar.Impl
 		}
 
 		public override void HandleAuthChallenge(CommandAuthChallenge authChallenge)
-		{
-			if(authChallenge.Challenge != null)
-                if(authChallenge.Challenge.AuthData_ != null)
+        {
+            if (authChallenge.Challenge == null)
+                return;
+            if (authChallenge.Challenge.AuthData_ == null)
+                return;
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				var authData = AuthenticationDataProvider.Authenticate(AuthData.of(authChallenge.Challenge.AuthData_));
+				var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(authChallenge.Challenge.AuthData_.ToByteArray()));
 
-						if (!authData.Complete)
-							throw new System.Exception();
-					var request = Commands.NewAuthResponse(Authentication.AuthMethodName, authData, _protocolVersion, string.Empty);
+                if (!authData.Complete)
+                    throw new System.Exception();
+                var auth = AuthData.NewBuilder().SetAuthData(ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
+				var request = Commands.NewAuthResponse(Authentication.AuthMethodName, ByteString.CopyFrom((byte[])(object)authData.Bytes), _protocolVersion, string.Empty);
 
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
@@ -258,12 +260,10 @@ namespace SharpPulsar.Impl
 
 				Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
 				{
-					if (writeTask.IsFaulted)
-					{
-						Log.LogWarning("{} Failed to send request for mutual auth to broker: {}", Ctx().Channel, writeTask.Exception.Message);
-						_connectionTask.SetException(writeTask.Exception);
-					}
-					});
+                    if (!writeTask.IsFaulted) return;
+                    Log.LogWarning("{} Failed to send request for mutual auth to broker: {}", Ctx().Channel, writeTask.Exception.Message);
+                    _connectionTask.SetException(writeTask.Exception);
+                });
 				_state = State.Connecting;
 			}
 			catch (System.Exception e)
@@ -628,8 +628,9 @@ namespace SharpPulsar.Impl
 				}
 
 				if (_maxLookupRequestSemaphore.WaitOne())
-				{
-					_waitingLookupRequests.AddLast(new LinkedListNode<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>> (requestId, new KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>(request, task)));
+                {
+                    var kv = new KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>(requestId, new KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>(request, task));
+                    _waitingLookupRequests.AddLast(kv);
 				}
 				else
 				{
@@ -637,7 +638,8 @@ namespace SharpPulsar.Impl
 					{
 						Log.LogDebug("{} Failed to add lookup-request into waiting queue", requestId);
 					}
-					task.SetException(new PulsarClientException.TooManyRequestsException(string.Format("Requests number out of config: There are {{{0}}} lookup requests outstanding and {{{1}}} requests pending.", _pendingLookupRequests.Count, _waitingLookupRequests.Count)));
+					task.SetException(new PulsarClientException.TooManyRequestsException(
+                        $"Requests number out of config: There are {{{_pendingLookupRequests.Count}}} lookup requests outstanding and {{{_waitingLookupRequests.Count}}} requests pending."));
 				}
 			}
 			return task;
@@ -715,15 +717,10 @@ namespace SharpPulsar.Impl
 			requestTask.SetResult(commandGetOrCreateSchemaResponse);
 		}
 
-		public virtual Task NewPromise()
-		{
-			//return Ctx().NewPromise();
-			return null;
-		}
 
 		public virtual IChannelHandlerContext Ctx()
 		{
-			return _ctx;
+			return Context;
 		}
 
 		public virtual IChannel Channel()
@@ -731,7 +728,7 @@ namespace SharpPulsar.Impl
 			return Ctx().Channel;
 		}
 
-		public virtual EndPoint ServerAddrees()
+		public virtual EndPoint ServerAddress()
 		{
 			return Ctx().Channel.RemoteAddress;
 		}
@@ -748,10 +745,12 @@ namespace SharpPulsar.Impl
 			await Ctx().WriteAndFlushAsync(cmd).ContinueWith(writeTask =>
 			{
 				if (writeTask.IsFaulted)
-				{
-					Log.LogWarning("{} Failed to send request to broker: {}", Ctx().Channel, writeTask.Exception.Message);
-					_pendingRequests.TryRemove(requestId, out task);
-				}
+                {
+                    if (writeTask.Exception != null)
+                        Log.LogWarning("{} Failed to send request to broker: {}", Ctx().Channel,
+                            writeTask.Exception.Message);
+                    _pendingRequests.TryRemove(requestId, out task);
+                }
 			});
 			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			return task.Task.Result;
@@ -878,27 +877,73 @@ namespace SharpPulsar.Impl
 		/// <param name="error"> </param>
 		/// <param name="errMsg"> </param>
 		private void CheckServerError(ServerError Error, string ErrMsg)
-		{
-			if (ServerError.ServiceNotReady.Equals(Error))
-			{
-				Log.LogError("{} Close connection because received internal-server error {}", Ctx().Channel, ErrMsg);
-				Ctx().CloseAsync();
-			}
-			else if (ServerError.TooManyRequests.Equals(Error))
-			{
-				var rejectedRequests = NumberOfRejectedrequestsUpdater[this];
-				if (rejectedRequests == 0)
-				{
-					// schedule timer
-					_eventLoopGroup.Schedule(x => NumberOfRejectedrequestsUpdater.TryAdd(this, 0), _rejectedRequestResetTimeSec, TimeSpan.FromSeconds(_rejectedRequestResetTimeSec));
-				}
-				else if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
-				{
-					Log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,NumberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
-					Ctx().CloseAsync();
-				}
-			}
-		}
+        {
+            switch (Error)
+            {
+                case ServerError.ServiceNotReady:
+                    Log.LogError("{} Close connection because received internal-server error {}", Ctx().Channel, ErrMsg);
+                    Ctx().CloseAsync();
+                    break;
+                case ServerError.TooManyRequests:
+                {
+                    var rejectedRequests = NumberOfRejectedrequestsUpdater[this];
+                    if (rejectedRequests == 0)
+                    {
+                        // schedule timer
+                        _eventLoopGroup.Schedule(x => NumberOfRejectedrequestsUpdater.TryAdd(this, 0), _rejectedRequestResetTimeSec, TimeSpan.FromSeconds(_rejectedRequestResetTimeSec));
+                    }
+                    else if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
+                    {
+                        Log.LogError("{} Close connection because received {} rejected request in {} seconds ", Ctx().Channel,NumberOfRejectedrequestsUpdater[this], _rejectedRequestResetTimeSec);
+                        Ctx().CloseAsync();
+                    }
+
+                    break;
+                }
+                case ServerError.UnknownError:
+                    break;
+                case ServerError.MetadataError:
+                    break;
+                case ServerError.PersistenceError:
+                    break;
+                case ServerError.AuthenticationError:
+                    break;
+                case ServerError.AuthorizationError:
+                    break;
+                case ServerError.ConsumerBusy:
+                    break;
+                case ServerError.ProducerBlockedQuotaExceededError:
+                    break;
+                case ServerError.ProducerBlockedQuotaExceededException:
+                    break;
+                case ServerError.ChecksumError:
+                    break;
+                case ServerError.UnsupportedVersionError:
+                    break;
+                case ServerError.TopicNotFound:
+                    break;
+                case ServerError.SubscriptionNotFound:
+                    break;
+                case ServerError.ConsumerNotFound:
+                    break;
+                case ServerError.TopicTerminatedError:
+                    break;
+                case ServerError.ProducerBusy:
+                    break;
+                case ServerError.InvalidTopicName:
+                    break;
+                case ServerError.IncompatibleSchema:
+                    break;
+                case ServerError.ConsumerAssignError:
+                    break;
+                case ServerError.TransactionCoordinatorNotFound:
+                    break;
+                case ServerError.InvalidTxnStatus:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Error), Error, null);
+            }
+        }
 
 		/// <summary>
 		/// verifies host name provided in x509 Certificate in tls session
@@ -917,20 +962,20 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="ctx"> </param>
 		/// <returns> true if hostname is verified else return false </returns>
-		private bool VerifyTlsHostName(string Hostname, IChannelHandlerContext Ctx)
+		private bool VerifyTlsHostName(string hostname, IChannelHandlerContext ctx)
 		{
-			var sslHandler = Ctx.Channel.Pipeline.Get("tls");
+			var sslHandler = ctx.Channel.Pipeline.Get("tls");
 
 			if (sslHandler != null)
 			{
 				var sslSession = ((TlsHandler) sslHandler);
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", Hostname, sslSession.CipherSuite, SslSession.Protocol);
+					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", hostname, sslSession.CipherSuite, SslSession.Protocol);
 				}
 				var y = new DefaultNameResolver();
 
-				return new  HOSTNAME_VERIFIER.verify(Hostname, SslSession);
+				return new  HOSTNAME_VERIFIER.verify(hostname, SslSession);
 			}
 			return false;
 		}
@@ -962,7 +1007,7 @@ namespace SharpPulsar.Impl
 
 		public virtual IPEndPoint TargetBroker
 		{
-			set => _proxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
+			set => ProxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
         }
 
 		 public virtual string RemoteHostName
@@ -973,40 +1018,28 @@ namespace SharpPulsar.Impl
 
 
 		private PulsarClientException GetPulsarClientException(ServerError error, string ErrorMsg)
-		{
-			switch (error)
-			{
-				case ServerError.AuthenticationError:
-					return new PulsarClientException.AuthenticationException(ErrorMsg);
-				case ServerError.AuthorizationError:
-					return new PulsarClientException.AuthorizationException(ErrorMsg);
-				case ServerError.ProducerBusy:
-					return new PulsarClientException.ProducerBusyException(ErrorMsg);
-				case ServerError.ConsumerBusy:
-					return new PulsarClientException.ConsumerBusyException(ErrorMsg);
-				case ServerError.MetadataError:
-					return new PulsarClientException.BrokerMetadataException(ErrorMsg);
-				case ServerError.PersistenceError:
-					return new PulsarClientException.BrokerPersistenceException(ErrorMsg);
-				case ServerError.ServiceNotReady:
-					return new PulsarClientException.LookupException(ErrorMsg);
-				case ServerError.TooManyRequests:
-					return new PulsarClientException.TooManyRequestsException(ErrorMsg);
-				case ServerError.ProducerBlockedQuotaExceededError:
-					return new PulsarClientException.ProducerBlockedQuotaExceededError(ErrorMsg);
-				case ServerError.ProducerBlockedQuotaExceededException:
-					return new PulsarClientException.ProducerBlockedQuotaExceededException(ErrorMsg);
-				case ServerError.TopicTerminatedError:
-					return new PulsarClientException.TopicTerminatedException(ErrorMsg);
-				case ServerError.IncompatibleSchema:
-					return new PulsarClientException.IncompatibleSchemaException(ErrorMsg);
-				case ServerError.TopicNotFound:
-					return new PulsarClientException.TopicDoesNotExistException(ErrorMsg);
-				case ServerError.UnknownError:
-				default:
-					return new PulsarClientException(ErrorMsg);
-			}
-		}
+        {
+            return error switch
+            {
+                ServerError.AuthenticationError => new PulsarClientException.AuthenticationException(ErrorMsg),
+                ServerError.AuthorizationError => new PulsarClientException.AuthorizationException(ErrorMsg),
+                ServerError.ProducerBusy => new PulsarClientException.ProducerBusyException(ErrorMsg),
+                ServerError.ConsumerBusy => new PulsarClientException.ConsumerBusyException(ErrorMsg),
+                ServerError.MetadataError => new PulsarClientException.BrokerMetadataException(ErrorMsg),
+                ServerError.PersistenceError => new PulsarClientException.BrokerPersistenceException(ErrorMsg),
+                ServerError.ServiceNotReady => new PulsarClientException.LookupException(ErrorMsg),
+                ServerError.TooManyRequests => new PulsarClientException.TooManyRequestsException(ErrorMsg),
+                ServerError.ProducerBlockedQuotaExceededError =>
+                new PulsarClientException.ProducerBlockedQuotaExceededError(ErrorMsg),
+                ServerError.ProducerBlockedQuotaExceededException =>
+                new PulsarClientException.ProducerBlockedQuotaExceededException(ErrorMsg),
+                ServerError.TopicTerminatedError => new PulsarClientException.TopicTerminatedException(ErrorMsg),
+                ServerError.IncompatibleSchema => new PulsarClientException.IncompatibleSchemaException(ErrorMsg),
+                ServerError.TopicNotFound => new PulsarClientException.TopicDoesNotExistException(ErrorMsg),
+                ServerError.UnknownError => new PulsarClientException(ErrorMsg),
+                _ => new PulsarClientException(ErrorMsg)
+            };
+        }
 
 		public virtual void Close()
 		{

@@ -1,6 +1,9 @@
 ﻿using SharpPulsar.Api;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Util;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -91,7 +94,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(AuthenticationDataTls));
+		private static readonly Logger<> LOG = LoggerFactory.getLogger(typeof(AuthenticationDataTls));
 	}
 
 }

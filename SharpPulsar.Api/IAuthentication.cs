@@ -42,15 +42,9 @@ namespace SharpPulsar.Api
 		///             if there was error getting the authentication data to use </exception>
 		/// <exception cref="PulsarClientException">
 		///             any other error </exception>
-		virtual IAuthenticationDataProvider AuthData
-		{
-			get
-			{
-				throw new UnsupportedAuthenticationException("Method not implemented!");
-			}
-		}
+		virtual IAuthenticationDataProvider AuthData => throw new UnsupportedAuthenticationException("Method not implemented!");
 
-		/// <summary>
+        /// <summary>
 		/// Get/Create an authentication data provider which provides the data that this client will be sent to the broker.
 		/// Some authentication method need to auth between each client channel. So it need the broker, who it will talk to.
 		/// </summary>

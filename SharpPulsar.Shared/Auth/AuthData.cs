@@ -23,14 +23,23 @@ namespace SharpPulsar.Shared.Auth
 	/// <summary>
 	/// Authentication data.
 	/// </summary>
-	public sealed class AuthData
+	public class AuthData
 	{
 		
 		public static sbyte[] InitAuthData = (sbyte[])(object)Encoding.UTF8.GetBytes("PulsarAuthInit");
 
-		public readonly sbyte[] Bytes;
+		public sbyte[] Bytes;
 
 		public bool Complete => Bytes == null;
-    }
+
+        public AuthData(byte[] authData)
+        {
+            Bytes = (sbyte[]) (object) authData;
+        }
+        public AuthData(sbyte[] authData)
+        {
+            Bytes = authData;
+        }
+	}
 
 }

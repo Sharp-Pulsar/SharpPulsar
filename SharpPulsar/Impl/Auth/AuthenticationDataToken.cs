@@ -26,13 +26,13 @@ namespace SharpPulsar.Impl.Auth
 
 	public class AuthenticationDataToken : IAuthenticationDataProvider
 	{
-		public const string HTTP_HEADER_NAME = "Authorization";
+		public const string HttpHeaderName = "Authorization";
 
-		private readonly Func<string> tokenSupplier;
+		private readonly Func<string> _tokenSupplier;
 
 		public AuthenticationDataToken(Func<string> tokenSupplier)
 		{
-			this.tokenSupplier = tokenSupplier;
+			this._tokenSupplier = tokenSupplier;
 		}
 
 		public bool HasDataForHttp()
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl.Auth
 			{
 				var set = new HashSet<KeyValuePair<string, string>>
 				{
-					new KeyValuePair<string, string>(HTTP_HEADER_NAME, "Bearer " + Token)
+					new KeyValuePair<string, string>(HttpHeaderName, "Bearer " + Token)
 				};
 				return set;
 			}
@@ -57,21 +57,15 @@ namespace SharpPulsar.Impl.Auth
 			return true;
 		}
 
-		public string CommandData
-		{
-			get
-			{
-				return Token;
-			}
-		}
+		public string CommandData => Token;
 
-		private string Token
+        private string Token
 		{
 			get
 			{
 				try
 				{
-					return tokenSupplier.Invoke();
+					return _tokenSupplier.Invoke();
 				}
 				catch (System.Exception t)
 				{

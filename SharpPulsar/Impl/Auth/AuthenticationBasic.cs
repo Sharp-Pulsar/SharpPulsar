@@ -28,24 +28,18 @@ namespace SharpPulsar.Impl.Auth
 {
 	public class AuthenticationBasic : IAuthentication, EncodedAuthenticationParameterSupport
 	{
-		private string userId;
-		private string password;
+		private string _userId;
+		private string _password;
 
-		public string AuthMethodName
-		{
-			get
-			{
-				return "basic";
-			}
-		}
+		public string AuthMethodName => "basic";
 
-		public  IAuthenticationDataProvider AuthData
+        public  IAuthenticationDataProvider AuthData
 		{
 			get
 			{
 				try
 				{
-					return new AuthenticationDataBasic(userId, password);
+					return new AuthenticationDataBasic(_userId, _password);
 				}
 				catch (System.Exception e)
 				{
@@ -63,8 +57,8 @@ namespace SharpPulsar.Impl.Auth
 		public void Configure(string encodedAuthParamString)
 		{
 			var authParams = JsonSerializer.Deserialize<IDictionary<string, string>>(encodedAuthParamString);
-			userId = authParams["userId"];
-			password = authParams["password"];
+			_userId = authParams["userId"];
+			_password = authParams["password"];
 		}
 
 		
