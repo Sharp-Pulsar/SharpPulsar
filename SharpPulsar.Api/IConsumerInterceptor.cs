@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -34,7 +35,7 @@ namespace SharpPulsar.Api
 	/// not propagated further.
 	/// </para>
 	/// </summary>
-	public interface ConsumerInterceptor<T> : IDisposable
+	public interface IConsumerInterceptor<T> : IDisposable
 	{
 
 		/// <summary>
@@ -45,7 +46,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// This is called just before the message is returned by
 		/// <seealso cref="IConsumer.receive()"/>, {@link MessageListener#received(Consumer,
-		/// Message)} or the <seealso cref="java.util.concurrent.ValueTask"/> returned by
+		/// Message)} or the <seealso cref="ValueTask"/> returned by
 		/// <seealso cref="IConsumer.receiveAsync()"/> completes.
 		/// 
 		/// <para>This method is allowed to modify message, in which case the new message
@@ -59,7 +60,7 @@ namespace SharpPulsar.Api
 		/// <para>Since the consumer may run multiple interceptors, a particular
 		/// interceptor's
 		/// <tt>beforeConsume</tt> callback will be called in the order specified by
-		/// <seealso cref="IConsumerBuilder.intercept(ConsumerInterceptor[])"/>. The first
+		/// <seealso cref="IConsumerBuilder.intercept(IConsumerInterceptor[])"/>. The first
 		/// interceptor in the list gets the consumed message, the following
 		/// interceptor will be passed
 		/// the message returned by the previous interceptor, and so on. Since
@@ -93,7 +94,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledge(IConsumer<T> consumer, IMessageId messageId, Exception exception);
+		void OnAcknowledge(IConsumer<T> consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -105,7 +106,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(IConsumer<T> consumer, IMessageId messageId, Exception exception);
+		void OnAcknowledgeCumulative(IConsumer<T> consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.

@@ -16,21 +16,19 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using DotNetty.Common.Utilities;
+using SharpPulsar.Api;
+
 namespace SharpPulsar.Impl
 {
 
-	using ConsumerStats = Api.ConsumerStats;
-	using SharpPulsar.Api;
 
-	using Timeout = io.netty.util.Timeout;
-
-	public interface ConsumerStatsRecorder : ConsumerStats
+	public interface ConsumerStatsRecorder : IConsumerStats
 	{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: void updateNumMsgsReceived(SharpPulsar.api.Message<?> message);
-		void updateNumMsgsReceived<T1>(Message<T1> Message);
+		void UpdateNumMsgsReceived<T1>(Message<T1> message);
 
-		void IncrementNumAcksSent(long NumAcks);
+		void IncrementNumAcksSent(long numAcks);
 
 		void IncrementNumAcksFailed();
 
@@ -38,11 +36,11 @@ namespace SharpPulsar.Impl
 
 		void IncrementNumBatchReceiveFailed();
 
-		Optional<Timeout> StatTimeout {get;}
+		ITimeout StatTimeout {get;}
 
 		void Reset();
 
-		void UpdateCumulativeStats(ConsumerStats Stats);
+		void UpdateCumulativeStats(IConsumerStats stats);
 	}
 
 }

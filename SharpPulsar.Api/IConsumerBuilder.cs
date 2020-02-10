@@ -366,7 +366,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumerEventListener">
 		///            the consumer group listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> ConsumerEventListener(ConsumerEventListener consumerEventListener);
+		IConsumerBuilder<T> ConsumerEventListener(IConsumerEventListener consumerEventListener);
 
 		/// <summary>
 		/// If enabled, the consumer will read messages from the compacted topic rather than reading the full message backlog
@@ -494,7 +494,7 @@ namespace SharpPulsar.Api
 		/// Intercept <seealso cref="Consumer"/>.
 		/// </summary>
 		/// <param name="interceptors"> the list of interceptors to intercept the consumer created by this builder. </param>
-		IConsumerBuilder<T> Intercept(params ConsumerInterceptor<T> [] interceptors);
+		IConsumerBuilder<T> Intercept(params IConsumerInterceptor<T> [] interceptors);
 
 		/// <summary>
 		/// Set dead letter policy for consumer.

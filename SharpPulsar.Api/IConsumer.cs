@@ -374,7 +374,7 @@ namespace SharpPulsar.Api
 		/// </ul>
 		/// </summary>
 		/// <returns> statistic for the consumer </returns>
-		ConsumerStats Stats {get;}
+		IConsumerStats Stats {get;}
 
 		/// <summary>
 		/// Close the consumer and stop the broker to push more messages.

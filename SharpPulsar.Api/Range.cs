@@ -24,8 +24,8 @@ namespace SharpPulsar.Api
 	public class Range
 	{
 
-		public virtual Start {get;}
-		public virtual End {get;}
+		public virtual int Start {get;}
+		public virtual int End {get;}
 
 
 		public Range(int start, int end)

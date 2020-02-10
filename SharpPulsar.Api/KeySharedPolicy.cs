@@ -26,9 +26,7 @@ namespace SharpPulsar.Api
 	/// </summary>
 	public abstract class KeySharedPolicy
 	{
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal KeySharedMode KeySharedModeConflict;
+		private KeySharedMode _keySharedMode;
 
 		public static readonly int DefaultHashRangeSize = 2 << 15;
 
@@ -44,23 +42,11 @@ namespace SharpPulsar.Api
 
 		public abstract void Validate();
 
-		public virtual KeySharedMode? KeySharedMode
-		{
-			get
-			{
-				return this.KeySharedModeConflict;
-			}
-		}
+		public virtual KeySharedMode? KeySharedMode => _keySharedMode;
 
-		public virtual int HashRangeTotal
-		{
-			get
-			{
-				return DefaultHashRangeSize;
-			}
-		}
+        public virtual int HashRangeTotal => DefaultHashRangeSize;
 
-		/// <summary>
+        /// <summary>
 		/// Sticky attach topic with fixed hash range.
 		/// 
 		/// <para>Total hash range size is 65536, using the sticky hash range policy should ensure that the provided ranges by
@@ -70,39 +56,37 @@ namespace SharpPulsar.Api
 		/// </summary>
 		public class KeySharedPolicySticky : KeySharedPolicy
 		{
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			protected internal IList<Range> RangesConflict;
+			private IList<Range> _ranges;
 
 			public KeySharedPolicySticky()
 			{
-				this.KeySharedModeConflict = KeySharedMode.STICKY;
-				this.RangesConflict = new List<Range>();
+				_keySharedMode = Api.KeySharedMode.Sticky;
+				_ranges = new List<Range>();
 			}
 
-			public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
+			public virtual KeySharedPolicySticky GetRanges(params Range[] ranges)
 			{
-				((List<Range>)this.RangesConflict).AddRange(Arrays.asList(ranges));
+				((List<Range>)_ranges).AddRange(new List<Range>(ranges));
 				return this;
 			}
 
 			public override void Validate()
 			{
-				if (RangesConflict.Count == 0)
+				if (_ranges.Count == 0)
 				{
 					throw new System.ArgumentException("Ranges for KeyShared policy must not be empty.");
 				}
-				for (int i = 0; i < RangesConflict.Count; i++)
+				for (int i = 0; i < _ranges.Count; i++)
 				{
-					Range range1 = RangesConflict[i];
+					Range range1 = _ranges[i];
 					if (range1.Start < 0 || range1.End > DefaultHashRangeSize)
 					{
 						throw new System.ArgumentException("Ranges must be [0, 65535] but provided range is " + range1);
 					}
-					for (int j = 0; j < RangesConflict.Count; j++)
+					for (int j = 0; j < _ranges.Count; j++)
 					{
-						Range range2 = RangesConflict[j];
-						if (i != j && range1.intersect(range2) != null)
+						Range range2 = _ranges[j];
+						if (i != j && range1.Intersect(range2) != null)
 						{
 							throw new System.ArgumentException("Ranges for KeyShared policy with overlap between " + range1 + " and " + range2);
 						}
@@ -110,14 +94,8 @@ namespace SharpPulsar.Api
 				}
 			}
 
-			public virtual IList<Range> Ranges
-			{
-				get
-				{
-					return RangesConflict;
-				}
-			}
-		}
+			public virtual IList<Range> Ranges => _ranges;
+        }
 
 		/// <summary>
 		/// Auto split hash range key shared policy.
@@ -127,7 +105,7 @@ namespace SharpPulsar.Api
 
 			public KeySharedPolicyAutoSplit()
 			{
-				this.KeySharedModeConflict = KeySharedMode.AutoSplit;
+				_keySharedMode =Api.KeySharedMode.AutoSplit;
 			}
 
 			public override void Validate()

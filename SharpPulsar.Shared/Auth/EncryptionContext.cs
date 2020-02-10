@@ -30,7 +30,7 @@ namespace Pulsar.Common.Auth
 		public IDictionary<string, EncryptionKey> Keys { get; set; }
 		public sbyte[] Param { get; set; }
 		public string Algorithm;
-		public CompressionType CompressionType { get; set; }
+		public int CompressionType { get; set; }//hack
 		public int UncompressedMessageSize { get; set; }
 		public int? BatchSize { get; set; }
 

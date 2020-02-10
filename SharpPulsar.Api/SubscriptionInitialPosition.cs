@@ -58,7 +58,7 @@ namespace SharpPulsar.Api
 		private static int _nextOrdinal = 0;
 
 
-		public Value {get;}
+		public int Value {get;}
 
 		public SubscriptionInitialPosition(string name, InnerEnum innerEnum, int value)
 		{

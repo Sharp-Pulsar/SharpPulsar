@@ -5,6 +5,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using DotNetty.Common;
+using DotNetty.Common.Utilities;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Util.Atomic.Locking;
+using SharpPulsar.Util.Collections;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,19 +34,19 @@ namespace SharpPulsar.Impl
 
 	public class UnAckedMessageTracker<T> : IDisposable
     {
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
+		private static readonly Logger<> log = LoggerFactory.getLogger(typeof(UnAckedMessageTracker));
 
 		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentOpenHashSet<IMessageId>> MessageIdPartitionMap;
 		protected internal readonly LinkedList<ConcurrentOpenHashSet<IMessageId>> TimePartitions;
 
-		protected internal readonly Lock ReadLock;
-		protected internal readonly Lock WriteLock;
+		protected internal readonly ILock ReadLock;
+		protected internal readonly ILock WriteLock;
 
 		public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled = new UnAckedMessageTrackerDisabled();
 		private readonly long ackTimeoutMillis;
 		private readonly long tickDurationInMs;
 
-		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
+		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker<T>
 		{
 			public  void Clear()
 			{
@@ -72,7 +77,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private readonly Timeout timeout;
+		private readonly ITimeout timeout;
 
 		public UnAckedMessageTracker()
 		{
@@ -96,15 +101,13 @@ namespace SharpPulsar.Impl
 
 		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<IMessageId>>
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @ protected java.util.HashSet<SharpPulsar.api.MessageId> initialValue() throws Exception
 			public  HashSet<IMessageId> initialValue()
 			{
 				return new HashSet<IMessageId>();
 			}
 		}
 
-		public UnAckedMessageTracker<T1>(PulsarClientImpl Client, ConsumerBase<T1> ConsumerBase, long AckTimeoutMillis, long TickDurationInMs)
+		public UnAckedMessageTracker(PulsarClientImpl Client, ConsumerBase<T> ConsumerBase, long AckTimeoutMillis, long TickDurationInMs)
 		{
 			Preconditions.checkArgument(TickDurationInMs > 0 && AckTimeoutMillis >= TickDurationInMs);
 			this.ackTimeoutMillis = AckTimeoutMillis;
@@ -125,7 +128,7 @@ namespace SharpPulsar.Impl
 		   , this.tickDurationInMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		public class TimerTaskAnonymousInnerClass : TimerTask
+		public class TimerTaskAnonymousInnerClass : ITimerTask
 		{
 			private readonly UnAckedMessageTracker outerInstance;
 
@@ -140,10 +143,7 @@ namespace SharpPulsar.Impl
 				this.consumerBase = ConsumerBase;
 				this.tickDurationInMs = TickDurationInMs;
 			}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @ public void run(io.netty.util.Timeout t) throws Exception
-			public  void run(Timeout T)
+			public  void run(ITimeout T)
 			{
 				ISet<IMessageId> MessageIds = TL_MESSAGE_IDS_SET.get();
 				MessageIds.Clear();

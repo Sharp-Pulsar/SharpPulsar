@@ -1073,6 +1073,12 @@ namespace SharpPulsar.Impl
 		}
 
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ClientCnx>();
-	}
+
+        public void RegisterConsumer<T>(in long consumerId, ConsumerImpl<T> consumer)
+        {
+            var c = (ConsumerImpl<object>)Convert.ChangeType(consumer, typeof(ConsumerImpl<object>));
+            _consumers.TryAdd(consumerId, c);
+        }
+    }
 
 }

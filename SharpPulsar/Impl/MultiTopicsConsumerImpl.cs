@@ -757,7 +757,7 @@ namespace SharpPulsar.Impl
 			return IncomingMessages.size() + consumers.Values.Select(ConsumerImpl::numMessagesInQueue).Sum();
 		}
 
-		public override ConsumerStats Stats
+		public override IConsumerStats Stats
 		{
 			get
 			{

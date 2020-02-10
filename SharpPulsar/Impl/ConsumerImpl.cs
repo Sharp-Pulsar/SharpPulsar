@@ -2,14 +2,26 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using Pulsar.Common.Auth;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Exception;
+using SharpPulsar.Extension;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;
+using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Shared;
 using SharpPulsar.Util;
+using SharpPulsar.Util.Atomic;
+using SharpPulsar.Util.Atomic.Locking;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,73 +43,61 @@ using SharpPulsar.Util;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    using DotNetty.Buffers;
-    using SharpPulsar.Api;
-    using SharpPulsar.Common.Naming;
-    using SharpPulsar.Impl.Conf;
-    using SharpPulsar.Protocol;
-    using SharpPulsar.Protocol.Proto;
-    using System.Threading.Tasks;
-
-    public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
+    public sealed class ConsumerImpl<T> : ConsumerBase<T>, IConnection
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
 		internal readonly long ConsumerId;
 
-		private static readonly AtomicIntegerFieldUpdater<ConsumerImpl> AVAILABLE_PERMITS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(ConsumerImpl), "availablePermits");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile int availablePermits = 0;
-		private volatile int availablePermits = 0;
+		private static readonly ConcurrentDictionary<ConsumerImpl<T>, int> _availablePermits = new ConcurrentDictionary<ConsumerImpl<T>, int>();
 
-		protected internal volatile IMessageId LastDequeuedMessage = MessageIdFields.Earliest;
-		private volatile IMessageId lastMessageIdInBroker = MessageIdFields.Earliest;
+        internal volatile IMessageId LastDequeuedMessage;
+		private volatile IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
 
-		private long subscribeTimeout;
+		private readonly long _subscribeTimeout;
 		internal int PartitionIndex;
-		private readonly bool hasParentConsumer;
+		private readonly bool _hasParentConsumer;
 
-		private readonly int receiverQueueRefillThreshold;
+		private readonly int _receiverQueueRefillThreshold;
 
-		private readonly ReadWriteLock @lock = new ReentrantReadWriteLock();
+		private readonly ReaderWriterLock _lock = new ReaderWriterLock();
 
-		public virtual UnAckedMessageTracker unack;
-		private readonly AcknowledgmentsGroupingTracker acknowledgmentsGroupingTracker;
-		private readonly NegativeAcksTracker negativeAcksTracker;
+		public UnAckedMessageTracker<T> UnAckedMessageTracker;
+		private readonly AcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
+		private readonly NegativeAcksTracker<T> _negativeAcksTracker;
 
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly ConsumerStatsRecorder StatsConflict;
-		private readonly int priorityLevel;
-		private readonly SubscriptionMode subscriptionMode;
-		private volatile BatchMessageIdImpl startMessageId;
+        internal readonly ConsumerStatsRecorder ConsumerStats;
+		private readonly int _priorityLevel;
+		private readonly SubscriptionMode _subscriptionMode;
+		private volatile BatchMessageIdImpl _startMessageId;
 
-		private readonly BatchMessageIdImpl initialStartMessageId;
-		private readonly long startMessageRollbackDurationInSec;
+		private readonly BatchMessageIdImpl _initialStartMessageId;
+		private readonly long _startMessageRollbackDurationInSec;
 
-		private volatile bool hasReachedEndOfTopic;
+		private volatile bool _hasReachedEndOfTopic;
 
-		private readonly MessageCrypto msgCrypto;
+		private readonly MessageCrypto _msgCrypto;
 
-		private readonly IDictionary<string, string> metadata;
+		private readonly IDictionary<string, string> _metadata;
 
-		private readonly bool readCompacted;
-		private readonly bool resetIncludeHead;
+		private readonly bool _readCompacted;
+		private readonly bool _resetIncludeHead;
 
-		private readonly SubscriptionInitialPosition subscriptionInitialPosition;
+		private readonly SubscriptionInitialPosition _subscriptionInitialPosition;
 		public  ConnectionHandler Handler;
 
-		private readonly TopicName topicName;
+		private readonly TopicName _topicName;
 		public string TopicNameWithoutPartition;
 
-		private readonly IDictionary<MessageIdImpl, IList<MessageImpl<T>>> possibleSendToDeadLetterTopicMessages;
+		private readonly IDictionary<MessageIdImpl, IList<MessageImpl<T>>> _possibleSendToDeadLetterTopicMessages;
 
-		private readonly DeadLetterPolicy deadLetterPolicy;
+		private readonly DeadLetterPolicy _deadLetterPolicy;
 
-		private IProducer<T> deadLetterProducer;
+		private IProducer<T> _deadLetterProducer;
 
-		protected internal volatile bool Paused;
+        internal volatile bool Paused;
 
-		private readonly bool createTopicIfDoesNotExist;
+		private readonly bool _createTopicIfDoesNotExist;
 
 		public enum SubscriptionMode
 		{
@@ -109,258 +109,244 @@ namespace SharpPulsar.Impl
 			NonDurable
 		}
 
-		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, ScheduledThreadPoolExecutor ListenerExecutor, int PartitionIndex, bool HasParentConsumer, TaskCompletionSource<IConsumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, IMessageId StartMessageId, ISchema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist)
+		internal static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer<T>> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist)
 		{
-			if (Conf.ReceiverQueueSize == 0)
+			if (conf.ReceiverQueueSize == 0)
 			{
-				return new ZeroQueueConsumerImpl<T>(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, Schema, Interceptors, CreateTopicIfDoesNotExist);
+				return new ZeroQueueConsumerImpl<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, schema, interceptors, createTopicIfDoesNotExist);
 			}
 			else
 			{
-				return new ConsumerImpl<T>(Client, Topic, Conf, ListenerExecutor, PartitionIndex, HasParentConsumer, SubscribeFuture, SubscriptionMode, StartMessageId, 0, Schema, Interceptors, CreateTopicIfDoesNotExist);
+				return new ConsumerImpl<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist);
 			}
 		}
 
-		public ConsumerImpl(PulsarClientImpl Client, string Topic, ConsumerConfigurationData<T> Conf, int PartitionIndex, bool HasParentConsumer, CompletableFuture<Consumer<T>> SubscribeFuture, SubscriptionMode SubscriptionMode, MessageId StartMessageId, long StartMessageRollbackDurationInSec, Schema<T> Schema, ConsumerInterceptors<T> Interceptors, bool CreateTopicIfDoesNotExist) : base(Client, Topic, Conf, Conf.ReceiverQueueSize, ListenerExecutor, SubscribeFuture, Schema, Interceptors)
+		public ConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer<T>> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, subscribeTask, schema, interceptors)
 		{
-			this.ConsumerId = Client.newConsumerId();
-			this.subscriptionMode = SubscriptionMode;
-			this.startMessageId = StartMessageId != null ? new BatchMessageIdImpl((MessageIdImpl) StartMessageId) : null;
-			this.LastDequeuedMessage = StartMessageId == null ? MessageIdFields.Earliest : StartMessageId;
-			this.initialStartMessageId = this.startMessageId;
-			this.startMessageRollbackDurationInSec = StartMessageRollbackDurationInSec;
-			AVAILABLE_PERMITS_UPDATER.set(this, 0);
-			this.subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + Client.Configuration.OperationTimeoutMs;
-			this.PartitionIndex = PartitionIndex;
-			this.hasParentConsumer = HasParentConsumer;
-			this.receiverQueueRefillThreshold = Conf.ReceiverQueueSize / 2;
-			this.priorityLevel = Conf.PriorityLevel;
-			this.readCompacted = Conf.ReadCompacted;
-			this.subscriptionInitialPosition = Conf.SubscriptionInitialPosition;
-			this.negativeAcksTracker = new NegativeAcksTracker(this, Conf);
-			this.resetIncludeHead = Conf.ResetIncludeHead;
-			this.createTopicIfDoesNotExist = CreateTopicIfDoesNotExist;
+			this.ConsumerId = client.NewConsumerId();
+			this._subscriptionMode = subscriptionMode;
+			this._startMessageId = startMessageId != null ? new BatchMessageIdImpl((MessageIdImpl) startMessageId) : null;
+			this.LastDequeuedMessage = startMessageId ?? MessageIdFields.Earliest;
+			this._initialStartMessageId = this._startMessageId;
+			this._startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
+			_availablePermits[this] =  0;
+			this._subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + client.Configuration.OperationTimeoutMs;
+			this.PartitionIndex = partitionIndex;
+			this._hasParentConsumer = hasParentConsumer;
+			this._receiverQueueRefillThreshold = conf.ReceiverQueueSize / 2;
+			this._priorityLevel = conf.PriorityLevel;
+			this._readCompacted = conf.ReadCompacted;
+			this._subscriptionInitialPosition = conf.SubscriptionInitialPosition;
+			this._negativeAcksTracker = new NegativeAcksTracker<T>(this, conf);
+			this._resetIncludeHead = conf.ResetIncludeHead;
+			this._createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 
-			if (Client.Configuration.StatsIntervalSeconds > 0)
+			if (client.Configuration.StatsIntervalSeconds > 0)
 			{
-				StatsConflict = new ConsumerStatsRecorderImpl(Client, Conf, this);
+				ConsumerStats = new ConsumerStatsRecorderImpl<T>(client, conf, this);
 			}
 			else
 			{
-				StatsConflict = ConsumerStatsDisabled.INSTANCE;
+				ConsumerStats = ConsumerStatsDisabled.Instance;
 			}
 
-			if (Conf.AckTimeoutMillis != 0)
+			if (conf.AckTimeoutMillis != 0)
 			{
-				if (Conf.TickDurationMillis > 0)
+				if (conf.TickDurationMillis > 0)
 				{
-					this.UnAckedMessageTracker = new UnAckedMessageTracker(Client, this, Conf.AckTimeoutMillis, Math.Min(Conf.TickDurationMillis, Conf.AckTimeoutMillis));
+					this.UnAckedMessageTracker = new UnAckedMessageTracker<T>(client, this, conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis));
 				}
 				else
 				{
-					this.UnAckedMessageTracker = new UnAckedMessageTracker(Client, this, Conf.AckTimeoutMillis);
+					this.UnAckedMessageTracker = new UnAckedMessageTracker<T>(client, this, conf.AckTimeoutMillis);
 				}
 			}
 			else
 			{
-				this.UnAckedMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
+				this.UnAckedMessageTracker = UnAckedMessageTracker<T>.UnackedMessageTrackerDisabled;
 			}
 
 			// Create msgCrypto if not created already
-			if (Conf.CryptoKeyReader != null)
+			this._msgCrypto = conf.CryptoKeyReader != null ? new MessageCrypto($"[{topic}] [{Subscription}]", false) : null;
+
+			_metadata = !Enumerable.Any(conf.Properties) ? new Dictionary<string, string>() : new Dictionary<string,string>(conf.Properties);
+
+			Handler = new ConnectionHandler(this, new BackoffBuilder()
+									.SetInitialTime(client.Configuration.InitialBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).SetMax(client.Configuration.MaxBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).SetMandatoryStop(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).Create(), this);
+
+			this._topicName = TopicName.Get(topic);
+			if (this._topicName.Persistent)
 			{
-				this.msgCrypto = new MessageCrypto(string.Format("[{0}] [{1}]", Topic, SubscriptionConflict), false);
+				this._acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker<T>(this, conf, client.EventLoopGroup);
 			}
 			else
 			{
-				this.msgCrypto = null;
+				this._acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
 			}
 
-			if (Conf.Properties.Empty)
+			if (conf.DeadLetterPolicy != null)
 			{
-				metadata = Collections.emptyMap();
-			}
-			else
-			{
-				metadata = Collections.unmodifiableMap(new Dictionary<>(Conf.Properties));
-			}
-
-			this.ConnectionHandler = new ConnectionHandler(this, new BackoffBuilder()
-									.setInitialTime(Client.Configuration.InitialBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMax(Client.Configuration.MaxBackoffIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS).setMandatoryStop(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create(), this);
-
-			this.topicName = TopicName.get(Topic);
-			if (this.topicName.Persistent)
-			{
-				this.acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(this, Conf, Client.eventLoopGroup());
-			}
-			else
-			{
-				this.acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
-			}
-
-			if (Conf.DeadLetterPolicy != null)
-			{
-				possibleSendToDeadLetterTopicMessages = new ConcurrentDictionary<MessageIdImpl, IList<MessageImpl<T>>>();
-				if (StringUtils.isNotBlank(Conf.DeadLetterPolicy.DeadLetterTopic))
+				_possibleSendToDeadLetterTopicMessages = new ConcurrentDictionary<MessageIdImpl, IList<MessageImpl<T>>>();
+				if (string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
 				{
-					this.deadLetterPolicy = DeadLetterPolicy.builder().maxRedeliverCount(Conf.DeadLetterPolicy.MaxRedeliverCount).deadLetterTopic(Conf.DeadLetterPolicy.DeadLetterTopic).build();
+					this._deadLetterPolicy = new DeadLetterPolicy
+                    {
+						MaxRedeliverCount = conf.DeadLetterPolicy.MaxRedeliverCount,
+						DeadLetterTopic = conf.DeadLetterPolicy.DeadLetterTopic
+					};
 				}
 				else
 				{
-					this.deadLetterPolicy = DeadLetterPolicy.builder().maxRedeliverCount(Conf.DeadLetterPolicy.MaxRedeliverCount).deadLetterTopic(string.Format("{0}-{1}-DLQ", Topic, SubscriptionConflict)).build();
+                    this._deadLetterPolicy = new DeadLetterPolicy
+                    {
+                        MaxRedeliverCount = conf.DeadLetterPolicy.MaxRedeliverCount,
+                        DeadLetterTopic = $"{topic}-{Subscription}-DLQ"
+					};
 				}
 			}
 			else
 			{
-				deadLetterPolicy = null;
-				possibleSendToDeadLetterTopicMessages = null;
+				_deadLetterPolicy = null;
+				_possibleSendToDeadLetterTopicMessages = null;
 			}
 
-			TopicNameWithoutPartition = topicName.PartitionedTopicName;
+			TopicNameWithoutPartition = _topicName.PartitionedTopicName;
 
 			GrabCnx();
 		}
 
 
 
-		public override CompletableFuture<Void> UnsubscribeAsync()
+		public override ValueTask UnsubscribeAsync()
 		{
-			if (State == State.Closing || State == State.Closed)
+			if (ConsumerState == State.Closing || ConsumerState == State.Closed)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Consumer was already closed"));
+				return new ValueTask(Task.FromException(new PulsarClientException.AlreadyClosedException("Consumer was already closed")));
 			}
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> unsubscribeFuture = new java.util.concurrent.CompletableFuture<>();
-			CompletableFuture<Void> UnsubscribeFuture = new CompletableFuture<Void>();
+
+			var unsubscribeTask = new TaskCompletionSource<Task>();
 			if (Connected)
 			{
-				State = State.Closing;
-				long RequestId = ClientConflict.newRequestId();
-				ByteBuf Unsubscribe = Commands.newUnsubscribe(ConsumerId, RequestId);
-				ClientCnx Cnx = cnx();
-				Cnx.sendRequestWithId(Unsubscribe, RequestId).thenRun(() =>
-				{
-				Cnx.removeConsumer(ConsumerId);
-				UnAckedMessageTracker.Dispose();
-				if (possibleSendToDeadLetterTopicMessages != null)
-				{
-					possibleSendToDeadLetterTopicMessages.Clear();
-				}
-				ClientConflict.cleanupConsumer(ConsumerImpl.this);
-				Log.info("[{}][{}] Successfully unsubscribed from topic", Topic, SubscriptionConflict);
-				State = State.Closed;
-				UnsubscribeFuture.complete(null);
-				}).exceptionally(e =>
-				{
-				Log.error("[{}][{}] Failed to unsubscribe: {}", Topic, SubscriptionConflict, e.Cause.Message);
-				State = State.Ready;
-				UnsubscribeFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("Failed to unsubscribe the subscription {0} of topic {1}", topicName.ToString(), SubscriptionConflict)));
-				return null;
-			});
-			}
+                ConsumerState = State.Closing;
+				var requestId = Client.NewRequestId();
+				var unsubscribe = Commands.NewUnsubscribe(ConsumerId, requestId);
+				var cnx = Cnx();
+                cnx.SendRequestWithId(unsubscribe, requestId).AsTask().ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        Log.LogError("[{}][{}] Failed to unsubscribe: {}", Topic, Subscription, task.Exception.Message);
+                        ConsumerState = State.Ready;
+                        unsubscribeTask.SetException(PulsarClientException.Wrap(task.Exception,
+                            $"Failed to unsubscribe the subscription {_topicName.ToString()} of topic {Subscription}"));
+                        return;
+                    }
+
+                    cnx.RemoveConsumer(ConsumerId);
+                    UnAckedMessageTracker.Close();
+                    _possibleSendToDeadLetterTopicMessages?.Clear();
+
+                    Client.CleanupConsumer(this);
+                    Log.LogInformation("[{}][{}] Successfully unsubscribed from topic", Topic, Subscription);
+                    ConsumerState = State.Closed;
+                    unsubscribeTask.SetResult(null);
+                });
+            }
 			else
 			{
-				UnsubscribeFuture.completeExceptionally(new PulsarClientException(string.Format("The client is not connected to the broker when unsubscribing the " + "subscription {0} of the topic {1}", SubscriptionConflict, topicName.ToString())));
+				unsubscribeTask.SetException(new PulsarClientException(
+                    "The client is not connected to the broker when unsubscribing the " +
+                    $"subscription {Subscription} of the topic {_topicName.ToString()}"));
 			}
-			return UnsubscribeFuture;
+			return new ValueTask(unsubscribeTask.Task);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected SharpPulsar.api.Message<T> internalReceive() throws SharpPulsar.api.PulsarClientException
 		public override Message<T> InternalReceive()
 		{
-			Message<T> Message;
-			try
+            try
 			{
-				Message = IncomingMessages.take();
-				MessageProcessed(Message);
-				return BeforeConsume(Message);
+				var message = IncomingMessages.take();
+				MessageProcessed(message);
+				return BeforeConsume(message);
 			}
-			catch (InterruptedException E)
+			catch (ThreadInterruptedException e)
 			{
-				StatsConflict.incrementNumReceiveFailed();
-				throw PulsarClientException.unwrap(E);
+				ConsumerStats.IncrementNumReceiveFailed();
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Message<T>> InternalReceiveAsync()
+		public override ValueTask<Message<T>> InternalReceiveAsync()
 		{
 
-			CompletableFuture<Message<T>> Result = new CompletableFuture<Message<T>>();
-			Message<T> Message = null;
+			var result = new TaskCompletionSource<Message<T>>();
+			Message<T> message = null;
 			try
 			{
-				@lock.writeLock().@lock();
-				Message = IncomingMessages.poll(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-				if (Message == null)
+				_lock.AcquireWriterLock(3000);
+				message = IncomingMessages.Poll(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+				if (message == null)
 				{
-					PendingReceives.add(Result);
+					PendingReceives.Enqueue(result);
 				}
 			}
-			catch (InterruptedException E)
+			catch (ThreadInterruptedException e)
 			{
 				Thread.CurrentThread.Interrupt();
-				Result.completeExceptionally(E);
+				result.SetException(e);
 			}
 			finally
 			{
-				@lock.writeLock().unlock();
+				_lock.ReleaseWriterLock();
 			}
 
-			if (Message != null)
+			if (message != null)
 			{
-				MessageProcessed(Message);
-				Result.complete(BeforeConsume(Message));
+				MessageProcessed(message);
+				result.SetResult(BeforeConsume(message));
 			}
 
-			return Result;
+			return new ValueTask<Message<T>>(result.Task.Result);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected SharpPulsar.api.Message<T> internalReceive(int timeout, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unit) throws SharpPulsar.api.PulsarClientException
-		public override Message<T> InternalReceive(int Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public override Message<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Message<T> Message;
-			try
+            try
 			{
-				Message = IncomingMessages.poll(Timeout, Unit);
-				if (Message == null)
+				var message = IncomingMessages.Poll(timeout, unit);
+				if (message == null)
 				{
 					return null;
 				}
-				MessageProcessed(Message);
-				return BeforeConsume(Message);
+				MessageProcessed(message);
+				return BeforeConsume(message);
 			}
-			catch (InterruptedException E)
+			catch (ThreadInterruptedException e)
 			{
-				State State = State;
-				if (State != State.Closing && State != State.Closed)
+				var state = ConsumerState;
+				if (state != State.Closing && state != State.Closed)
 				{
-					StatsConflict.incrementNumReceiveFailed();
-					throw PulsarClientException.unwrap(E);
+					ConsumerStats.IncrementNumReceiveFailed();
+					throw PulsarClientException.Unwrap(e);
 				}
-				else
-				{
-					return null;
-				}
-			}
+
+                return null;
+            }
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override protected SharpPulsar.api.Messages<T> internalBatchReceive() throws SharpPulsar.api.PulsarClientException
 		public override Messages<T> InternalBatchReceive()
 		{
 			try
 			{
-				return InternalBatchReceiveAsync().get();
+				return InternalBatchReceiveAsync().Result;
 			}
-			catch (Exception e) when (e is InterruptedException || e is ExecutionException)
+			catch (System.Exception e) when (e is ThreadInterruptedException)
 			{
-				State State = State;
-				if (State != State.Closing && State != State.Closed)
+				var state = ConsumerState;
+				if (state != State.Closing && state != State.Closed)
 				{
-					StatsConflict.incrementNumBatchReceiveFailed();
-					throw PulsarClientException.unwrap(e);
+					ConsumerStats.IncrementNumBatchReceiveFailed();
+					throw PulsarClientException.Unwrap(e);
 				}
 				else
 				{
@@ -369,296 +355,285 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override CompletableFuture<Messages<T>> InternalBatchReceiveAsync()
+		public override ValueTask<Messages<T>> InternalBatchReceiveAsync()
 		{
-			CompletableFuture<Messages<T>> Result = new CompletableFuture<Messages<T>>();
+			var result = new TaskCompletionSource<Messages<T>>();
 			try
 			{
-				@lock.writeLock().@lock();
+				_lock.AcquireWriterLock(300);
 				if (PendingBatchReceives == null)
 				{
-					PendingBatchReceives = Queues.newConcurrentLinkedQueue();
+					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive<T>>();
 				}
 				if (HasEnoughMessagesForBatchReceive())
 				{
-					MessagesImpl<T> Messages = NewMessagesImpl;
-					Message<T> MsgPeeked = IncomingMessages.peek();
-					while (MsgPeeked != null && Messages.canAdd(MsgPeeked))
+					var messages = NewMessagesImpl;
+					var msgPeeked = IncomingMessages.Peek();
+					while (msgPeeked != null && messages.CanAdd(msgPeeked))
 					{
-						Message<T> Msg = IncomingMessages.poll();
-						if (Msg != null)
+						var msg = IncomingMessages.Poll();
+						if (msg != null)
 						{
-							MessageProcessed(Msg);
-							Message<T> InterceptMsg = BeforeConsume(Msg);
-							Messages.add(InterceptMsg);
+							MessageProcessed(msg);
+							var interceptMsg = BeforeConsume(msg);
+							messages.Add(interceptMsg);
 						}
-						MsgPeeked = IncomingMessages.peek();
+						msgPeeked = IncomingMessages.Peek();
 					}
-					Result.complete(Messages);
+					result.SetResult(messages);
 				}
 				else
 				{
-					PendingBatchReceives.add(OpBatchReceive.Of(Result));
+					PendingBatchReceives.Enqueue(new OpBatchReceive<T>(result));
 				}
 			}
 			finally
 			{
-				@lock.writeLock().unlock();
+				_lock.ReleaseWriterLock();
 			}
-			return Result;
+			return new ValueTask<Messages<T>>(result.Task.Result);
 		}
 
-		public virtual bool MarkAckForBatchMessage(BatchMessageIdImpl BatchMessageId, PulsarApi.CommandAck.AckType AckType, IDictionary<string, long> Properties)
+		public bool MarkAckForBatchMessage(BatchMessageIdImpl batchMessageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties)
 		{
-			bool IsAllMsgsAcked;
-			if (AckType == PulsarApi.CommandAck.AckType.Individual)
+			bool isAllMsgsAcked;
+			isAllMsgsAcked = ackType == CommandAck.Types.AckType.Individual ? batchMessageId.AckIndividual() : batchMessageId.AckCumulative();
+			var outstandingAcks = 0;
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				IsAllMsgsAcked = BatchMessageId.ackIndividual();
-			}
-			else
-			{
-				IsAllMsgsAcked = BatchMessageId.ackCumulative();
-			}
-			int OutstandingAcks = 0;
-			if (Log.DebugEnabled)
-			{
-				OutstandingAcks = BatchMessageId.OutstandingAcksInSameBatch;
+				outstandingAcks = batchMessageId.OutstandingAcksInSameBatch;
 			}
 
-			int BatchSize = BatchMessageId.BatchSize;
+			var batchSize = batchMessageId.BatchSize;
 			// all messages in this batch have been acked
-			if (IsAllMsgsAcked)
+			if (isAllMsgsAcked)
 			{
-				if (Log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] can ack message to broker {}, acktype {}, cardinality {}, length {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks, BatchSize);
+					Log.LogDebug("[{}] [{}] can ack message to broker {}, acktype {}, cardinality {}, length {}", Subscription, ConsumerName, batchMessageId, ackType, outstandingAcks, batchSize);
 				}
 				return true;
 			}
 			else
 			{
-				if (PulsarApi.CommandAck.AckType.Cumulative == AckType && !BatchMessageId.Acker.PrevBatchCumulativelyAcked)
+				if (CommandAck.Types.AckType.Cumulative == ackType && !batchMessageId.Acker.PrevBatchCumulativelyAcked)
 				{
-					SendAcknowledge(BatchMessageId.prevBatchMessageId(), PulsarApi.CommandAck.AckType.Cumulative, Properties, null);
-					BatchMessageId.Acker.PrevBatchCumulativelyAcked = true;
+					SendAcknowledge(batchMessageId.PrevBatchMessageId(), CommandAck.Types.AckType.Cumulative, properties, null);
+					batchMessageId.Acker.PrevBatchCumulativelyAcked = true;
 				}
 				else
 				{
-					OnAcknowledge(BatchMessageId, null);
+					OnAcknowledge(batchMessageId, null);
 				}
-				if (Log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] cannot ack message to broker {}, acktype {}, pending acks - {}", SubscriptionConflict, ConsumerNameConflict, BatchMessageId, AckType, OutstandingAcks);
+					Log.LogDebug("[{}] [{}] cannot ack message to broker {}, acktype {}, pending acks - {}", Subscription, ConsumerName, batchMessageId, ackType, outstandingAcks);
 				}
 			}
 			return false;
 		}
 
-		public override CompletableFuture<Void> DoAcknowledge(MessageId MessageId, PulsarApi.CommandAck.AckType AckType, IDictionary<string, long> Properties, TransactionImpl TxnImpl)
+		public override TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txnImpl)
 		{
-			checkArgument(MessageId is MessageIdImpl);
-			if (State != State.Ready && State != State.Connecting)
-			{
-				StatsConflict.incrementNumAcksFailed();
-				PulsarClientException Exception = new PulsarClientException("Consumer not ready. State: " + State);
-				if (PulsarApi.CommandAck.AckType.Individual.Equals(AckType))
-				{
-					OnAcknowledge(MessageId, Exception);
-				}
-				else if (PulsarApi.CommandAck.AckType.Cumulative.Equals(AckType))
-				{
-					OnAcknowledgeCumulative(MessageId, Exception);
-				}
-				return FutureUtil.failedFuture(Exception);
+			var doTask = new TaskCompletionSource<Task>();
+            if (messageId is MessageIdImpl)
+            {
+                if (ConsumerState != State.Ready && ConsumerState != State.Connecting)
+                {
+                    ConsumerStats.IncrementNumAcksFailed();
+                    var exception = new PulsarClientException("Consumer not ready. State: " + ConsumerState);
+                    if (CommandAck.Types.AckType.Individual.Equals(ackType))
+                    {
+                        OnAcknowledge(messageId, exception);
+                    }
+                    else if (CommandAck.Types.AckType.Cumulative.Equals(ackType))
+                    {
+                        OnAcknowledgeCumulative(messageId, exception);
+                    }
+					doTask.SetException(exception);
+                    return doTask;
+                }
 			}
 
-			if (MessageId is BatchMessageIdImpl)
+
+			if (messageId is BatchMessageIdImpl id)
 			{
-				if (MarkAckForBatchMessage((BatchMessageIdImpl) MessageId, AckType, Properties))
+				if (MarkAckForBatchMessage(id, ackType, properties))
 				{
 					// all messages in batch have been acked so broker can be acked via sendAcknowledge()
-					if (Log.DebugEnabled)
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						Log.debug("[{}] [{}] acknowledging message - {}, acktype {}", SubscriptionConflict, ConsumerNameConflict, MessageId, AckType);
+						Log.LogDebug("[{}] [{}] acknowledging message - {}, acktype {}", Subscription, ConsumerName, messageId, ackType);
 					}
 				}
 				else
 				{
 					// other messages in batch are still pending ack.
-					return CompletableFuture.completedFuture(null);
-				}
+					doTask.SetResult(null);
+                    return doTask;
+                }
 			}
-			return SendAcknowledge(MessageId, AckType, Properties, TxnImpl);
+			return SendAcknowledge(messageId, ackType, properties, txnImpl);
 		}
 
-		// TODO: handle transactional acknowledgements.
-		private CompletableFuture<Void> SendAcknowledge(MessageId MessageId, PulsarApi.CommandAck.AckType AckType, IDictionary<string, long> Properties, TransactionImpl TxnImpl)
+		private TaskCompletionSource<Task> SendAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txnImpl)
 		{
-			MessageIdImpl MsgId = (MessageIdImpl) MessageId;
+			var msgId = (MessageIdImpl) messageId;
 
-			if (AckType == PulsarApi.CommandAck.AckType.Individual)
+			if (ackType == CommandAck.Types.AckType.Individual)
 			{
-				if (MessageId is BatchMessageIdImpl)
+				if (messageId is BatchMessageIdImpl batchMessageId)
 				{
-					BatchMessageIdImpl BatchMessageId = (BatchMessageIdImpl) MessageId;
-
-					StatsConflict.incrementNumAcksSent(BatchMessageId.BatchSize);
-					UnAckedMessageTracker.Remove(new MessageIdImpl(BatchMessageId.LedgerId, BatchMessageId.EntryId, BatchMessageId.PartitionIndex));
-					if (possibleSendToDeadLetterTopicMessages != null)
-					{
-						possibleSendToDeadLetterTopicMessages.Remove(new MessageIdImpl(BatchMessageId.LedgerId, BatchMessageId.EntryId, BatchMessageId.PartitionIndex));
-					}
-				}
+                    ConsumerStats.IncrementNumAcksSent(batchMessageId.BatchSize);
+					UnAckedMessageTracker.Remove(new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
+                    _possibleSendToDeadLetterTopicMessages?.Remove(new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
+                }
 				else
 				{
 					// increment counter by 1 for non-batch msg
-					UnAckedMessageTracker.Remove(MsgId);
-					if (possibleSendToDeadLetterTopicMessages != null)
-					{
-						possibleSendToDeadLetterTopicMessages.Remove(MsgId);
-					}
-					StatsConflict.incrementNumAcksSent(1);
+					UnAckedMessageTracker.Remove(msgId);
+                    _possibleSendToDeadLetterTopicMessages?.Remove(msgId);
+                    ConsumerStats.IncrementNumAcksSent(1);
 				}
-				OnAcknowledge(MessageId, null);
+				OnAcknowledge(messageId, null);
 			}
-			else if (AckType == PulsarApi.CommandAck.AckType.Cumulative)
+			else if (ackType == CommandAck.Types.AckType.Cumulative)
 			{
-				OnAcknowledgeCumulative(MessageId, null);
-				StatsConflict.incrementNumAcksSent(UnAckedMessageTracker.RemoveMessagesTill(MsgId));
+				OnAcknowledgeCumulative(messageId, null);
+				ConsumerStats.IncrementNumAcksSent(UnAckedMessageTracker.RemoveMessagesTill(msgId));
 			}
 
-			acknowledgmentsGroupingTracker.AddAcknowledgment(MsgId, AckType, Properties);
+			_acknowledgmentsGroupingTracker.AddAcknowledgment(msgId, ackType, properties);
 
 			// Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
 			// the messages will be re-delivered
-			return CompletableFuture.completedFuture(null);
+			return new TaskCompletionSource<Task>();
 		}
 
-		public override void NegativeAcknowledge(MessageId MessageId)
+		public override void NegativeAcknowledge(IMessageId messageId)
 		{
-			negativeAcksTracker.Add(MessageId);
+			_negativeAcksTracker.Add(messageId);
 
 			// Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
-			UnAckedMessageTracker.Remove(MessageId);
+			UnAckedMessageTracker.Remove(messageId);
 		}
 
-		public override void ConnectionOpened(in ClientCnx Cnx)
+		public void ConnectionOpened(ClientCnx cnx)
 		{
-			ClientCnx = Cnx;
-			Cnx.registerConsumer(ConsumerId, this);
+			ClientCnx = cnx;
+			cnx.RegisterConsumer(ConsumerId, this);
 
-			Log.info("[{}][{}] Subscribing to topic on cnx {}", Topic, SubscriptionConflict, Cnx.ctx().channel());
+			Log.LogInformation("[{}][{}] Subscribing to topic on cnx {}", Topic, Subscription, cnx.Ctx().Channel);
 
-			long RequestId = ClientConflict.newRequestId();
+			var requestId = Client.NewRequestId();
 
-			int CurrentSize;
+			int currentSize;
 			lock (this)
 			{
-				CurrentSize = IncomingMessages.size();
-				startMessageId = ClearReceiverQueue();
-				if (possibleSendToDeadLetterTopicMessages != null)
-				{
-					possibleSendToDeadLetterTopicMessages.Clear();
-				}
-			}
+				currentSize = IncomingMessages.size();
+				_startMessageId = ClearReceiverQueue();
+                _possibleSendToDeadLetterTopicMessages?.Clear();
+            }
 
-			bool IsDurable = subscriptionMode == SubscriptionMode.Durable;
-			PulsarApi.MessageIdData StartMessageIdData;
-			if (IsDurable)
+			var isDurable = _subscriptionMode == SubscriptionMode.Durable;
+			MessageIdData startMessageIdData;
+			if (isDurable)
 			{
 				// For regular durable subscriptions, the message id from where to restart will be determined by the broker.
-				StartMessageIdData = null;
+				startMessageIdData = null;
 			}
 			else
 			{
 				// For non-durable we are going to restart from the next entry
-				PulsarApi.MessageIdData.Builder Builder = PulsarApi.MessageIdData.newBuilder();
-				Builder.LedgerId = startMessageId.LedgerId;
-				Builder.EntryId = startMessageId.EntryId;
-				if (startMessageId is BatchMessageIdImpl)
+				var builder = MessageIdData.NewBuilder();
+				builder.SetLedgerId(_startMessageId.LedgerId);
+				builder.SetEntryId(_startMessageId.EntryId);
+				if (_startMessageId is BatchMessageIdImpl)
 				{
-					Builder.BatchIndex = ((BatchMessageIdImpl) startMessageId).BatchIndex;
+					builder.SetBatchIndex(((BatchMessageIdImpl) _startMessageId).BatchIndex);
 				}
 
-				StartMessageIdData = Builder.build();
-				Builder.recycle();
+				startMessageIdData = builder.Build();
+				builder.Recycle();
 			}
 
-			SchemaInfo Si = Schema.SchemaInfo;
-			if (Si != null && (SchemaType.BYTES == Si.Type || SchemaType.NONE == Si.Type))
+			var si = (SchemaInfo)Schema.SchemaInfo;
+			if (si != null && (SchemaType.BYTES == si.Type || SchemaType.NONE == si.Type))
 			{
 				// don't set schema for Schema.BYTES
-				Si = null;
+				si = null;
 			}
 			// startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
-			long StartMessageRollbackDuration = (startMessageRollbackDurationInSec > 0 && startMessageId.Equals(initialStartMessageId)) ? startMessageRollbackDurationInSec : 0;
-			ByteBuf Request = Commands.newSubscribe(Topic, SubscriptionConflict, ConsumerId, RequestId, SubType, priorityLevel, ConsumerNameConflict, IsDurable, StartMessageIdData, metadata, readCompacted, Conf.ReplicateSubscriptionState, PulsarApi.CommandSubscribe.InitialPosition.valueOf(subscriptionInitialPosition.Value), StartMessageRollbackDuration, Si, createTopicIfDoesNotExist, Conf.KeySharedPolicy);
-			if (StartMessageIdData != null)
-			{
-				StartMessageIdData.recycle();
-			}
+			var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
+			var request = Commands.NewSubscribe(Topic, Subscription, ConsumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, CommandSubscribe.ValueOf(_subscriptionInitialPosition.Value), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+            startMessageIdData?.Recycle();
 
-			Cnx.sendRequestWithId(Request, RequestId).thenRun(() =>
-			{
-			lock (this)
-			{
-				if (ChangeToReadyState())
-				{
-					ConsumerIsReconnectedToBroker(Cnx, CurrentSize);
-				}
-				else
-				{
-					State = State.Closed;
-					Cnx.removeConsumer(ConsumerId);
-					Cnx.channel().close();
+            cnx.SendRequestWithId(request, requestId).AsTask().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    ClientCnx.RemoveConsumer(ConsumerId);
+                    if (ConsumerState == State.Closing || ConsumerState == State.Closed)
+                    {
+                        ClientCnx.Channel().CloseAsync();
+                        return;
+                    }
+                    Log.LogWarning("[{}][{}] Failed to subscribe to topic on {}", Topic, Subscription, ClientCnx.Channel().RemoteAddress);
+                    if (task.Exception.InnerException is PulsarClientException exception && Handler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
+                    {
+                        ReconnectLater(exception);
+                    }
+                    else if (!SubscribeTask.Task.IsCompleted)
+                    {
+                        ConsumerState = State.Failed;
+                        CloseConsumerTasks();
+                        SubscribeTask.SetException(PulsarClientException.Wrap(task.Exception,
+                            $"Failed to subscribe the topic {_topicName.ToString()} with subscription " +
+                            $"name {Subscription} when connecting to the broker"));
+                        Client.CleanupConsumer(this);
+                    }
+                    else if (task.Exception is PulsarClientException.TopicDoesNotExistException)
+                    {
+                        ConsumerState = State.Failed;
+                        Client.CleanupConsumer(this);
+                        Log.LogWarning("[{}][{}] Closed consumer because topic does not exist anymore {}", Topic, Subscription, ClientCnx.Channel().RemoteAddress);
+                    }
+                    else
+                    {
+                        ReconnectLater(task.Exception);
+                    }
 					return;
-				}
-			}
-			ResetBackoff();
-			bool FirstTimeConnect = SubscribeFutureConflict.complete(this);
-			if (!(FirstTimeConnect && hasParentConsumer && IsDurable) && Conf.ReceiverQueueSize != 0)
-			{
-				SendFlowPermitsToBroker(Cnx, Conf.ReceiverQueueSize);
-			}
-			}).exceptionally((e) =>
-			{
-			Cnx.removeConsumer(ConsumerId);
-			if (State == State.Closing || State == State.Closed)
-			{
-				Cnx.channel().close();
-				return null;
-			}
-			Log.warn("[{}][{}] Failed to subscribe to topic on {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
-			if (e.Cause is PulsarClientException && ConnectionHandler.isRetriableError((PulsarClientException) e.Cause) && DateTimeHelper.CurrentUnixTimeMillis() < subscribeTimeout)
-			{
-				ReconnectLater(e.Cause);
-			}
-			else if (!SubscribeFutureConflict.Done)
-			{
-				State = State.Failed;
-				CloseConsumerTasks();
-				SubscribeFutureConflict.completeExceptionally(PulsarClientException.wrap(e, string.Format("Failed to subscribe the topic {0} with subscription " + "name {1} when connecting to the broker", topicName.ToString(), SubscriptionConflict)));
-				ClientConflict.cleanupConsumer(this);
-			}
-			else if (e.Cause is PulsarClientException.TopicDoesNotExistException)
-			{
-				State = State.Failed;
-				ClientConflict.cleanupConsumer(this);
-				Log.warn("[{}][{}] Closed consumer because topic does not exist anymore {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress());
-			}
-			else
-			{
-				ReconnectLater(e.Cause);
-			}
-			return null;
-		});
-		}
+                }
 
-		public virtual void ConsumerIsReconnectedToBroker(ClientCnx Cnx, int CurrentQueueSize)
+                lock (this)
+                {
+                    if (ChangeToReadyState())
+                    {
+                        ConsumerIsReconnectedToBroker(ClientCnx, currentSize);
+                    }
+                    else
+                    {
+                        ConsumerState = State.Closed;
+                        ClientCnx.RemoveConsumer(ConsumerId);
+                        ClientCnx.Channel().CloseAsync();
+                        return;
+                    }
+                }
+
+                ResetBackoff();
+                var firstTimeConnect = SubscribeTask.TrySetResult(this);
+                if (!(firstTimeConnect && _hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
+                {
+                    SendFlowPermitsToBroker(ClientCnx, Conf.ReceiverQueueSize);
+                }
+            });
+        }
+
+		public void ConsumerIsReconnectedToBroker(ClientCnx cnx, int currentQueueSize)
 		{
-			Log.info("[{}][{}] Subscribed to topic on {} -- consumer: {}", Topic, SubscriptionConflict, Cnx.channel().remoteAddress(), ConsumerId);
+			Log.LogInformation("[{}][{}] Subscribed to topic on {} -- consumer: {}", Topic, Subscription, cnx.Channel().RemoteAddress, ConsumerId);
 
-			AVAILABLE_PERMITS_UPDATER.set(this, 0);
+			_availablePermits[this] =  0;
 		}
 
 		/// <summary>
@@ -667,27 +642,25 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private BatchMessageIdImpl ClearReceiverQueue()
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: java.util.List<SharpPulsar.api.Message<?>> currentMessageQueue = new java.util.ArrayList<>(incomingMessages.size());
-			IList<Message<object>> CurrentMessageQueue = new List<Message<object>>(IncomingMessages.size());
-			IncomingMessages.drainTo(CurrentMessageQueue);
-			IncomingMessagesSizeUpdater.set(this, 0);
-			if (CurrentMessageQueue.Count > 0)
+			IList<Message<object>> currentMessageQueue = new List<Message<object>>(IncomingMessages.size());
+			IncomingMessages.drainTo(currentMessageQueue);
+			IncomingMessagesSize[this] =  0;
+			if (currentMessageQueue.Count > 0)
 			{
-				MessageIdImpl NextMessageInQueue = (MessageIdImpl) CurrentMessageQueue[0].MessageId;
-				BatchMessageIdImpl PreviousMessage;
-				if (NextMessageInQueue is BatchMessageIdImpl)
+				var nextMessageInQueue = (MessageIdImpl) currentMessageQueue[0].MessageId;
+				BatchMessageIdImpl previousMessage;
+				if (nextMessageInQueue is BatchMessageIdImpl impl)
 				{
 					// Get on the previous message within the current batch
-					PreviousMessage = new BatchMessageIdImpl(NextMessageInQueue.LedgerId, NextMessageInQueue.EntryId, NextMessageInQueue.PartitionIndex, ((BatchMessageIdImpl) NextMessageInQueue).BatchIndex - 1);
+					previousMessage = new BatchMessageIdImpl(impl.LedgerId, impl.EntryId, impl.PartitionIndex, impl.BatchIndex - 1);
 				}
 				else
 				{
 					// Get on previous message in previous entry
-					PreviousMessage = new BatchMessageIdImpl(NextMessageInQueue.LedgerId, NextMessageInQueue.EntryId - 1, NextMessageInQueue.PartitionIndex, -1);
+					previousMessage = new BatchMessageIdImpl(nextMessageInQueue.LedgerId, nextMessageInQueue.EntryId - 1, nextMessageInQueue.PartitionIndex, -1);
 				}
 
-				return PreviousMessage;
+				return previousMessage;
 			}
 			else if (!LastDequeuedMessage.Equals(MessageIdFields.Earliest))
 			{
@@ -698,123 +671,120 @@ namespace SharpPulsar.Impl
 			else
 			{
 				// No message was received or dequeued by this consumer. Next message would still be the startMessageId
-				return startMessageId;
+				return _startMessageId;
 			}
 		}
 
 		/// <summary>
 		/// send the flow command to have the broker start pushing messages
 		/// </summary>
-		public virtual void SendFlowPermitsToBroker(ClientCnx Cnx, int NumMessages)
+		public void SendFlowPermitsToBroker(ClientCnx cnx, int numMessages)
 		{
-			if (Cnx != null)
+			if (cnx != null)
 			{
-				if (Log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] Adding {} additional permits", Topic, SubscriptionConflict, NumMessages);
+					Log.LogDebug("[{}] [{}] Adding {} additional permits", Topic, Subscription, numMessages);
 				}
 
-				Cnx.ctx().writeAndFlush(Commands.newFlow(ConsumerId, NumMessages), Cnx.ctx().voidPromise());
+				cnx.Ctx().WriteAndFlushAsync(Commands.NewFlow(ConsumerId, numMessages));
 			}
 		}
 
-		public override void ConnectionFailed(PulsarClientException Exception)
+		public void ConnectionFailed(PulsarClientException exception)
 		{
-			if (DateTimeHelper.CurrentUnixTimeMillis() > subscribeTimeout && SubscribeFutureConflict.completeExceptionally(Exception))
+			if (DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout && SubscribeTask.TrySetException(exception))
 			{
-				State = State.Failed;
-				Log.info("[{}] Consumer creation failed for consumer {}", Topic, ConsumerId);
-				ClientConflict.cleanupConsumer(this);
+				ConsumerState = State.Failed;
+				Log.LogInformation("[{}] Consumer creation failed for consumer {}", Topic, ConsumerId);
+				Client.CleanupConsumer(this);
 			}
 		}
 
-		public override CompletableFuture<Void> CloseAsync()
+		public override ValueTask CloseAsync()
 		{
-			if (State == State.Closing || State == State.Closed)
+			if (ConsumerState == State.Closing || ConsumerState == State.Closed)
 			{
 				CloseConsumerTasks();
-				return CompletableFuture.completedFuture(null);
+				return new ValueTask(null);
 			}
 
 			if (!Connected)
 			{
-				Log.info("[{}] [{}] Closed Consumer (not connected)", Topic, SubscriptionConflict);
-				State = State.Closed;
+				Log.LogInformation("[{}] [{}] Closed Consumer (not connected)", Topic, Subscription);
+				ConsumerState = State.Closed;
 				CloseConsumerTasks();
-				ClientConflict.cleanupConsumer(this);
-				return CompletableFuture.completedFuture(null);
+				Client.CleanupConsumer(this);
+                return new ValueTask(null);
 			}
 
-			StatsConflict.StatTimeout.ifPresent(Timeout.cancel);
+            ConsumerStats.StatTimeout.Cancel();
 
-			State = State.Closing;
+			ConsumerState = State.Closing;
 
 			CloseConsumerTasks();
 
-			long RequestId = ClientConflict.newRequestId();
+			var requestId = Client.NewRequestId();
 
-			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
-			ClientCnx Cnx = cnx();
-			if (null == Cnx)
+			var closeTask = new TaskCompletionSource<Task>();
+			var cnx = ClientCnx;
+			if (null == cnx)
 			{
-				CleanupAtClose(CloseFuture);
+				CleanupAtClose(closeTask);
 			}
 			else
 			{
-				ByteBuf Cmd = Commands.newCloseConsumer(ConsumerId, RequestId);
-				Cnx.sendRequestWithId(Cmd, RequestId).handle((v, exception) =>
-				{
-				Cnx.removeConsumer(ConsumerId);
-				if (exception == null || !Cnx.ctx().channel().Active)
-				{
-					CleanupAtClose(CloseFuture);
-				}
-				else
-				{
-					CloseFuture.completeExceptionally(exception);
-				}
-				return null;
-				});
+				var cmd = Commands.NewCloseConsumer(ConsumerId, requestId);
+				cnx.SendRequestWithId(cmd, requestId).AsTask().ContinueWith(task =>
+                {
+                    var exception = task.Exception;
+				    cnx.RemoveConsumer(ConsumerId);
+				    if (exception == null || !cnx.Ctx().Channel.Active)
+				    {
+					    CleanupAtClose(closeTask);
+				    }
+				    else
+				    {
+					    closeTask.SetException(exception);
+				    }
+					closeTask.SetResult(task);
+                });
 			}
 
-			return CloseFuture;
+			return new ValueTask(closeTask.Task);
 		}
 
-		private void CleanupAtClose(CompletableFuture<Void> CloseFuture)
+		private void CleanupAtClose(TaskCompletionSource<Task> closeTask)
 		{
-			Log.info("[{}] [{}] Closed consumer", Topic, SubscriptionConflict);
-			State = State.Closed;
+			Log.LogInformation("[{}] [{}] Closed consumer", Topic, Subscription);
+			ConsumerState = State.Closed;
 			CloseConsumerTasks();
-			CloseFuture.complete(null);
-			ClientConflict.cleanupConsumer(this);
+			closeTask.SetResult(null);
+			Client.CleanupConsumer(this);
 			// fail all pending-receive futures to notify application
 			FailPendingReceive();
 		}
 
 		private void CloseConsumerTasks()
 		{
-			UnAckedMessageTracker.Dispose();
-			if (possibleSendToDeadLetterTopicMessages != null)
-			{
-				possibleSendToDeadLetterTopicMessages.Clear();
-			}
+			UnAckedMessageTracker.Close();
+            _possibleSendToDeadLetterTopicMessages?.Clear();
 
-			acknowledgmentsGroupingTracker.Close();
+            _acknowledgmentsGroupingTracker.Close();
 		}
 
 		private void FailPendingReceive()
 		{
-			@lock.readLock().@lock();
+			_lock.AcquireReaderLock(3000);
 			try
 			{
-				if (ListenerExecutor != null && !ListenerExecutor.Shutdown)
+				if (ListenerExecutor != null /*&& !ListenerExecutor.Shutdown*/)
 				{
-					while (!PendingReceives.Empty)
+					while (!PendingReceives.IsEmpty)
 					{
-						CompletableFuture<Message<T>> ReceiveFuture = PendingReceives.poll();
-						if (ReceiveFuture != null)
+						if (PendingReceives.TryPeek(out var receiveTask))
 						{
-							ReceiveFuture.completeExceptionally(new PulsarClientException.AlreadyClosedException(string.Format("The consumer which subscribes the topic {0} with subscription name {1} " + "was already closed when cleaning and closing the consumers", topicName.ToString(), SubscriptionConflict)));
+                            receiveTask.SetException(new PulsarClientException.AlreadyClosedException(string.Format("The consumer which subscribes the topic {0} with subscription name {1} " + "was already closed when cleaning and closing the consumers", _topicName.ToString(), Subscription)));
 						}
 						else
 						{
@@ -825,85 +795,82 @@ namespace SharpPulsar.Impl
 			}
 			finally
 			{
-				@lock.readLock().unlock();
+				_lock.ReleaseReaderLock();
 			}
 		}
 
-		public virtual void ActiveConsumerChanged(bool IsActive)
+		public void ActiveConsumerChanged(bool isActive)
 		{
 			if (ConsumerEventListener == null)
 			{
 				return;
 			}
 
-			ListenerExecutor.execute(() =>
-			{
-			if (IsActive)
-			{
-				ConsumerEventListener.becameActive(this, PartitionIndex);
-			}
-			else
-			{
-				ConsumerEventListener.becameInactive(this, PartitionIndex);
-			}
+            Task.Run(() =>
+            {
+                if (isActive)
+                {
+                    ConsumerEventListener.BecameActive(this, PartitionIndex);
+                }
+                else
+                {
+                    ConsumerEventListener.BecameInactive(this, PartitionIndex);
+                }
 			});
 		}
 
-		public virtual void MessageReceived(MessageIdData MessageId, int RedeliveryCount, IByteBuffer HeadersAndPayload, ClientCnx Cnx)
+		public void MessageReceived(MessageIdData messageId, int redeliveryCount, IByteBuffer headersAndPayload, ClientCnx cnx)
 		{
-			if (Log.DebugEnabled)
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.debug("[{}][{}] Received message: {}/{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
+				Log.LogDebug("[{}][{}] Received message: {}/{}", Topic, Subscription, messageId.LedgerId, messageId.EntryId);
 			}
 
-			if (!VerifyChecksum(HeadersAndPayload, MessageId))
+			if (!VerifyChecksum(headersAndPayload, messageId))
 			{
 				// discard message with checksum error
-				DiscardCorruptedMessage(MessageId, Cnx, CommandAck.ValidationError.ChecksumMismatch);
+				DiscardCorruptedMessage(messageId, cnx, CommandAck.Types.ValidationError.ChecksumMismatch);
 				return;
 			}
 
-			PulsarApi.MessageMetadata MsgMetadata;
+			MessageMetadata msgMetadata;
 			try
 			{
-				MsgMetadata = Commands.parseMessageMetadata(HeadersAndPayload);
+				msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
 			}
-			catch (Exception)
+			catch (System.Exception)
 			{
-				DiscardCorruptedMessage(MessageId, Cnx, PulsarApi.CommandAck.ValidationError.ChecksumMismatch);
+				DiscardCorruptedMessage(messageId, cnx, CommandAck.Types.ValidationError.ChecksumMismatch);
 				return;
 			}
+			var numMessages = msgMetadata.NumMessagesInBatch;
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final int numMessages = msgMetadata.getNumMessagesInBatch();
-			int NumMessages = MsgMetadata.NumMessagesInBatch;
-
-			MessageIdImpl MsgId = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-			if (acknowledgmentsGroupingTracker.IsDuplicate(MsgId))
+			var msgId = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex);
+			if (_acknowledgmentsGroupingTracker.IsDuplicate(msgId))
 			{
-				if (Log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] Ignoring message as it was already being acked earlier by same consumer {}/{}", Topic, SubscriptionConflict, ConsumerNameConflict, MsgId);
+					Log.LogDebug("[{}] [{}] Ignoring message as it was already being acked earlier by same consumer {}/{}", Topic, Subscription, ConsumerName, msgId);
 				}
 
-				IncreaseAvailablePermits(Cnx, NumMessages);
+				IncreaseAvailablePermits(cnx, numMessages);
 				return;
 			}
 
-			ByteBuf DecryptedPayload = DecryptPayloadIfNeeded(MessageId, MsgMetadata, HeadersAndPayload, Cnx);
+			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, headersAndPayload, cnx);
 
-			bool IsMessageUndecryptable = isMessageUndecryptable(MsgMetadata);
+			var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
-			if (DecryptedPayload == null)
+			if (decryptedPayload == null)
 			{
 				// Message was discarded or CryptoKeyReader isn't implemented
 				return;
 			}
 
 			// uncompress decryptedPayload and release decryptedPayload-ByteBuf
-			ByteBuf UncompressedPayload = IsMessageUndecryptable ? DecryptedPayload.retain() : UncompressPayloadIfNeeded(MessageId, MsgMetadata, DecryptedPayload, Cnx);
-			DecryptedPayload.release();
-			if (UncompressedPayload == null)
+			var uncompressedPayload = isMessageUndecryptable ? (IByteBuffer)decryptedPayload.Retain() : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, cnx);
+			decryptedPayload.Release();
+			if (uncompressedPayload == null)
 			{
 				// Message was discarded on decompression error
 				return;
@@ -911,43 +878,41 @@ namespace SharpPulsar.Impl
 
 			// if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
 			// and return undecrypted payload
-			if (IsMessageUndecryptable || (NumMessages == 1 && !MsgMetadata.hasNumMessagesInBatch()))
+			if (isMessageUndecryptable || (numMessages == 1 && !msgMetadata.HasNumMessagesInBatch))
 			{
 
-				if (IsResetIncludedAndSameEntryLedger(MessageId) && IsPriorEntryIndex(MessageId.EntryId))
+				if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorEntryIndex((long)messageId.EntryId))
 				{
 					// We need to discard entries that were prior to startMessageId
-					if (Log.DebugEnabled)
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						Log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
+						Log.LogDebug("[{}] [{}] Ignoring message from before the startMessageId: {}", Subscription, ConsumerName, _startMessageId);
 					}
 
-					UncompressedPayload.release();
-					MsgMetadata.recycle();
+					uncompressedPayload.Release();
+					msgMetadata.Recycle();
 					return;
 				}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final MessageImpl<T> message = new MessageImpl<>(topicName.toString(), msgId, msgMetadata, uncompressedPayload, createEncryptionContext(msgMetadata), cnx, schema, redeliveryCount);
-				MessageImpl<T> Message = new MessageImpl<T>(topicName.ToString(), MsgId, MsgMetadata, UncompressedPayload, CreateEncryptionContext(MsgMetadata), Cnx, Schema, RedeliveryCount);
-				UncompressedPayload.release();
-				MsgMetadata.recycle();
+				var message = new MessageImpl<T>(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+				uncompressedPayload.Release();
+				msgMetadata.Recycle();
 
-				@lock.readLock().@lock();
+				_lock.AcquireReaderLock(3000);
 				try
 				{
 					// Enqueue the message so that it can be retrieved when application calls receive()
 					// if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
 					// if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-					if (deadLetterPolicy != null && possibleSendToDeadLetterTopicMessages != null && RedeliveryCount >= deadLetterPolicy.MaxRedeliverCount)
+					if (_deadLetterPolicy != null && _possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
 					{
-						possibleSendToDeadLetterTopicMessages[(MessageIdImpl)Message.getMessageId()] = Collections.singletonList(Message);
+						_possibleSendToDeadLetterTopicMessages[(MessageIdImpl)message.GetMessageId()] = new List<MessageImpl<T>>{message};
 					}
-					if (!PendingReceives.Empty)
+					if (!PendingReceives.IsEmpty)
 					{
-						NotifyPendingReceivedCallback(Message, null);
+						NotifyPendingReceivedCallback(message, null);
 					}
-					else if (EnqueueMessageAndCheckBatchReceive(Message))
+					else if (EnqueueMessageAndCheckBatchReceive(message))
 					{
 						if (HasPendingBatchReceive())
 						{
@@ -957,186 +922,177 @@ namespace SharpPulsar.Impl
 				}
 				finally
 				{
-					@lock.readLock().unlock();
+					_lock.ReleaseReaderLock();
 				}
 			}
 			else
 			{
 				// handle batch message enqueuing; uncompressed payload has all messages in batch
-				ReceiveIndividualMessagesFromBatch(MsgMetadata, RedeliveryCount, UncompressedPayload, MessageId, Cnx);
+				ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, uncompressedPayload, messageId, cnx);
 
-				UncompressedPayload.release();
-				MsgMetadata.recycle();
+				uncompressedPayload.Release();
+				msgMetadata.Recycle();
 			}
 
 			if (Listener != null)
 			{
-				TriggerListener(NumMessages);
+				TriggerListener(numMessages);
 			}
 		}
 
-		public virtual void TriggerListener(int NumMessages)
+		public void TriggerListener(int numMessages)
 		{
 			// Trigger the notification on the message listener in a separate thread to avoid blocking the networking
 			// thread while the message processing happens
-			ListenerExecutor.execute(() =>
-			{
-			for (int I = 0; I < NumMessages; I++)
-			{
-				try
-				{
-					Message<T> Msg = InternalReceive(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-					if (Msg == null)
-					{
-						if (Log.DebugEnabled)
-						{
-							Log.debug("[{}] [{}] Message has been cleared from the queue", Topic, SubscriptionConflict);
-						}
-						break;
-					}
-					try
-					{
-						if (Log.DebugEnabled)
-						{
-							Log.debug("[{}][{}] Calling message listener for message {}", Topic, SubscriptionConflict, Msg.MessageId);
-						}
-						Listener.received(ConsumerImpl.this, Msg);
-					}
-					catch (Exception T)
-					{
-						Log.error("[{}][{}] Message listener error in processing message: {}", Topic, SubscriptionConflict, Msg.MessageId, T);
-					}
-				}
-				catch (PulsarClientException E)
-				{
-					Log.warn("[{}] [{}] Failed to dequeue the message for listener", Topic, SubscriptionConflict, E);
-					return;
-				}
-			}
+            Task.Run(() =>
+            {
+                for (var i = 0; i < numMessages; i++)
+                {
+                    try
+                    {
+                        var msg = InternalReceive(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+                        if (msg == null)
+                        {
+                            if (Log.IsEnabled(LogLevel.Debug))
+                            {
+                                Log.LogDebug("[{}] [{}] Message has been cleared from the queue", Topic, Subscription);
+                            }
+                            break;
+                        }
+                        try
+                        {
+                            if (Log.IsEnabled(LogLevel.Debug))
+                            {
+                                Log.LogDebug("[{}][{}] Calling message listener for message {}", Topic, Subscription, msg.MessageId);
+                            }
+                            Listener.Received(this, msg);
+                        }
+                        catch (System.Exception T)
+                        {
+                            Log.LogError("[{}][{}] Message listener error in processing message: {}", Topic, Subscription, msg.MessageId, T);
+                        }
+                    }
+                    catch (PulsarClientException e)
+                    {
+                        Log.LogWarning("[{}] [{}] Failed to dequeue the message for listener", Topic, Subscription, e);
+                        return;
+                    }
+                }
 			});
-		}
+        }
 
 		/// <summary>
 		/// Notify waiting asyncReceive request with the received message
 		/// </summary>
 		/// <param name="message"> </param>
-		public virtual void NotifyPendingReceivedCallback(in Message<T> Message, Exception Exception)
+		public void NotifyPendingReceivedCallback(in Message<T> message, System.Exception exception)
 		{
-			if (PendingReceives.Empty)
+			if (PendingReceives.IsEmpty)
 			{
 				return;
 			}
 
 			// fetch receivedCallback from queue
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<SharpPulsar.api.Message<T>> receivedFuture = pendingReceives.poll();
-			CompletableFuture<Message<T>> ReceivedFuture = PendingReceives.poll();
-			if (ReceivedFuture == null)
+			if (!PendingReceives.TryPeek(out var receivedTask))
 			{
 				return;
 			}
 
-			if (Exception != null)
-			{
-				ListenerExecutor.execute(() => ReceivedFuture.completeExceptionally(Exception));
+			if (exception != null)
+            {
+                Task.Run(() => receivedTask.SetException(exception));
 				return;
 			}
 
-			if (Message == null)
+			if (message == null)
 			{
-                InvalidOperationException E = new InvalidOperationException("received message can't be null");
-				ListenerExecutor.execute(() => ReceivedFuture.completeExceptionally(E));
+                var e = new InvalidOperationException("received message can't be null");
+                Task.Run(() => receivedTask.SetException(e));
 				return;
 			}
 
 			if (Conf.ReceiverQueueSize == 0)
 			{
 				// call interceptor and complete received callback
-				InterceptAndComplete(Message, ReceivedFuture);
+				InterceptAndComplete(message, receivedTask);
 				return;
 			}
 
 			// increase permits for available message-queue
-			MessageProcessed(Message);
+			MessageProcessed(message);
 			// call interceptor and complete received callback
-			InterceptAndComplete(Message, ReceivedFuture);
+			InterceptAndComplete(message, receivedTask);
 		}
 
-		private void InterceptAndComplete(in Message<T> Message, in CompletableFuture<Message<T>> ReceivedFuture)
-		{
+		private void InterceptAndComplete(Message<T> message, TaskCompletionSource<Message<T>> receivedTask)
+        {
 			// call proper interceptor
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final SharpPulsar.api.Message<T> interceptMessage = beforeConsume(message);
-			Message<T> InterceptMessage = BeforeConsume(Message);
+			var interceptMessage = BeforeConsume(message);
 			// return message to receivedCallback
-			ListenerExecutor.execute(() => ReceivedFuture.complete(InterceptMessage));
+            Task.Run(() => receivedTask.SetResult(interceptMessage));
 		}
 
-		public virtual void ReceiveIndividualMessagesFromBatch(PulsarApi.MessageMetadata MsgMetadata, int RedeliveryCount, ByteBuf UncompressedPayload, PulsarApi.MessageIdData MessageId, ClientCnx Cnx)
+		public void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IByteBuffer uncompressedPayload, MessageIdData messageId, ClientCnx cnx)
 		{
-			int BatchSize = MsgMetadata.NumMessagesInBatch;
+			var batchSize = msgMetadata.NumMessagesInBatch;
 
 			// create ack tracker for entry aka batch
-			MessageIdImpl BatchMessage = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-			BatchMessageAcker Acker = BatchMessageAcker.NewAcker(BatchSize);
-			IList<MessageImpl<T>> PossibleToDeadLetter = null;
-			if (deadLetterPolicy != null && RedeliveryCount >= deadLetterPolicy.MaxRedeliverCount)
+			var batchMessage = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex);
+			var acker = BatchMessageAcker.NewAcker(batchSize);
+			IList<MessageImpl<T>> possibleToDeadLetter = null;
+			if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
 			{
-				PossibleToDeadLetter = new List<MessageImpl<T>>();
+				possibleToDeadLetter = new List<MessageImpl<T>>();
 			}
-			int SkippedMessages = 0;
+			var skippedMessages = 0;
 			try
 			{
-				for (int I = 0; I < BatchSize; ++I)
+				for (var i = 0; i < batchSize; ++i)
 				{
-					if (Log.DebugEnabled)
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						Log.debug("[{}] [{}] processing message num - {} in batch", SubscriptionConflict, ConsumerNameConflict, I);
+						Log.LogDebug("[{}] [{}] processing message num - {} in batch", Subscription, ConsumerName, i);
 					}
-					PulsarApi.SingleMessageMetadata.Builder SingleMessageMetadataBuilder = PulsarApi.SingleMessageMetadata.newBuilder();
-					ByteBuf SingleMessagePayload = Commands.deSerializeSingleMessageInBatch(UncompressedPayload, SingleMessageMetadataBuilder, i, BatchSize);
+					var singleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
+					var singleMessagePayload = Commands.DeSerializeSingleMessageInBatch(uncompressedPayload, singleMessageMetadataBuilder, i, batchSize);
 
-					if (IsResetIncludedAndSameEntryLedger(MessageId) && IsPriorBatchIndex(i))
+					if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorBatchIndex(i))
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
 						// to the startMessageId
-						if (Log.DebugEnabled)
+						if (Log.IsEnabled(LogLevel.Debug))
 						{
-							Log.debug("[{}] [{}] Ignoring message from before the startMessageId: {}", SubscriptionConflict, ConsumerNameConflict, startMessageId);
+							Log.LogDebug("[{}] [{}] Ignoring message from before the startMessageId: {}", Subscription, ConsumerName, _startMessageId);
 						}
-						SingleMessagePayload.release();
-						SingleMessageMetadataBuilder.recycle();
+						singleMessagePayload.Release();
+						singleMessageMetadataBuilder.Recycle();
 
-						++SkippedMessages;
+						++skippedMessages;
 						continue;
 					}
 
-					if (SingleMessageMetadataBuilder.CompactedOut)
+					if (singleMessageMetadataBuilder.CompactedOut)
 					{
 						// message has been compacted out, so don't send to the user
-						SingleMessagePayload.release();
-						SingleMessageMetadataBuilder.recycle();
+						singleMessagePayload.Release();
+						singleMessageMetadataBuilder.Recycle();
 
-						++SkippedMessages;
+						++skippedMessages;
 						continue;
 					}
 
-					BatchMessageIdImpl BatchMessageIdImpl = new BatchMessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex, i, Acker);
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final MessageImpl<T> message = new MessageImpl<>(topicName.toString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.build(), singleMessagePayload, createEncryptionContext(msgMetadata), cnx, schema, redeliveryCount);
-					MessageImpl<T> Message = new MessageImpl<T>(topicName.ToString(), BatchMessageIdImpl, MsgMetadata, SingleMessageMetadataBuilder.build(), SingleMessagePayload, CreateEncryptionContext(MsgMetadata), Cnx, Schema, RedeliveryCount);
-					if (PossibleToDeadLetter != null)
-					{
-						PossibleToDeadLetter.Add(Message);
-					}
-					@lock.readLock().@lock();
+					var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex, i, acker);
+
+                    var message = new MessageImpl<T>(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+                    possibleToDeadLetter?.Add(message);
+                    _lock.AcquireReaderLock(300);
 					try
 					{
-						if (!PendingReceives.Empty)
+						if (!PendingReceives.IsEmpty)
 						{
-							NotifyPendingReceivedCallback(Message, null);
+							NotifyPendingReceivedCallback(message, null);
 						}
-						else if (EnqueueMessageAndCheckBatchReceive(Message))
+						else if (EnqueueMessageAndCheckBatchReceive(message))
 						{
 							if (HasPendingBatchReceive())
 							{
@@ -1146,47 +1102,47 @@ namespace SharpPulsar.Impl
 					}
 					finally
 					{
-						@lock.readLock().unlock();
+						_lock.ReleaseReaderLock();
 					}
-					SingleMessagePayload.release();
-					SingleMessageMetadataBuilder.recycle();
+					singleMessagePayload.Release();
+					singleMessageMetadataBuilder.Recycle();
 				}
 			}
 			catch (IOException)
 			{
-				Log.warn("[{}] [{}] unable to obtain message in batch", SubscriptionConflict, ConsumerNameConflict);
-				DiscardCorruptedMessage(MessageId, Cnx, PulsarApi.CommandAck.ValidationError.BatchDeSerializeError);
+				Log.LogWarning("[{}] [{}] unable to obtain message in batch", Subscription, ConsumerName);
+				DiscardCorruptedMessage(messageId, cnx, CommandAck.Types.ValidationError.BatchDeSerializeError);
 			}
 
-			if (PossibleToDeadLetter != null && possibleSendToDeadLetterTopicMessages != null)
+			if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
 			{
-				possibleSendToDeadLetterTopicMessages[BatchMessage] = PossibleToDeadLetter;
+				_possibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
 			}
 
-			if (Log.DebugEnabled)
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.debug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", SubscriptionConflict, ConsumerNameConflict, IncomingMessages.size(), IncomingMessages.remainingCapacity());
+				Log.LogDebug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", Subscription, ConsumerName, IncomingMessages.size(), IncomingMessages.RemainingCapacity());
 			}
 
-			if (SkippedMessages > 0)
+			if (skippedMessages > 0)
 			{
-				IncreaseAvailablePermits(Cnx, SkippedMessages);
+				IncreaseAvailablePermits(cnx, skippedMessages);
 			}
 		}
 
-		private bool IsPriorEntryIndex(long Idx)
+		private bool IsPriorEntryIndex(long idx)
 		{
-			return resetIncludeHead ? Idx < startMessageId.EntryId : Idx <= startMessageId.EntryId;
+			return _resetIncludeHead ? idx < _startMessageId.EntryId : idx <= _startMessageId.EntryId;
 		}
 
-		private bool IsPriorBatchIndex(long Idx)
+		private bool IsPriorBatchIndex(long idx)
 		{
-			return resetIncludeHead ? Idx < startMessageId.BatchIndex : Idx <= startMessageId.BatchIndex;
+			return _resetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
 		}
 
-		private bool IsResetIncludedAndSameEntryLedger(PulsarApi.MessageIdData MessageId)
+		private bool IsResetIncludedAndSameEntryLedger(MessageIdData messageId)
 		{
-			return !resetIncludeHead && startMessageId != null && MessageId.LedgerId == startMessageId.LedgerId && MessageId.EntryId == startMessageId.EntryId;
+			return !_resetIncludeHead && _startMessageId != null && (long)messageId.LedgerId == _startMessageId.LedgerId && (long)messageId.EntryId == _startMessageId.EntryId;
 		}
 
 		/// <summary>
@@ -1194,75 +1150,73 @@ namespace SharpPulsar.Impl
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		public virtual void MessageProcessed<T1>(Message<T1> Msg)
+		public override void MessageProcessed<T1>(Message<T1> msg)
 		{
 			lock (this)
 			{
-				ClientCnx CurrentCnx = Cnx();
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ClientCnx msgCnx = ((MessageImpl<?>) msg).getCnx();
-				ClientCnx MsgCnx = ((MessageImpl<object>) Msg).Cnx;
-				LastDequeuedMessage = Msg.MessageId;
+				var currentCnx = Cnx();
+				var msgCnx = ((MessageImpl<object>) msg).Cnx;
+				LastDequeuedMessage = msg.MessageId;
         
-				if (MsgCnx != CurrentCnx)
+				if (msgCnx != currentCnx)
 				{
 					// The processed message did belong to the old queue that was cleared after reconnection.
 					return;
 				}
         
-				IncreaseAvailablePermits(CurrentCnx);
-				StatsConflict.updateNumMsgsReceived(Msg);
+				IncreaseAvailablePermits(currentCnx);
+				ConsumerStats.UpdateNumMsgsReceived(msg);
         
-				TrackMessage(Msg);
-				IncomingMessagesSizeUpdater.addAndGet(this, -Msg.Data.Length);
+				TrackMessage(msg);
+				IncomingMessagesSize[this] = -msg.Data.Length;
 			}
 		}
 
-		public virtual void TrackMessage<T1>(Message<T1> Msg)
+		public void TrackMessage<T1>(Message<T1> msg)
 		{
-			if (Msg != null)
+			if (msg != null)
 			{
-				MessageId MessageId = Msg.MessageId;
-				if (Conf.AckTimeoutMillis > 0 && MessageId is MessageIdImpl)
+				var messageId = msg.MessageId;
+				if (Conf.AckTimeoutMillis > 0 && messageId is MessageIdImpl id)
 				{
-					MessageIdImpl Id = (MessageIdImpl)MessageId;
-					if (Id is BatchMessageIdImpl)
+                    if (id is BatchMessageIdImpl)
 					{
 						// do not add each item in batch message into tracker
-						Id = new MessageIdImpl(Id.LedgerId, Id.EntryId, PartitionIndex);
+						id = new MessageIdImpl(id.LedgerId, id.EntryId, PartitionIndex);
 					}
-					if (hasParentConsumer)
+					if (_hasParentConsumer)
 					{
 						// we should no longer track this message, TopicsConsumer will take care from now onwards
-						UnAckedMessageTracker.Remove(Id);
+						UnAckedMessageTracker.Remove(id);
 					}
 					else
 					{
-						UnAckedMessageTracker.Add(Id);
+						UnAckedMessageTracker.Add(id);
 					}
 				}
 			}
 		}
 
-		public virtual void IncreaseAvailablePermits(ClientCnx CurrentCnx)
+		public void IncreaseAvailablePermits(ClientCnx currentCnx)
 		{
-			IncreaseAvailablePermits(CurrentCnx, 1);
+			IncreaseAvailablePermits(currentCnx, 1);
 		}
 
-		private void IncreaseAvailablePermits(ClientCnx CurrentCnx, int Delta)
-		{
-			int Available = AVAILABLE_PERMITS_UPDATER.addAndGet(this, Delta);
+		private void IncreaseAvailablePermits(ClientCnx currentCnx, int delta)
+        {
+            _availablePermits[this] = delta;
+			var available = _availablePermits[this];
 
-			while (Available >= receiverQueueRefillThreshold && !Paused)
+			while (available >= _receiverQueueRefillThreshold && !Paused)
 			{
-				if (AVAILABLE_PERMITS_UPDATER.compareAndSet(this, Available, 0))
+				if (_availablePermits.TryUpdate(this, 0, available))
 				{
-					SendFlowPermitsToBroker(CurrentCnx, Available);
+					SendFlowPermitsToBroker(currentCnx, available);
 					break;
 				}
 				else
 				{
-					Available = AVAILABLE_PERMITS_UPDATER.get(this);
+					available = _availablePermits[this];
 				}
 			}
 		}
@@ -1281,96 +1235,99 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private ByteBuf DecryptPayloadIfNeeded(PulsarApi.MessageIdData MessageId, PulsarApi.MessageMetadata MsgMetadata, ByteBuf Payload, ClientCnx CurrentCnx)
+		private IByteBuffer DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx currentCnx)
 		{
 
-			if (MsgMetadata.EncryptionKeysCount == 0)
+			if (msgMetadata.EncryptionKeys.Count == 0)
 			{
-				return Payload.retain();
-			}
+				payload.Retain();
+                return payload;
+            }
 
 			// If KeyReader is not configured throw exception based on config param
 			if (Conf.CryptoKeyReader == null)
 			{
 				switch (Conf.CryptoFailureAction)
 				{
-					case CONSUME:
-						Log.warn("[{}][{}][{}] CryptoKeyReader interface is not implemented. Consuming encrypted message.", Topic, SubscriptionConflict, ConsumerNameConflict);
-						return Payload.retain();
-					case DISCARD:
-						Log.warn("[{}][{}][{}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict);
-						DiscardMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecryptionError);
+					case ConsumerCryptoFailureAction.Consume:
+						Log.LogWarning("[{}][{}][{}] CryptoKeyReader interface is not implemented. Consuming encrypted message.", Topic, Subscription, ConsumerName);
+						payload.Retain();
+                        return payload;
+					case ConsumerCryptoFailureAction.Discard:
+						Log.LogWarning("[{}][{}][{}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard", Topic, Subscription, ConsumerName);
+						DiscardMessage(messageId, currentCnx, CommandAck.Types.ValidationError.DecryptionError);
 						return null;
-					case FAIL:
-						MessageId M = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-						Log.error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
-						UnAckedMessageTracker.Add(M);
+					case ConsumerCryptoFailureAction.Fail:
+						IMessageId m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex);
+						Log.LogError("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", Topic, Subscription, ConsumerName, m);
+						UnAckedMessageTracker.Add(m);
 						return null;
 				}
 			}
 
-			ByteBuf DecryptedData = this.msgCrypto.Decrypt(MsgMetadata, Payload, Conf.CryptoKeyReader);
-			if (DecryptedData != null)
+			var decryptedData = this._msgCrypto.Decrypt(msgMetadata, payload, Conf.CryptoKeyReader);
+			if (decryptedData != null)
 			{
-				return DecryptedData;
+				return decryptedData;
 			}
 
 			switch (Conf.CryptoFailureAction)
 			{
-				case CONSUME:
+				case ConsumerCryptoFailureAction.Consume:
 					// Note, batch message will fail to consume even if config is set to consume
-					Log.warn("[{}][{}][{}][{}] Decryption failed. Consuming encrypted message since config is set to consume.", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
-					return Payload.retain();
-				case DISCARD:
-					Log.warn("[{}][{}][{}][{}] Discarding message since decryption failed and config is set to discard", Topic, SubscriptionConflict, ConsumerNameConflict, MessageId);
-					DiscardMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecryptionError);
+					Log.LogWarning("[{}][{}][{}][{}] Decryption failed. Consuming encrypted message since config is set to consume.", Topic, Subscription, ConsumerName, messageId);
+					payload.Retain();
+                    return payload;
+				case ConsumerCryptoFailureAction.Discard:
+					Log.LogWarning("[{}][{}][{}][{}] Discarding message since decryption failed and config is set to discard", Topic, Subscription, ConsumerName, messageId);
+					DiscardMessage(messageId, currentCnx, CommandAck.Types.ValidationError.DecryptionError);
 					return null;
-				case FAIL:
-					MessageId M = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
-					Log.error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", Topic, SubscriptionConflict, ConsumerNameConflict, M);
-					UnAckedMessageTracker.Add(M);
+				case ConsumerCryptoFailureAction.Fail:
+					var m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex);
+					Log.LogError("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", Topic, Subscription, ConsumerName, m);
+					UnAckedMessageTracker.Add(m);
 					return null;
 			}
 			return null;
 		}
 
-		private ByteBuf UncompressPayloadIfNeeded(PulsarApi.MessageIdData MessageId, PulsarApi.MessageMetadata MsgMetadata, ByteBuf Payload, ClientCnx CurrentCnx)
+		private IByteBuffer UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx currentCnx)
 		{
-			PulsarApi.CompressionType CompressionType = MsgMetadata.Compression;
-			CompressionCodec Codec = CompressionCodecProvider.getCompressionCodec(CompressionType);
-			int UncompressedSize = MsgMetadata.UncompressedSize;
-			int PayloadSize = Payload.readableBytes();
-			if (PayloadSize > ClientCnx.MaxMessageSize)
+			var compressionType = msgMetadata.Compression;
+			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
+			var uncompressedSize = (int)msgMetadata.UncompressedSize;
+			var payloadSize = payload.ReadableBytes;
+			if (payloadSize > ClientCnx.MaxMessageSize)
 			{
 				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
-				Log.error("[{}][{}] Got corrupted payload message size {} at {}", Topic, SubscriptionConflict, PayloadSize, MessageId);
-				DiscardCorruptedMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.UncompressedSizeCorruption);
+				Log.LogError("[{}][{}] Got corrupted payload message size {} at {}", Topic, Subscription, payloadSize, messageId);
+				DiscardCorruptedMessage(messageId, currentCnx, CommandAck.Types.ValidationError.UncompressedSizeCorruption);
 				return null;
 			}
 
 			try
 			{
-				ByteBuf UncompressedPayload = Codec.decode(Payload, UncompressedSize);
-				return UncompressedPayload;
+				var uncompressedPayload = codec.Decode(payload, uncompressedSize);
+				return uncompressedPayload;
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				Log.error("[{}][{}] Failed to decompress message with {} at {}: {}", Topic, SubscriptionConflict, CompressionType, MessageId, E.Message, E);
-				DiscardCorruptedMessage(MessageId, CurrentCnx, PulsarApi.CommandAck.ValidationError.DecompressionError);
+				Log.LogError("[{}][{}] Failed to decompress message with {} at {}: {}", Topic, Subscription, compressionType, messageId, e.Message, e);
+				DiscardCorruptedMessage(messageId, currentCnx, CommandAck.Types.ValidationError.DecompressionError);
 				return null;
 			}
 		}
 
-		private bool VerifyChecksum(ByteBuf HeadersAndPayload, PulsarApi.MessageIdData MessageId)
+		private bool VerifyChecksum(IByteBuffer headersAndPayload, MessageIdData messageId)
 		{
 
-			if (hasChecksum(HeadersAndPayload))
+			if (Commands.HasChecksum(headersAndPayload))
 			{
-				int Checksum = readChecksum(HeadersAndPayload);
-				int ComputedChecksum = computeChecksum(HeadersAndPayload);
-				if (Checksum != ComputedChecksum)
+				var checksum = Commands.ReadChecksum(headersAndPayload);
+				int computedChecksum = ComputeChecksum(headersAndPayload);
+				if (checksum != computedChecksum)
 				{
-					Log.error("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId, Checksum.ToString("x"), ComputedChecksum.ToString("x"));
+					Log.LogError("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", Topic, Subscription, messageId.LedgerId, messageId.EntryId, checksum.ToString("x"), computedChecksum.ToString("x"));
 					return false;
 				}
 			}
@@ -1378,450 +1335,423 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private void DiscardCorruptedMessage(MessageIdData MessageId, ClientCnx CurrentCnx, CommandAck.ValidationError ValidationError)
+		private void DiscardCorruptedMessage(MessageIdData messageId, ClientCnx currentCnx, CommandAck.Types.ValidationError validationError)
 		{
-			Log.error("[{}][{}] Discarding corrupted message at {}:{}", Topic, SubscriptionConflict, MessageId.LedgerId, MessageId.EntryId);
-			DiscardMessage(MessageId, CurrentCnx, ValidationError);
+			Log.LogError("[{}][{}] Discarding corrupted message at {}:{}", Topic, Subscription, messageId.LedgerId, messageId.EntryId);
+			DiscardMessage(messageId, currentCnx, validationError);
 		}
 
-		private void DiscardMessage(MessageIdData MessageId, ClientCnx currentCnx, CommandAck.ValidationError ValidationError)
+		private void DiscardMessage(MessageIdData messageId, ClientCnx currentCnx, CommandAck.Types.ValidationError validationError)
 		{
-			IByteBuffer cmd = Commands.NewAck(ConsumerId, (long)MessageId.ledgerId, (long)MessageId.entryId, CommandAck.AckType.Individual, ValidationError, new Dictionary<string,long>());
+			var cmd = Commands.NewAck(ConsumerId, (long)messageId.LedgerId, (long)messageId.EntryId, CommandAck.Types.AckType.Individual, validationError, new Dictionary<string,long>());
 			currentCnx.Ctx().WriteAndFlushAsync(cmd);
 			IncreaseAvailablePermits(currentCnx);
-			StatsConflict.IncrementNumReceiveFailed();
+			ConsumerStats.IncrementNumReceiveFailed();
 		}
 
-		public override string HandlerName
-		{
-			get
-			{
-				return SubscriptionConflict;
-			}
-		}
+		public new string HandlerName => Subscription;
 
-		public override bool Connected
-		{
-			get
-			{
-				return ClientCnx != null && (this.State == State.Ready);
-			}
-		}
+        public override bool Connected => ClientCnx != null && (ConsumerState == State.Ready);
 
 
-		public override int AvailablePermits
-		{
-			get
-			{
-				return AVAILABLE_PERMITS_UPDATER.get(this);
-			}
-		}
+        public override int AvailablePermits => _availablePermits[this];
 
-		public override int NumMessagesInQueue()
+        public override int NumMessagesInQueue()
 		{
 			return IncomingMessages.size();
 		}
 
 		public override void RedeliverUnacknowledgedMessages()
 		{
-			ClientCnx Cnx = Cnx();
-			if (Connected && Cnx.RemoteEndpointProtocolVersion >= (int)ProtocolVersion.v2)
+			var cnx = ClientCnx;
+			if (Connected && cnx.RemoteEndpointProtocolVersion >= (int)ProtocolVersion.V2)
 			{
-				int CurrentSize = 0;
+				var currentSize = 0;
 				lock (this)
 				{
-					CurrentSize = IncomingMessages.size();
+					currentSize = IncomingMessages.size();
 					IncomingMessages.clear();
-					IncomingMessagesSizeUpdater.set(this, 0);
-					UnAckedMessageTracker<T>.Clear();
+					IncomingMessagesSize[this] =  0;
+					UnAckedMessageTracker.Clear();
 				}
-				Cnx.ctx().writeAndFlush(Commands.newRedeliverUnacknowledgedMessages(ConsumerId), Cnx.ctx().voidPromise());
-				if (CurrentSize > 0)
+				cnx.Ctx().WriteAndFlushAsync(Commands.NewRedeliverUnacknowledgedMessages(ConsumerId));
+				if (currentSize > 0)
 				{
-					IncreaseAvailablePermits(Cnx, CurrentSize);
+					IncreaseAvailablePermits(cnx, currentSize);
 				}
-				if (Log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] [{}] Redeliver unacked messages and send {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, CurrentSize);
+					Log.LogDebug("[{}] [{}] [{}] Redeliver unacked messages and send {} permits", Subscription, Topic, ConsumerName, currentSize);
 				}
 				return;
 			}
-			if (Cnx == null || (State == State.Connecting))
+			if (cnx == null || (ConsumerState == State.Connecting))
 			{
-				Log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
+				Log.LogWarning("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
 			}
 			else
 			{
-				Log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
-				Cnx.ctx().close();
+				Log.LogWarning("[{}] Reconnecting the client to redeliver the messages.", this);
+				cnx.Ctx().CloseAsync();
 			}
 		}
 
-		public override void RedeliverUnacknowledgedMessages(ISet<MessageId> MessageIds)
+		public override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
 		{
-			if (MessageIds.Count == 0)
+			if (messageIds.Count == 0)
 			{
 				return;
 			}
 
-			checkArgument(MessageIds.First().get() is MessageIdImpl);
+			if(!(messageIds.First() is MessageIdImpl))
+				throw new ArgumentException();
 
-			if (Conf.SubscriptionType != SubscriptionType.Shared && Conf.SubscriptionType != SubscriptionType.Key_Shared)
+			if (Conf.SubscriptionType != SubscriptionType.Shared && Conf.SubscriptionType != SubscriptionType.KeyShared)
 			{
 				// We cannot redeliver single messages if subscription type is not Shared
 				RedeliverUnacknowledgedMessages();
 				return;
 			}
-			ClientCnx Cnx = cnx();
-			if (Connected && Cnx.RemoteEndpointProtocolVersion >= PulsarApi.ProtocolVersion.v2.Number)
+			var cnx = ClientCnx;
+			if (Connected && cnx.RemoteEndpointProtocolVersion >= (int)ProtocolVersion.V2)
 			{
-				int MessagesFromQueue = RemoveExpiredMessagesFromQueue(MessageIds);
-//JAVA TO C# CONVERTER TODO TASK: Most Java stream collectors are not converted by Java to C# Converter:
-				IEnumerable<IList<MessageIdImpl>> Batches = Iterables.partition(MessageIds.Select(messageId => (MessageIdImpl)messageId).collect(Collectors.toSet()), MaxRedeliverUnacknowledged);
-				PulsarApi.MessageIdData.Builder Builder = PulsarApi.MessageIdData.newBuilder();
-				Batches.forEach(ids =>
+				var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
+                var i = 0;
+				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
+				var builder = MessageIdData.NewBuilder();
+				batches.ForEach(ids =>
 				{
-				IList<MessageIdData> MessageIdDatas = ids.Where(messageId => !ProcessPossibleToDLQ(messageId)).Select(messageId =>
-				{
-					Builder.Partition = messageId.PartitionIndex;
-					Builder.LedgerId = messageId.LedgerId;
-					Builder.EntryId = messageId.EntryId;
-					return Builder.build();
-				}).ToList();
-				ByteBuf Cmd = Commands.newRedeliverUnacknowledgedMessages(ConsumerId, MessageIdDatas);
-				Cnx.ctx().writeAndFlush(Cmd, Cnx.ctx().voidPromise());
-				MessageIdDatas.ForEach(MessageIdData.recycle);
+				    var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId)).Select(messageId =>
+				    {
+					    builder.SetPartition(messageId.PartitionIndex);
+					    builder.SetLedgerId(messageId.LedgerId);
+					    builder.SetEntryId(messageId.EntryId);
+					    return builder.Build();
+				    }).ToList();
+				    var cmd = Commands.NewRedeliverUnacknowledgedMessages(ConsumerId, messageIdDatas);
+				    cnx.Ctx().WriteAndFlushAsync(cmd);
+				    messageIdDatas.ForEach(x => x.Recycle());
 				});
-				if (MessagesFromQueue > 0)
+				if (messagesFromQueue > 0)
 				{
-					IncreaseAvailablePermits(Cnx, MessagesFromQueue);
+					IncreaseAvailablePermits(cnx, messagesFromQueue);
 				}
-				Builder.recycle();
-				if (Log.DebugEnabled)
+				builder.Recycle();
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.debug("[{}] [{}] [{}] Redeliver unacked messages and increase {} permits", SubscriptionConflict, Topic, ConsumerNameConflict, MessagesFromQueue);
+					Log.LogDebug("[{}] [{}] [{}] Redeliver unacked messages and increase {} permits", Subscription, Topic, ConsumerName, messagesFromQueue);
 				}
 				return;
 			}
-			if (Cnx == null || (State == State.Connecting))
+			if (cnx == null || (ConsumerState == State.Connecting))
 			{
-				Log.warn("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
+				Log.LogWarning("[{}] Client Connection needs to be established for redelivery of unacknowledged messages", this);
 			}
 			else
 			{
-				Log.warn("[{}] Reconnecting the client to redeliver the messages.", this);
-				Cnx.ctx().close();
+				Log.LogWarning("[{}] Reconnecting the client to redeliver the messages.", this);
+				cnx.Ctx().CloseAsync();
 			}
 		}
 
-		public override void CompleteOpBatchReceive(OpBatchReceive<T> Op)
+		public override void CompleteOpBatchReceive(OpBatchReceive<T> op)
 		{
-			NotifyPendingBatchReceivedCallBack(Op);
+			NotifyPendingBatchReceivedCallBack(op);
 		}
 
-		private bool ProcessPossibleToDLQ(MessageIdImpl MessageId)
+		private bool ProcessPossibleToDlq(MessageIdImpl messageId)
 		{
-			IList<MessageImpl<T>> DeadLetterMessages = null;
-			if (possibleSendToDeadLetterTopicMessages != null)
+			IList<MessageImpl<T>> deadLetterMessages = null;
+			if (_possibleSendToDeadLetterTopicMessages != null)
+            {
+                deadLetterMessages = messageId is BatchMessageIdImpl ? _possibleSendToDeadLetterTopicMessages[new MessageIdImpl(messageId.LedgerId, messageId.EntryId, PartitionIndex)] : _possibleSendToDeadLetterTopicMessages[messageId];
+            }
+			if (deadLetterMessages != null)
 			{
-				if (MessageId is BatchMessageIdImpl)
-				{
-					DeadLetterMessages = possibleSendToDeadLetterTopicMessages[new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex)];
-				}
-				else
-				{
-					DeadLetterMessages = possibleSendToDeadLetterTopicMessages[MessageId];
-				}
-			}
-			if (DeadLetterMessages != null)
-			{
-				if (deadLetterProducer == null)
+				if (_deadLetterProducer == null)
 				{
 					try
 					{
-						deadLetterProducer = ClientConflict.newProducer(Schema).topic(this.deadLetterPolicy.DeadLetterTopic).blockIfQueueFull(false).create();
+						_deadLetterProducer = Client.NewProducer(Schema).Topic(this._deadLetterPolicy.DeadLetterTopic).BlockIfQueueFull(false).Create();
 					}
-					catch (Exception E)
+					catch (System.Exception e)
 					{
-						Log.error("Create dead letter producer exception with topic: {}", deadLetterPolicy.DeadLetterTopic, E);
+						Log.LogError("Create dead letter producer exception with topic: {}", _deadLetterPolicy.DeadLetterTopic, e);
 					}
 				}
-				if (deadLetterProducer != null)
+				if (_deadLetterProducer != null)
 				{
 					try
 					{
-						foreach (MessageImpl<T> Message in DeadLetterMessages)
+						foreach (var message in deadLetterMessages)
 						{
-							deadLetterProducer.NewMessage().value(Message.Value).properties(Message.Properties).send();
+							_deadLetterProducer.NewMessage().Value(message.Value).Properties(message.Properties).Send();
 						}
-						Acknowledge(MessageId);
+						Acknowledge(messageId);
 						return true;
 					}
-					catch (Exception E)
+					catch (System.Exception e)
 					{
-						Log.error("Send to dead letter topic exception with topic: {}, messageId: {}", deadLetterProducer.Topic, MessageId, E);
+						Log.LogError("Send to dead letter topic exception with topic: {}, messageId: {}", _deadLetterProducer.Topic, messageId, e);
 					}
 				}
 			}
 			return false;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(SharpPulsar.api.MessageId messageId) throws SharpPulsar.api.PulsarClientException
-		public override void Seek(MessageId MessageId)
+		public override void Seek(IMessageId messageId)
 		{
 			try
 			{
-				SeekAsync(MessageId).get();
+				SeekAsync(messageId);
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(long timestamp) throws SharpPulsar.api.PulsarClientException
-		public override void Seek(long Timestamp)
+		public override void Seek(long timestamp)
 		{
 			try
 			{
-				SeekAsync(Timestamp).get();
+				SeekAsync(timestamp);
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<Void> SeekAsync(long Timestamp)
+		public override ValueTask SeekAsync(long timestamp)
 		{
-			if (State == State.Closing || State == State.Closed)
+			if (ConsumerState == State.Closing || ConsumerState == State.Closed)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when seeking the subscription {1} of the topic " + "{2} to the timestamp {3:D}", ConsumerNameConflict, SubscriptionConflict, topicName.ToString(), Timestamp)));
+				return new ValueTask(Task.FromException(new PulsarClientException.AlreadyClosedException(
+                    $"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic " +
+                    $"{_topicName.ToString()} to the timestamp {timestamp:D}")));
 			}
 
 			if (!Connected)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException(string.Format("The client is not connected to the broker when seeking the subscription {0} of the " + "topic {1} to the timestamp {2:D}", SubscriptionConflict, topicName.ToString(), Timestamp)));
+                return new ValueTask(Task.FromException(new PulsarClientException(
+                    $"The client is not connected to the broker when seeking the subscription {Subscription} of the " +
+                    $"topic {_topicName.ToString()} to the timestamp {timestamp:D}")));
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> seekFuture = new java.util.concurrent.CompletableFuture<>();
-			CompletableFuture<Void> SeekFuture = new CompletableFuture<Void>();
+			var seekTask = new TaskCompletionSource<Task>();
 
-			long RequestId = ClientConflict.newRequestId();
-			ByteBuf Seek = Commands.newSeek(ConsumerId, RequestId, Timestamp);
-			ClientCnx Cnx = cnx();
+			var requestId = Client.NewRequestId();
+			var seek = Commands.NewSeek(ConsumerId, requestId, timestamp);
+			var cnx = ClientCnx;
 
-			Log.info("[{}][{}] Seek subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
+			Log.LogInformation("[{}][{}] Seek subscription to publish time {}", Topic, Subscription, timestamp);
 
-			Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
+			cnx.SendRequestWithId(seek, requestId).AsTask().ContinueWith(task =>
 			{
-			Log.info("[{}][{}] Successfully reset subscription to publish time {}", Topic, SubscriptionConflict, Timestamp);
-			acknowledgmentsGroupingTracker.FlushAndClean();
-			LastDequeuedMessage = MessageId.earliest;
-			IncomingMessages.clear();
-			IncomingMessagesSizeUpdater.set(this, 0);
-			SeekFuture.complete(null);
-			}).exceptionally(e =>
-			{
-			Log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
-			SeekFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("Failed to seek the subscription {0} of the topic {1} to the timestamp {2:D}", SubscriptionConflict, topicName.ToString(), Timestamp)));
-			return null;
-		});
-			return SeekFuture;
+                if (task.IsFaulted)
+                {
+                    Log.LogError("[{}][{}] Failed to reset subscription: {}", Topic, Subscription, task.Exception.Message);
+                    seekTask.SetException(PulsarClientException.Wrap(task.Exception,
+                        $"Failed to seek the subscription {Subscription} of the topic {_topicName.ToString()} to the timestamp {timestamp:D}"));
+                    
+					return;
+                }
+			    Log.LogInformation("[{}][{}] Successfully reset subscription to publish time {}", Topic, Subscription, timestamp);
+			    _acknowledgmentsGroupingTracker.FlushAndClean();
+			    LastDequeuedMessage = MessageIdFields.Earliest;
+			    IncomingMessages.clear();
+			    IncomingMessagesSize[this] = 0;
+			    seekTask.SetResult(null);
+			});
+			return new ValueTask(seekTask.Task); 
 		}
 
-		public override CompletableFuture<Void> SeekAsync(MessageId MessageId)
+		public override ValueTask SeekAsync(IMessageId messageId)
 		{
-			if (State == State.Closing || State == State.Closed)
+			if (ConsumerState == State.Closing || ConsumerState == State.Closed)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when seeking the subscription {1} of the topic " + "{2} to the message {3}", ConsumerNameConflict, SubscriptionConflict, topicName.ToString(), MessageId.ToString())));
+                return new ValueTask(Task.FromException(new PulsarClientException.AlreadyClosedException(
+                    $"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic " +
+                    $"{_topicName.ToString()} to the message {messageId.ToString()}")));
 			}
 
 			if (!Connected)
 			{
-				return FutureUtil.failedFuture(new PulsarClientException(string.Format("The client is not connected to the broker when seeking the subscription {0} of the " + "topic {1} to the message {2}", SubscriptionConflict, topicName.ToString(), MessageId.ToString())));
+                return new ValueTask(Task.FromException(new PulsarClientException(
+                    $"The client is not connected to the broker when seeking the subscription {Subscription} of the " +
+                    $"topic {_topicName.ToString()} to the message {messageId.ToString()}")));
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<Void> seekFuture = new java.util.concurrent.CompletableFuture<>();
-			CompletableFuture<Void> SeekFuture = new CompletableFuture<Void>();
+            var seekTask = new TaskCompletionSource<Task>();
 
-			long RequestId = ClientConflict.newRequestId();
-			MessageIdImpl MsgId = (MessageIdImpl) MessageId;
-			ByteBuf Seek = Commands.newSeek(ConsumerId, RequestId, MsgId.LedgerId, MsgId.EntryId);
-			ClientCnx Cnx = cnx();
+			var requestId = Client.NewRequestId();
+			var msgId = (MessageIdImpl) messageId;
+			var seek = Commands.NewSeek(ConsumerId, requestId, msgId.LedgerId, msgId.EntryId);
+			var cnx = ClientCnx;
 
-			Log.info("[{}][{}] Seek subscription to message id {}", Topic, SubscriptionConflict, MessageId);
+			Log.LogInformation("[{}][{}] Seek subscription to message id {}", Topic, Subscription, messageId);
 
-			Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
+			cnx.SendRequestWithId(seek, requestId).AsTask().ContinueWith( task =>
 			{
-			Log.info("[{}][{}] Successfully reset subscription to message id {}", Topic, SubscriptionConflict, MessageId);
-			acknowledgmentsGroupingTracker.FlushAndClean();
-			LastDequeuedMessage = MessageId;
-			IncomingMessages.clear();
-			IncomingMessagesSizeUpdater.set(this, 0);
-			SeekFuture.complete(null);
-			}).exceptionally(e =>
-			{
-			Log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
-			SeekFuture.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("[{0}][{1}] Failed to seek the subscription {2} of the topic {3} to the message {4}", SubscriptionConflict, topicName.ToString(), MessageId.ToString())));
-			return null;
-		});
-			return SeekFuture;
+                if (task.IsFaulted)
+                {
+                    Log.LogError("[{}][{}] Failed to reset subscription: {}", Topic, Subscription, task.Exception.Message);
+                    seekTask.TrySetException(PulsarClientException.Wrap(task.Exception, string.Format("[{0}][{1}] Failed to seek the subscription {2} of the topic {3} to the message {4}", Subscription, _topicName.ToString(), messageId.ToString())));
+                    return;
+                }
+			    Log.LogInformation("[{}][{}] Successfully reset subscription to message id {}", Topic, Subscription, messageId);
+			    _acknowledgmentsGroupingTracker.FlushAndClean();
+			    LastDequeuedMessage = messageId;
+			    IncomingMessages.clear();
+			    IncomingMessagesSize[this] = 0;
+			    seekTask.SetResult(null);
+			});
+			return new ValueTask(seekTask.Task);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public boolean hasMessageAvailable() throws SharpPulsar.api.PulsarClientException
-		public virtual bool HasMessageAvailable()
+		public bool HasMessageAvailable()
 		{
 			// we need to seek to the last position then the last message can be received when the resetIncludeHead
 			// specified.
-			if (LastDequeuedMessage == MessageIdFields.Latest && resetIncludeHead)
+			if (Equals(LastDequeuedMessage, MessageIdFields.Latest) && _resetIncludeHead)
 			{
 				LastDequeuedMessage = LastMessageId;
 				Seek(LastDequeuedMessage);
 			}
 			try
+            {
+                return HasMoreMessages(_lastMessageIdInBroker, LastDequeuedMessage) || HasMessageAvailableAsync().Result;
+            }
+			catch (System.Exception e)
 			{
-				if (HasMoreMessages(lastMessageIdInBroker, LastDequeuedMessage))
-				{
-					return true;
-				}
-
-				return HasMessageAvailableAsync().get();
-			}
-			catch (Exception E)
-			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public virtual CompletableFuture<bool> HasMessageAvailableAsync()
+		public ValueTask<bool> HasMessageAvailableAsync()
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final java.util.concurrent.CompletableFuture<bool> booleanFuture = new java.util.concurrent.CompletableFuture<>();
-			CompletableFuture<bool> BooleanFuture = new CompletableFuture<bool>();
+			var boolTask = new TaskCompletionSource<bool>();
 
-			if (HasMoreMessages(lastMessageIdInBroker, LastDequeuedMessage))
+			if (HasMoreMessages(_lastMessageIdInBroker, LastDequeuedMessage))
 			{
-				BooleanFuture.complete(true);
+				boolTask.SetResult(true);
 			}
 			else
 			{
-				LastMessageIdAsync.thenAccept(messageId =>
-				{
-				lastMessageIdInBroker = messageId;
-				if (HasMoreMessages(lastMessageIdInBroker, LastDequeuedMessage))
-				{
-					BooleanFuture.complete(true);
-				}
-				else
-				{
-					BooleanFuture.complete(false);
-				}
-				}).exceptionally(e =>
-				{
-				Log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
-				BooleanFuture.completeExceptionally(e.Cause);
-				return null;
-			});
+				LastMessageIdAsync.AsTask().ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        Log.LogError("[{}][{}] Failed getLastMessageId command", Topic, Subscription);
+                        boolTask.SetException(task.Exception ?? throw new InvalidOperationException());
+                        return;
+					}
+                    _lastMessageIdInBroker = task.Result;
+                    boolTask.SetResult(HasMoreMessages(_lastMessageIdInBroker, LastDequeuedMessage));
+                });
 			}
-			return BooleanFuture;
+			return new ValueTask<bool>(boolTask.Task.Result);
 		}
 
-		private bool HasMoreMessages(MessageId LastMessageIdInBroker, MessageId LastDequeuedMessage)
+		private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId lastDequeuedMessage)
 		{
-			if (LastMessageIdInBroker.CompareTo(LastDequeuedMessage) > 0 && ((MessageIdImpl)LastMessageIdInBroker).EntryId != -1)
+			if (lastMessageIdInBroker.CompareTo(lastDequeuedMessage) > 0 && ((MessageIdImpl)lastMessageIdInBroker).EntryId != -1)
 			{
 				return true;
 			}
 			else
 			{
 				// Make sure batching message can be read completely.
-				return LastMessageIdInBroker.CompareTo(LastDequeuedMessage) == 0 && IncomingMessages.size() > 0;
+				return lastMessageIdInBroker.CompareTo(lastDequeuedMessage) == 0 && IncomingMessages.size() > 0;
 			}
 		}
 
-		public override CompletableFuture<MessageId> LastMessageIdAsync
+		public override ValueTask<IMessageId> LastMessageIdAsync
 		{
 			get
 			{
-				if (State == State.Closing || State == State.Closed)
+				if (ConsumerState == State.Closing || ConsumerState == State.Closed)
 				{
-					return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when the subscription {1} of the topic {2} " + "getting the last message id", ConsumerNameConflict, SubscriptionConflict, topicName.ToString())));
+					return new ValueTask<IMessageId>(Task.FromException<IMessageId>(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when the subscription {1} of the topic {2} " + "getting the last message id", ConsumerName, Subscription, _topicName.ToString()))));
 				}
     
-				AtomicLong OpTimeoutMs = new AtomicLong(ClientConflict.Configuration.OperationTimeoutMs);
-				Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMax(OpTimeoutMs.get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMandatoryStop(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create();
+				var opTimeoutMs = new AtomicLong(Client.Configuration.OperationTimeoutMs);
+				var backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMax(opTimeoutMs.Get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMandatoryStop(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).Create();
     
-				CompletableFuture<MessageId> GetLastMessageIdFuture = new CompletableFuture<MessageId>();
+				var getLastMessageIdTask = new TaskCompletionSource<IMessageId>();
     
-				InternalGetLastMessageIdAsync(Backoff, OpTimeoutMs, GetLastMessageIdFuture);
-				return GetLastMessageIdFuture;
+				InternalGetLastMessageIdAsync(backoff, opTimeoutMs, getLastMessageIdTask);
+				return new ValueTask<IMessageId>(getLastMessageIdTask.Task.Result); 
 			}
 		}
 
-		private void InternalGetLastMessageIdAsync(in Backoff Backoff, in AtomicLong RemainingTime, CompletableFuture<MessageId> Future)
+		private void InternalGetLastMessageIdAsync(Backoff backoff, AtomicLong remainingTime, TaskCompletionSource<IMessageId> task)
 		{
-			ClientCnx Cnx = cnx();
-			if (Connected && Cnx != null)
+			var cnx = ClientCnx;
+			if (Connected && cnx != null)
 			{
-				if (!Commands.peerSupportsGetLastMessageId(Cnx.RemoteEndpointProtocolVersion))
+				if (!Commands.PeerSupportsGetLastMessageId(cnx.RemoteEndpointProtocolVersion))
 				{
-					Future.completeExceptionally(new PulsarClientException.NotSupportedException(string.Format("The command `GetLastMessageId` is not supported for the protocol version {0:D}. " + "The consumer is {1}, topic {2}, subscription {3}", Cnx.RemoteEndpointProtocolVersion, ConsumerNameConflict, topicName.ToString(), SubscriptionConflict)));
+					task.SetException(new PulsarClientException.NotSupportedException(
+                        $"The command `GetLastMessageId` is not supported for the protocol version {cnx.RemoteEndpointProtocolVersion:D}. " +
+                        $"The consumer is {ConsumerName}, topic {_topicName.ToString()}, subscription {Subscription}"));
 				}
 
-				long RequestId = ClientConflict.newRequestId();
-				ByteBuf GetLastIdCmd = Commands.newGetLastMessageId(ConsumerId, RequestId);
-				Log.info("[{}][{}] Get topic last message Id", Topic, SubscriptionConflict);
+				var requestId = Client.NewRequestId();
+				var getLastIdCmd = Commands.NewGetLastMessageId(ConsumerId, requestId);
+				Log.LogInformation("[{}][{}] Get topic last message Id", Topic, Subscription);
 
-				Cnx.sendGetLastMessageId(GetLastIdCmd, RequestId).thenAccept((result) =>
-				{
-				Log.info("[{}][{}] Successfully getLastMessageId {}:{}", Topic, SubscriptionConflict, result.LedgerId, result.EntryId);
-				Future.complete(new MessageIdImpl(result.LedgerId, result.EntryId, result.Partition));
-				}).exceptionally(e =>
-				{
-				Log.error("[{}][{}] Failed getLastMessageId command", Topic, SubscriptionConflict);
-				Future.completeExceptionally(PulsarClientException.wrap(e.Cause, string.Format("The subscription {0} of the topic {1} gets the last message id was failed", SubscriptionConflict, topicName.ToString())));
-				return null;
-			});
+				cnx.SendGetLastMessageId(getLastIdCmd, requestId).AsTask().ContinueWith(taskC =>
+                {
+                    if (taskC.IsFaulted)
+                    {
+                        Log.LogError("[{}][{}] Failed getLastMessageId command", Topic, Subscription);
+                        task.SetException(PulsarClientException.Wrap(taskC.Exception,
+                            $"The subscription {Subscription} of the topic {_topicName.ToString()} gets the last message id was failed"));
+                        return;
+                    }
+                    var result = taskC.Result;
+				    Log.LogInformation("[{}][{}] Successfully getLastMessageId {}:{}", Topic, Subscription, result.LedgerId, result.EntryId);
+				    task.SetResult(new MessageIdImpl((long)result.LedgerId, (long)result.EntryId, result.Partition));
+				});
 			}
 			else
 			{
-				long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
-				if (NextDelay <= 0)
+				var nextDelay = Math.Min(backoff.Next(), remainingTime.Get());
+				if (nextDelay <= 0)
 				{
-					Future.completeExceptionally(new PulsarClientException.TimeoutException(string.Format("The subscription {0} of the topic {1} could not get the last message id " + "withing configured timeout", SubscriptionConflict, topicName.ToString())));
+					task.SetException(new PulsarClientException.TimeoutException(
+                        $"The subscription {Subscription} of the topic {_topicName.ToString()} could not get the last message id " +
+                        "withing configured timeout"));
 					return;
 				}
 
-				((ScheduledExecutorService) ListenerExecutor).schedule(() =>
-				{
-				Log.warn("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, NextDelay);
-				RemainingTime.addAndGet(-NextDelay);
-				InternalGetLastMessageIdAsync(Backoff, RemainingTime, Future);
-				}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+				ListenerExecutor.Schedule(() =>
+                {
+                    
+				    Log.LogWarning("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, nextDelay);
+				        remainingTime.AddAndGet(-nextDelay);
+				    InternalGetLastMessageIdAsync(backoff, remainingTime, task);
+				}, TimeSpan.FromMilliseconds(nextDelay));
 			}
 		}
 
-		private MessageIdImpl GetMessageIdImpl<T1>(Message<T1> Msg)
+		private MessageIdImpl GetMessageIdImpl<T1>(Message<T1> msg)
 		{
-			MessageIdImpl MessageId = (MessageIdImpl) Msg.MessageId;
-			if (MessageId is BatchMessageIdImpl)
+			var messageId = (MessageIdImpl) msg.MessageId;
+			if (messageId is BatchMessageIdImpl)
 			{
 				// messageIds contain MessageIdImpl, not BatchMessageIdImpl
-				MessageId = new MessageIdImpl(MessageId.LedgerId, MessageId.EntryId, PartitionIndex);
+				messageId = new MessageIdImpl(messageId.LedgerId, messageId.EntryId, PartitionIndex);
 			}
-			return MessageId;
+			return messageId;
 		}
 
 
-		private bool IsMessageUndecryptable(PulsarApi.MessageMetadata MsgMetadata)
+		private bool IsMessageUndecryptable(MessageMetadata msgMetadata)
 		{
-			return (MsgMetadata.EncryptionKeysCount > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.Consume);
+			return (msgMetadata.EncryptionKeys.Count > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.Consume);
 		}
 
 		/// <summary>
@@ -1829,131 +1759,113 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="msgMetadata"> </param>
 		/// <returns> <seealso cref="Optional"/><<seealso cref="EncryptionContext"/>> </returns>
-		private Optional<EncryptionContext> CreateEncryptionContext(PulsarApi.MessageMetadata MsgMetadata)
+		private EncryptionContext CreateEncryptionContext(MessageMetadata msgMetadata)
 		{
 
-			EncryptionContext EncryptionCtx = null;
-			if (MsgMetadata.EncryptionKeysCount > 0)
+			EncryptionContext encryptionCtx = null;
+			if (msgMetadata.EncryptionKeys.Count > 0)
 			{
-				EncryptionCtx = new EncryptionContext();
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-				IDictionary<string, EncryptionContext.EncryptionKey> Keys = MsgMetadata.EncryptionKeysList.ToDictionary(PulsarApi.EncryptionKeys::getKey, e => new EncryptionContext.EncryptionKey(e.Value.toByteArray(), e.MetadataList != null ? e.MetadataList.ToDictionary(PulsarApi.KeyValue::getKey, PulsarApi.KeyValue::getValue) : null));
-				sbyte[] EncParam = new sbyte[MessageCrypto.IvLen];
-				MsgMetadata.EncryptionParam.copyTo(EncParam, 0);
-				int? BatchSize = Optional.ofNullable(MsgMetadata.hasNumMessagesInBatch() ? MsgMetadata.NumMessagesInBatch : null);
-				EncryptionCtx.Keys = Keys;
-				EncryptionCtx.Param = EncParam;
-				EncryptionCtx.Algorithm = MsgMetadata.EncryptionAlgo;
-				EncryptionCtx.CompressionType = CompressionCodecProvider.convertFromWireProtocol(MsgMetadata.Compression);
-				EncryptionCtx.UncompressedMessageSize = MsgMetadata.UncompressedSize;
-				EncryptionCtx.BatchSize = BatchSize;
+				encryptionCtx = new EncryptionContext();
+				IDictionary<string, EncryptionContext.EncryptionKey> keys = msgMetadata.EncryptionKeys.ToDictionary(e => e.Key, e => new EncryptionContext.EncryptionKey{ KeyValue = (sbyte[])(object)e.Value.ToByteArray(), Metadata = e.Metadata?.ToDictionary(k=> k.Key, k => k.Value)});
+				var encParam = new sbyte[MessageCrypto.IvLen];
+				msgMetadata.EncryptionParam.CopyTo((byte[])(object)encParam, 0);
+				int? batchSize = msgMetadata.HasNumMessagesInBatch ? msgMetadata.NumMessagesInBatch : 0;
+				encryptionCtx.Keys = keys;
+				encryptionCtx.Param = encParam;
+				encryptionCtx.Algorithm = msgMetadata.EncryptionAlgo;
+                encryptionCtx.CompressionType = (int)msgMetadata.Compression;//CompressionCodecProvider.ConvertFromWireProtocol(msgMetadata.Compression);
+				encryptionCtx.UncompressedMessageSize = (int)msgMetadata.UncompressedSize;
+				encryptionCtx.BatchSize = batchSize;
 			}
-			return Optional.ofNullable(EncryptionCtx);
+			return encryptionCtx;
 		}
 
-		private int RemoveExpiredMessagesFromQueue(ISet<MessageId> MessageIds)
+		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
-			int MessagesFromQueue = 0;
-			Message<T> Peek = IncomingMessages.peek();
-			if (Peek != null)
+			var messagesFromQueue = 0;
+			var peek = IncomingMessages.Peek();
+			if (peek != null)
 			{
-				MessageIdImpl MessageId = GetMessageIdImpl(Peek);
-				if (!MessageIds.Contains(MessageId))
+				var messageId = GetMessageIdImpl(peek);
+				if (!messageIds.Contains(messageId))
 				{
 					// first message is not expired, then no message is expired in queue.
 					return 0;
 				}
 
 				// try not to remove elements that are added while we remove
-				Message<T> Message = IncomingMessages.poll();
-				while (Message != null)
+				var message = IncomingMessages.Poll();
+				while (message != null)
 				{
-					IncomingMessagesSizeUpdater.addAndGet(this, -Message.Data.Length);
-					MessagesFromQueue++;
-					MessageIdImpl Id = GetMessageIdImpl(Message);
-					if (!MessageIds.Contains(Id))
+					IncomingMessagesSize[this] =  -message.Data.Length;
+					messagesFromQueue++;
+					var id = GetMessageIdImpl(message);
+					if (!messageIds.Contains(id))
 					{
-						MessageIds.Add(Id);
+						messageIds.Add(id);
 						break;
 					}
-					Message = IncomingMessages.poll();
+					message = IncomingMessages.Poll();
 				}
 			}
-			return MessagesFromQueue;
+			return messagesFromQueue;
 		}
 
-		public override ConsumerStats Stats
-		{
-			get
-			{
-				return StatsConflict;
-			}
-		}
+		public override IConsumerStats Stats => ConsumerStats;
 
-		public virtual void SetTerminated()
+        public void SetTerminated()
 		{
-			Log.info("[{}] [{}] [{}] Consumer has reached the end of topic", SubscriptionConflict, Topic, ConsumerNameConflict);
-			hasReachedEndOfTopic = true;
-			if (Listener != null)
-			{
-				// Propagate notification to listener
-				Listener.reachedEndOfTopic(this);
-			}
-		}
+			Log.LogInformation("[{}] [{}] [{}] Consumer has reached the end of topic", Subscription, Topic, ConsumerName);
+			_hasReachedEndOfTopic = true;
+            // Propagate notification to listener
+            Listener?.ReachedEndOfTopic(this);
+        }
 
 		public override bool HasReachedEndOfTopic()
 		{
-			return hasReachedEndOfTopic;
+			return _hasReachedEndOfTopic;
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(Topic, SubscriptionConflict, ConsumerNameConflict);
+			return HashCode.Combine(Topic, Subscription, ConsumerName);
 		}
 
 		// wrapper for connection methods
-		public virtual ClientCnx Cnx()
+		public ClientCnx Cnx()
 		{
-			return this.ConnectionHandler.Cnx();
+			return Handler.Cnx();
 		}
 
-		public virtual void ResetBackoff()
+		public void ResetBackoff()
 		{
-			this.ConnectionHandler.ResetBackoff();
+			this.Handler.ResetBackoff();
 		}
 
-		public virtual void ConnectionClosed(ClientCnx Cnx)
+		public void ConnectionClosed(ClientCnx cnx)
 		{
-			this.ConnectionHandler.ConnectionClosed(Cnx);
+			this.Handler.ConnectionClosed(cnx);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public ClientCnx getClientCnx()
-		public virtual ClientCnx ClientCnx
+		public ClientCnx ClientCnx
 		{
-			get
-			{
-				return this.ConnectionHandler.ClientCnx;
-			}
-			set
-			{
-				this.ConnectionHandler.ClientCnx = value;
-			}
+			get => Handler.ClientCnx;
+            set => Handler.ClientCnx = value;
+        }
+
+
+		public void ReconnectLater(System.Exception exception)
+		{
+			Handler.ReconnectLater(exception);
 		}
 
-
-		public virtual void ReconnectLater(Exception Exception)
+		public void GrabCnx()
 		{
-			this.ConnectionHandler.ReconnectLater(Exception);
-		}
-
-		public virtual void GrabCnx()
-		{
-			this.ConnectionHandler.GrabCnx();
+			Handler.GrabCnx();
 		}
 
 
-		internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerImpl));
+		internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerImpl<T>));
 
 	}
 

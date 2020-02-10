@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Threading;
+using DotNetty.Common.Utilities;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,169 +24,74 @@
 namespace SharpPulsar.Impl
 {
 
-	using ConsumerStats = Api.ConsumerStats;
-	using SharpPulsar.Api;
-
-	using Timeout = io.netty.util.Timeout;
-
 	[Serializable]
 	public class ConsumerStatsDisabled : ConsumerStatsRecorder
 	{
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
-		internal static readonly ConsumerStatsRecorder INSTANCE = new ConsumerStatsDisabled();
+		internal static readonly ConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
 
-		public override void UpdateNumMsgsReceived<T1>(Message<T1> Message)
+		public void UpdateNumMsgsReceived<T1>(Message<T1> message)
 		{
 			// Do nothing
 		}
 
-		public override void IncrementNumReceiveFailed()
+		public void IncrementNumReceiveFailed()
 		{
 			// Do nothing
 		}
 
-		public override void IncrementNumBatchReceiveFailed()
+		public void IncrementNumBatchReceiveFailed()
 		{
 			// Do nothing
 		}
 
-		public override void IncrementNumAcksSent(long NumAcks)
+		public void IncrementNumAcksSent(long numAcks)
 		{
 			// Do nothing
 		}
 
-		public override void IncrementNumAcksFailed()
+		public void IncrementNumAcksFailed()
 		{
 			// Do nothing
 		}
 
-		public virtual long NumMsgsReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+		public virtual long NumMsgsReceived => 0;
 
-		public virtual long NumBytesReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumBytesReceived => 0;
 
-		public virtual long NumAcksSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumAcksSent => 0;
 
-		public virtual long NumAcksFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumAcksFailed => 0;
 
-		public virtual long NumReceiveFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumReceiveFailed => 0;
 
-		public virtual long NumBatchReceiveFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long NumBatchReceiveFailed => 0;
 
-		public virtual long TotalMsgsReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalMsgsReceived => 0;
 
-		public virtual long TotalBytesReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalBytesReceived => 0;
 
-		public virtual long TotalReceivedFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalReceivedFailed => 0;
 
-		public virtual long TotaBatchReceivedFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotaBatchReceivedFailed => 0;
 
-		public virtual long TotalAcksSent
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalAcksSent => 0;
 
-		public virtual long TotalAcksFailed
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual long TotalAcksFailed => 0;
 
-		public virtual double RateMsgsReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double RateMsgsReceived => 0;
 
-		public virtual double RateBytesReceived
-		{
-			get
-			{
-				return 0;
-			}
-		}
+        public virtual double RateBytesReceived => 0;
 
-		public virtual Optional<Timeout> StatTimeout
-		{
-			get
-			{
-				return null;
-			}
-		}
+        public virtual ITimeout StatTimeout => null;
 
-		public override void Reset()
+        public void Reset()
 		{
 			// do nothing
 		}
 
-		public override void UpdateCumulativeStats(ConsumerStats Stats)
+		public void UpdateCumulativeStats(IConsumerStats stats)
 		{
 			// do nothing
 		}

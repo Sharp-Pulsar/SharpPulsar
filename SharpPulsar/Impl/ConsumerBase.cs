@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl
 		public abstract void Seek(IMessageId messageId);
 		public abstract void RedeliverUnacknowledgedMessages();
 		public abstract bool HasReachedEndOfTopic();
-		public abstract ConsumerStats Stats {get;}
+		public abstract IConsumerStats Stats {get;}
 
 		public enum ConsumerType
 		{
@@ -57,12 +57,12 @@ namespace SharpPulsar.Impl
 		protected internal readonly string _subscription;
 		protected internal readonly ConsumerConfigurationData<T> Conf;
 		protected internal readonly string _consumerName;
-		private readonly TaskCompletionSource<IConsumer<T>> _subscribeTask;
+        public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
 		protected internal readonly MessageListener<T> Listener;
-		protected internal readonly ConsumerEventListener ConsumerEventListener;
+		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
 		internal readonly GrowableArrayBlockingQueue<Message<T>> IncomingMessages;
-		protected internal readonly ConcurrentQueue<ValueTask<Message<T>>> PendingReceives;
+		protected internal readonly ConcurrentQueue<TaskCompletionSource<Message<T>>> PendingReceives;
 		protected internal int _maxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
@@ -80,14 +80,14 @@ namespace SharpPulsar.Impl
 			this._subscription = conf.SubscriptionName;
 			this.Conf = conf;
 			this._consumerName = conf.ConsumerName ?? Util.ConsumerName.GenerateRandomName();
-			this._subscribeTask = subscribeTask;
+			this.SubscribeTask = subscribeTask;
 			this.Listener = conf.MessageListener;
 			this.ConsumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
 			this.IncomingMessages = new GrowableArrayBlockingQueue<Message<T>>();
 
 			this.ListenerExecutor = listenerExecutor;
-			this.PendingReceives = new ConcurrentQueue<ValueTask<Message<T>>>();
+			this.PendingReceives = new ConcurrentQueue<TaskCompletionSource<Message<T>>>();
 			this.Schema = schema;
 			this.Interceptors = interceptors;
 			this.BatchReceivePolicy = conf.BatchReceivePolicy ?? BatchReceivePolicy.DefaultPolicy;
@@ -428,11 +428,7 @@ namespace SharpPulsar.Impl
 
 		public abstract int NumMessagesInQueue();
 
-		public virtual ValueTask<IConsumer<T>> SubscribeTask()
-		{
-			return new ValueTask<IConsumer<T>>(Task.FromResult(_subscribeTask.Task.Result)); 
-		}
-
+		
 		public virtual string Topic => Topic;
 
         public virtual string Subscription => _subscription;

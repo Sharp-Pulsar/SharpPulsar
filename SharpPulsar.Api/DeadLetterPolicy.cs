@@ -18,28 +18,23 @@
 /// </summary>
 namespace SharpPulsar.Api
 {
-	using Builder = lombok.Builder;
-	using Data = lombok.Data;
+    /// <summary>
+    /// Configuration for the "dead letter queue" feature in consumer.
+    /// </summary>
+    /// <seealso cref= DeadLetterPolicy </seealso>
+    public class DeadLetterPolicy
+    {
 
-	/// <summary>
-	/// Configuration for the "dead letter queue" feature in consumer.
-	/// </summary>
-	/// <seealso cref= ConsumerBuilder#deadLetterPolicy(DeadLetterPolicy) </seealso>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Builder @Data public class DeadLetterPolicy
-	public class DeadLetterPolicy
-	{
+        /// <summary>
+        /// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
+        /// </summary>
+        public int MaxRedeliverCount { get; set; }
 
-		/// <summary>
-		/// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
-		/// </summary>
-		private int _maxRedeliverCount;
+        /// <summary>
+        /// Name of the topic where the failing messages will be sent.
+        /// </summary>
+        public string DeadLetterTopic { get; set; }
 
-		/// <summary>
-		/// Name of the topic where the failing messages will be sent.
-		/// </summary>
-		private string _deadLetterTopic;
-
-	}
+    }
 
 }

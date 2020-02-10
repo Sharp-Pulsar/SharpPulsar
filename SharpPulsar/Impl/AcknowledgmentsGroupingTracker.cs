@@ -30,9 +30,9 @@ namespace SharpPulsar.Impl
 	public interface AcknowledgmentsGroupingTracker : IDisposable
 	{
 
-		bool IsDuplicate(IMessageId MessageId);
+		bool IsDuplicate(IMessageId messageId);
 
-		void AddAcknowledgment(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties);
+		void AddAcknowledgment(MessageIdImpl msgId, Types.AckType ackType, IDictionary<string, long> properties);
 
 		void Flush();
 

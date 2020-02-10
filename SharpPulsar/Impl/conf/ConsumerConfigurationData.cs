@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Conf
 	[Serializable]
 	public class ConsumerConfigurationData<T> : ICloneable
 	{
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
 		public ISet<string> TopicNames = new SortedSet<string>();
 
@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
 		public MessageListener<T> MessageListener;
-		public ConsumerEventListener ConsumerEventListener;
+		public IConsumerEventListener ConsumerEventListener;
 
 		public int ReceiverQueueSize = 1000;
 
@@ -107,11 +107,10 @@ namespace SharpPulsar.Impl.Conf
 		{
 			try
 			{
-//JAVA 
-				var C = (ConsumerConfigurationData<T>) base.MemberwiseClone();
-				C.TopicNames = new SortedSet<string>(TopicNames);
-				C.Properties = new SortedDictionary<string, string>(Properties);
-				return C;
+				var c = (ConsumerConfigurationData<T>) base.MemberwiseClone();
+				c.TopicNames = new SortedSet<string>(TopicNames);
+				c.Properties = new SortedDictionary<string, string>(Properties);
+				return c;
 			}
 			catch (System.Exception)
 			{

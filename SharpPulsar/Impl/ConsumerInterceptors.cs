@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,29 +23,20 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Consumer = Api.IConsumer;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-	using IMessageId = Api.IMessageId;
-	using SharpPulsar.Api;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-
 	/// <summary>
-	/// A container that hold the list <seealso cref="ConsumerInterceptor{T}"/> and wraps calls to the chain
+	/// A container that hold the list <seealso cref="IConsumerInterceptor{T}"/> and wraps calls to the chain
 	/// of custom interceptors.
 	/// </summary>
 	public class ConsumerInterceptors<T> : IDisposable
     {
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerInterceptors));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerInterceptors<T>));
 
-		private readonly IList<ConsumerInterceptor<T>> interceptors;
+		private readonly IList<IConsumerInterceptor<T>> _interceptors;
 
-		public ConsumerInterceptors(IList<ConsumerInterceptor<T>> Interceptors)
+		public ConsumerInterceptors(IList<IConsumerInterceptor<T>> interceptors)
 		{
-			this.interceptors = Interceptors;
+			this._interceptors = interceptors;
 		}
 
 		/// <summary>
@@ -52,7 +44,7 @@ namespace SharpPulsar.Impl
 		/// <seealso cref="MessageListener.received(IConsumer, Message)"/> or the <seealso cref="java.util.concurrent.CompletableFuture"/>
 		/// returned by <seealso cref="IConsumer.receiveAsync()"/> completes.
 		/// <para>
-		/// This method calls <seealso cref="ConsumerInterceptor.beforeConsume(IConsumer, Message)"/> for each interceptor. Messages returned
+		/// This method calls <seealso cref="IConsumerInterceptor.beforeConsume(IConsumer, Message)"/> for each interceptor. Messages returned
 		/// from each interceptor get passed to beforeConsume() of the next interceptor in the chain of interceptors.
 		/// </para>
 		/// <para>
@@ -65,34 +57,34 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="message"> message to be consume by the client. </param>
 		/// <returns> messages that are either modified by interceptors or same as messages passed to this method. </returns>
-		public virtual Message<T> BeforeConsume(IConsumer<T> Consumer, Message<T> Message)
+		public virtual Message<T> BeforeConsume(IConsumer<T> consumer, Message<T> message)
 		{
-			Message<T> InterceptorMessage = Message;
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			var interceptorMessage = message;
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					InterceptorMessage = interceptors[I].beforeConsume(Consumer, InterceptorMessage);
+					interceptorMessage = _interceptors[i].BeforeConsume(consumer, interceptorMessage);
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					if (Consumer != null)
+					if (consumer != null)
 					{
-						log.warn("Error executing interceptor beforeConsume callback topic: {} consumerName: {}", Consumer.Topic, Consumer.ConsumerName, E);
+						Log.LogWarning("Error executing interceptor beforeConsume callback topic: {} consumerName: {}", consumer.Topic, consumer.ConsumerName, e);
 					}
 					else
 					{
-						log.warn("Error executing interceptor beforeConsume callback", E);
+                        Log.LogWarning("Error executing interceptor beforeConsume callback", e);
 					}
 				}
 			}
-			return InterceptorMessage;
+			return interceptorMessage;
 		}
 
 		/// <summary>
 		/// This is called when acknowledge request return from the broker.
 		/// <para>
-		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledge(IConsumer, IMessageId, System.Exception)"/> method for each interceptor.
+		/// This method calls <seealso cref="IConsumerInterceptor.onAcknowledge(IConsumer, IMessageId, System.Exception)"/> method for each interceptor.
 		/// </para>
 		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
@@ -102,17 +94,17 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> message to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledge(IConsumer<T> Consumer, IMessageId MessageId, System.Exception Exception)
+		public virtual void OnAcknowledge(IConsumer<T> consumer, IMessageId messageId, System.Exception exception)
 		{
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					interceptors[I].onAcknowledge(Consumer, MessageId, Exception);
+					_interceptors[i].OnAcknowledge(consumer, messageId, exception);
 				}
-				catch (System.Exception E)
+				catch (System.Exception e)
 				{
-					log.warn("Error executing interceptor onAcknowledge callback ", E);
+					Log.LogWarning("Error executing interceptor onAcknowledge callback ", e);
 				}
 			}
 		}
@@ -120,7 +112,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This is called when acknowledge cumulative request return from the broker.
 		/// <para>
-		/// This method calls <seealso cref="ConsumerInterceptor.onAcknowledgeCumulative(IConsumer, IMessageId, System.Exception)"/> (Message, Throwable)} method for each interceptor.
+		/// This method calls <seealso cref="IConsumerInterceptor.onAcknowledgeCumulative(IConsumer, IMessageId, System.Exception)"/> (Message, Throwable)} method for each interceptor.
 		/// </para>
 		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
@@ -130,17 +122,17 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> messages to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledgeCumulative(IConsumer<T> Consumer, IMessageId MessageId, System.Exception Exception)
+		public virtual void OnAcknowledgeCumulative(IConsumer<T> consumer, IMessageId messageId, System.Exception exception)
 		{
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					interceptors[I].onAcknowledgeCumulative(Consumer, MessageId, Exception);
+					_interceptors[i].OnAcknowledgeCumulative(consumer, messageId, exception);
 				}
-				catch (System.Exception E)
+				catch (System.Exception e)
 				{
-					log.warn("Error executing interceptor onAcknowledgeCumulative callback ", E);
+					Log.LogWarning("Error executing interceptor onAcknowledgeCumulative callback ", e);
 				}
 			}
 		}
@@ -158,17 +150,17 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due a negative acknowledge. </param>
-		public virtual void OnNegativeAcksSend(IConsumer<T> Consumer, ISet<IMessageId> MessageIds)
+		public virtual void OnNegativeAcksSend(IConsumer<T> consumer, ISet<IMessageId> messageIds)
 		{
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					interceptors[I].onNegativeAcksSend(Consumer, MessageIds);
+					_interceptors[i].OnNegativeAcksSend(consumer, messageIds);
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					log.warn("Error executing interceptor onNegativeAcksSend callback", E);
+					Log.LogWarning("Error executing interceptor onNegativeAcksSend callback", e);
 				}
 			}
 		}
@@ -186,38 +178,40 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due an acknowledge timeout. </param>
-		public virtual void OnAckTimeoutSend(IConsumer<T> Consumer, ISet<IMessageId> MessageIds)
+		public virtual void OnAckTimeoutSend(IConsumer<T> consumer, ISet<IMessageId> messageIds)
 		{
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					interceptors[I].onAckTimeoutSend(Consumer, MessageIds);
+					_interceptors[i].OnAckTimeoutSend(consumer, messageIds);
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					log.warn("Error executing interceptor onAckTimeoutSend callback", E);
+					Log.LogWarning("Error executing interceptor onAckTimeoutSend callback", e);
 				}
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
-			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
 				try
 				{
-					interceptors[I].close();
+					_interceptors[i].Close();
 				}
-				catch (Exception E)
+				catch (System.Exception e)
 				{
-					log.error("Fail to close consumer interceptor ", E);
+					Log.LogError("Fail to close consumer interceptor ", e);
 				}
 			}
 		}
 
-	}
+        public void Dispose()
+        {
+           Close();
+        }
+    }
 
 }

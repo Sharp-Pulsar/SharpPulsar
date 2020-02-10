@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl
 		private readonly PulsarClientImpl _client;
 		private ConsumerConfigurationData<T> _conf;
 		private readonly ISchema<T> _schema;
-		private IList<ConsumerInterceptor<T>> _interceptorList;
+		private IList<IConsumerInterceptor<T>> _interceptorList;
 
 		private static long _minAckTimeoutMillis = 1000;
 		private static long _minTickTimeMillis = 100;
@@ -187,7 +187,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IConsumerBuilder<T> ConsumerEventListener(ConsumerEventListener consumerEventListener)
+		public IConsumerBuilder<T> ConsumerEventListener(IConsumerEventListener consumerEventListener)
 		{
 			_conf.ConsumerEventListener = consumerEventListener;
 			return this;
@@ -299,14 +299,14 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IConsumerBuilder<T> Intercept(params ConsumerInterceptor<T>[] interceptors)
+		public IConsumerBuilder<T> Intercept(params IConsumerInterceptor<T>[] interceptors)
 		{
 			if (_interceptorList == null)
 			{
-				_interceptorList = new List<ConsumerInterceptor<T>>();
+				_interceptorList = new List<IConsumerInterceptor<T>>();
 			}
 
-            ((List<ConsumerInterceptor<T>>) _interceptorList).AddRange(new List<ConsumerInterceptor<T>>(interceptors));
+            ((List<IConsumerInterceptor<T>>) _interceptorList).AddRange(new List<IConsumerInterceptor<T>>(interceptors));
 			return this;
 		}
 

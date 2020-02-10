@@ -1,4 +1,13 @@
 ﻿using System;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using App.Metrics.Concurrency;
+using DotNetty.Common.Utilities;
+using Microsoft.Extensions.Logging;
+using Optional;
+using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,322 +30,239 @@
 namespace SharpPulsar.Impl
 {
 
-	using ConsumerStats = Api.ConsumerStats;
-	using SharpPulsar.Api;
-	using SharpPulsar.Impl.Conf;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using ObjectWriter = com.fasterxml.jackson.databind.ObjectWriter;
-	using SerializationFeature = com.fasterxml.jackson.databind.SerializationFeature;
-
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-
 	[Serializable]
-	public class ConsumerStatsRecorderImpl : ConsumerStatsRecorder
+	public class ConsumerStatsRecorderImpl<T> : ConsumerStatsRecorder
 	{
 
-		private const long SerialVersionUID = 1L;
-		private TimerTask stat;
-		private Timeout statTimeout;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ConsumerImpl<?> consumer;
-		private ConsumerImpl<object> consumer;
-		private PulsarClientImpl pulsarClient;
-		private long oldTime;
-		private long statsIntervalSeconds;
-		private readonly LongAdder numMsgsReceived;
-		private readonly LongAdder numBytesReceived;
-		private readonly LongAdder numReceiveFailed;
-		private readonly LongAdder numBatchReceiveFailed;
-		private readonly LongAdder numAcksSent;
-		private readonly LongAdder numAcksFailed;
-		private readonly LongAdder totalMsgsReceived;
-		private readonly LongAdder totalBytesReceived;
-		private readonly LongAdder totalReceiveFailed;
-		private readonly LongAdder totalBatchReceiveFailed;
-		private readonly LongAdder totalAcksSent;
-		private readonly LongAdder totalAcksFailed;
+		private const long SerialVersionUid = 1L;
+		private ITimerTask _stat;
+		private ITimeout _statTimeout;
+		private ConsumerImpl<T> _consumer;
+		private PulsarClientImpl _pulsarClient;
+		private long _oldTime;
+		private long _statsIntervalSeconds;
+		private readonly StripedLongAdder _numMsgsReceived;
+		private readonly StripedLongAdder _numBytesReceived;
+		private readonly StripedLongAdder _numReceiveFailed;
+		private readonly StripedLongAdder _numBatchReceiveFailed;
+		private readonly StripedLongAdder _numAcksSent;
+		private readonly StripedLongAdder _numAcksFailed;
+		private readonly StripedLongAdder _totalMsgsReceived;
+		private readonly StripedLongAdder _totalBytesReceived;
+		private readonly StripedLongAdder _totalReceiveFailed;
+		private readonly StripedLongAdder _totalBatchReceiveFailed;
+		private readonly StripedLongAdder _totalAcksSent;
+		private readonly StripedLongAdder _totalAcksFailed;
 
-		public virtual RateMsgsReceived {get;}
-		public virtual RateBytesReceived {get;}
+		public virtual double RateMsgsReceived {get; set; }
+		public virtual double RateBytesReceived {get; set; }
 
-		private static readonly DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat("0.00");
+		private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
 
+        public double OldTime => _oldTime;
 		public ConsumerStatsRecorderImpl()
 		{
-			numMsgsReceived = new LongAdder();
-			numBytesReceived = new LongAdder();
-			numReceiveFailed = new LongAdder();
-			numBatchReceiveFailed = new LongAdder();
-			numAcksSent = new LongAdder();
-			numAcksFailed = new LongAdder();
-			totalMsgsReceived = new LongAdder();
-			totalBytesReceived = new LongAdder();
-			totalReceiveFailed = new LongAdder();
-			totalBatchReceiveFailed = new LongAdder();
-			totalAcksSent = new LongAdder();
-			totalAcksFailed = new LongAdder();
+            ThroughputFormat.NumberDecimalSeparator = "0.00";
+			_numMsgsReceived = new StripedLongAdder();
+			_numBytesReceived = new StripedLongAdder();
+			_numReceiveFailed = new StripedLongAdder();
+			_numBatchReceiveFailed = new StripedLongAdder();
+			_numAcksSent = new StripedLongAdder();
+			_numAcksFailed = new StripedLongAdder();
+			_totalMsgsReceived = new StripedLongAdder();
+			_totalBytesReceived = new StripedLongAdder();
+			_totalReceiveFailed = new StripedLongAdder();
+			_totalBatchReceiveFailed = new StripedLongAdder();
+			_totalAcksSent = new StripedLongAdder();
+			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorderImpl<T1, T2>(PulsarClientImpl PulsarClient, ConsumerConfigurationData<T1> Conf, ConsumerImpl<T2> Consumer)
+		public ConsumerStatsRecorderImpl(PulsarClientImpl pulsarClient, ConsumerConfigurationData<T> conf, ConsumerImpl<T> consumer)
 		{
-			this.pulsarClient = PulsarClient;
-			this.consumer = Consumer;
-			this.statsIntervalSeconds = PulsarClient.Configuration.StatsIntervalSeconds;
-			numMsgsReceived = new LongAdder();
-			numBytesReceived = new LongAdder();
-			numReceiveFailed = new LongAdder();
-			numBatchReceiveFailed = new LongAdder();
-			numAcksSent = new LongAdder();
-			numAcksFailed = new LongAdder();
-			totalMsgsReceived = new LongAdder();
-			totalBytesReceived = new LongAdder();
-			totalReceiveFailed = new LongAdder();
-			totalBatchReceiveFailed = new LongAdder();
-			totalAcksSent = new LongAdder();
-			totalAcksFailed = new LongAdder();
-			Init(Conf);
+            ThroughputFormat.NumberDecimalSeparator = "0.00";
+			this._pulsarClient = pulsarClient;
+			this._consumer = consumer;
+			this._statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
+			_numMsgsReceived = new StripedLongAdder();
+			_numBytesReceived = new StripedLongAdder();
+			_numReceiveFailed = new StripedLongAdder();
+			_numBatchReceiveFailed = new StripedLongAdder();
+			_numAcksSent = new StripedLongAdder();
+			_numAcksFailed = new StripedLongAdder();
+			_totalMsgsReceived = new StripedLongAdder();
+			_totalBytesReceived = new StripedLongAdder();
+			_totalReceiveFailed = new StripedLongAdder();
+			_totalBatchReceiveFailed = new StripedLongAdder();
+			_totalAcksSent = new StripedLongAdder();
+			_totalAcksFailed = new StripedLongAdder();
+			Init(conf);
 		}
 
-		private void Init<T1>(ConsumerConfigurationData<T1> Conf)
+		private void Init(ConsumerConfigurationData<T> conf)
 		{
-			ObjectMapper M = new ObjectMapper();
-			M.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-			ObjectWriter W = M.writerWithDefaultPrettyPrinter();
+			/*var m = new ObjectMapper();
+			m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+			ObjectWriter w = m.writerWithDefaultPrettyPrinter();*/
 
 			try
 			{
-				log.info("Starting Pulsar consumer status recorder with config: {}", W.writeValueAsString(Conf));
-				log.info("Pulsar client config: {}", W.withoutAttribute("authentication").writeValueAsString(pulsarClient.Configuration));
+				//Log.LogInformation("Starting Pulsar consumer status recorder with config: {}", w.writeValueAsString(conf));
+				//Log.LogInformation("Pulsar client config: {}", w.withoutAttribute("authentication").writeValueAsString(_pulsarClient.Configuration));
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				log.error("Failed to dump config info: {}", E);
+				Log.LogError("Failed to dump config info: {}", e);
 			}
 
-			stat = (timeout) =>
-			{
-			if (timeout.Cancelled)
-			{
-				return;
-			}
-			try
-			{
-				long Now = System.nanoTime();
-				double Elapsed = (Now - oldTime) / 1e9;
-				oldTime = Now;
-				long CurrentNumMsgsReceived = numMsgsReceived.sumThenReset();
-				long CurrentNumBytesReceived = numBytesReceived.sumThenReset();
-				long CurrentNumReceiveFailed = numReceiveFailed.sumThenReset();
-				long CurrentNumBatchReceiveFailed = numBatchReceiveFailed.sumThenReset();
-				long CurrentNumAcksSent = numAcksSent.sumThenReset();
-				long CurrentNumAcksFailed = numAcksFailed.sumThenReset();
+			_oldTime = DateTime.Now.Millisecond;
+			_statTimeout = _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
+		}
 
-				totalMsgsReceived.add(CurrentNumMsgsReceived);
-				totalBytesReceived.add(CurrentNumBytesReceived);
-				totalReceiveFailed.add(CurrentNumReceiveFailed);
-				totalBatchReceiveFailed.add(CurrentNumBatchReceiveFailed);
-				totalAcksSent.add(CurrentNumAcksSent);
-				totalAcksFailed.add(CurrentNumAcksFailed);
+		public class StatsTimerTask : ITimerTask
+		{
+            private readonly ConsumerStatsRecorderImpl<T> _outerInstance;
 
-				RateMsgsReceived = CurrentNumMsgsReceived / Elapsed;
-				RateBytesReceived = CurrentNumBytesReceived / Elapsed;
-
-				if ((CurrentNumMsgsReceived | CurrentNumBytesReceived | CurrentNumReceiveFailed | CurrentNumAcksSent | CurrentNumAcksFailed) != 0)
+            public StatsTimerTask(ConsumerStatsRecorderImpl<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
+			public void Run(ITimeout timeout)
+			{
+				if (timeout.Canceled)
 				{
-					log.info("[{}] [{}] [{}] Prefetched messages: {} --- " + "Consume throughput received: {} msgs/s --- {} Mbit/s --- " + "Ack sent rate: {} ack/s --- " + "Failed messages: {} --- batch messages: {} ---" + "Failed acks: {}", consumer.Topic, consumer.Subscription, consumer.ConsumerNameConflict, consumer.IncomingMessages.size(), THROUGHPUT_FORMAT.format(RateMsgsReceived), THROUGHPUT_FORMAT.format(RateBytesReceived * 8 / 1024 / 1024), THROUGHPUT_FORMAT.format(CurrentNumAcksSent / Elapsed), CurrentNumReceiveFailed, CurrentNumBatchReceiveFailed, CurrentNumAcksFailed);
+					return;
+				}
+				try
+				{
+					long now = DateTime.Now.Millisecond;
+					var elapsed = (now - _outerInstance.OldTime) / 1e9;
+                    _outerInstance._oldTime = now;
+					var currentNumMsgsReceived = _outerInstance._numMsgsReceived.GetAndReset();
+					var currentNumBytesReceived = _outerInstance._numBytesReceived.GetAndReset();
+					var currentNumReceiveFailed = _outerInstance._numReceiveFailed.GetAndReset();
+					var currentNumBatchReceiveFailed = _outerInstance._numBatchReceiveFailed.GetAndReset();
+					var currentNumAcksSent = _outerInstance._numAcksSent.GetAndReset();
+					var currentNumAcksFailed = _outerInstance._numAcksFailed.GetAndReset();
+
+                    _outerInstance._totalMsgsReceived.Add(currentNumMsgsReceived);
+                    _outerInstance._totalBytesReceived.Add(currentNumBytesReceived);
+                    _outerInstance._totalReceiveFailed.Add(currentNumReceiveFailed);
+                    _outerInstance._totalBatchReceiveFailed.Add(currentNumBatchReceiveFailed);
+                    _outerInstance._totalAcksSent.Add(currentNumAcksSent);
+                    _outerInstance._totalAcksFailed.Add(currentNumAcksFailed);
+
+                    _outerInstance.RateMsgsReceived = currentNumMsgsReceived / elapsed;
+                    _outerInstance.RateBytesReceived = currentNumBytesReceived / elapsed;
+
+					if ((currentNumMsgsReceived | currentNumBytesReceived | currentNumReceiveFailed | currentNumAcksSent | currentNumAcksFailed) != 0)
+					{
+						Log.LogInformation("[{}] [{}] [{}] Prefetched messages: {} --- " + "Consume throughput received: {} msgs/s --- {} Mbit/s --- " + "Ack sent rate: {} ack/s --- " + "Failed messages: {} --- batch messages: {} ---" + "Failed acks: {}", _outerInstance._consumer.Topic, _outerInstance._consumer.Subscription, _outerInstance._consumer.ConsumerName, _outerInstance._consumer.IncomingMessages.size(), (_outerInstance.RateMsgsReceived).ToString(ThroughputFormat), (_outerInstance.RateBytesReceived * 8 / 1024 / 1024).ToString(ThroughputFormat), (currentNumAcksSent / elapsed).ToString(ThroughputFormat), currentNumReceiveFailed, currentNumBatchReceiveFailed, currentNumAcksFailed);
+					}
+				}
+				catch (System.Exception e)
+				{
+					Log.LogError("[{}] [{}] [{}]: {}", _outerInstance._consumer.Topic, _outerInstance._consumer.Subscription, _outerInstance._consumer.ConsumerName, e.Message);
+				}
+				finally
+				{
+					// schedule the next stat info
+                    _outerInstance._statTimeout = _outerInstance._pulsarClient.Timer.NewTimeout(this, TimeSpan.FromSeconds(_outerInstance._statsIntervalSeconds));
 				}
 			}
-			catch (Exception E)
-			{
-				log.error("[{}] [{}] [{}]: {}", consumer.Topic, consumer.SubscriptionConflict, consumer.ConsumerNameConflict, E.Message);
-			}
-			finally
-			{
-				// schedule the next stat info
-				statTimeout = pulsarClient.Timer().newTimeout(stat, statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
-			}
-			};
-
-			oldTime = System.nanoTime();
-			statTimeout = pulsarClient.Timer().newTimeout(stat, statsIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 		}
-
-		public override void UpdateNumMsgsReceived<T1>(Message<T1> Message)
+		public void UpdateNumMsgsReceived<T1>(Message<T1> message)
 		{
-			if (Message != null)
+			if (message != null)
 			{
-				numMsgsReceived.increment();
-				numBytesReceived.add(Message.Data.Length);
+				_numMsgsReceived.Increment();
+				_numBytesReceived.Add(message.Data.Length);
 			}
 		}
 
-		public override void IncrementNumAcksSent(long NumAcks)
+		public void IncrementNumAcksSent(long numAcks)
 		{
-			numAcksSent.add(NumAcks);
+			_numAcksSent.Add(numAcks);
 		}
 
-		public override void IncrementNumAcksFailed()
+		public void IncrementNumAcksFailed()
 		{
-			numAcksFailed.increment();
+			_numAcksFailed.Increment();
 		}
 
-		public override void IncrementNumReceiveFailed()
+		public void IncrementNumReceiveFailed()
 		{
-			numReceiveFailed.increment();
+			_numReceiveFailed.Increment();
 		}
 
-		public override void IncrementNumBatchReceiveFailed()
+		public void IncrementNumBatchReceiveFailed()
 		{
-			numBatchReceiveFailed.increment();
+			_numBatchReceiveFailed.Increment();
 		}
 
-		public virtual Optional<Timeout> StatTimeout
+		public virtual ITimeout StatTimeout => _statTimeout;
+
+        public void Reset()
 		{
-			get
-			{
-				return Optional.ofNullable(statTimeout);
-			}
+			_numMsgsReceived.Reset();
+			_numBytesReceived.Reset();
+			_numReceiveFailed.Reset();
+			_numBatchReceiveFailed.Reset();
+			_numAcksSent.Reset();
+			_numAcksFailed.Reset();
+			_totalMsgsReceived.Reset();
+			_totalBytesReceived.Reset();
+			_totalReceiveFailed.Reset();
+			_totalBatchReceiveFailed.Reset();
+			_totalAcksSent.Reset();
+			_totalAcksFailed.Reset();
 		}
 
-		public override void Reset()
+		public void UpdateCumulativeStats(IConsumerStats stats)
 		{
-			numMsgsReceived.reset();
-			numBytesReceived.reset();
-			numReceiveFailed.reset();
-			numBatchReceiveFailed.reset();
-			numAcksSent.reset();
-			numAcksFailed.reset();
-			totalMsgsReceived.reset();
-			totalBytesReceived.reset();
-			totalReceiveFailed.reset();
-			totalBatchReceiveFailed.reset();
-			totalAcksSent.reset();
-			totalAcksFailed.reset();
-		}
-
-		public override void UpdateCumulativeStats(ConsumerStats Stats)
-		{
-			if (Stats == null)
+			if (stats == null)
 			{
 				return;
 			}
-			numMsgsReceived.add(Stats.NumMsgsReceived);
-			numBytesReceived.add(Stats.NumBytesReceived);
-			numReceiveFailed.add(Stats.NumReceiveFailed);
-			numBatchReceiveFailed.add(Stats.NumBatchReceiveFailed);
-			numAcksSent.add(Stats.NumAcksSent);
-			numAcksFailed.add(Stats.NumAcksFailed);
-			totalMsgsReceived.add(Stats.TotalMsgsReceived);
-			totalBytesReceived.add(Stats.TotalBytesReceived);
-			totalReceiveFailed.add(Stats.TotalReceivedFailed);
-			totalBatchReceiveFailed.add(Stats.TotaBatchReceivedFailed);
-			totalAcksSent.add(Stats.TotalAcksSent);
-			totalAcksFailed.add(Stats.TotalAcksFailed);
+			_numMsgsReceived.Add(stats.NumMsgsReceived);
+			_numBytesReceived.Add(stats.NumBytesReceived);
+			_numReceiveFailed.Add(stats.NumReceiveFailed);
+			_numBatchReceiveFailed.Add(stats.NumBatchReceiveFailed);
+			_numAcksSent.Add(stats.NumAcksSent);
+			_numAcksFailed.Add(stats.NumAcksFailed);
+			_totalMsgsReceived.Add(stats.TotalMsgsReceived);
+			_totalBytesReceived.Add(stats.TotalBytesReceived);
+			_totalReceiveFailed.Add(stats.TotalReceivedFailed);
+			_totalBatchReceiveFailed.Add(stats.TotaBatchReceivedFailed);
+			_totalAcksSent.Add(stats.TotalAcksSent);
+			_totalAcksFailed.Add(stats.TotalAcksFailed);
 		}
 
-		public virtual long NumMsgsReceived
-		{
-			get
-			{
-				return numMsgsReceived.longValue();
-			}
-		}
+		public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
 
-		public virtual long NumBytesReceived
-		{
-			get
-			{
-				return numBytesReceived.longValue();
-			}
-		}
+        public virtual long NumBytesReceived => _numBytesReceived.GetValue();
 
-		public virtual long NumAcksSent
-		{
-			get
-			{
-				return numAcksSent.longValue();
-			}
-		}
+        public virtual long NumAcksSent => _numAcksSent.GetValue();
 
-		public virtual long NumAcksFailed
-		{
-			get
-			{
-				return numAcksFailed.longValue();
-			}
-		}
+        public virtual long NumAcksFailed => _numAcksFailed.GetValue();
 
-		public virtual long NumReceiveFailed
-		{
-			get
-			{
-				return numReceiveFailed.longValue();
-			}
-		}
+        public virtual long NumReceiveFailed => _numReceiveFailed.GetValue();
 
-		public virtual long NumBatchReceiveFailed
-		{
-			get
-			{
-				return numBatchReceiveFailed.longValue();
-			}
-		}
+        public virtual long NumBatchReceiveFailed => _numBatchReceiveFailed.GetValue();
 
-		public virtual long TotalMsgsReceived
-		{
-			get
-			{
-				return totalMsgsReceived.longValue();
-			}
-		}
+        public virtual long TotalMsgsReceived => _totalMsgsReceived.GetValue();
 
-		public virtual long TotalBytesReceived
-		{
-			get
-			{
-				return totalBytesReceived.longValue();
-			}
-		}
+        public virtual long TotalBytesReceived => _totalBytesReceived.GetValue();
 
-		public virtual long TotalReceivedFailed
-		{
-			get
-			{
-				return totalReceiveFailed.longValue();
-			}
-		}
+        public virtual long TotalReceivedFailed => _totalReceiveFailed.GetValue();
 
-		public virtual long TotaBatchReceivedFailed
-		{
-			get
-			{
-				return totalBatchReceiveFailed.longValue();
-			}
-		}
+        public virtual long TotaBatchReceivedFailed => _totalBatchReceiveFailed.GetValue();
 
-		public virtual long TotalAcksSent
-		{
-			get
-			{
-				return totalAcksSent.longValue();
-			}
-		}
+        public virtual long TotalAcksSent => _totalAcksSent.GetValue();
 
-		public virtual long TotalAcksFailed
-		{
-			get
-			{
-				return totalAcksFailed.longValue();
-			}
-		}
+        public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
 
 
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerStatsRecorderImpl));
+        private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerStatsRecorderImpl<T>));
 	}
 
 }

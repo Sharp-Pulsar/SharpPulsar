@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using DotNetty.Common.Utilities;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,88 +23,82 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Timeout = io.netty.util.Timeout;
-	using Timer = io.netty.util.Timer;
 
-
-	using IMessageId = Api.IMessageId;
+    using IMessageId = Api.IMessageId;
 	using SharpPulsar.Impl.Conf;
 
-	public class NegativeAcksTracker
+	public class NegativeAcksTracker<T>
 	{
 
-		private Dictionary<IMessageId, long> nackedMessages = null;
+		private Dictionary<IMessageId, long> _nackedMessages = null;
+		private readonly ConsumerBase<object> _consumer;
+		private readonly HashedWheelTimer _timer;
+		private readonly long _nackDelayNanos;
+		private readonly long _timerIntervalNanos;
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private final ConsumerBase<?> consumer;
-		private readonly ConsumerBase<object> consumer;
-		private readonly Timer timer;
-		private readonly long nackDelayNanos;
-		private readonly long timerIntervalNanos;
-
-		private Timeout timeout;
+		private ITimeout _timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
-		private static readonly long MIN_NACK_DELAY_NANOS = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.toNanos(100);
+		private static readonly long MinNackDelayNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
 
-		public NegativeAcksTracker<T1, T2>(ConsumerBase<T1> Consumer, ConsumerConfigurationData<T2> Conf)
+		public NegativeAcksTracker(ConsumerBase<T> consumer, ConsumerConfigurationData<T> conf)
 		{
-			this.consumer = Consumer;
-			this.timer = ((PulsarClientImpl) Consumer.Client).timer();
-			this.nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.toNanos(Conf.NegativeAckRedeliveryDelayMicros), MIN_NACK_DELAY_NANOS);
-			this.timerIntervalNanos = nackDelayNanos / 3;
+			this._consumer = consumer;
+			this._timer = ((PulsarClientImpl) consumer.Client).Timer;
+			this._nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToNanos(conf.NegativeAckRedeliveryDelayMicros), MinNackDelayNanos);
+			this._timerIntervalNanos = _nackDelayNanos / 3;
 		}
 
-		private void TriggerRedelivery(Timeout T)
+		private void TriggerRedelivery(ITimeout T)
 		{
 			lock (this)
 			{
-				if (nackedMessages.Count == 0)
+				if (_nackedMessages.Count == 0)
 				{
-					this.timeout = null;
+					this._timeout = null;
 					return;
 				}
         
 				// Group all the nacked messages into one single re-delivery request
-				ISet<IMessageId> MessagesToRedeliver = new HashSet<IMessageId>();
-				long Now = System.nanoTime();
-				nackedMessages.forEach((msgId, timestamp) =>
+				ISet<IMessageId> messagesToRedeliver = new HashSet<IMessageId>();
+				long now = System.nanoTime();
+				_nackedMessages.forEach((msgId, timestamp) =>
 				{
-				if (timestamp < Now)
+				if (timestamp < now)
 				{
-					MessagesToRedeliver.Add(msgId);
+					messagesToRedeliver.Add(msgId);
 				}
 				});
         
-				MessagesToRedeliver.forEach(nackedMessages.remove);
-				consumer.OnNegativeAcksSend(MessagesToRedeliver);
-				consumer.RedeliverUnacknowledgedMessages(MessagesToRedeliver);
+				messagesToRedeliver.forEach(_nackedMessages.remove);
+				_consumer.OnNegativeAcksSend(messagesToRedeliver);
+				_consumer.RedeliverUnacknowledgedMessages(messagesToRedeliver);
         
-				this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
+				this._timeout = _timer.NewTimeout(()=>TriggerRedelivery, TimeSpan.FromTicks(_timerIntervalNanos));
 			}
 		}
 
-		public virtual void Add(IMessageId MessageId)
+		public virtual void Add(IMessageId messageId)
 		{
 			lock (this)
 			{
-				if (MessageId is BatchMessageIdImpl)
+				if (messageId is BatchMessageIdImpl)
 				{
-					BatchMessageIdImpl BatchMessageId = (BatchMessageIdImpl) MessageId;
-					MessageId = new MessageIdImpl(BatchMessageId.LedgerId, BatchMessageId.EntryId, BatchMessageId.PartitionIndex);
+					BatchMessageIdImpl batchMessageId = (BatchMessageIdImpl) messageId;
+					messageId = new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
 				}
         
-				if (nackedMessages == null)
+				if (_nackedMessages == null)
 				{
-					nackedMessages = new Dictionary<IMessageId, long>();
+					_nackedMessages = new Dictionary<IMessageId, long>();
 				}
-				nackedMessages[MessageId] = System.nanoTime() + nackDelayNanos;
+				_nackedMessages[messageId] = System.nanoTime() + _nackDelayNanos;
         
-				if (this.timeout == null)
+				if (this._timeout == null)
 				{
 					// Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
 					// nack immediately following the current one will be batched into the same redeliver request.
-					this.timeout = timer.newTimeout(this.triggerRedelivery, timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
+					this._timeout = _timer.newTimeout(this.triggerRedelivery, _timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
 				}
 			}
 		}

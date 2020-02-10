@@ -52,7 +52,10 @@ namespace SharpPulsar.Common.Compression
 		{
 			return codecs[type];
 		}
-
+        public static CompressionCodec GetCompressionCodec(int type)
+        {
+            return codecs[ConvertToWireProtocol(type)];
+        }
 		public static CompressionCodec GetCompressionCodec(ICompressionType type)
 		{
 			return codecs[ConvertToWireProtocol(type)];
@@ -78,6 +81,26 @@ namespace SharpPulsar.Common.Compression
 				throw new System.Exception("Invalid compression type");
 			}
 		}
+        public static CompressionType ConvertToWireProtocol(int compressionType)
+        {
+
+            switch (compressionType)
+            {
+                case 0:
+                    return CompressionType.NONE;
+                case 1:
+                    return CompressionType.LZ4;
+                case 2:
+                    return CompressionType.ZLIB;
+                case 3:
+                    return CompressionType.ZSTD;
+                case 4:
+                    return CompressionType.SNAPPY;
+
+                default:
+                    throw new System.Exception("Invalid compression type");
+            }
+        }
 
 		public static CompressionType? ConvertFromWireProtocol(CompressionType compressionType)
 		{

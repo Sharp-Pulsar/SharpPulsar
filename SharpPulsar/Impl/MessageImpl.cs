@@ -62,11 +62,11 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, Option<EncryptionContext> encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
 		{
 			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			MessageId = messageId;
