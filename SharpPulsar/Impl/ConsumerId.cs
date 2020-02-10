@@ -20,41 +20,41 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Objects = com.google.common.@base.Objects;
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
 
 	public class ConsumerId : IComparable<ConsumerId>
 	{
-		public virtual Topic {get;}
-		public virtual Subscription {get;}
+		public virtual string Topic {get;}
+		public virtual string Subscription {get;}
 
-		public ConsumerId(string Topic, string Subscription)
+		public ConsumerId(string topic, string subscription)
 		{
-			this.Topic = Topic;
-			this.Subscription = Subscription;
+			this.Topic = topic;
+			this.Subscription = subscription;
 		}
 
 
 
 		public override int GetHashCode()
 		{
-			return Objects.hashCode(Topic, Subscription);
+			return HashCode.Combine(Topic, Subscription);
 		}
 
-		public override bool Equals(object Obj)
+		public override bool Equals(object obj)
 		{
-			if (Obj is ConsumerId)
+			if (obj is ConsumerId other)
 			{
-				ConsumerId Other = (ConsumerId) Obj;
-				return Objects.equal(this.Topic, Other.Topic) && Objects.equal(this.Subscription, Other.Subscription);
+                return object.Equals(this.Topic, other.Topic) && object.Equals(this.Subscription, other.Subscription);
 			}
 
 			return false;
 		}
 
-		public override int CompareTo(ConsumerId O)
-		{
-			return ComparisonChain.start().compare(this.Topic, O.Topic).compare(this.Subscription, O.Subscription).result();
+		public int CompareTo(ConsumerId other)
+        {
+            if (other == null) return 1;
+            if (object.Equals(this.Topic, other.Topic) && object.Equals(this.Subscription, other.Subscription))
+                return 0;
+			return 1;
 		}
 
 	}

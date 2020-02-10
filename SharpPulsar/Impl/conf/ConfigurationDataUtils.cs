@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl.Conf
 			return new ObjectMapper();
 		}
 
-		private static readonly FastThreadLocal<ObjectMapper> mapper = new FastThreadLocalAnonymousInnerClass();
+		private static readonly FastThreadLocal<ObjectMapper> Mapper = new FastThreadLocalAnonymousInnerClass();
 
 		public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<ObjectMapper>
 		{
@@ -49,7 +49,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 			get
 			{
-				return mapper.Value;
+				return Mapper.Value;
 			}
 		}
 
@@ -57,22 +57,22 @@ namespace SharpPulsar.Impl.Conf
 		{
 		}
 
-		public static T LoadData<T>(IDictionary<string, object> Config, T ExistingData, Type DataCls)
+		public static T LoadData<T>(IDictionary<string, object> config, T existingData, Type dataCls)
 		{
-			var Mapper = ThreadLocal;
+			var mapper = ThreadLocal;
 			try
 			{
-				var existingConfigJson = Mapper.WriteValueAsString(ExistingData);
-				var existingConfig = (IDictionary<string, object>)Mapper.ReadValue(existingConfigJson, typeof(IDictionary<string, object>));
+				var existingConfigJson = mapper.WriteValueAsString(existingData);
+				var existingConfig = (IDictionary<string, object>)mapper.ReadValue(existingConfigJson, typeof(IDictionary<string, object>));
 				IDictionary<string, object> newConfig = new Dictionary<string, object>();
 				existingConfig.ToList().ForEach(x=> newConfig.Add(x.Key, x.Value));
-				Config.ToList().ForEach(x => newConfig.Add(x.Key, x.Value));
-				var ConfigJson = Mapper.WriteValueAsString(newConfig);
-				return (T)Mapper.ReadValue(ConfigJson, DataCls);
+				config.ToList().ForEach(x => newConfig.Add(x.Key, x.Value));
+				var configJson = mapper.WriteValueAsString(newConfig);
+				return (T)mapper.ReadValue(configJson, dataCls);
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
-				throw new System.Exception("Failed to load config into existing configuration data", E);
+				throw new System.Exception("Failed to load config into existing configuration data", e);
 			}
 
 		}
