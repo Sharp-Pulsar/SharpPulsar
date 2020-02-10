@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using BAMCIS.Util.Concurrent;
+
 namespace SharpPulsar.Api
 {
 
@@ -68,7 +71,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Max number of messages for a single batch receive, 0 or negative means no limit.
 		/// </summary>
-		public virtual MaxNumMessages {get;}
+		public virtual long MaxNumMessages {get;}
 
 		/// <summary>
 		/// Max bytes of messages for a single batch receive, 0 or negative means no limit.
@@ -93,63 +96,47 @@ namespace SharpPulsar.Api
 			}
 		}
 
-		public virtual long TimeoutMs
-		{
-			get
-			{
-				return (_timeout > 0 && _timeoutUnit != null) ? _timeoutUnit.toMillis(_timeout) : 0L;
-			}
-		}
+		public virtual long TimeoutMs => (_timeout > 0 && _timeoutUnit != null) ? _timeoutUnit.ToMilliseconds(_timeout) : 0L;
 
 
-		public virtual long MaxNumBytes
-		{
-			get
-			{
-				return _maxNumBytes;
-			}
-		}
+        public virtual long MaxNumBytes => _maxNumBytes;
 
-		/// <summary>
+        /// <summary>
 		/// Builder of BatchReceivePolicy.
 		/// </summary>
 		public class Builder
 		{
-
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal int MaxNumMessagesConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal int MaxNumBytesConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal int TimeoutConflict;
+			internal int _MaxNumMessages;
+			internal int _MaxNumBytes;
+			internal int _Timeout;
 			internal TimeUnit TimeoutUnit;
 
 			public virtual Builder MaxNumMessages(int maxNumMessages)
 			{
-				this.MaxNumMessagesConflict = maxNumMessages;
+				this._MaxNumMessages = maxNumMessages;
 				return this;
 			}
 
 			public virtual Builder MaxNumBytes(int maxNumBytes)
 			{
-				this.MaxNumBytesConflict = maxNumBytes;
+				this._MaxNumBytes = maxNumBytes;
 				return this;
 			}
 
 			public virtual Builder Timeout(int timeout, TimeUnit timeoutUnit)
 			{
-				this.TimeoutConflict = timeout;
+				this._Timeout = timeout;
 				this.TimeoutUnit = timeoutUnit;
 				return this;
 			}
 
 			public virtual BatchReceivePolicy Build()
 			{
-				return new BatchReceivePolicy(MaxNumMessagesConflict, MaxNumBytesConflict, TimeoutConflict, TimeoutUnit);
+				return new BatchReceivePolicy(_MaxNumMessages, _MaxNumBytes, _Timeout, TimeoutUnit);
 			}
 		}
 
-		public static Builder Builder()
+		public static Builder Build()
 		{
 			return new Builder();
 		}

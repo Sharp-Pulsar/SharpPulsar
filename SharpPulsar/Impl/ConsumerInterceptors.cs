@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +32,7 @@ namespace SharpPulsar.Impl
 
 
 	/// <summary>
-	/// A container that hold the list <seealso cref="SharpPulsar.api.ConsumerInterceptor"/> and wraps calls to the chain
+	/// A container that hold the list <seealso cref="ConsumerInterceptor{T}"/> and wraps calls to the chain
 	/// of custom interceptors.
 	/// </summary>
 	public class ConsumerInterceptors<T> : IDisposable
@@ -101,7 +102,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> message to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledge(IConsumer<T> Consumer, IMessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledge(IConsumer<T> Consumer, IMessageId MessageId, System.Exception Exception)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{
@@ -109,7 +110,7 @@ namespace SharpPulsar.Impl
 				{
 					interceptors[I].onAcknowledge(Consumer, MessageId, Exception);
 				}
-				catch (Exception E)
+				catch (System.Exception E)
 				{
 					log.warn("Error executing interceptor onAcknowledge callback ", E);
 				}
@@ -129,7 +130,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> messages to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledgeCumulative(IConsumer<T> Consumer, IMessageId MessageId, Exception Exception)
+		public virtual void OnAcknowledgeCumulative(IConsumer<T> Consumer, IMessageId MessageId, System.Exception Exception)
 		{
 			for (int I = 0, interceptorsSize = interceptors.Count; I < interceptorsSize; I++)
 			{
@@ -137,7 +138,7 @@ namespace SharpPulsar.Impl
 				{
 					interceptors[I].onAcknowledgeCumulative(Consumer, MessageId, Exception);
 				}
-				catch (Exception E)
+				catch (System.Exception E)
 				{
 					log.warn("Error executing interceptor onAcknowledgeCumulative callback ", E);
 				}

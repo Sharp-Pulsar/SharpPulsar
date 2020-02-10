@@ -974,8 +974,7 @@ namespace SharpPulsar.Impl
 					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", hostname, sslSession.CipherSuite, SslSession.Protocol);
 				}
 				var y = new DefaultNameResolver();
-
-				return new  HOSTNAME_VERIFIER.verify(hostname, SslSession);
+                return new  HOSTNAME_VERIFIER.verify(hostname, SslSession);
 			}
 			return false;
 		}
