@@ -641,23 +641,21 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public Types.ValidationError ValidationError
+			public Types.ValidationError ValidationError => ValidationError_;
+
+            public Builder SetValidationError(Types.ValidationError? value)
 			{
-				get
-				{
-					return ValidationError_;
-				}
-			}
-			public Builder SetValidationError(Types.ValidationError Value)
-			{
-				if (Value == null)
+				if (value == null)
 				{
 					throw new NullReferenceException();
 				}
-				BitField0_ |= 0x00000008;
-				ValidationError_ = Value;
+                else
+                {
+                    BitField0_ |= 0x00000008;
+                    ValidationError_ = (Types.ValidationError) value;
 
-				return this;
+                    return this;
+				}
 			}
 			public Builder ClearValidationError()
 			{

@@ -28,8 +28,8 @@ namespace SharpPulsar.Impl
 
 		public ConsumerId(string topic, string subscription)
 		{
-			this.Topic = topic;
-			this.Subscription = subscription;
+			Topic = topic;
+			Subscription = subscription;
 		}
 
 
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl
 		{
 			if (obj is ConsumerId other)
 			{
-                return object.Equals(this.Topic, other.Topic) && object.Equals(this.Subscription, other.Subscription);
+                return Equals(Topic, other.Topic) && Equals(Subscription, other.Subscription);
 			}
 
 			return false;
@@ -52,7 +52,7 @@ namespace SharpPulsar.Impl
 		public int CompareTo(ConsumerId other)
         {
             if (other == null) return 1;
-            if (object.Equals(this.Topic, other.Topic) && object.Equals(this.Subscription, other.Subscription))
+            if (Equals(Topic, other.Topic) && Equals(Subscription, other.Subscription))
                 return 0;
 			return 1;
 		}
