@@ -429,9 +429,9 @@ namespace SharpPulsar.Impl
 		public abstract int NumMessagesInQueue();
 
 		
-		public virtual string Topic => Topic;
+		public  string Topic => Topic;
 
-        public virtual string Subscription => _subscription;
+        public  string Subscription => _subscription;
 
         public virtual string ConsumerName => this._consumerName;
 

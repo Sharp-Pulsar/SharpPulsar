@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNetty.Buffers;
+using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
@@ -51,16 +54,16 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask<Message<T>> InternalReceiveAsync()
+		public override ValueTask<Message<T>> InternalReceiveAsync()
 		{
 			var task = base.InternalReceiveAsync();
-			if (!task)
+			if (!task.IsCompleted)
 			{
 				// We expect the message to be not in the queue yet
 				SendFlowPermitsToBroker(Cnx(), 1);
 			}
 
-			return future;
+			return task;
 		}
 
 		private Message<T> FetchSingleMessageFromBroker()
@@ -68,7 +71,7 @@ namespace SharpPulsar.Impl
 			// Just being cautious
 			if (IncomingMessages.size() > 0)
 			{
-				Log.error("The incoming message queue should never be greater than 0 when Queue size is 0");
+				Log.LogError("The incoming message queue should never be greater than 0 when Queue size is 0");
 				IncomingMessages.clear();
 			}
 
@@ -88,8 +91,6 @@ namespace SharpPulsar.Impl
 				{
 					message = IncomingMessages.take();
 					LastDequeuedMessage = message.MessageId;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: ClientCnx msgCnx = ((MessageImpl<?>) message).getCnx();
 					ClientCnx msgCnx = ((MessageImpl<object>) message).Cnx;
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					lock (this)
@@ -104,13 +105,13 @@ namespace SharpPulsar.Impl
 					}
 				} while (true);
 
-				StatsConflict.updateNumMsgsReceived(message);
+				ConsumerStats.UpdateNumMsgsReceived(message);
 				return message;
 			}
-			catch (InterruptedException e)
+			catch (ThreadInterruptedException e)
 			{
-				StatsConflict.incrementNumReceiveFailed();
-				throw PulsarClientException.unwrap(e);
+				ConsumerStats.IncrementNumReceiveFailed();
+				throw PulsarClientException.Unwrap(e);
 			}
 			finally
 			{
@@ -121,7 +122,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void ConsumerIsReconnectedToBroker(ClientCnx cnx, int currentQueueSize)
+		public new void ConsumerIsReconnectedToBroker(ClientCnx cnx, int currentQueueSize)
 		{
 			base.ConsumerIsReconnectedToBroker(cnx, currentQueueSize);
 
@@ -146,43 +147,45 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void TriggerZeroQueueSizeListener(in Message<T> message)
+		private void TriggerZeroQueueSizeListener(Message<T> message)
 		{
-			checkNotNull(Listener, "listener can't be null");
-			checkNotNull(message, "unqueued message can't be null");
+			if(Listener == null)
+                throw new NullReferenceException("listener can't be null");
+			if(message == null)
+                throw new NullReferenceException("unqueued message can't be null");
 
-			ListenerExecutor.execute(() =>
+			Task.Run(() =>
 			{
-			StatsConflict.updateNumMsgsReceived(message);
-			try
-			{
-				if (Log.DebugEnabled)
-				{
-					Log.debug("[{}][{}] Calling message listener for unqueued message {}", Topic, SubscriptionConflict, message.MessageId);
-				}
-				Listener.received(ZeroQueueConsumerImpl.this, BeforeConsume(message));
-			}
-			catch (Exception T)
-			{
-				Log.error("[{}][{}] Message listener error in processing unqueued message: {}", Topic, SubscriptionConflict, message.MessageId, T);
-			}
-			IncreaseAvailablePermits(Cnx());
+			    ConsumerStats.UpdateNumMsgsReceived(message);
+			    try
+			    {
+				    if (Log.IsEnabled(LogLevel.Debug))
+				    {
+					    Log.LogDebug("[{}][{}] Calling message listener for unqueued message {}", Topic, Subscription, message.MessageId);
+				    }
+				    Listener.Received(this, BeforeConsume(message));
+			    }
+			    catch (System.Exception T)
+			    {
+				    Log.LogError("[{}][{}] Message listener error in processing unqueued message: {}", Topic, Subscription, message.MessageId, T);
+			    }
+			    IncreaseAvailablePermits(Cnx());
 			});
 		}
 
-		public override void TriggerListener(int numMessages)
+		public new void TriggerListener(int numMessages)
 		{
 			// Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
 		}
 
-		public override void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, ByteBuf uncompressedPayload, MessageIdData messageId, ClientCnx cnx)
+		public new void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IByteBuffer uncompressedPayload, MessageIdData messageId, ClientCnx cnx)
 		{
-			Log.warn("Closing consumer [{}]-[{}] due to unsupported received batch-message with zero receiver queue size", SubscriptionConflict, ConsumerNameConflict);
+			Log.LogWarning("Closing consumer [{}]-[{}] due to unsupported received batch-message with zero receiver queue size", Subscription, ConsumerName);
 			// close connection
-			CloseAsync().handle((ok, e) =>
+			CloseAsync().AsTask().ContinueWith( t=>
 			{
-			NotifyPendingReceivedCallback(null, new PulsarClientException.InvalidMessageException(format("Unsupported Batch message with 0 size receiver queue for [%s]-[%s] ", SubscriptionConflict, ConsumerNameConflict)));
-			return null;
+			    NotifyPendingReceivedCallback(null, new PulsarClientException.InvalidMessageException(string.Format("Unsupported Batch message with 0 size receiver queue for [%s]-[%s] ", Subscription, ConsumerName)));
+			    //return null;
 			});
 		}
 	}

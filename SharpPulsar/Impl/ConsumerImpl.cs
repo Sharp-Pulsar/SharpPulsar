@@ -21,7 +21,6 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Util;
 using SharpPulsar.Util.Atomic;
-using SharpPulsar.Util.Atomic.Locking;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,7 +42,7 @@ using SharpPulsar.Util.Atomic.Locking;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public sealed class ConsumerImpl<T> : ConsumerBase<T>, IConnection
+    public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
