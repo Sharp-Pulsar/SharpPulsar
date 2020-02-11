@@ -36,23 +36,11 @@ namespace SharpPulsar.Common.Schema
 			this._value = value;
 		}
 
-		public virtual TK Key
-		{
-			get
-			{
-				return _key;
-			}
-		}
+		public virtual TK Key => _key;
 
-		public virtual TV Value
-		{
-			get
-			{
-				return _value;
-			}
-		}
+        public virtual TV Value => _value;
 
-		public override int GetHashCode()
+        public override int GetHashCode()
 		{
 			return HashCode.Combine(_key, _value);
 		}

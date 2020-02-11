@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.Api;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,10 +23,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Getter = lombok.Getter;
-	using IMessageId = Api.IMessageId;
-	using NotImplementedException = sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 	/// <summary>
 	/// A MessageId implementation that contains a map of <partitionName, MessageId>.
 	/// This is useful when MessageId is need for partition/multi-topics/pattern consumer.
@@ -33,68 +31,65 @@ namespace SharpPulsar.Impl
 	[Serializable]
 	public class MultiMessageIdImpl : IMessageId
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter private java.util.Map<String, SharpPulsar.api.MessageId> map;
-		private IDictionary<string, IMessageId> map;
+		private readonly IDictionary<string, IMessageId> _map;
 
-		public MultiMessageIdImpl(IDictionary<string, IMessageId> Map)
+		public MultiMessageIdImpl(IDictionary<string, IMessageId> map)
 		{
-			this.map = Map;
+			this._map = map;
 		}
 
 		// TODO: Add support for Serialization and Deserialization
 		//  https://github.com/apache/pulsar/issues/4940
-		public override sbyte[] ToByteArray()
+		public sbyte[] ToByteArray()
 		{
 			throw new NotImplementedException();
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(map);
+			return _map.GetHashCode();
 		}
 
 		// If all messageId in map are same size, and all bigger/smaller than the other, return valid value.
-		public override int CompareTo(IMessageId O)
+		public int CompareTo(IMessageId o)
 		{
-			if (!(O is MultiMessageIdImpl))
+			if (!(o is MultiMessageIdImpl))
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + O.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 
-			MultiMessageIdImpl Other = (MultiMessageIdImpl) O;
-			IDictionary<string, IMessageId> OtherMap = Other.Map;
+			var other = (MultiMessageIdImpl) o;
+			var otherMap = other._map;
 
-			if ((map == null || map.Count == 0) && (OtherMap == null || OtherMap.Count == 0))
+			if ((_map == null || _map.Count == 0) && (otherMap == null || otherMap.Count == 0))
 			{
 				return 0;
 			}
 
-			if (OtherMap == null || map == null || OtherMap.Count != map.Count)
+			if (otherMap == null || _map == null || otherMap.Count != _map.Count)
 			{
 				throw new ArgumentException("Current size and other size not equals");
 			}
 
-			int Result = 0;
-			foreach (KeyValuePair<string, IMessageId> Entry in map.SetOfKeyValuePairs())
+			var result = 0;
+			foreach (var entry in _map.SetOfKeyValuePairs())
 			{
-				IMessageId OtherMessage = OtherMap[Entry.Key];
-				if (OtherMessage == null)
+				var otherMessage = otherMap[entry.Key];
+				if (otherMessage == null)
 				{
-					throw new ArgumentException("Other MessageId not have topic " + Entry.Key);
+					throw new ArgumentException("Other MessageId not have topic " + entry.Key);
 				}
 
-				int CurrentResult = Entry.Value.compareTo(OtherMessage);
-				if (Result == 0)
+				var currentResult = entry.Value.CompareTo(otherMessage);
+				if (result == 0)
 				{
-					Result = CurrentResult;
+					result = currentResult;
 				}
-				else if (CurrentResult == 0)
+				else if (currentResult == 0)
 				{
 					continue;
 				}
-				else if (Result != CurrentResult)
+				else if (result != currentResult)
 				{
 					throw new ArgumentException("Different MessageId in Map get different compare result");
 				}
@@ -104,22 +99,21 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			return Result;
+			return result;
 		}
 
-		public override bool Equals(object Obj)
+		public override bool Equals(object obj)
 		{
-			if (!(Obj is MultiMessageIdImpl))
+			if (!(obj is MultiMessageIdImpl))
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + Obj.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + obj.GetType().FullName);
 			}
 
-			MultiMessageIdImpl Other = (MultiMessageIdImpl) Obj;
+			var other = (MultiMessageIdImpl) obj;
 
 			try
 			{
-				return CompareTo(Other) == 0;
+				return CompareTo(other) == 0;
 			}
 			catch (ArgumentException)
 			{

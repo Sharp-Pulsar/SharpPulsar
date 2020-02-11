@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,69 +23,72 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using Preconditions = com.google.common.@base.Preconditions;
-	using NotThreadSafe = net.jcip.annotations.NotThreadSafe;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @NotThreadSafe public class MessagesImpl<T> implements SharpPulsar.api.Messages<T>
 	public class MessagesImpl<T> : Messages<T>
 	{
 
-		private IList<Message<T>> messageList;
+		private IList<Message<T>> _messageList;
 
-		private readonly int maxNumberOfMessages;
-		private readonly long maxSizeOfMessages;
+		private readonly int _maxNumberOfMessages;
+		private readonly long _maxSizeOfMessages;
 
-		private int currentNumberOfMessages;
-		private long currentSizeOfMessages;
+		private int _currentNumberOfMessages;
+		private long _currentSizeOfMessages;
 
-		public MessagesImpl(int MaxNumberOfMessages, long MaxSizeOfMessages)
+		public MessagesImpl(int maxNumberOfMessages, long maxSizeOfMessages)
 		{
-			this.maxNumberOfMessages = MaxNumberOfMessages;
-			this.maxSizeOfMessages = MaxSizeOfMessages;
-			messageList = MaxNumberOfMessages > 0 ? new List<Message<T>>(MaxNumberOfMessages) : new List<Message<T>>();
+			this._maxNumberOfMessages = maxNumberOfMessages;
+			this._maxSizeOfMessages = maxSizeOfMessages;
+			_messageList = maxNumberOfMessages > 0 ? new List<Message<T>>(maxNumberOfMessages) : new List<Message<T>>();
 		}
 
-		public virtual bool CanAdd(Message<T> Message)
+		public virtual bool CanAdd(Message<T> message)
 		{
-			if (maxNumberOfMessages <= 0 && maxSizeOfMessages <= 0)
+			if (_maxNumberOfMessages <= 0 && _maxSizeOfMessages <= 0)
 			{
 				return true;
 			}
-			return (maxNumberOfMessages > 0 && currentNumberOfMessages + 1 <= maxNumberOfMessages) || (maxSizeOfMessages > 0 && currentSizeOfMessages + Message.Data.Length <= maxSizeOfMessages);
+			return (_maxNumberOfMessages > 0 && _currentNumberOfMessages + 1 <= _maxNumberOfMessages) || (_maxSizeOfMessages > 0 && _currentSizeOfMessages + message.Data.Length <= _maxSizeOfMessages);
 		}
 
-		public virtual void Add(Message<T> Message)
+		public virtual void Add(Message<T> message)
 		{
-			if (Message == null)
+			if (message == null)
 			{
 				return;
 			}
-			Preconditions.checkArgument(CanAdd(Message), "No more space to add messages.");
-			currentNumberOfMessages++;
-			currentSizeOfMessages += Message.Data.Length;
-			messageList.Add(Message);
+			if(!CanAdd(message))
+                throw new ArgumentException("No more space to add messages.");
+			_currentNumberOfMessages++;
+			_currentSizeOfMessages += message.Data.Length;
+			_messageList.Add(message);
 		}
 
-		public override int Size()
+		public int Size()
 		{
-			return messageList.Count;
+			return _messageList.Count;
 		}
 
 		public virtual void Clear()
 		{
-			this.currentNumberOfMessages = 0;
-			this.currentSizeOfMessages = 0;
-			this.messageList.Clear();
+			this._currentNumberOfMessages = 0;
+			this._currentSizeOfMessages = 0;
+			this._messageList.Clear();
 		}
 
-		public override IEnumerator<Message<T>> Iterator()
+		public IEnumerator<Message<T>> Iterator()
 		{
-			return messageList.GetEnumerator();
+			return _messageList.GetEnumerator();
 		}
-	}
+
+        public IEnumerator<Message<T>> GetEnumerator()
+        {
+           return Iterator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
 
 }

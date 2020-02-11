@@ -28,15 +28,15 @@ namespace SharpPulsar.Impl
 	[Serializable]
 	public abstract class MessageRouterBase : MessageRouter
 	{
-		public abstract int choosePartition<T1>(Message<T1> Msg, TopicMetadata Metadata);
-		public abstract int choosePartition<T1>(Message<T1> Msg);
-		private const long SerialVersionUID = 1L;
+		public abstract int choosePartition<T1>(Message<T1> msg, TopicMetadata metadata);
+		public abstract int choosePartition<T1>(Message<T1> msg);
+		private const long SerialVersionUid = 1L;
 
 		protected internal readonly Hash Hash;
 
-		public MessageRouterBase(HashingScheme HashingScheme)
+        protected MessageRouterBase(HashingScheme hashingScheme)
 		{
-			switch (HashingScheme)
+			switch (hashingScheme)
 			{
 			case HashingScheme.JavaStringHash:
 				this.Hash = JavaStringHash.Instance;

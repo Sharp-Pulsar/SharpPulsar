@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using SharpPulsar.Api;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,151 +25,129 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	using AccessLevel = lombok.AccessLevel;
-	using Getter = lombok.Getter;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using ConsumerCryptoFailureAction = Api.ConsumerCryptoFailureAction;
-	using CryptoKeyReader = Api.CryptoKeyReader;
-	using IMessageId = Api.IMessageId;
-	using PulsarClientException = Api.PulsarClientException;
-	using Reader = Api.IReader;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-	using SharpPulsar.Api;
-	using ConfigurationDataUtils = Conf.ConfigurationDataUtils;
-	using SharpPulsar.Impl.Conf;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Getter(AccessLevel.PUBLIC) public class ReaderBuilderImpl<T> implements SharpPulsar.api.ReaderBuilder<T>
-	public class ReaderBuilderImpl<T> : ReaderBuilder<T>
+    public class ReaderBuilderImpl<T> : ReaderBuilder<T>
 	{
 
-		private readonly PulsarClientImpl client;
+		private readonly PulsarClientImpl _client;
 
-		private ReaderConfigurationData<T> conf;
+		private ReaderConfigurationData<T> _conf;
 
-		private readonly ISchema<T> schema;
+		private readonly ISchema<T> _schema;
 
-		public ReaderBuilderImpl(PulsarClientImpl Client, ISchema<T> Schema) : this(Client, new ReaderConfigurationData<T>(), Schema)
+		public ReaderBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ReaderConfigurationData<T>(), schema)
 		{
 		}
 
-		private ReaderBuilderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> Conf, ISchema<T> Schema)
+		private ReaderBuilderImpl(PulsarClientImpl client, ReaderConfigurationData<T> conf, ISchema<T> schema)
 		{
-			this.client = Client;
-			this.conf = Conf;
-			this.schema = Schema;
+			this._client = client;
+			this._conf = conf;
+			this._schema = schema;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Override @SuppressWarnings("unchecked") public SharpPulsar.api.ReaderBuilder<T> clone()
-		public override ReaderBuilder<T> Clone()
+		public ReaderBuilder<T> Clone()
 		{
-			return new ReaderBuilderImpl<T>(client, conf.Clone(), schema);
+			return new ReaderBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.Reader<T> create() throws SharpPulsar.api.PulsarClientException
-		public override IReader<T> Create()
+		public IReader<T> Create()
 		{
 			try
 			{
-				return CreateAsync().get();
+				return CreateAsync().Result;
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw PulsarClientException.unwrap(E);
+				throw PulsarClientException.Unwrap(e);
 			}
 		}
 
-		public override CompletableFuture<IReader<T>> CreateAsync()
+		public ValueTask<IReader<T>> CreateAsync()
 		{
-			if (conf.TopicName == null)
+			if (_conf.TopicName == null)
 			{
-				return FutureUtil.failedFuture(new ArgumentException("Topic name must be set on the reader builder"));
+				Return new (new ArgumentException("Topic name must be set on the reader builder"));
 			}
 
-			if (conf.StartMessageId == null)
+			if (_conf.StartMessageId == null)
 			{
 				return FutureUtil.failedFuture(new ArgumentException("Start message id must be set on the reader builder"));
 			}
 
-			return client.CreateReaderAsync(conf, schema);
+			return _client.CreateReaderAsync(_conf, _schema);
 		}
 
-		public override ReaderBuilder<T> LoadConf(IDictionary<string, object> Config)
+		public override ReaderBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			IMessageId StartMessageId = conf.StartMessageId;
-			conf = ConfigurationDataUtils.loadData(Config, conf, typeof(ReaderConfigurationData));
-			conf.StartMessageId = StartMessageId;
+			IMessageId startMessageId = _conf.StartMessageId;
+			_conf = ConfigurationDataUtils.loadData(config, _conf, typeof(ReaderConfigurationData));
+			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public override ReaderBuilder<T> Topic(string TopicName)
+		public override ReaderBuilder<T> Topic(string topicName)
 		{
-			conf.TopicName = StringUtils.Trim(TopicName);
+			_conf.TopicName = StringUtils.Trim(topicName);
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageId(IMessageId StartMessageId)
+		public override ReaderBuilder<T> StartMessageId(IMessageId startMessageId)
 		{
-			conf.StartMessageId = StartMessageId;
+			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageFromRollbackDuration(long RollbackDuration, BAMCIS.Util.Concurrent.TimeUnit BAMCIS.Util.Concurrent.TimeUnit)
+		public override ReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit bamcis.Util.Concurrent.TimeUnit)
 		{
-			conf.StartMessageFromRollbackDurationInSec = BAMCIS.Util.Concurrent.TimeUnit.toSeconds(RollbackDuration);
+			_conf.StartMessageFromRollbackDurationInSec = bamcis.Util.Concurrent.TimeUnit.toSeconds(rollbackDuration);
 			return this;
 		}
 
 		public override ReaderBuilder<T> StartMessageIdInclusive()
 		{
-			conf.ResetIncludeHead = true;
+			_conf.ResetIncludeHead = true;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReaderListener(ReaderListener<T> ReaderListener)
+		public override ReaderBuilder<T> ReaderListener(ReaderListener<T> readerListener)
 		{
-			conf.ReaderListener = ReaderListener;
+			_conf.ReaderListener = readerListener;
 			return this;
 		}
 
-		public override ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader CryptoKeyReader)
+		public override ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
 		{
-			conf.CryptoKeyReader = CryptoKeyReader;
+			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public override ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction Action)
+		public override ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
-			conf.CryptoFailureAction = Action;
+			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReceiverQueueSize(int ReceiverQueueSize)
+		public override ReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
-			conf.ReceiverQueueSize = ReceiverQueueSize;
+			_conf.ReceiverQueueSize = receiverQueueSize;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReaderName(string ReaderName)
+		public override ReaderBuilder<T> ReaderName(string readerName)
 		{
-			conf.ReaderName = ReaderName;
+			_conf.ReaderName = readerName;
 			return this;
 		}
 
-		public override ReaderBuilder<T> SubscriptionRolePrefix(string SubscriptionRolePrefix)
+		public override ReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
 		{
-			conf.SubscriptionRolePrefix = SubscriptionRolePrefix;
+			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReadCompacted(bool ReadCompacted)
+		public override ReaderBuilder<T> ReadCompacted(bool readCompacted)
 		{
-			conf.ReadCompacted = ReadCompacted;
+			_conf.ReadCompacted = readCompacted;
 			return this;
 		}
 	}
