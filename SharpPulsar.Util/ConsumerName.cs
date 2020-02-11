@@ -26,14 +26,14 @@ namespace SharpPulsar.Util
 	{
 		public static string GenerateRandomName()
 		{
-			return SHA1Hex(Guid.NewGuid().ToString()).Substring(0, 5);
+			return Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 5);
 		}
 		/// <summary>
 		/// Compute hash for string encoded as UTF8
 		/// </summary>
 		/// <param name="s">String to be hashed</param>
 		/// <returns>40-character hex string</returns>
-		public static string SHA1Hex(string s)
+		public static string Sha1Hex(string s)
 		{
 			byte[] bytes = Encoding.UTF8.GetBytes(s);
 

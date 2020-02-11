@@ -16,6 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+using System.Threading.Tasks;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Exception;
+
 namespace SharpPulsar.Api
 {
 
@@ -65,7 +71,7 @@ namespace SharpPulsar.Api
 		/// Asynchronously close the reader and stop the broker to push more messages.
 		/// </summary>
 		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask<Void> CloseAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Return true if the topic was terminated and this reader has reached the end of the topic.
@@ -170,7 +176,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="messageId"> the message id where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(IMessageId messageId);
+		ValueTask SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -183,7 +189,7 @@ namespace SharpPulsar.Api
 		/// <param name="timestamp">
 		///            the message publish time where to position the reader </param>
 		/// <returns> a future to track the completion of the seek operation </returns>
-		ValueTask<Void> SeekAsync(long timestamp);
+		ValueTask SeekAsync(long timestamp);
 	}
 
 }

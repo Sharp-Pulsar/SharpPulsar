@@ -16,203 +16,178 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+using System.Threading.Tasks;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Util;
+
 namespace SharpPulsar.Impl
 {
-	using DigestUtils = org.apache.commons.codec.digest.DigestUtils;
-	using StringUtils = org.apache.commons.lang3.StringUtils;
-	using SharpPulsar.Api;
-	using SubscriptionMode = Impl.ConsumerImpl.SubscriptionMode;
-	using SharpPulsar.Impl.Conf;
-	using SharpPulsar.Impl.Conf;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-    using System.Threading.Tasks;
 
     public class ReaderImpl<T> : IReader<T>
 	{
 
-		private readonly ConsumerImpl<T> consumer;
+		private readonly ConsumerImpl<T> _consumer;
 
-		public ReaderImpl(PulsarClientImpl Client, ReaderConfigurationData<T> ReaderConfiguration, TaskCompletionSource<IConsumer<T>> ConsumerFuture, ISchema<T> Schema)
+		public ReaderImpl(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, TaskCompletionSource<IConsumer<T>> consumerTask, ISchema<T> schema, ScheduledThreadPoolExecutor executor)
 		{
 
-			string Subscription = "reader-" + DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 10);
-			if (StringUtils.isNotBlank(ReaderConfiguration.SubscriptionRolePrefix))
+			string subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
-				Subscription = ReaderConfiguration.SubscriptionRolePrefix + "-" + Subscription;
+				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
-			ConsumerConfigurationData<T> ConsumerConfiguration = new ConsumerConfigurationData<T>();
-			ConsumerConfiguration.TopicNames.add(ReaderConfiguration.TopicName);
-			ConsumerConfiguration.SubscriptionName = Subscription;
-			ConsumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
-			ConsumerConfiguration.ReceiverQueueSize = ReaderConfiguration.ReceiverQueueSize;
-			ConsumerConfiguration.ReadCompacted = ReaderConfiguration.ReadCompacted;
+			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
+			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
+			consumerConfiguration.SubscriptionName = subscription;
+			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
+			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
+			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
 
-			if (ReaderConfiguration.ReaderName != null)
+			if (readerConfiguration.ReaderName != null)
 			{
-				ConsumerConfiguration.ConsumerName = ReaderConfiguration.ReaderName;
+				consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
 			}
 
-			if (ReaderConfiguration.ResetIncludeHead)
+			if (readerConfiguration.ResetIncludeHead)
 			{
-				ConsumerConfiguration.ResetIncludeHead = true;
+				consumerConfiguration.ResetIncludeHead = true;
 			}
 
-			if (ReaderConfiguration.ReaderListener != null)
+			if (readerConfiguration.ReaderListener != null)
 			{
-				ReaderListener<T> ReaderListener = ReaderConfiguration.ReaderListener;
-				ConsumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, ReaderListener);
+				ReaderListener<T> readerListener = readerConfiguration.ReaderListener;
+				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
 			}
 
-			ConsumerConfiguration.CryptoFailureAction = ReaderConfiguration.CryptoFailureAction;
-			if (ReaderConfiguration.CryptoKeyReader != null)
+			consumerConfiguration.CryptoFailureAction = readerConfiguration.CryptoFailureAction;
+			if (readerConfiguration.CryptoKeyReader != null)
 			{
-				ConsumerConfiguration.CryptoKeyReader = ReaderConfiguration.CryptoKeyReader;
+				consumerConfiguration.CryptoKeyReader = readerConfiguration.CryptoKeyReader;
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final int partitionIdx = org.apache.pulsar.common.naming.TopicName.getPartitionIndex(readerConfiguration.getTopicName());
-			int PartitionIdx = TopicName.getPartitionIndex(ReaderConfiguration.TopicName);
-			consumer = new ConsumerImpl<T>(Client, ReaderConfiguration.TopicName, ConsumerConfiguration, ListenerExecutor, PartitionIdx, false, ConsumerFuture, SubscriptionMode.NonDurable, ReaderConfiguration.StartMessageId, ReaderConfiguration.StartMessageFromRollbackDurationInSec, Schema, null, true);
+			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
+			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, executor, partitionIdx, false, consumerTask, ConsumerImpl<T>.SubscriptionMode.NonDurable, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
 		}
 
 		public class MessageListenerAnonymousInnerClass : MessageListener<T>
 		{
-			private readonly ReaderImpl<T> outerInstance;
+			private readonly ReaderImpl<T> _outerInstance;
 
-			private ReaderListener<T> readerListener;
+			private ReaderListener<T> _readerListener;
 
-			public MessageListenerAnonymousInnerClass(ReaderImpl<T> OuterInstance, ReaderListener<T> ReaderListener)
+			public MessageListenerAnonymousInnerClass(ReaderImpl<T> outerInstance, ReaderListener<T> readerListener)
 			{
-				this.outerInstance = OuterInstance;
-				this.readerListener = ReaderListener;
-				serialVersionUID = 1L;
+				this._outerInstance = outerInstance;
+				this._readerListener = readerListener;
+				SerialVersionUid = 1L;
 			}
 
-			private static readonly long serialVersionUID;
+			private static long SerialVersionUid;
 
-			public void received(IConsumer<T> Consumer, Message<T> Msg)
+			public void Received(IConsumer<T> consumer, Message<T> msg)
 			{
-				readerListener.Received(outerInstance, Msg);
-				Consumer.acknowledgeCumulativeAsync(Msg);
+				_readerListener.Received(_outerInstance, msg);
+				consumer.AcknowledgeCumulativeAsync(msg);
 			}
 
-			public void reachedEndOfTopic(IConsumer<T> Consumer)
+			public void ReachedEndOfTopic(IConsumer<T> consumer)
 			{
-				readerListener.ReachedEndOfTopic(outerInstance);
-			}
-		}
-
-		public virtual string Topic
-		{
-			get
-			{
-				return consumer.Topic;
+				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
 		}
 
-		public virtual ConsumerImpl<T> Consumer
+		public virtual string Topic => _consumer.Topic;
+
+        public virtual ConsumerImpl<T> Consumer => _consumer;
+
+        public bool HasReachedEndOfTopic()
 		{
-			get
-			{
-				return consumer;
-			}
+			return _consumer.HasReachedEndOfTopic();
 		}
 
-		public override bool HasReachedEndOfTopic()
+		public Message<T> ReadNext()
 		{
-			return consumer.HasReachedEndOfTopic();
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public Message<T> readNext() throws PulsarClientException
-		public override Message<T> ReadNext()
-		{
-			Message<T> Msg = consumer.Receive();
+			Message<T> msg = _consumer.Receive();
 
 			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
 			// it will specify the subscription position anyway
-			consumer.AcknowledgeCumulativeAsync(Msg);
-			return Msg;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public Message<T> readNext(int timeout, java.util.concurrent.BAMCIS.Util.Concurrent.TimeUnit unit) throws PulsarClientException
-		public override Message<T> ReadNext(int Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
-		{
-			Message<T> Msg = consumer.Receive(Timeout, Unit);
-
-			if (Msg != null)
-			{
-				consumer.AcknowledgeCumulativeAsync(Msg);
-			}
-			return Msg;
-		}
-
-		public override CompletableFuture<Message<T>> ReadNextAsync()
-		{
-			return consumer.ReceiveAsync().thenApply(msg =>
-			{
-			consumer.AcknowledgeCumulativeAsync(msg);
+			_consumer.AcknowledgeCumulativeAsync(msg);
 			return msg;
-			});
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public Message<T> ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			consumer.Close();
-		}
+			Message<T> msg = _consumer.Receive(timeout, unit);
 
-		public override CompletableFuture<Void> CloseAsync()
-		{
-			return consumer.CloseAsync();
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public boolean hasMessageAvailable() throws PulsarClientException
-		public override bool HasMessageAvailable()
-		{
-			return consumer.HasMessageAvailable();
-		}
-
-		public override CompletableFuture<bool> HasMessageAvailableAsync()
-		{
-			return consumer.HasMessageAvailableAsync();
-		}
-
-		public virtual bool Connected
-		{
-			get
+			if (msg != null)
 			{
-				return consumer.Connected;
+				_consumer.AcknowledgeCumulativeAsync(msg);
 			}
+			return msg;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(MessageId messageId) throws PulsarClientException
-		public override void Seek(IMessageId MessageId)
+		public ValueTask<Message<T>> ReadNextAsync()
 		{
-			consumer.Seek(MessageId);
+			var r = _consumer.ReceiveAsync().AsTask().ContinueWith(task =>
+            {
+                var msg = task.Result;
+			    _consumer.AcknowledgeCumulativeAsync(msg);
+			    return msg;
+			});
+			return new ValueTask<Message<T>>(r.Result);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(long timestamp) throws PulsarClientException
-		public override void Seek(long Timestamp)
+		public void Close()
 		{
-			consumer.Seek(Timestamp);
+			_consumer.Close();
 		}
 
-		public override CompletableFuture<Void> SeekAsync(IMessageId MessageId)
+		public ValueTask CloseAsync()
 		{
-			return consumer.SeekAsync(MessageId);
+			return _consumer.CloseAsync();
 		}
 
-		public override CompletableFuture<Void> SeekAsync(long Timestamp)
+		public bool HasMessageAvailable()
 		{
-			return consumer.SeekAsync(Timestamp);
+			return _consumer.HasMessageAvailable();
 		}
-	}
+
+		public ValueTask<bool> HasMessageAvailableAsync()
+		{
+			return _consumer.HasMessageAvailableAsync();
+		}
+
+		public virtual bool Connected => _consumer.Connected;
+
+		public void Seek(IMessageId messageId)
+		{
+			_consumer.Seek(messageId);
+		}
+
+		public void Seek(long timestamp)
+		{
+			_consumer.Seek(timestamp);
+		}
+
+		public ValueTask SeekAsync(IMessageId messageId)
+		{
+			return _consumer.SeekAsync(messageId);
+		}
+
+		public ValueTask SeekAsync(long timestamp)
+		{
+			return _consumer.SeekAsync(timestamp);
+		}
+
+        public void Dispose()
+        {
+            CloseAsync();
+        }
+    }
 
 }
