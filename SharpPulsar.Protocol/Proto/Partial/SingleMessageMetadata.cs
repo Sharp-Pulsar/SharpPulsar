@@ -38,23 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly SingleMessageMetadata _defaultInstance;
-		public static SingleMessageMetadata DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static SingleMessageMetadata DefaultInstance => _defaultInstance;
 
-		public SingleMessageMetadata DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public SingleMessageMetadata DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Properties.Clear();
 			PartitionKey = "";
@@ -203,15 +191,9 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 
-			public SingleMessageMetadata DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public SingleMessageMetadata DefaultInstanceForType => DefaultInstance;
 
-			public SingleMessageMetadata Build()
+            public SingleMessageMetadata Build()
 			{
 				SingleMessageMetadata Result = BuildPartial();
 				if (!Result.Initialized)
@@ -429,21 +411,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyValue> PropertiesList
-			{
-				get
-				{
-					return _properties;
-				}
-			}
-			public int PropertiesCount
-			{
-				get
-				{
-					return _properties.Count;
-				}
-			}
-			public KeyValue GetProperties(int Index)
+			public IList<KeyValue> PropertiesList => _properties;
+
+            public int PropertiesCount => _properties.Count;
+
+            public KeyValue GetProperties(int Index)
 			{
 				return _properties[Index];
 			}
@@ -540,14 +512,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000004) == 0x00000004);
 			}
-			public int PayloadSize
-			{
-				get
-				{
-					return _payloadSize;
-				}
-			}
-			public Builder SetPayloadSize(int Value)
+			public int PayloadSize => _payloadSize;
+
+            public Builder SetPayloadSize(int Value)
 			{
 				_bitField |= 0x00000004;
 				_payloadSize = Value;
@@ -568,14 +535,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000008) == 0x00000008);
 			}
-			public bool CompactedOut
-			{
-				get
-				{
-					return _compactedOut;
-				}
-			}
-			public Builder SetCompactedOut(bool Value)
+			public bool CompactedOut => _compactedOut;
+
+            public Builder SetCompactedOut(bool Value)
 			{
 				_bitField |= 0x00000008;
 				_compactedOut = Value;
@@ -596,14 +558,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000010) == 0x00000010);
 			}
-			public long EventTime
-			{
-				get
-				{
-					return _eventTime;
-				}
-			}
-			public Builder SetEventTime(long Value)
+			public long EventTime => _eventTime;
+
+            public Builder SetEventTime(long Value)
 			{
 				_bitField |= 0x00000010;
 				_eventTime = Value;
@@ -624,14 +581,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000020) == 0x00000020);
 			}
-			public bool PartitionKeyB64Encoded
-			{
-				get
-				{
-					return _partitionKeyB64Encoded;
-				}
-			}
-			public Builder SetPartitionKeyB64Encoded(bool Value)
+			public bool PartitionKeyB64Encoded => _partitionKeyB64Encoded;
+
+            public Builder SetPartitionKeyB64Encoded(bool Value)
 			{
 				_bitField |= 0x00000020;
 				_partitionKeyB64Encoded = Value;
@@ -678,14 +630,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000080) == 0x00000080);
 			}
-			public long SequenceId
-			{
-				get
-				{
-					return _sequenceId;
-				}
-			}
-			public Builder SetSequenceId(long Value)
+			public long SequenceId => _sequenceId;
+
+            public Builder SetSequenceId(long Value)
 			{
 				_bitField |= 0x00000080;
 				_sequenceId = Value;

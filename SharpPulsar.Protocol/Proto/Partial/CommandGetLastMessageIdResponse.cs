@@ -35,23 +35,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandGetLastMessageIdResponse _defaultInstance;
-		public static CommandGetLastMessageIdResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandGetLastMessageIdResponse DefaultInstance => _defaultInstance;
 
-		public CommandGetLastMessageIdResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandGetLastMessageIdResponse DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			LastMessageId = MessageIdData.DefaultInstance;
 			RequestId = 0L;
@@ -165,15 +153,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandGetLastMessageIdResponse DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandGetLastMessageIdResponse DefaultInstanceForType => DefaultInstance;
 
-			public CommandGetLastMessageIdResponse Build()
+            public CommandGetLastMessageIdResponse Build()
 			{
 				CommandGetLastMessageIdResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -351,14 +333,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;

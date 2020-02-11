@@ -37,21 +37,9 @@ namespace SharpPulsar.Protocol.Proto
         }
 
         internal static readonly MessageIdData _defaultInstance;
-        public static MessageIdData DefaultInstance
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public static MessageIdData DefaultInstance => _defaultInstance;
 
-        public MessageIdData DefaultInstanceForType
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public MessageIdData DefaultInstanceForType => _defaultInstance;
 
 
         public void InitFields()
@@ -155,13 +143,7 @@ namespace SharpPulsar.Protocol.Proto
                 return this;
             }
 
-            public MessageIdData DefaultInstanceForType
-            {
-                get
-                {
-                    return DefaultInstance;
-                }
-            }
+            public MessageIdData DefaultInstanceForType => DefaultInstance;
 
             public MessageIdData Build()
             {

@@ -38,41 +38,18 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly KeySharedMeta _defaultInstance;
-		public static KeySharedMeta DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static KeySharedMeta DefaultInstance => _defaultInstance;
 
-		public KeySharedMeta DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public KeySharedMeta DefaultInstanceForType => _defaultInstance;
 
-		// repeated .pulsar.proto.IntRange hashRanges = 3;
+        // repeated .pulsar.proto.IntRange hashRanges = 3;
 		public const int HashrangesFieldNumber = 3;
 		internal IList<IntRange> HashRanges_;
-		public IList<IntRange> HashRangesList
-		{
-			get
-			{
-				return HashRanges_;
-			}
-		}
-		
-		public int HashRangesCount
-		{
-			get
-			{
-				return HashRanges_.Count;
-			}
-		}
-		public IntRange GetHashRanges(int Index)
+		public IList<IntRange> HashRangesList => HashRanges_;
+
+        public int HashRangesCount => HashRanges_.Count;
+
+        public IntRange GetHashRanges(int Index)
 		{
 			return HashRanges_[Index];
 		}
@@ -188,15 +165,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public KeySharedMeta DefaultInstanceForType
-			{
-				get
-				{
-					return KeySharedMeta.DefaultInstance;
-				}
-			}
+			public KeySharedMeta DefaultInstanceForType => KeySharedMeta.DefaultInstance;
 
-			public KeySharedMeta Build()
+            public KeySharedMeta Build()
 			{
 				KeySharedMeta Result = BuildPartial();
 				if (!Result.Initialized)
@@ -333,14 +304,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public KeySharedMode KeySharedMode
-			{
-				get
-				{
-					return KeySharedMode_;
-				}
-			}
-			public Builder SetKeySharedMode(KeySharedMode Value)
+			public KeySharedMode KeySharedMode => KeySharedMode_;
+
+            public Builder SetKeySharedMode(KeySharedMode Value)
 			{
 				if (Value == null)
 				{
@@ -370,21 +336,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<IntRange> HashRangesList
-			{
-				get
-				{
-					return new List<IntRange>(HashRanges_);
-				}
-			}
-			public int HashRangesCount
-			{
-				get
-				{
-					return HashRanges_.Count;
-				}
-			}
-			public IntRange GetHashRanges(int Index)
+			public IList<IntRange> HashRangesList => new List<IntRange>(HashRanges_);
+
+            public int HashRangesCount => HashRanges_.Count;
+
+            public IntRange GetHashRanges(int Index)
 			{
 				return HashRanges_[Index];
 			}

@@ -35,23 +35,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly IntRange _defaultInstance;
-		public static IntRange DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static IntRange DefaultInstance => _defaultInstance;
 
-		public IntRange DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public IntRange DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Start = 0;
 			End = 0;
@@ -160,15 +148,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public IntRange DefaultInstanceForType
-			{
-				get
-				{
-					return IntRange.DefaultInstance;
-				}
-			}
+			public IntRange DefaultInstanceForType => IntRange.DefaultInstance;
 
-			public IntRange Build()
+            public IntRange Build()
 			{
 				IntRange Result = BuildPartial();
 				if (!Result.Initialized)
@@ -287,14 +269,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public int Start
-			{
-				get
-				{
-					return Start_;
-				}
-			}
-			public Builder SetStart(int Value)
+			public int Start => Start_;
+
+            public Builder SetStart(int Value)
 			{
 				BitField0_ |= 0x00000001;
 				Start_ = Value;
@@ -315,14 +292,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public int End
-			{
-				get
-				{
-					return End_;
-				}
-			}
-			public Builder SetEnd(int Value)
+			public int End => End_;
+
+            public Builder SetEnd(int Value)
 			{
 				BitField0_ |= 0x00000002;
 				End_ = Value;

@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandProducerSuccess _defaultInstance;
-		public static CommandProducerSuccess DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandProducerSuccess DefaultInstance => _defaultInstance;
 
-		public CommandProducerSuccess DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandProducerSuccess DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			ProducerName = "";
@@ -176,15 +164,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandProducerSuccess DefaultInstanceForType
-			{
-				get
-				{
-					return CommandProducerSuccess.DefaultInstance;
-				}
-			}
+			public CommandProducerSuccess DefaultInstanceForType => CommandProducerSuccess.DefaultInstance;
 
-			public CommandProducerSuccess Build()
+            public CommandProducerSuccess Build()
 			{
 				CommandProducerSuccess Result = BuildPartial();
 				if (!Result.Initialized)
@@ -332,14 +314,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -405,14 +382,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public long LastSequenceId
-			{
-				get
-				{
-					return LastSequenceId_;
-				}
-			}
-			public Builder SetLastSequenceId(long Value)
+			public long LastSequenceId => LastSequenceId_;
+
+            public Builder SetLastSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000004;
 				LastSequenceId_ = Value;
@@ -433,14 +405,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public ByteString SchemaVersion
-			{
-				get
-				{
-					return SchemaVersion_;
-				}
-			}
-			public Builder SetSchemaVersion(ByteString Value)
+			public ByteString SchemaVersion => SchemaVersion_;
+
+            public Builder SetSchemaVersion(ByteString Value)
 			{
 				if (Value == null)
 				{

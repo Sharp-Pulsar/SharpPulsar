@@ -36,23 +36,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandSuccess _defaultInstance;
-		public static CommandSuccess DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSuccess DefaultInstance => _defaultInstance;
 
-		public CommandSuccess DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
-		
-		public void InitFields()
+        public CommandSuccess DefaultInstanceForType => _defaultInstance;
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			Schema = Schema.DefaultInstance;
@@ -163,15 +151,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSuccess DefaultInstanceForType
-			{
-				get
-				{
-					return CommandSuccess.DefaultInstance;
-				}
-			}
+			public CommandSuccess DefaultInstanceForType => CommandSuccess.DefaultInstance;
 
-			public CommandSuccess Build()
+            public CommandSuccess Build()
 			{
 				CommandSuccess Result = BuildPartial();
 				if (!Result.Initialized)
@@ -298,14 +280,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;

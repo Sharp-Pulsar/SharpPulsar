@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandRedeliverUnacknowledgedMessages _defaultInstance;
-		public static CommandRedeliverUnacknowledgedMessages DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandRedeliverUnacknowledgedMessages DefaultInstance => _defaultInstance;
 
-		public CommandRedeliverUnacknowledgedMessages DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandRedeliverUnacknowledgedMessages DefaultInstanceForType => _defaultInstance;
 
-		public MessageIdData GetMessageIds(int Index)
+        public MessageIdData GetMessageIds(int Index)
 		{
 			return MessageIds[Index];
 		}
@@ -169,15 +157,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandRedeliverUnacknowledgedMessages DefaultInstanceForType
-			{
-				get
-				{
-					return CommandRedeliverUnacknowledgedMessages.DefaultInstance;
-				}
-			}
+			public CommandRedeliverUnacknowledgedMessages DefaultInstanceForType => CommandRedeliverUnacknowledgedMessages.DefaultInstance;
 
-			public CommandRedeliverUnacknowledgedMessages Build()
+            public CommandRedeliverUnacknowledgedMessages Build()
 			{
 				CommandRedeliverUnacknowledgedMessages Result = BuildPartial();
 				if (!Result.Initialized)
@@ -309,14 +291,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -342,21 +319,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<MessageIdData> MessageIdsList
-			{
-				get
-				{
-					return new List<MessageIdData>(MessageIds_);
-				}
-			}
-			public int MessageIdsCount
-			{
-				get
-				{
-					return MessageIds_.Count;
-				}
-			}
-			public MessageIdData GetMessageIds(int Index)
+			public IList<MessageIdData> MessageIdsList => new List<MessageIdData>(MessageIds_);
+
+            public int MessageIdsCount => MessageIds_.Count;
+
+            public MessageIdData GetMessageIds(int Index)
 			{
 				return MessageIds_[Index];
 			}

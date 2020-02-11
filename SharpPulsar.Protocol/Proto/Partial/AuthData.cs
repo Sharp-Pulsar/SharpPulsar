@@ -34,23 +34,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly AuthData _defaultInstance;
-		public static AuthData DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static AuthData DefaultInstance => _defaultInstance;
 
-		public AuthData DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public AuthData DefaultInstanceForType => _defaultInstance;
 
-		internal int BitField0_;
+        internal int BitField0_;
 		
 		public void InitFields()
 		{
@@ -151,15 +139,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public AuthData DefaultInstanceForType
-			{
-				get
-				{
-					return Proto.AuthData.DefaultInstance;
-				}
-			}
+			public AuthData DefaultInstanceForType => Proto.AuthData.DefaultInstance;
 
-			public AuthData Build()
+            public AuthData Build()
 			{
 				AuthData Result = BuildPartial();
 				if (!Result.Initialized)
@@ -215,15 +197,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			public bool Initialized
-			{
-				get
-				{
-					return true;
-				}
-			}
+			public bool Initialized => true;
 
-			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+            public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
 			{
 				while (true)
 				{
@@ -311,14 +287,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ByteString AuthData
-			{
-				get
-				{
-					return AuthData_;
-				}
-			}
-			public Builder SetAuthData(ByteString Value)
+			public ByteString AuthData => AuthData_;
+
+            public Builder SetAuthData(ByteString Value)
 			{
 				if (Value == null)
 				{

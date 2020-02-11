@@ -38,25 +38,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandLookupTopicResponse _defaultInstance;
-		public static CommandLookupTopicResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandLookupTopicResponse DefaultInstance => _defaultInstance;
 
-		public CommandLookupTopicResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandLookupTopicResponse DefaultInstanceForType => _defaultInstance;
 
 
-		
-		public void InitFields()
+        public void InitFields()
 		{
 			BrokerServiceUrl = "";
 			BrokerServiceUrlTls = "";
@@ -203,15 +190,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandLookupTopicResponse DefaultInstanceForType
-			{
-				get
-				{
-					return CommandLookupTopicResponse.DefaultInstance;
-				}
-			}
+			public CommandLookupTopicResponse DefaultInstanceForType => CommandLookupTopicResponse.DefaultInstance;
 
-			public CommandLookupTopicResponse Build()
+            public CommandLookupTopicResponse Build()
 			{
 				CommandLookupTopicResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -513,14 +494,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public Types.LookupType Response
-			{
-				get
-				{
-					return Response_;
-				}
-			}
-			public Builder SetResponse(Types.LookupType Value)
+			public Types.LookupType Response => Response_;
+
+            public Builder SetResponse(Types.LookupType Value)
 			{
 				if (Value == null)
 				{
@@ -545,14 +521,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000008;
 				RequestId_ = Value;
@@ -573,14 +544,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public bool Authoritative
-			{
-				get
-				{
-					return Authoritative_;
-				}
-			}
-			public Builder SetAuthoritative(bool Value)
+			public bool Authoritative => Authoritative_;
+
+            public Builder SetAuthoritative(bool Value)
 			{
 				BitField0_ |= 0x00000010;
 				Authoritative_ = Value;
@@ -601,14 +567,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000020) == 0x00000020);
 			}
-			public ServerError Error
-			{
-				get
-				{
-					return Error_;
-				}
-			}
-			public Builder SetError(ServerError Value)
+			public ServerError Error => Error_;
+
+            public Builder SetError(ServerError Value)
 			{
 				if (Value == null)
 				{
@@ -678,14 +639,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000080) == 0x00000080);
 			}
-			public bool ProxyThroughServiceUrl
-			{
-				get
-				{
-					return ProxyThroughServiceUrl_;
-				}
-			}
-			public Builder SetProxyThroughServiceUrl(bool Value)
+			public bool ProxyThroughServiceUrl => ProxyThroughServiceUrl_;
+
+            public Builder SetProxyThroughServiceUrl(bool Value)
 			{
 				BitField0_ |= 0x00000080;
 				ProxyThroughServiceUrl_ = Value;

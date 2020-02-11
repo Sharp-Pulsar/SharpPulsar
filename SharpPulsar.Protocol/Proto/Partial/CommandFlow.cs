@@ -36,23 +36,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandFlow _defaultInstance;
-		public static CommandFlow DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandFlow DefaultInstance => _defaultInstance;
 
-		public CommandFlow DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
-		
-		public void InitFields()
+        public CommandFlow DefaultInstanceForType => _defaultInstance;
+
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 			MessagePermits = 0;
@@ -160,15 +148,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandFlow DefaultInstanceForType
-			{
-				get
-				{
-					return CommandFlow.DefaultInstance;
-				}
-			}
+			public CommandFlow DefaultInstanceForType => CommandFlow.DefaultInstance;
 
-			public CommandFlow Build()
+            public CommandFlow Build()
 			{
 				CommandFlow Result = BuildPartial();
 				if (!Result.Initialized)
@@ -285,14 +267,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -313,14 +290,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public int MessagePermits
-			{
-				get
-				{
-					return MessagePermits_;
-				}
-			}
-			public Builder SetMessagePermits(int Value)
+			public int MessagePermits => MessagePermits_;
+
+            public Builder SetMessagePermits(int Value)
 			{
 				BitField0_ |= 0x00000002;
 				MessagePermits_ = Value;

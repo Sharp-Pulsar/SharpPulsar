@@ -38,23 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandGetTopicsOfNamespace _defaultInstance;
-		public static CommandGetTopicsOfNamespace DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandGetTopicsOfNamespace DefaultInstance => _defaultInstance;
 
-		public CommandGetTopicsOfNamespace DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandGetTopicsOfNamespace DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			RequestId = 0L;
 			Namespace = "";
@@ -170,15 +158,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandGetTopicsOfNamespace DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandGetTopicsOfNamespace DefaultInstanceForType => DefaultInstance;
 
-			public CommandGetTopicsOfNamespace Build()
+            public CommandGetTopicsOfNamespace Build()
 			{
 				CommandGetTopicsOfNamespace Result = BuildPartial();
 				if (!Result.Initialized)
@@ -315,14 +297,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -388,14 +365,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public Types.Mode Mode
-			{
-				get
-				{
-					return Mode_;
-				}
-			}
-			public Builder SetMode(Types.Mode Value)
+			public Types.Mode Mode => Mode_;
+
+            public Builder SetMode(Types.Mode Value)
 			{
 				if (Value == null)
 				{

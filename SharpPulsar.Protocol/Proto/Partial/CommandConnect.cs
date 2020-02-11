@@ -38,23 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		internal static readonly CommandConnect _defaultInstance;
-		public static CommandConnect DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandConnect DefaultInstance => _defaultInstance;
 
-		public CommandConnect DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandConnect DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ClientVersion = "";
 			AuthMethod = AuthMethod.None;
@@ -201,15 +189,9 @@ namespace SharpPulsar.Protocol.Proto
 
 			
 
-			public CommandConnect DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandConnect DefaultInstanceForType => DefaultInstance;
 
-			public CommandConnect Build()
+            public CommandConnect Build()
 			{
 				var result = BuildPartial();
 				if (!result.Initialized)
@@ -532,14 +514,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000010) == 0x00000010);
 			}
-			public int ProtocolVersion
-			{
-				get
-				{
-					return _protocolVersion;
-				}
-			}
-			public Builder SetProtocolVersion(int Value)
+			public int ProtocolVersion => _protocolVersion;
+
+            public Builder SetProtocolVersion(int Value)
 			{
 				_bitField |= 0x00000010;
 				_protocolVersion = Value;

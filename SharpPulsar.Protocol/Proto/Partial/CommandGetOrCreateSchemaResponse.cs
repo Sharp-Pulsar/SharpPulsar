@@ -37,24 +37,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandGetOrCreateSchemaResponse _defaultInstance;
-		public static CommandGetOrCreateSchemaResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandGetOrCreateSchemaResponse DefaultInstance => _defaultInstance;
 
-		public CommandGetOrCreateSchemaResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandGetOrCreateSchemaResponse DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			ErrorCode = ServerError.UnknownError;
@@ -172,15 +160,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandGetOrCreateSchemaResponse DefaultInstanceForType
-			{
-				get
-				{
-					return CommandGetOrCreateSchemaResponse.DefaultInstance;
-				}
-			}
+			public CommandGetOrCreateSchemaResponse DefaultInstanceForType => CommandGetOrCreateSchemaResponse.DefaultInstance;
 
-			public CommandGetOrCreateSchemaResponse Build()
+            public CommandGetOrCreateSchemaResponse Build()
 			{
 				CommandGetOrCreateSchemaResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -328,14 +310,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -356,14 +333,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ServerError ErrorCode
-			{
-				get
-				{
-					return ErrorCode_;
-				}
-			}
-			public Builder SetErrorCode(ServerError Value)
+			public ServerError ErrorCode => ErrorCode_;
+
+            public Builder SetErrorCode(ServerError Value)
 			{
 				if (Value == null)
 				{
@@ -433,14 +405,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public ByteString SchemaVersion
-			{
-				get
-				{
-					return SchemaVersion_;
-				}
-			}
-			public Builder SetSchemaVersion(ByteString Value)
+			public ByteString SchemaVersion => SchemaVersion_;
+
+            public Builder SetSchemaVersion(ByteString Value)
 			{
 				if (Value == null)
 				{

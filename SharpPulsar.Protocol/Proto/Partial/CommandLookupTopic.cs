@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandLookupTopic _defaultInstance;
-		public static CommandLookupTopic DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandLookupTopic DefaultInstance => _defaultInstance;
 
-		public CommandLookupTopic DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandLookupTopic DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Topic = "";
 			RequestId = 0L;
@@ -190,15 +178,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandLookupTopic DefaultInstanceForType
-			{
-				get
-				{
-					return CommandLookupTopic.DefaultInstance;
-				}
-			}
+			public CommandLookupTopic DefaultInstanceForType => CommandLookupTopic.DefaultInstance;
 
-			public CommandLookupTopic Build()
+            public CommandLookupTopic Build()
 			{
 				CommandLookupTopic Result = BuildPartial();
 				if (!Result.Initialized)
@@ -421,14 +403,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;
@@ -449,14 +426,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public bool Authoritative
-			{
-				get
-				{
-					return Authoritative_;
-				}
-			}
-			public Builder SetAuthoritative(bool Value)
+			public bool Authoritative => Authoritative_;
+
+            public Builder SetAuthoritative(bool Value)
 			{
 				BitField0_ |= 0x00000004;
 				Authoritative_ = Value;

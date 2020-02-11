@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		internal static readonly CommandUnsubscribe _defaultInstance;
-		public static CommandUnsubscribe DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandUnsubscribe DefaultInstance => _defaultInstance;
 
-		public CommandUnsubscribe DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandUnsubscribe DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 			RequestId = 0L;
@@ -161,15 +149,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandUnsubscribe DefaultInstanceForType
-			{
-				get
-				{
-					return CommandUnsubscribe.DefaultInstance;
-				}
-			}
+			public CommandUnsubscribe DefaultInstanceForType => CommandUnsubscribe.DefaultInstance;
 
-			public CommandUnsubscribe Build()
+            public CommandUnsubscribe Build()
 			{
 				CommandUnsubscribe Result = BuildPartial();
 				if (!Result.Initialized)
@@ -286,14 +268,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -314,14 +291,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;

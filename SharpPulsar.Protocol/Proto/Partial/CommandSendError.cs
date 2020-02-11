@@ -38,23 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandSendError _defaultInstance;
-		public static CommandSendError DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSendError DefaultInstance => _defaultInstance;
 
-		public CommandSendError DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandSendError DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ProducerId = 0L;
 			SequenceId = 0L;
@@ -185,15 +173,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSendError DefaultInstanceForType
-			{
-				get
-				{
-					return CommandSendError.DefaultInstance;
-				}
-			}
+			public CommandSendError DefaultInstanceForType => CommandSendError.DefaultInstance;
 
-			public CommandSendError Build()
+            public CommandSendError Build()
 			{
 				CommandSendError Result = BuildPartial();
 				if (!Result.Initialized)
@@ -354,14 +336,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ProducerId
-			{
-				get
-				{
-					return ProducerId_;
-				}
-			}
-			public Builder SetProducerId(long Value)
+			public long ProducerId => ProducerId_;
+
+            public Builder SetProducerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ProducerId_ = Value;
@@ -382,14 +359,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long SequenceId
-			{
-				get
-				{
-					return SequenceId_;
-				}
-			}
-			public Builder SetSequenceId(long Value)
+			public long SequenceId => SequenceId_;
+
+            public Builder SetSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				SequenceId_ = Value;
@@ -410,14 +382,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public ServerError Error
-			{
-				get
-				{
-					return Error_;
-				}
-			}
-			public Builder SetError(ServerError Value)
+			public ServerError Error => Error_;
+
+            public Builder SetError(ServerError Value)
 			{
 				if (Value == null)
 				{

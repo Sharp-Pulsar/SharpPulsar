@@ -38,24 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandProducer _defaultInstance;
-		public static CommandProducer DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandProducer DefaultInstance => _defaultInstance;
 
-		public CommandProducer DefaultInstanceForType
-		{
-			
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandProducer DefaultInstanceForType => _defaultInstance;
 
-		public KeyValue GetMetadata(int Index)
+        public KeyValue GetMetadata(int Index)
 		{
 			return Metadata[Index];
 		}
@@ -238,15 +225,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandProducer DefaultInstanceForType
-			{
-				get
-				{
-					return CommandProducer.DefaultInstance;
-				}
-			}
+			public CommandProducer DefaultInstanceForType => CommandProducer.DefaultInstance;
 
-			public CommandProducer Build()
+            public CommandProducer Build()
 			{
 				CommandProducer Result = BuildPartial();
 				if (!Result.Initialized)
@@ -552,14 +533,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long ProducerId
-			{
-				get
-				{
-					return ProducerId_;
-				}
-			}
-			public Builder SetProducerId(long Value)
+			public long ProducerId => ProducerId_;
+
+            public Builder SetProducerId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				ProducerId_ = Value;
@@ -580,14 +556,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000004;
 				RequestId_ = Value;
@@ -653,14 +624,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public bool Encrypted
-			{
-				get
-				{
-					return Encrypted_;
-				}
-			}
-			public Builder SetEncrypted(bool Value)
+			public bool Encrypted => Encrypted_;
+
+            public Builder SetEncrypted(bool Value)
 			{
 				BitField0_ |= 0x00000010;
 				Encrypted_ = Value;
@@ -686,21 +652,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyValue> MetadataList
-			{
-				get
-				{
-					return new List<KeyValue>(Metadata_);
-				}
-			}
-			public int MetadataCount
-			{
-				get
-				{
-					return Metadata_.Count;
-				}
-			}
-			public KeyValue GetMetadata(int Index)
+			public IList<KeyValue> MetadataList => new List<KeyValue>(Metadata_);
+
+            public int MetadataCount => Metadata_.Count;
+
+            public KeyValue GetMetadata(int Index)
 			{
 				return Metadata_[Index];
 			}
@@ -836,14 +792,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000080) == 0x00000080);
 			}
-			public long Epoch
-			{
-				get
-				{
-					return Epoch_;
-				}
-			}
-			public Builder SetEpoch(long Value)
+			public long Epoch => Epoch_;
+
+            public Builder SetEpoch(long Value)
 			{
 				BitField0_ |= 0x00000080;
 				Epoch_ = Value;
@@ -864,14 +815,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000100) == 0x00000100);
 			}
-			public bool UserProvidedProducerName
-			{
-				get
-				{
-					return UserProvidedProducerName_;
-				}
-			}
-			public Builder SetUserProvidedProducerName(bool Value)
+			public bool UserProvidedProducerName => UserProvidedProducerName_;
+
+            public Builder SetUserProvidedProducerName(bool Value)
 			{
 				BitField0_ |= 0x00000100;
 				UserProvidedProducerName_ = Value;

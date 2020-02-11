@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandConnected _defaultInstance;
-		public static CommandConnected DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandConnected DefaultInstance => _defaultInstance;
 
-		public CommandConnected DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandConnected DefaultInstanceForType => _defaultInstance;
 
 
-		public void InitFields()
+        public void InitFields()
 		{
 			serverVersion_ = "";
 			protocolVersion_ = 0;
@@ -171,15 +159,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandConnected DefaultInstanceForType
-			{
-				get
-				{
-					return CommandConnected.DefaultInstance;
-				}
-			}
+			public CommandConnected DefaultInstanceForType => CommandConnected.DefaultInstance;
 
-			public CommandConnected Build()
+            public CommandConnected Build()
 			{
 				CommandConnected Result = BuildPartial();
 				if (!Result.Initialized)
@@ -341,14 +323,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000002) == 0x00000002);
 			}
-			public int ProtocolVersion
-			{
-				get
-				{
-					return ProtocolVersion_;
-				}
-			}
-			public Builder SetProtocolVersion(int Value)
+			public int ProtocolVersion => ProtocolVersion_;
+
+            public Builder SetProtocolVersion(int Value)
 			{
 				_hasBits0 |= 0x00000002;
 				ProtocolVersion_ = Value;
@@ -369,14 +346,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000004) == 0x00000004);
 			}
-			public int MaxMessageSize
-			{
-				get
-				{
-					return MaxMessageSize_;
-				}
-			}
-			public Builder SetMaxMessageSize(int Value)
+			public int MaxMessageSize => MaxMessageSize_;
+
+            public Builder SetMaxMessageSize(int Value)
 			{
 				_hasBits0 |= 0x00000004;
 				MaxMessageSize_ = Value;

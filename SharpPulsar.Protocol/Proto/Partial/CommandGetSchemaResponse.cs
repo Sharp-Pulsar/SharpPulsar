@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandGetSchemaResponse _defaultInstance;
-		public static CommandGetSchemaResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandGetSchemaResponse DefaultInstance => _defaultInstance;
 
-		public CommandGetSchemaResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandGetSchemaResponse DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			ErrorCode = ServerError.UnknownError;
@@ -185,15 +173,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandGetSchemaResponse DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandGetSchemaResponse DefaultInstanceForType => DefaultInstance;
 
-			public CommandGetSchemaResponse Build()
+            public CommandGetSchemaResponse Build()
 			{
 				CommandGetSchemaResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -369,14 +351,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -397,14 +374,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ServerError ErrorCode
-			{
-				get
-				{
-					return ErrorCode_;
-				}
-			}
-			public Builder SetErrorCode(ServerError Value)
+			public ServerError ErrorCode => ErrorCode_;
+
+            public Builder SetErrorCode(ServerError Value)
 			{
 				if (Value == null)
 				{
@@ -524,14 +496,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public ByteString SchemaVersion
-			{
-				get
-				{
-					return SchemaVersion_;
-				}
-			}
-			public Builder SetSchemaVersion(ByteString Value)
+			public ByteString SchemaVersion => SchemaVersion_;
+
+            public Builder SetSchemaVersion(ByteString Value)
 			{
 				if (Value == null)
 				{

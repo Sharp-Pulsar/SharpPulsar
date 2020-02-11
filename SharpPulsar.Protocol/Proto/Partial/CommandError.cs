@@ -37,24 +37,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandError _defaultInstance;
-		public static CommandError DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandError DefaultInstance => _defaultInstance;
 
-		public CommandError DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandError DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			Error = ServerError.UnknownError;
@@ -174,15 +162,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandError DefaultInstanceForType
-			{
-				get
-				{
-					return CommandError.DefaultInstance;
-				}
-			}
+			public CommandError DefaultInstanceForType => CommandError.DefaultInstance;
 
-			public CommandError Build()
+            public CommandError Build()
 			{
 				CommandError Result = BuildPartial();
 				if (!Result.Initialized)
@@ -324,14 +306,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -352,14 +329,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ServerError Error
-			{
-				get
-				{
-					return Error_;
-				}
-			}
-			public Builder SetError(ServerError Value)
+			public ServerError Error => Error_;
+
+            public Builder SetError(ServerError Value)
 			{
 				if (Value == null)
 				{

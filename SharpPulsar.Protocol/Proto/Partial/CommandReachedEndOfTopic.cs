@@ -36,23 +36,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandReachedEndOfTopic _defaultInstance;
-		public static CommandReachedEndOfTopic DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandReachedEndOfTopic DefaultInstance => _defaultInstance;
 
-		public CommandReachedEndOfTopic DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandReachedEndOfTopic DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 		}
@@ -149,15 +137,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandReachedEndOfTopic DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandReachedEndOfTopic DefaultInstanceForType => DefaultInstance;
 
-			public CommandReachedEndOfTopic Build()
+            public CommandReachedEndOfTopic Build()
 			{
 				CommandReachedEndOfTopic Result = BuildPartial();
 				if (!Result.Initialized)
@@ -255,14 +237,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;

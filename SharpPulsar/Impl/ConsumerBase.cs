@@ -76,21 +76,21 @@ namespace SharpPulsar.Impl
         protected ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ScheduledThreadPoolExecutor listenerExecutor, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors) : base(client, topic)
         {
             ConsumerState = State.Uninitialized;
-			this._maxReceiverQueueSize = receiverQueueSize;
-			this._subscription = conf.SubscriptionName;
-			this.Conf = conf;
-			this._consumerName = conf.ConsumerName ?? Util.ConsumerName.GenerateRandomName();
-			this.SubscribeTask = subscribeTask;
-			this.Listener = conf.MessageListener;
-			this.ConsumerEventListener = conf.ConsumerEventListener;
+			_maxReceiverQueueSize = receiverQueueSize;
+			_subscription = conf.SubscriptionName;
+			Conf = conf;
+			_consumerName = conf.ConsumerName ?? Util.ConsumerName.GenerateRandomName();
+			SubscribeTask = subscribeTask;
+			Listener = conf.MessageListener;
+			ConsumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
-			this.IncomingMessages = new GrowableArrayBlockingQueue<Message<T>>();
+			IncomingMessages = new GrowableArrayBlockingQueue<Message<T>>();
 
-			this.ListenerExecutor = listenerExecutor;
-			this.PendingReceives = new ConcurrentQueue<TaskCompletionSource<Message<T>>>();
-			this.Schema = schema;
-			this.Interceptors = interceptors;
-			this.BatchReceivePolicy = conf.BatchReceivePolicy ?? BatchReceivePolicy.DefaultPolicy;
+			ListenerExecutor = listenerExecutor;
+			PendingReceives = new ConcurrentQueue<TaskCompletionSource<Message<T>>>();
+			Schema = schema;
+			Interceptors = interceptors;
+			BatchReceivePolicy = conf.BatchReceivePolicy ?? BatchReceivePolicy.DefaultPolicy;
 			if (BatchReceivePolicy.TimeoutMs > 0)
 			{
 				BatchReceiveTimeout = client.Timer.NewTimeout(this, TimeSpan.FromMilliseconds(BatchReceivePolicy.TimeoutMs));
@@ -433,7 +433,7 @@ namespace SharpPulsar.Impl
 
         public  string Subscription => _subscription;
 
-        public virtual string ConsumerName => this._consumerName;
+        public virtual string ConsumerName => _consumerName;
 
         /// <summary>
 		/// Redelivers the given unacknowledged messages. In Failover mode, the request is ignored if the consumer is not
@@ -547,8 +547,8 @@ namespace SharpPulsar.Impl
 
 			public OpBatchReceive(TaskCompletionSource<Messages<T>> task)
 			{
-				this.Task = task;
-				this.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
+				Task = task;
+				CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
 			internal static OpBatchReceive<T1> Of<T1>(TaskCompletionSource<Messages<T>> task)

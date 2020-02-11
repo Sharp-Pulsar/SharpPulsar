@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandNewTxn _defaultInstance;
-		public static CommandNewTxn DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandNewTxn DefaultInstance => _defaultInstance;
 
-		public CommandNewTxn DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandNewTxn DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			TxnTtlSeconds = 0L;
@@ -162,15 +150,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandNewTxn DefaultInstanceForType
-			{
-				get
-				{
-					return CommandNewTxn.DefaultInstance;
-				}
-			}
+			public CommandNewTxn DefaultInstanceForType => CommandNewTxn.DefaultInstance;
 
-			public CommandNewTxn Build()
+            public CommandNewTxn Build()
 			{
 				CommandNewTxn Result = BuildPartial();
 				if (!Result.Initialized)
@@ -297,14 +279,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -325,14 +302,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long TxnTtlSeconds
-			{
-				get
-				{
-					return TxnTtlSeconds_;
-				}
-			}
-			public Builder SetTxnTtlSeconds(long Value)
+			public long TxnTtlSeconds => TxnTtlSeconds_;
+
+            public Builder SetTxnTtlSeconds(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				TxnTtlSeconds_ = Value;
@@ -353,14 +325,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public long TcId
-			{
-				get
-				{
-					return TcId_;
-				}
-			}
-			public Builder SetTcId(long Value)
+			public long TcId => TcId_;
+
+            public Builder SetTcId(long Value)
 			{
 				BitField0_ |= 0x00000004;
 				TcId_ = Value;

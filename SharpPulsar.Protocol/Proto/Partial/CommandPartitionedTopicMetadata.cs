@@ -36,23 +36,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandPartitionedTopicMetadata _defaultInstance;
-		public static CommandPartitionedTopicMetadata DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandPartitionedTopicMetadata DefaultInstance => _defaultInstance;
 
-		public CommandPartitionedTopicMetadata DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandPartitionedTopicMetadata DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Topic = "";
 			RequestId = 0L;
@@ -182,15 +170,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandPartitionedTopicMetadata DefaultInstanceForType
-			{
-				get
-				{
-					return CommandPartitionedTopicMetadata.DefaultInstance;
-				}
-			}
+			public CommandPartitionedTopicMetadata DefaultInstanceForType => CommandPartitionedTopicMetadata.DefaultInstance;
 
-			public CommandPartitionedTopicMetadata Build()
+            public CommandPartitionedTopicMetadata Build()
 			{
 				CommandPartitionedTopicMetadata Result = BuildPartial();
 				if (!Result.Initialized)
@@ -398,14 +380,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;

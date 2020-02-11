@@ -37,24 +37,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandConsumerStatsResponse _defaultInstance;
-		public static CommandConsumerStatsResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandConsumerStatsResponse DefaultInstance => _defaultInstance;
 
-		public CommandConsumerStatsResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandConsumerStatsResponse DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			ErrorCode = ServerError.UnknownError;
@@ -248,15 +236,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandConsumerStatsResponse DefaultInstanceForType
-			{
-				get
-				{
-					return CommandConsumerStatsResponse.DefaultInstance;
-				}
-			}
+			public CommandConsumerStatsResponse DefaultInstanceForType => CommandConsumerStatsResponse.DefaultInstance;
 
-			public CommandConsumerStatsResponse Build()
+            public CommandConsumerStatsResponse Build()
 			{
 				CommandConsumerStatsResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -569,14 +551,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -597,14 +574,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ServerError ErrorCode
-			{
-				get
-				{
-					return ErrorCode_;
-				}
-			}
-			public Builder SetErrorCode(ServerError Value)
+			public ServerError ErrorCode => ErrorCode_;
+
+            public Builder SetErrorCode(ServerError Value)
 			{
 				if (Value == null)
 				{
@@ -674,14 +646,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public double MsgRateOut
-			{
-				get
-				{
-					return MsgRateOut_;
-				}
-			}
-			public Builder SetMsgRateOut(double Value)
+			public double MsgRateOut => MsgRateOut_;
+
+            public Builder SetMsgRateOut(double Value)
 			{
 				BitField0_ |= 0x00000008;
 				MsgRateOut_ = Value;
@@ -702,14 +669,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public double MsgThroughputOut
-			{
-				get
-				{
-					return MsgThroughputOut_;
-				}
-			}
-			public Builder SetMsgThroughputOut(double Value)
+			public double MsgThroughputOut => MsgThroughputOut_;
+
+            public Builder SetMsgThroughputOut(double Value)
 			{
 				BitField0_ |= 0x00000010;
 				MsgThroughputOut_ = Value;
@@ -730,14 +692,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000020) == 0x00000020);
 			}
-			public double MsgRateRedeliver
-			{
-				get
-				{
-					return MsgRateRedeliver_;
-				}
-			}
-			public Builder SetMsgRateRedeliver(double Value)
+			public double MsgRateRedeliver => MsgRateRedeliver_;
+
+            public Builder SetMsgRateRedeliver(double Value)
 			{
 				BitField0_ |= 0x00000020;
 				MsgRateRedeliver_ = Value;
@@ -803,14 +760,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000080) == 0x00000080);
 			}
-			public long AvailablePermits
-			{
-				get
-				{
-					return AvailablePermits_;
-				}
-			}
-			public Builder SetAvailablePermits(long Value)
+			public long AvailablePermits => AvailablePermits_;
+
+            public Builder SetAvailablePermits(long Value)
 			{
 				BitField0_ |= 0x00000080;
 				AvailablePermits_ = Value;
@@ -831,14 +783,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000100) == 0x00000100);
 			}
-			public long UnackedMessages
-			{
-				get
-				{
-					return UnackedMessages_;
-				}
-			}
-			public Builder SetUnackedMessages(long Value)
+			public long UnackedMessages => UnackedMessages_;
+
+            public Builder SetUnackedMessages(long Value)
 			{
 				BitField0_ |= 0x00000100;
 				UnackedMessages_ = Value;
@@ -859,14 +806,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000200) == 0x00000200);
 			}
-			public bool BlockedConsumerOnUnackedMsgs
-			{
-				get
-				{
-					return BlockedConsumerOnUnackedMsgs_;
-				}
-			}
-			public Builder SetBlockedConsumerOnUnackedMsgs(bool Value)
+			public bool BlockedConsumerOnUnackedMsgs => BlockedConsumerOnUnackedMsgs_;
+
+            public Builder SetBlockedConsumerOnUnackedMsgs(bool Value)
 			{
 				BitField0_ |= 0x00000200;
 				BlockedConsumerOnUnackedMsgs_ = Value;
@@ -1022,14 +964,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00002000) == 0x00002000);
 			}
-			public double MsgRateExpired
-			{
-				get
-				{
-					return MsgRateExpired_;
-				}
-			}
-			public Builder SetMsgRateExpired(double Value)
+			public double MsgRateExpired => MsgRateExpired_;
+
+            public Builder SetMsgRateExpired(double Value)
 			{
 				BitField0_ |= 0x00002000;
 				MsgRateExpired_ = Value;
@@ -1050,14 +987,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00004000) == 0x00004000);
 			}
-			public long MsgBacklog
-			{
-				get
-				{
-					return MsgBacklog_;
-				}
-			}
-			public Builder SetMsgBacklog(long Value)
+			public long MsgBacklog => MsgBacklog_;
+
+            public Builder SetMsgBacklog(long Value)
 			{
 				BitField0_ |= 0x00004000;
 				MsgBacklog_ = Value;

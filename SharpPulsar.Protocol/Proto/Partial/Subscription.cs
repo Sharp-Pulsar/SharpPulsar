@@ -35,23 +35,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly Subscription _defaultInstance;
-		public static Subscription DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static Subscription DefaultInstance => _defaultInstance;
 
-		public Subscription DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public Subscription DefaultInstanceForType => _defaultInstance;
 
-		internal int BitField0_;
+        internal int BitField0_;
 		
 		public void InitFields()
 		{
@@ -162,15 +150,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public Subscription DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public Subscription DefaultInstanceForType => DefaultInstance;
 
-			public Subscription Build()
+            public Subscription Build()
 			{
 				Subscription Result = BuildPartial();
 				if (!Result.Initialized)

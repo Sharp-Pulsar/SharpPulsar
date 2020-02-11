@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandAckResponse _defaultInstance;
-		public static CommandAckResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandAckResponse DefaultInstance => _defaultInstance;
 
-		public CommandAckResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandAckResponse DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 			TxnidLeastBits = 0L;
@@ -177,15 +165,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandAckResponse DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandAckResponse DefaultInstanceForType => DefaultInstance;
 
-			public CommandAckResponse Build()
+            public CommandAckResponse Build()
 			{
 				CommandAckResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -346,14 +328,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -374,14 +351,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long TxnidLeastBits
-			{
-				get
-				{
-					return TxnidLeastBits_;
-				}
-			}
-			public Builder SetTxnidLeastBits(long Value)
+			public long TxnidLeastBits => TxnidLeastBits_;
+
+            public Builder SetTxnidLeastBits(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				TxnidLeastBits_ = Value;
@@ -402,14 +374,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public long TxnidMostBits
-			{
-				get
-				{
-					return TxnidMostBits_;
-				}
-			}
-			public Builder SetTxnidMostBits(long Value)
+			public long TxnidMostBits => TxnidMostBits_;
+
+            public Builder SetTxnidMostBits(long Value)
 			{
 				BitField0_ |= 0x00000004;
 				TxnidMostBits_ = Value;
@@ -430,14 +397,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public ServerError Error
-			{
-				get
-				{
-					return Error_;
-				}
-			}
-			public Builder SetError(ServerError Value)
+			public ServerError Error => Error_;
+
+            public Builder SetError(ServerError Value)
 			{
 				if (Value == null)
 				{

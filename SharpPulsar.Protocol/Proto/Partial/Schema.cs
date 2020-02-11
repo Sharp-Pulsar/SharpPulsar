@@ -36,38 +36,15 @@ namespace SharpPulsar.Protocol.Proto
         {
         }
         internal static readonly Schema _defaultInstance;
-        public static Schema DefaultInstance
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public static Schema DefaultInstance => _defaultInstance;
 
-        public Schema DefaultInstanceForType
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public Schema DefaultInstanceForType => _defaultInstance;
 
-        
-        public IList<KeyValue> PropertiesList
-        {
-            get
-            {
-                return Properties;
-            }
-        }
 
-        public int PropertiesCount
-        {
-            get
-            {
-                return Properties.Count;
-            }
-        }
+        public IList<KeyValue> PropertiesList => Properties;
+
+        public int PropertiesCount => Properties.Count;
+
         public KeyValue GetProperties(int Index)
         {
             return Properties[Index];
@@ -226,13 +203,7 @@ namespace SharpPulsar.Protocol.Proto
                 return this;
             }
 
-            public Schema DefaultInstanceForType
-            {
-                get
-                {
-                    return DefaultInstance;
-                }
-            }
+            public Schema DefaultInstanceForType => DefaultInstance;
 
             public Schema Build()
             {
@@ -448,13 +419,8 @@ namespace SharpPulsar.Protocol.Proto
             {
                 return ((_bitField & 0x00000004) == 0x00000004);
             }
-            public Types.Type Type
-            {
-                get
-                {
-                    return _type;
-                }
-            }
+            public Types.Type Type => _type;
+
             public Builder SetType(Types.Type value)
             {
                 if (value == null)
@@ -485,20 +451,10 @@ namespace SharpPulsar.Protocol.Proto
                 }
             }
 
-            public IList<KeyValue> PropertiesList
-            {
-                get
-                {
-                    return new List<KeyValue>(_properties);
-                }
-            }
-            public int PropertiesCount
-            {
-                get
-                {
-                    return _properties.Count;
-                }
-            }
+            public IList<KeyValue> PropertiesList => new List<KeyValue>(_properties);
+
+            public int PropertiesCount => _properties.Count;
+
             public KeyValue GetProperties(int Index)
             {
                 return _properties[Index];

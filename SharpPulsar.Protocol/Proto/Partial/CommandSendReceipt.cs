@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandSendReceipt _defaultInstance;
-		public static CommandSendReceipt DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSendReceipt DefaultInstance => _defaultInstance;
 
-		public CommandSendReceipt DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
-		
-		public void InitFields()
+        public CommandSendReceipt DefaultInstanceForType => _defaultInstance;
+
+        public void InitFields()
 		{
 			ProducerId = 0L;
 			SequenceId = 0L;
@@ -184,15 +172,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSendReceipt DefaultInstanceForType
-			{
-				get
-				{
-					return CommandSendReceipt.DefaultInstance;
-				}
-			}
+			public CommandSendReceipt DefaultInstanceForType => CommandSendReceipt.DefaultInstance;
 
-			public CommandSendReceipt Build()
+            public CommandSendReceipt Build()
 			{
 				CommandSendReceipt Result = BuildPartial();
 				if (!Result.Initialized)
@@ -352,14 +334,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ProducerId
-			{
-				get
-				{
-					return ProducerId_;
-				}
-			}
-			public Builder SetProducerId(long Value)
+			public long ProducerId => ProducerId_;
+
+            public Builder SetProducerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ProducerId_ = Value;
@@ -380,14 +357,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long SequenceId
-			{
-				get
-				{
-					return SequenceId_;
-				}
-			}
-			public Builder SetSequenceId(long Value)
+			public long SequenceId => SequenceId_;
+
+            public Builder SetSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				SequenceId_ = Value;
@@ -458,14 +430,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public long HighestSequenceId
-			{
-				get
-				{
-					return HighestSequenceId_;
-				}
-			}
-			public Builder SetHighestSequenceId(long Value)
+			public long HighestSequenceId => HighestSequenceId_;
+
+            public Builder SetHighestSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000008;
 				HighestSequenceId_ = Value;

@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandAck _defaultInstance;
-		public static CommandAck DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandAck DefaultInstance => _defaultInstance;
 
-		public CommandAck DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandAck DefaultInstanceForType => _defaultInstance;
 
-		public Types.AckType GetAckType()
+        public Types.AckType GetAckType()
 		{
 			return AckType;
 		}
@@ -226,15 +214,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandAck DefaultInstanceForType
-			{
-				get
-				{
-					return CommandAck.DefaultInstance;
-				}
-			}
+			public CommandAck DefaultInstanceForType => CommandAck.DefaultInstance;
 
-			public CommandAck Build()
+            public CommandAck Build()
 			{
 				CommandAck Result = BuildPartial();
 				if (!Result.Initialized)
@@ -476,14 +458,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -504,14 +481,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public Types.AckType AckType
-			{
-				get
-				{
-					return AckType_;
-				}
-			}
-			public Builder SetAckType(Types.AckType Value)
+			public Types.AckType AckType => AckType_;
+
+            public Builder SetAckType(Types.AckType Value)
 			{
 				if (Value == null)
 				{
@@ -541,21 +513,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<MessageIdData> MessageIdList
-			{
-				get
-				{
-					return new List<MessageIdData>(MessageId_);
-				}
-			}
-			public int MessageIdCount
-			{
-				get
-				{
-					return MessageId_.Count;
-				}
-			}
-			public MessageIdData GetMessageId(int Index)
+			public IList<MessageIdData> MessageIdList => new List<MessageIdData>(MessageId_);
+
+            public int MessageIdCount => MessageId_.Count;
+
+            public MessageIdData GetMessageId(int Index)
 			{
 				return MessageId_[Index];
 			}
@@ -676,21 +638,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyLongValue> PropertiesList
-			{
-				get
-				{
-					return new List<KeyLongValue>(Properties_);
-				}
-			}
-			public int PropertiesCount
-			{
-				get
-				{
-					return Properties_.Count;
-				}
-			}
-			public KeyLongValue GetProperties(int Index)
+			public IList<KeyLongValue> PropertiesList => new List<KeyLongValue>(Properties_);
+
+            public int PropertiesCount => Properties_.Count;
+
+            public KeyLongValue GetProperties(int Index)
 			{
 				return Properties_[Index];
 			}
@@ -776,14 +728,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000020) == 0x00000020);
 			}
-			public long TxnidLeastBits
-			{
-				get
-				{
-					return TxnidLeastBits_;
-				}
-			}
-			public Builder SetTxnidLeastBits(long Value)
+			public long TxnidLeastBits => TxnidLeastBits_;
+
+            public Builder SetTxnidLeastBits(long Value)
 			{
 				BitField0_ |= 0x00000020;
 				TxnidLeastBits_ = Value;
@@ -804,14 +751,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000040) == 0x00000040);
 			}
-			public long TxnidMostBits
-			{
-				get
-				{
-					return TxnidMostBits_;
-				}
-			}
-			public Builder SetTxnidMostBits(long Value)
+			public long TxnidMostBits => TxnidMostBits_;
+
+            public Builder SetTxnidMostBits(long Value)
 			{
 				BitField0_ |= 0x00000040;
 				TxnidMostBits_ = Value;

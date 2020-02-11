@@ -37,24 +37,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandConsumerStats _defaultInstance;
-		public static CommandConsumerStats DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandConsumerStats DefaultInstance => _defaultInstance;
 
-		public CommandConsumerStats DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandConsumerStats DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			ConsumerId = 0L;
@@ -162,15 +150,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandConsumerStats DefaultInstanceForType
-			{
-				get
-				{
-					return CommandConsumerStats.DefaultInstance;
-				}
-			}
+			public CommandConsumerStats DefaultInstanceForType => CommandConsumerStats.DefaultInstance;
 
-			public CommandConsumerStats Build()
+            public CommandConsumerStats Build()
 			{
 				CommandConsumerStats Result = BuildPartial();
 				if (!Result.Initialized)
@@ -287,14 +269,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -315,14 +292,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				ConsumerId_ = Value;

@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandMessage _defaultInstance;
-		public static CommandMessage DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandMessage DefaultInstance => _defaultInstance;
 
-		public CommandMessage DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandMessage DefaultInstanceForType => _defaultInstance;
 
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 			MessageId = MessageIdData.DefaultInstance;
@@ -174,15 +162,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandMessage DefaultInstanceForType
-			{
-				get
-				{
-					return CommandMessage.DefaultInstance;
-				}
-			}
+			public CommandMessage DefaultInstanceForType => CommandMessage.DefaultInstance;
 
-			public CommandMessage Build()
+            public CommandMessage Build()
 			{
 				CommandMessage Result = BuildPartial();
 				if (!Result.Initialized)
@@ -324,14 +306,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -402,14 +379,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public int RedeliveryCount
-			{
-				get
-				{
-					return RedeliveryCount_;
-				}
-			}
-			public Builder SetRedeliveryCount(int Value)
+			public int RedeliveryCount => RedeliveryCount_;
+
+            public Builder SetRedeliveryCount(int Value)
 			{
 				BitField0_ |= 0x00000004;
 				RedeliveryCount_ = Value;

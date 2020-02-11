@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandCloseProducer _defaultInstance;
-		public static CommandCloseProducer DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandCloseProducer DefaultInstance => _defaultInstance;
 
-		public CommandCloseProducer DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandCloseProducer DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			ProducerId = 0L;
 			RequestId = 0L;
@@ -161,15 +149,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandCloseProducer DefaultInstanceForType
-			{
-				get
-				{
-					return CommandCloseProducer.DefaultInstance;
-				}
-			}
+			public CommandCloseProducer DefaultInstanceForType => CommandCloseProducer.DefaultInstance;
 
-			public CommandCloseProducer Build()
+            public CommandCloseProducer Build()
 			{
 				CommandCloseProducer Result = BuildPartial();
 				if (!Result.Initialized)
@@ -287,14 +269,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ProducerId
-			{
-				get
-				{
-					return ProducerId_;
-				}
-			}
-			public Builder SetProducerId(long Value)
+			public long ProducerId => ProducerId_;
+
+            public Builder SetProducerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ProducerId_ = Value;
@@ -315,14 +292,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;

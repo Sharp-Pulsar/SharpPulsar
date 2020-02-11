@@ -35,24 +35,12 @@ namespace SharpPulsar.Protocol.Proto
 
 
 		internal static readonly CommandAuthChallenge _defaultInstance;
-		public static CommandAuthChallenge DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandAuthChallenge DefaultInstance => _defaultInstance;
 
-		public CommandAuthChallenge DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandAuthChallenge DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			ServerVersion = "";
 			Challenge = AuthData.DefaultInstance;
@@ -159,15 +147,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandAuthChallenge DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandAuthChallenge DefaultInstanceForType => DefaultInstance;
 
-			public CommandAuthChallenge Build()
+            public CommandAuthChallenge Build()
 			{
 				CommandAuthChallenge Result = BuildPartial();
 				if (!Result.Initialized)
@@ -232,14 +214,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			public bool Initialized
-			{
-				get
-				{
-					return true;
-				}
-			}
-			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			public bool Initialized => true;
+
+            public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
 			{
 				while (true)
 				{
@@ -389,14 +366,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public int ProtocolVersion
-			{
-				get
-				{
-					return ProtocolVersion_;
-				}
-			}
-			public Builder SetProtocolVersion(int Value)
+			public int ProtocolVersion => ProtocolVersion_;
+
+            public Builder SetProtocolVersion(int Value)
 			{
 				BitField0_ |= 0x00000004;
 				ProtocolVersion_ = Value;

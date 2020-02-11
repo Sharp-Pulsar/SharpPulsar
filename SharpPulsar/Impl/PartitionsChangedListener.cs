@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// Notified when topic partitions increased.
 		/// Passed in topics that have partitions increased.
 		/// </summary>
-		CompletableFuture<Void> OnTopicsExtended(ICollection<string> TopicsExtended);
+		TaskCompletionSource<Task> OnTopicsExtended(ICollection<string> topicsExtended);
 	}
 
 }

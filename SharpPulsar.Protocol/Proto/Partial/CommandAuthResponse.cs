@@ -35,21 +35,9 @@ namespace SharpPulsar.Protocol.Proto
         }
 
         internal static readonly CommandAuthResponse _defaultInstance;
-        public static CommandAuthResponse DefaultInstance
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public static CommandAuthResponse DefaultInstance => _defaultInstance;
 
-        public CommandAuthResponse DefaultInstanceForType
-        {
-            get
-            {
-                return _defaultInstance;
-            }
-        }
+        public CommandAuthResponse DefaultInstanceForType => _defaultInstance;
 
 
         public void InitFields()
@@ -157,13 +145,7 @@ namespace SharpPulsar.Protocol.Proto
                 return Create().MergeFrom(BuildPartial());
             }
 
-            public CommandAuthResponse DefaultInstanceForType
-            {
-                get
-                {
-                    return DefaultInstance;
-                }
-            }
+            public CommandAuthResponse DefaultInstanceForType => DefaultInstance;
 
             public CommandAuthResponse Build()
             {
@@ -230,13 +212,7 @@ namespace SharpPulsar.Protocol.Proto
                 return this;
             }
 
-            public bool Initialized
-            {
-                get
-                {
-                    return true;
-                }
-            }
+            public bool Initialized => true;
 
             public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
             {
@@ -388,13 +364,8 @@ namespace SharpPulsar.Protocol.Proto
             {
                 return ((BitField0_ & 0x00000004) == 0x00000004);
             }
-            public int ProtocolVersion
-            {
-                get
-                {
-                    return ProtocolVersion_;
-                }
-            }
+            public int ProtocolVersion => ProtocolVersion_;
+
             public Builder SetProtocolVersion(int Value)
             {
                 BitField0_ |= 0x00000004;

@@ -39,24 +39,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly MessageMetadata _defaultInstance;
-		public static MessageMetadata DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static MessageMetadata DefaultInstance => _defaultInstance;
 
-		public MessageMetadata DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public MessageMetadata DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			ProducerName = "";
 			SequenceId = 0L;
@@ -318,15 +306,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			public MessageMetadata DefaultInstanceForType
-			{
-				get
-				{
-					return MessageMetadata.DefaultInstance;
-				}
-			}
+			public MessageMetadata DefaultInstanceForType => MessageMetadata.DefaultInstance;
 
-			public MessageMetadata Build()
+            public MessageMetadata Build()
 			{
 				var result = BuildPartial();
 				if (!result.Initialized)
@@ -876,21 +858,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyValue> PropertiesList
-			{
-				get
-				{
-					return _properties;
-				}
-			}
-			public int PropertiesCount
-			{
-				get
-				{
-					return _properties.Count;
-				}
-			}
-			public KeyValue GetProperties(int Index)
+			public IList<KeyValue> PropertiesList => _properties;
+
+            public int PropertiesCount => _properties.Count;
+
+            public KeyValue GetProperties(int Index)
 			{
 				return _properties[Index];
 			}
@@ -1038,21 +1010,11 @@ namespace SharpPulsar.Protocol.Proto
 					_bitField |= 0x00000040;
 				}
 			}
-			public IList<string> ReplicateToList
-			{
-				get
-				{
-					return _replicateToes;
-				}
-			}
-			public int ReplicateToCount
-			{
-				get
-				{
-					return _replicateToes.Count;
-				}
-			}
-			public string GetReplicateTo(int Index)
+			public IList<string> ReplicateToList => _replicateToes;
+
+            public int ReplicateToCount => _replicateToes.Count;
+
+            public string GetReplicateTo(int Index)
 			{
 				return _replicateToes[Index];
 			}
@@ -1152,14 +1114,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000100) == 0x00000100);
 			}
-			public int UncompressedSize
-			{
-				get
-				{
-					return _uncompressedSize;
-				}
-			}
-			public Builder SetUncompressedSize(int Value)
+			public int UncompressedSize => _uncompressedSize;
+
+            public Builder SetUncompressedSize(int Value)
 			{
 				_bitField |= 0x00000100;
 				_uncompressedSize = Value;
@@ -1180,14 +1137,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000200) == 0x00000200);
 			}
-			public int NumMessagesInBatch
-			{
-				get
-				{
-					return _numMessagesInBatch;
-				}
-			}
-			public Builder SetNumMessagesInBatch(int Value)
+			public int NumMessagesInBatch => _numMessagesInBatch;
+
+            public Builder SetNumMessagesInBatch(int Value)
 			{
 				_bitField |= 0x00000200;
 				_numMessagesInBatch = Value;
@@ -1208,14 +1160,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00000400) == 0x00000400);
 			}
-			public long EventTime
-			{
-				get
-				{
-					return _eventTime;
-				}
-			}
-			public Builder SetEventTime(long Value)
+			public long EventTime => _eventTime;
+
+            public Builder SetEventTime(long Value)
 			{
 				_bitField |= 0x00000400;
 				_eventTime = Value;
@@ -1241,21 +1188,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<EncryptionKeys> EncryptionKeysList
-			{
-				get
-				{
-					return _encryptionKeys;
-				}
-			}
-			public int EncryptionKeysCount
-			{
-				get
-				{
-					return _encryptionKeys.Count;
-				}
-			}
-			public EncryptionKeys GetEncryptionKeys(int Index)
+			public IList<EncryptionKeys> EncryptionKeysList => _encryptionKeys;
+
+            public int EncryptionKeysCount => _encryptionKeys.Count;
+
+            public EncryptionKeys GetEncryptionKeys(int Index)
 			{
 				return _encryptionKeys[Index];
 			}
@@ -1401,14 +1338,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_bitField & 0x00008000) == 0x00008000);
 			}
-			public bool PartitionKeyB64Encoded
-			{
-				get
-				{
-					return _partitionKeyB64Encoded;
-				}
-			}
-			public Builder SetPartitionKeyB64Encoded(bool Value)
+			public bool PartitionKeyB64Encoded => _partitionKeyB64Encoded;
+
+            public Builder SetPartitionKeyB64Encoded(bool Value)
 			{
 				_bitField |= 0x00008000;
 				_partitionKeyB64Encoded = Value;

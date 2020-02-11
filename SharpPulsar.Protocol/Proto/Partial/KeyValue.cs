@@ -34,23 +34,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
 		internal static readonly KeyValue _defaultInstance;
-		public static KeyValue DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static KeyValue DefaultInstance => _defaultInstance;
 
-		public KeyValue DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public KeyValue DefaultInstanceForType => _defaultInstance;
 
-		internal int BitField0_;
+        internal int BitField0_;
 		public void InitFields()
 		{
 			Key = "";
@@ -159,15 +147,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public KeyValue DefaultInstanceForType
-			{
-				get
-				{
-					return KeyValue.DefaultInstance;
-				}
-			}
+			public KeyValue DefaultInstanceForType => KeyValue.DefaultInstance;
 
-			public KeyValue Build()
+            public KeyValue Build()
 			{
 				KeyValue Result = BuildPartial();
 				if (!Result.Initialized)

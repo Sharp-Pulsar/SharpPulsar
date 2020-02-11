@@ -36,23 +36,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly EncryptionKeys _defaultInstance;
-		public static EncryptionKeys DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static EncryptionKeys DefaultInstance => _defaultInstance;
 
-		public EncryptionKeys DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public EncryptionKeys DefaultInstanceForType => _defaultInstance;
 
-		internal int BitField0_;
+        internal int BitField0_;
 		
 		public void InitFields()
 		{
@@ -177,15 +165,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public EncryptionKeys DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public EncryptionKeys DefaultInstanceForType => DefaultInstance;
 
-			public EncryptionKeys Build()
+            public EncryptionKeys Build()
 			{
 				EncryptionKeys Result = BuildPartial();
 				if (!Result.Initialized)
@@ -381,14 +363,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public ByteString Value
-			{
-				get
-				{
-					return Value_;
-				}
-			}
-			public Builder SetValue(ByteString Value)
+			public ByteString Value => Value_;
+
+            public Builder SetValue(ByteString Value)
 			{
 				if (Value == null)
 				{
@@ -418,21 +395,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyValue> MetadataList
-			{
-				get
-				{
-					return new List<KeyValue>(Metadata_);
-				}
-			}
-			public int MetadataCount
-			{
-				get
-				{
-					return Metadata_.Count;
-				}
-			}
-			public KeyValue GetMetadata(int Index)
+			public IList<KeyValue> MetadataList => new List<KeyValue>(Metadata_);
+
+            public int MetadataCount => Metadata_.Count;
+
+            public KeyValue GetMetadata(int Index)
 			{
 				return Metadata_[Index];
 			}

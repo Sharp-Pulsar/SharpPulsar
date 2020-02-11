@@ -35,23 +35,11 @@ namespace SharpPulsar.Protocol.Proto
 
 
 		internal static readonly CommandSeek _defaultInstance;
-		public static CommandSeek DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSeek DefaultInstance => _defaultInstance;
 
-		public CommandSeek DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandSeek DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ConsumerId = 0L;
 			RequestId = 0L;
@@ -182,15 +170,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSeek DefaultInstanceForType
-			{
-				get
-				{
-					return CommandSeek.DefaultInstance;
-				}
-			}
+			public CommandSeek DefaultInstanceForType => CommandSeek.DefaultInstance;
 
-			public CommandSeek Build()
+            public CommandSeek Build()
 			{
 				CommandSeek Result = BuildPartial();
 				if (!Result.Initialized)
@@ -352,14 +334,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ConsumerId_ = Value;
@@ -380,14 +357,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				RequestId_ = Value;
@@ -458,14 +430,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public long MessagePublishTime
-			{
-				get
-				{
-					return MessagePublishTime_;
-				}
-			}
-			public Builder SetMessagePublishTime(long Value)
+			public long MessagePublishTime => MessagePublishTime_;
+
+            public Builder SetMessagePublishTime(long Value)
 			{
 				BitField0_ |= 0x00000008;
 				MessagePublishTime_ = Value;

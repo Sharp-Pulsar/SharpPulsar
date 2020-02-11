@@ -32,23 +32,11 @@ namespace SharpPulsar.Protocol.Proto
 		}
 
 		internal static readonly CommandPong _defaultInstance;
-		public static CommandPong DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandPong DefaultInstance => _defaultInstance;
 
-		public CommandPong DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandPong DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 		}
 		internal sbyte MemoizedIsInitialized = -1;
@@ -132,15 +120,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandPong DefaultInstanceForType
-			{
-				get
-				{
-					return CommandPong.DefaultInstance;
-				}
-			}
+			public CommandPong DefaultInstanceForType => CommandPong.DefaultInstance;
 
-			public CommandPong Build()
+            public CommandPong Build()
 			{
 				CommandPong Result = BuildPartial();
 				if (!Result.Initialized)
@@ -175,14 +157,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			public bool Initialized
-			{
-				get
-				{
-					return true;
-				}
-			}
-			public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
+			public bool Initialized => true;
+
+            public ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry extensionRegistry)
 			{
 				while (true)
 				{

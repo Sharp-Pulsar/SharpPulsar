@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandSend _defaultInstance;
-		public static CommandSend DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSend DefaultInstance => _defaultInstance;
 
-		public CommandSend DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandSend DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			ProducerId = 0L;
 			SequenceId = 0L;
@@ -189,15 +177,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSend DefaultInstanceForType
-			{
-				get
-				{
-					return CommandSend.DefaultInstance;
-				}
-			}
+			public CommandSend DefaultInstanceForType => CommandSend.DefaultInstance;
 
-			public CommandSend Build()
+            public CommandSend Build()
 			{
 				CommandSend Result = BuildPartial();
 				if (!Result.Initialized)
@@ -373,14 +355,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long ProducerId
-			{
-				get
-				{
-					return ProducerId_;
-				}
-			}
-			public Builder SetProducerId(long Value)
+			public long ProducerId => ProducerId_;
+
+            public Builder SetProducerId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				ProducerId_ = Value;
@@ -401,14 +378,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long SequenceId
-			{
-				get
-				{
-					return SequenceId_;
-				}
-			}
-			public Builder SetSequenceId(long Value)
+			public long SequenceId => SequenceId_;
+
+            public Builder SetSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				SequenceId_ = Value;
@@ -429,14 +401,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public int NumMessages
-			{
-				get
-				{
-					return NumMessages_;
-				}
-			}
-			public Builder SetNumMessages(int Value)
+			public int NumMessages => NumMessages_;
+
+            public Builder SetNumMessages(int Value)
 			{
 				BitField0_ |= 0x00000004;
 				NumMessages_ = Value;
@@ -457,14 +424,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000008) == 0x00000008);
 			}
-			public long TxnidLeastBits
-			{
-				get
-				{
-					return TxnidLeastBits_;
-				}
-			}
-			public Builder SetTxnidLeastBits(long Value)
+			public long TxnidLeastBits => TxnidLeastBits_;
+
+            public Builder SetTxnidLeastBits(long Value)
 			{
 				BitField0_ |= 0x00000008;
 				TxnidLeastBits_ = Value;
@@ -485,14 +447,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public long TxnidMostBits
-			{
-				get
-				{
-					return TxnidMostBits_;
-				}
-			}
-			public Builder SetTxnidMostBits(long Value)
+			public long TxnidMostBits => TxnidMostBits_;
+
+            public Builder SetTxnidMostBits(long Value)
 			{
 				BitField0_ |= 0x00000010;
 				TxnidMostBits_ = Value;
@@ -513,14 +470,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000020) == 0x00000020);
 			}
-			public long HighestSequenceId
-			{
-				get
-				{
-					return HighestSequenceId_;
-				}
-			}
-			public Builder SetHighestSequenceId(long Value)
+			public long HighestSequenceId => HighestSequenceId_;
+
+            public Builder SetHighestSequenceId(long Value)
 			{
 				BitField0_ |= 0x00000020;
 				HighestSequenceId_ = Value;

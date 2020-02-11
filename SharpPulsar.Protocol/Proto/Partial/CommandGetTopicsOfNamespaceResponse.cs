@@ -37,23 +37,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandGetTopicsOfNamespaceResponse _defaultInstance;
-		public static CommandGetTopicsOfNamespaceResponse DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandGetTopicsOfNamespaceResponse DefaultInstance => _defaultInstance;
 
-		public CommandGetTopicsOfNamespaceResponse DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandGetTopicsOfNamespaceResponse DefaultInstanceForType => _defaultInstance;
 
-		public string GetTopics(int Index)
+        public string GetTopics(int Index)
 		{
 			return Topics[Index];
 		}
@@ -161,15 +149,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandGetTopicsOfNamespaceResponse DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandGetTopicsOfNamespaceResponse DefaultInstanceForType => DefaultInstance;
 
-			public CommandGetTopicsOfNamespaceResponse Build()
+            public CommandGetTopicsOfNamespaceResponse Build()
 			{
 				CommandGetTopicsOfNamespaceResponse Result = BuildPartial();
 				if (!Result.Initialized)
@@ -293,14 +275,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -325,21 +302,11 @@ namespace SharpPulsar.Protocol.Proto
 					BitField0_ |= 0x00000002;
 				}
 			}
-			public IList<string> TopicsList
-			{
-				get
-				{
-					return new List<string>(Topics_);
-				}
-			}
-			public int TopicsCount
-			{
-				get
-				{
-					return Topics_.Count;
-				}
-			}
-			public string GetTopics(int Index)
+			public IList<string> TopicsList => new List<string>(Topics_);
+
+            public int TopicsCount => Topics_.Count;
+
+            public string GetTopics(int Index)
 			{
 				return Topics_[Index];
 			}

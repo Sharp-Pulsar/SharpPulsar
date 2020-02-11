@@ -36,24 +36,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly KeyLongValue _defaultInstance;
-		public static KeyLongValue DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static KeyLongValue DefaultInstance => _defaultInstance;
 
-		public KeyLongValue DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public KeyLongValue DefaultInstanceForType => _defaultInstance;
 
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Key = "";
 			Value = 0L;
@@ -162,15 +150,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public KeyLongValue DefaultInstanceForType
-			{
-				get
-				{
-					return KeyLongValue.DefaultInstance;
-				}
-			}
+			public KeyLongValue DefaultInstanceForType => KeyLongValue.DefaultInstance;
 
-			public KeyLongValue Build()
+            public KeyLongValue Build()
 			{
 				KeyLongValue Result = BuildPartial();
 				if (!Result.Initialized)
@@ -332,14 +314,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long Value
-			{
-				get
-				{
-					return Value_;
-				}
-			}
-			public Builder SetValue(long Value)
+			public long Value => Value_;
+
+            public Builder SetValue(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				Value_ = Value;

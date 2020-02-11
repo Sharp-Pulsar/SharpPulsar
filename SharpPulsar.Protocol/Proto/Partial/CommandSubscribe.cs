@@ -38,22 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandSubscribe _defaultInstance;
-		public static CommandSubscribe DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandSubscribe DefaultInstance => _defaultInstance;
 
-		public CommandSubscribe DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
-		public static Types.InitialPosition ValueOf(int Value)
+        public CommandSubscribe DefaultInstanceForType => _defaultInstance;
+
+        public static Types.InitialPosition ValueOf(int Value)
 		{
 			switch (Value)
 			{
@@ -332,15 +321,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandSubscribe DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandSubscribe DefaultInstanceForType => DefaultInstance;
 
-			public CommandSubscribe Build()
+            public CommandSubscribe Build()
 			{
 				CommandSubscribe Result = BuildPartial();
 				if (!Result.Initialized)
@@ -858,14 +841,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000004) == 0x00000004);
 			}
-			public Types.SubType SubType
-			{
-				get
-				{
-					return SubType_;
-				}
-			}
-			public Builder SetSubType(Types.SubType Value)
+			public Types.SubType SubType => SubType_;
+
+            public Builder SetSubType(Types.SubType Value)
 			{
 				if (Value == null)
 				{
@@ -890,14 +868,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000008) == 0x00000008);
 			}
-			public long ConsumerId
-			{
-				get
-				{
-					return ConsumerId_;
-				}
-			}
-			public Builder SetConsumerId(long Value)
+			public long ConsumerId => ConsumerId_;
+
+            public Builder SetConsumerId(long Value)
 			{
 				_hasBits0 |= 0x00000008;
 				ConsumerId_ = Value;
@@ -918,14 +891,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000010) == 0x00000010);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				_hasBits0 |= 0x00000010;
 				RequestId_ = Value;
@@ -991,14 +959,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000040) == 0x00000040);
 			}
-			public int PriorityLevel
-			{
-				get
-				{
-					return PriorityLevel_;
-				}
-			}
-			public Builder SetPriorityLevel(int Value)
+			public int PriorityLevel => PriorityLevel_;
+
+            public Builder SetPriorityLevel(int Value)
 			{
 				_hasBits0 |= 0x00000040;
 				PriorityLevel_ = Value;
@@ -1019,14 +982,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000080) == 0x00000080);
 			}
-			public bool Durable
-			{
-				get
-				{
-					return Durable_;
-				}
-			}
-			public Builder SetDurable(bool Value)
+			public bool Durable => Durable_;
+
+            public Builder SetDurable(bool Value)
 			{
 				_hasBits0 |= 0x00000080;
 				Durable_ = Value;
@@ -1117,21 +1075,11 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public IList<KeyValue> MetadataList
-			{
-				get
-				{
-					return Metadata_;
-				}
-			}
-			public int MetadataCount
-			{
-				get
-				{
-					return Metadata_.Count;
-				}
-			}
-			public KeyValue GetMetadata(int Index)
+			public IList<KeyValue> MetadataList => Metadata_;
+
+            public int MetadataCount => Metadata_.Count;
+
+            public KeyValue GetMetadata(int Index)
 			{
 				return Metadata_[Index];
 			}
@@ -1217,14 +1165,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00000400) == 0x00000400);
 			}
-			public bool ReadCompacted
-			{
-				get
-				{
-					return ReadCompacted_;
-				}
-			}
-			public Builder SetReadCompacted(bool Value)
+			public bool ReadCompacted => ReadCompacted_;
+
+            public Builder SetReadCompacted(bool Value)
 			{
 				_hasBits0 |= 0x00000400;
 				ReadCompacted_ = Value;
@@ -1295,14 +1238,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00001000) == 0x00001000);
 			}
-			public Types.InitialPosition InitialPosition
-			{
-				get
-				{
-					return InitialPosition_;
-				}
-			}
-			public Builder SetInitialPosition(Types.InitialPosition Value)
+			public Types.InitialPosition InitialPosition => InitialPosition_;
+
+            public Builder SetInitialPosition(Types.InitialPosition Value)
 			{
 				if (Value == null)
 				{
@@ -1327,14 +1265,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00002000) == 0x00002000);
 			}
-			public bool ReplicateSubscriptionState
-			{
-				get
-				{
-					return ReplicateSubscriptionState_;
-				}
-			}
-			public Builder SetReplicateSubscriptionState(bool Value)
+			public bool ReplicateSubscriptionState => ReplicateSubscriptionState_;
+
+            public Builder SetReplicateSubscriptionState(bool Value)
 			{
 				_hasBits0 |= 0x00002000;
 				ReplicateSubscriptionState_ = Value;
@@ -1355,14 +1288,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00004000) == 0x00004000);
 			}
-			public bool ForceTopicCreation
-			{
-				get
-				{
-					return ForceTopicCreation_;
-				}
-			}
-			public Builder SetForceTopicCreation(bool Value)
+			public bool ForceTopicCreation => ForceTopicCreation_;
+
+            public Builder SetForceTopicCreation(bool Value)
 			{
 				_hasBits0 |= 0x00004000;
 				ForceTopicCreation_ = Value;
@@ -1383,14 +1311,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((_hasBits0 & 0x00008000) == 0x00008000);
 			}
-			public long StartMessageRollbackDurationSec
-			{
-				get
-				{
-					return StartMessageRollbackDurationSec_;
-				}
-			}
-			public Builder SetStartMessageRollbackDurationSec(long Value)
+			public long StartMessageRollbackDurationSec => StartMessageRollbackDurationSec_;
+
+            public Builder SetStartMessageRollbackDurationSec(long Value)
 			{
 				_hasBits0 |= 0x00008000;
 				StartMessageRollbackDurationSec_ = Value;

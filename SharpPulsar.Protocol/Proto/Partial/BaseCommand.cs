@@ -38,23 +38,11 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly BaseCommand _defaultInstance;
-		public static BaseCommand DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static BaseCommand DefaultInstance => _defaultInstance;
 
-		public BaseCommand DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public BaseCommand DefaultInstanceForType => _defaultInstance;
 
-		public void InitFields()
+        public void InitFields()
 		{
 			Type = Types.Type.Connect;
 			Connect = CommandConnect.DefaultInstance;
@@ -833,15 +821,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 
-			public BaseCommand DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public BaseCommand DefaultInstanceForType => DefaultInstance;
 
-			public BaseCommand Build()
+            public BaseCommand Build()
 			{
 				BaseCommand result = BuildPartial();
 				if (!result.IsInitialized())

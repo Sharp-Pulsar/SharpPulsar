@@ -35,24 +35,12 @@ namespace SharpPulsar.Protocol.Proto
 
 		
 		internal static readonly CommandEndTxnOnSubscription _defaultInstance;
-		public static CommandEndTxnOnSubscription DefaultInstance
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+		public static CommandEndTxnOnSubscription DefaultInstance => _defaultInstance;
 
-		public CommandEndTxnOnSubscription DefaultInstanceForType
-		{
-			get
-			{
-				return _defaultInstance;
-			}
-		}
+        public CommandEndTxnOnSubscription DefaultInstanceForType => _defaultInstance;
 
-		
-		public void InitFields()
+
+        public void InitFields()
 		{
 			RequestId = 0L;
 			TxnidLeastBits = 0L;
@@ -184,15 +172,9 @@ namespace SharpPulsar.Protocol.Proto
 				return Create().MergeFrom(BuildPartial());
 			}
 
-			public CommandEndTxnOnSubscription DefaultInstanceForType
-			{
-				get
-				{
-					return DefaultInstance;
-				}
-			}
+			public CommandEndTxnOnSubscription DefaultInstanceForType => DefaultInstance;
 
-			public CommandEndTxnOnSubscription Build()
+            public CommandEndTxnOnSubscription Build()
 			{
 				CommandEndTxnOnSubscription Result = BuildPartial();
 				if (!Result.Initialized)
@@ -367,14 +349,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000001) == 0x00000001);
 			}
-			public long RequestId
-			{
-				get
-				{
-					return RequestId_;
-				}
-			}
-			public Builder SetRequestId(long Value)
+			public long RequestId => RequestId_;
+
+            public Builder SetRequestId(long Value)
 			{
 				BitField0_ |= 0x00000001;
 				RequestId_ = Value;
@@ -395,14 +372,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000002) == 0x00000002);
 			}
-			public long TxnidLeastBits
-			{
-				get
-				{
-					return TxnidLeastBits_;
-				}
-			}
-			public Builder SetTxnidLeastBits(long Value)
+			public long TxnidLeastBits => TxnidLeastBits_;
+
+            public Builder SetTxnidLeastBits(long Value)
 			{
 				BitField0_ |= 0x00000002;
 				TxnidLeastBits_ = Value;
@@ -423,14 +395,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000004) == 0x00000004);
 			}
-			public long TxnidMostBits
-			{
-				get
-				{
-					return TxnidMostBits_;
-				}
-			}
-			public Builder SetTxnidMostBits(long Value)
+			public long TxnidMostBits => TxnidMostBits_;
+
+            public Builder SetTxnidMostBits(long Value)
 			{
 				BitField0_ |= 0x00000004;
 				TxnidMostBits_ = Value;
@@ -501,14 +468,9 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				return ((BitField0_ & 0x00000010) == 0x00000010);
 			}
-			public TxnAction TxnAction
-			{
-				get
-				{
-					return TxnAction_;
-				}
-			}
-			public Builder SetTxnAction(TxnAction Value)
+			public TxnAction TxnAction => TxnAction_;
+
+            public Builder SetTxnAction(TxnAction Value)
 			{
 				if (Value == null)
 				{
