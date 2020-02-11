@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Util;
 
@@ -31,7 +32,7 @@ namespace SharpPulsar.Impl
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages = null;
-		private readonly ConsumerBase<object> _consumer;
+		private readonly ConsumerBase<T> _consumer;
 		private readonly HashedWheelTimer _timer;
 		private readonly long _nackDelayNanos;
 		private readonly long _timerIntervalNanos;
@@ -44,39 +45,49 @@ namespace SharpPulsar.Impl
 		public NegativeAcksTracker(ConsumerBase<T> consumer, ConsumerConfigurationData<T> conf)
 		{
 			this._consumer = consumer;
-			this._timer = ((PulsarClientImpl) consumer.Client).Timer;
+			this._timer = consumer.Client.Timer;
 			this._nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToNanos(conf.NegativeAckRedeliveryDelayMicros), MinNackDelayNanos);
 			this._timerIntervalNanos = _nackDelayNanos / 3;
 		}
 
-		private void TriggerRedelivery(ITimeout T)
+		public class TriggerRedelivery : ITimerTask
 		{
-			lock (this)
+            private readonly NegativeAcksTracker<T> _outerInstance;
+			public TriggerRedelivery(NegativeAcksTracker<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
+			public void Run(ITimeout timeout)
 			{
-				if (_nackedMessages.Count == 0)
-				{
-					this._timeout = null;
-					return;
-				}
-        
-				// Group all the nacked messages into one single re-delivery request
-				ISet<IMessageId> messagesToRedeliver = new HashSet<IMessageId>();
-				long now = System.nanoTime();
-				_nackedMessages.forEach((msgId, timestamp) =>
-				{
-				if (timestamp < now)
-				{
-					messagesToRedeliver.Add(msgId);
-				}
-				});
-        
-				messagesToRedeliver.forEach(_nackedMessages.remove);
-				_consumer.OnNegativeAcksSend(messagesToRedeliver);
-				_consumer.RedeliverUnacknowledgedMessages(messagesToRedeliver);
-        
-				this._timeout = _timer.NewTimeout(()=>TriggerRedelivery, TimeSpan.FromTicks(_timerIntervalNanos));
+                lock (this)
+                {
+                    if (_outerInstance._nackedMessages.Count == 0)
+                    {
+						_outerInstance._timeout = null;
+                        return;
+                    }
+
+                    // Group all the nacked messages into one single re-delivery request
+                    ISet<IMessageId> messagesToRedeliver = new HashSet<IMessageId>();
+                    long now = DateTime.Now.Millisecond;
+                    _outerInstance._nackedMessages.ToList().ForEach(nack =>
+                    {
+                        var (key, value) = nack;
+                        if (value < now)
+                        {
+                            messagesToRedeliver.Add(key);
+                        }
+                    });
+
+                    messagesToRedeliver.ToList().ForEach(x => _outerInstance._nackedMessages.Remove(x));
+                    _outerInstance._consumer.OnNegativeAcksSend(messagesToRedeliver);
+                    _outerInstance._consumer.RedeliverUnacknowledgedMessages(messagesToRedeliver);
+
+                    _outerInstance._timeout = _outerInstance._timer.NewTimeout(new TriggerRedelivery(_outerInstance), TimeSpan.FromTicks(_outerInstance._timerIntervalNanos));
+                }
 			}
 		}
+		
 
 		public virtual void Add(IMessageId messageId)
 		{
@@ -92,13 +103,13 @@ namespace SharpPulsar.Impl
 				{
 					_nackedMessages = new Dictionary<IMessageId, long>();
 				}
-				_nackedMessages[messageId] = System.nanoTime() + _nackDelayNanos;
+				_nackedMessages[messageId] = DateTime.Now.Millisecond + _nackDelayNanos;
         
 				if (this._timeout == null)
 				{
 					// Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
 					// nack immediately following the current one will be batched into the same redeliver request.
-					this._timeout = _timer.newTimeout(this.triggerRedelivery, _timerIntervalNanos, BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS);
+					this._timeout = _timer.NewTimeout(new TriggerRedelivery(this), TimeSpan.FromMilliseconds(_timerIntervalNanos));
 				}
 			}
 		}
