@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Api;
-using System.Collections.Generic;
-
+﻿
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,46 +17,49 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Collections.Generic;
+using System.Threading;
+
 namespace SharpPulsar.Impl
 {
 
 	public class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker<T>
-	{
-
-		public UnAckedTopicMessageTracker(PulsarClientImpl Client, ConsumerBase<T> consumerBase, long AckTimeoutMillis) : base(Client, consumerBase, AckTimeoutMillis)
+    {
+        private ReaderWriterLockSlim _readerWriterLock;
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
 		{
+			_readerWriterLock = new ReaderWriterLockSlim();
 		}
 
-		public UnAckedTopicMessageTracker(PulsarClientImpl Client, ConsumerBase<T> consumerBase, long AckTimeoutMillis, long TickDurationMillis) : base(Client, consumerBase, AckTimeoutMillis, TickDurationMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
 		{
+            _readerWriterLock = new ReaderWriterLockSlim();
 		}
 
-		public virtual int RemoveTopicMessages(string TopicName)
+		public virtual int RemoveTopicMessages(string topicName)
 		{
-			WriteLock.@lock();
+            _readerWriterLock.EnterWriteLock();
 			try
 			{
-				int Removed = 0;
-				IEnumerator<IMessageId> Iterator = MessageIdPartitionMap.Keys.GetEnumerator();
-				while (Iterator.MoveNext())
+				var removed = 0;
+                using var iterator = MessageIdPartitionMap.Keys.GetEnumerator();
+				while (iterator.MoveNext())
 				{
-					IMessageId MessageId = Iterator.Current;
-					if (MessageId is TopicMessageIdImpl && ((TopicMessageIdImpl)MessageId).TopicPartitionName.Contains(TopicName))
+					var messageId = iterator.Current;
+					if (messageId is TopicMessageIdImpl impl && impl.TopicPartitionName.Contains(topicName))
 					{
-						var exist = MessageIdPartitionMap[MessageId];
-						if (exist != null)
-						{
-							exist.remove(MessageId);
-						}
-						//Iterator.Remove();
-						Removed++;
+						var exist = MessageIdPartitionMap[impl];
+                        exist?.TryRemove(impl);
+                        MessageIdPartitionMap.Remove(impl, out var m);
+						removed++;
 					}
 				}
-				return Removed;
+				return removed;
 			}
 			finally
 			{
-				WriteLock.unlock();
+                _readerWriterLock.ExitWriteLock();
 			}
 		}
 

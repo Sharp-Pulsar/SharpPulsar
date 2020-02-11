@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
 	/// <summary>
 	/// Group the acknowledgements for a certain time and then sends them out in a single protobuf command.
 	/// </summary>
-	public class PersistentAcknowledgmentsGroupingTracker<T>: AcknowledgmentsGroupingTracker
+	public class PersistentAcknowledgmentsGroupingTracker<T>: IAcknowledgmentsGroupingTracker
 	{
 
 		/// <summary>

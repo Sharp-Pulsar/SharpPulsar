@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl
 		private readonly ReaderWriterLock _lock = new ReaderWriterLock();
 
 		public UnAckedMessageTracker<T> UnAckedMessageTracker;
-		private readonly AcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
+		private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
 		private readonly NegativeAcksTracker<T> _negativeAcksTracker;
 
         internal readonly ConsumerStatsRecorder ConsumerStats;

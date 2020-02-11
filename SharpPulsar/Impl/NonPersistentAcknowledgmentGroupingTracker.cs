@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,49 +22,52 @@
 namespace SharpPulsar.Impl
 {
 	using IMessageId = Api.IMessageId;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
-
 	/// <summary>
 	/// A no-op acknowledgment grouping tracker.
 	/// </summary>
-	public class NonPersistentAcknowledgmentGroupingTracker : AcknowledgmentsGroupingTracker
+	public class NonPersistentAcknowledgmentGroupingTracker : IAcknowledgmentsGroupingTracker
 	{
 
 		public static NonPersistentAcknowledgmentGroupingTracker Of()
 		{
-			return INSTANCE;
+			return Instance;
 		}
 
-		private static readonly NonPersistentAcknowledgmentGroupingTracker INSTANCE = new NonPersistentAcknowledgmentGroupingTracker();
+		private static readonly NonPersistentAcknowledgmentGroupingTracker Instance = new NonPersistentAcknowledgmentGroupingTracker();
 
 		private NonPersistentAcknowledgmentGroupingTracker()
 		{
 		}
 
-		public override bool IsDuplicate(IMessageId MessageId)
+		public bool IsDuplicate(IMessageId messageId)
 		{
 			return false;
 		}
 
-		public override void AddAcknowledgment(MessageIdImpl MsgId, AckType AckType, IDictionary<string, long> Properties)
+		public  void AddAcknowledgment(MessageIdImpl msgId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties)
 		{
 			// no-op
 		}
 
-		public override void Flush()
+		public void Flush()
 		{
 			// no-op
 		}
 
-		public override void Close()
+		public void Close()
 		{
 			// no-op
 		}
 
-		public override void FlushAndClean()
+		public void FlushAndClean()
 		{
 			// no-op
 		}
-	}
+
+        public void Dispose()
+        {
+            Close();
+        }
+    }
 
 }

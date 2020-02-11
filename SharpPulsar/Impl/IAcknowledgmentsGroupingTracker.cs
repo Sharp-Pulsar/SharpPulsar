@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl
 	/// <summary>
 	/// Acknowledgments grouping tracker.
 	/// </summary>
-	public interface AcknowledgmentsGroupingTracker : IDisposable
+	public interface IAcknowledgmentsGroupingTracker : IDisposable
 	{
 
 		bool IsDuplicate(IMessageId messageId);
