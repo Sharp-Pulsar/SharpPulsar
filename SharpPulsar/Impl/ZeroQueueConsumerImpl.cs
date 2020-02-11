@@ -75,8 +75,7 @@ namespace SharpPulsar.Impl
 				IncomingMessages.clear();
 			}
 
-			Message<T> message;
-			try
+            try
 			{
 				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
 				_waitingOnReceiveForZeroQueueSize = true;
@@ -87,11 +86,13 @@ namespace SharpPulsar.Impl
 						SendFlowPermitsToBroker(Cnx(), 1);
 					}
 				}
-				do
+
+                Message<T> message;
+                do
 				{
 					message = IncomingMessages.take();
 					LastDequeuedMessage = message.MessageId;
-					ClientCnx msgCnx = ((MessageImpl<object>) message).Cnx;
+					var msgCnx = ((MessageImpl<object>) message).Cnx;
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					lock (this)
 					{
