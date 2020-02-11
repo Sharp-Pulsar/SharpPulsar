@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.util
+namespace SharpPulsar.Util
 {
 	
 
@@ -28,9 +28,9 @@ namespace org.apache.pulsar.client.util
 		/// <param name="dividend"> </param>
 		/// <param name="divisor">
 		/// @return </param>
-		public static int signSafeMod(long dividend, int divisor)
+		public static int SignSafeMod(long dividend, int divisor)
 		{
-			int mod = (int)(dividend % divisor);
+			var mod = (int)(dividend % divisor);
 
 			if (mod < 0)
 			{

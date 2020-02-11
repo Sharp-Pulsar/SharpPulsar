@@ -23,7 +23,7 @@ namespace SharpPulsar.Impl
 {
     using Optional;
     using Pulsar.Common.Auth;
-    using SharpPulsar.Api;
+    using Api;
 
 	public class TopicMessageImpl<T> : Message<T>
 	{
@@ -32,15 +32,15 @@ namespace SharpPulsar.Impl
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		public string TopicPartitionName;
 
-		private readonly Message<T> msg;
-		private readonly TopicMessageIdImpl messageId;
+		private readonly Message<T> _msg;
+		private readonly TopicMessageIdImpl _messageId;
 
-		public TopicMessageImpl(string TopicPartitionName, string TopicName, Message<T> Msg)
+		public TopicMessageImpl(string topicPartitionName, string topicName, Message<T> msg)
 		{
-			this.TopicPartitionName = TopicPartitionName;
+			TopicPartitionName = topicPartitionName;
 
-			this.msg = Msg;
-			this.messageId = new TopicMessageIdImpl(TopicPartitionName, TopicName, Msg.MessageId);
+			_msg = msg;
+			_messageId = new TopicMessageIdImpl(topicPartitionName, topicName, msg.MessageId);
 		}
 
 		/// <summary>
@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.TopicName;
+				return _msg.TopicName;
 			}
 		}
 
@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return messageId;
+				return _messageId;
 			}
 		}
 
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return messageId.InnerMessageId;
+				return _messageId.InnerMessageId;
 			}
 		}
 
@@ -78,25 +78,25 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.Properties;
+				return _msg.Properties;
 			}
 		}
 
-		public bool HasProperty(string Name)
+		public bool HasProperty(string name)
 		{
-			return msg.HasProperty(Name);
+			return _msg.HasProperty(name);
 		}
 
-		public string GetProperty(string Name)
+		public string GetProperty(string name)
 		{
-			return msg.GetProperty(Name);
+			return _msg.GetProperty(name);
 		}
 
 		public virtual sbyte[] Data
 		{
 			get
 			{
-				return msg.Data;
+				return _msg.Data;
 			}
 		}
 
@@ -104,7 +104,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.PublishTime;
+				return _msg.PublishTime;
 			}
 		}
 
@@ -112,7 +112,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.EventTime;
+				return _msg.EventTime;
 			}
 		}
 
@@ -120,7 +120,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.SequenceId;
+				return _msg.SequenceId;
 			}
 		}
 
@@ -128,46 +128,46 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.ProducerName;
+				return _msg.ProducerName;
 			}
 		}
 
 		public bool HasKey()
 		{
-			return msg.HasKey();
+			return _msg.HasKey();
 		}
 
 		public virtual string Key
 		{
 			get
 			{
-				return msg.Key;
+				return _msg.Key;
 			}
 		}
 
 		public bool HasBase64EncodedKey()
 		{
-			return msg.HasBase64EncodedKey();
+			return _msg.HasBase64EncodedKey();
 		}
 
 		public virtual sbyte[] KeyBytes
 		{
 			get
 			{
-				return msg.KeyBytes;
+				return _msg.KeyBytes;
 			}
 		}
 
 		public bool HasOrderingKey()
 		{
-			return msg.HasOrderingKey();
+			return _msg.HasOrderingKey();
 		}
 
 		public virtual sbyte[] OrderingKey
 		{
 			get
 			{
-				return msg.OrderingKey;
+				return _msg.OrderingKey;
 			}
 		}
 
@@ -175,7 +175,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.Value;
+				return _msg.Value;
 			}
 		}
 
@@ -183,7 +183,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.EncryptionCtx;
+				return _msg.EncryptionCtx;
 			}
 		}
 
@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.RedeliveryCount;
+				return _msg.RedeliveryCount;
 			}
 		}
 
@@ -199,7 +199,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.SchemaVersion;
+				return _msg.SchemaVersion;
 			}
 		}
 
@@ -207,7 +207,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.Replicated;
+				return _msg.Replicated;
 			}
 		}
 
@@ -215,7 +215,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg.ReplicatedFrom;
+				return _msg.ReplicatedFrom;
 			}
 		}
 
@@ -223,7 +223,7 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				return msg;
+				return _msg;
 			}
 		}
 	}

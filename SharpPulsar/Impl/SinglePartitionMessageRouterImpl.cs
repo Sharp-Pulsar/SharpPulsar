@@ -20,37 +20,38 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static SharpPulsar.util.MathUtils.signSafeMod;
-
-	using HashingScheme = Api.HashingScheme;
+    using HashingScheme = Api.HashingScheme;
 	using SharpPulsar.Api;
-	using TopicMetadata = Api.TopicMetadata;
+	using ITopicMetadata = Api.ITopicMetadata;
 
 	[Serializable]
 	public class SinglePartitionMessageRouterImpl : MessageRouterBase
 	{
 
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
-		private readonly int partitionIndex;
+		private readonly int _partitionIndex;
 
-		public SinglePartitionMessageRouterImpl(int PartitionIndex, HashingScheme HashingScheme) : base(HashingScheme)
+		public SinglePartitionMessageRouterImpl(int partitionIndex, HashingScheme hashingScheme) : base(hashingScheme)
 		{
-			this.partitionIndex = PartitionIndex;
+			this._partitionIndex = partitionIndex;
 		}
 
-		public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata Metadata)
+		public override int ChoosePartition<T1>(Message<T1> msg, ITopicMetadata metadata)
 		{
 			// If the message has a key, it supersedes the single partition routing policy
-			if (Msg.hasKey())
+			if (msg.HasKey())
 			{
-				return signSafeMod(Hash.makeHash(Msg.Key), Metadata.numPartitions());
+				return Util.MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), metadata.NumPartitions());
 			}
 
-			return partitionIndex;
+			return _partitionIndex;
 		}
 
-	}
+        public override int ChoosePartition<T1>(Message<T1> msg)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 }

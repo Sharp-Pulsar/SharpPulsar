@@ -1,5 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using DotNetty.Common.Utilities;
+using Google.Protobuf.Collections;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Common.Naming;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,7 +34,7 @@ namespace SharpPulsar.Impl
     using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
     using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
-    public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, TimerTask
+    public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, ITimerTask
 	{
 		private readonly Pattern topicsPattern;
 		private readonly TopicsChangedListener topicsChangeListener;
@@ -186,7 +192,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(PatternMultiTopicsConsumerImpl));
+		private static readonly Logger<> log = LoggerFactory.getLogger(typeof(PatternMultiTopicsConsumerImpl));
 	}
 
 }

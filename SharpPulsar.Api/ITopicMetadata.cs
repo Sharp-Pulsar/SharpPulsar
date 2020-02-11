@@ -21,7 +21,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Metadata of a topic that can be used for message routing.
 	/// </summary>
-	public interface TopicMetadata
+	public interface ITopicMetadata
 	{
 
 		/// <summary>

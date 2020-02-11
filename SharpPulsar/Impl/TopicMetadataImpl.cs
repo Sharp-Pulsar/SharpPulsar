@@ -18,21 +18,21 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using TopicMetadata = Api.TopicMetadata;
+	using ITopicMetadata = Api.ITopicMetadata;
 
-	public class TopicMetadataImpl : TopicMetadata
+	public class TopicMetadataImpl : ITopicMetadata
 	{
 
-		private readonly int numPartitions;
+		private readonly int _numPartitions;
 
-		public TopicMetadataImpl(int NumPartitions)
+		public TopicMetadataImpl(int numPartitions)
 		{
-			this.numPartitions = NumPartitions;
+			this._numPartitions = numPartitions;
 		}
 
-		public override int NumPartitions()
+		public int NumPartitions()
 		{
-			return numPartitions;
+			return _numPartitions;
 		}
 	}
 

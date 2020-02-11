@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,8 +26,8 @@ namespace SharpPulsar.Impl
 
 
 	using HashingScheme = Api.HashingScheme;
-	using SharpPulsar.Api;
-	using TopicMetadata = Api.TopicMetadata;
+	using Api;
+	using ITopicMetadata = Api.ITopicMetadata;
 
 	/// <summary>
 	/// The routing strategy here:
@@ -40,53 +41,55 @@ namespace SharpPulsar.Impl
 	public class RoundRobinPartitionMessageRouterImpl : MessageRouterBase
 	{
 
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
-		private static readonly AtomicIntegerFieldUpdater<RoundRobinPartitionMessageRouterImpl> PARTITION_INDEX_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(RoundRobinPartitionMessageRouterImpl), "partitionIndex");
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private volatile int partitionIndex = 0;
-		private volatile int partitionIndex = 0;
+		private static readonly ConcurrentDictionary<RoundRobinPartitionMessageRouterImpl, int> PartitionIndexUpdater = new ConcurrentDictionary<RoundRobinPartitionMessageRouterImpl, int>();
 
-		private readonly int startPtnIdx;
-		private readonly bool isBatchingEnabled;
-		private readonly long partitionSwitchMs;
+		private readonly int _startPtnIdx;
+		private readonly bool _isBatchingEnabled;
+		private readonly long _partitionSwitchMs;
 
-		private readonly Clock clock;
+		private readonly DateTime _clock;
 
-		private static readonly Clock SYSTEM_CLOCK = Clock.systemUTC();
+		private static readonly DateTime SystemClock = DateTime.UtcNow;
 
-		public RoundRobinPartitionMessageRouterImpl(HashingScheme HashingScheme, int StartPtnIdx, bool IsBatchingEnabled, long PartitionSwitchMs) : this(HashingScheme, StartPtnIdx, IsBatchingEnabled, PartitionSwitchMs, SYSTEM_CLOCK)
+		public RoundRobinPartitionMessageRouterImpl(HashingScheme hashingScheme, int startPtnIdx, bool isBatchingEnabled, long partitionSwitchMs) : this(hashingScheme, startPtnIdx, isBatchingEnabled, partitionSwitchMs, SystemClock)
 		{
 		}
 
-		public RoundRobinPartitionMessageRouterImpl(HashingScheme HashingScheme, int StartPtnIdx, bool IsBatchingEnabled, long PartitionSwitchMs, Clock Clock) : base(HashingScheme)
+		public RoundRobinPartitionMessageRouterImpl(HashingScheme hashingScheme, int startPtnIdx, bool isBatchingEnabled, long partitionSwitchMs, DateTime clock) : base(hashingScheme)
 		{
-			PARTITION_INDEX_UPDATER.set(this, StartPtnIdx);
-			this.startPtnIdx = StartPtnIdx;
-			this.isBatchingEnabled = IsBatchingEnabled;
-			this.partitionSwitchMs = Math.Max(1, PartitionSwitchMs);
-			this.clock = Clock;
+			PartitionIndexUpdater[this] = startPtnIdx;
+			_startPtnIdx = startPtnIdx;
+			_isBatchingEnabled = isBatchingEnabled;
+			_partitionSwitchMs = Math.Max(1, partitionSwitchMs);
+			_clock = clock;
 		}
 
-		public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata TopicMetadata)
+		public override int ChoosePartition<T1>(Message<T1> msg, ITopicMetadata topicMetadata)
 		{
 			// If the message has a key, it supersedes the round robin routing policy
-			if (Msg.hasKey())
+			if (msg.HasKey())
 			{
-				return signSafeMod(Hash.makeHash(Msg.Key), TopicMetadata.numPartitions());
+				return Util.MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), topicMetadata.NumPartitions());
 			}
 
-			if (isBatchingEnabled)
+			if (_isBatchingEnabled)
 			{ // if batching is enabled, choose partition on `partitionSwitchMs` boundary.
-				long CurrentMs = clock.millis();
-				return signSafeMod(CurrentMs / partitionSwitchMs + startPtnIdx, TopicMetadata.numPartitions());
+				long currentMs = _clock.Millisecond;
+				return Util.MathUtils.SignSafeMod(currentMs / _partitionSwitchMs + _startPtnIdx, topicMetadata.NumPartitions());
 			}
 			else
-			{
-				return signSafeMod(PARTITION_INDEX_UPDATER.getAndIncrement(this), TopicMetadata.numPartitions());
+            {
+                PartitionIndexUpdater[this] = PartitionIndexUpdater[this]++;
+				return Util.MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
 			}
 		}
 
+		public override int ChoosePartition<T1>(Message<T1> msg)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 }

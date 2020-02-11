@@ -34,7 +34,7 @@ namespace SharpPulsar.Api
 		/// <param name="msg">
 		///            Message object </param>
 		/// <returns> The index of the partition to use for the message </returns>
-		/// @deprecated since 1.22.0. Please use <seealso cref="choosePartition(Message, TopicMetadata)"/> instead. 
+		/// @deprecated since 1.22.0. Please use <seealso cref="choosePartition(Message, ITopicMetadata)"/> instead. 
 		[Obsolete(@"since 1.22.0. Please use <seealso cref=""choosePartition(Message, TopicMetadata)""/> instead.")]
 		virtual int ChoosePartition<T1>(Message<T1> msg)
 		{
@@ -48,7 +48,7 @@ namespace SharpPulsar.Api
 		/// <param name="metadata"> topic metadata </param>
 		/// <returns> the partition to route the message.
 		/// @since 1.22.0 </returns>
-		virtual int ChoosePartition<T1>(Message<T1> msg, TopicMetadata metadata)
+		virtual int ChoosePartition<T1>(Message<T1> msg, ITopicMetadata metadata)
 		{
 			return choosePartition(msg);
 		}

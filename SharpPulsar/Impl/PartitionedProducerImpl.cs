@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl
 	using PulsarClientException = Api.PulsarClientException;
 	using NotSupportedException = Api.PulsarClientException.NotSupportedException;
 	using SharpPulsar.Api;
-	using TopicMetadata = Api.TopicMetadata;
+	using ITopicMetadata = Api.ITopicMetadata;
 	using ProducerConfigurationData = Conf.ProducerConfigurationData;
 	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
 	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl
 		private IList<ProducerImpl<T>> producers;
 		private MessageRouter routerPolicy;
 		private readonly ProducerStatsRecorderImpl stats;
-		private TopicMetadata topicMetadata;
+		private ITopicMetadata topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
 		public virtual long PartitionsAutoUpdateTimeout {get;} = null;

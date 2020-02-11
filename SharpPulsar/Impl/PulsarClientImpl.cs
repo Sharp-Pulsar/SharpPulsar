@@ -338,7 +338,7 @@ namespace SharpPulsar.Impl
 		{
 			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
 
-			var consumer = new MultiTopicsConsumerImpl<T>(this, conf, consumerSubscribedTask, schema, interceptors, true);
+			var consumer = new MultiTopicsConsumerImpl<T>(this, conf, consumerSubscribedTask, schema, interceptors, true, ExternalExecutorProvider());
 
 			lock (_consumers)
 			{
@@ -453,7 +453,7 @@ namespace SharpPulsar.Impl
 			}
 			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
 
-			var reader = new ReaderImpl<T>(this, conf, consumerSubscribedTask, schema);
+			var reader = new ReaderImpl<T>(this, conf, consumerSubscribedTask, schema, ExternalExecutorProvider());
 			lock (_consumers)
 			{
 				var c = (ConsumerBase<object>)Convert.ChangeType(reader.Consumer, typeof(IConsumer<object>));
