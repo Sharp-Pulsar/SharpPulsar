@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Api;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -66,90 +67,95 @@ namespace SharpPulsar.Impl
 		{
 			if (_conf.TopicName == null)
 			{
-				Return new (new ArgumentException("Topic name must be set on the reader builder"));
+				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new ArgumentException("Topic name must be set on the reader builder")));
 			}
 
 			if (_conf.StartMessageId == null)
 			{
-				return FutureUtil.failedFuture(new ArgumentException("Start message id must be set on the reader builder"));
+                return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new ArgumentException("Start message id must be set on the reader builder")));
 			}
 
 			return _client.CreateReaderAsync(_conf, _schema);
 		}
 
-		public override ReaderBuilder<T> LoadConf(IDictionary<string, object> config)
+		public ReaderBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
 			IMessageId startMessageId = _conf.StartMessageId;
-			_conf = ConfigurationDataUtils.loadData(config, _conf, typeof(ReaderConfigurationData));
+			_conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ReaderConfigurationData<T>));
 			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public override ReaderBuilder<T> Topic(string topicName)
+		public ReaderBuilder<T> Topic(string topicName)
 		{
-			_conf.TopicName = StringUtils.Trim(topicName);
+			_conf.TopicName = topicName.Trim();
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageId(IMessageId startMessageId)
+		public ReaderBuilder<T> StartMessageId(IMessageId startMessageId)
 		{
 			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit bamcis.Util.Concurrent.TimeUnit)
+		public ReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			_conf.StartMessageFromRollbackDurationInSec = bamcis.Util.Concurrent.TimeUnit.toSeconds(rollbackDuration);
+			_conf.StartMessageFromRollbackDurationInSec = timeUnit.ToSecs(rollbackDuration);
 			return this;
 		}
 
-		public override ReaderBuilder<T> StartMessageIdInclusive()
+		public ReaderBuilder<T> StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReaderListener(ReaderListener<T> readerListener)
+		public  ReaderBuilder<T> ReaderListener(ReaderListener<T> readerListener)
 		{
 			_conf.ReaderListener = readerListener;
 			return this;
 		}
 
-		public override ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
+		public ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public override ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+		public ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
+		public ReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
 			_conf.ReceiverQueueSize = receiverQueueSize;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReaderName(string readerName)
+		public ReaderBuilder<T> ReaderName(string readerName)
 		{
 			_conf.ReaderName = readerName;
 			return this;
 		}
 
-		public override ReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
+		public  ReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
 		{
 			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
 			return this;
 		}
 
-		public override ReaderBuilder<T> ReadCompacted(bool readCompacted)
+		public ReaderBuilder<T> ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
 			return this;
 		}
-	}
+
+        object ICloneable.Clone()
+        {
+            return Clone();
+        }
+    }
 
 }
