@@ -376,7 +376,7 @@ namespace SharpPulsar.Impl
 			}
 			var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern).ToList();
 			topicsList.ForEach(x => conf.TopicNames.Add(x));
-			var consumer = new PatternMultiTopicsConsumerImpl<T>(conf.TopicsPattern, this, conf, consumerSubscribedTask, schema, subscriptionMode, interceptors);
+			var consumer = new PatternMultiTopicsConsumerImpl<T>(conf.TopicsPattern, this, conf, consumerSubscribedTask, schema, subscriptionMode, interceptors, ExternalExecutorProvider());
 			lock (_consumers)
 			{
 				var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
