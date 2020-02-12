@@ -8,8 +8,8 @@ namespace SharpPulsar.Impl
 {
     public sealed class OpSendMsg<T>
     {
-        internal MessageImpl<object> Msg;
-        internal IList<MessageImpl<object>> Msgs;
+        internal MessageImpl<T> Msg;
+        internal IList<MessageImpl<T>> Msgs;
         internal ByteBufPair Cmd;
         internal SendCallback Callback;
         internal ThreadStart RePopulate;
@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
         internal static OpSendMsg<T> Create(IList<MessageImpl<T>> msgs, ByteBufPair cmd, long sequenceId, SendCallback callback)
         {
             var op = Pool.Take();
-            op.Msgs = (IList<MessageImpl<object>>) msgs;
+            op.Msgs =  msgs;
             op.Cmd = cmd;
             op.Callback = callback;
             op.SequenceId = sequenceId;
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl
         internal static OpSendMsg<T> Create(IList<MessageImpl<T>> msgs, ByteBufPair cmd, long lowestSequenceId, long highestSequenceId, SendCallback callback)
         {
             var op = Pool.Take();
-            op.Msgs = (IList<MessageImpl<object>>)msgs;
+            op.Msgs = msgs;
             op.Cmd = cmd;
             op.Callback = callback;
             op.SequenceId = lowestSequenceId;

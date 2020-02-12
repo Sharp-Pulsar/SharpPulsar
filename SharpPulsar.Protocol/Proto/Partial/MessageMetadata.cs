@@ -219,9 +219,9 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		public static Builder NewBuilder(MessageMetadata Prototype)
+		public static Builder NewBuilder(MessageMetadata prototype)
 		{
-			return NewBuilder().MergeFrom(Prototype);
+			return NewBuilder().MergeFrom(prototype);
 		}
 		public Builder ToBuilder()
 		{

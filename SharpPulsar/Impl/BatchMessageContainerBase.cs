@@ -22,7 +22,7 @@ using static SharpPulsar.Impl.ProducerImpl<object>;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public interface BatchMessageContainerBase : BatchMessageContainer
+	public interface BatchMessageContainerBase<T> : BatchMessageContainer
 	{
 
 		/// <summary>
@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(MessageImpl<object> msg, SendCallback callback);
+		bool Add(MessageImpl<T> msg, SendCallback callback);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container have enough space for the specific message,
 		///         otherwise return false. </returns>
-		bool HaveEnoughSpace(MessageImpl<object> msg);
+		bool HaveEnoughSpace(MessageImpl<T> msg);
 
 		/// <summary>
 		/// Check the batch message container has same schema with the message want to add.
@@ -48,14 +48,14 @@ namespace SharpPulsar.Impl
 		/// <returns> return true if the container has same schema with the specific message,
 		///         otherwise return false. </returns>
 		///         
-		bool HasSameSchema(MessageImpl<object> msg);
+		bool HasSameSchema(MessageImpl<T> msg);
 
 		/// <summary>
 		/// Set producer of the message batch container.
 		/// </summary>
 		/// <param name="producer"> producer </param>
 		/// 
-		ProducerImpl<object> Producer {set;}
+		ProducerImpl<T> Producer {set;}
 
 		/// <summary>
 		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
 		/// <returns> list of OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 		/// 
-		IList<OpSendMsg<T>> CreateOpSendMsgs<T>();
+		IList<OpSendMsg<T>> CreateOpSendMsgs();
 
 		/// <summary>
 		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
@@ -71,7 +71,7 @@ namespace SharpPulsar.Impl
 		/// <returns> OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 		/// 
-		OpSendMsg<T> CreateOpSendMsg<T>();
+		OpSendMsg<T> CreateOpSendMsg();
 	}
 
 }
