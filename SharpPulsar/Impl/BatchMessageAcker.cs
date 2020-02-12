@@ -34,23 +34,16 @@ namespace SharpPulsar.Impl
 		// bitset shared across messages in the same batch.
 		private int _batchSize;
 		private readonly BitArray bitSet;
-		private bool prevBatchCumulativelyAcked = false;
 
-		public BatchMessageAcker(BitArray bitSet, int batchSize)
+        public BatchMessageAcker(BitArray bitSet, int batchSize)
 		{
 			this.bitSet = bitSet;
 			_batchSize = batchSize;
 		}
 
-		public virtual BitArray BitSet
-		{
-			get
-			{
-				return bitSet;
-			}
-		}
+		public virtual BitArray BitSet => bitSet;
 
-		public virtual int BatchSize
+        public virtual int BatchSize
 		{
 			get
 			{
@@ -95,19 +88,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual bool PrevBatchCumulativelyAcked
-		{
-			set
-			{
-				this.prevBatchCumulativelyAcked = value;
-			}
-			get
-			{
-				return prevBatchCumulativelyAcked;
-			}
-		}
-
-
-	}
+		public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
+    }
 
 }

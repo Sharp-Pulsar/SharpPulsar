@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl
 
         public override bool HasSameSchema(MessageImpl<object> msg)
         {
-			if (NumMessagesInBatchConflict == 0)
+			if (NumMessagesInBatch == 0)
             {
                 return true;
             }
