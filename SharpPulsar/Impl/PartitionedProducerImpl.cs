@@ -1,5 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using App.Metrics.Concurrency;
+using DotNetty.Common.Utilities;
+using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,390 +31,352 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
-
-	using VisibleForTesting = com.google.common.annotations.VisibleForTesting;
-	using ImmutableList = com.google.common.collect.ImmutableList;
-	using Lists = com.google.common.collect.Lists;
-	using Timeout = io.netty.util.Timeout;
-	using TimerTask = io.netty.util.TimerTask;
-	using SharpPulsar.Api;
-	using IMessageId = Api.IMessageId;
-	using MessageRouter = Api.MessageRouter;
-	using MessageRoutingMode = Api.MessageRoutingMode;
-	using Producer = Api.Producer;
-	using PulsarClientException = Api.PulsarClientException;
-	using NotSupportedException = Api.PulsarClientException.NotSupportedException;
-	using SharpPulsar.Api;
-	using ITopicMetadata = Api.ITopicMetadata;
-	using ProducerConfigurationData = Conf.ProducerConfigurationData;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using FutureUtil = Org.Apache.Pulsar.Common.Util.FutureUtil;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-    using System.Threading.Tasks;
 
     public class PartitionedProducerImpl<T> : ProducerBase<T>
 	{
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(PartitionedProducerImpl));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PartitionedProducerImpl<T>));
 
-		private IList<ProducerImpl<T>> producers;
-		private MessageRouter routerPolicy;
-		private readonly ProducerStatsRecorderImpl stats;
-		private ITopicMetadata topicMetadata;
+		private readonly IList<ProducerImpl<T>> _producers;
+		private readonly MessageRouter _routerPolicy;
+		private readonly ProducerStatsRecorderImpl<T> _stats;
+		private ITopicMetadata _topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
-		public virtual long PartitionsAutoUpdateTimeout {get;} = null;
-		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
-		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
+		public  ITimeout PartitionsAutoUpdateTimeout;
+		internal TopicsPartitionChangedListener TopicPartitionChangedListener;
+		internal TaskCompletionSource<Task> PartitionsAutoUpdateTask = null;
 
-		public PartitionedProducerImpl(PulsarClientImpl Client, string Topic, ProducerConfigurationData Conf, int NumPartitions, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> Schema, ProducerInterceptors Interceptors) : base(Client, Topic, Conf, producerCreatedTask, Schema, Interceptors)
+		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
 		{
-			this.producers = Lists.newArrayListWithCapacity(NumPartitions);
-			this.topicMetadata = new TopicMetadataImpl(NumPartitions);
-			this.routerPolicy = MessageRouter;
-			stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>() : null;
+			_producers = new List<ProducerImpl<T>>(numPartitions);
+			_topicMetadata = new TopicMetadataImpl(numPartitions);
+			_routerPolicy = MessageRouter;
+			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>() : null;
 
-			int MaxPendingMessages = Math.Min(Conf.MaxPendingMessages, Conf.MaxPendingMessagesAcrossPartitions / NumPartitions);
-			Conf.MaxPendingMessages = MaxPendingMessages;
+			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
+			conf.MaxPendingMessages = maxPendingMessages;
 			Start();
 
 			// start track and auto subscribe partition increasement
-			if (Conf.AutoUpdatePartitions)
+			if (conf.AutoUpdatePartitions)
 			{
-				TopicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
-				PartitionsAutoUpdateTimeout = Client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
+				TopicPartitionChangedListener = new TopicsPartitionChangedListener(this);
+				PartitionsAutoUpdateTimeout = client.Timer.NewTimeout(new TimerTaskAnonymousInnerClass(this), TimeSpan.FromMinutes(1));
 			}
 		}
 
 		private MessageRouter MessageRouter
 		{
 			get
-			{
-				MessageRouter MessageRouter;
-    
-				MessageRoutingMode MessageRouteMode = Conf.MessageRoutingMode;
-    
-				switch (MessageRouteMode)
-				{
-					case MessageRoutingMode.CustomPartition:
-						MessageRouter = checkNotNull(Conf.CustomMessageRouter);
-						break;
-					case MessageRoutingMode.SinglePartition:
-						MessageRouter = new SinglePartitionMessageRouterImpl(ThreadLocalRandom.current().Next(topicMetadata.NumPartitions()), Conf.HashingScheme);
-						break;
-					case MessageRoutingMode.RoundRobinPartition:
-					default:
-						MessageRouter = new RoundRobinPartitionMessageRouterImpl(Conf.HashingScheme, ThreadLocalRandom.current().Next(topicMetadata.NumPartitions()), Conf.BatchingEnabled, BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.toMillis(Conf.batchingPartitionSwitchFrequencyIntervalMicros()));
-					break;
-				}
-    
-				return MessageRouter;
-			}
+            {
+                var messageRouteMode = Conf.MessageRoutingMode;
+
+                return messageRouteMode switch
+                {
+                    MessageRoutingMode.CustomPartition => (Conf.CustomMessageRouter ??
+                                                           new RoundRobinPartitionMessageRouterImpl(Conf.HashingScheme,
+                                                               ThreadLocalRandom.Next(_topicMetadata.NumPartitions()),
+                                                               Conf.BatchingEnabled,
+                                                               BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToMillis(
+                                                                   Conf
+                                                                       .BatchingPartitionSwitchFrequencyIntervalMicros()))
+                    ),
+                    MessageRoutingMode.SinglePartition => new SinglePartitionMessageRouterImpl(
+                        ThreadLocalRandom.Next(_topicMetadata.NumPartitions()), Conf.HashingScheme),
+                    MessageRoutingMode.RoundRobinPartition => new RoundRobinPartitionMessageRouterImpl(
+                        Conf.HashingScheme, ThreadLocalRandom.Next(_topicMetadata.NumPartitions()),
+                        Conf.BatchingEnabled,
+                        BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToMillis(
+                            Conf.BatchingPartitionSwitchFrequencyIntervalMicros())),
+                    _ => new RoundRobinPartitionMessageRouterImpl(Conf.HashingScheme,
+                        ThreadLocalRandom.Next(_topicMetadata.NumPartitions()), Conf.BatchingEnabled,
+                        BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToMillis(
+                            Conf.BatchingPartitionSwitchFrequencyIntervalMicros()))
+                };
+            }
 		}
 
 		public override string ProducerName
-		{
-			get
-			{
-				return producers[0].ProducerName;
-			}
-		}
+        {
+            get => _producers[0].ProducerName;
+            set => _producers[0].ProducerName = value;
+        }
 
-		public override long LastSequenceId
-		{
-			get
-			{
-				// Return the highest sequence id across all partitions. This will be correct,
-				// since there is a single id generator across all partitions for the same producer
-	//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-				return producers.Select(Producer::getLastSequenceId).Select(long?.longValue).Max().orElse(-1);
-			}
-		}
+        // Return the highest sequence id across all partitions. This will be correct,
+        // since there is a single id generator across all partitions for the same producer
 
-		private void Start()
+        public new long LastSequenceId => _producers.Select(p => p.LastSequenceId).DefaultIfEmpty(-1).Max();
+        
+
+        private void Start()
 		{
-			AtomicReference<Exception> CreateFail = new AtomicReference<Exception>();
-			AtomicInteger Completed = new AtomicInteger();
-			for (int PartitionIndex = 0; PartitionIndex < topicMetadata.NumPartitions(); PartitionIndex++)
+			var createFail = new AtomicReference<System.Exception>();
+			var completed = new AtomicInteger();
+			for (var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
-				string PartitionName = TopicName.get(Topic).getPartition(PartitionIndex).ToString();
-				ProducerImpl<T> Producer = new ProducerImpl<T>(ClientConflict, PartitionName, Conf, new CompletableFuture<Producer<T>>(), PartitionIndex, Schema, Interceptors);
-				producers.Add(Producer);
-				Producer.producerCreatedFuture().handle((prod, createException) =>
-				{
-				if (createException != null)
-				{
-					State = State.Failed;
-					CreateFail.compareAndSet(null, createException);
-				}
-				if (Completed.incrementAndGet() == topicMetadata.NumPartitions())
-				{
-					if (CreateFail.get() == null)
-					{
-						State = State.Ready;
-						log.info("[{}] Created partitioned producer", Topic);
-						ProducerCreatedFuture().complete(PartitionedProducerImpl.this);
-					}
-					else
-					{
-						log.error("[{}] Could not create partitioned producer.", Topic, CreateFail.get().Cause);
-						CloseAsync().handle((ok, closeException) =>
-						{
-							ProducerCreatedFuture().completeExceptionally(CreateFail.get());
-							ClientConflict.cleanupProducer(this);
-							return null;
-						});
-					}
-				}
-				return null;
+				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
+				var producer = new ProducerImpl<T>(Client, partitionName, Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, Schema, Interceptors);
+				_producers.Add(producer);
+				producer.ProducerCreatedTask.Task.ContinueWith(task =>
+                {
+                    var createException = task.Exception;
+				    if (createException != null)
+				    {
+					    SetState(State.Failed);
+					    createFail.CompareAndSet(null, createException);
+				    }
+				    if (completed.Increment() == _topicMetadata.NumPartitions())
+				    {
+					    if (createFail.Value == null)
+					    {
+                            SetState(State.Ready);
+						    Log.LogInformation("[{}] Created partitioned producer", Topic);
+						    ProducerCreatedTask.SetResult(this);
+					    }
+					    else
+					    {
+						    Log.LogError("[{}] Could not create partitioned producer.", Topic, createFail.Value.InnerException);
+						    CloseAsync().AsTask().ContinueWith(ex =>
+						    {
+							    ProducerCreatedTask.SetException(createFail.Value);
+							    Client.CleanupProducer(this);
+						    });
+					    }
+				    }
 				});
 			}
 
 		}
 
-		public override CompletableFuture<IMessageId> InternalSendAsync<T1>(Message<T1> Message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> message)
 		{
-
-			switch (State)
+			var t = new TaskCompletionSource<IMessageId>();
+			switch (GetState())
 			{
-			case Ready:
-			case Connecting:
+			case State.Ready:
+			case State.Connecting:
 				break; // Ok
-				goto case Closing;
-			case Closing:
-			case Closed:
-				return FutureUtil.failedFuture(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-			case Terminated:
-				return FutureUtil.failedFuture(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-			case Failed:
-			case Uninitialized:
-				return FutureUtil.failedFuture(new PulsarClientException.NotConnectedException());
+			case State.Closing:
+			case State.Closed:
+				t.SetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+				return t;
+			case State.Terminated:
+				t.SetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+				return t;
+			case State.Failed:
+			case State.Uninitialized:
+				t.SetException(new PulsarClientException.NotConnectedException());
+				return t;
 			}
 
-			int Partition = routerPolicy.ChoosePartition(Message, topicMetadata);
-			checkArgument(Partition >= 0 && Partition < topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + Partition);
-			return producers[Partition].internalSendAsync(Message);
+			var partition = _routerPolicy.ChoosePartition(message, _topicMetadata);
+			if(partition <= 0 && partition > _topicMetadata.NumPartitions())
+                throw new ArgumentException("Illegal partition index chosen by the message routing policy: " + partition);
+			return _producers[partition].InternalSendAsync(message);
 		}
 
-		public override CompletableFuture<Void> FlushAsync()
+		public override ValueTask FlushAsync()
 		{
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-			IList<CompletableFuture<Void>> FlushFutures = producers.Select(ProducerImpl::flushAsync).ToList();
-			return CompletableFuture.allOf(((List<CompletableFuture<Void>>)FlushFutures).ToArray());
-		}
+			var flushTasks = _producers.Select(x => x.FlushAsync().AsTask()).ToList();
+            var t = Task.WhenAll(flushTasks);
+			return new ValueTask(t); 
+        }
 
 		public override void TriggerFlush()
 		{
-			producers.ForEach(ProducerImpl.triggerFlush);
+			_producers.ToList().ForEach(x => x.TriggerFlush());
 		}
 
-		public override bool Connected
-		{
-			get
-			{
-				// returns false if any of the partition is not connected
-	//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-				return producers.All(ProducerImpl::isConnected);
-			}
-		}
+        public override bool Connected
+        {
+            get => _producers.All(x => x.Connected);
+            set => ChangeToState(State.Closed);
+        }
 
-		public override CompletableFuture<Void> CloseAsync()
+        public override ValueTask CloseAsync()
 		{
-			if (State == State.Closing || State == State.Closed)
+			if (GetState() == State.Closing || GetState() == State.Closed)
 			{
-				return CompletableFuture.completedFuture(null);
+				return new ValueTask(null);
 			}
-			State = State.Closing;
+			SetState(State.Closing);
 
 			if (PartitionsAutoUpdateTimeout != null)
 			{
-				PartitionsAutoUpdateTimeout.cancel();
+				PartitionsAutoUpdateTimeout.Cancel();
 				PartitionsAutoUpdateTimeout = null;
 			}
 
-			AtomicReference<Exception> CloseFail = new AtomicReference<Exception>();
-			AtomicInteger Completed = new AtomicInteger(topicMetadata.NumPartitions());
-			CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
-			foreach (Producer<T> Producer in producers)
+			AtomicReference<System.Exception> closeFail = new AtomicReference<System.Exception>();
+			var completed = new AtomicInteger(_topicMetadata.NumPartitions());
+			var closeTask = new TaskCompletionSource<Task>();
+			foreach (var producer in _producers)
 			{
-				if (Producer != null)
+				if (producer != null)
 				{
-					Producer.closeAsync().handle((closed, ex) =>
-					{
-					if (ex != null)
-					{
-						CloseFail.compareAndSet(null, ex);
-					}
-					if (Completed.decrementAndGet() == 0)
-					{
-						if (CloseFail.get() == null)
-						{
-							State = State.Closed;
-							CloseFuture.complete(null);
-							log.info("[{}] Closed Partitioned Producer", Topic);
-							ClientConflict.cleanupProducer(this);
-						}
-						else
-						{
-							State = State.Failed;
-							CloseFuture.completeExceptionally(CloseFail.get());
-							log.error("[{}] Could not close Partitioned Producer", Topic, CloseFail.get().Cause);
-						}
-					}
-					return null;
+					producer.CloseAsync().AsTask().ContinueWith(task =>
+                    {
+                        var ex = task.Exception;
+					    if (ex != null)
+					    {
+						    closeFail.CompareAndSet(null, ex);
+					    }
+					    if (completed.Decrement() == 0)
+					    {
+						    if (closeFail.Value == null)
+						    {
+							    SetState(State.Closed);
+							    closeTask.SetResult(null);
+							    Log.LogInformation("[{}] Closed Partitioned Producer", Topic);
+							    Client.CleanupProducer(this);
+						    }
+						    else
+						    {
+							    SetState(State.Failed);
+							    closeTask.SetException(closeFail.Value);
+							    Log.LogError("[{}] Could not close Partitioned Producer", Topic, closeFail.Value.InnerException);
+						    }
+					    }
+					    return;
 					});
 				}
 
 			}
 
-			return CloseFuture;
+			return new ValueTask(closeTask.Task);
 		}
 
-		public override ProducerStatsRecorderImpl Stats
+		public new ProducerStatsRecorderImpl<T> Stats
 		{
 			get
 			{
 				lock (this)
 				{
-					if (stats == null)
+					if (_stats == null)
 					{
 						return null;
 					}
-					stats.Reset();
-					for (int I = 0; I < topicMetadata.NumPartitions(); I++)
+					_stats.Reset();
+					for (var i = 0; i < _topicMetadata.NumPartitions(); i++)
 					{
-						stats.UpdateCumulativeStats(producers[I].Stats);
+						_stats.UpdateCumulativeStats(_producers[i].Stats);
 					}
-					return stats;
+					return _stats;
 				}
 			}
 		}
 
-		public virtual IList<ProducerImpl<T>> Producers
-		{
-			get
-			{
-				return producers.ToList();
-			}
-		}
+		public virtual IList<ProducerImpl<T>> Producers => _producers.ToList();
 
-		public override string HandlerName
-		{
-			get
-			{
-				return "partition-producer";
-			}
-		}
+        public new string HandlerName => "partition-producer";
 
-		// This listener is triggered when topics partitions are updated.
+        // This listener is triggered when topics partitions are updated.
 		public class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
-			private readonly PartitionedProducerImpl<T> outerInstance;
+			private readonly PartitionedProducerImpl<T> _outerInstance;
 
 			public TopicsPartitionChangedListener(PartitionedProducerImpl<T> outerInstance)
 			{
-				this.outerInstance = OuterInstance;
+				_outerInstance = outerInstance;
 			}
 
 			// Check partitions changes of passed in topics, and add new topic partitions.
-			public override CompletableFuture<Void> OnTopicsExtended(ICollection<string> TopicsExtended)
+			public TaskCompletionSource<Task> OnTopicsExtended(ICollection<string> topicsExtended)
 			{
-				CompletableFuture<Void> Future = new CompletableFuture<Void>();
-				if (TopicsExtended.Count == 0 || !TopicsExtended.Contains(outerInstance.Topic))
+				var task = new TaskCompletionSource<Task>();
+				if (topicsExtended.Count == 0 || !topicsExtended.Contains(_outerInstance.Topic))
 				{
-					Future.complete(null);
-					return Future;
+					task.SetResult(null);
+					return task;
 				}
 
-				outerInstance.ClientConflict.getPartitionsForTopic(outerInstance.Topic).thenCompose(list =>
-				{
-				int OldPartitionNumber = outerInstance.topicMetadata.NumPartitions();
-				int CurrentPartitionNumber = list.size();
-				if (log.DebugEnabled)
-				{
-					log.debug("[{}] partitions number. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
-				}
-				if (OldPartitionNumber == CurrentPartitionNumber)
-				{
-					Future.complete(null);
-					return Future;
-				}
-				else if (OldPartitionNumber < CurrentPartitionNumber)
-				{
-					IList<CompletableFuture<Producer<T>>> FutureList = list.subList(OldPartitionNumber, CurrentPartitionNumber).Select(partitionName =>
-					{
-						int PartitionIndex = TopicName.getPartitionIndex(partitionName);
-						ProducerImpl<T> Producer = new ProducerImpl<T>(outerInstance.ClientConflict, partitionName, outerInstance.Conf, new CompletableFuture<Producer<T>>(), PartitionIndex, outerInstance.Schema, outerInstance.Interceptors);
-						outerInstance.producers.Add(Producer);
-						return Producer.producerCreatedFuture();
-					}).ToList();
-					FutureUtil.waitForAll(FutureList).thenAccept(finalFuture =>
-					{
-						if (log.DebugEnabled)
-						{
-							log.debug("[{}] success create producers for extended partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
-						}
-						outerInstance.topicMetadata = new TopicMetadataImpl(CurrentPartitionNumber);
-						Future.complete(null);
-					}).exceptionally(ex =>
-					{
-						log.warn("[{}] fail create producers for extended partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
-						IList<ProducerImpl<T>> Sublist = outerInstance.producers.subList(OldPartitionNumber, outerInstance.producers.Count);
-						Sublist.ForEach(newProducer => newProducer.closeAsync());
-						Sublist.Clear();
-						Future.completeExceptionally(ex);
-						return null;
-					});
-					return null;
-				}
-				else
-				{
-					log.error("[{}] not support shrink topic partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
-					Future.completeExceptionally(new NotSupportedException("not support shrink topic partitions"));
-				}
-				return Future;
+				_outerInstance.Client.GetPartitionsForTopic(_outerInstance.Topic).AsTask().ContinueWith(tasks =>
+                {
+                    var list = tasks.Result.ToList();
+
+					var oldPartitionNumber = _outerInstance._topicMetadata.NumPartitions();
+				    int currentPartitionNumber = list.Count;
+				    if (Log.IsEnabled(LogLevel.Debug))
+				    {
+					    Log.LogDebug("[{}] partitions number. old: {}, new: {}", _outerInstance.Topic, oldPartitionNumber, currentPartitionNumber);
+				    }
+				    if (oldPartitionNumber == currentPartitionNumber)
+				    {
+					    task.SetResult(null);
+				    }
+				    else if (oldPartitionNumber < currentPartitionNumber)
+				    {
+					    IList<TaskCompletionSource<IProducer<T>>> taskList = list.Skip(oldPartitionNumber).Take(oldPartitionNumber-currentPartitionNumber).Select(partitionName =>
+					    {
+						    int partitionIndex = TopicName.GetPartitionIndex(partitionName);
+						    var producer = new ProducerImpl<T>(_outerInstance.Client, partitionName, _outerInstance.Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors);
+						    _outerInstance._producers.Add(producer);
+						    return producer.ProducerCreatedTask;
+					    }).ToList();
+					    Task.WhenAll(taskList.Select(x=> x.Task)).ContinueWith(finalTask =>
+					    {
+                            if (finalTask.IsFaulted)
+                            {
+                                Log.LogWarning("[{}] fail create producers for extended partitions. old: {}, new: {}", _outerInstance.Topic, oldPartitionNumber, currentPartitionNumber);
+                                var sublist = _outerInstance._producers.Skip(oldPartitionNumber).Take(_outerInstance._producers.Count - oldPartitionNumber).ToList();
+                                sublist.ForEach(newProducer => newProducer.CloseAsync());
+                                sublist.Clear();
+                                task.SetException(finalTask.Exception ?? throw new InvalidOperationException());
+                                return;
+							}
+						    if (Log.IsEnabled(LogLevel.Debug))
+						    {
+							    Log.LogDebug("[{}] success create producers for extended partitions. old: {}, new: {}", _outerInstance.Topic, oldPartitionNumber, currentPartitionNumber);
+						    }
+						    _outerInstance._topicMetadata = new TopicMetadataImpl(currentPartitionNumber);
+						    task.SetResult(null);
+					    });
+				    }
+				    else
+				    {
+					    Log.LogError("[{}] not support shrink topic partitions. old: {}, new: {}", _outerInstance.Topic, oldPartitionNumber, currentPartitionNumber);
+					    task.SetException(new NotSupportedException("not support shrink topic partitions"));
+				    }
+				    return task;
 				});
 
-				return Future;
+				return task;
 			}
 		}
+		
+		public class TimerTaskAnonymousInnerClass : ITimerTask
+        {
+            private readonly PartitionedProducerImpl<T> _outerInstance;
 
-		private TimerTask partitionsAutoUpdateTimerTask = new TimerTaskAnonymousInnerClass();
+            public TimerTaskAnonymousInnerClass(PartitionedProducerImpl<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
 
-		public class TimerTaskAnonymousInnerClass : TimerTask
-		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-			public override void run(Timeout Timeout)
+            public void Run(ITimeout timeout)
 			{
-				if (Timeout.Cancelled || outerInstance.State != State.Ready)
+				if (timeout.Canceled || _outerInstance.GetState() != State.Ready)
 				{
 					return;
 				}
 
-				if (log.DebugEnabled)
+				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					log.debug("[{}] run partitionsAutoUpdateTimerTask for partitioned producer", outerInstance.topic);
+					Log.LogDebug("[{}] run partitionsAutoUpdateTimerTask for partitioned producer", _outerInstance.Topic);
 				}
 
 				// if last auto update not completed yet, do nothing.
-				if (outerInstance.partitionsAutoUpdateFuture == null || outerInstance.partitionsAutoUpdateFuture.Done)
-				{
-					outerInstance.partitionsAutoUpdateFuture = outerInstance.topicsPartitionChangedListener.onTopicsExtended(ImmutableList.of(outerInstance.topic));
+				if (_outerInstance.PartitionsAutoUpdateTask == null || _outerInstance.PartitionsAutoUpdateTask.Task.IsCompleted)
+                {
+                    var t = new TopicsPartitionChangedListener(_outerInstance);
+					_outerInstance.PartitionsAutoUpdateTask = t.OnTopicsExtended(new List<string>{_outerInstance.Topic});
 				}
 
 				// schedule the next re-check task
-				outerInstance.PartitionsAutoUpdateTimeout = outerInstance.client.timer().newTimeout(partitionsAutoUpdateTimerTask, 1, BAMCIS.Util.Concurrent.TimeUnit.MINUTES);
+				_outerInstance.PartitionsAutoUpdateTimeout = _outerInstance.Client.Timer.NewTimeout(new TimerTaskAnonymousInnerClass(_outerInstance), TimeSpan.FromMinutes(1));
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting public io.netty.util.Timeout getPartitionsAutoUpdateTimeout()
 
 	}
 
