@@ -77,7 +77,7 @@ namespace SharpPulsar.Impl
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(MessageMetadata.NewBuilder());
-				this.FirstCallback = callback;
+				FirstCallback = callback;
 				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
 			}
 
@@ -101,13 +101,13 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				int batchWriteIndex = _batchedMessageMetadataAndPayload.WriterIndex;
-				int batchReadIndex = _batchedMessageMetadataAndPayload.ReaderIndex;
+				var batchWriteIndex = _batchedMessageMetadataAndPayload.WriterIndex;
+				var batchReadIndex = _batchedMessageMetadataAndPayload.ReaderIndex;
     
 				for (int i = 0, n = _messages.Count; i < n; i++)
 				{
-					MessageImpl<object> msg = _messages[i];
-					MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
+					var msg = _messages[i];
+					var msgBuilder = msg.MessageBuilder;
 					msg.DataBuffer.MarkReaderIndex();
 					try
 					{
@@ -117,9 +117,9 @@ namespace SharpPulsar.Impl
 					{
 						// serializing batch message can corrupt the index of message and batch-message. Reset the index so,
 						// next iteration doesn't send corrupt message to broker.
-						for (int j = 0; j <= i; j++)
+						for (var j = 0; j <= i; j++)
 						{
-							MessageImpl<object> previousMsg = _messages[j];
+							var previousMsg = _messages[j];
 							previousMsg.DataBuffer.ResetReaderIndex();
 						}
 						_batchedMessageMetadataAndPayload.SetWriterIndex(batchWriteIndex);
@@ -128,12 +128,12 @@ namespace SharpPulsar.Impl
 					}
 				}
 				// Recycle messages only once they serialized successfully in batch
-				foreach (MessageImpl<object> msg in _messages)
+				foreach (var msg in _messages)
 				{
 					msg.MessageBuilder.Recycle();
 				}
-				int uncompressedSize = _batchedMessageMetadataAndPayload.ReadableBytes;
-				IByteBuffer compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
+				var uncompressedSize = _batchedMessageMetadataAndPayload.ReadableBytes;
+				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
 				_batchedMessageMetadataAndPayload.Release();
 				if (CompressionType != ICompressionType.None)
                 {
@@ -183,7 +183,7 @@ namespace SharpPulsar.Impl
 
         public OpSendMsg<object> CreateOpSendMsg()
 		{
-			IByteBuffer encryptedPayload = Producer.EncryptMessage(_messageMetadata, CompressedBatchMetadataAndPayload);
+			var encryptedPayload = Producer.EncryptMessage(_messageMetadata, CompressedBatchMetadataAndPayload);
 			if (encryptedPayload.ReadableBytes > ClientCnx.MaxMessageSize)
 			{
 				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
 			}
 			_messageMetadata.SetNumMessagesInBatch(NumMessagesInBatch);
 			_messageMetadata.SetHighestSequenceId(_highestSequenceId);
-            ByteBufPair cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, _messageMetadata.Build(), encryptedPayload);
+            var cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, _messageMetadata.Build(), encryptedPayload);
 
 			var op = OpSendMsg<object>.Create(_messages, cmd, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, FirstCallback);
 

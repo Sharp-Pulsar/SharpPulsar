@@ -21,20 +21,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
-	using Lists = com.google.common.collect.Lists;
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ReferenceCountUtil = io.netty.util.ReferenceCountUtil;
-	using PulsarClientException = Api.PulsarClientException;
-	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using CompressionCodec = Org.Apache.Pulsar.Common.Compression.CompressionCodec;
-	using ByteBufPair = Org.Apache.Pulsar.Common.Protocol.ByteBufPair;
-	using Commands = Org.Apache.Pulsar.Common.Protocol.Commands;
-	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
 
 	/// <summary>
 	/// Key based batch message container
@@ -58,8 +44,8 @@ namespace SharpPulsar.Impl
 			}
 			NumMessagesInBatchConflict++;
 			CurrentBatchSizeBytes += Msg.DataBuffer.readableBytes();
-			string Key = GetKey(Msg);
-			KeyedBatch Part = batches[Key];
+			var Key = GetKey(Msg);
+			var Part = batches[Key];
 			if (Part == null)
 			{
 				Part = new KeyedBatch();
@@ -116,8 +102,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch) throws java.io.IOException
 		private ProducerImpl.OpSendMsg CreateOpSendMsg(KeyedBatch KeyedBatch)
 		{
 			ByteBuf EncryptedPayload = ProducerConflict.encryptMessage(KeyedBatch.MessageMetadata, KeyedBatch.CompressedBatchMetadataAndPayload);
@@ -127,13 +111,9 @@ namespace SharpPulsar.Impl
 				return null;
 			}
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final int numMessagesInBatch = keyedBatch.messages.size();
-			int NumMessagesInBatch = KeyedBatch.Messages.Count;
+			var NumMessagesInBatch = KeyedBatch.Messages.Count;
 			long CurrentBatchSizeBytes = 0;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: for (MessageImpl<?> message : keyedBatch.messages)
-			foreach (MessageImpl<object> Message in KeyedBatch.Messages)
+			foreach (var Message in KeyedBatch.Messages)
 			{
 				CurrentBatchSizeBytes += Message.DataBuffer.readableBytes();
 			}
@@ -147,14 +127,12 @@ namespace SharpPulsar.Impl
 			return Op;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public java.util.List<ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException
 		public override IList<ProducerImpl.OpSendMsg> CreateOpSendMsgs()
 		{
 			IList<ProducerImpl.OpSendMsg> Result = new List<ProducerImpl.OpSendMsg>();
 			IList<KeyedBatch> List = new List<KeyedBatch>(batches.Values);
 			List.sort(((o1, o2) => ComparisonChain.start().compare(o1.sequenceId, o2.sequenceId).result()));
-			foreach (KeyedBatch KeyedBatch in List)
+			foreach (var KeyedBatch in List)
 			{
 				ProducerImpl.OpSendMsg Op = CreateOpSendMsg(KeyedBatch);
 				if (Op != null)
@@ -167,8 +145,8 @@ namespace SharpPulsar.Impl
 
 		public override bool HasSameSchema<T1>(MessageImpl<T1> Msg)
 		{
-			string Key = GetKey(Msg);
-			KeyedBatch Part = batches[Key];
+			var Key = GetKey(Msg);
+			var Part = batches[Key];
 			if (Part == null || Part.Messages.Count == 0)
 			{
 				return true;
@@ -195,8 +173,7 @@ namespace SharpPulsar.Impl
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
 			internal ByteBuf BatchedMessageMetadataAndPayload;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private java.util.List<MessageImpl<?>> messages = com.google.common.collect.Lists.newArrayList();
+
 			internal IList<MessageImpl<object>> Messages = Lists.newArrayList();
 			internal SendCallback PreviousCallback = null;
 			internal PulsarApi.CompressionType CompressionType;
@@ -212,9 +189,8 @@ namespace SharpPulsar.Impl
 			{
 				get
 				{
-	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-	//ORIGINAL LINE: for (MessageImpl<?> msg : messages)
-					foreach (MessageImpl<object> Msg in Messages)
+
+					foreach (var Msg in Messages)
 					{
 						PulsarApi.MessageMetadata.Builder MsgBuilder = Msg.MessageBuilder;
 						BatchedMessageMetadataAndPayload = Commands.serializeSingleMessageInBatchWithPayload(MsgBuilder, Msg.DataBuffer, BatchedMessageMetadataAndPayload);

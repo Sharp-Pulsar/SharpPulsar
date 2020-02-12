@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl
 			}
 			Builder.SetTxnidLeastBits(txn.TxnIdLeastBits);
 			MetadataBuilder.TxnidMostBits = txn.TxnIdMostBits;
-			long SequenceId = txn.NextSequenceId();
+			var SequenceId = txn.NextSequenceId();
 			MetadataBuilder.SequenceId = SequenceId;
 			return SequenceId;
 		}
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
 
 		public TaskCompletionSource<MessageId> SendAsync()
 		{
-			long sequenceId = BeforeSend();
+			var sequenceId = BeforeSend();
 			TaskCompletionSource<MessageId> sendTask = _producer.InternalSendAsync(Message);
 			if (txn != null)
 			{

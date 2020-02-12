@@ -29,58 +29,56 @@ namespace SharpPulsar.Impl
 
 		public BatchMessageAcker Acker {get;}
 
-		public BatchMessageIdImpl(long LedgerId, long EntryId, int PartitionIndex, int BatchIndex) : this(LedgerId, EntryId, PartitionIndex, BatchIndex, BatchMessageAckerDisabled.Instance)
+		public BatchMessageIdImpl(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, BatchMessageAckerDisabled.Instance)
 		{
 		}
 
-		public BatchMessageIdImpl(long LedgerId, long EntryId, int PartitionIndex, int BatchIndex, BatchMessageAcker Acker) : base(LedgerId, EntryId, PartitionIndex)
+		public BatchMessageIdImpl(long ledgerId, long entryId, int partitionIndex, int batchIndex, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
 		{
-			this.BatchIndex = BatchIndex;
-			this.Acker = Acker;
+			BatchIndex = batchIndex;
+			Acker = acker;
 		}
 
-		public BatchMessageIdImpl(MessageIdImpl Other) : base(Other.LedgerIdConflict, Other.EntryIdConflict, Other.PartitionIndexConflict)
+		public BatchMessageIdImpl(MessageIdImpl other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
-			if (Other is BatchMessageIdImpl)
+			if (other is BatchMessageIdImpl)
 			{
-				BatchMessageIdImpl OtherId = (BatchMessageIdImpl) Other;
-				this.BatchIndex = OtherId.BatchIndex;
-				this.Acker = OtherId.Acker;
+				var otherId = (BatchMessageIdImpl) other;
+				BatchIndex = otherId.BatchIndex;
+				Acker = otherId.Acker;
 			}
 			else
 			{
-				this.BatchIndex = NoBatch;
-				this.Acker = BatchMessageAckerDisabled.Instance;
+				BatchIndex = NoBatch;
+				Acker = BatchMessageAckerDisabled.Instance;
 			}
 		}
 
 		public override int GetHashCode()
 		{
-			return (int)(31 * (LedgerIdConflict + 31 * EntryIdConflict) + (31 * PartitionIndexConflict) + BatchIndex);
+			return (int)(31 * (LedgerId + 31 * EntryId) + (31 * PartitionIndex) + BatchIndex);
 		}
 
-		public override bool Equals(object Obj)
+		public override bool Equals(object obj)
 		{
-			if (Obj is BatchMessageIdImpl)
+			if (obj is BatchMessageIdImpl other1)
 			{
-				BatchMessageIdImpl Other = (BatchMessageIdImpl) Obj;
-				return LedgerIdConflict == Other.LedgerIdConflict && EntryIdConflict == Other.EntryIdConflict && PartitionIndexConflict == Other.PartitionIndexConflict && BatchIndex == Other.BatchIndex;
+                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
 			}
-			else if (Obj is MessageIdImpl)
+			else if (obj is MessageIdImpl other)
 			{
-				MessageIdImpl Other = (MessageIdImpl) Obj;
-				return LedgerIdConflict == Other.LedgerIdConflict && EntryIdConflict == Other.EntryIdConflict && PartitionIndexConflict == Other.PartitionIndexConflict && BatchIndex == NoBatch;
+                return LedgerId == other.LedgerId && EntryId == other.EntryId && PartitionIndex == other.PartitionIndex && BatchIndex == NoBatch;
 			}
 			return false;
 		}
 
 		public override string ToString()
 		{
-			return string.Format("{0:D}:{1:D}:{2:D}:{3:D}", LedgerIdConflict, EntryIdConflict, PartitionIndexConflict, BatchIndex);
+			return $"{LedgerId:D}:{EntryId:D}:{PartitionIndex:D}:{BatchIndex:D}";
 		}
 
 		// Serialization
-		public override sbyte[] ToByteArray()
+		public new sbyte[] ToByteArray()
 		{
 			return ToByteArray(BatchIndex);
 		}
@@ -95,25 +93,13 @@ namespace SharpPulsar.Impl
 			return Acker.AckCumulative(BatchIndex);
 		}
 
-		public virtual int OutstandingAcksInSameBatch
-		{
-			get
-			{
-				return Acker.OutstandingAcks;
-			}
-		}
+		public virtual int OutstandingAcksInSameBatch => Acker.OutstandingAcks;
 
-		public virtual int BatchSize
-		{
-			get
-			{
-				return Acker.BatchSize;
-			}
-		}
+        public virtual int BatchSize => Acker.BatchSize;
 
-		public virtual MessageIdImpl PrevBatchMessageId()
+        public virtual MessageIdImpl PrevBatchMessageId()
 		{
-			return new MessageIdImpl(LedgerIdConflict, EntryIdConflict - 1, PartitionIndexConflict);
+			return new MessageIdImpl(LedgerId, EntryId - 1, PartitionIndex);
 		}
 
 

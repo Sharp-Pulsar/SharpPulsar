@@ -140,7 +140,7 @@ namespace SharpPulsar.Impl
 				return CreateConnection(logicalAddress, physicalAddress, -1);
 			}
 
-			int randomKey = SignSafeMod(random.Next(), maxConnectionsPerHosts);
+			var randomKey = SignSafeMod(random.Next(), maxConnectionsPerHosts);
 			var client = Pool.GetOrAdd(host, x => new ConcurrentDictionary<int, Task<ClientCnx>>()).GetOrAdd(randomKey, k => CreateConnection(logicalAddress, physicalAddress, randomKey).AsTask());
 			return new ValueTask<ClientCnx>(client);
 		}
@@ -151,7 +151,7 @@ namespace SharpPulsar.Impl
 			{
 				log.LogDebug("Connection for {} not found in cache", logicalAddress);
 			}
-			TaskCompletionSource<ClientCnx> cxnTask = new TaskCompletionSource<ClientCnx>();
+			var cxnTask = new TaskCompletionSource<ClientCnx>();
 			// Trigger async connect to broker
 			CreateConnection(physicalAddress).AsTask().ContinueWith(connectionTask =>
 			{
@@ -171,7 +171,7 @@ namespace SharpPulsar.Impl
 					});
 					 
 					*/
-					ClientCnx cnx = (ClientCnx)channel.Pipeline.Get("handler");
+					var cnx = (ClientCnx)channel.Pipeline.Get("handler");
 					if (!channel.Active || cnx == null)
 					{
 						if(log.IsEnabled(LogLevel.Debug))
@@ -222,8 +222,8 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private ValueTask<IChannel> CreateConnection(IPEndPoint unresolvedAddress)
 		{
-			string hostname = unresolvedAddress.Address.ToString();
-			int port = unresolvedAddress.Port;
+			var hostname = unresolvedAddress.Address.ToString();
+			var port = unresolvedAddress.Port;
 
 			// Resolve DNS --> Attempt to connect to all IP addresses until once succeeds
 			var channel = ResolveName(hostname).AsTask().ContinueWith(task => 
@@ -237,7 +237,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private ValueTask<IChannel> ConnectToResolvedAddresses(IEnumerator<IPAddress> unresolvedAddresses, int port)
 		{
-			TaskCompletionSource<IChannel> channelTask = new TaskCompletionSource<IChannel>();
+			var channelTask = new TaskCompletionSource<IChannel>();
 			var connected = false;
 			while(unresolvedAddresses.MoveNext() && !connected)
 			{
@@ -283,7 +283,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private ValueTask<IChannel> ConnectToAddress(string server, int port)
 		{
-			TaskCompletionSource<IChannel> channelTask = new TaskCompletionSource<IChannel>();
+			var channelTask = new TaskCompletionSource<IChannel>();
 
 			bootstrap.ConnectAsync(server, port).ContinueWith(task =>
 			{
@@ -316,7 +316,7 @@ namespace SharpPulsar.Impl
 		private Task<ClientCnx> CleanupConnection(string server, int connectionKey)
 		{
 			Task<ClientCnx> connectionTask = null;
-			ConcurrentDictionary<int, Task<ClientCnx>> map = Pool[server];
+			var map = Pool[server];
 			if (map != null)
 			{
 				map.Remove(connectionKey, out connectionTask);
@@ -326,7 +326,7 @@ namespace SharpPulsar.Impl
 
 		public static int SignSafeMod(long Dividend, int Divisor)
 		{
-			int Mod = (int)(Dividend % (long) Divisor);
+			var Mod = (int)(Dividend % (long) Divisor);
 			if (Mod < 0)
 			{
 				Mod += Divisor;

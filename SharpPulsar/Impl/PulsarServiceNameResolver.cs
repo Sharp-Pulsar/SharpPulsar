@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 
 		public  Uri ResolveHost()
 		{
-			IList<Uri> List = addressList;
+			var List = addressList;
 			if(List == null)
 				throw new ArgumentNullException("No service url is provided yet");
 			if(List.Count < 1)
@@ -56,8 +56,8 @@ namespace SharpPulsar.Impl
 
 		public Uri ResolveHostUri()
 		{
-			Uri Host = ResolveHost();
-			string HostUrl = ServiceUrl.ServiceScheme + "://" + Host.Host + ":" + Host.Port;
+			var Host = ResolveHost();
+			var HostUrl = ServiceUrl.ServiceScheme + "://" + Host.Host + ":" + Host.Port;
 			return new Uri(HostUrl);
 		}
 
@@ -75,11 +75,11 @@ namespace SharpPulsar.Impl
 				throw new InvalidServiceURL(Iae.Message);
 			}
 
-			string[] Hosts = Uri.ServiceHosts;
+			var Hosts = Uri.ServiceHosts;
 			IList<Uri> Addresses = new List<Uri>(Hosts.Length);
-			foreach (string Host in Hosts)
+			foreach (var Host in Hosts)
 			{
-				string HostUrl = Uri.ServiceScheme + "://" + Host;
+				var HostUrl = Uri.ServiceScheme + "://" + Host;
 				try
 				{
 					Uri HostUri = new uri(HostUrl);

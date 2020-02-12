@@ -101,8 +101,8 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			lock (this)
 			{
-				TaskCompletionSource<IMessageId> transactional = new TaskCompletionSource<IMessageId>();
-				TransactionalSendOp SendOp = new TransactionalSendOp(send, transactional);
+				var transactional = new TaskCompletionSource<IMessageId>();
+				var SendOp = new TransactionalSendOp(send, transactional);
 				SendOps.Add(SequenceId, SendOp);
 				return transactional;
 			}
@@ -124,8 +124,8 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			lock (this)
 			{
-				TaskCompletionSource<Task> transactional = new TaskCompletionSource<Task>();
-				TransactionalAckOp AckOp = new TransactionalAckOp(ack, transactional);
+				var transactional = new TaskCompletionSource<Task>();
+				var AckOp = new TransactionalAckOp(ack, transactional);
 				AckOps.Add(AckOp);
 				return transactional;
 			}

@@ -84,7 +84,7 @@ namespace SharpPulsar.Impl
 			}
 			long RequestId = ClientConflict.newRequestId();
 			ByteBuf Cmd = Commands.newTxn(transactionCoordinatorId, RequestId, Unit.toMillis(Timeout));
-			OpForTxnIdCallBack Op = OpForTxnIdCallBack.Create(Cmd, Callback);
+			var Op = OpForTxnIdCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
 			Cmd.retain();
@@ -94,7 +94,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void HandleNewTxnResponse(CommandNewTxnResponse Response)
 		{
-			OpForTxnIdCallBack Op = (OpForTxnIdCallBack) pendingRequests.Remove(Response.RequestId);
+			var Op = (OpForTxnIdCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
 			{
 				if (LOG.DebugEnabled)
@@ -135,7 +135,7 @@ namespace SharpPulsar.Impl
 			}
 			long RequestId = ClientConflict.newRequestId();
 			ByteBuf Cmd = Commands.newAddPartitionToTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits);
-			OpForVoidCallBack Op = OpForVoidCallBack.Create(Cmd, Callback);
+			var Op = OpForVoidCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
 			Cmd.retain();
@@ -145,7 +145,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse Response)
 		{
-			OpForVoidCallBack Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
+			var Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
 			{
 				if (LOG.DebugEnabled)
@@ -185,7 +185,7 @@ namespace SharpPulsar.Impl
 			}
 			long RequestId = ClientConflict.newRequestId();
 			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, TxnAction.COMMIT);
-			OpForVoidCallBack Op = OpForVoidCallBack.Create(Cmd, Callback);
+			var Op = OpForVoidCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
 			Cmd.retain();
@@ -207,7 +207,7 @@ namespace SharpPulsar.Impl
 			}
 			long RequestId = ClientConflict.newRequestId();
 			ByteBuf Cmd = Commands.newEndTxn(RequestId, TxnID.LeastSigBits, TxnID.MostSigBits, TxnAction.ABORT);
-			OpForVoidCallBack Op = OpForVoidCallBack.Create(Cmd, Callback);
+			var Op = OpForVoidCallBack.Create(Cmd, Callback);
 			pendingRequests.Put(RequestId, Op);
 			timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), RequestId));
 			Cmd.retain();
@@ -217,7 +217,7 @@ namespace SharpPulsar.Impl
 
 		public virtual void HandleEndTxnResponse(CommandEndTxnResponse Response)
 		{
-			OpForVoidCallBack Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
+			var Op = (OpForVoidCallBack) pendingRequests.Remove(Response.RequestId);
 			if (Op == null)
 			{
 				if (LOG.DebugEnabled)
@@ -434,7 +434,7 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				long Diff = (Peeked.CreationTimeMs + ClientConflict.Configuration.OperationTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
+				var Diff = (Peeked.CreationTimeMs + ClientConflict.Configuration.OperationTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
 				if (Diff <= 0)
 				{
 					TimeToWaitMs = ClientConflict.Configuration.OperationTimeoutMs;

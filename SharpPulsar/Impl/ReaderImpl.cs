@@ -35,13 +35,13 @@ namespace SharpPulsar.Impl
 		public ReaderImpl(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, TaskCompletionSource<IConsumer<T>> consumerTask, ISchema<T> schema, ScheduledThreadPoolExecutor executor)
 		{
 
-			string subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
 			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
-			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
+			var consumerConfiguration = new ConsumerConfigurationData<T>();
 			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
 			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
@@ -60,7 +60,7 @@ namespace SharpPulsar.Impl
 
 			if (readerConfiguration.ReaderListener != null)
 			{
-				IReaderListener<T> readerListener = readerConfiguration.ReaderListener;
+				var readerListener = readerConfiguration.ReaderListener;
 				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
 			}
 
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl
 				consumerConfiguration.CryptoKeyReader = readerConfiguration.CryptoKeyReader;
 			}
 
-			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
+			var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, executor, partitionIdx, false, consumerTask, ConsumerImpl<T>.SubscriptionMode.NonDurable, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
 		}
 
@@ -112,7 +112,7 @@ namespace SharpPulsar.Impl
 
 		public IMessage<T> ReadNext()
 		{
-			IMessage<T> msg = _consumer.Receive();
+			var msg = _consumer.Receive();
 
 			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
 			// it will specify the subscription position anyway
@@ -122,7 +122,7 @@ namespace SharpPulsar.Impl
 
 		public IMessage<T> ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			IMessage<T> msg = _consumer.Receive(timeout, unit);
+			var msg = _consumer.Receive(timeout, unit);
 
 			if (msg != null)
 			{

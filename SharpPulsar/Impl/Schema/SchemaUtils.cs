@@ -124,7 +124,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 			else if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
 			{
-				ByteBuffer bb = new ByteBuffer(schemaVersionBytes);
+				var bb = new ByteBuffer(schemaVersionBytes);
 				return bb.Long.ToString();
 			}
 			else if (schemaVersionBytes.Length == 0)

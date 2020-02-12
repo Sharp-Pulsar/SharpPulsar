@@ -1046,7 +1046,7 @@ namespace SharpPulsar.Impl
 			}
 
 			var unsubscribeTask = new TaskCompletionSource<Task>();
-			string topicPartName = TopicName.Get(topicName).PartitionedTopicName;
+			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
 
 			IList<ConsumerImpl<T>> consumersToUnsub = _consumers.Values.Where(consumer =>
 			{
@@ -1101,7 +1101,7 @@ namespace SharpPulsar.Impl
 			}
 
 			var unsubscribeTask = new TaskCompletionSource<Task>();
-			string topicPartName = TopicName.Get(topicName).PartitionedTopicName;
+			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
 
 
 			IList<ConsumerImpl<T>> consumersToClose = _consumers.Values.Where(consumer =>
@@ -1217,7 +1217,7 @@ namespace SharpPulsar.Impl
             {
                 var list = tas.Result;
 			    var oldPartitionNumber = _topics[topicName.ToString()];
-			    int currentPartitionNumber = list.Count;
+			    var currentPartitionNumber = list.Count;
 			    if (Log.IsEnabled(LogLevel.Debug))
 			    {
 				    Log.LogDebug("[{}] partitions number. old: {}, new: {}", topicName.ToString(), oldPartitionNumber, currentPartitionNumber);
@@ -1232,7 +1232,7 @@ namespace SharpPulsar.Impl
 				    IList<string> newPartitions = list.Skip(currentPartitionNumber).Take(oldPartitionNumber - currentPartitionNumber).ToList();
 				    var taskList = newPartitions.Select(partitionName =>
 				    {
-					    int partitionIndex = TopicName.GetPartitionIndex(partitionName);
+					    var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					    var subTask = new TaskCompletionSource<IConsumer<T>>();
 					    var configurationData = InternalConsumerConfig;
 					    var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, true);

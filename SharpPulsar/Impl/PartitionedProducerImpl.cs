@@ -208,7 +208,7 @@ namespace SharpPulsar.Impl
 				PartitionsAutoUpdateTimeout = null;
 			}
 
-			AtomicReference<System.Exception> closeFail = new AtomicReference<System.Exception>();
+			var closeFail = new AtomicReference<System.Exception>();
 			var completed = new AtomicInteger(_topicMetadata.NumPartitions());
 			var closeTask = new TaskCompletionSource<Task>();
 			foreach (var producer in _producers)
@@ -296,7 +296,7 @@ namespace SharpPulsar.Impl
                     var list = tasks.Result.ToList();
 
 					var oldPartitionNumber = _outerInstance._topicMetadata.NumPartitions();
-				    int currentPartitionNumber = list.Count;
+				    var currentPartitionNumber = list.Count;
 				    if (Log.IsEnabled(LogLevel.Debug))
 				    {
 					    Log.LogDebug("[{}] partitions number. old: {}, new: {}", _outerInstance.Topic, oldPartitionNumber, currentPartitionNumber);
@@ -309,7 +309,7 @@ namespace SharpPulsar.Impl
 				    {
 					    IList<TaskCompletionSource<IProducer<T>>> taskList = list.Skip(oldPartitionNumber).Take(oldPartitionNumber-currentPartitionNumber).Select(partitionName =>
 					    {
-						    int partitionIndex = TopicName.GetPartitionIndex(partitionName);
+						    var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 						    var producer = new ProducerImpl<T>(_outerInstance.Client, partitionName, _outerInstance.Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors);
 						    _outerInstance._producers.Add(producer);
 						    return producer.ProducerCreatedTask;

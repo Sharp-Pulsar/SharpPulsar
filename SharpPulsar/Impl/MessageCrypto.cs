@@ -230,7 +230,7 @@ namespace SharpPulsar.Impl
 				// Generate data key
 				dataKey = keyGenerator.GenerateKey();
         
-				foreach (string Key in KeyNames)
+				foreach (var Key in KeyNames)
 				{
 					AddPublicKeyCipher(Key, KeyReader);
 				}
@@ -246,7 +246,7 @@ namespace SharpPulsar.Impl
 			}
 
 			// Read the public key and its info using callback
-			EncryptionKeyInfo KeyInfo = KeyReader.GetPublicKey(KeyName, null);
+			var KeyInfo = KeyReader.GetPublicKey(KeyName, null);
 
 			AsymmetricKeyParameter PubKey;
 
@@ -256,7 +256,7 @@ namespace SharpPulsar.Impl
 			}
 			catch (System.Exception E)
 			{
-				string Msg = logCtx + "Failed to load public key " + KeyName + ". " + E.Message;
+				var Msg = logCtx + "Failed to load public key " + KeyName + ". " + E.Message;
 				log.LogError(Msg);
 				throw new PulsarClientException.CryptoException(Msg);
 			}
@@ -276,7 +276,7 @@ namespace SharpPulsar.Impl
 				log.LogError("{} Failed to encrypt data key {}. {}", logCtx, KeyName, E.Message);
 				throw new PulsarClientException.CryptoException(E.Message);
 			}
-			EncryptionKeyInfo Eki = new EncryptionKeyInfo(EncryptedKey, KeyInfo.Metadata);
+			var Eki = new EncryptionKeyInfo(EncryptedKey, KeyInfo.Metadata);
 			encryptedDataKeyMap[KeyName] = Eki;
 		}
 
@@ -322,7 +322,7 @@ namespace SharpPulsar.Impl
 				}
         
 				// Update message metadata with encrypted data key
-				foreach (string KeyName in EncKeys)
+				foreach (var KeyName in EncKeys)
 				{
 					if (encryptedDataKeyMap[KeyName] == null)
 					{
@@ -330,7 +330,7 @@ namespace SharpPulsar.Impl
 						// a new key is added to producer config
 						AddPublicKeyCipher(KeyName, KeyReader);
 					}
-					EncryptionKeyInfo KeyInfo = encryptedDataKeyMap[KeyName];
+					var KeyInfo = encryptedDataKeyMap[KeyName];
 					if (KeyInfo != null)
 					{
 						if (KeyInfo.Metadata != null && KeyInfo.Metadata.Count > 0)
@@ -372,11 +372,11 @@ namespace SharpPulsar.Impl
         
 					var SourceNioBuf = Payload.GetIoBuffer(Payload.ReaderIndex, Payload.ReadableBytes);
         
-					int MaxLength = cipher.GetOutputSize(Payload.ReadableBytes);
+					var MaxLength = cipher.GetOutputSize(Payload.ReadableBytes);
 					TargetBuf = PooledByteBufferAllocator.Default.Buffer(MaxLength, MaxLength);
 					var TargetNioBuf = TargetBuf.GetIoBuffer(0, MaxLength);
         
-					int BytesStored = cipher.DoFinal(SourceNioBuf.ToArray(), TargetNioBuf.ToArray().Length);
+					var BytesStored = cipher.DoFinal(SourceNioBuf.ToArray(), TargetNioBuf.ToArray().Length);
 					TargetBuf.SetWriterIndex(BytesStored);
         
 				}
@@ -404,7 +404,7 @@ namespace SharpPulsar.Impl
 			});
 
 			// Read the private key info using callback
-			EncryptionKeyInfo KeyInfo = KeyReader.GetPrivateKey(KeyName, KeyMeta);
+			var KeyInfo = KeyReader.GetPrivateKey(KeyName, KeyMeta);
 
 			// Convert key from byte to PivateKey
 			AsymmetricKeyParameter PrivateKey;
@@ -465,7 +465,7 @@ namespace SharpPulsar.Impl
 		{
 
 			// unpack iv and encrypted data
-			ByteString IvString = MsgMetadata.EncryptionParam;
+			var IvString = MsgMetadata.EncryptionParam;
 			IvString.copyTo(iv, 0);
 
 			GCMParameterSpec GcmParams = new GCMParameterSpec(TagLen, iv);
@@ -505,10 +505,10 @@ namespace SharpPulsar.Impl
 			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeys;
 
 			// Go through all keys to retrieve data key from cache
-			for (int I = 0; I < EncKeys.Count; I++)
+			for (var I = 0; I < EncKeys.Count; I++)
 			{
 
-				sbyte[] MsgDataKey = (sbyte[])(object)EncKeys[I].Value.ToByteArray();
+				var MsgDataKey = (sbyte[])(object)EncKeys[I].Value.ToByteArray();
 				sbyte[] KeyDigest = Digest.Update(MsgDataKey);
 				SecretKey StoredSecretKey = dataKeyCache.getIfPresent(ByteBuffer.Wrap(KeyDigest));
 				if (StoredSecretKey != null)
@@ -552,7 +552,7 @@ namespace SharpPulsar.Impl
 			// If dataKey is present, attempt to decrypt using the existing key
 			if (dataKey != null)
 			{
-				IByteBuffer DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
+				var DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
 				// If decryption succeeded, data is non null
 				if (DecryptedData != null)
 				{
@@ -562,9 +562,9 @@ namespace SharpPulsar.Impl
 
 			// dataKey is null or decryption failed. Attempt to regenerate data key
 			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeys;
-			EncryptionKeys EncKeyInfo = EncKeys.Where(kbv =>
+			var EncKeyInfo = EncKeys.Where(kbv =>
 			{
-				sbyte[] EncDataKey = (sbyte[])(object)kbv.Value.ToByteArray();
+				var EncDataKey = (sbyte[])(object)kbv.Value.ToByteArray();
 				IList<KeyValue> EncKeyMeta = kbv.Metadata;
 				return DecryptDataKey(kbv.Key, EncDataKey, EncKeyMeta, KeyReader);
 			}).FirstOrDefault();

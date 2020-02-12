@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl
 
 		public virtual long Next()
 		{
-			long current = this._next;
+			var current = this._next;
 			if (current < _max)
 			{
 				this._next = Math.Min(this._next * 2, this._max);
@@ -104,10 +104,10 @@ namespace SharpPulsar.Impl
 
 		public static bool ShouldBackoff(long initialTimestamp, BAMCIS.Util.Concurrent.TimeUnit unitInitial, int failedAttempts, long defaultInterval, long maxBackoffInterval)
 		{
-			long initialTimestampInNano = unitInitial.ToNanos(initialTimestamp);
+			var initialTimestampInNano = unitInitial.ToNanos(initialTimestamp);
 			long currentTime = DateTime.Now.Millisecond;
-			long interval = defaultInterval;
-			for (int i = 1; i < failedAttempts; i++)
+			var interval = defaultInterval;
+			for (var i = 1; i < failedAttempts; i++)
 			{
 				interval = interval * 2;
 				if (interval > maxBackoffInterval)

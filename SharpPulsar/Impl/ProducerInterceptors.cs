@@ -59,7 +59,7 @@ namespace SharpPulsar.Impl
 		public virtual IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
 		{
 			var interceptorMessage = message;
-			foreach (IProducerInterceptor interceptor in interceptors)
+			foreach (var interceptor in interceptors)
 			{
 				if (!interceptor.Eligible(message))
 				{
@@ -98,7 +98,7 @@ namespace SharpPulsar.Impl
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
 		public virtual void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
 		{
-			foreach (IProducerInterceptor interceptor in interceptors)
+			foreach (var interceptor in interceptors)
 			{
 				if (!interceptor.Eligible(message))
 				{
@@ -117,7 +117,7 @@ namespace SharpPulsar.Impl
 
 		public void Close()
 		{
-			foreach (IProducerInterceptor interceptor in interceptors)
+			foreach (var interceptor in interceptors)
 			{
 				try
 				{

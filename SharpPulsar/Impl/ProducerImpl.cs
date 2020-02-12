@@ -1349,7 +1349,7 @@ namespace SharpPulsar.Impl
 			if (cnx == null)
 			{
 				var releaseCount = new AtomicInt();
-				bool batchMessagingEnabled = BatchMessagingEnabled;
+				var batchMessagingEnabled = BatchMessagingEnabled;
 				_pendingMessages.ToList().ForEach(op =>
 				{
 						releaseCount.AddAndGet(batchMessagingEnabled ? op.NumMessagesInBatch: 1);

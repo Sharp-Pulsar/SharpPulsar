@@ -95,7 +95,7 @@ namespace SharpPulsar.Impl
 			{
 				if (messageId is BatchMessageIdImpl)
 				{
-					BatchMessageIdImpl batchMessageId = (BatchMessageIdImpl) messageId;
+					var batchMessageId = (BatchMessageIdImpl) messageId;
 					messageId = new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
 				}
         

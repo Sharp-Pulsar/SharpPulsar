@@ -71,11 +71,11 @@ namespace SharpPulsar.Impl
 
 		private ValueTask<ValueTask<KeyValuePair<EndPoint, EndPoint>>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
 		{
-			TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>> addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
+			var addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
 
 			client.CnxPool.GetConnection(socketAddress).thenAccept(clientCnx =>
 			{
-				long requestId = client.NewRequestId();
+				var requestId = client.NewRequestId();
 				var request = Commands.NewLookup(topicName.ToString(), authoritative, requestId);
 				clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
 				{
@@ -146,7 +146,7 @@ namespace SharpPulsar.Impl
 
 			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
 			{
-			long RequestId = client.NewRequestId();
+			var RequestId = client.NewRequestId();
 			ByteBuf Request = Commands.newPartitionMetadataRequest(TopicName.ToString(), RequestId);
 			clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
 			{
@@ -183,7 +183,7 @@ namespace SharpPulsar.Impl
 		{
 			return client.CnxPool.GetConnection(serviceNameResolver.ResolveHost()).thenCompose(clientCnx =>
 			{
-			long RequestId = client.NewRequestId();
+			var RequestId = client.NewRequestId();
 			ByteBuf Request = Commands.newGetSchema(RequestId, TopicName.ToString(), Optional.ofNullable(BytesSchemaVersion.of(Version)));
 			return clientCnx.sendGetSchema(Request, RequestId);
 			});
@@ -201,7 +201,7 @@ namespace SharpPulsar.Impl
 		{
 			CompletableFuture<IList<string>> TopicsFuture = new CompletableFuture<IList<string>>();
 
-			AtomicLong OpTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
+			var OpTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
 			Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMandatoryStop(OpTimeoutMs.get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create();
 			GetTopicsUnderNamespace(serviceNameResolver.ResolveHost(), Namespace, Backoff, OpTimeoutMs, TopicsFuture, Mode);
 			return TopicsFuture;
@@ -211,7 +211,7 @@ namespace SharpPulsar.Impl
 		{
 			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
 			{
-			long RequestId = client.NewRequestId();
+			var RequestId = client.NewRequestId();
 			ByteBuf Request = Commands.newGetTopicsOfNamespaceRequest(Namespace.ToString(), RequestId, Mode);
 			clientCnx.newGetTopicsOfNamespace(Request, RequestId).thenAccept(topicsList =>
 			{
@@ -222,7 +222,7 @@ namespace SharpPulsar.Impl
 				IList<string> Result = Lists.newArrayList();
 				topicsList.forEach(topic =>
 				{
-					string Filtered = TopicName.get(topic).PartitionedTopicName;
+					var Filtered = TopicName.get(topic).PartitionedTopicName;
 					if (!Result.Contains(Filtered))
 					{
 						Result.Add(Filtered);

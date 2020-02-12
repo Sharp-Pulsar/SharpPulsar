@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl
 
 		internal static BatchMessageAcker NewAcker(int batchSize)
 		{
-			BitArray bitSet = new BitArray(batchSize);
+			var bitSet = new BitArray(batchSize);
 			bitSet.Set(batchSize, true);
 			return new BatchMessageAcker(bitSet, batchSize);
 		}

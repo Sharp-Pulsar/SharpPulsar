@@ -80,8 +80,8 @@ namespace SharpPulsar.Impl
 		{
 			if(data == null)
 				throw new ArgumentException();
-			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
-			MessageIdData.Builder builder = MessageIdData.NewBuilder();
+			var inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
+			var builder = MessageIdData.NewBuilder();
 
 			MessageIdData idData;
 			try
@@ -118,8 +118,8 @@ namespace SharpPulsar.Impl
 		{
             if (data == null)
                 throw new ArgumentException();
-			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
-			MessageIdData.Builder builder = MessageIdData.NewBuilder();
+			var inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
+			var builder = MessageIdData.NewBuilder();
 
 			MessageIdData idData;
 			try
@@ -155,7 +155,7 @@ namespace SharpPulsar.Impl
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual sbyte[] ToByteArray(int batchIndex)
 		{
-			MessageIdData.Builder builder = MessageIdData.NewBuilder();
+			var builder = MessageIdData.NewBuilder();
 			builder.SetLedgerId(_ledgerId);
 			builder.SetEntryId(_entryId);
 			if (_partitionIndex >= 0)
@@ -168,10 +168,10 @@ namespace SharpPulsar.Impl
 				builder.SetBatchIndex(batchIndex);
 			}
 
-			MessageIdData msgId = builder.Build();
-			int size = msgId.SerializedSize;
+			var msgId = builder.Build();
+			var size = msgId.SerializedSize;
 			var serialized = Unpooled.Buffer(size, size);
-			ByteBufCodedOutputStream stream = ByteBufCodedOutputStream.Get(serialized);
+			var stream = ByteBufCodedOutputStream.Get(serialized);
 			try
 			{
 				msgId.WriteTo(stream);

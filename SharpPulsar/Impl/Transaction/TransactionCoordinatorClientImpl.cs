@@ -83,9 +83,9 @@ namespace SharpPulsar.Impl.Transaction
 					if (partitionMeta.Result.partitions > 0)
 					{
 						handlers = new TransactionMetaStoreHandler[partitionMeta.Result.partitions];
-						for (int I = 0; I < partitionMeta.Result.partitions; I++)
+						for (var I = 0; I < partitionMeta.Result.partitions; I++)
 						{
-							TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(I, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + I);
+							var Handler = new TransactionMetaStoreHandler(I, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + I);
 							handlers[I] = Handler;
 							handlerMap.put(I, Handler);
 						}
@@ -93,7 +93,7 @@ namespace SharpPulsar.Impl.Transaction
 					else
 					{
 						handlers = new TransactionMetaStoreHandler[1];
-						TransactionMetaStoreHandler Handler = new TransactionMetaStoreHandler(0, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
+						var Handler = new TransactionMetaStoreHandler(0, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
 						handlers[0] = Handler;
 						handlerMap.put(0, Handler);
 					}
@@ -121,7 +121,7 @@ namespace SharpPulsar.Impl.Transaction
 
 		public ValueTask CloseAsync()
 		{
-			TaskCompletionSource<Task> Result = new TaskCompletionSource<Task>();
+			var Result = new TaskCompletionSource<Task>();
 			if (State == TransactionCoordinatorClientState.Closing || State == TransactionCoordinatorClientState.Closed)
 			{
 				log.LogWarning("The transaction meta store is closing or closed, doing nothing.");
@@ -129,7 +129,7 @@ namespace SharpPulsar.Impl.Transaction
 			}
 			else
 			{
-				foreach (TransactionMetaStoreHandler Handler in handlers)
+				foreach (var Handler in handlers)
 				{
 					try
 					{
