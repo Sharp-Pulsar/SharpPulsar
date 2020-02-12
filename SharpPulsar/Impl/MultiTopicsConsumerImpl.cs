@@ -38,13 +38,13 @@ namespace SharpPulsar.Impl
     using System.Linq;
     using System.Threading.Tasks;
 
-    public sealed class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
+    public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
 	{
 
 		public const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
 
 		// All topics should be in same namespace
-        internal NamespaceName NamespaceName;
+        public NamespaceName Namespacename;
 
 		// Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
 		private readonly ConcurrentDictionary<string, ConsumerImpl<T>> _consumers;
@@ -119,7 +119,7 @@ namespace SharpPulsar.Impl
 
 			if (conf.TopicNames.Count < 1)
 			{
-				NamespaceName = null;
+				Namespacename = null;
 				_state = State.Ready;
 				subscribeTask.SetResult(this);
 				return;
@@ -127,7 +127,7 @@ namespace SharpPulsar.Impl
 
 			if(conf.TopicNames.Count < 1 || !TopicNamesValid(conf.TopicNames))
 				throw new ArgumentException("Topics should have same namespace.");
-			NamespaceName = TopicName.Get(conf.TopicNames.First()).NamespaceObject;
+			Namespacename = TopicName.Get(conf.TopicNames.First()).NamespaceObject;
 
 			IList<Task> tasks = conf.TopicNames.Select(t => SubscribeAsync(t, createTopicIfDoesNotExist)).ToList();
 			Task.WhenAll(tasks).ContinueWith(task=> 
@@ -810,9 +810,9 @@ namespace SharpPulsar.Impl
 			if(_topics.ContainsKey(topicName))
                 throw new ArgumentException("Topics already contains topic:" + topicName);
 
-			if (NamespaceName != null)
+			if (Namespacename != null)
 			{
-				if(!TopicName.Get(topicName).Namespace.Equals(NamespaceName.ToString()))
+				if(!TopicName.Get(topicName).Namespace.Equals(Namespacename.ToString()))
                     throw new ArgumentException("Topic " + topicName + " not in same namespace with Topics");
 			}
 
@@ -980,9 +980,9 @@ namespace SharpPulsar.Impl
                 }).ToList());
 			    subscribeResult.SetResult(null);
 			    Log.LogInformation("[{}] [{}] Success subscribe new topic {} in topics consumer, partitions: {}, allTopicPartitionsNumber: {}", Topic, Subscription, topicName, numPartitions, AllTopicPartitionsNumber.Get());
-			    if (NamespaceName == null)
+			    if (Namespacename == null)
 			    {
-				    NamespaceName = TopicName.Get(topicName).NamespaceObject;
+				    Namespacename = TopicName.Get(topicName).NamespaceObject;
 			    }
 
             });
