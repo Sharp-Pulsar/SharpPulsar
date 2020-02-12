@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-
+﻿
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -18,18 +17,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Impl
 {
-	/// <summary>
-	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>
-	/// @param <T> </param>
-	public interface Messages<T> : IEnumerable<Message<T>>
+	public interface IHash : Common.Util.IHash
 	{
 
 		/// <summary>
-		/// Get number of messages.
-		/// </summary>
-		int Size();
+		/// Generate the hash of a given String
+		/// </summary> </returns>
+		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
+		int MakeHash(string s);
 	}
 
 }

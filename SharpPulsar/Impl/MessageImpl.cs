@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using SharpPulsar.Util;
 
 /// <summary>
@@ -34,23 +35,21 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Shared;
     using SharpPulsar.Common.Enum;
 
-    public sealed class MessageImpl<T> : Message<T>
+    public sealed class MessageImpl<T> : IMessage<T>
 	{
-        internal IMessageId MessageId;
 		public MessageMetadata.Builder MessageBuilder;
 		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
 		private ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
-		private EncryptionContext _encryptionCtx;
+        private IDictionary<string, string> _properties;
 
 		public string TopicName {get;} // only set for incoming messages
-		public long RedeliveryCount;
 
 		// Constructor for out-going message
 		internal static MessageImpl<T> Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
 		{
-			var msg = _pool.Take();
+            var msg = _pool.Take();
 			msg.MessageBuilder = msgMetadataBuilder;
 			msg.DataBuffer = Unpooled.WrappedBuffer(payload);
 			msg._schema = schema;
@@ -64,10 +63,12 @@ namespace SharpPulsar.Impl
 
 		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
 		{
+			_properties = new Dictionary<string, string>();
 		}
 
 		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
 		{
+            _properties = new Dictionary<string, string>();
 			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			MessageId = messageId;
 			TopicName = topic;
@@ -104,7 +105,7 @@ namespace SharpPulsar.Impl
 			RedeliveryCount = redeliveryCount;
 
 			DataBuffer = Unpooled.CopiedBuffer(payload);
-			_encryptionCtx = encryptionCtx;
+			EncryptionCtx = encryptionCtx;
 
 			if (singleMessageMetadata.Properties.Count > 0)
 			{
@@ -185,6 +186,7 @@ namespace SharpPulsar.Impl
 		public bool Replicated => MessageBuilder != null && MessageBuilder.HasReplicatedFrom();
 
 
+        public IMessageId MessageId { get; set; }
         public long PublishTime => MessageBuilder?.GetPublishTime() ?? 0L;
 
         public long EventTime
@@ -221,6 +223,8 @@ namespace SharpPulsar.Impl
 
 		public ISchema<T> Schema => _schema;
 
+        public int RedeliveryCount { get; }
+
         public sbyte[] SchemaVersion
 		{
 			get
@@ -240,7 +244,25 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				if (_schema.SchemaInfo != null && SchemaType.KEY_VALUE == _schema.SchemaInfo.Type)
+                // check if the schema passed in from client supports schema versioning or not
+                // this is an optimization to only get schema version when necessary
+                if (_schema.SupportSchemaVersioning())
+                {
+                    var schemaversion = SchemaVersion;
+                    if (null == schemaversion)
+                    {
+                        return _schema.Decode(Data);
+                    }
+                    else
+                    {
+                        return _schema.Decode(Data, schemaversion);
+                    }
+                }
+                else
+                {
+                    return _schema.Decode(Data);
+                }
+				/*if (_schema.SchemaInfo != null && SchemaType.KEY_VALUE == _schema.SchemaInfo.Type)
 				{
 					if (_schema.SupportSchemaVersioning())
 					{
@@ -271,11 +293,11 @@ namespace SharpPulsar.Impl
 					{
 						return _schema.Decode(Data);
 					}
-				}
+				}*/
 			}
 		}
 
-		private T KeyValueBySchemaVersion
+		/*private T KeyValueBySchemaVersion
 		{
 			get
 			{
@@ -307,7 +329,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 		}
-
+		*/
 		public long SequenceId
 		{
 			get
@@ -351,21 +373,21 @@ namespace SharpPulsar.Impl
 			{
 				lock (this)
 				{
-					if (Properties == null)
+					if (_properties == null)
 					{
 						if (MessageBuilder.PropertiesCount > 0)
 						{
-							Properties = new Dictionary<string,string>(MessageBuilder.PropertiesList.ToDictionary(x => x.Key, x => x.Value));
+							_properties = new Dictionary<string,string>(MessageBuilder.PropertiesList.ToDictionary(x => x.Key, x => x.Value));
 						}
 						else
 						{
-							properties = Collections.emptyMap();
+							_properties = new Dictionary<string, string>();
 						}
 					}
-					return properties;
+					return _properties;
 				}
 			}
-            set { properties = value; }
+            set => _properties = value;
         }
 
 		public bool HasProperty(string name)
@@ -381,7 +403,8 @@ namespace SharpPulsar.Impl
 
 		public bool HasKey()
 		{
-			checkNotNull(MessageBuilder);
+			if(MessageBuilder == null)
+				throw  new NullReferenceException();
 			return MessageBuilder.HasPartitionKey();
 		}
 
@@ -390,14 +413,16 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
+                if (MessageBuilder == null)
+                    throw new NullReferenceException();
 				return MessageBuilder.GetPartitionKey();
 			}
 		}
 
 		public bool HasBase64EncodedKey()
 		{
-			checkNotNull(MessageBuilder);
+            if (MessageBuilder == null)
+                throw new NullReferenceException();
 			return MessageBuilder.PartitionKeyB64Encoded;
 		}
 
@@ -405,21 +430,23 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
+				if (MessageBuilder == null)
+					throw new NullReferenceException();
 				if (HasBase64EncodedKey())
 				{
-					return Base64.Decoder.decode(Key);
+					return (sbyte[])(object)Convert.FromBase64String(Key);
 				}
 				else
 				{
-					return Key.GetBytes(UTF_8);
+					return (sbyte[])(object)Encoding.UTF8.GetBytes(Key);
 				}
 			}
 		}
 
 		public bool HasOrderingKey()
 		{
-			checkNotNull(MessageBuilder);
+            if (MessageBuilder == null)
+                throw new NullReferenceException();
 			return MessageBuilder.HasOrderingKey();
 		}
 
@@ -427,8 +454,9 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
-				return MessageBuilder.OrderingKey.toByteArray();
+                if (MessageBuilder == null)
+                    throw new NullReferenceException();
+				return (sbyte[])(object)MessageBuilder.GetOrderingKey().ToByteArray();
 			}
 		}
 
@@ -437,17 +465,14 @@ namespace SharpPulsar.Impl
 		{
 			MessageBuilder = null;
 			MessageId = null;
-			TopicName = null;
+			//TopicName = null;
 			DataBuffer = null;
 			Properties = null;
 			_schema = null;
 			_schemaState = SchemaState.None;
 
-			if (_handle != null)
-			{
-				_handle.Release(this);
-			}
-		}
+            _handle?.Release(this);
+        }
 		private static ThreadLocalPool<MessageImpl<T>> _pool = 	new ThreadLocalPool<MessageImpl<T>>(handle => new MessageImpl<T>(handle), 1, true);
 		private ThreadLocalPool.Handle _handle;
 		private MessageImpl(ThreadLocalPool.Handle handle)
@@ -458,7 +483,8 @@ namespace SharpPulsar.Impl
 		
 		public bool HasReplicateTo()
 		{
-			checkNotNull(MessageBuilder);
+            if (MessageBuilder == null)
+                throw new NullReferenceException();
 			return MessageBuilder.ReplicateToCount > 0;
 		}
 
@@ -466,18 +492,19 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				checkNotNull(MessageBuilder);
+                if (MessageBuilder == null)
+                    throw new NullReferenceException();
 				return MessageBuilder.ReplicateToList;
 			}
 		}
 
 		public void SetMessageId(MessageIdImpl messageId)
 		{
-			messageId = messageId;
+			MessageId = messageId;
 		}
 
         //check not null 
-        public EncryptionContext EncryptionCtx => _encryptionCtx;
+        public EncryptionContext EncryptionCtx { get; }
 
 
         public SchemaState? GetSchemaState()

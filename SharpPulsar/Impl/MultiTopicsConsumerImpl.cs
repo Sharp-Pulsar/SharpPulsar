@@ -239,7 +239,7 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		private void MessageReceived(ConsumerImpl<T> consumer, Message<T> message)
+		private void MessageReceived(ConsumerImpl<T> consumer, IMessage<T> message)
 		{
 			if (!(message is MessageImpl<T>))
 				throw new ArgumentException("Message<T> is not of type MessageImpl<T>");
@@ -282,7 +282,7 @@ namespace SharpPulsar.Impl
 				// thread while the message processing happens
                 Client.EventLoopGroup.Execute(() =>
                 {
-					Message<T> msg;
+					IMessage<T> msg;
                     try
                     {
                         msg = InternalReceive();
@@ -308,7 +308,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void MessageProcessed<T1>(Message<T1> msg)
+		public override void MessageProcessed<T1>(IMessage<T1> msg)
 		{
 			lock (this)
 			{
@@ -345,7 +345,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override Message<T> InternalReceive()
+		public override IMessage<T> InternalReceive()
 		{
             try
 			{
@@ -363,7 +363,7 @@ namespace SharpPulsar.Impl
 				throw PulsarClientException.Unwrap(e);
 			}
 		}
-        public override Message<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+        public override IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
             try
 			{
@@ -384,7 +384,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override Messages<T> InternalBatchReceive()
+		public override IMessages<T> InternalBatchReceive()
 		{
 			try
 			{
@@ -405,9 +405,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<Messages<T>> InternalBatchReceiveAsync()
+		public override ValueTask<IMessages<T>> InternalBatchReceiveAsync()
 		{
-			var result = new TaskCompletionSource<Messages<T>>();
+			var result = new TaskCompletionSource<IMessages<T>>();
 			try
 			{
 				@lock.EnterWriteLock();
@@ -441,12 +441,12 @@ namespace SharpPulsar.Impl
 			{
 				@lock.ExitWriteLock();
 			}
-			return new ValueTask<Messages<T>>(result.Task); 
+			return new ValueTask<IMessages<T>>(result.Task); 
 		}
 
-		public override ValueTask<Message<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage<T>> InternalReceiveAsync()
 		{
-            var result = new TaskCompletionSource<Message<T>>();
+            var result = new TaskCompletionSource<IMessage<T>>();
             try
 			{
 				@lock.EnterWriteLock();
@@ -477,7 +477,7 @@ namespace SharpPulsar.Impl
 				@lock.ExitWriteLock();
 			}
 
-			return new ValueTask<Message<T>>(result.Task);
+			return new ValueTask<IMessage<T>>(result.Task);
 		}
 
 		public override TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txnImpl)

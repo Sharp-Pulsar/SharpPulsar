@@ -45,12 +45,15 @@ public class ByteBuffer
 
 	public static ByteBuffer Allocate(int capacity)
 	{
-		ByteBuffer buffer = new ByteBuffer();
-		buffer.stream.Capacity = capacity;
-		buffer.mode = Mode.Write;
-		return buffer;
+        ByteBuffer buffer = new ByteBuffer {stream = {Capacity = capacity}, mode = Mode.Write};
+        return buffer;
 	}
 
+    public  ByteBuffer Wrap(byte[] bytes)
+    {
+		writer.Write(bytes);
+        return this;
+    }
 	public static ByteBuffer AllocateDirect(int capacity)
 	{
 		//this wrapper class makes no distinction between 'allocate' & 'allocateDirect'
@@ -144,6 +147,10 @@ public class ByteBuffer
 		return this;
 	}
 
+    public byte[] ToArray()
+    {
+        return stream.ToArray();
+    }
 	public bool Equals(ByteBuffer other)
 	{
 		if (other != null && this.Remaining() == other.Remaining())

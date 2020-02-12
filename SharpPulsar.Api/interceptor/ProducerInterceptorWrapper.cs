@@ -43,17 +43,17 @@ namespace SharpPulsar.Api.Interceptor
 			_innerInterceptor.Close();
 		}
 
-		public bool Eligible<T>(Message<T> message)
+		public bool Eligible<T>(IMessage<T> message)
 		{
 			return true;
 		}
 
-		public Message<T> BeforeSend<T>(IProducer<T> producer, Message<T> message)
+		public IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
 		{
 			return _innerInterceptor.BeforeSend(producer, message);
 		}
 
-		public void OnSendAcknowledgement<T>(IProducer<T> producer, Message<T> message, IMessageId msgId, System.Exception exception)
+		public void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
 		{
 			_innerInterceptor.OnSendAcknowledgement(producer, message, msgId, exception);
 		}

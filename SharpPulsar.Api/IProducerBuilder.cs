@@ -298,7 +298,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="messageRouter"> </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> MessageRouter(MessageRouter messageRouter);
+		IProducerBuilder<T> MessageRouter(IMessageRouter messageRouter);
 
 		/// <summary>
 		/// Control whether automatic batching of messages is enabled for the producer. <i>default: enabled</i>

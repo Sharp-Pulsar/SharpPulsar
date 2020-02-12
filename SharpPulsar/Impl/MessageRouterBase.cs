@@ -23,16 +23,16 @@ using System;
 namespace SharpPulsar.Impl
 {
 	using HashingScheme = HashingScheme;
-	using MessageRouter = MessageRouter;
+	using IMessageRouter = IMessageRouter;
 
 	[Serializable]
-	public abstract class MessageRouterBase : MessageRouter
+	public abstract class MessageRouterBase : IMessageRouter
 	{
-		public abstract int ChoosePartition<T1>(Message<T1> msg, ITopicMetadata metadata);
-		public abstract int ChoosePartition<T1>(Message<T1> msg);
+		public abstract int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata);
+		public abstract int ChoosePartition<T1>(IMessage<T1> msg);
 		private const long SerialVersionUid = 1L;
 
-		protected internal readonly Hash Hash;
+		protected internal readonly IHash Hash;
 
         protected MessageRouterBase(HashingScheme hashingScheme)
 		{
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl
 				break;
 			case HashingScheme.Murmur332Hash:
 			default:
-				this.Hash = Murmur3_32Hash.Instance;
+				this.Hash = Murmur332Hash.Instance;
 			break;
 			}
 		}

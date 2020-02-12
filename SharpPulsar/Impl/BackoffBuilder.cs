@@ -22,50 +22,50 @@ namespace SharpPulsar.Impl
 	
 	public class BackoffBuilder
 	{
-		private long backoffIntervalNanos;
-		private long maxBackoffIntervalNanos;
-		private long initial;
-		private BAMCIS.Util.Concurrent.TimeUnit unitInitial;
-		private long max;
-		private BAMCIS.Util.Concurrent.TimeUnit unitMax;
-		private DateTime clock;
-		private long mandatoryStop;
-		private BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop;
+		private long _backoffIntervalNanos;
+		private long _maxBackoffIntervalNanos;
+		private long _initial;
+		private BAMCIS.Util.Concurrent.TimeUnit _unitInitial;
+		private long _max;
+		private BAMCIS.Util.Concurrent.TimeUnit _unitMax;
+		private DateTime _clock;
+		private long _mandatoryStop;
+		private BAMCIS.Util.Concurrent.TimeUnit _unitMandatoryStop;
 		public BackoffBuilder()
 		{
-			this.initial = 0;
-			this.max = 0;
-			this.mandatoryStop = 0;
-			this.clock = DateTime.Now;
-			this.backoffIntervalNanos = 0;
-			this.maxBackoffIntervalNanos = 0;
+			this._initial = 0;
+			this._max = 0;
+			this._mandatoryStop = 0;
+			this._clock = DateTime.Now;
+			this._backoffIntervalNanos = 0;
+			this._maxBackoffIntervalNanos = 0;
 		}
 
-		public virtual BackoffBuilder SetInitialTime(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial)
+		public virtual BackoffBuilder SetInitialTime(long initial, BAMCIS.Util.Concurrent.TimeUnit unitInitial)
 		{
-			this.unitInitial = UnitInitial;
-			this.initial = Initial;
+			this._unitInitial = unitInitial;
+			this._initial = initial;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMax(long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax)
+		public virtual BackoffBuilder SetMax(long max, BAMCIS.Util.Concurrent.TimeUnit unitMax)
 		{
-			this.unitMax = UnitMax;
-			this.max = Max;
+			this._unitMax = unitMax;
+			this._max = max;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMandatoryStop(long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop)
+		public virtual BackoffBuilder SetMandatoryStop(long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop)
 		{
-			this.mandatoryStop = MandatoryStop;
-			this.unitMandatoryStop = UnitMandatoryStop;
+			this._mandatoryStop = mandatoryStop;
+			this._unitMandatoryStop = unitMandatoryStop;
 			return this;
 		}
 
 
 		public virtual Backoff Create()
 		{
-			return new Backoff(initial, unitInitial, max, unitMax, mandatoryStop, unitMandatoryStop, clock);
+			return new Backoff(_initial, _unitInitial, _max, _unitMax, _mandatoryStop, _unitMandatoryStop, _clock);
 		}
 	}
 

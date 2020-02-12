@@ -26,79 +26,79 @@ namespace SharpPulsar.Impl
 	{
 		public static readonly long DefaultIntervalInNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
 		public static readonly long MaxBackoffIntervalNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(30);
-		private readonly long initial;
-		private readonly long max;
-		private readonly DateTime clock;
-		private long next;
-		private long mandatoryStop;
+		private readonly long _initial;
+		private readonly long _max;
+		private readonly DateTime _clock;
+		private long _next;
+		private long _mandatoryStop;
 
-		internal  long firstBackoffTimeInMillis;
-		private bool mandatoryStopMade = false;
+		internal  long FirstBackoffTimeInMillis;
+		private bool _mandatoryStopMade = false;
 
-		private static readonly Random random = new Random();
-		public Backoff(long initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long max, BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop, DateTime clock)
+		private static readonly Random Random = new Random();
+		public Backoff(long initial, BAMCIS.Util.Concurrent.TimeUnit unitInitial, long max, BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop, DateTime clock)
 		{
-			this.initial = UnitInitial.ToMillis(initial);
-			this.max = unitMax.ToMillis(max);
-			this.next = this.initial;
-			this.mandatoryStop = unitMandatoryStop.ToMillis(mandatoryStop);
-			this.clock = clock;
+			this._initial = unitInitial.ToMillis(initial);
+			this._max = unitMax.ToMillis(max);
+			this._next = this._initial;
+			this._mandatoryStop = unitMandatoryStop.ToMillis(mandatoryStop);
+			this._clock = clock;
 		}
 
-		public Backoff(long Initial, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, long Max, BAMCIS.Util.Concurrent.TimeUnit UnitMax, long MandatoryStop, BAMCIS.Util.Concurrent.TimeUnit UnitMandatoryStop) : this(Initial, UnitInitial, Max, UnitMax, MandatoryStop, UnitMandatoryStop, DateTime.Now)
+		public Backoff(long initial, BAMCIS.Util.Concurrent.TimeUnit unitInitial, long max, BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop) : this(initial, unitInitial, max, unitMax, mandatoryStop, unitMandatoryStop, DateTime.Now)
 		{
 		}
 
 		public virtual long Next()
 		{
-			long Current = this.next;
-			if (Current < max)
+			long current = this._next;
+			if (current < _max)
 			{
-				this.next = Math.Min(this.next * 2, this.max);
+				this._next = Math.Min(this._next * 2, this._max);
 			}
 
 			// Check for mandatory stop
-			if (!mandatoryStopMade)
+			if (!_mandatoryStopMade)
 			{
-				long now = clock.Millisecond;
+				long now = _clock.Millisecond;
 				long timeElapsedSinceFirstBackoff = 0;
-				if (initial == Current)
+				if (_initial == current)
 				{
-					firstBackoffTimeInMillis = now;
+					FirstBackoffTimeInMillis = now;
 				}
 				else
 				{
-					timeElapsedSinceFirstBackoff = now - firstBackoffTimeInMillis;
+					timeElapsedSinceFirstBackoff = now - FirstBackoffTimeInMillis;
 				}
 
-				if (timeElapsedSinceFirstBackoff + Current > mandatoryStop)
+				if (timeElapsedSinceFirstBackoff + current > _mandatoryStop)
 				{
-					Current = Math.Max(initial, mandatoryStop - timeElapsedSinceFirstBackoff);
-					mandatoryStopMade = true;
+					current = Math.Max(_initial, _mandatoryStop - timeElapsedSinceFirstBackoff);
+					_mandatoryStopMade = true;
 				}
 			}
 
 			// Randomly decrease the timeout up to 10% to avoid simultaneous retries
 			// If current < 10 then current/10 < 1 and we get an exception from Random saying "Bound must be positive"
-			if (Current > 10)
+			if (current > 10)
 			{
-				Current -= random.Next((int) Current / 10);
+				current -= Random.Next((int) current / 10);
 			}
-			return Math.Max(initial, Current);
+			return Math.Max(_initial, current);
 		}
 
 		public virtual void ReduceToHalf()
 		{
-			if (next > initial)
+			if (_next > _initial)
 			{
-				this.next = Math.Max(this.next / 2, this.initial);
+				this._next = Math.Max(this._next / 2, this._initial);
 			}
 		}
 
 		public virtual void Reset()
 		{
-			this.next = this.initial;
-			this.mandatoryStopMade = false;
+			this._next = this._initial;
+			this._mandatoryStopMade = false;
 		}
 
 
@@ -106,24 +106,24 @@ namespace SharpPulsar.Impl
 		{
 			long initialTimestampInNano = unitInitial.ToNanos(initialTimestamp);
 			long currentTime = DateTime.Now.Millisecond;
-			long Interval = defaultInterval;
-			for (int I = 1; I < failedAttempts; I++)
+			long interval = defaultInterval;
+			for (int i = 1; i < failedAttempts; i++)
 			{
-				Interval = Interval * 2;
-				if (Interval > maxBackoffInterval)
+				interval = interval * 2;
+				if (interval > maxBackoffInterval)
 				{
-					Interval = maxBackoffInterval;
+					interval = maxBackoffInterval;
 					break;
 				}
 			}
 
 			// if the current time is less than the time at which next retry should occur, we should backoff
-			return currentTime < (initialTimestampInNano + Interval);
+			return currentTime < (initialTimestampInNano + interval);
 		}
 
-		public static bool ShouldBackoff(long InitialTimestamp, BAMCIS.Util.Concurrent.TimeUnit UnitInitial, int FailedAttempts)
+		public static bool ShouldBackoff(long initialTimestamp, BAMCIS.Util.Concurrent.TimeUnit unitInitial, int failedAttempts)
 		{
-			return ShouldBackoff(InitialTimestamp, UnitInitial, FailedAttempts, DefaultIntervalInNanoseconds, MaxBackoffIntervalNanoseconds);
+			return ShouldBackoff(initialTimestamp, unitInitial, failedAttempts, DefaultIntervalInNanoseconds, MaxBackoffIntervalNanoseconds);
 		}
 	}
 

@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Instruct the LookupService to switch to a new service URL for all subsequent requests
 		/// </summary>
-		void UpdateServiceUrl(string ServiceUrl);
+		void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Calls broker lookup-api to get broker <seealso cref="InetSocketAddress"/> which serves namespace bundle that contains given
@@ -55,21 +55,21 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> a pair of addresses, representing the logical and physical address of the broker that serves given topic </returns>
-		ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName TopicName);
+		ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName topicName);
 
 		/// <summary>
 		/// Returns <seealso cref="PartitionedTopicMetadata"/> for a given topic.
 		/// </summary>
 		/// <param name="topicName"> topic-name
 		/// @return </param>
-		ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName);
+		ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName);
 
 		/// <summary>
 		/// Returns current SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
 		/// </summary>
 		/// <param name="topicName"> topic-name </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<SchemaInfo> GetSchema(TopicName TopicName);
+		ValueTask<SchemaInfo> GetSchema(TopicName topicName);
 
 		/// <summary>
 		/// Returns specific version SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
@@ -77,7 +77,7 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName"> topic-name </param>
 		/// <param name="version"> schema info version </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<SchemaInfo> GetSchema(TopicName TopicName, sbyte[] Version);
+		ValueTask<SchemaInfo> GetSchema(TopicName topicName, sbyte[] version);
 
 		/// <summary>
 		/// Returns broker-service lookup api url.
@@ -91,7 +91,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="namespace"> : namespace-name
 		/// @return </param>
-		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode);
+		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode);
 		void Close();
 
 	}

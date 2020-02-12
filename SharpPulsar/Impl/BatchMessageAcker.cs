@@ -75,8 +75,11 @@ namespace SharpPulsar.Impl
 			lock (this)
 			{
 				// +1 since to argument is exclusive
-				bitSet.Clear(0, BatchIndex + 1);
-				return bitSet.Empty;
+				//ORIGINAL FROM JAVA
+				//bitSet.Clear(0, BatchIndex + 1);
+				//return bitSet.Empty;
+                bitSet.Set(batchIndex + 1, false);
+                return bitSet.Get(batchIndex);
 			}
 		}
 

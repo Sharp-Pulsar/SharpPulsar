@@ -262,7 +262,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public virtual Message<T> Message
+		public virtual IMessage<T> Message
 		{
 			get
 			{

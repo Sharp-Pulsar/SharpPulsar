@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 	{
 		public static IDictionary<string, string> ConfigureFromJsonString(string authParamsString)
 		{
-			ObjectMapper jsonMapper = new ObjectMapper();
+			var jsonMapper = new ObjectMapper();
 			return (IDictionary<string, string>)jsonMapper.ReadValue(authParamsString, typeof(TypeReferenceAnonymousInnerClass));
 		}
 
@@ -45,10 +45,10 @@ namespace SharpPulsar.Impl
 
 			if (!string.IsNullOrWhiteSpace(authParamsString))
 			{
-				string[] @params = authParamsString.Split(',');
+				var @params = authParamsString.Split(',');
 				foreach (var p in @params)
 				{
-					string[] kv = p.Split(':');
+					var kv = p.Split(':');
 					if (kv.Length == 2)
 					{
 						authParams[kv[0]] = kv[1];
@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 			{
 				if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
-					Type authClass = Type.GetType(authPluginClassName);
+					var authClass = Type.GetType(authPluginClassName);
 					var auth = (IAuthentication) Activator.CreateInstance(authClass);
 					if (auth is EncodedAuthenticationParameterSupport)
 					{
@@ -115,7 +115,7 @@ namespace SharpPulsar.Impl
 			{
 				if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
-					Type AuthClass = Type.GetType(authPluginClassName);
+					var AuthClass = Type.GetType(authPluginClassName);
 					var auth = (IAuthentication) Activator.CreateInstance(AuthClass);
 					auth.Configure(JsonSerializer.Serialize(authParams));
 					return auth;

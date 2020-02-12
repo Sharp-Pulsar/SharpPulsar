@@ -21,7 +21,7 @@ namespace SharpPulsar.Impl
 	public class BatchMessageAckerDisabled : BatchMessageAcker
 	{
 
-		internal static readonly BatchMessageAckerDisabled INSTANCE = new BatchMessageAckerDisabled();
+		internal static readonly BatchMessageAckerDisabled Instance = new BatchMessageAckerDisabled();
 
 		private BatchMessageAckerDisabled() : base(null, 0)
 		{
@@ -38,23 +38,17 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool AckIndividual(int BatchIndex)
+		public override bool AckIndividual(int batchIndex)
 		{
 			return true;
 		}
 
-		public override bool AckCumulative(int BatchIndex)
+		public override bool AckCumulative(int batchIndex)
 		{
 			return true;
 		}
 
-		public override int OutstandingAcks
-		{
-			get
-			{
-				return 0;
-			}
-		}
-	}
+		public override int OutstandingAcks => 0;
+    }
 
 }

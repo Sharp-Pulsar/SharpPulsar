@@ -16,10 +16,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Text;
+
 namespace SharpPulsar.Impl
 {
 
-	public class JavaStringHash : Hash
+	public class JavaStringHash : IHash
 	{
 		private static readonly JavaStringHash instance = new JavaStringHash();
 
@@ -27,22 +30,16 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public static Hash Instance
+		public static IHash Instance => instance;
+
+        public int MakeHash(string s)
 		{
-			get
-			{
-				return instance;
-			}
+			return s.GetHashCode() & int.MaxValue;
 		}
 
-		public override int MakeHash(string S)
+		public  int MakeHash(sbyte[] b)
 		{
-			return S.GetHashCode() & int.MaxValue;
-		}
-
-		public override int MakeHash(sbyte[] B)
-		{
-			return MakeHash(StringHelper.NewString(B, UTF_8));
+			return MakeHash(StringHelper.NewString(b, Encoding.UTF8.EncodingName));
 		}
 
 	}

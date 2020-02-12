@@ -155,7 +155,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> MessageRouter(MessageRouter messageRouter)
+		public IProducerBuilder<T> MessageRouter(IMessageRouter messageRouter)
 		{
 			_conf.CustomMessageRouter = messageRouter;
 			return this;

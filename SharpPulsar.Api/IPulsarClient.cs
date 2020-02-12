@@ -148,7 +148,7 @@ namespace SharpPulsar.Api
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
 		/// 
 		/// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
-		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(IMessageId)"/>
+		/// subscription. A reader needs to be specified a <seealso cref="IReaderBuilder.startMessageId(IMessageId)"/>
 		/// that can either be:
 		/// <ul>
 		/// <li><seealso cref="IMessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
@@ -182,13 +182,13 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<sbyte[]> NewReader();
+		IReaderBuilder<sbyte[]> NewReader();
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
 		/// 
 		/// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
-		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(IMessageId)"/> that can either
+		/// subscription. A reader needs to be specified a <seealso cref="IReaderBuilder.startMessageId(IMessageId)"/> that can either
 		/// be:
 		/// <ul>
 		/// <li><seealso cref="IMessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
@@ -224,7 +224,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<T> NewReader<T>(ISchema<T> schema);
+		IReaderBuilder<T> NewReader<T>(ISchema<T> schema);
 
 		/// <summary>
 		/// Update the service URL this client is using.

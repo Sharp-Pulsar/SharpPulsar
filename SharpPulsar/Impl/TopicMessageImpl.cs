@@ -25,17 +25,17 @@ namespace SharpPulsar.Impl
     using Pulsar.Common.Auth;
     using Api;
 
-	public class TopicMessageImpl<T> : Message<T>
+	public class TopicMessageImpl<T> : IMessage<T>
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		public string TopicPartitionName;
 
-		private readonly Message<T> _msg;
+		private readonly IMessage<T> _msg;
 		private readonly TopicMessageIdImpl _messageId;
 
-		public TopicMessageImpl(string topicPartitionName, string topicName, Message<T> msg)
+		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage<T> msg)
 		{
 			TopicPartitionName = topicPartitionName;
 
@@ -219,7 +219,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual Message<T> Message
+		public virtual IMessage<T> Message
 		{
 			get
 			{

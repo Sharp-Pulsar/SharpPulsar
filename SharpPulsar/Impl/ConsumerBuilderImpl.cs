@@ -181,7 +181,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IConsumerBuilder<T> MessageListener(MessageListener<T> messageListener)
+		public IConsumerBuilder<T> MessageListener(IMessageListener<T> messageListener)
 		{
 			_conf.MessageListener = messageListener;
 			return this;

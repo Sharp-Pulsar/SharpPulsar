@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 
 		private const long SerialVersionUID = 1L;
 
-		public override BatchMessageContainer Build()
+		public BatchMessageContainer Build()
 		{
 			return new BatchMessageKeyBasedContainer();
 		}

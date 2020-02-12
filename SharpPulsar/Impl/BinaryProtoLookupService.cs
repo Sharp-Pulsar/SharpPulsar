@@ -236,7 +236,7 @@ namespace SharpPulsar.Impl
 			});
 			}).exceptionally((e) =>
 			{
-				long NextDelay = Math.Min(Backoff.next(), RemainingTime.get());
+				long NextDelay = Math.Min(Backoff._next(), RemainingTime.get());
 				if (NextDelay <= 0)
 				{
 					TopicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", Namespace.ToString())));

@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl.Conf
 		public string SubscriptionName;
 
 		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
-		public MessageListener<T> MessageListener;
+		public IMessageListener<T> MessageListener;
 		public IConsumerEventListener ConsumerEventListener;
 
 		public int ReceiverQueueSize = 1000;

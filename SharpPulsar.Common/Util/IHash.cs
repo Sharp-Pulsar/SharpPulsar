@@ -16,31 +16,19 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using DotNetty.Common.Utilities;
-using SharpPulsar.Api;
-
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Common.Util
 {
-
-
-	public interface ConsumerStatsRecorder : IConsumerStats
+	/// <summary>
+	/// This interface declares a hash function.
+	/// </summary>
+	public interface IHash
 	{
-		void UpdateNumMsgsReceived<T1>(IMessage<T1> message);
 
-		void IncrementNumAcksSent(long numAcks);
-
-		void IncrementNumAcksFailed();
-
-		void IncrementNumReceiveFailed();
-
-		void IncrementNumBatchReceiveFailed();
-
-		ITimeout StatTimeout {get;}
-
-		void Reset();
-
-		void UpdateCumulativeStats(IConsumerStats stats);
+		/// <summary>
+		/// Generate the hash of a given byte array.
+		/// </summary>
+		/// <returns> The hash of {@code b}, which is non-negative integer. </returns>
+		int MakeHash(sbyte[] b);
 	}
 
 }

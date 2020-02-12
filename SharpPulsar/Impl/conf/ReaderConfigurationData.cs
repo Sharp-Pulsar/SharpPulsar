@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public int ReceiverQueueSize = 1000;
 
-		public ReaderListener<T> ReaderListener;
+		public IReaderListener<T> ReaderListener;
 		[NonSerialized]
 		public string ReaderName = null;
 		[NonSerialized]

@@ -170,7 +170,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 		}
-		public void UpdateNumMsgsReceived<T1>(Message<T1> message)
+		public void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
 		{
 			if (message != null)
 			{

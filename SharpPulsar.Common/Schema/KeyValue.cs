@@ -32,8 +32,8 @@ namespace SharpPulsar.Common.Schema
 
 		public KeyValue(TK key, TV value)
 		{
-			this._key = key;
-			this._value = value;
+			_key = key;
+			_value = value;
 		}
 
 		public virtual TK Key => _key;
@@ -51,13 +51,13 @@ namespace SharpPulsar.Common.Schema
 			{
 				return false;
 			}
-			KeyValue<TK, TV> another = (KeyValue<TK, TV>) obj;
+			var another = (KeyValue<TK, TV>) obj;
 			return Equals(_key, another._key) && Equals(_value, another._value);
 		}
 
 		public override string ToString()
 		{
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			sb.Append("(key = \"").Append(_key).Append("\", value = \"").Append(_value).Append("\")");
 			return sb.ToString();
 		}
@@ -77,11 +77,12 @@ namespace SharpPulsar.Common.Schema
 		/// <returns> the encoded bytes array </returns>
 		public static sbyte[] Encode(TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
 		{
-			sbyte[] keyBytes = keyWriter.Encode(key);
-			sbyte[] valueBytes = valueWriter.Encode(value);
-			ByteBuffer byteBuffer = ByteBuffer.Allocate(4 + keyBytes.Length + 4 + valueBytes.Length);
-			byteBuffer.PutInt(keyBytes.Length).Put((byte)(object)keyBytes).PutInt(valueBytes.Length).Put((byte)(object)valueBytes);
-			return byteBuffer.ToArray();
+			var keyBytes = keyWriter.Encode(key);
+			var valueBytes = valueWriter.Encode(value);
+			var byteBuffer = ByteBuffer.Allocate(4 + keyBytes.Length + 4 + valueBytes.Length);
+			byteBuffer.PutInt(keyBytes.Length).Put((byte[])(object)keyBytes, 0, keyBytes.Length).PutInt(valueBytes.Length).Put((byte[])(object)valueBytes, 0, valueBytes.Length);
+           
+            return (sbyte[])(object)byteBuffer.ToArray();
 		}
 
 		/// <summary>
@@ -92,14 +93,14 @@ namespace SharpPulsar.Common.Schema
 		/// <returns> the decoded key/value pair </returns>
 		public static KeyValue<TK, TV> Decode(sbyte[] data, KeyValueDecoder<TK, TV> decoder)
 		{
-			ByteBuffer byteBuffer = ByteBuffer.Wrap(data);
-			int keyLength = byteBuffer.Int;
-			sbyte[] keyBytes = new sbyte[keyLength];
-			byteBuffer.Get(keyBytes);
+			var byteBuffer = ByteBuffer.Allocate(data.Length).Wrap((byte[])(object)data);
+			var keyLength = byteBuffer.GetInt();
+			var keyBytes = new sbyte[keyLength];
+			byteBuffer.Get((byte[])(object)keyBytes, 0, keyLength);
 
-			int valueLength = byteBuffer.Int;
-			sbyte[] valueBytes = new sbyte[valueLength];
-			byteBuffer.Get(valueBytes);
+			var valueLength = byteBuffer.GetInt();
+			var valueBytes = new sbyte[valueLength];
+			byteBuffer.Get((byte[])(object)valueBytes, 0, valueLength);
 
 			return decoder(keyBytes, valueBytes);
 		}

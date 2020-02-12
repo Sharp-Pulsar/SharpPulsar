@@ -41,10 +41,10 @@ namespace SharpPulsar.Impl
 
 		/// <summary>
 		/// This is called just before the message is returned by <seealso cref="IConsumer.receive()"/>,
-		/// <seealso cref="MessageListener.received(IConsumer, Message)"/> or the <seealso cref="java.util.concurrent.CompletableFuture"/>
+		/// <seealso cref="IMessageListener.received(IConsumer, IMessage)"/> or the <seealso cref="java.util.concurrent.CompletableFuture"/>
 		/// returned by <seealso cref="IConsumer.receiveAsync()"/> completes.
 		/// <para>
-		/// This method calls <seealso cref="IConsumerInterceptor.beforeConsume(IConsumer, Message)"/> for each interceptor. Messages returned
+		/// This method calls <seealso cref="IConsumerInterceptor.beforeConsume(IConsumer, IMessage)"/> for each interceptor. Messages returned
 		/// from each interceptor get passed to beforeConsume() of the next interceptor in the chain of interceptors.
 		/// </para>
 		/// <para>
@@ -57,7 +57,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="message"> message to be consume by the client. </param>
 		/// <returns> messages that are either modified by interceptors or same as messages passed to this method. </returns>
-		public virtual Message<T> BeforeConsume(IConsumer<T> consumer, Message<T> message)
+		public virtual IMessage<T> BeforeConsume(IConsumer<T> consumer, IMessage<T> message)
 		{
 			var interceptorMessage = message;
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)

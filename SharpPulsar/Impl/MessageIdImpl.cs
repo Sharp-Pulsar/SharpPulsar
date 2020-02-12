@@ -1,4 +1,10 @@
 ﻿using System;
+using System.IO;
+using DotNetty.Buffers;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Util.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,233 +26,197 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkNotNull;
-
-	using ComparisonChain = com.google.common.collect.ComparisonChain;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using Unpooled = io.netty.buffer.Unpooled;
-
-	using IMessageId = Api.IMessageId;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using MessageIdData = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageIdData;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using ByteBufCodedInputStream = Org.Apache.Pulsar.Common.Util.Protobuf.ByteBufCodedInputStream;
-	using ByteBufCodedOutputStream = Org.Apache.Pulsar.Common.Util.Protobuf.ByteBufCodedOutputStream;
-	using UninitializedMessageException = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.UninitializedMessageException;
-
 	[Serializable]
 	public class MessageIdImpl : IMessageId
 	{
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly long LedgerIdConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly long EntryIdConflict;
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		protected internal readonly int PartitionIndexConflict;
+		private  readonly long _ledgerId;
+		private readonly long _entryId;
+		private readonly int _partitionIndex;
 
 		// Private constructor used only for json deserialization
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unused") private MessageIdImpl()
 		private MessageIdImpl() : this(-1, -1, -1)
 		{
 		}
 
-		public MessageIdImpl(long LedgerId, long EntryId, int PartitionIndex)
+		public MessageIdImpl(long ledgerId, long entryId, int partitionIndex)
 		{
-			this.LedgerIdConflict = LedgerId;
-			this.EntryIdConflict = EntryId;
-			this.PartitionIndexConflict = PartitionIndex;
+			_ledgerId = ledgerId;
+			_entryId = entryId;
+			_partitionIndex = partitionIndex;
 		}
 
-		public virtual long LedgerId
+		public virtual long LedgerId => _ledgerId;
+
+        public virtual long EntryId => _entryId;
+
+        public virtual int PartitionIndex => _partitionIndex;
+
+        public override int GetHashCode()
 		{
-			get
+			return (int)(31 * (_ledgerId + 31 * _entryId) + _partitionIndex);
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is BatchMessageIdImpl other1)
 			{
-				return LedgerIdConflict;
+                return other1.Equals(this);
 			}
-		}
-
-		public virtual long EntryId
-		{
-			get
+			else if (obj is MessageIdImpl other)
 			{
-				return EntryIdConflict;
-			}
-		}
-
-		public virtual int PartitionIndex
-		{
-			get
-			{
-				return PartitionIndexConflict;
-			}
-		}
-
-		public override int GetHashCode()
-		{
-			return (int)(31 * (LedgerIdConflict + 31 * EntryIdConflict) + PartitionIndexConflict);
-		}
-
-		public override bool Equals(object Obj)
-		{
-			if (Obj is BatchMessageIdImpl)
-			{
-				BatchMessageIdImpl Other = (BatchMessageIdImpl) Obj;
-				return Other.Equals(this);
-			}
-			else if (Obj is MessageIdImpl)
-			{
-				MessageIdImpl Other = (MessageIdImpl) Obj;
-				return LedgerIdConflict == Other.LedgerIdConflict && EntryIdConflict == Other.EntryIdConflict && PartitionIndexConflict == Other.PartitionIndexConflict;
+                return _ledgerId == other._ledgerId && _entryId == other._entryId && _partitionIndex == other._partitionIndex;
 			}
 			return false;
 		}
 
 		public override string ToString()
 		{
-			return string.Format("{0:D}:{1:D}:{2:D}", LedgerIdConflict, EntryIdConflict, PartitionIndexConflict);
+			return $"{_ledgerId:D}:{_entryId:D}:{_partitionIndex:D}";
 		}
 
 		// / Serialization
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArray(byte[] data) throws java.io.IOException
-		public static IMessageId FromByteArray(sbyte[] Data)
+		public static IMessageId FromByteArray(sbyte[] data)
 		{
-			checkNotNull(Data);
-			ByteBufCodedInputStream InputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(Data, 0, Data.Length));
-			PulsarApi.MessageIdData.Builder Builder = PulsarApi.MessageIdData.newBuilder();
+			if(data == null)
+				throw new ArgumentException();
+			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
+			MessageIdData.Builder builder = MessageIdData.NewBuilder();
 
-			PulsarApi.MessageIdData IdData;
+			MessageIdData idData;
 			try
 			{
-				IdData = Builder.mergeFrom(InputStream, null).build();
+				idData = ((MessageIdData.Builder)builder.MergeFrom(inputStream, null)).Build();
 			}
-			catch (UninitializedMessageException E)
+			catch (System.Exception e)
 			{
-				throw new IOException(E);
+				throw e;
 			}
 
-			MessageIdImpl MessageId;
-			if (IdData.hasBatchIndex())
+			MessageIdImpl messageId;
+			if (idData.HasBatchIndex)
 			{
-				MessageId = new BatchMessageIdImpl(IdData.LedgerId, IdData.EntryId, IdData.Partition, IdData.BatchIndex);
+				messageId = new BatchMessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				MessageId = new MessageIdImpl(IdData.LedgerId, IdData.EntryId, IdData.Partition);
+				messageId = new MessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
 			}
 
-			InputStream.recycle();
-			Builder.recycle();
-			IdData.recycle();
-			return MessageId;
+			inputStream.Recycle();
+			builder.Recycle();
+			idData.Recycle();
+			return messageId;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException
-		public static IMessageId FromByteArrayWithTopic(sbyte[] Data, string TopicName)
+		public static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
-			return fromByteArrayWithTopic(Data, TopicName.get(TopicName));
+			return FromByteArrayWithTopic(data, TopicName.Get(topicName));
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public static SharpPulsar.api.MessageId fromByteArrayWithTopic(byte[] data, org.apache.pulsar.common.naming.TopicName topicName) throws java.io.IOException
-		public static IMessageId FromByteArrayWithTopic(sbyte[] Data, TopicName TopicName)
+		public static IMessageId FromByteArrayWithTopic(sbyte[] data, TopicName topicName)
 		{
-			checkNotNull(Data);
-			ByteBufCodedInputStream InputStream = ByteBufCodedInputStream.get(Unpooled.wrappedBuffer(Data, 0, Data.Length));
-			PulsarApi.MessageIdData.Builder Builder = PulsarApi.MessageIdData.newBuilder();
+            if (data == null)
+                throw new ArgumentException();
+			ByteBufCodedInputStream inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
+			MessageIdData.Builder builder = MessageIdData.NewBuilder();
 
-			PulsarApi.MessageIdData IdData;
+			MessageIdData idData;
 			try
 			{
-				IdData = Builder.mergeFrom(InputStream, null).build();
+				idData = ((MessageIdData.Builder)builder.MergeFrom(inputStream, null)).Build();
 			}
-			catch (UninitializedMessageException E)
-			{
-				throw new IOException(E);
-			}
+            catch (System.Exception e)
+            {
+                throw e;
+            }
 
-			IMessageId MessageId;
-			if (IdData.hasBatchIndex())
+			IMessageId messageId;
+			if (idData.HasBatchIndex)
 			{
-				MessageId = new BatchMessageIdImpl(IdData.LedgerId, IdData.EntryId, IdData.Partition, IdData.BatchIndex);
+				messageId = new BatchMessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				MessageId = new MessageIdImpl(IdData.LedgerId, IdData.EntryId, IdData.Partition);
+				messageId = new MessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
 			}
-			if (IdData.Partition > -1 && TopicName != null)
+			if (idData.Partition > -1 && topicName != null)
 			{
-				MessageId = new TopicMessageIdImpl(TopicName.getPartition(IdData.Partition).ToString(), TopicName.ToString(), MessageId);
+				var t = new TopicName();
+				messageId = new TopicMessageIdImpl(t.GetPartition(idData.Partition).ToString(), topicName.ToString(), messageId);
 			}
 
-			InputStream.recycle();
-			Builder.recycle();
-			IdData.recycle();
-			return MessageId;
+			inputStream.Recycle();
+			builder.Recycle();
+			idData.Recycle();
+			return messageId;
 		}
 
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
-		public virtual sbyte[] ToByteArray(int BatchIndex)
+		public virtual sbyte[] ToByteArray(int batchIndex)
 		{
-			PulsarApi.MessageIdData.Builder Builder = PulsarApi.MessageIdData.newBuilder();
-			Builder.LedgerId = LedgerIdConflict;
-			Builder.EntryId = EntryIdConflict;
-			if (PartitionIndexConflict >= 0)
+			MessageIdData.Builder builder = MessageIdData.NewBuilder();
+			builder.SetLedgerId(_ledgerId);
+			builder.SetEntryId(_entryId);
+			if (_partitionIndex >= 0)
 			{
-				Builder.Partition = PartitionIndexConflict;
+				builder.SetPartition(_partitionIndex);
 			}
 
-			if (BatchIndex != -1)
+			if (batchIndex != -1)
 			{
-				Builder.BatchIndex = BatchIndex;
+				builder.SetBatchIndex(batchIndex);
 			}
 
-			PulsarApi.MessageIdData MsgId = Builder.build();
-			int Size = MsgId.SerializedSize;
-			ByteBuf Serialized = Unpooled.buffer(Size, Size);
-			ByteBufCodedOutputStream Stream = ByteBufCodedOutputStream.get(Serialized);
+			MessageIdData msgId = builder.Build();
+			int size = msgId.SerializedSize;
+			var serialized = Unpooled.Buffer(size, size);
+			ByteBufCodedOutputStream stream = ByteBufCodedOutputStream.Get(serialized);
 			try
 			{
-				MsgId.writeTo(Stream);
+				msgId.WriteTo(stream);
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// This is in-memory serialization, should not fail
-				throw new Exception(E);
+				throw new System.Exception(e.Message);
 			}
 
-			MsgId.recycle();
-			Builder.recycle();
-			Stream.recycle();
-			return Serialized.array();
+			msgId.Recycle();
+			builder.Recycle();
+			stream.Recycle();
+			return (sbyte[])(object)serialized.Array;
 		}
 
-		public override sbyte[] ToByteArray()
+		public sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
 			return ToByteArray(-1);
 		}
 
-		public override int CompareTo(IMessageId O)
+		public int CompareTo(IMessageId o)
 		{
-			if (O is MessageIdImpl)
+			//Needs more 
+			if (o is MessageIdImpl other)
+            {
+                if ((_entryId > other.EntryId) && (_ledgerId > other.LedgerId) && (_partitionIndex > other.PartitionIndex))
+                {
+                    return -1;
+                }
+				else if ((_entryId < other.EntryId) && (_ledgerId < other.LedgerId) && (_partitionIndex < other.PartitionIndex))
+                {
+                    return 1;
+                }
+
+                return 0;
+            }
+			else if (o is TopicMessageIdImpl impl)
 			{
-				MessageIdImpl Other = (MessageIdImpl) O;
-				return ComparisonChain.start().compare(this.LedgerIdConflict, Other.LedgerIdConflict).compare(this.EntryIdConflict, Other.EntryIdConflict).compare(this.PartitionIndex, Other.PartitionIndex).result();
-			}
-			else if (O is TopicMessageIdImpl)
-			{
-				return CompareTo(((TopicMessageIdImpl) O).InnerMessageId);
+				return CompareTo(impl.InnerMessageId);
 			}
 			else
 			{
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-				throw new ArgumentException("expected MessageIdImpl object. Got instance of " + O.GetType().FullName);
+				throw new ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 		}
 	}

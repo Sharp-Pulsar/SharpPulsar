@@ -1,12 +1,13 @@
 ﻿using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Command.Builder;
-using SharpPulsar.Common;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
-using static SharpPulsar.Impl.ProducerImpl<object>;
+using System.Linq;
+using SharpPulsar.Api;
+using SharpPulsar.Exception;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,46 +42,57 @@ namespace SharpPulsar.Impl
 	public class BatchMessageContainerImpl : AbstractBatchMessageContainer
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
-		private long lowestSequenceId = -1L;
-		private long highestSequenceId = -1L;
-		private IByteBuffer batchedMessageMetadataAndPayload;
-		private IList<MessageImpl<object>> messages = new List<MessageImpl<object>>();
+        private readonly MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
+		private long _lowestSequenceId = -1L;
+		private long _highestSequenceId = -1L;
+		private IByteBuffer _batchedMessageMetadataAndPayload;
+		private IList<MessageImpl<object>> _messages = new List<MessageImpl<object>>();
 		protected internal SendCallback PreviousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		protected internal SendCallback FirstCallback;
 
-		public override bool Add(MessageImpl<object> msg, SendCallback callback)
+        public override bool HasSameSchema(MessageImpl<object> msg)
+        {
+			if (NumMessagesInBatchConflict == 0)
+            {
+                return true;
+            }
+            if (!_messageMetadata.HasSchemaVersion())
+            {
+                return msg.SchemaVersion == null;
+            }
+            return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
+		}
+
+        public override bool Add(MessageImpl<object> msg, SendCallback callback)
 		{
 
-			if (log.IsEnabled(LogLevel.Debug))
+			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatchConflict);
+				Log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatchConflict);
 			}
 
 			if (++NumMessagesInBatchConflict == 1)
 			{
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
-				lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadata.Builder, msg.MessageBuilder);
+				_lowestSequenceId = Commands.InitBatchMessageMetadata(MessageMetadata.NewBuilder());
 				this.FirstCallback = callback;
-				batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
+				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
 			}
 
-			if (PreviousCallback != null)
-			{
-				PreviousCallback.AddCallback(Msg, callback);
-			}
-			PreviousCallback = callback;
-			CurrentBatchSizeBytes += Msg.DataBuffer.ReadableBytes;
-			messages.Add(Msg);
+            PreviousCallback?.AddCallback(msg, callback);
+            PreviousCallback = callback;
+			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
+			_messages.Add(msg);
 
-			if (lowestSequenceId == -1L)
+			if (_lowestSequenceId == -1L)
 			{
-				lowestSequenceId = Msg.SequenceId;
-				messageMetadata.SequenceId = lowestSequenceId;
+				_lowestSequenceId = msg.SequenceId;
+				_messageMetadata.SetSequenceId(_lowestSequenceId);
 			}
-			highestSequenceId = Msg.SequenceId;
-			ProducerConflict.lastSequenceIdPushed = Msg.SequenceId;
+			_highestSequenceId = msg.SequenceId;
+			Producer.LastSequenceIdPushed = msg.SequenceId;
 
 			return BatchFull;
 		}
@@ -89,131 +101,107 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				int BatchWriteIndex = batchedMessageMetadataAndPayload.writerIndex();
-				int BatchReadIndex = batchedMessageMetadataAndPayload.readerIndex();
+				int batchWriteIndex = _batchedMessageMetadataAndPayload.WriterIndex;
+				int batchReadIndex = _batchedMessageMetadataAndPayload.ReaderIndex;
     
-				for (int I = 0, n = messages.Count; I < n; I++)
+				for (int i = 0, n = _messages.Count; i < n; i++)
 				{
-					MessageImpl<object> Msg = messages[I];
-					PulsarApi.MessageMetadata.Builder MsgBuilder = Msg.MessageBuilder;
-					Msg.DataBuffer.markReaderIndex();
+					MessageImpl<object> msg = _messages[i];
+					MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
+					msg.DataBuffer.MarkReaderIndex();
 					try
 					{
-						batchedMessageMetadataAndPayload = Commands.serializeSingleMessageInBatchWithPayload(MsgBuilder, Msg.DataBuffer, batchedMessageMetadataAndPayload);
+						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, _batchedMessageMetadataAndPayload);
 					}
-					catch (Exception Th)
+					catch (System.Exception th)
 					{
 						// serializing batch message can corrupt the index of message and batch-message. Reset the index so,
 						// next iteration doesn't send corrupt message to broker.
-						for (int J = 0; J <= i; J++)
+						for (int j = 0; j <= i; j++)
 						{
-							MessageImpl<object> PreviousMsg = messages[J];
-							PreviousMsg.DataBuffer.resetReaderIndex();
+							MessageImpl<object> previousMsg = _messages[j];
+							previousMsg.DataBuffer.ResetReaderIndex();
 						}
-						batchedMessageMetadataAndPayload.writerIndex(BatchWriteIndex);
-						batchedMessageMetadataAndPayload.readerIndex(BatchReadIndex);
-						throw new Exception(Th);
+						_batchedMessageMetadataAndPayload.SetWriterIndex(batchWriteIndex);
+						_batchedMessageMetadataAndPayload.SetReaderIndex(batchReadIndex);
+						throw new System.Exception(th.Message);
 					}
 				}
 				// Recycle messages only once they serialized successfully in batch
-				foreach (MessageImpl<object> Msg in messages)
+				foreach (MessageImpl<object> msg in _messages)
 				{
-					Msg.MessageBuilder.recycle();
+					msg.MessageBuilder.Recycle();
 				}
-				int UncompressedSize = batchedMessageMetadataAndPayload.readableBytes();
-				IByteBuffer CompressedPayload = Compressor.encode(batchedMessageMetadataAndPayload);
-				batchedMessageMetadataAndPayload.release();
-				if (CompressionType != PulsarApi.CompressionType.NONE)
-				{
-					messageMetadata.Compression = CompressionType;
-					messageMetadata.UncompressedSize = UncompressedSize;
+				int uncompressedSize = _batchedMessageMetadataAndPayload.ReadableBytes;
+				IByteBuffer compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
+				_batchedMessageMetadataAndPayload.Release();
+				if (CompressionType != ICompressionType.None)
+                {
+                    var compression = Enum.GetValues(typeof(Common.Enum.CompressionType)).Cast<Common.Enum.CompressionType>()
+                        .ToList()[(int)CompressionType];
+					_messageMetadata.SetCompression(compression);
+					_messageMetadata.SetUncompressedSize(uncompressedSize);
 				}
     
 				// Update the current max batch size using the uncompressed size, which is what we need in any case to
 				// accumulate the batch content
-				MaxBatchSize = Math.Max(MaxBatchSize, UncompressedSize);
-				return CompressedPayload;
+				MaxBatchSize = Math.Max(MaxBatchSize, uncompressedSize);
+				return compressedPayload;
 			}
 		}
 
 		public override void Clear()
 		{
-			messages = Lists.newArrayList();
+			_messages = new List<MessageImpl<object>>();
 			FirstCallback = null;
 			PreviousCallback = null;
-			messageMetadata.Clear();
+			_messageMetadata.Clear();
 			NumMessagesInBatchConflict = 0;
 			CurrentBatchSizeBytes = 0;
-			lowestSequenceId = -1L;
-			highestSequenceId = -1L;
-			batchedMessageMetadataAndPayload = null;
+			_lowestSequenceId = -1L;
+			_highestSequenceId = -1L;
+			_batchedMessageMetadataAndPayload = null;
 		}
 
-		public override bool Empty
-		{
-			get
-			{
-				return messages.Count == 0;
-			}
-		}
+		public override bool Empty => _messages.Count == 0;
 
-		public override void Discard(System.Exception ex)
+        public override void Discard(System.Exception ex)
 		{
 			try
+            {
+                // Need to protect ourselves from any exception being thrown in the future handler from the application
+                FirstCallback?.SendComplete(ex);
+            }
+			catch (System.Exception T)
 			{
-				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				if (FirstCallback != null)
-				{
-					FirstCallback.sendComplete(Ex);
-				}
-			}
-			catch (Exception T)
-			{
-				log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", TopicName, ProducerName, lowestSequenceId, T);
+				Log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", TopicName, ProducerName, _lowestSequenceId, T);
 			}
 			Clear();
 		}
 
-		public override bool MultiBatches
+		public override bool MultiBatches => false;
+
+        public OpSendMsg<object> CreateOpSendMsg()
 		{
-			get
-			{
-				return false;
-			}
-		}
-		public OpSendMsg CreateOpSendMsg()
-		{
-			IByteBuffer EncryptedPayload = ProducerConflict.encryptMessage(messageMetadata, CompressedBatchMetadataAndPayload);
-			if (EncryptedPayload.readableBytes() > ClientCnx.MaxMessageSize)
+			IByteBuffer encryptedPayload = Producer.EncryptMessage(_messageMetadata, CompressedBatchMetadataAndPayload);
+			if (encryptedPayload.ReadableBytes > ClientCnx.MaxMessageSize)
 			{
 				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
 				return null;
 			}
-			messageMetadata.NumMessagesInBatch = NumMessagesInBatchConflict;
-			messageMetadata.HighestSequenceId = highestSequenceId;
-			IByteBufferPair Cmd = ProducerConflict.sendMessage(ProducerConflict.producerId, messageMetadata.SequenceId, messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, messageMetadata.Build(), EncryptedPayload);
+			_messageMetadata.SetNumMessagesInBatch(NumMessagesInBatch);
+			_messageMetadata.SetHighestSequenceId(_highestSequenceId);
+            ByteBufPair cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, _messageMetadata.Build(), encryptedPayload);
 
-			OpSendMsg Op = OpSendMsg.create(messages, Cmd, messageMetadata.SequenceId, messageMetadata.HighestSequenceId, FirstCallback);
+			var op = OpSendMsg<object>.Create(_messages, cmd, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, FirstCallback);
 
-			Op.NumMessagesInBatch = NumMessagesInBatchConflict;
-			Op.BatchSizeByte = CurrentBatchSizeBytes;
-			lowestSequenceId = -1L;
-			return Op;
+			op.NumMessagesInBatch = NumMessagesInBatchConflict;
+			op.BatchSizeByte = CurrentBatchSizeBytes;
+			_lowestSequenceId = -1L;
+			return op;
 		}
 
-		public override bool HasSameSchema<T1>(MessageImpl<T1> Msg)
-		{
-			if (NumMessagesInBatchConflict == 0)
-			{
-				return true;
-			}
-			if (!messageMetadata.HasSchemaVersion())
-			{
-				return Msg.SchemaVersion == null;
-			}
-			return Arrays.equals(Msg.SchemaVersion, messageMetadata.SchemaVersion.toByteArray());
-		}
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl>();
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl>();
 	}
 
 }

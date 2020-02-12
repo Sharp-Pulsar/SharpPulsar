@@ -45,7 +45,7 @@ namespace SharpPulsar.Api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> readNext() throws PulsarClientException;
-		Message<T> ReadNext();
+		IMessage<T> ReadNext();
 
 		/// <summary>
 		/// Read the next message in the topic waiting for a maximum time.
@@ -58,14 +58,14 @@ namespace SharpPulsar.Api
 		/// <exception cref="PulsarClientException"> </exception>
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 //ORIGINAL LINE: Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		Message<T> ReadNext(int timeout, TimeUnit unit);
+		IMessage<T> ReadNext(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Read asynchronously the next message in the topic.
 		/// </summary>
 		/// <returns> a future that will yield a message (when it's available) or <seealso cref="PulsarClientException"/> if the reader
 		///         is already closed. </returns>
-		ValueTask<Message<T>> ReadNextAsync();
+		ValueTask<IMessage<T>> ReadNextAsync();
 
 		/// <summary>
 		/// Asynchronously close the reader and stop the broker to push more messages.

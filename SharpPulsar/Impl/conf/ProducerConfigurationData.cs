@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl.Conf
 		public HashingScheme HashingScheme = HashingScheme.JavaStringHash;
 
 		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.Fail;
-		public MessageRouter CustomMessageRouter = null;
+		public IMessageRouter CustomMessageRouter = null;
 
 		public long BatchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;

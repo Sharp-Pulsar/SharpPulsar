@@ -1470,7 +1470,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 
 			// optional uint64 highest_sequence_id = 24 [default = 0];
-			internal long HighestSequenceId;
+			public long HighestSequenceId;
 			public bool HasHighestSequenceId()
 			{
 				return ((_bitField & 0x00200000) == 0x00200000);

@@ -22,7 +22,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// A listener that will be called in order for every message received.
 	/// </summary>
-	public interface MessageListener<T>
+	public interface IMessageListener<T>
 	{
 		/// <summary>
 		/// This method is called whenever a new message is received.
@@ -44,7 +44,7 @@ namespace SharpPulsar.Api
 		///            the consumer that received the message </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(IConsumer<T> consumer, Message<T> msg);
+		void Received(IConsumer<T> consumer, IMessage<T> msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.

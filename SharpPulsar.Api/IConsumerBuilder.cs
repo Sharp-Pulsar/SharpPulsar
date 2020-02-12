@@ -213,7 +213,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Set the delay to wait before re-delivering messages that have failed to be process.
 		/// 
-		/// <para>When application uses <seealso cref="IConsumer.negativeAcknowledge(Message)"/>, the failed message
+		/// <para>When application uses <seealso cref="IConsumer.negativeAcknowledge(IMessage)"/>, the failed message
 		/// will be redelivered after a fixed timeout. The default is 1 min.
 		/// 
 		/// </para>
@@ -254,7 +254,7 @@ namespace SharpPulsar.Api
 		/// <param name="messageListener">
 		///            the listener object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> MessageListener(MessageListener<T> messageListener);
+		IConsumerBuilder<T> MessageListener(IMessageListener<T> messageListener);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/>.

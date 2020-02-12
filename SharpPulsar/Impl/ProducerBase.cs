@@ -77,7 +77,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual TaskCompletionSource<IMessageId> SendAsync(Message<T> message)
+		public virtual TaskCompletionSource<IMessageId> SendAsync(IMessage<T> message)
 		{
 			return InternalSendAsync(message);
 		}
@@ -109,8 +109,8 @@ namespace SharpPulsar.Impl
 
         }
 
-		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> message);
-		public virtual IMessageId Send(Message<T> message)
+		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(IMessage<T> message);
+		public virtual IMessageId Send(IMessage<T> message)
 		{
 			try
 			{
@@ -168,7 +168,7 @@ namespace SharpPulsar.Impl
 			return ProducerCreatedTask;
 		}
 
-		public virtual Message<T> BeforeSend(Message<T> message)
+		public virtual IMessage<T> BeforeSend(IMessage<T> message)
 		{
 			if (Interceptors != null)
 			{
@@ -180,7 +180,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void OnSendAcknowledgement(Message<T> message, IMessageId msgId, System.Exception exception)
+		public virtual void OnSendAcknowledgement(IMessage<T> message, IMessageId msgId, System.Exception exception)
 		{
 			if (Interceptors != null)
 			{

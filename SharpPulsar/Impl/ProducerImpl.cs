@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
         }
 
 
-		public override TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> Message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync(Api.IMessage<T> Message)
 		{
 
 			var task = new TaskCompletionSource<IMessageId>();
@@ -300,7 +300,7 @@ namespace SharpPulsar.Impl
 		{
 			return (ProducerImpl<object>)Convert.ChangeType(v, typeof(ProducerImpl<object>));
 		}
-		public void SendAsync<T1>(Message<T1> message, SendCallback callback)
+		public void SendAsync<T1>(Api.IMessage<T1> message, SendCallback callback)
 		{
 			if (message is MessageImpl<T1>)
 				return;

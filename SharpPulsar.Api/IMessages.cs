@@ -1,4 +1,4 @@
-﻿using Org.Apache.Pulsar.Common.Util;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,16 +18,18 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Api
 {
-	public interface Hash : Hash
+	/// <summary>
+	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>
+	/// @param <T> </param>
+	public interface IMessages<out T> : IEnumerable<IMessage<T>>
 	{
 
 		/// <summary>
-		/// Generate the hash of a given String
-		/// </summary> </returns>
-		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
-		int MakeHash(string S);
+		/// Get number of messages.
+		/// </summary>
+		int Size();
 	}
 
 }

@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-        public override Message<T> InternalReceive()
+        public override IMessage<T> InternalReceive()
 		{
 			_zeroQueueLock.Lock();
 			try
@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<Message<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage<T>> InternalReceiveAsync()
 		{
 			var task = base.InternalReceiveAsync();
 			if (!task.IsCompleted)
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 			return task;
 		}
 
-		private Message<T> FetchSingleMessageFromBroker()
+		private IMessage<T> FetchSingleMessageFromBroker()
 		{
 			// Just being cautious
 			if (IncomingMessages.size() > 0)
@@ -87,7 +87,7 @@ namespace SharpPulsar.Impl
 					}
 				}
 
-                Message<T> message;
+                IMessage<T> message;
                 do
 				{
 					message = IncomingMessages.take();
@@ -135,7 +135,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool CanEnqueueMessage(Message<T> message)
+		public override bool CanEnqueueMessage(IMessage<T> message)
 		{
 			if (Listener != null)
 			{
@@ -148,7 +148,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void TriggerZeroQueueSizeListener(Message<T> message)
+		private void TriggerZeroQueueSizeListener(IMessage<T> message)
 		{
 			if(Listener == null)
                 throw new NullReferenceException("listener can't be null");

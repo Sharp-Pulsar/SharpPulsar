@@ -60,7 +60,7 @@ namespace SharpPulsar.Impl
 
 			if (readerConfiguration.ReaderListener != null)
 			{
-				ReaderListener<T> readerListener = readerConfiguration.ReaderListener;
+				IReaderListener<T> readerListener = readerConfiguration.ReaderListener;
 				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
 			}
 
@@ -74,13 +74,13 @@ namespace SharpPulsar.Impl
 			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, executor, partitionIdx, false, consumerTask, ConsumerImpl<T>.SubscriptionMode.NonDurable, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
 		}
 
-		public class MessageListenerAnonymousInnerClass : MessageListener<T>
+		public class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly ReaderImpl<T> _outerInstance;
 
-			private ReaderListener<T> _readerListener;
+			private IReaderListener<T> _readerListener;
 
-			public MessageListenerAnonymousInnerClass(ReaderImpl<T> outerInstance, ReaderListener<T> readerListener)
+			public MessageListenerAnonymousInnerClass(ReaderImpl<T> outerInstance, IReaderListener<T> readerListener)
 			{
 				this._outerInstance = outerInstance;
 				this._readerListener = readerListener;
@@ -89,7 +89,7 @@ namespace SharpPulsar.Impl
 
 			private static long SerialVersionUid;
 
-			public void Received(IConsumer<T> consumer, Message<T> msg)
+			public void Received(IConsumer<T> consumer, IMessage<T> msg)
 			{
 				_readerListener.Received(_outerInstance, msg);
 				consumer.AcknowledgeCumulativeAsync(msg);
@@ -110,9 +110,9 @@ namespace SharpPulsar.Impl
 			return _consumer.HasReachedEndOfTopic();
 		}
 
-		public Message<T> ReadNext()
+		public IMessage<T> ReadNext()
 		{
-			Message<T> msg = _consumer.Receive();
+			IMessage<T> msg = _consumer.Receive();
 
 			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
 			// it will specify the subscription position anyway
@@ -120,9 +120,9 @@ namespace SharpPulsar.Impl
 			return msg;
 		}
 
-		public Message<T> ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public IMessage<T> ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Message<T> msg = _consumer.Receive(timeout, unit);
+			IMessage<T> msg = _consumer.Receive(timeout, unit);
 
 			if (msg != null)
 			{
@@ -131,7 +131,7 @@ namespace SharpPulsar.Impl
 			return msg;
 		}
 
-		public ValueTask<Message<T>> ReadNextAsync()
+		public ValueTask<IMessage<T>> ReadNextAsync()
 		{
 			var r = _consumer.ReceiveAsync().AsTask().ContinueWith(task =>
             {
@@ -139,7 +139,7 @@ namespace SharpPulsar.Impl
 			    _consumer.AcknowledgeCumulativeAsync(msg);
 			    return msg;
 			});
-			return new ValueTask<Message<T>>(r.Result);
+			return new ValueTask<IMessage<T>>(r.Result);
 		}
 
 		public void Close()

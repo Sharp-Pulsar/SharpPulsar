@@ -55,52 +55,27 @@ namespace SharpPulsar.Impl
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		protected internal int MaxBatchSize = InitialBatchBufferSize;
 
-		public bool HaveEnoughSpace(MessageImpl<object> Msg)
+		public bool HaveEnoughSpace(MessageImpl<object> msg)
 		{
-			int MessageSize = Msg.DataBuffer.ReadableBytes;
-			return ((MaxBytesInBatch <= 0 && (MessageSize + CurrentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (MaxBytesInBatch > 0 && (MessageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || NumMessagesInBatchConflict < MaxNumMessagesInBatch);
+			var messageSize = msg.DataBuffer.ReadableBytes;
+			return ((MaxBytesInBatch <= 0 && (messageSize + CurrentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (MaxBytesInBatch > 0 && (messageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || NumMessagesInBatchConflict < MaxNumMessagesInBatch);
 		}
 
-		public virtual bool BatchFull
-		{
-			get
-			{
-				return (MaxBytesInBatch > 0 && CurrentBatchSizeBytes >= MaxBytesInBatch) || (MaxBytesInBatch <= 0 && CurrentBatchSizeBytes >= ClientCnx.MaxMessageSize) || (MaxNumMessagesInBatch > 0 && NumMessagesInBatchConflict >= MaxNumMessagesInBatch);
-			}
-		}
+		public virtual bool BatchFull => (MaxBytesInBatch > 0 && CurrentBatchSizeBytes >= MaxBytesInBatch) || (MaxBytesInBatch <= 0 && CurrentBatchSizeBytes >= ClientCnx.MaxMessageSize) || (MaxNumMessagesInBatch > 0 && NumMessagesInBatchConflict >= MaxNumMessagesInBatch);
 
-		public virtual int NumMessagesInBatch
-		{
-			get
-			{
-				return NumMessagesInBatchConflict;
-			}
-		}
+        public virtual int NumMessagesInBatch => NumMessagesInBatchConflict;
 
-		public virtual long CurrentBatchSize
-		{
-			get
-			{
-				return CurrentBatchSizeBytes;
-			}
-		}
-		public IList<ProducerImpl<object>.OpSendMsg> CreateOpSendMsgs()
-		{
-			throw new NotSupportedException();
-		}
+        public virtual long CurrentBatchSize => CurrentBatchSizeBytes;
 
-		public ProducerImpl<object>.OpSendMsg CreateOpSendMsg()
+        public OpSendMsg<T> CreateOpSendMsg<T>()
 		{
 			throw new NotSupportedException();
 		}
 
 		public virtual ProducerImpl<object> Producer
 		{
-			get
-			{
-				return producer;
-			}
-			set
+			get => producer;
+            set
 			{
 				producer = value;
 				TopicName = value.Topic;
@@ -111,6 +86,12 @@ namespace SharpPulsar.Impl
 				MaxBytesInBatch = value.Configuration.BatchingMaxBytes;
 			}
 		}
-	}
+
+        public IList<OpSendMsg<T>> CreateOpSendMsgs<T>()
+        {
+            throw new NotImplementedException();
+        }
+
+    }
 
 }

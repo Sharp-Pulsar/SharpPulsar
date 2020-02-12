@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl
 
 		/// <summary>
 		/// This is called when client sends message to pulsar broker, before key and value gets serialized.
-		/// The method calls <seealso cref="ProducerInterceptor.beforeSend(Producer,Message)"/> method. Message returned from
+		/// The method calls <seealso cref="ProducerInterceptor.beforeSend(Producer,IMessage)"/> method. Message returned from
 		/// first interceptor's beforeSend() is passed to the second interceptor beforeSend(), and so on in the
 		/// interceptor chain. The message returned from the last interceptor is returned from this method.
 		/// 
@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public virtual Message<T> BeforeSend<T>(IProducer<T> producer, Message<T> message)
+		public virtual IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
 		{
 			var interceptorMessage = message;
 			foreach (IProducerInterceptor interceptor in interceptors)
@@ -87,16 +87,16 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This method is called when the message send to the broker has been acknowledged, or when sending the record fails
 		/// before it gets send to the broker.
-		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, Message, IMessageId, System.Exception)"/> method for
+		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, IMessage, IMessageId, System.Exception)"/> method for
 		/// each interceptor.
 		/// 
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptor methods are caught and ignored.
 		/// </summary>
 		/// <param name="producer"> the producer which contains the interceptor. </param>
-		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, Message)"/> </param>
+		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, IMessage)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public virtual void OnSendAcknowledgement<T>(IProducer<T> producer, Message<T> message, IMessageId msgId, System.Exception exception)
+		public virtual void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
 		{
 			foreach (IProducerInterceptor interceptor in interceptors)
 			{

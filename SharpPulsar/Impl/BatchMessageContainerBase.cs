@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(MessageImpl<object> Msg, SendCallback Callback);
+		bool Add(MessageImpl<object> msg, SendCallback callback);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container have enough space for the specific message,
 		///         otherwise return false. </returns>
-		bool HaveEnoughSpace(MessageImpl<object> Msg);
+		bool HaveEnoughSpace(MessageImpl<object> msg);
 
 		/// <summary>
 		/// Check the batch message container has same schema with the message want to add.
@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl
 		/// <returns> return true if the container has same schema with the specific message,
 		///         otherwise return false. </returns>
 		///         
-		bool HasSameSchema(MessageImpl<object> Msg);
+		bool HasSameSchema(MessageImpl<object> msg);
 
 		/// <summary>
 		/// Set producer of the message batch container.

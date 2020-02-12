@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl
 
 		public BatchMessageAcker Acker {get;}
 
-		public BatchMessageIdImpl(long LedgerId, long EntryId, int PartitionIndex, int BatchIndex) : this(LedgerId, EntryId, PartitionIndex, BatchIndex, BatchMessageAckerDisabled.INSTANCE)
+		public BatchMessageIdImpl(long LedgerId, long EntryId, int PartitionIndex, int BatchIndex) : this(LedgerId, EntryId, PartitionIndex, BatchIndex, BatchMessageAckerDisabled.Instance)
 		{
 		}
 
@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 			else
 			{
 				this.BatchIndex = NoBatch;
-				this.Acker = BatchMessageAckerDisabled.INSTANCE;
+				this.Acker = BatchMessageAckerDisabled.Instance;
 			}
 		}
 

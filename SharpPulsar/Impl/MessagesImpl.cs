@@ -23,10 +23,10 @@ using SharpPulsar.Api;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public class MessagesImpl<T> : Messages<T>
+	public class MessagesImpl<T> : IMessages<T>
 	{
 
-		private IList<Message<T>> _messageList;
+		private IList<IMessage<T>> _messageList;
 
 		private readonly int _maxNumberOfMessages;
 		private readonly long _maxSizeOfMessages;
@@ -38,10 +38,10 @@ namespace SharpPulsar.Impl
 		{
 			this._maxNumberOfMessages = maxNumberOfMessages;
 			this._maxSizeOfMessages = maxSizeOfMessages;
-			_messageList = maxNumberOfMessages > 0 ? new List<Message<T>>(maxNumberOfMessages) : new List<Message<T>>();
+			_messageList = maxNumberOfMessages > 0 ? new List<IMessage<T>>(maxNumberOfMessages) : new List<IMessage<T>>();
 		}
 
-		public virtual bool CanAdd(Message<T> message)
+		public virtual bool CanAdd(IMessage<T> message)
 		{
 			if (_maxNumberOfMessages <= 0 && _maxSizeOfMessages <= 0)
 			{
@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 			return (_maxNumberOfMessages > 0 && _currentNumberOfMessages + 1 <= _maxNumberOfMessages) || (_maxSizeOfMessages > 0 && _currentSizeOfMessages + message.Data.Length <= _maxSizeOfMessages);
 		}
 
-		public virtual void Add(Message<T> message)
+		public virtual void Add(IMessage<T> message)
 		{
 			if (message == null)
 			{
@@ -75,12 +75,12 @@ namespace SharpPulsar.Impl
 			this._messageList.Clear();
 		}
 
-		public IEnumerator<Message<T>> Iterator()
+		public IEnumerator<IMessage<T>> Iterator()
 		{
 			return _messageList.GetEnumerator();
 		}
 
-        public IEnumerator<Message<T>> GetEnumerator()
+        public IEnumerator<IMessage<T>> GetEnumerator()
         {
            return Iterator();
         }

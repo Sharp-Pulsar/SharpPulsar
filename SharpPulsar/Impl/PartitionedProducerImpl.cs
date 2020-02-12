@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PartitionedProducerImpl<T>));
 
 		private readonly IList<ProducerImpl<T>> _producers;
-		private readonly MessageRouter _routerPolicy;
+		private readonly IMessageRouter _routerPolicy;
 		private readonly ProducerStatsRecorderImpl<T> _stats;
 		private ITopicMetadata _topicMetadata;
 
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private MessageRouter MessageRouter
+		private IMessageRouter MessageRouter
 		{
 			get
             {
@@ -149,7 +149,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public override TaskCompletionSource<IMessageId> InternalSendAsync(Message<T> message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync(IMessage<T> message)
 		{
 			var t = new TaskCompletionSource<IMessageId>();
 			switch (GetState())

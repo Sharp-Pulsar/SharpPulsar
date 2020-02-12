@@ -260,7 +260,7 @@ namespace SharpPulsar.Impl
 			return new ValueTask(unsubscribeTask.Task);
 		}
 
-		public override Message<T> InternalReceive()
+		public override IMessage<T> InternalReceive()
 		{
             try
 			{
@@ -275,11 +275,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<Message<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage<T>> InternalReceiveAsync()
 		{
 
-			var result = new TaskCompletionSource<Message<T>>();
-			Message<T> message = null;
+			var result = new TaskCompletionSource<IMessage<T>>();
+			IMessage<T> message = null;
 			try
 			{
 				_lock.AcquireWriterLock(3000);
@@ -305,10 +305,10 @@ namespace SharpPulsar.Impl
 				result.SetResult(BeforeConsume(message));
 			}
 
-			return new ValueTask<Message<T>>(result.Task.Result);
+			return new ValueTask<IMessage<T>>(result.Task.Result);
 		}
 
-		public override Message<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public override IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
             try
 			{
@@ -333,7 +333,7 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public override Messages<T> InternalBatchReceive()
+		public override IMessages<T> InternalBatchReceive()
 		{
 			try
 			{
@@ -354,9 +354,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<Messages<T>> InternalBatchReceiveAsync()
+		public override ValueTask<IMessages<T>> InternalBatchReceiveAsync()
 		{
-			var result = new TaskCompletionSource<Messages<T>>();
+			var result = new TaskCompletionSource<IMessages<T>>();
 			try
 			{
 				_lock.AcquireWriterLock(300);
@@ -390,7 +390,7 @@ namespace SharpPulsar.Impl
 			{
 				_lock.ReleaseWriterLock();
 			}
-			return new ValueTask<Messages<T>>(result.Task.Result);
+			return new ValueTask<IMessages<T>>(result.Task.Result);
 		}
 
 		public bool MarkAckForBatchMessage(BatchMessageIdImpl batchMessageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties)
@@ -641,7 +641,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private BatchMessageIdImpl ClearReceiverQueue()
 		{
-			IList<Message<object>> currentMessageQueue = new List<Message<object>>(IncomingMessages.size());
+			IList<IMessage<object>> currentMessageQueue = new List<IMessage<object>>(IncomingMessages.size());
 			IncomingMessages.drainTo(currentMessageQueue);
 			IncomingMessagesSize[this] =  0;
 			if (currentMessageQueue.Count > 0)
@@ -984,7 +984,7 @@ namespace SharpPulsar.Impl
 		/// Notify waiting asyncReceive request with the received message
 		/// </summary>
 		/// <param name="message"> </param>
-		public void NotifyPendingReceivedCallback(in Message<T> message, System.Exception exception)
+		public void NotifyPendingReceivedCallback(in IMessage<T> message, System.Exception exception)
 		{
 			if (PendingReceives.IsEmpty)
 			{
@@ -1023,7 +1023,7 @@ namespace SharpPulsar.Impl
 			InterceptAndComplete(message, receivedTask);
 		}
 
-		private void InterceptAndComplete(Message<T> message, TaskCompletionSource<Message<T>> receivedTask)
+		private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedTask)
         {
 			// call proper interceptor
 			var interceptMessage = BeforeConsume(message);
@@ -1149,7 +1149,7 @@ namespace SharpPulsar.Impl
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		public override void MessageProcessed<T1>(Message<T1> msg)
+		public override void MessageProcessed<T1>(IMessage<T1> msg)
 		{
 			lock (this)
 			{
@@ -1171,7 +1171,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void TrackMessage<T1>(Message<T1> msg)
+		public void TrackMessage<T1>(IMessage<T1> msg)
 		{
 			if (msg != null)
 			{
@@ -1736,7 +1736,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private MessageIdImpl GetMessageIdImpl<T1>(Message<T1> msg)
+		private MessageIdImpl GetMessageIdImpl<T1>(IMessage<T1> msg)
 		{
 			var messageId = (MessageIdImpl) msg.MessageId;
 			if (messageId is BatchMessageIdImpl)

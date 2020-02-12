@@ -26,7 +26,7 @@ using SharpPulsar.Util;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public class ReaderBuilderImpl<T> : ReaderBuilder<T>
+    public class ReaderBuilderImpl<T> : IReaderBuilder<T>
 	{
 
 		private readonly PulsarClientImpl _client;
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 			this._schema = schema;
 		}
 
-		public ReaderBuilder<T> Clone()
+		public IReaderBuilder<T> Clone()
 		{
 			return new ReaderBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
@@ -78,7 +78,7 @@ namespace SharpPulsar.Impl
 			return _client.CreateReaderAsync(_conf, _schema);
 		}
 
-		public ReaderBuilder<T> LoadConf(IDictionary<string, object> config)
+		public IReaderBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
 			var startMessageId = _conf.StartMessageId;
 			_conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ReaderConfigurationData<T>));
@@ -86,67 +86,67 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ReaderBuilder<T> Topic(string topicName)
+		public IReaderBuilder<T> Topic(string topicName)
 		{
 			_conf.TopicName = topicName.Trim();
 			return this;
 		}
 
-		public ReaderBuilder<T> StartMessageId(IMessageId startMessageId)
+		public IReaderBuilder<T> StartMessageId(IMessageId startMessageId)
 		{
 			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public ReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public IReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			_conf.StartMessageFromRollbackDurationInSec = timeUnit.ToSecs(rollbackDuration);
 			return this;
 		}
 
-		public ReaderBuilder<T> StartMessageIdInclusive()
+		public IReaderBuilder<T> StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
 			return this;
 		}
 
-		public  ReaderBuilder<T> ReaderListener(ReaderListener<T> readerListener)
+		public  IReaderBuilder<T> ReaderListener(IReaderListener<T> readerListener)
 		{
 			_conf.ReaderListener = readerListener;
 			return this;
 		}
 
-		public ReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
+		public IReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+		public IReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public ReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
+		public IReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
 			_conf.ReceiverQueueSize = receiverQueueSize;
 			return this;
 		}
 
-		public ReaderBuilder<T> ReaderName(string readerName)
+		public IReaderBuilder<T> ReaderName(string readerName)
 		{
 			_conf.ReaderName = readerName;
 			return this;
 		}
 
-		public  ReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
+		public  IReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
 		{
 			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
 			return this;
 		}
 
-		public ReaderBuilder<T> ReadCompacted(bool readCompacted)
+		public IReaderBuilder<T> ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
 			return this;

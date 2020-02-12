@@ -132,12 +132,12 @@ namespace SharpPulsar.Impl
 			return new ConsumerBuilderImpl<T>(this, schema);
 		}
 
-		public ReaderBuilder<sbyte[]> NewReader()
+		public IReaderBuilder<sbyte[]> NewReader()
 		{
 			return new ReaderBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
 		}
 
-		public ReaderBuilder<T> NewReader<T>(ISchema<T> schema)
+		public IReaderBuilder<T> NewReader<T>(ISchema<T> schema)
 		{
 			return new ReaderBuilderImpl<T>(this, schema);
 		}

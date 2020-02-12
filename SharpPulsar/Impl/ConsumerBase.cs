@@ -58,11 +58,11 @@ namespace SharpPulsar.Impl
 		protected internal readonly ConsumerConfigurationData<T> Conf;
 		protected internal readonly string _consumerName;
         public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
-		protected internal readonly MessageListener<T> Listener;
+		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
-		internal readonly GrowableArrayBlockingQueue<Message<T>> IncomingMessages;
-		protected internal readonly ConcurrentQueue<TaskCompletionSource<Message<T>>> PendingReceives;
+		internal readonly GrowableArrayBlockingQueue<IMessage<T>> IncomingMessages;
+		protected internal readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
 		protected internal int _maxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
@@ -84,10 +84,10 @@ namespace SharpPulsar.Impl
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
-			IncomingMessages = new GrowableArrayBlockingQueue<Message<T>>();
+			IncomingMessages = new GrowableArrayBlockingQueue<IMessage<T>>();
 
 			ListenerExecutor = listenerExecutor;
-			PendingReceives = new ConcurrentQueue<TaskCompletionSource<Message<T>>>();
+			PendingReceives = new ConcurrentQueue<TaskCompletionSource<IMessage<T>>>();
 			Schema = schema;
 			Interceptors = interceptors;
 			BatchReceivePolicy = conf.BatchReceivePolicy ?? BatchReceivePolicy.DefaultPolicy;
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public Message<T> Receive()
+		public IMessage<T> Receive()
 		{
 			if (Listener != null)
 			{
@@ -107,11 +107,11 @@ namespace SharpPulsar.Impl
 			return InternalReceive();
 		}
 
-		public ValueTask<Message<T>> ReceiveAsync()
+		public ValueTask<IMessage<T>> ReceiveAsync()
 		{
 			if (Listener != null)
 			{
-				return new ValueTask<Message<T>>(Task.FromException<Message<T>>(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set")));
+				return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set")));
 			}
 			try
 			{
@@ -119,16 +119,16 @@ namespace SharpPulsar.Impl
 			}
 			catch (PulsarClientException e)
 			{
-                return new ValueTask<Message<T>>(Task.FromException<Message<T>>(e));
+                return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(e));
 			}
 			return InternalReceiveAsync();
 		}
 
-		public abstract Message<T> InternalReceive();
+		public abstract IMessage<T> InternalReceive();
 
-		public abstract ValueTask<Message<T>> InternalReceiveAsync();
+		public abstract ValueTask<IMessage<T>> InternalReceiveAsync();
 
-		public Message<T> Receive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public IMessage<T> Receive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{
@@ -143,16 +143,16 @@ namespace SharpPulsar.Impl
 			return InternalReceive(timeout, unit);
 		}
 
-		public abstract Message<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit);
+		public abstract IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit);
 
-		public Messages<T> BatchReceive()
+		public IMessages<T> BatchReceive()
 		{
 			VerifyBatchReceive();
 			VerifyConsumerState();
 			return InternalBatchReceive();
 		}
 
-		public ValueTask<Messages<T>> BatchReceiveAsync()
+		public ValueTask<IMessages<T>> BatchReceiveAsync()
 		{
 			try
 			{
@@ -162,15 +162,15 @@ namespace SharpPulsar.Impl
 			}
 			catch (PulsarClientException e)
 			{
-                return new ValueTask<Messages<T>>(Task.FromException<Messages<T>>(e));
+                return new ValueTask<IMessages<T>>(Task.FromException<IMessages<T>>(e));
 			}
 		}
 
-		public abstract Messages<T> InternalBatchReceive();
+		public abstract IMessages<T> InternalBatchReceive();
 
-		public abstract ValueTask<Messages<T>> InternalBatchReceiveAsync();
+		public abstract ValueTask<IMessages<T>> InternalBatchReceiveAsync();
 
-		public void Acknowledge<T1>(Message<T1> message)
+		public void Acknowledge<T1>(IMessage<T1> message)
 		{
 			try
 			{
@@ -194,7 +194,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void Acknowledge<T1>(Messages<T1> messages)
+		public void Acknowledge<T1>(IMessages<T1> messages)
 		{
 			try
 			{
@@ -206,7 +206,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void AcknowledgeCumulative<T1>(Message<T1> message)
+		public void AcknowledgeCumulative<T1>(IMessage<T1> message)
 		{
 			try
 			{
@@ -230,7 +230,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeAsync<T1>(Message<T1> message)
+		public ValueTask AcknowledgeAsync<T1>(IMessage<T1> message)
 		{
 			try
 			{
@@ -242,7 +242,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeAsync<T1>(Messages<T1> messages)
+		public ValueTask AcknowledgeAsync<T1>(IMessages<T1> messages)
 		{
 			try
             {
@@ -259,7 +259,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeCumulativeAsync<T1>(Message<T1> message)
+		public ValueTask AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
 		{
 			try
 			{
@@ -315,7 +315,7 @@ namespace SharpPulsar.Impl
             return DoAcknowledgeWithTxn(messageId, CommandAck.Types.AckType.Cumulative, new Dictionary<string, long>(), txnImpl);
         }
 
-		public void NegativeAcknowledge<T1>(Message<T1> message)
+		public void NegativeAcknowledge<T1>(IMessage<T1> message)
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
@@ -339,7 +339,7 @@ namespace SharpPulsar.Impl
 		}
 
 		public abstract TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
-		public void NegativeAcknowledge<T1>(Messages<T1> messages)
+		public void NegativeAcknowledge<T1>(IMessages<T1> messages)
         {
             using var msgs = messages.GetEnumerator();
             while (msgs.MoveNext())
@@ -459,7 +459,7 @@ namespace SharpPulsar.Impl
             set => _maxReceiverQueueSize = value;
         }
 
-		public virtual Message<T> BeforeConsume(Message<T> message)
+		public virtual IMessage<T> BeforeConsume(IMessage<T> message)
         {
             return Interceptors != null ? Interceptors.BeforeConsume(this, message) : message;
         }
@@ -484,13 +484,13 @@ namespace SharpPulsar.Impl
             Interceptors?.OnAckTimeoutSend(this, messageIds);
         }
 
-		public virtual bool CanEnqueueMessage(Message<T> message)
+		public virtual bool CanEnqueueMessage(IMessage<T> message)
 		{
 			// Default behavior, can be overridden in subclasses
 			return true;
 		}
 
-		public virtual bool EnqueueMessageAndCheckBatchReceive(Message<T> message)
+		public virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
             if (!CanEnqueueMessage(message)) return HasEnoughMessagesForBatchReceive();
             IncomingMessages.add(message);
@@ -542,16 +542,16 @@ namespace SharpPulsar.Impl
 		public sealed class OpBatchReceive<T1>
 		{
 
-			internal readonly TaskCompletionSource<Messages<T>> Task;
+			internal readonly TaskCompletionSource<IMessages<T>> Task;
 			internal readonly long CreatedAt;
 
-			public OpBatchReceive(TaskCompletionSource<Messages<T>> task)
+			public OpBatchReceive(TaskCompletionSource<IMessages<T>> task)
 			{
 				Task = task;
 				CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
-			internal static OpBatchReceive<T1> Of<T1>(TaskCompletionSource<Messages<T>> task)
+			internal static OpBatchReceive<T1> Of<T1>(TaskCompletionSource<IMessages<T>> task)
 			{
 				return new OpBatchReceive<T1>(task);
 			}
@@ -572,7 +572,7 @@ namespace SharpPulsar.Impl
 			var msgPeeked = IncomingMessages.Peek();
 			while (msgPeeked != null && messages.CanAdd(msgPeeked))
 			{
-				Message<T> msg = null;
+				IMessage<T> msg = null;
 				try
 				{
 					msg = IncomingMessages.Poll(0L, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
@@ -592,7 +592,7 @@ namespace SharpPulsar.Impl
 			opBatchReceive.Task.SetResult(messages);
 		}
 
-		public abstract void MessageProcessed<T1>(Message<T1> msg);
+		public abstract void MessageProcessed<T1>(IMessage<T1> msg);
 
 		public void Run(ITimeout timeout)
 		{

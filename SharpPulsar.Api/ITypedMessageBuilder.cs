@@ -139,7 +139,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Set the event time for a given message.
 		/// 
-		/// <para>Applications can retrieve the event time by calling <seealso cref="Message.getEventTime()"/>.
+		/// <para>Applications can retrieve the event time by calling <seealso cref="IMessage.getEventTime()"/>.
 		/// 
 		/// </para>
 		/// <para>Note: currently pulsar doesn't support event-time based index. so the subscribers

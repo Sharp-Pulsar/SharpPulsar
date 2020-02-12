@@ -25,7 +25,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// The message abstraction used in Pulsar.
 	/// </summary>
-	public interface Message<T>
+	public interface IMessage<out T>
 	{
 
 		/// <summary>
@@ -81,7 +81,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the message id null if this message was not received by this client instance </returns>
-		IMessageId MessageId {get;}
+		IMessageId MessageId {get; set; }
 
 		/// <summary>
 		/// Get the publish time of this message. The publish time is the timestamp that a client publish the message.
@@ -168,7 +168,7 @@ namespace SharpPulsar.Api
 		/// decrypt consumed message with encrypted-payload.
 		/// </summary>
 		/// <returns> the optiona encryption context </returns>
-		Option<EncryptionContext> EncryptionCtx {get;}
+		EncryptionContext EncryptionCtx {get;}
 
 		/// <summary>
 		/// Get message redelivery count, redelivery count maintain in pulsar broker. When client acknowledge message

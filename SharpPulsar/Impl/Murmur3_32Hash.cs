@@ -1,5 +1,4 @@
-﻿using Org.Apache.Pulsar.Common.Util;
-
+﻿
 using System.Text;
 
 /// <summary>
@@ -28,30 +27,24 @@ using System.Text;
 namespace SharpPulsar.Impl
 {
 
-	public class Murmur3_32Hash : Hash
+	public class Murmur332Hash : IHash
 	{
-		private static readonly Murmur3_32Hash instance = new Murmur3_32Hash();
+		private static readonly Murmur332Hash _instance = new Murmur332Hash();
 
-		private Murmur3_32Hash()
+		private Murmur332Hash()
 		{
 		}
 
-		public static Hash Instance
+		public static IHash Instance => _instance;
+
+        public int MakeHash(string s)
 		{
-			get
-			{
-				return instance;
-			}
+			return Common.Util.Murmur332Hash.Instance.MakeHash(s.GetBytes(Encoding.UTF8)) & int.MaxValue;
 		}
 
-		public override int MakeHash(string S)
+		public int MakeHash(sbyte[] b)
 		{
-			return Murmur3_32Hash.Instance.makeHash(S.GetBytes(Encoding.UTF8)) & int.MaxValue;
-		}
-
-		public override int MakeHash(sbyte[] B)
-		{
-			return Murmur3_32Hash.Instance.makeHash(B) & int.MaxValue;
+			return Common.Util.Murmur332Hash.Instance.MakeHash(b) & int.MaxValue;
 		}
 	}
 
