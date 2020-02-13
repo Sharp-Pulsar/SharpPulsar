@@ -192,7 +192,7 @@ namespace SharpPulsar.Impl
 			{
 				return callback;
 			}
-			long requestId = ClientConflict.newRequestId();
+			long requestId = Client.newRequestId();
 			ByteBuf cmd = Commands.newEndTxn(requestId, txnId.LeastSigBits, txnId.MostSigBits, TxnAction.COMMIT);
 			var op = OpForVoidCallBack.Create(cmd, callback);
 			_pendingRequests.Put(requestId, op);
@@ -214,7 +214,7 @@ namespace SharpPulsar.Impl
 			{
 				return callback;
 			}
-			long requestId = ClientConflict.newRequestId();
+			long requestId = Client.newRequestId();
 			ByteBuf cmd = Commands.newEndTxn(requestId, txnId.LeastSigBits, txnId.MostSigBits, TxnAction.ABORT);
 			var op = OpForVoidCallBack.Create(cmd, callback);
 			_pendingRequests.Put(requestId, op);
@@ -398,11 +398,9 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
-		public override void Run(Timeout timeout)
+		public  void Run(ITimeout timeout)
 		{
-			if (timeout.Cancelled)
+			if (timeout.Canceled)
 			{
 				return;
 			}
@@ -412,13 +410,11 @@ namespace SharpPulsar.Impl
 				return;
 			}
 			ClientCnx.RequestTime peeked = _timeoutQueue.peek();
-			while (peeked != null && peeked.CreationTimeMs + ClientConflict.Configuration.OperationTimeoutMs - DateTimeHelper.CurrentUnixTimeMillis() <= 0)
+			while (peeked != null && peeked.CreationTimeMs + Client.Configuration.OperationTimeoutMs - DateTimeHelper.CurrentUnixTimeMillis() <= 0)
 			{
 				ClientCnx.RequestTime lastPolled = _timeoutQueue.poll();
 				if (lastPolled != null)
 				{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: OpBase<?> op = pendingRequests.remove(lastPolled.requestId);
 					OpBase<object> op = _pendingRequests.Remove(lastPolled.RequestId);
 					if (!op.Callback.Done)
 					{
@@ -439,21 +435,21 @@ namespace SharpPulsar.Impl
 
 			if (peeked == null)
 			{
-				timeToWaitMs = ClientConflict.Configuration.OperationTimeoutMs;
+				timeToWaitMs = Client.Configuration.OperationTimeoutMs;
 			}
 			else
 			{
-				var diff = (peeked.CreationTimeMs + ClientConflict.Configuration.OperationTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
+				var diff = (peeked.CreationTimeMs + Client.Configuration.OperationTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
 				if (diff <= 0)
 				{
-					timeToWaitMs = ClientConflict.Configuration.OperationTimeoutMs;
+					timeToWaitMs = Client.Configuration.OperationTimeoutMs;
 				}
 				else
 				{
 					timeToWaitMs = diff;
 				}
 			}
-			_requestTimeout = ClientConflict.timer().newTimeout(this, timeToWaitMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
+			_requestTimeout = Client.Timer.NewTimeout(this, TimeSpan.FromMilliseconds(timeToWaitMs));
 		}
 
 		private ClientCnx Cnx()

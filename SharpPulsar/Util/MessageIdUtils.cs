@@ -23,26 +23,26 @@ namespace SharpPulsar.Util
 
 	public class MessageIdUtils
 	{
-		public static long GetOffset(IMessageId MessageId)
+		public static long GetOffset(IMessageId messageId)
 		{
-			MessageIdImpl MsgId = (MessageIdImpl) MessageId;
-			long LedgerId = MsgId.LedgerId;
-			long EntryId = MsgId.EntryId;
+			var msgId = (MessageIdImpl) messageId;
+			var ledgerId = msgId.LedgerId;
+			var entryId = msgId.EntryId;
 
 			// Combine ledger id and entry id to form offset
 			// Use less than 32 bits to represent entry id since it will get
 			// rolled over way before overflowing the max int range
-			long Offset = (LedgerId << 28) | EntryId;
-			return Offset;
+			var offset = (ledgerId << 28) | entryId;
+			return offset;
 		}
 
-		public static IMessageId GetMessageId(long Offset)
+		public static IMessageId GetMessageId(long offset)
 		{
 			// Demultiplex ledgerId and entryId from offset
-			long LedgerId = (long)((ulong)Offset >> 28);
-			long EntryId = Offset & 0x0F_FF_FF_FFL;
+			var ledgerId = (long)((ulong)offset >> 28);
+			var entryId = offset & 0x0F_FF_FF_FFL;
 
-			return new MessageIdImpl(LedgerId, EntryId, -1);
+			return new MessageIdImpl(ledgerId, entryId, -1);
 		}
 	}
 

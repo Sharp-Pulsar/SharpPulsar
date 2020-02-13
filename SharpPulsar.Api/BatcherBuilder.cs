@@ -55,10 +55,4 @@ namespace SharpPulsar.Api
 
 	}
 
-	public static class BatcherBuilderFields
-	{
-		public static readonly BatcherBuilder Default = DefaultImplementation.newDefaultBatcherBuilder();
-		public static readonly BatcherBuilder KeyBased = DefaultImplementation.newKeyBasedBatcherBuilder();
-	}
-
 }
