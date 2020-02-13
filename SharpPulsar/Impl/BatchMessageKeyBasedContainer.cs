@@ -4,10 +4,10 @@ using System.Linq;
 using DotNetty.Buffers;
 using DotNetty.Common.Utilities;
 using Google.Protobuf;
-using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exception;
+using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl
 	public class BatchMessageKeyBasedContainer<T> : AbstractBatchMessageContainer<T>
 	{
 
-		private IDictionary<string, KeyedBatch<T>> batches = new Dictionary<string, KeyedBatch<T>>();
+		private IDictionary<string, KeyedBatch<T>> _batches = new Dictionary<string, KeyedBatch<T>>();
 
 		public override bool Add(MessageImpl<T> msg, SendCallback callback)
 		{
@@ -56,17 +56,17 @@ namespace SharpPulsar.Impl
 			NumMessagesInBatch++;
 			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
 			var key = GetKey(msg);
-			var part = batches[key];
+			var part = _batches[key];
 			if (part == null)
 			{
 				part = new KeyedBatch<T>();
 				part.AddMsg(msg, callback);
-				part.CompressionType = CompressionType;
+				part.CompressionType = CompressionType.GetCompressionTypeValue<CompressionType>();
 				part.Compressor = Compressor;
 				part.MaxBatchSize = MaxBatchSize;
 				part.TopicName = TopicName;
 				part.ProducerName = ProducerName;
-				if (!batches.ContainsKey(key)) batches.Add(key, part);
+				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
 			}
 			else
 			{
@@ -79,23 +79,23 @@ namespace SharpPulsar.Impl
 		{
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
-			batches = new Dictionary<string, KeyedBatch<T>>();
+			_batches = new Dictionary<string, KeyedBatch<T>>();
 		}
 
-		public override bool Empty => batches.Count == 0;
+		public override bool Empty => _batches.Count == 0;
 
         public override void Discard(System.Exception ex)
 		{
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				batches.ToList().ForEach(x => x.Value.FirstCallback.SendComplete(ex));
+				_batches.ToList().ForEach(x => x.Value.FirstCallback.SendComplete(ex));
 			}
 			catch (System.Exception T)
 			{
 				Log.LogWarning("[{}] [{}] Got exception while completing the callback", TopicName, ProducerName, T);
 			}
-            batches.ToList().ForEach((x => x.Value.BatchedMessageMetadataAndPayload.SafeRelease()));
+            _batches.ToList().ForEach((x => x.Value.BatchedMessageMetadataAndPayload.SafeRelease()));
 			Clear();
 		}
 
@@ -129,8 +129,8 @@ namespace SharpPulsar.Impl
 		public override IList<OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			var result = new List<OpSendMsg<T>>();
-			var list = new List<KeyedBatch<T>>(batches.Values);
-			list.sort(((o1, o2) => ComparisonChain.start().compare(o1.sequenceId, o2.sequenceId).result()));
+			var list = new List<KeyedBatch<T>>(_batches.Values);
+			list.Sort();
 			foreach (var keyedBatch in list)
 			{
 				var op = CreateOpSendMsg(keyedBatch);
@@ -145,7 +145,7 @@ namespace SharpPulsar.Impl
 		public override bool HasSameSchema(MessageImpl<T> msg)
 		{
 			var key = GetKey(msg);
-			var part = batches[key];
+			var part = _batches[key];
 			if (part == null || part.Messages.Count == 0)
 			{
 				return true;
