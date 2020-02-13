@@ -39,19 +39,19 @@ namespace SharpPulsar.Impl
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainerImpl : AbstractBatchMessageContainer
+	public class BatchMessageContainerImpl<T> : AbstractBatchMessageContainer<T>
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
         private readonly MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private IByteBuffer _batchedMessageMetadataAndPayload;
-		private IList<MessageImpl<object>> _messages = new List<MessageImpl<object>>();
+		private IList<MessageImpl<T>> _messages = new List<MessageImpl<T>>();
 		protected internal SendCallback PreviousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		protected internal SendCallback FirstCallback;
 
-        public override bool HasSameSchema(MessageImpl<object> msg)
+        public override bool HasSameSchema(MessageImpl<T> msg)
         {
 			if (NumMessagesInBatch == 0)
             {
@@ -64,15 +64,15 @@ namespace SharpPulsar.Impl
             return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-        public override bool Add(MessageImpl<object> msg, SendCallback callback)
+        public override bool Add(MessageImpl<T> msg, SendCallback callback)
 		{
 
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatchConflict);
+				Log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far {}", TopicName, ProducerName, NumMessagesInBatch);
 			}
 
-			if (++NumMessagesInBatchConflict == 1)
+			if (++NumMessagesInBatch == 1)
 			{
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
@@ -152,11 +152,11 @@ namespace SharpPulsar.Impl
 
 		public override void Clear()
 		{
-			_messages = new List<MessageImpl<object>>();
+			_messages = new List<MessageImpl<T>>();
 			FirstCallback = null;
 			PreviousCallback = null;
 			_messageMetadata.Clear();
-			NumMessagesInBatchConflict = 0;
+			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
 			_lowestSequenceId = -1L;
 			_highestSequenceId = -1L;
@@ -181,7 +181,7 @@ namespace SharpPulsar.Impl
 
 		public override bool MultiBatches => false;
 
-        public OpSendMsg<object> CreateOpSendMsg()
+        public new OpSendMsg<T> CreateOpSendMsg()
 		{
 			var encryptedPayload = Producer.EncryptMessage(_messageMetadata, CompressedBatchMetadataAndPayload);
 			if (encryptedPayload.ReadableBytes > ClientCnx.MaxMessageSize)
@@ -191,17 +191,17 @@ namespace SharpPulsar.Impl
 			}
 			_messageMetadata.SetNumMessagesInBatch(NumMessagesInBatch);
 			_messageMetadata.SetHighestSequenceId(_highestSequenceId);
-            var cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatchConflict, _messageMetadata.Build(), encryptedPayload);
+            var cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata.Build(), encryptedPayload);
 
-			var op = OpSendMsg<object>.Create(_messages, cmd, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, FirstCallback);
+			var op = OpSendMsg<T>.Create(_messages, cmd, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, FirstCallback);
 
-			op.NumMessagesInBatch = NumMessagesInBatchConflict;
+			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSizeBytes;
 			_lowestSequenceId = -1L;
 			return op;
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl>();
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl<T>>();
 	}
 
 }

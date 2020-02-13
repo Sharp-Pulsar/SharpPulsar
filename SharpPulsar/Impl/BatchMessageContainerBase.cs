@@ -1,6 +1,5 @@
 ﻿using SharpPulsar.Api;
 using System.Collections.Generic;
-using static SharpPulsar.Impl.ProducerImpl<object>;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
