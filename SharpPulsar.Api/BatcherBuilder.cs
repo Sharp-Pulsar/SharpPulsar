@@ -18,9 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Api
 {
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-
-	/// <summary>
+    /// <summary>
 	/// Batcher builder.
 	/// </summary>
 	public interface BatcherBuilder
@@ -53,7 +51,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Build a new batch message container. </summary>
 		/// <returns> new batch message container </returns>
-		BatchMessageContainer Build();
+		BatchMessageContainer Build<T>();
 
 	}
 
