@@ -19,8 +19,8 @@ using SharpPulsar.Protocol.Schema;
 using Microsoft.Extensions.Logging;
 using DotNetty.Handlers.Tls;
 using System.IO;
-using DotNetty.Transport.Bootstrapping;
 using Google.Protobuf;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -80,7 +80,7 @@ namespace SharpPulsar.Impl
 		private readonly long _operationTimeoutMs;
 
 		protected internal string ProxyToTargetBrokerAddress;
-		protected internal string _remoteHostName;
+		private string _remoteHostName;
 		private readonly bool _isTlsHostnameVerificationEnable;
 
 		private CancellationTokenSource _timeoutTask;
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl
 			internal long CreationTimeMs;
 			internal long RequestId;
 
-			public RequestTime(long creationTime, long requestId) : base()
+			public RequestTime(long creationTime, long requestId)
 			{
 				CreationTimeMs = creationTime;
 				RequestId = requestId;
@@ -270,8 +270,7 @@ namespace SharpPulsar.Impl
 			{
 				Log.LogError("{} Error mutual verify: {}", Ctx().Channel, e);
 				_connectionTask.SetException(e);
-				return;
-			}
+            }
 		}
 
 		public override void HandleSendReceipt(CommandSendReceipt sendReceipt)
@@ -458,7 +457,7 @@ namespace SharpPulsar.Impl
 				else
 				{
 					// return LookupDataResult when Result.response = success/redirect
-					requestTask.SetResult(new LookupDataResult(lookupResult));
+					requestTask.SetResult(new LookupDataResult((int)lookupResult.Partitions));
 				}
 			}
 			else
@@ -971,10 +970,9 @@ namespace SharpPulsar.Impl
 				var sslSession = ((TlsHandler) sslHandler);
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", hostname, sslSession.CipherSuite, SslSession.Protocol);
+					Log.LogDebug("Verifying HostName for {}, Cipher {}, Protocols {}", hostname);
 				}
-				var y = new DefaultNameResolver();
-                return new  HOSTNAME_VERIFIER.verify(hostname, SslSession);
+                return new  DefaultHostNameVerifier().Verify(hostname, sslSession);
 			}
 			return false;
 		}
