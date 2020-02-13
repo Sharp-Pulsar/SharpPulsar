@@ -54,16 +54,16 @@ namespace SharpPulsar.Impl
 			Partitioned,
 			NonPartitioned
 		}
-		protected internal readonly string _subscription;
-		protected internal readonly ConsumerConfigurationData<T> Conf;
-		protected internal readonly string _consumerName;
+		private readonly string _subscription;
+		public readonly ConsumerConfigurationData<T> Conf;
+		private readonly string _consumerName;
         public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
 		internal readonly GrowableArrayBlockingQueue<IMessage<T>> IncomingMessages;
 		protected internal readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
-		protected internal int _maxReceiverQueueSize;
+        private int _maxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;

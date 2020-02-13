@@ -2,13 +2,9 @@
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
-using DotNetty.Transport.Libuv;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Common.Allocator;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Netty;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,41 +33,41 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Impl
 {
 
-	public class ConnectionPool : IDisposable
+	public sealed class ConnectionPool : IDisposable
 	{
-		protected internal readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Task<ClientCnx>>> Pool;
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Task<ClientCnx>>> _pool;
 
-		private readonly Bootstrap bootstrap;
-		private readonly IEventLoopGroup eventLoopGroup;
-		private readonly int maxConnectionsPerHosts;
+		private readonly Bootstrap _bootstrap;
+		private readonly IEventLoopGroup _eventLoopGroup;
+		private readonly int _maxConnectionsPerHosts;
 		private DefaultNameResolver _dnsResolver;
 		private ClientConfigurationData _conf;
 
-		public ConnectionPool(ClientConfigurationData Conf, IEventLoopGroup eventLoopGroup) : this(Conf, eventLoopGroup, () => new ClientCnx(Conf, eventLoopGroup))
+		public ConnectionPool(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () => new ClientCnx(conf, eventLoopGroup))
 		{
 		}
 
-		public ConnectionPool(ClientConfigurationData Conf, IEventLoopGroup eventLoopGroup, Func<ClientCnx> ClientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup, Func<ClientCnx> clientCnxSupplier)
 		{
-			this.eventLoopGroup = eventLoopGroup;
-			this.maxConnectionsPerHosts = Conf.ConnectionsPerBroker;
-			_conf = Conf;
-			Pool = new ConcurrentDictionary<string, ConcurrentDictionary<int, Task<ClientCnx>>>();
-			bootstrap = new Bootstrap();
-			bootstrap.Group(eventLoopGroup);
-			bootstrap.Channel<TcpSocketChannel>();
+			this._eventLoopGroup = eventLoopGroup;
+			this._maxConnectionsPerHosts = conf.ConnectionsPerBroker;
+			_conf = conf;
+			_pool = new ConcurrentDictionary<string, ConcurrentDictionary<int, Task<ClientCnx>>>();
+			_bootstrap = new Bootstrap();
+			_bootstrap.Group(eventLoopGroup);
+			_bootstrap.Channel<TcpSocketChannel>();
 
-			bootstrap.Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(Conf.ConnectionTimeoutMs));
-			bootstrap.Option(ChannelOption.TcpNodelay, Conf.UseTcpNoDelay);
-			bootstrap.Option(ChannelOption.Allocator, PooledByteBufferAllocator.Default);
+			_bootstrap.Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(conf.ConnectionTimeoutMs));
+			_bootstrap.Option(ChannelOption.TcpNodelay, conf.UseTcpNoDelay);
+			_bootstrap.Option(ChannelOption.Allocator, PooledByteBufferAllocator.Default);
 
 			try
 			{
-				bootstrap.Handler(new PulsarChannelInitializer(Conf, ClientCnxSupplier));
+				_bootstrap.Handler(new PulsarChannelInitializer(conf, clientCnxSupplier));
 			}
 			catch (System.Exception e)
 			{
-				log.LogError("Failed to create channel initializer");
+				Log.LogError("Failed to create channel initializer");
 				throw new PulsarClientException(e.Message);
 			}
 
@@ -79,16 +75,16 @@ namespace SharpPulsar.Impl
 			//this.DnsResolver = (new DnsNameResolverBuilder(eEventLoopGroup. .next())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(EventLoopGroup)).build();
 		}
 
-		private static readonly Random random = new Random();
+		private static readonly Random Random = new Random();
 
-		public virtual ValueTask<ClientCnx> GetConnection(in IPEndPoint address)
+		public ValueTask<ClientCnx> GetConnection(in IPEndPoint address)
 		{
 			return GetConnection(address, address);
 		}
 
-		public virtual void CloseAllConnections()
+		public void CloseAllConnections()
 		{
-			Pool.Values.ToList().ForEach(map =>
+			_pool.Values.ToList().ForEach(map =>
 			{
 				map.Values.ToList().ForEach(task =>
 			{
@@ -130,26 +126,26 @@ namespace SharpPulsar.Impl
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		public virtual ValueTask<ClientCnx> GetConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress)
+		public ValueTask<ClientCnx> GetConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress)
 		{
 			var host = Dns.GetHostEntry(logicalAddress.Address.ToString()).HostName;
-			if (maxConnectionsPerHosts == 0)
+			if (_maxConnectionsPerHosts == 0)
 			{
 				
 				// Disable pooling
 				return CreateConnection(logicalAddress, physicalAddress, -1);
 			}
 
-			var randomKey = SignSafeMod(random.Next(), maxConnectionsPerHosts);
-			var client = Pool.GetOrAdd(host, x => new ConcurrentDictionary<int, Task<ClientCnx>>()).GetOrAdd(randomKey, k => CreateConnection(logicalAddress, physicalAddress, randomKey).AsTask());
+			var randomKey = SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
+			var client = _pool.GetOrAdd(host, x => new ConcurrentDictionary<int, Task<ClientCnx>>()).GetOrAdd(randomKey, k => CreateConnection(logicalAddress, physicalAddress, randomKey).AsTask());
 			return new ValueTask<ClientCnx>(client);
 		}
 
-		private ValueTask<ClientCnx> CreateConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress, int ConnectionKey)
+		private ValueTask<ClientCnx> CreateConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress, int connectionKey)
 		{
-			if(log.IsEnabled(LogLevel.Debug))
+			if(Log.IsEnabled(LogLevel.Debug))
 			{
-				log.LogDebug("Connection for {} not found in cache", logicalAddress);
+				Log.LogDebug("Connection for {} not found in cache", logicalAddress);
 			}
 			var cxnTask = new TaskCompletionSource<ClientCnx>();
 			// Trigger async connect to broker
@@ -157,7 +153,7 @@ namespace SharpPulsar.Impl
 			{
 				if(connectionTask.Status != TaskStatus.Faulted)
 				{
-					log.LogInformation("[{}] Connected to server", connectionTask.Result);
+					Log.LogInformation("[{}] Connected to server", connectionTask.Result);
 					var channel = connectionTask.Result;
 					//How do I implement this in C#?
 					/*
@@ -174,9 +170,9 @@ namespace SharpPulsar.Impl
 					var cnx = (ClientCnx)channel.Pipeline.Get("handler");
 					if (!channel.Active || cnx == null)
 					{
-						if(log.IsEnabled(LogLevel.Debug))
+						if(Log.IsEnabled(LogLevel.Debug))
 						{
-							log.LogDebug("[{}] Connection was already closed by the time we got notified", channel);
+							Log.LogDebug("[{}] Connection was already closed by the time we got notified", channel);
 						}						
 						cxnTask.SetException(new ChannelException("Connection already closed"));
 						return;
@@ -190,17 +186,17 @@ namespace SharpPulsar.Impl
 					{
 						if (cnnx.Status != TaskStatus.Faulted)
 						{
-							if (log.IsEnabled(LogLevel.Debug))
+							if (Log.IsEnabled(LogLevel.Debug))
 							{
-								log.LogDebug("[{}] Connection handshake completed", cnnx.Result.Channel());
+								Log.LogDebug("[{}] Connection handshake completed", cnnx.Result.Channel());
 							}
 							cxnTask.SetResult(cnnx.Result);
 						}
 						else
 						{
-							log.LogWarning("[{}] Connection handshake failed: {}", cnnx.Result.Channel(), cnnx.Exception.Message);
+							Log.LogWarning("[{}] Connection handshake failed: {}", cnnx.Result.Channel(), cnnx.Exception.Message);
 							cxnTask.SetException(cnnx.Exception);
-							CleanupConnection(cnx.RemoteHostName, ConnectionKey);
+							CleanupConnection(cnx.RemoteHostName, connectionKey);
 							cnnx.Result.Ctx().CloseAsync();
 						}
 
@@ -208,8 +204,8 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					log.LogWarning("Failed to open connection to {} : {}", physicalAddress, connectionTask.Exception.Message);
-					CleanupConnection(connectionTask.Result.RemoteAddress.ToString(), ConnectionKey);
+					Log.LogWarning("Failed to open connection to {} : {}", physicalAddress, connectionTask.Exception.Message);
+					CleanupConnection(connectionTask.Result.RemoteAddress.ToString(), connectionKey);
 					cxnTask.SetException(new PulsarClientException(connectionTask.Exception.Message));
 				}
 			});
@@ -272,7 +268,7 @@ namespace SharpPulsar.Impl
 			return new ValueTask<IChannel>(channelTask.Task.Result);
 		}
 
-		public virtual ValueTask<IList<IPAddress>> ResolveName(string hostname)
+		public  ValueTask<IList<IPAddress>> ResolveName(string hostname)
 		{
 			return new ValueTask<IList<IPAddress>>(Task.FromResult<IList<IPAddress>>(Dns.GetHostEntry(hostname).AddressList.ToList()));
 			
@@ -285,7 +281,7 @@ namespace SharpPulsar.Impl
 		{
 			var channelTask = new TaskCompletionSource<IChannel>();
 
-			bootstrap.ConnectAsync(server, port).ContinueWith(task =>
+			_bootstrap.ConnectAsync(server, port).ContinueWith(task =>
 			{
 				if (task.Status == TaskStatus.RanToCompletion)
 				{
@@ -304,11 +300,11 @@ namespace SharpPulsar.Impl
 		{
 			try
 			{
-				eventLoopGroup.ShutdownGracefullyAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5)).Wait();
+				_eventLoopGroup.ShutdownGracefullyAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5)).Wait();
 			}
 			catch (System.Exception e)
 			{
-				log.LogWarning("EventLoopGroup shutdown was interrupted", e);
+				Log.LogWarning("EventLoopGroup shutdown was interrupted", e);
 			}
 
 		}
@@ -316,7 +312,7 @@ namespace SharpPulsar.Impl
 		private Task<ClientCnx> CleanupConnection(string server, int connectionKey)
 		{
 			Task<ClientCnx> connectionTask = null;
-			var map = Pool[server];
+			var map = _pool[server];
 			if (map != null)
 			{
 				map.Remove(connectionKey, out connectionTask);
@@ -324,14 +320,14 @@ namespace SharpPulsar.Impl
 			return connectionTask;
 		}
 
-		public static int SignSafeMod(long Dividend, int Divisor)
+		public static int SignSafeMod(long dividend, int divisor)
 		{
-			var Mod = (int)(Dividend % (long) Divisor);
-			if (Mod < 0)
+			var mod = (int)(dividend % (long) divisor);
+			if (mod < 0)
 			{
-				Mod += Divisor;
+				mod += divisor;
 			}
-			return Mod;
+			return mod;
 		}
 
 		public void Dispose()
@@ -339,7 +335,7 @@ namespace SharpPulsar.Impl
 			throw new NotImplementedException();
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(ConnectionPool));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConnectionPool));
 	}
 
 }

@@ -24,14 +24,14 @@ namespace SharpPulsar.Impl
 	using BatcherBuilder = Api.BatcherBuilder;
 
 	[Serializable]
-	public class DefaultBatcherBuilder : BatcherBuilder
+	public class DefaultBatcherBuilder<T> : BatcherBuilder
 	{
 
 		private const long SerialVersionUID = 1L;
 
 		public BatchMessageContainer Build()
 		{
-			return new BatchMessageContainerImpl();
+			return new BatchMessageContainerImpl<T>();
 		}
 	}
 

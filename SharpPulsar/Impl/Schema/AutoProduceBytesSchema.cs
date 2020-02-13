@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Shared;
+
 namespace SharpPulsar.Impl.Schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
@@ -31,30 +34,30 @@ namespace SharpPulsar.Impl.Schema
 	public class AutoProduceBytesSchema<T> : ISchema<sbyte[]>
 	{
 
-		private bool requireSchemaValidation = true;
-		private ISchema<T> schema;
+		private bool _requireSchemaValidation = true;
+		private ISchema<T> _schema;
 
 		public AutoProduceBytesSchema()
 		{
 		}
 
-		public AutoProduceBytesSchema(ISchema<T> Schema)
+		public AutoProduceBytesSchema(ISchema<T> schema)
 		{
-			this.schema = Schema;
-			SchemaInfo SchemaInfo = Schema.SchemaInfo;
-			this.requireSchemaValidation = SchemaInfo != null && SchemaInfo.Type != SchemaType.BYTES && SchemaInfo.Type != SchemaType.NONE;
+			this._schema = schema;
+			SchemaInfo schemaInfo = schema.SchemaInfo;
+			this._requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
 		}
 
 		public virtual ISchema<T> Schema
 		{
             get
             {
-                return this.schema;
+                return this._schema;
             }
 			set
 			{
-				this.schema = value;
-				this.requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
+				this._schema = value;
+				this._requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
 			}
 		}
 
@@ -65,40 +68,40 @@ namespace SharpPulsar.Impl.Schema
 
 		public virtual bool SchemaInitialized()
 		{
-			return schema != null;
+			return _schema != null;
 		}
 
-		public override void Validate(sbyte[] Message)
+		public override void Validate(sbyte[] message)
 		{
 			EnsureSchemaInitialized();
 
-			schema.Validate(Message);
+			_schema.Validate(message);
 		}
 
-		public override sbyte[] Encode(sbyte[] Message)
+		public override sbyte[] Encode(sbyte[] message)
 		{
 			EnsureSchemaInitialized();
 
-			if (requireSchemaValidation)
+			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				schema.Validate(Message);
+				_schema.Validate(message);
 			}
 
-			return Message;
+			return message;
 		}
 
-		public override sbyte[] Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		public override sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			EnsureSchemaInitialized();
 
-			if (requireSchemaValidation)
+			if (_requireSchemaValidation)
 			{
 				// verify the message can be detected by the underlying schema
-				schema.Decode(Bytes, SchemaVersion);
+				_schema.Decode(bytes, schemaVersion);
 			}
 
-			return Bytes;
+			return bytes;
 		}
 
 		public virtual SchemaInfo SchemaInfo
@@ -107,7 +110,7 @@ namespace SharpPulsar.Impl.Schema
 			{
 				EnsureSchemaInitialized();
     
-				return schema.SchemaInfo;
+				return _schema.SchemaInfo;
 			}
 		}
 	}

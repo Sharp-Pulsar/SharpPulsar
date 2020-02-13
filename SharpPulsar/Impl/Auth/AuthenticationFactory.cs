@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Auth
 		/// <returns> the Authentication object initialized with the token credentials </returns>
 		public static IAuthentication Token(Func<string> tokenSupplier)
 		{
-			return DefaultImplementation.newAuthenticationToken(tokenSupplier);
+			return DefaultImplementation.NewAuthenticationToken(tokenSupplier);
 		}
 
 		// CHECKSTYLE.OFF: MethodName
@@ -64,9 +64,9 @@ namespace SharpPulsar.Impl.Auth
 		/// <param name="keyFilePath">
 		///            the path to the TLS client private key </param>
 		/// <returns> the Authentication object initialized with the TLS credentials </returns>
-		public static IAuthentication TLS(string certFilePath, string keyFilePath)
+		public static IAuthentication Tls(string certFilePath, string keyFilePath)
 		{
-			return DefaultImplementation.newAuthenticationTLS(certFilePath, keyFilePath);
+			return DefaultImplementation.NewAuthenticationTls(certFilePath, keyFilePath);
 		}
 
 		// CHECKSTYLE.ON: MethodName
@@ -85,7 +85,7 @@ namespace SharpPulsar.Impl.Auth
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(authPluginClassName, authParamsString);
+				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParamsString);
 			}
 			catch (System.Exception t)
 			{
@@ -104,7 +104,7 @@ namespace SharpPulsar.Impl.Auth
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(authPluginClassName, authParams);
+				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParams);
 			}
 			catch (System.Exception t)
 			{

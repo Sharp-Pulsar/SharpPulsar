@@ -109,11 +109,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData conf, IEventLoopGroup eventLoop, MultithreadEventLoopGroup eventLoopGroup) : this(conf, Commands.CurrentProtocolVersion, eventLoop, eventLoopGroup)
+		public ClientCnx(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, Commands.CurrentProtocolVersion, eventLoopGroup)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, int protocolVersion, IEventLoopGroup eventLoop, MultithreadEventLoopGroup eventLoopGroup) : base(conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup) : base(conf.KeepAliveIntervalSeconds, BAMCIS.Util.Concurrent.TimeUnit.SECONDS)
 		{
 			if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
 				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
