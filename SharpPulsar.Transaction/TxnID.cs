@@ -46,7 +46,13 @@ namespace SharpPulsar.Transaction
 		 */
 		public readonly long LeastSigBits;
 
-		public override string ToString()
+        public TxnID(long mostSigBits, long leastSigBits)
+        {
+            LeastSigBits = leastSigBits;
+            MostSigBits = mostSigBits;
+        }
+
+        public override string ToString()
 		{
 			return "(" + MostSigBits + "," + LeastSigBits + ")";
 		}

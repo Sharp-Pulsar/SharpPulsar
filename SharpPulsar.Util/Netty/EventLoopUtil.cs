@@ -37,17 +37,8 @@ namespace SharpPulsar.Util.Netty
 	{
 
 		/// <returns> an EventLoopGroup suitable for the current platform </returns>
-		public static IEventLoopGroup NewEventLoopGroup(int nThreads)
+		public static MultithreadEventLoopGroup NewEventLoopGroup(int nThreads)
 		{
-			/*if (Epoll.Available)
-			{
-				return new EventLoopGroup(nThreads);
-			}
-			else
-			{
-				// Fallback to NIO
-				return new MultithreadEventLoopGroup(nThreads);
-			}*/
 			return new MultithreadEventLoopGroup(nThreads);
 		}
 

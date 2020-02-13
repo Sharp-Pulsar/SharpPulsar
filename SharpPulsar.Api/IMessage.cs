@@ -81,7 +81,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the message id null if this message was not received by this client instance </returns>
-		IMessageId MessageId {get; set; }
+		IMessageId MessageId {get; }
 
 		/// <summary>
 		/// Get the publish time of this message. The publish time is the timestamp that a client publish the message.

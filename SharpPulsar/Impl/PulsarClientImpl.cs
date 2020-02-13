@@ -74,7 +74,7 @@ namespace SharpPulsar.Impl
 		public PulsarClientImpl(ClientConfigurationData conf) : this(conf, GetEventLoopGroup(conf))
 		{
 		}
-		public PulsarClientImpl(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup))
+		public PulsarClientImpl(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup))
 		{
 		}
 		public PulsarClientImpl(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup, ConnectionPool cnxPool)
@@ -695,7 +695,7 @@ namespace SharpPulsar.Impl
 				return new ValueTask<IList<string>>(new List<string>() { topic });
 			}
 		}
-		private static IEventLoopGroup GetEventLoopGroup(ClientConfigurationData conf)
+		private static MultithreadEventLoopGroup GetEventLoopGroup(ClientConfigurationData conf)
 		{
 			return EventLoopUtil.NewEventLoopGroup(conf.NumIoThreads);
 		}

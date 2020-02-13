@@ -1,7 +1,14 @@
-﻿using Org.Apache.Pulsar.Common.Schema;
-
+﻿
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using DotNetty.Buffers;
+using Google.Protobuf;
+using SharpPulsar.Exception;
+using SharpPulsar.Extension;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Shared;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,54 +31,54 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl
 {
     using System.Threading.Tasks;
-    using SharpPulsar.Api;
-    using SharpPulsar.Impl.Transaction;
-    using SharpPulsar.Protocol.Builder;
+    using Api;
+    using Transaction;
+    using Protocol.Builder;
 
     [Serializable]
 	public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>
 	{
 
-		private const long SerialVersionUID = 0L;
+		private const long SerialVersionUid = 0L;
 
-		private static readonly ByteBuffer EMPTY_CONTENT = ByteBuffer.Allocate(0);
+		private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
 		[NonSerialized]
 		private readonly ProducerBase<T> _producer;
 		[NonSerialized]
-		public MessageMetadataBuilder Builder  = new MessageMetadataBuilder();
-		private readonly ISchema<T> schema;
+		public MessageMetadata.Builder Builder  = MessageMetadata.NewBuilder();
+		private readonly ISchema<T> _schema;
 		[NonSerialized]
-		public  ByteBuffer Content;
-		private readonly TransactionImpl txn;
+		public  IByteBuffer Content;
+		private readonly TransactionImpl _txn;
 
 		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema) : this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl Txn)
+		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl txn)
 		{
 			_producer = producer;
-			this.schema = schema;
-			this.Content = EMPTY_CONTENT;
-			this.txn = Txn;
+			_schema = schema;
+			Content = EmptyContent;
+			_txn = txn;
 		}
 
 		private long BeforeSend()
 		{
-			if (txn == null)
+			if (_txn == null)
 			{
 				return -1L;
 			}
-			Builder.SetTxnidLeastBits(txn.TxnIdLeastBits);
-			MetadataBuilder.TxnidMostBits = txn.TxnIdMostBits;
-			var SequenceId = txn.NextSequenceId();
-			MetadataBuilder.SequenceId = SequenceId;
-			return SequenceId;
+			Builder.SetTxnidLeastBits(_txn.TxnIdLeastBits);
+			Builder.SetTxnidMostBits(_txn.TxnIdMostBits);
+			var sequenceId = _txn.NextSequenceId();
+			Builder.SetSequenceId(sequenceId);
+			return sequenceId;
 		}
 
-		public MessageId Send()
+		public IMessageId Send()
 		{
-			if (null != txn)
+			if (null != _txn)
 			{
 				// NOTE: it makes no sense to send a transactional message in a blocking way.
 				//       because #send only completes when a transaction is committed or aborted.
@@ -80,182 +87,191 @@ namespace SharpPulsar.Impl
 			return _producer.Send(Message);
 		}
 
-		public TaskCompletionSource<MessageId> SendAsync()
+		public ValueTask<IMessageId> SendAsync()
 		{
 			var sequenceId = BeforeSend();
-			TaskCompletionSource<MessageId> sendTask = _producer.InternalSendAsync(Message);
-			if (txn != null)
+			var sendTask = _producer.InternalSendAsync(Message);
+			if (_txn != null)
 			{
 				// it is okay that we register produced topic after sending the messages. because
 				// the transactional messages will not be visible for consumers until the transaction
 				// is committed.
-				txn.RegisterProducedTopic(_producer.Topic);
+				_txn.RegisterProducedTopic(_producer.Topic);
 				// register the sendFuture as part of the transaction
-				return txn.RegisterSendOp(sequenceId, sendTask);
+				var t = _txn.RegisterSendOp(sequenceId, sendTask);
+				return new ValueTask<IMessageId>(t.Task);
 			}
-			else
-			{
-				return sendTask;
-			}
+            return new ValueTask<IMessageId>(sendTask.Task);
 		}
 
-		public ITypedMessageBuilder<T> Key(string Key)
+		public ITypedMessageBuilder<T> Key(string key)
 		{
-			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if (_schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema KvSchema = (KeyValueSchema) schema;
-				checkArgument(!(KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				throw new PulsarClientException.NotSupportedException("KeyValue not supported");
+				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
+				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			MetadataBuilder.setPartitionKey(Key);
-			MetadataBuilder.PartitionKeyB64Encoded = false;
+			Builder.SetPartitionKey(key);
+			Builder.SetPartitionKeyB64Encoded(false);
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> KeyBytes(sbyte[] Key)
+		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
-			if (schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if (_schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema KvSchema = (KeyValueSchema) schema;
-				checkArgument(!(KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+                throw new PulsarClientException.NotSupportedException("KeyValue not supported");
+				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
+				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(Key));
-			MetadataBuilder.PartitionKeyB64Encoded = true;
+			Builder.SetPartitionKey(Convert.ToBase64String((byte[])(object)key));
+			Builder.SetPartitionKeyB64Encoded(true);
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> OrderingKey(sbyte[] OrderingKey)
+		public ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey)
 		{
-			MetadataBuilder.OrderingKey = ByteString.copyFrom(OrderingKey);
+			Builder.SetOrderingKey(ByteString.CopyFrom((byte[])(object)orderingKey));
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> Value(T Value)
+		public ITypedMessageBuilder<T> Value(T value)
 		{
 
-			checkArgument(Value != null, "Need Non-Null content value");
-			if (schema.SchemaInfo != null && schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if(value == null)
+                throw new NullReferenceException("Need Non-Null content value");
+			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
 			{
-				KeyValueSchema KvSchema = (KeyValueSchema) schema;
-				KeyValue Kv = (KeyValue) Value;
-				if (KvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
+                throw new PulsarClientException.NotSupportedException("KeyValue not supported");
+				/*KeyValueSchema kvSchema = (KeyValueSchema) _schema;
+				KeyValue kv = (KeyValue) value;
+				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
 					// set key as the message key
-					MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(KvSchema.KeySchema.encode(Kv.Key)));
+					MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(kvSchema.KeySchema.encode(kv.Key)));
 					MetadataBuilder.PartitionKeyB64Encoded = true;
 					// set value as the payload
-					this.Content = ByteBuffer.wrap(KvSchema.ValueSchema.encode(Kv.Value));
+					this.Content = ByteBuffer.wrap(kvSchema.ValueSchema.encode(kv.Value));
 					return this;
-				}
-			}
-			this.Content = ByteBuffer.wrap(schema.Encode(Value));
-			return this;
-		}
-
-		public override ITypedMessageBuilder<T> Property(string Name, string Value)
-		{
-			checkArgument(!string.ReferenceEquals(Name, null), "Need Non-Null name");
-			checkArgument(!string.ReferenceEquals(Value, null), "Need Non-Null value for name: " + Name);
-			MetadataBuilder.AddProperties(KeyValue.newBuilder().setKey(Name).setValue(Value).build());
-			return this;
-		}
-
-		public override ITypedMessageBuilder<T> Properties(IDictionary<string, string> Properties)
-		{
-			foreach (KeyValuePair<string, string> Entry in Properties.SetOfKeyValuePairs())
-			{
-				checkArgument(Entry.Key != null, "Need Non-Null key");
-				checkArgument(Entry.Value != null, "Need Non-Null value for key: " + Entry.Key);
-				MetadataBuilder.AddProperties(KeyValue.newBuilder().setKey(Entry.Key).setValue(Entry.Value).build());
+				}*/
 			}
 
+            var data = (byte[])(object)_schema.Encode(value);
+            Content = Unpooled.WrappedBuffer(data);
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> EventTime(long Timestamp)
+		public  ITypedMessageBuilder<T> Property(string name, string value)
 		{
-			checkArgument(Timestamp > 0, "Invalid timestamp : '%s'", Timestamp);
-			MetadataBuilder.EventTime = Timestamp;
+			if(ReferenceEquals(name, null))
+                throw new NullReferenceException("Need Non-Null name");
+			if(ReferenceEquals(value, null))
+                throw new NullReferenceException("Need Non-Null value for name: " + name);
+			Builder.AddProperties(KeyValue.NewBuilder().SetKey(name).SetValue(value).Build());
 			return this;
 		}
 
-		public override ITypedMessageBuilder<T> SequenceId(long SequenceId)
+		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			checkArgument(SequenceId >= 0);
-			MetadataBuilder.SequenceId = SequenceId;
-			return this;
-		}
-
-		public override ITypedMessageBuilder<T> ReplicationClusters(IList<string> Clusters)
-		{
-			Preconditions.checkNotNull(Clusters);
-			MetadataBuilder.ClearReplicateTo();
-			MetadataBuilder.AddAllReplicateTo(Clusters);
-			return this;
-		}
-
-		public override ITypedMessageBuilder<T> DisableReplication()
-		{
-			MetadataBuilder.ClearReplicateTo();
-			MetadataBuilder.AddReplicateTo("__local__");
-			return this;
-		}
-
-		public override ITypedMessageBuilder<T> DeliverAfter(long Delay, BAMCIS.Util.Concurrent.TimeUnit Unit)
-		{
-			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + Unit.toMillis(Delay));
-		}
-
-		public override ITypedMessageBuilder<T> DeliverAt(long Timestamp)
-		{
-			MetadataBuilder.DeliverAtTime = Timestamp;
-			return this;
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") @Override public SharpPulsar.api.TypedMessageBuilder<T> loadConf(java.util.Map<String, Object> config)
-		public override ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> Config)
-		{
-			Config.forEach((key, value) =>
+			foreach (var entry in properties.SetOfKeyValuePairs())
 			{
-			if (key.Equals(TypedMessageBuilderFields.ConfKey))
-			{
-				this.Key(checkType(value, typeof(string)));
+				if(entry.Key == null)
+					throw new NullReferenceException("Need Non-Null name");
+				if(entry.Value == null)
+					throw new NullReferenceException("Need Non-Null value for name: " + entry.Key); ;
+				Builder.AddProperties(KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build());
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfProperties))
+
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> EventTime(long timestamp)
+		{
+			if(timestamp <= 0)
+                throw new ArgumentException("Invalid timestamp : "+ timestamp);
+			Builder.SetEventTime(timestamp);
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> SequenceId(long sequenceId)
+		{
+			if(sequenceId < 0)
+				throw new ArgumentException();
+			Builder.SetSequenceId(sequenceId);
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
+		{
+			if(clusters == null)
+				throw new NullReferenceException();
+			Builder.ClearReplicateTo();
+			Builder.AddAllReplicateTo(clusters);
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> DisableReplication()
+		{
+			Builder.ClearReplicateTo();
+			Builder.AddReplicateTo("__local__");
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		{
+			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMillis(delay));
+		}
+
+		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
+		{
+			Builder.SetDeliverAtTime(timestamp);
+			return this;
+		}
+
+		public ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> config)
+		{
+			config.ToList().ForEach(d =>
 			{
-				this.Properties(checkType(value, typeof(System.Collections.IDictionary)));
+			if (d.Key.Equals(TypedMessageBuilderFields.ConfKey))
+			{
+				Key(d.Value.ToString());
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfEventTime))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfProperties))
 			{
-				this.EventTime(checkType(value, typeof(Long)));
+				Properties((IDictionary<string, string>)d.Value);
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfSequenceId))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfEventTime))
 			{
-				this.SequenceId(checkType(value, typeof(Long)));
+				EventTime((long)d.Value);
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfReplicationClusters))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfSequenceId))
 			{
-				this.ReplicationClusters(checkType(value, typeof(System.Collections.IList)));
+				SequenceId((long)d.Value);
+            }
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfReplicationClusters))
+			{
+				ReplicationClusters((IList<string>)d.Value);
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfDisableReplication))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDisableReplication))
 			{
-				bool DisableReplication = checkType(value, typeof(Boolean));
-				if (DisableReplication)
+				var disableReplication = (bool)d.Value;
+				if (disableReplication)
 				{
-					this.DisableReplication();
+					DisableReplication();
 				}
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds))
 			{
-				this.DeliverAfter(checkType(value, typeof(Long)), BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+				DeliverAfter((long)d.Value, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 			}
-			else if (key.Equals(TypedMessageBuilderFields.ConfDeliveryAt))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAt))
 			{
-				this.DeliverAt(checkType(value, typeof(Long)));
+				DeliverAt((long)d.Value);
 			}
 			else
 			{
-				throw new Exception("Invalid message config key '" + key + "'");
+				throw new System.Exception("Invalid message config key '" + d.Key + "'");
 			}
 			});
 			return this;
@@ -267,31 +283,18 @@ namespace SharpPulsar.Impl
 			get
 			{
 				BeforeSend();
-				return MessageImpl.Create(MetadataBuilder, Content, schema);
+				return MessageImpl<T>.Create(Builder, Content, _schema);
 			}
 		}
 
-		public virtual long PublishTime
+		public virtual long PublishTime => Builder.GetPublishTime();
+
+        public virtual bool HasKey()
 		{
-			get
-			{
-				return MetadataBuilder.PublishTime;
-			}
+			return Builder.HasPartitionKey();
 		}
 
-		public virtual bool HasKey()
-		{
-			return MetadataBuilder.HasPartitionKey();
-		}
-
-		public virtual string Key
-		{
-			get
-			{
-				return MetadataBuilder.getPartitionKey();
-			}
-		}
-
-	}
+		public virtual string GetKey => Builder.GetPartitionKey();
+    }
 
 }

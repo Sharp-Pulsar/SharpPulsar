@@ -29,9 +29,7 @@ namespace SharpPulsar.Impl
 	/// The default implementation of <seealso cref="ServiceNameResolver"/>.
 	/// </summary>
 	public class PulsarServiceNameResolver : ServiceNameResolver
-	{
-
-		public ServiceURI ServiceUrl;
+    {
 		private  int _currentIndex;
 		private volatile IList<IPEndPoint> _addressList;
 
@@ -57,12 +55,19 @@ namespace SharpPulsar.Impl
 		public Uri ResolveHostUri()
 		{
 			var host = ResolveHost();
-			var hostUrl = ServiceUrl.ServiceScheme + "://" + Dns.GetHostEntry(host.Address).HostName + ":" + host.Port;
+			var hostUrl = ServiceUri.ServiceScheme + "://" + Dns.GetHostEntry(host.Address).HostName + ":" + host.Port;
 			return new Uri(hostUrl);
 		}
 
+        public string ServiceUrl { get; }
 
-		public void UpdateServiceUrl(string serviceUrl)
+		public ServiceURI ServiceUri
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        public void UpdateServiceUrl(string serviceUrl)
 		{
 			ServiceURI uri;
 			try
@@ -92,7 +97,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 			_addressList = addresses;
-			ServiceUrl = uri;
+			ServiceUri = uri;
 			_currentIndex = RandomIndex(addresses.Count);
 		}
 

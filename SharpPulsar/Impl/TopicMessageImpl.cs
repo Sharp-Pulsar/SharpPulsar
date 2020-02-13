@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
 		public string TopicPartitionName;
 
 		private readonly IMessage<T> _msg;
-		private readonly TopicMessageIdImpl _messageId;
+		private  TopicMessageIdImpl _messageId;
 
 		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage<T> msg)
 		{
@@ -46,43 +46,19 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Get the topic name without partition part of this message. </summary>
 		/// <returns> the name of the topic on which this message was published </returns>
-		public virtual string TopicName
-		{
-			get
-			{
-				return _msg.TopicName;
-			}
-		}
+		public virtual string TopicName => _msg.TopicName;
 
-		/// <summary>
+        /// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
 
-		public virtual IMessageId MessageId
-		{
-			get
-			{
-				return _messageId;
-			}
-		}
+		public virtual IMessageId MessageId => _messageId;
 
-		public virtual IMessageId InnerMessageId
-		{
-			get
-			{
-				return _messageId.InnerMessageId;
-			}
-		}
+        public virtual IMessageId InnerMessageId => _messageId.InnerMessageId;
 
-		public virtual IDictionary<string, string> Properties
-		{
-			get
-			{
-				return _msg.Properties;
-			}
-		}
+        public virtual IDictionary<string, string> Properties => _msg.Properties;
 
-		public bool HasProperty(string name)
+        public bool HasProperty(string name)
 		{
 			return _msg.HasProperty(name);
 		}
@@ -92,140 +68,50 @@ namespace SharpPulsar.Impl
 			return _msg.GetProperty(name);
 		}
 
-		public virtual sbyte[] Data
-		{
-			get
-			{
-				return _msg.Data;
-			}
-		}
+		public virtual sbyte[] Data => _msg.Data;
 
-		public virtual long PublishTime
-		{
-			get
-			{
-				return _msg.PublishTime;
-			}
-		}
+        public virtual long PublishTime => _msg.PublishTime;
 
-		public virtual long EventTime
-		{
-			get
-			{
-				return _msg.EventTime;
-			}
-		}
+        public virtual long EventTime => _msg.EventTime;
 
-		public virtual long SequenceId
-		{
-			get
-			{
-				return _msg.SequenceId;
-			}
-		}
+        public virtual long SequenceId => _msg.SequenceId;
 
-		public virtual string ProducerName
-		{
-			get
-			{
-				return _msg.ProducerName;
-			}
-		}
+        public virtual string ProducerName => _msg.ProducerName;
 
-		public bool HasKey()
+        public bool HasKey()
 		{
 			return _msg.HasKey();
 		}
 
-		public virtual string Key
-		{
-			get
-			{
-				return _msg.Key;
-			}
-		}
+		public virtual string Key => _msg.Key;
 
-		public bool HasBase64EncodedKey()
+        public bool HasBase64EncodedKey()
 		{
 			return _msg.HasBase64EncodedKey();
 		}
 
-		public virtual sbyte[] KeyBytes
-		{
-			get
-			{
-				return _msg.KeyBytes;
-			}
-		}
+		public virtual sbyte[] KeyBytes => _msg.KeyBytes;
 
-		public bool HasOrderingKey()
+        public bool HasOrderingKey()
 		{
 			return _msg.HasOrderingKey();
 		}
 
-		public virtual sbyte[] OrderingKey
-		{
-			get
-			{
-				return _msg.OrderingKey;
-			}
-		}
+		public virtual sbyte[] OrderingKey => _msg.OrderingKey;
 
-		public virtual T Value
-		{
-			get
-			{
-				return _msg.Value;
-			}
-		}
+        public virtual T Value => _msg.Value;
 
-		public virtual Option<EncryptionContext> EncryptionCtx
-		{
-			get
-			{
-				return _msg.EncryptionCtx;
-			}
-		}
+        public virtual EncryptionContext EncryptionCtx => _msg.EncryptionCtx;
 
-		public virtual int RedeliveryCount
-		{
-			get
-			{
-				return _msg.RedeliveryCount;
-			}
-		}
+        public virtual int RedeliveryCount => _msg.RedeliveryCount;
 
-		public virtual sbyte[] SchemaVersion
-		{
-			get
-			{
-				return _msg.SchemaVersion;
-			}
-		}
+        public virtual sbyte[] SchemaVersion => _msg.SchemaVersion;
 
-		public virtual bool Replicated
-		{
-			get
-			{
-				return _msg.Replicated;
-			}
-		}
+        public virtual bool Replicated => _msg.Replicated;
 
-		public virtual string ReplicatedFrom
-		{
-			get
-			{
-				return _msg.ReplicatedFrom;
-			}
-		}
+        public virtual string ReplicatedFrom => _msg.ReplicatedFrom;
 
-		public virtual IMessage<T> Message
-		{
-			get
-			{
-				return _msg;
-			}
-		}
-	}
+        public virtual IMessage<T> Message => _msg;
+    }
 
 }
