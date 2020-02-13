@@ -28,23 +28,23 @@ namespace SharpPulsar.Impl.Auth
 
     public class AuthenticationDataTls : IAuthenticationDataProvider
 	{
-		protected internal X509Certificate2[] tlsCertificates;
-		protected internal AsymmetricAlgorithm tlsPrivateKey;
-		protected internal FileModifiedTimeUpdater certFile, keyFile;
+		private X509Certificate2[] _tlsCertificates;
+		private AsymmetricAlgorithm _tlsPrivateKey;
+		protected internal FileModifiedTimeUpdater CertFile, KeyFile;
 		public AuthenticationDataTls(string certFilePath, string keyFilePath)
 		{
-			if (string.ReferenceEquals(certFilePath, null))
+			if (ReferenceEquals(certFilePath, null))
 			{
 				throw new System.ArgumentException("certFilePath must not be null");
 			}
-			if (string.ReferenceEquals(keyFilePath, null))
+			if (ReferenceEquals(keyFilePath, null))
 			{
 				throw new System.ArgumentException("keyFilePath must not be null");
 			}
-			this.certFile = new FileModifiedTimeUpdater(certFilePath);
-			this.keyFile = new FileModifiedTimeUpdater(keyFilePath);
-			this.tlsCertificates = SecurityUtility.loadCertificatesFromPemFile(certFilePath);
-			this.tlsPrivateKey = SecurityUtility.loadPrivateKeyFromPemFile(keyFilePath);
+			CertFile = new FileModifiedTimeUpdater(certFilePath);
+			KeyFile = new FileModifiedTimeUpdater(keyFilePath);
+			_tlsCertificates = SecurityUtility.LoadCertificatesFromPemFile(certFilePath);
+			_tlsPrivateKey = SecurityUtility.LoadPrivateKeyFromPemFile(keyFilePath);
 		}
 
 		/*
@@ -60,18 +60,18 @@ namespace SharpPulsar.Impl.Auth
 		{
 			get
 			{
-				if (this.certFile.checkAndRefresh())
+				if (CertFile.CheckAndRefresh())
 				{
 					try
 					{
-						this.tlsCertificates = SecurityUtility.loadCertificatesFromPemFile(certFile.FileName);
+						_tlsCertificates = SecurityUtility.LoadCertificatesFromPemFile(CertFile.FileName);
 					}
-					catch (KeyManagementException e)
+					catch (System.Exception e)
 					{
-						LOG.error("Unable to refresh authData for cert {}: ", certFile.FileName, e);
+						Log.LogError("Unable to refresh authData for cert {}: ", CertFile.FileName);
 					}
 				}
-				return this.tlsCertificates;
+				return _tlsCertificates;
 			}
 		}
 
@@ -79,22 +79,22 @@ namespace SharpPulsar.Impl.Auth
 		{
 			get
 			{
-				if (this.keyFile.checkAndRefresh())
+				if (KeyFile.CheckAndRefresh())
 				{
 					try
 					{
-						this.tlsPrivateKey = SecurityUtility.loadPrivateKeyFromPemFile(keyFile.FileName);
+						_tlsPrivateKey = SecurityUtility.LoadPrivateKeyFromPemFile(KeyFile.FileName);
 					}
-					catch (KeyManagementException e)
+					catch (System.Exception e)
 					{
-						LOG.error("Unable to refresh authData for cert {}: ", keyFile.FileName, e);
+						Log.LogError("Unable to refresh authData for cert {}: ", KeyFile.FileName);
 					}
 				}
-				return this.tlsPrivateKey;
+				return _tlsPrivateKey;
 			}
 		}
 
-		private static readonly Logger<> LOG = LoggerFactory.getLogger(typeof(AuthenticationDataTls));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger((typeof(AuthenticationDataTls)));
 	}
 
 }

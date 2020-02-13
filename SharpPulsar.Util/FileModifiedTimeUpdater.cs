@@ -28,27 +28,27 @@ namespace SharpPulsar.Util
 	/// </summary>
 	public class FileModifiedTimeUpdater
 	{
-		internal string fileName;
-		internal DateTime lastModifiedTime;
+		public readonly string FileName;
+		public readonly DateTime LastModifiedTime;
 
 		public FileModifiedTimeUpdater(string fileName)
 		{
-			this.fileName = fileName;
-			this.lastModifiedTime = UpdateLastModifiedTime();
+			this.FileName = fileName;
+			this.LastModifiedTime = UpdateLastModifiedTime();
 		}
 
 		private DateTime UpdateLastModifiedTime()
 		{
-			if (!string.IsNullOrWhiteSpace(fileName))
+			if (!string.IsNullOrWhiteSpace(FileName))
 			{
-				FileInfo p = new FileInfo(fileName);
+				var p = new FileInfo(FileName);
 				try
 				{
 					return p.LastWriteTimeUtc;
 				}
 				catch (IOException e)
 				{
-					log.LogError("Unable to fetch lastModified time for file {}: ", fileName, e);
+					Log.LogError("Unable to fetch lastModified time for file {}: ", FileName, e);
 				}
 			}
 			throw new Exception("Invalid file name");
@@ -56,16 +56,16 @@ namespace SharpPulsar.Util
 
 		public virtual bool CheckAndRefresh()
 		{
-			DateTime newLastModifiedTime = UpdateLastModifiedTime();
-			if (newLastModifiedTime != null && !newLastModifiedTime.Equals(lastModifiedTime))
+			var newLastModifiedTime = UpdateLastModifiedTime();
+			if (!newLastModifiedTime.Equals(LastModifiedTime))
 			{
-				this.lastModifiedTime = newLastModifiedTime;
+				this.LastModifiedTime = newLastModifiedTime;
 				return true;
 			}
 			return false;
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<FileModifiedTimeUpdater>();
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<FileModifiedTimeUpdater>();
 	}
 
 }

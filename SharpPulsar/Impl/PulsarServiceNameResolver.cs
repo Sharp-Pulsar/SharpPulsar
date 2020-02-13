@@ -1,6 +1,9 @@
 ﻿using SharpPulsar.Common;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using DotNetty.Common.Internal;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,85 +25,82 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    using static SharpPulsar.Exception.PulsarClientException;
-    using PlatformDependent = io.netty.util.@internal.PlatformDependent;
-
-	/// <summary>
+    /// <summary>
 	/// The default implementation of <seealso cref="ServiceNameResolver"/>.
 	/// </summary>
 	public class PulsarServiceNameResolver : ServiceNameResolver
 	{
 
 		public ServiceURI ServiceUrl;
-		private  int currentIndex;
-		private volatile IList<Uri> addressList;
+		private  int _currentIndex;
+		private volatile IList<IPEndPoint> _addressList;
 
-		public  Uri ResolveHost()
+		public  IPEndPoint ResolveHost()
 		{
-			var List = addressList;
-			if(List == null)
+			var list = _addressList;
+			if(list == null)
 				throw new ArgumentNullException("No service url is provided yet");
-			if(List.Count < 1)
+			if(list.Count < 1)
 				throw new ArgumentNullException("No hosts found for service url : " + ServiceUrl);
-			if (List.Count == 1)
+			if (list.Count == 1)
 			{
-				return List[0];
+				return list[0];
 			}
 			else
 			{
-				currentIndex = (currentIndex + 1) % List.Count;
-				return List[currentIndex];
+				_currentIndex = (_currentIndex + 1) % list.Count;
+				return list[_currentIndex];
 
 			}
 		}
 
 		public Uri ResolveHostUri()
 		{
-			var Host = ResolveHost();
-			var HostUrl = ServiceUrl.ServiceScheme + "://" + Host.Host + ":" + Host.Port;
-			return new Uri(HostUrl);
+			var host = ResolveHost();
+			var hostUrl = ServiceUrl.ServiceScheme + "://" + Dns.GetHostEntry(host.Address).HostName + ":" + host.Port;
+			return new Uri(hostUrl);
 		}
 
 
-		public void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string serviceUrl)
 		{
-			ServiceURI Uri;
+			ServiceURI uri;
 			try
 			{
-				Uri = ServiceURI.Create(ServiceUrl);
+				uri = ServiceURI.Create(serviceUrl);
 			}
-			catch (ArgumentException Iae)
+			catch (System.Exception iae)
 			{
-				log.error("Invalid service-url {} provided {}", ServiceUrl, Iae.Message, Iae);
-				throw new InvalidServiceURL(Iae.Message);
+				Log.LogWarning("Invalid service-url {} provided {}", serviceUrl, iae.Message, iae);
+				throw;
 			}
 
-			var Hosts = Uri.ServiceHosts;
-			IList<Uri> Addresses = new List<Uri>(Hosts.Length);
-			foreach (var Host in Hosts)
+			var hosts = uri.ServiceHosts;
+			IList<IPEndPoint> addresses = new List<IPEndPoint>(hosts.Length);
+			foreach (var host in hosts)
 			{
-				var HostUrl = Uri.ServiceScheme + "://" + Host;
+				var hostUrl = uri.ServiceScheme + "://" + host;
 				try
 				{
-					Uri HostUri = new uri(HostUrl);
-					Addresses.Add(InetSocketAddress.createUnresolved(HostUri.Host, HostUri.Port));
+					var hostUri = new Uri(hostUrl);
+					addresses.Add(new IPEndPoint(Dns.GetHostAddresses(hostUri.Host)[0], hostUri.Port));
 				}
-				catch (URISyntaxException E)
+				catch (UriFormatException e)
 				{
-					log.error("Invalid host provided {}", HostUrl, E);
-					throw new InvalidServiceURL(E);
+					Log.LogError("Invalid host provided {}", hostUrl);
+					throw;
 				}
 			}
-			this.addressList = Addresses;
-			this.ServiceUrl = ServiceUrl;
-			this.ServiceUri = Uri;
-			this.currentIndex = RandomIndex(Addresses.Count);
+			_addressList = addresses;
+			ServiceUrl = uri;
+			_currentIndex = RandomIndex(addresses.Count);
 		}
 
-		private static int RandomIndex(int NumAddresses)
+		private static int RandomIndex(int numAddresses)
 		{
-			return NumAddresses == 1 ? 0 : PlatformDependent.threadLocalRandom().Next(NumAddresses);
+			return numAddresses == 1 ? 0 : PlatformDependent.GetThreadLocalRandom().Next(numAddresses);
 		}
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarServiceNameResolver));
 	}
 
 }

@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 		/// Resolve pulsar service url.
 		/// </summary>
 		/// <returns> resolve the service url to return a socket address </returns>
-		Uri ResolveHost();
+		IPEndPoint ResolveHost();
 
 		/// <summary>
 		/// Resolve pulsar service url

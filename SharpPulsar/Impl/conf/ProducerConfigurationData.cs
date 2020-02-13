@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl.Conf
 	public class ProducerConfigurationData : ICloneable
 	{
 
-		private const long SerialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
 		public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
@@ -77,22 +77,16 @@ namespace SharpPulsar.Impl.Conf
 		/// 
 		/// </summary>
 		/// 
-		public virtual bool EncryptionEnabled
-		{
-			get
-			{
-				return (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
-			}
-		}
+		public virtual bool EncryptionEnabled => (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 
-		public virtual ProducerConfigurationData Clone()
+        public virtual ProducerConfigurationData Clone()
 		{
 			try
 			{
-				var C = (ProducerConfigurationData) base.MemberwiseClone();
-				C.EncryptionKeys = new SortedSet<string>(EncryptionKeys);
-				C.Properties = new SortedDictionary<string, string>(Properties);
-				return C;
+				var c = (ProducerConfigurationData) base.MemberwiseClone();
+				c.EncryptionKeys = new SortedSet<string>(EncryptionKeys);
+				c.Properties = new SortedDictionary<string, string>(Properties);
+				return c;
 			}
 			catch (System.Exception e)
 			{
@@ -102,11 +96,8 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual string ProducerName
 		{
-			get
-			{
-				return _producerName;
-			}
-			set
+			get => _producerName;
+            set
 			{
 				if (string.IsNullOrWhiteSpace(value))
 					throw new System.Exception("producerName cannot be blank");
@@ -116,11 +107,8 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int MaxPendingMessages
 		{
-			get
-			{
-				return _maxPendingMessages;
-			}
-			set
+			get => _maxPendingMessages;
+            set
 			{
 				if(value < 1)
 					throw new System.Exception("maxPendingMessages needs to be > 0");
@@ -130,11 +118,8 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int MaxPendingMessagesAcrossPartitions
 		{
-			get
-			{
-				return _maxPendingMessagesAcrossPartitions;
-			}
-			set
+			get => _maxPendingMessagesAcrossPartitions;
+            set
 			{
 				if(value >= _maxPendingMessages)
 				 _maxPendingMessagesAcrossPartitions = value;
@@ -143,41 +128,29 @@ namespace SharpPulsar.Impl.Conf
 
 		public virtual int BatchingMaxMessages
 		{
-			get
-			{
-				return _batchingMaxMessages;
-			}
-			set
-			{
-				_batchingMaxMessages = value;
-			}
-		}
+			get => _batchingMaxMessages;
+            set => _batchingMaxMessages = value;
+        }
 
 		public virtual int BatchingMaxBytes
 		{
-			get
-			{
-				return _batchingMaxBytes;
-			}
-			set
-			{
-				_batchingMaxBytes = value;
-			}
-		}
+			get => _batchingMaxBytes;
+            set => _batchingMaxBytes = value;
+        }
 
-		public virtual void SetSendTimeoutMs(int SendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public virtual void SetSendTimeoutMs(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			if (SendTimeout < 1)
+			if (sendTimeout < 1)
 				throw new System.Exception("sendTimeout needs to be >= 0");
-			_sendTimeoutMs = timeUnit.ToMillis(SendTimeout);
+			SendTimeoutMs = timeUnit.ToMillis(sendTimeout);
 		}
 
-		public virtual void SetBatchingMaxPublishDelayMicros(long BatchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public virtual void SetBatchingMaxPublishDelayMicros(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
-			var DelayInMs = timeUnit.ToMillis(BatchDelay);
-			if (DelayInMs < 1)
+			var delayInMs = timeUnit.ToMillis(batchDelay);
+			if (delayInMs < 1)
 				throw new System.Exception("configured value for batch delay must be at least 1ms");
-			BatchingMaxPublishDelayMicros = DelayInMs;
+			BatchingMaxPublishDelayMicros = delayInMs;
 		}
 
 		public virtual int BatchingPartitionSwitchFrequencyByPublishDelay

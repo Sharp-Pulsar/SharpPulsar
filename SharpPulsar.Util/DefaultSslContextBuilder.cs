@@ -31,7 +31,7 @@ namespace SharpPulsar.Util
 		{
 			lock (this)
 			{
-				this.sslContext = SecurityUtility.CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.fileName, tlsCertificateFilePath.fileName, tlsKeyFilePath.fileName);
+				this.sslContext = SecurityUtility.CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.FileName, tlsCertificateFilePath.FileName, tlsKeyFilePath.FileName);
 				return this.sslContext;
 			}
 		}

@@ -87,11 +87,11 @@ namespace SharpPulsar.Impl
 			Auth = conf;
 			EventLoopGroup = eventLoopGroup;
 			Configuration = conf;
-			ClientClock = conf.clock;
+			ClientClock = conf.Clock;
 			conf.Authentication.Start();
 			CnxPool = cnxPool;
 
-			Lookup = new BinaryProtoLookupService(this, conf.ServiceUrl, conf.UseTls);
+			Lookup = new BinaryProtoLookupService(this, conf.ServiceUrl, conf.UseTls, ExternalExecutorProvider());
 			_producers = new HashSet<ProducerBase<object>>();
 			_consumers = new HashSet<ConsumerBase<object>>();
 			_state = State.Open;
@@ -619,7 +619,7 @@ namespace SharpPulsar.Impl
 
 		public void ReloadLookUp()
 		{
-			Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls);
+			Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls, ExternalExecutorProvider());
 		}
 
 		public ValueTask<int> GetNumberOfPartitions(string topic)

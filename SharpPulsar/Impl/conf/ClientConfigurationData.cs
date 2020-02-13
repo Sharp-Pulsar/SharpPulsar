@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl.Conf
 	[Serializable]
 	public class ClientConfigurationData : ICloneable
 	{
-		public const long SerialVersionUID = 1L;
+		public const long SerialVersionUid = 1L;
 		[NonSerialized]
 		public string ServiceUrl;
 		[NonSerialized]
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl.Conf
 		public long InitialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
 		public long MaxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
 		[NonSerialized]
-		public DateTime clock = DateTime.Now;
+		public DateTime Clock = DateTime.Now;
 
 		public virtual IAuthentication Authentication
 		{
@@ -78,11 +78,8 @@ namespace SharpPulsar.Impl.Conf
 				}
 				return _authentication;
 			}
-			set
-			{
-				_authentication = value;
-			}
-		}
+			set => _authentication = value;
+        }
 
 		public virtual bool UseTls
 		{

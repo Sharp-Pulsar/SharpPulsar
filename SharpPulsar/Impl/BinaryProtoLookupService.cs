@@ -6,8 +6,15 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Google.Protobuf.Collections;
+using Org.BouncyCastle.Asn1.Ocsp;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exception;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,24 +36,25 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Impl
 {	
-	public class BinaryProtoLookupService : ILookupService
+	public sealed class BinaryProtoLookupService : ILookupService
 	{
 
-		private readonly PulsarClientImpl client;
-		private readonly ServiceNameResolver serviceNameResolver;
-		private readonly bool useTls;
-		private readonly Task executor;
-		public BinaryProtoLookupService(PulsarClientImpl Client, string ServiceUrl, bool UseTls)
+		private readonly PulsarClientImpl _client;
+		private readonly ServiceNameResolver _serviceNameResolver;
+		private readonly bool _useTls;
+		private readonly ScheduledThreadPoolExecutor _executor;
+		public BinaryProtoLookupService(PulsarClientImpl client, string serviceUrl, bool useTls, ScheduledThreadPoolExecutor executor)
 		{
-			this.client = Client;
-			this.useTls = UseTls;
-			this.serviceNameResolver = new PulsarServiceNameResolver();
-			UpdateServiceUrl(ServiceUrl);
+			_executor = executor;
+			_client = client;
+			_useTls = useTls;
+			_serviceNameResolver = new PulsarServiceNameResolver();
+			UpdateServiceUrl(serviceUrl);
 		}
 
-		public void UpdateServiceUrl(string ServiceUrl)
+		public void UpdateServiceUrl(string serviceUrl)
 		{
-			serviceNameResolver.UpdateServiceUrl(ServiceUrl);
+			_serviceNameResolver.UpdateServiceUrl(serviceUrl);
 		}
 
 		/// <summary>
@@ -55,204 +63,226 @@ namespace SharpPulsar.Impl
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		public virtual ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName topicName)
+		public ValueTask<KeyValuePair<EndPoint, EndPoint>> GetBroker(TopicName topicName)
 		{
-			return FindBroker(serviceNameResolver.ResolveHost(), false, topicName);
+			return FindBroker(_serviceNameResolver.ResolveHost(), false, topicName);
 		}
 
 		/// <summary>
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		public virtual ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName TopicName)
+		public ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName)
 		{
-			return GetPartitionedTopicMetadata(serviceNameResolver.ResolveHost(), TopicName);
+			return GetPartitionedTopicMetadata(_serviceNameResolver.ResolveHost(), topicName);
 		}
 
-		private ValueTask<ValueTask<KeyValuePair<EndPoint, EndPoint>>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
+		private ValueTask<KeyValuePair<EndPoint, EndPoint>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
 		{
 			var addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
 
-			client.CnxPool.GetConnection(socketAddress).thenAccept(clientCnx =>
-			{
-				var requestId = client.NewRequestId();
+			_client.CnxPool.GetConnection(socketAddress).AsTask().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    addressTask.SetException(task.Exception ?? throw new InvalidOperationException());
+                    return;
+				}
+                var clientCnx = task.Result;
+				var requestId = _client.NewRequestId();
 				var request = Commands.NewLookup(topicName.ToString(), authoritative, requestId);
-				clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
-				{
-				URI Uri = null;
-				try
-				{
-					if (useTls)
-					{
-						Uri = new URI(lookupDataResult.brokerUrlTls);
+				clientCnx.NewLookup(request, requestId).Task.ContinueWith(tsk =>
+                {
+                    if (tsk.IsFaulted)
+                    {
+                        if (tsk.Exception != null)
+                            Log.LogWarning("[{}] failed to send lookup request : {}", topicName.ToString(),
+                                tsk.Exception.Message);
+                        if (Log.IsEnabled(LogLevel.Debug))
+                        {
+                            Log.LogWarning("[{}] Lookup response exception: {}", topicName.ToString(), tsk.Exception);
+                        }
+                        addressTask.SetException(tsk.Exception ?? throw new InvalidOperationException());
+                        return;
 					}
-					else
-					{
-						string ServiceUrl = lookupDataResult.brokerUrl;
-						Uri = new URI(ServiceUrl);
-					}
-					InetSocketAddress ResponseBrokerAddress = InetSocketAddress.createUnresolved(Uri.Host, Uri.Port);
-					if (lookupDataResult.redirect)
-					{
-						FindBroker(ResponseBrokerAddress, lookupDataResult.authoritative, TopicName).thenAccept(addressPair =>
-						{
-							AddressFuture.complete(addressPair);
-						}).exceptionally((lookupException) =>
-						{
-							log.warn("[{}] lookup failed : {}", TopicName.ToString(), lookupException.Message, lookupException);
-							AddressFuture.completeExceptionally(lookupException);
-							return null;
-						});
-					}
-					else
-					{
-						if (lookupDataResult.proxyThroughServiceUrl)
-						{
-							AddressFuture.complete(Pair.of(ResponseBrokerAddress, SocketAddress));
-						}
-						else
-						{
-							AddressFuture.complete(Pair.of(ResponseBrokerAddress, ResponseBrokerAddress));
-						}
-					}
-				}
-				catch (Exception ParseUrlException)
-				{
-					log.warn("[{}] invalid url {} : {}", TopicName.ToString(), Uri, ParseUrlException.Message, ParseUrlException);
-					AddressFuture.completeExceptionally(ParseUrlException);
-				}
-			}).exceptionally((sendException) =>
-			{
-				log.warn("[{}] failed to send lookup request : {}", TopicName.ToString(), sendException.Message);
-				if (log.DebugEnabled)
-				{
-					log.warn("[{}] Lookup response exception: {}", TopicName.ToString(), sendException);
-				}
-				AddressFuture.completeExceptionally(sendException);
-				return null;
+                    var lookupDataResult = tsk.Result;
+
+					Uri uri = null;
+				    try
+				    {
+					    if (_useTls)
+					    {
+						    uri = new Uri(lookupDataResult.BrokerUrlTls);
+					    }
+					    else
+					    {
+						    string serviceUrl = lookupDataResult.BrokerUrl;
+						    uri = new Uri(serviceUrl);
+					    }
+					    var responseBrokerAddress = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port); 
+					    if (lookupDataResult.Redirect)
+					    {
+						    FindBroker(responseBrokerAddress, lookupDataResult.Authoritative, topicName).AsTask().ContinueWith(taskAddr =>
+                            {
+                                if (taskAddr.IsFaulted)
+                                {
+                                    if (taskAddr.Exception != null)
+                                    {
+                                        Log.LogWarning("[{}] lookup failed : {}", topicName.ToString(),
+                                            taskAddr.Exception.Message, taskAddr.Exception);
+                                        addressTask.SetException(taskAddr.Exception);
+                                    }
+
+                                    return;
+								}
+                                var addressPair = taskAddr.Result;
+                                addressTask.SetResult(addressPair);
+						    });
+					    }
+					    else
+					    {
+						    if (lookupDataResult.ProxyThroughServiceUrl)
+						    {
+							    addressTask.SetResult(new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, socketAddress));
+						    }
+						    else
+						    {
+								addressTask.SetResult(new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, responseBrokerAddress));
+							}
+					    }
+				    }
+				    catch (System.Exception parseUrlException)
+				    {
+					    Log.LogWarning("[{}] invalid url {} : {}", topicName.ToString(), uri, parseUrlException.Message, parseUrlException);
+					    addressTask.SetException(parseUrlException);
+				    }
+			    });
 			});
-			}).exceptionally(connectionException =>
-			{
-			AddressFuture.completeExceptionally(connectionException);
-			return null;
-		});
-			return AddressFuture;
+			return new ValueTask<KeyValuePair<EndPoint, EndPoint>>(addressTask.Task);
 		}
 
-		private CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(InetSocketAddress SocketAddress, TopicName TopicName)
+		private ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(IPEndPoint socketAddress, TopicName topicName)
 		{
 
-			CompletableFuture<PartitionedTopicMetadata> PartitionFuture = new CompletableFuture<PartitionedTopicMetadata>();
+			var partitionTask = new TaskCompletionSource<PartitionedTopicMetadata>();
 
-			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
-			{
-			var RequestId = client.NewRequestId();
-			ByteBuf Request = Commands.newPartitionMetadataRequest(TopicName.ToString(), RequestId);
-			clientCnx.newLookup(Request, RequestId).thenAccept(lookupDataResult =>
-			{
-				try
-				{
-					PartitionFuture.complete(new PartitionedTopicMetadata(lookupDataResult.partitions));
+			_client.CnxPool.GetConnection(socketAddress).AsTask().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    partitionTask.SetException(task.Exception ?? throw new InvalidOperationException());
+                    return;
 				}
-				catch (Exception E)
-				{
-					PartitionFuture.completeExceptionally(new PulsarClientException.LookupException(format("Failed to parse partition-response redirect=%s, topic=%s, partitions with %s", lookupDataResult.redirect, TopicName.ToString(), lookupDataResult.partitions, E.Message)));
-				}
-			}).exceptionally((e) =>
-			{
-				log.warn("[{}] failed to get Partitioned metadata : {}", TopicName.ToString(), e.Cause.Message, e);
-				PartitionFuture.completeExceptionally(e);
-				return null;
-			});
-			}).exceptionally(connectionException =>
-			{
-			PartitionFuture.completeExceptionally(connectionException);
-			return null;
-		});
+                var clientCnx = task.Result;
 
-			return PartitionFuture;
-		}
-
-		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName)
-		{
-			return GetSchema(TopicName, null);
-		}
-
-
-		public override CompletableFuture<Optional<SchemaInfo>> GetSchema(TopicName TopicName, sbyte[] Version)
-		{
-			return client.CnxPool.GetConnection(serviceNameResolver.ResolveHost()).thenCompose(clientCnx =>
-			{
-			var RequestId = client.NewRequestId();
-			ByteBuf Request = Commands.newGetSchema(RequestId, TopicName.ToString(), Optional.ofNullable(BytesSchemaVersion.of(Version)));
-			return clientCnx.sendGetSchema(Request, RequestId);
-			});
-		}
-
-		public virtual string ServiceUrl
-		{
-			get
-			{
-				return serviceNameResolver.ServiceUrl;
-			}
-		}
-
-		public override CompletableFuture<IList<string>> GetTopicsUnderNamespace(NamespaceName Namespace, Mode Mode)
-		{
-			CompletableFuture<IList<string>> TopicsFuture = new CompletableFuture<IList<string>>();
-
-			var OpTimeoutMs = new AtomicLong(client.Configuration.OperationTimeoutMs);
-			Backoff Backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMandatoryStop(OpTimeoutMs.get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).setMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).create();
-			GetTopicsUnderNamespace(serviceNameResolver.ResolveHost(), Namespace, Backoff, OpTimeoutMs, TopicsFuture, Mode);
-			return TopicsFuture;
-		}
-
-		private void GetTopicsUnderNamespace(InetSocketAddress SocketAddress, NamespaceName Namespace, Backoff Backoff, AtomicLong RemainingTime, CompletableFuture<IList<string>> TopicsFuture, Mode Mode)
-		{
-			client.CnxPool.getConnection(SocketAddress).thenAccept(clientCnx =>
-			{
-			var RequestId = client.NewRequestId();
-			ByteBuf Request = Commands.newGetTopicsOfNamespaceRequest(Namespace.ToString(), RequestId, Mode);
-			clientCnx.newGetTopicsOfNamespace(Request, RequestId).thenAccept(topicsList =>
-			{
-				if (log.DebugEnabled)
-				{
-					log.debug("[namespace: {}] Success get topics list in request: {}", Namespace.ToString(), RequestId);
-				}
-				IList<string> Result = Lists.newArrayList();
-				topicsList.forEach(topic =>
-				{
-					var Filtered = TopicName.get(topic).PartitionedTopicName;
-					if (!Result.Contains(Filtered))
-					{
-						Result.Add(Filtered);
+				var requestId = _client.NewRequestId();
+			    var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
+			    clientCnx.NewLookup(request, requestId).Task.ContinueWith(tskNew =>
+                {
+                    if (tskNew.IsFaulted)
+                    {
+                        Log.LogWarning("[{}] failed to get Partitioned metadata : {}", topicName.ToString(), tskNew.Exception.Message, tskNew.Exception);
+                        partitionTask.SetException(tskNew.Exception ?? throw new InvalidOperationException());
+                        return;
 					}
-				});
-				TopicsFuture.complete(Result);
-			}).exceptionally((e) =>
-			{
-				TopicsFuture.completeExceptionally(e);
-				return null;
+                    var lookupDataResult = tskNew.Result;
+
+					try
+				    {
+					    partitionTask.SetResult(new PartitionedTopicMetadata(lookupDataResult.Partitions));
+				    }
+				    catch (System.Exception e)
+				    {
+					    partitionTask.SetException(new PulsarClientException.LookupException(string.Format("Failed to parse partition-response redirect=%s, topic=%s, partitions with %s", lookupDataResult.Redirect, topicName.ToString(), lookupDataResult.Partitions, e.Message)));
+				    }
+			    });
 			});
-			}).exceptionally((e) =>
-			{
-				long NextDelay = Math.Min(Backoff._next(), RemainingTime.get());
-				if (NextDelay <= 0)
-				{
-					TopicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", Namespace.ToString())));
-					return null;
-				}
-				((ScheduledExecutorService) executor).schedule(() =>
-				{
-					log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", Namespace, NextDelay);
-					RemainingTime.addAndGet(-NextDelay);
-					GetTopicsUnderNamespace(SocketAddress, Namespace, Backoff, RemainingTime, TopicsFuture, Mode);
-				}, NextDelay, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-				return null;
-		});
+
+			return new ValueTask<PartitionedTopicMetadata>(partitionTask.Task);
 		}
 
-		public override void Close()
+		public ValueTask<SchemaInfo> GetSchema(TopicName topicName)
+		{
+			return GetSchema(topicName, null);
+		}
+
+
+		public ValueTask<SchemaInfo> GetSchema(TopicName topicName, sbyte[] version)
+		{
+			var r = _client.CnxPool.GetConnection(_serviceNameResolver.ResolveHost()).AsTask().ContinueWith(task =>
+            {
+                var clientCnx = task.Result;
+
+				var requestId = _client.NewRequestId();
+			    var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
+			    return clientCnx.SendGetSchema(request, requestId);
+			});
+			return r.Result;
+		}
+
+		public string ServiceUrl => _serviceNameResolver.ServiceUrl;
+
+        public ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, CommandGetTopicsOfNamespace.Types.Mode mode)
+		{
+			var topicsTask = new TaskCompletionSource<IList<string>>();
+
+			var opTimeoutMs = new AtomicLong(_client.Configuration.OperationTimeoutMs);
+			var backoff = (new BackoffBuilder()).SetInitialTime(100, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs.Get() * 2, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).SetMax(0, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS).Create();
+			GetTopicsUnderNamespace(_serviceNameResolver.ResolveHost(), @namespace, backoff, opTimeoutMs, topicsTask, mode);
+			return new ValueTask<IList<string>>(topicsTask.Task);
+		}
+
+		private void GetTopicsUnderNamespace(IPEndPoint socketAddress, NamespaceName @namespace, Backoff backoff, AtomicLong remainingTime, TaskCompletionSource<IList<string>> topicsTask, CommandGetTopicsOfNamespace.Types.Mode mode)
+		{
+			_client.CnxPool.GetConnection(socketAddress).AsTask().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    var nextDelay = Math.Min(backoff.Next(), remainingTime.Get());
+                    if (nextDelay <= 0)
+                    {
+                        topicsTask.SetException(new PulsarClientException.TimeoutException(string.Format("Could not get topics of namespace %s within configured timeout", @namespace.ToString())));
+                        return;
+                    }
+                    _executor.Schedule(() =>
+                    {
+                        Log.LogWarning("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", @namespace, nextDelay);
+                        remainingTime.AddAndGet(-nextDelay);
+                        GetTopicsUnderNamespace(socketAddress, @namespace, backoff, remainingTime, topicsTask, mode);
+                    }, TimeSpan.FromMilliseconds(nextDelay));
+                    return;
+				}
+                var clientCnx = task.Result;
+
+				var requestId = _client.NewRequestId();
+			    var request = Commands.NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
+			    clientCnx.NewGetTopicsOfNamespace(request, requestId).Task.ContinueWith(tsk =>
+                {
+                    var topicsList = tsk.Result;
+                    if (tsk.IsFaulted)
+                    {
+                        topicsTask.SetException(tsk.Exception ?? throw new InvalidOperationException());
+                        return;
+					}
+					if (Log.IsEnabled(LogLevel.Debug))
+				    {
+					    Log.LogDebug("[namespace: {}] Success get topics list in request: {}", @namespace.ToString(), requestId);
+				    }
+				    IList<string> result = new List<string>();
+				    topicsList.ToList().ForEach(topic =>
+				    {
+					    var filtered = TopicName.Get(topic).PartitionedTopicName;
+					    if (!result.Contains(filtered))
+					    {
+						    result.Add(filtered);
+					    }
+				    });
+				    topicsTask.SetResult(result);
+			    });
+			});
+		}
+
+		public void Close()
 		{
 			// no-op
 		}
@@ -269,26 +299,30 @@ namespace SharpPulsar.Impl
 
 			public LookupDataResult(CommandLookupTopicResponse result)
 			{
-				this.BrokerUrl = result.brokerServiceUrl;
-				this.BrokerUrlTls = result.brokerServiceUrlTls;
-				this.Authoritative = result.Authoritative;
-				this.Redirect = result.Response == CommandLookupTopicResponse.LookupType.Redirect;
-				this.ProxyThroughServiceUrl = result.ProxyThroughServiceUrl;
-				this.Partitions = -1;
+				BrokerUrl = result.BrokerServiceUrl;
+				BrokerUrlTls = result.BrokerServiceUrlTls;
+				Authoritative = result.Authoritative;
+				Redirect = result.Response == CommandLookupTopicResponse.Types.LookupType.Redirect;
+				ProxyThroughServiceUrl = result.ProxyThroughServiceUrl;
+				Partitions = -1;
 			}
 
-			public LookupDataResult(int Partitions) : base()
+			public LookupDataResult(int partitions) : base()
 			{
-				this.Partitions = Partitions;
-				this.BrokerUrl = null;
-				this.BrokerUrlTls = null;
-				this.Authoritative = false;
-				this.ProxyThroughServiceUrl = false;
-				this.Redirect = false;
+				Partitions = partitions;
+				BrokerUrl = null;
+				BrokerUrlTls = null;
+				Authoritative = false;
+				ProxyThroughServiceUrl = false;
+				Redirect = false;
 			}
 
 		}
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<BinaryProtoLookupService>();
-	}
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BinaryProtoLookupService>();
+        public void Dispose()
+        {
+            Close();
+        }
+    }
 
 }

@@ -45,15 +45,9 @@ namespace SharpPulsar.Impl.Conf
 			}
 		}
 
-		public static ObjectMapper ThreadLocal
-		{
-			get
-			{
-				return Mapper.Value;
-			}
-		}
+		public static ObjectMapper ThreadLocal => Mapper.Value;
 
-		private ConfigurationDataUtils()
+        private ConfigurationDataUtils()
 		{
 		}
 
