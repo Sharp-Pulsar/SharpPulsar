@@ -38,11 +38,11 @@ namespace SharpPulsar.Impl.Schema.Generic
         private GenericSchemaImpl _genericSchemaImplImplementation;
 		private static ILogger _log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
 
-        protected GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-        protected GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+        public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 			Writer = new GenericJsonWriter();
 			

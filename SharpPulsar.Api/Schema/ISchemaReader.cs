@@ -25,7 +25,7 @@ namespace SharpPulsar.Api.Schema
 	/// Deserialize messages from bytes.
 	/// </summary>
 
-	public interface ISchemaReader<T>
+	public interface ISchemaReader<out T>
 	{
 
 		/// <summary>

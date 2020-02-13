@@ -1,4 +1,5 @@
 ﻿using System;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +19,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Api
+namespace SharpPulsar.Test
 {
 	using MockEncodedAuthenticationParameterSupport = Org.Apache.Pulsar.Client.Impl.Auth.MockEncodedAuthenticationParameterSupport;
 	using MockAuthentication = Org.Apache.Pulsar.Client.Impl.Auth.MockAuthentication;
@@ -29,8 +30,6 @@ namespace Org.Apache.Pulsar.Client.Api
 	public class AuthenticationTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigureDefaultFormat()
 		public virtual void TestConfigureDefaultFormat()
 		{
 			try

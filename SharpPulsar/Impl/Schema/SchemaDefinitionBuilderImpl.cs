@@ -22,7 +22,6 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl.Schema
 {
 	using SharpPulsar.Api.Schema;
-	using SharpPulsar.Api.Schema;
 
 
 	/// <summary>
@@ -36,7 +35,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <summary>
 		/// the schema definition class
 		/// </summary>
-		private Type clazz = typeof(T);
+		private T _clazz;
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 
@@ -45,63 +44,63 @@ namespace SharpPulsar.Impl.Schema
 		/// false you can define the field by yourself by the annotation@Nullable
 		/// 
 		/// </summary>
-		private bool alwaysAllowNull = true;
+		private bool _alwaysAllowNull = true;
 
 		/// <summary>
 		/// The schema info properties
 		/// </summary>
-		private IDictionary<string, string> properties = new Dictionary<string, string>();
+		private IDictionary<string, string> _properties = new Dictionary<string, string>();
 
 		/// <summary>
 		/// The json schema definition
 		/// </summary>
-		private string jsonDef;
+		private string _jsonDef;
 
 		/// <summary>
 		/// The flag of message decode whether by schema version
 		/// </summary>
-		private bool supportSchemaVersioning = false;
+		private bool _supportSchemaVersioning = false;
 
-		public override ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool AlwaysAllowNull)
+		public ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull)
 		{
-			this.alwaysAllowNull = AlwaysAllowNull;
+			this._alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
 
-		public override ISchemaDefinitionBuilder<T> AddProperty(string Key, string Value)
+		public ISchemaDefinitionBuilder<T> AddProperty(string key, string value)
 		{
-			this.properties[Key] = Value;
+			this._properties[key] = value;
 			return this;
 		}
 
-		public override ISchemaDefinitionBuilder<T> WithPojo(Type Clazz)
+		public ISchemaDefinitionBuilder<T> WithPojo(T clazz)
 		{
-			this.clazz = Clazz;
+			this._clazz = clazz;
 			return this;
 		}
 
-		public override ISchemaDefinitionBuilder<T> WithJsonDef(string JsonDef)
+		public ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDef)
 		{
-			this.jsonDef = JsonDef;
+			this._jsonDef = jsonDef;
 			return this;
 		}
 
-		public override ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool SupportSchemaVersioning)
+		public  ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning)
 		{
-			this.supportSchemaVersioning = SupportSchemaVersioning;
+			this._supportSchemaVersioning = supportSchemaVersioning;
 			return this;
 		}
 
-		public override ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> Properties)
+		public  ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties)
 		{
-			this.properties = Properties;
+			this._properties = properties;
 			return this;
 		}
 
-		public override ISchemaDefinition<T> Build()
+		public  ISchemaDefinition<T> Build()
 		{
-			properties[AlwaysAllowNull] = this.alwaysAllowNull ? "true" : "false";
-			return new SchemaDefinitionImpl(clazz, jsonDef, alwaysAllowNull, properties, supportSchemaVersioning);
+			_properties[AlwaysAllowNull] = this._alwaysAllowNull ? "true" : "false";
+			return new SchemaDefinitionImpl<T>(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning);
 
 		}
 	}

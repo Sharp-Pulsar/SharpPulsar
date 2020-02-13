@@ -18,9 +18,12 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-	/// <summary>
-	/// Serialize messages into bytes.
-	/// </summary>
-	public delegate sbyte[] ISchemaWriter<in T>(T message);
+    public interface ISchemaWriter<in T>
+    {
+        /// <summary>
+        /// Serialize messages into bytes.
+        /// </summary>
+        public sbyte[] Write(T message);
 
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 /// <summary>
@@ -27,7 +28,7 @@ namespace SharpPulsar.Impl.Schema
 
 	/// <summary>
 	/// A json schema definition
-	/// <seealso cref="SharpPulsar.api.schema.SchemaDefinition"/> for the json schema definition.
+	/// <seealso cref="ISchemaDefinition<T>"/> for the json schema definition.
 	/// </summary>
 	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
 	{
@@ -35,7 +36,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <summary>
 		/// the schema definition class
 		/// </summary>
-		private Type pojo = typeof(T);
+		private T _pojo;
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 
@@ -44,21 +45,21 @@ namespace SharpPulsar.Impl.Schema
 		/// false you can define the field by yourself by the annotation@Nullable
 		/// 
 		/// </summary>
-		public virtual AlwaysAllowNull {get;}
+		public virtual bool AlwaysAllowNull {get;}
 
-		private IDictionary<string, string> properties;
+		private IDictionary<string, string> _properties;
 
-		public virtual JsonDef {get;}
+		public virtual string JsonDef {get;}
 
-		public virtual SupportSchemaVersioning {get;}
+		public virtual bool SupportSchemaVersioning {get;}
 
-		public SchemaDefinitionImpl(Type Pojo, string JsonDef, bool AlwaysAllowNull, IDictionary<string, string> Properties, bool SupportSchemaVersioning)
+		public SchemaDefinitionImpl(T pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning)
 		{
-			this.AlwaysAllowNull = AlwaysAllowNull;
-			this.properties = Properties;
-			this.JsonDef = JsonDef;
-			this.pojo = Pojo;
-			this.SupportSchemaVersioning = SupportSchemaVersioning;
+			AlwaysAllowNull = alwaysAllowNull;
+			_properties = properties;
+			JsonDef = jsonDef;
+			_pojo = pojo;
+			SupportSchemaVersioning = supportSchemaVersioning;
 		}
 		/// <summary>
 		/// get schema whether always allow null or not
@@ -73,27 +74,14 @@ namespace SharpPulsar.Impl.Schema
 		/// Get pojo schema definition
 		/// </summary>
 		/// <returns> pojo class </returns>
-		public virtual Type<T> Pojo
-		{
-			get
-			{
-				return pojo;
-			}
-		}
+		public virtual T Pojo => _pojo;
 
 
-		/// <summary>
+        /// <summary>
 		/// Get schema class
 		/// </summary>
 		/// <returns> schema class </returns>
-		public virtual IDictionary<string, string> Properties
-		{
-			get
-			{
-				return Collections.unmodifiableMap(properties);
-			}
-		}
-
-	}
+		public virtual IDictionary<string, string> Properties => new ConcurrentDictionary<string, string>(_properties);
+    }
 
 }

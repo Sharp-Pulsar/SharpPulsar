@@ -68,11 +68,11 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public static StringSchema FromSchemaInfo(SchemaInfo SchemaInfo)
+		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
 		{
-			if(SchemaType.STRING != SchemaInfo.Type)
+			if(SchemaType.STRING != schemaInfo.Type)
                 throw new ArgumentException("Not a string schema");
-			var charsetName = SchemaInfo.Properties[CharsetKey];
+			var charsetName = schemaInfo.Properties[CharsetKey];
 			if (null == charsetName)
 			{
 				return UTF8;

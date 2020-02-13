@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Api
+namespace SharpPulsar.Test
 {
 	using Assert = org.testng.Assert;
 	using Test = org.testng.annotations.Test;

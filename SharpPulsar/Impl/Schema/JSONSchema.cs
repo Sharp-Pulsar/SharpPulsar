@@ -166,10 +166,11 @@ namespace SharpPulsar.Impl.Schema
 			throw new NotImplementedException();
 		}
 		
-		public override T Decode(IByteBuffer byteBuf)
+		public new T Decode(IByteBuffer byteBuf)
 		{
 			throw new NotImplementedException();
 		}
+
 	}
 
 }

@@ -43,9 +43,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		public abstract override ISchema<IGenericRecord> AutoConsume();
 		public abstract override ISchema<IGenericRecord> Auto();
 		
-        public abstract  ISchema<T> KvBytes<T>();
-		
-        public abstract ISchema<T> Json<T>(Type pojo);
+        public abstract ISchema<T> Json<T>(T pojo);
         public abstract override bool RequireFetchingSchemaInfo();
 		public abstract override bool SupportSchemaVersioning();
 		public abstract override void Validate(sbyte[] message);

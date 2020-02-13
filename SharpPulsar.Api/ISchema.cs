@@ -194,9 +194,9 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json(Type pojo)
+		static ISchema<T> Json(T pojo)
 		{
-			return DefaultImplementation.newJSONSchema(ISchemaDefinition.builder().withPojo(pojo).build());
+			return DefaultImplementation.newJSONSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
 		/// <summary>
@@ -204,7 +204,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json<T>(ISchemaDefinition schemaDefinition)
+		static ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
 		{
 			return DefaultImplementation.newJSONSchema(schemaDefinition);
 		}
@@ -270,7 +270,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-		static IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+		static IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo)
 		{
 			return DefaultImplementation.getGenericSchema(schemaInfo);
 		}

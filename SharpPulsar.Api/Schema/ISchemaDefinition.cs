@@ -21,9 +21,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-
-	/// <summary>
+    /// <summary>
 	/// Interface for schema definition.
 	/// </summary>
 	public interface ISchemaDefinition<T>
@@ -60,7 +58,7 @@ namespace SharpPulsar.Api.Schema
 		/// Get pojo schema definition.
 		/// </summary>
 		/// <returns> pojo schema </returns>
-		ITypedMessageBuilder<T> Pojo {get;}
+		T Pojo {get;}
 
 		/// <summary>
 		/// Get supportSchemaVersioning schema definition.
