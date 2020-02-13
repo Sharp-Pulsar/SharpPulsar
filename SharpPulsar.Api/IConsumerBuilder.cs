@@ -266,7 +266,7 @@ namespace SharpPulsar.Api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
+		IConsumerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Sets the ConsumerCryptoFailureAction to the value specified.

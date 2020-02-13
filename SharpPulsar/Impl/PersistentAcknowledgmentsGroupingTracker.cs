@@ -165,7 +165,7 @@ namespace SharpPulsar.Impl
 			var shouldFlush = false;
 			if (_cumulativeAckFlushRequired)
 			{
-				var cmd = Commands.NewAck(_consumer.ConsumerId, _lastCumulativeAck.LedgerIdConflict, _lastCumulativeAck.EntryIdConflict, CommandAck.Types.AckType.Cumulative, null, new Dictionary<string, long>());
+				var cmd = Commands.NewAck(_consumer.ConsumerId, _lastCumulativeAck.LedgerId, _lastCumulativeAck.EntryId, CommandAck.Types.AckType.Cumulative, null, new Dictionary<string, long>());
 				cnx.Ctx().WriteAsync(cmd);
 				shouldFlush = true;
 				_cumulativeAckFlushRequired = false;

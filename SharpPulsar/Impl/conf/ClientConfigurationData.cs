@@ -82,8 +82,8 @@ namespace SharpPulsar.Impl.Conf
         }
 
 		public virtual bool UseTls
-		{
-			get
+        {
+            get
 			{
 				if (_useTls)
 				{
@@ -96,9 +96,10 @@ namespace SharpPulsar.Impl.Conf
 				}
 				return false;
 			}
-		}
+            set => throw new NotImplementedException();
+        }
 
-		public virtual ClientConfigurationData Clone()
+        public virtual ClientConfigurationData Clone()
 		{
 			try
 			{

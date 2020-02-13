@@ -25,7 +25,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Interface that abstracts the access to a key store.
 	/// </summary>
-	public interface CryptoKeyReader
+	public interface ICryptoKeyReader
 	{
 
 		/// <summary>

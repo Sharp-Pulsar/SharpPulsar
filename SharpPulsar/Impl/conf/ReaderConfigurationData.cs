@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl.Conf
 		[NonSerialized]
 		public string SubscriptionRolePrefix = null;
 
-		public CryptoKeyReader CryptoKeyReader = null;
+		public ICryptoKeyReader CryptoKeyReader = null;
 		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.Fail;
 
 		public bool ReadCompacted = false;

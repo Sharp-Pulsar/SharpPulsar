@@ -26,7 +26,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Impl.Auth
 {
-	public class AuthenticationBasic : IAuthentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationBasic : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 		private string _userId;
 		private string _password;

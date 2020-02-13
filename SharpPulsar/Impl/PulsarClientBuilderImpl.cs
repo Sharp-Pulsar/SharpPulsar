@@ -2,6 +2,7 @@
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,24 +33,24 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public PulsarClientBuilderImpl(ClientConfigurationData Conf)
+		public PulsarClientBuilderImpl(ClientConfigurationData conf)
 		{
-			this.Conf = Conf;
+			this.Conf = conf;
 		}
 
 		public IPulsarClient Build()
 		{
-			if (StringUtils.isBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
+			if (string.IsNullOrWhiteSpace(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
 			{
 				throw new ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
 			}
-			if (StringUtils.isNotBlank(Conf.ServiceUrl) && Conf.ServiceUrlProvider != null)
+			if (string.IsNullOrWhiteSpace(Conf.ServiceUrl) && Conf.ServiceUrlProvider != null)
 			{
 				throw new ArgumentException("Can only chose one way service URL or service URL provider.");
 			}
 			if (Conf.ServiceUrlProvider != null)
 			{
-				if (StringUtils.isBlank(Conf.ServiceUrlProvider.ServiceUrl))
+				if (string.IsNullOrWhiteSpace(Conf.ServiceUrlProvider.ServiceUrl))
 				{
 					throw new ArgumentException("Cannot get service url from service url provider.");
 				}
@@ -58,186 +59,178 @@ namespace SharpPulsar.Impl
 					Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
 				}
 			}
-			IPulsarClient Client = new PulsarClientImpl(Conf);
-			if (Conf.ServiceUrlProvider != null)
-			{
-				Conf.ServiceUrlProvider.Initialize(Client);
-			}
-			return Client;
+			IPulsarClient client = new PulsarClientImpl(Conf);
+            Conf.ServiceUrlProvider?.Initialize(client);
+            return client;
 		}
 
-		public override IPulsarClientBuilder Clone()
+		public IPulsarClientBuilder Clone()
 		{
-			return new PulsarClientBuilderImpl(Conf.clone());
+			return new PulsarClientBuilderImpl(Conf.Clone());
 		}
 
-		public override ClientBuilder LoadConf(IDictionary<string, object> Config)
+		public IPulsarClientBuilder LoadConf(IDictionary<string, object> config)
 		{
-			Conf = ConfigurationDataUtils.loadData(Config, Conf, typeof(ClientConfigurationData));
+			Conf = ConfigurationDataUtils.LoadData(config, Conf, typeof(ClientConfigurationData));
 			return this;
 		}
 
-		public override IPulsarClientBuilder ServiceUrl(string ServiceUrl)
+		public IPulsarClientBuilder ServiceUrl(string serviceUrl)
 		{
-			if (StringUtils.isBlank(ServiceUrl))
+			if (string.IsNullOrWhiteSpace(serviceUrl))
 			{
 				throw new ArgumentException("Param serviceUrl must not be blank.");
 			}
-			Conf.ServiceUrl = ServiceUrl;
+			Conf.ServiceUrl = serviceUrl;
 			if (!Conf.UseTls)
 			{
-				EnableTls(ServiceUrl.StartsWith("pulsar+ssl", StringComparison.Ordinal) || ServiceUrl.StartsWith("https", StringComparison.Ordinal));
+				EnableTls(serviceUrl.StartsWith("pulsar+ssl", StringComparison.Ordinal) || serviceUrl.StartsWith("https", StringComparison.Ordinal));
 			}
 			return this;
 		}
 
-		public IPulsarClientBuilder ServiceUrlProvider(ServiceUrlProvider ServiceUrlProvider)
+		public IPulsarClientBuilder ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider)
 		{
-			if (ServiceUrlProvider == null)
+			if (serviceUrlProvider == null)
 			{
 				throw new ArgumentException("Param serviceUrlProvider must not be null.");
 			}
-			Conf.ServiceUrlProvider = ServiceUrlProvider;
+			Conf.ServiceUrlProvider = serviceUrlProvider;
 			return this;
 		}
 
 		public IPulsarClientBuilder Authentication(IAuthentication authentication)
 		{
-			Conf.Authentication = Authentication;
+			Conf.Authentication = authentication;
 			return this;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ClientBuilder authentication(String authPluginClassName, String authParamsString) throws SharpPulsar.api.PulsarClientException.UnsupportedAuthenticationException
-		public override ClientBuilder Authentication(string AuthPluginClassName, string AuthParamsString)
+		public IPulsarClientBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
-			Conf.Authentication = AuthenticationFactory.create(AuthPluginClassName, AuthParamsString);
+			Conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParamsString);
 			return this;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public SharpPulsar.api.ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws SharpPulsar.api.PulsarClientException.UnsupportedAuthenticationException
-		public override ClientBuilder Authentication(string AuthPluginClassName, IDictionary<string, string> AuthParams)
+		public IPulsarClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
-			Conf.Authentication = AuthenticationFactory.create(AuthPluginClassName, AuthParams);
+			Conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParams);
 			return this;
 		}
 
-		public override ClientBuilder OperationTimeout(int OperationTimeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder OperationTimeout(int operationTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.OperationTimeoutMs = Unit.toMillis(OperationTimeout);
+			Conf.OperationTimeoutMs = unit.ToMillis(operationTimeout);
 			return this;
 		}
 
-		public override ClientBuilder IoThreads(int NumIoThreads)
+		public IPulsarClientBuilder IoThreads(int numIoThreads)
 		{
-			Conf.NumIoThreads = NumIoThreads;
+			Conf.NumIoThreads = numIoThreads;
 			return this;
 		}
 
-		public override ClientBuilder ListenerThreads(int NumListenerThreads)
+		public IPulsarClientBuilder ListenerThreads(int numListenerThreads)
 		{
-			Conf.NumListenerThreads = NumListenerThreads;
+			Conf.NumListenerThreads = numListenerThreads;
 			return this;
 		}
 
-		public override ClientBuilder ConnectionsPerBroker(int ConnectionsPerBroker)
+		public IPulsarClientBuilder ConnectionsPerBroker(int connectionsPerBroker)
 		{
-			Conf.ConnectionsPerBroker = ConnectionsPerBroker;
+			Conf.ConnectionsPerBroker = connectionsPerBroker;
 			return this;
 		}
 
-		public override ClientBuilder EnableTcpNoDelay(bool UseTcpNoDelay)
+		public IPulsarClientBuilder EnableTcpNoDelay(bool useTcpNoDelay)
 		{
-			Conf.UseTcpNoDelay = UseTcpNoDelay;
+			Conf.UseTcpNoDelay = useTcpNoDelay;
 			return this;
 		}
 
-		public override ClientBuilder EnableTls(bool UseTls)
+		public IPulsarClientBuilder EnableTls(bool useTls)
 		{
-			Conf.UseTls = UseTls;
+			Conf.UseTls = useTls;
 			return this;
 		}
 
-		public override ClientBuilder EnableTlsHostnameVerification(bool EnableTlsHostnameVerification)
+		public IPulsarClientBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
 		{
-			Conf.TlsHostnameVerificationEnable = EnableTlsHostnameVerification;
+			Conf.TlsHostnameVerificationEnable = enableTlsHostnameVerification;
 			return this;
 		}
 
-		public override ClientBuilder TlsTrustCertsFilePath(string TlsTrustCertsFilePath)
+		public IPulsarClientBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath)
 		{
-			Conf.TlsTrustCertsFilePath = TlsTrustCertsFilePath;
+			Conf.TlsTrustCertsFilePath = tlsTrustCertsFilePath;
 			return this;
 		}
 
-		public override ClientBuilder AllowTlsInsecureConnection(bool TlsAllowInsecureConnection)
+		public IPulsarClientBuilder AllowTlsInsecureConnection(bool tlsAllowInsecureConnection)
 		{
-			Conf.TlsAllowInsecureConnection = TlsAllowInsecureConnection;
+			Conf.TlsAllowInsecureConnection = tlsAllowInsecureConnection;
 			return this;
 		}
 
-		public override ClientBuilder StatsInterval(long StatsInterval, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder StatsInterval(long statsInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.StatsIntervalSeconds = Unit.toSeconds(StatsInterval);
+			Conf.StatsIntervalSeconds = unit.ToSeconds(statsInterval);
 			return this;
 		}
 
-		public override ClientBuilder MaxConcurrentLookupRequests(int ConcurrentLookupRequests)
+		public IPulsarClientBuilder MaxConcurrentLookupRequests(int concurrentLookupRequests)
 		{
-			Conf.ConcurrentLookupRequest = ConcurrentLookupRequests;
+			Conf.ConcurrentLookupRequest = concurrentLookupRequests;
 			return this;
 		}
 
-		public override ClientBuilder MaxLookupRequests(int MaxLookupRequests)
+		public IPulsarClientBuilder MaxLookupRequests(int maxLookupRequests)
 		{
-			Conf.MaxLookupRequest = MaxLookupRequests;
+			Conf.MaxLookupRequest = maxLookupRequests;
 			return this;
 		}
 
-		public override ClientBuilder MaxNumberOfRejectedRequestPerConnection(int MaxNumberOfRejectedRequestPerConnection)
+		public IPulsarClientBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
 		{
-			Conf.MaxNumberOfRejectedRequestPerConnection = MaxNumberOfRejectedRequestPerConnection;
+			Conf.MaxNumberOfRejectedRequestPerConnection = maxNumberOfRejectedRequestPerConnection;
 			return this;
 		}
 
-		public override ClientBuilder KeepAliveInterval(int KeepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.KeepAliveIntervalSeconds = (int)Unit.toSeconds(KeepAliveInterval);
+			Conf.KeepAliveIntervalSeconds = (int)unit.ToSeconds(keepAliveInterval);
 			return this;
 		}
 
-		public override ClientBuilder ConnectionTimeout(int Duration, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder ConnectionTimeout(int duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.ConnectionTimeoutMs = (int)Unit.toMillis(Duration);
+			Conf.ConnectionTimeoutMs = (int)unit.ToMillis(duration);
 			return this;
 		}
 
-		public override ClientBuilder StartingBackoffInterval(long Duration, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder StartingBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.InitialBackoffIntervalNanos = Unit.toNanos(Duration);
+			Conf.InitialBackoffIntervalNanos = unit.ToNanos(duration);
 			return this;
 		}
 
-		public override ClientBuilder MaxBackoffInterval(long Duration, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public IPulsarClientBuilder MaxBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			Conf.MaxBackoffIntervalNanos = Unit.toNanos(Duration);
+			Conf.MaxBackoffIntervalNanos = unit.ToNanos(duration);
 			return this;
 		}
 
-		public virtual ClientConfigurationData ClientConfigurationData
-		{
-			get
-			{
-				return Conf;
-			}
-		}
+		public virtual ClientConfigurationData ClientConfigurationData => Conf;
 
-		public override ClientBuilder Clock(Clock Clock)
+        public IPulsarClientBuilder Clock(DateTime clock)
 		{
-			Conf.Clock = Clock;
+			Conf.Clock = clock;
 			return this;
 		}
-	}
+
+        object ICloneable.Clone()
+        {
+            return Clone();
+        }
+    }
 
 }

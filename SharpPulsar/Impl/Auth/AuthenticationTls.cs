@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl.Auth
 	/// tlsCertFile: A file path for a client certificate. tlsKeyFile: A file path for a client private key.
 	/// 
 	/// </summary>
-	public class AuthenticationTls : IAuthentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private const long serialVersionUID = 1L;

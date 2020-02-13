@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Impl.Auth
 {
 
-	public class AuthenticationDisabled : IAuthentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationDisabled : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();

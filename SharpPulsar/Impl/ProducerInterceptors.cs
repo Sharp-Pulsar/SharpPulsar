@@ -31,15 +31,15 @@ namespace SharpPulsar.Impl
 	/// A container that holds the list<seealso cref="ProducerInterceptor"/>
 	/// and wraps calls to the chain of custom interceptors.
 	/// </summary>
-	public class ProducerInterceptors : IDisposable
+	public sealed class ProducerInterceptors : IDisposable
 	{
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<ProducerInterceptors>();
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ProducerInterceptors>();
 
-		private readonly IList<IProducerInterceptor> interceptors;
+		private readonly IList<IProducerInterceptor> _interceptors;
 
-		public ProducerInterceptors(IList<IProducerInterceptor> Interceptors)
+		public ProducerInterceptors(IList<IProducerInterceptor> interceptors)
 		{
-			this.interceptors = Interceptors;
+			this._interceptors = interceptors;
 		}
 
 		/// <summary>
@@ -56,10 +56,10 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public virtual IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
+		public IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
 		{
 			var interceptorMessage = message;
-			foreach (var interceptor in interceptors)
+			foreach (var interceptor in _interceptors)
 			{
 				if (!interceptor.Eligible(message))
 				{
@@ -69,15 +69,15 @@ namespace SharpPulsar.Impl
 				{
 					interceptorMessage = interceptor.BeforeSend(producer, interceptorMessage);
 				}
-				catch (System.Exception E)
+				catch (System.Exception e)
 				{
 					if (producer != null)
 					{
-						log.LogWarning("Error executing interceptor beforeSend callback for topicName:{} ", producer.Topic, E);
+						Log.LogWarning("Error executing interceptor beforeSend callback for topicName:{} ", producer.Topic, e);
 					}
 					else
 					{
-						log.LogWarning("Error Error executing interceptor beforeSend callback ", E);
+						Log.LogWarning("Error Error executing interceptor beforeSend callback ", e);
 					}
 				}
 			}
@@ -96,9 +96,9 @@ namespace SharpPulsar.Impl
 		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, IMessage)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public virtual void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
+		public void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
 		{
-			foreach (var interceptor in interceptors)
+			foreach (var interceptor in _interceptors)
 			{
 				if (!interceptor.Eligible(message))
 				{
@@ -110,14 +110,14 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					log.LogWarning("Error executing interceptor onSendAcknowledgement callback ", e);
+					Log.LogWarning("Error executing interceptor onSendAcknowledgement callback ", e);
 				}
 			}
 		}
 
 		public void Close()
 		{
-			foreach (var interceptor in interceptors)
+			foreach (var interceptor in _interceptors)
 			{
 				try
 				{
@@ -125,7 +125,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					log.LogError("Fail to close producer interceptor ", e);
+					Log.LogError("Fail to close producer interceptor ", e);
 				}
 			}
 		}

@@ -116,7 +116,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IReaderBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader)
+		public IReaderBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;

@@ -21,7 +21,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Support for encoded authentication configuration parameters.
 	/// </summary>
-	public interface EncodedAuthenticationParameterSupport
+	public interface IEncodedAuthenticationParameterSupport
 	{
 
 		/// <summary>

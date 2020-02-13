@@ -331,14 +331,14 @@ namespace SharpPulsar.Api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> CryptoKeyReader(CryptoKeyReader cryptoKeyReader);
+		IProducerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Add public encryption key, used by producer to encrypt the data key.
 		/// 
 		/// <para>At the time of producer creation, Pulsar client checks if there are keys added to encryptionKeys. If keys are
-		/// found, a callback <seealso cref="CryptoKeyReader.getPrivateKey(string, System.Collections.IDictionary)"/> and
-		/// <seealso cref="CryptoKeyReader.getPublicKey(string, System.Collections.IDictionary)"/> is invoked against each key to load the values of the key.
+		/// found, a callback <seealso cref="ICryptoKeyReader.getPrivateKey(string, System.Collections.IDictionary)"/> and
+		/// <seealso cref="ICryptoKeyReader.getPublicKey(string, System.Collections.IDictionary)"/> is invoked against each key to load the values of the key.
 		/// Application should implement this callback to return the key in pkcs8 format. If compression is enabled, message
 		/// is encrypted after compression. If batch messaging is enabled, the batched message is encrypted.
 		/// 

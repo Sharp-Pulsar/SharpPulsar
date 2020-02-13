@@ -75,10 +75,10 @@ namespace SharpPulsar.Impl
 				{
 					var authClass = Type.GetType(authPluginClassName);
 					var auth = (IAuthentication) Activator.CreateInstance(authClass);
-					if (auth is EncodedAuthenticationParameterSupport)
+					if (auth is IEncodedAuthenticationParameterSupport)
 					{
 						// Parse parameters on plugin side.
-						((EncodedAuthenticationParameterSupport) auth).Configure(authParamsString);
+						((IEncodedAuthenticationParameterSupport) auth).Configure(authParamsString);
 					}
 					else
 					{

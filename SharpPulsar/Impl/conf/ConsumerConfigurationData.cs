@@ -59,7 +59,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public int PriorityLevel = 0;
 
-		public CryptoKeyReader CryptoKeyReader = null;
+		public ICryptoKeyReader CryptoKeyReader = null;
 
 		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.Fail;
 

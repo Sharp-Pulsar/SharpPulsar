@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public BatcherBuilder BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder<object>();
 
-		public CryptoKeyReader CryptoKeyReader;
+		public ICryptoKeyReader CryptoKeyReader;
 
 		public ISet<string> EncryptionKeys = new SortedSet<string>();
 

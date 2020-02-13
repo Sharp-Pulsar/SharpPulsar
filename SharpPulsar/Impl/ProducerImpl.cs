@@ -1475,7 +1475,7 @@ namespace SharpPulsar.Impl
 				try
 				{
 					IList<OpSendMsg<T>> opSendMsgs;
-					opSendMsgs = _batchMessageContainer.MultiBatches ? _batchMessageContainer.CreateOpSendMsgs() : new List<OpSendMsg<T>>{ _batchMessageContainer.CreateOpSendMsg<T>()};
+					opSendMsgs = _batchMessageContainer.MultiBatches ? _batchMessageContainer.CreateOpSendMsgs() : new List<OpSendMsg<T>>{ _batchMessageContainer.CreateOpSendMsg()};
 					_batchMessageContainer.Clear();
 					foreach (var opSendMsg in opSendMsgs)
 					{

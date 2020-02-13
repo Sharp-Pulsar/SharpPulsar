@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl.Auth
 	/// <summary>
 	/// Token based authentication provider.
 	/// </summary>
-	public class AuthenticationToken : IAuthentication, EncodedAuthenticationParameterSupport
+	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private Func<string> tokenSupplier;

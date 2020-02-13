@@ -33,20 +33,20 @@ namespace SharpPulsar.Impl
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>
 	{
-		public ClientConfigurationData _conf;
+		public ClientConfigurationData Conf;
 
-		private readonly Func<ClientCnx> clientCnxSupplier;
-		private readonly bool tlsEnabled;
+		private readonly Func<ClientCnx> _clientCnxSupplier;
+		private readonly bool _tlsEnabled;
 
-		private readonly Func<TlsHandler> sslContextSupplier;
+		private readonly Func<TlsHandler> _sslContextSupplier;
 
-		private static readonly long TLS_CERTIFICATE_CACHE_MILLIS = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMillis(1);
+		private static readonly long TlsCertificateCacheMillis = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMillis(1);
 
-		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientCnx> ClientCnxSupplier) : base()
+		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientCnx> clientCnxSupplier) : base()
 		{
-			clientCnxSupplier = ClientCnxSupplier;
-			tlsEnabled = conf.UseTls;
-			_conf = conf;
+			_clientCnxSupplier = clientCnxSupplier;
+			_tlsEnabled = conf.UseTls;
+			Conf = conf;
 			/*if (Conf.UseTls)
 			{
 				sslContextSupplier = new ObjectCache<TlsHandler>(() =>
@@ -78,9 +78,9 @@ namespace SharpPulsar.Impl
 
 		protected override void InitChannel(IChannel ch)
 		{
-			if (tlsEnabled)
+			if (_tlsEnabled)
 			{
-				ch.Pipeline.AddLast("tls", TlsHandler.Client(_conf.ServiceUrl, _conf.Authentication.AuthData.TlsCertificates[0]));
+				ch.Pipeline.AddLast("tls", TlsHandler.Client(Conf.ServiceUrl, Conf.Authentication.AuthData.TlsCertificates[0]));
 				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.COPYINGENCODER);
 			}
 			else
@@ -89,7 +89,7 @@ namespace SharpPulsar.Impl
 			}
 
 			ch.Pipeline.AddLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DefaultMaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
-			ch.Pipeline.AddLast("handler", clientCnxSupplier.Invoke());
+			ch.Pipeline.AddLast("handler", _clientCnxSupplier.Invoke());
 		}
 
 	}
