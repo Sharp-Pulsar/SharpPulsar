@@ -19,9 +19,6 @@
 namespace SharpPulsar.Util
 {
 
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-
 	public class Codec
 	{
 		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(Codec));

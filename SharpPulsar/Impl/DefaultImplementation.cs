@@ -102,12 +102,7 @@ namespace SharpPulsar.Impl
 		{
 			return new StringSchema(charset);
 		}
-
-		public static ISchema<sbyte> NewByteSchema()
-		{
-			return new ByteSchema();
-		}
-
+		
 		/*public static ISchema<short> NewShortSchema()
 		{
 			return new ShortSchema();
@@ -223,10 +218,6 @@ namespace SharpPulsar.Impl
 			return GenericSchemaImpl.Of(schemaInfo);
 		}
 
-		public static IRecordSchemaBuilder NewRecordSchemaBuilder(string name)
-		{
-			return new ecordSchemaBuilderImpl(name);
-		}
 
 		/// <summary>
 		/// Decode the kv encoding type from the schema info.
