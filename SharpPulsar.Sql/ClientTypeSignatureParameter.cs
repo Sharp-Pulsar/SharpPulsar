@@ -1,4 +1,7 @@
 ﻿using System;
+using Newtonsoft.Json;
+using SharpPulsar.Sql.Facebook.Type;
+using Type = System.Type;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,148 +18,105 @@
  */
 namespace SharpPulsar.Sql
 {
-	using ObjectMapperProvider = com.facebook.airlift.json.ObjectMapperProvider;
-	using NamedTypeSignature = com.facebook.presto.spi.type.NamedTypeSignature;
-	using ParameterKind = com.facebook.presto.spi.type.ParameterKind;
-	using TypeSignatureParameter = com.facebook.presto.spi.type.TypeSignatureParameter;
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-	using JsonParser = com.fasterxml.jackson.core.JsonParser;
-	using DeserializationContext = com.fasterxml.jackson.databind.DeserializationContext;
-	using JsonDeserializer = com.fasterxml.jackson.databind.JsonDeserializer;
-	using JsonNode = com.fasterxml.jackson.databind.JsonNode;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using JsonDeserialize = com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable @JsonDeserialize(using = ClientTypeSignatureParameter.ClientTypeSignatureParameterDeserializer.class) public class ClientTypeSignatureParameter
 	public class ClientTypeSignatureParameter
 	{
-		public virtual Kind {get;}
-		public virtual Value {get;}
-
-		public ClientTypeSignatureParameter(TypeSignatureParameter TypeParameterSignature)
+		public  ParameterKind Kind {get;}
+		public object Value {get;}
+        [JsonConstructor]
+		public ClientTypeSignatureParameter(TypeSignatureParameter typeParameterSignature)
 		{
-			this.Kind = TypeParameterSignature.Kind;
+			this.Kind = typeParameterSignature.Kind;
 			switch (Kind)
 			{
-				case TYPE:
-					Value = new ClientTypeSignature(TypeParameterSignature.TypeSignature);
+				case ParameterKind.Type:
+					Value = new ClientTypeSignature(typeParameterSignature.TypeSignature);
 					break;
-				case LONG:
-					Value = TypeParameterSignature.LongLiteral;
+				case ParameterKind.Long:
+					Value = typeParameterSignature.LongLiteral;
 					break;
-				case NAMED_TYPE:
-					Value = TypeParameterSignature.NamedTypeSignature;
+				case ParameterKind.NamedType:
+					Value = typeParameterSignature.NamedTypeSignature;
 					break;
 				default:
-					throw new System.NotSupportedException(format("Unknown kind [%s]", Kind));
+					throw new NotSupportedException(string.Format("Unknown kind [%s]", Kind));
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonCreator public ClientTypeSignatureParameter(@JsonProperty("kind") com.facebook.presto.spi.type.ParameterKind kind, @JsonProperty("value") Object value)
-		public ClientTypeSignatureParameter(ParameterKind Kind, object Value)
+		public ClientTypeSignatureParameter(ParameterKind kind, object value)
 		{
-			this.Kind = Kind;
-			this.Value = Value;
+			this.Kind = kind;
+			this.Value = value;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public com.facebook.presto.spi.type.ParameterKind getKind()
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public Object getValue()
-
-		private A getValue<A>(ParameterKind ExpectedParameterKind, Type Target)
+		private TA GetValue<TA>(ParameterKind expectedParameterKind, Type target)
 		{
-			if (Kind != ExpectedParameterKind)
+			if (Kind != expectedParameterKind)
 			{
-				throw new System.ArgumentException(format("ParameterKind is [%s] but expected [%s]", Kind, ExpectedParameterKind));
+				throw new System.ArgumentException(string.Format("ParameterKind is [%s] but expected [%s]", Kind, expectedParameterKind));
 			}
-			return Target.cast(Value);
+			return (TA)Convert.ChangeType(Value, target);
 		}
 
-		public virtual ClientTypeSignature TypeSignature
-		{
-			get
-			{
-				return GetValue(ParameterKind.TYPE, typeof(ClientTypeSignature));
-			}
-		}
+		public virtual ClientTypeSignature TypeSignature => GetValue<ClientTypeSignature>(ParameterKind.Type, typeof(ClientTypeSignature));
 
-		public virtual long? LongLiteral
-		{
-			get
-			{
-				return GetValue(ParameterKind.LONG, typeof(Long));
-			}
-		}
+        public virtual long? LongLiteral => GetValue<long>(ParameterKind.Long, typeof(long));
 
-		public virtual NamedTypeSignature NamedTypeSignature
-		{
-			get
-			{
-				return GetValue(ParameterKind.NAMED_TYPE, typeof(NamedTypeSignature));
-			}
-		}
+        public virtual NamedTypeSignature NamedTypeSignature => GetValue<NamedTypeSignature>(ParameterKind.NamedType, typeof(NamedTypeSignature));
 
-		public override string ToString()
+        public override string ToString()
 		{
 			return Value.ToString();
 		}
 
-		public override bool Equals(object O)
+		public override bool Equals(object o)
 		{
-			if (this == O)
+			if (this == o)
 			{
 				return true;
 			}
-			if (O == null || this.GetType() != O.GetType())
+			if (o == null || this.GetType() != o.GetType())
 			{
 				return false;
 			}
 
-			ClientTypeSignatureParameter Other = (ClientTypeSignatureParameter) O;
+			ClientTypeSignatureParameter other = (ClientTypeSignatureParameter) o;
 
-			return Objects.equals(this.Kind, Other.Kind) && Objects.equals(this.Value, Other.Value);
+			return object.Equals(this.Kind, other.Kind) && object.Equals(this.Value, other.Value);
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(Kind, Value);
+			return HashCode.Combine(Kind, Value);
 		}
 
-		public class ClientTypeSignatureParameterDeserializer : JsonDeserializer<ClientTypeSignatureParameter>
+		/*public class ClientTypeSignatureParameterDeserializer : JsonDeserializer<ClientTypeSignatureParameter>
 		{
-			internal static readonly ObjectMapper MAPPER = new ObjectMapperProvider().get();
+			internal static readonly ObjectMapper Mapper = new ObjectMapperProvider().get();
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public ClientTypeSignatureParameter deserialize(com.fasterxml.jackson.core.JsonParser jp, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException
-			public override ClientTypeSignatureParameter Deserialize(JsonParser Jp, DeserializationContext Ctxt)
+			public override ClientTypeSignatureParameter Deserialize(JsonParser jp, DeserializationContext ctxt)
 			{
-				JsonNode Node = Jp.Codec.readTree(Jp);
-				ParameterKind Kind = MAPPER.readValue(MAPPER.treeAsTokens(Node.get("kind")), typeof(ParameterKind));
-				JsonParser JsonValue = MAPPER.treeAsTokens(Node.get("value"));
-				object Value;
-				switch (Kind)
+				JsonNode node = jp.Codec.readTree(jp);
+				ParameterKind kind = Mapper.readValue(Mapper.treeAsTokens(node.get("kind")), typeof(ParameterKind));
+				JsonParser jsonValue = Mapper.treeAsTokens(node.get("value"));
+				object value;
+				switch (kind)
 				{
 					case TYPE:
-						Value = MAPPER.readValue(JsonValue, typeof(ClientTypeSignature));
+						value = Mapper.readValue(jsonValue, typeof(ClientTypeSignature));
 						break;
 					case NAMED_TYPE:
-						Value = MAPPER.readValue(JsonValue, typeof(NamedTypeSignature));
+						value = Mapper.readValue(jsonValue, typeof(NamedTypeSignature));
 						break;
 					case LONG:
-						Value = MAPPER.readValue(JsonValue, typeof(Long));
+						value = Mapper.readValue(jsonValue, typeof(Long));
 						break;
 					default:
-						throw new System.NotSupportedException(format("Unsupported kind [%s]", Kind));
+						throw new System.NotSupportedException(format("Unsupported kind [%s]", kind));
 				}
-				return new ClientTypeSignatureParameter(Kind, Value);
+				return new ClientTypeSignatureParameter(kind, value);
 			}
-		}
+		}*/
 	}
 
 }

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
+using SharpPulsar.Sql.Facebook.Type;
+using SharpPulsar.Sql.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,88 +20,78 @@ using System.Text;
  */
 namespace SharpPulsar.Sql
 {
-	using NamedTypeSignature = com.facebook.presto.spi.type.NamedTypeSignature;
-	using ParameterKind = com.facebook.presto.spi.type.ParameterKind;
-	using RowFieldName = com.facebook.presto.spi.type.RowFieldName;
-	using StandardTypes = com.facebook.presto.spi.type.StandardTypes;
-	using TypeSignature = com.facebook.presto.spi.type.TypeSignature;
-	using TypeSignatureParameter = com.facebook.presto.spi.type.TypeSignatureParameter;
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-	using ImmutableList = com.google.common.collect.ImmutableList;
-	using Lists = com.google.common.collect.Lists;
 
 	public class ClientTypeSignature
 	{
-		private static readonly Pattern PATTERN = Pattern.compile(".*[<>,].*");
+		private static readonly Regex Pattern = new Regex(".*[<>,].*");
 		public virtual string RawType {get;}
-		private readonly IList<ClientTypeSignatureParameter> arguments;
+		private readonly IList<ClientTypeSignatureParameter> _arguments;
 
-		public ClientTypeSignature(TypeSignature TypeSignature) : this(TypeSignature.Base, Lists.transform(TypeSignature.Parameters, ClientTypeSignatureParameter::new))
-		{
-//JAVA TO C# CONVERTER TODO TASK: Method reference constructor syntax is not converted by Java to C# Converter:
-		}
-
-		public ClientTypeSignature(string RawType, IList<ClientTypeSignatureParameter> Arguments) : this(RawType, ImmutableList.of(), ImmutableList.of(), Arguments)
+		public ClientTypeSignature(TypeSignature typeSignature) : this(typeSignature.Base, new List<ClientTypeSignatureParameter>())
 		{
 		}
 
-		public ClientTypeSignature(string RawType, IList<ClientTypeSignature> TypeArguments, IList<object> LiteralArguments, IList<ClientTypeSignatureParameter> Arguments)
+		public ClientTypeSignature(string rawType, IList<ClientTypeSignatureParameter> arguments) : this(rawType, new List<ClientTypeSignature>(), new List<object>(), arguments)
 		{
-			requireNonNull(RawType, "rawType is null");
-			this.RawType = RawType;
-			checkArgument(RawType.Length > 0, "rawType is empty");
-			checkArgument(!PATTERN.matcher(RawType).matches(), "Bad characters in rawType type: %s", RawType);
-			if (Arguments != null)
+			
+		}
+
+		public ClientTypeSignature(string rawType, IList<ClientTypeSignature> typeArguments, IList<object> literalArguments, IList<ClientTypeSignatureParameter> arguments)
+		{
+			ParameterCondition.RequireNonNull(rawType, "rawType", "rawType is null");
+			this.RawType = rawType;
+			ParameterCondition.CheckArgument(rawType.Length > 0, "rawType is empty");
+            ParameterCondition.CheckArgument(!Pattern.IsMatch(rawType), "Bad characters in rawType type: %s", rawType);
+			if (arguments != null)
 			{
-				this.arguments = unmodifiableList(new List<>(Arguments));
+				this._arguments = new List<ClientTypeSignatureParameter>(arguments);
 			}
 			else
 			{
-				requireNonNull(TypeArguments, "typeArguments is null");
-				requireNonNull(LiteralArguments, "literalArguments is null");
-				ImmutableList.Builder<ClientTypeSignatureParameter> ConvertedArguments = ImmutableList.builder();
+				ParameterCondition.RequireNonNull(typeArguments, "typeArguments", "typeArguments is null");
+                ParameterCondition.RequireNonNull(literalArguments, "literalArguments", "literalArguments is null");
+				List<ClientTypeSignatureParameter> convertedArguments = new List<ClientTypeSignatureParameter>();
 				// Talking to a legacy server (< 0.133)
-				if (RawType.Equals(StandardTypes.ROW))
+				if (rawType.Equals(StandardTypes.Row))
 				{
-					checkArgument(TypeArguments.Count == LiteralArguments.Count);
-					for (int I = 0; I < TypeArguments.Count; I++)
+					ParameterCondition.CheckArgument(typeArguments.Count == literalArguments.Count);
+					for (int i = 0; i < typeArguments.Count; i++)
 					{
-						object Value = LiteralArguments[I];
-						checkArgument(Value is string, "Expected literalArgument %d in %s to be a string", I, LiteralArguments);
-						ConvertedArguments.add(new ClientTypeSignatureParameter(TypeSignatureParameter.of(new NamedTypeSignature((new RowFieldName((string) Value, false)), ToTypeSignature(TypeArguments[I])))));
+						object value = literalArguments[i];
+						ParameterCondition.CheckArgument(value is string, "Expected literalArgument %d in %s to be a string", i, literalArguments);
+						convertedArguments.Add(new ClientTypeSignatureParameter(new TypeSignatureParameter(new NamedTypeSignature((new RowFieldName((string) value, false)), ToTypeSignature(typeArguments[i])))));
 					}
 				}
 				else
 				{
-					checkArgument(LiteralArguments.Count == 0, "Unexpected literal arguments from legacy server");
-					foreach (ClientTypeSignature TypeArgument in TypeArguments)
+					checkArgument(literalArguments.Count == 0, "Unexpected literal arguments from legacy server");
+					foreach (ClientTypeSignature typeArgument in typeArguments)
 					{
-						ConvertedArguments.add(new ClientTypeSignatureParameter(ParameterKind.TYPE, TypeArgument));
+						convertedArguments.add(new ClientTypeSignatureParameter(ParameterKind.Type, typeArgument));
 					}
 				}
-				this.arguments = ConvertedArguments.build();
+				this._arguments = convertedArguments.build();
 			}
 		}
 
-		private static TypeSignature ToTypeSignature(ClientTypeSignature Signature)
+		private static TypeSignature ToTypeSignature(ClientTypeSignature signature)
 		{
-			IList<TypeSignatureParameter> Parameters = Signature.Arguments.Select(ClientTypeSignature.legacyClientTypeSignatureParameterToTypeSignatureParameter).ToList();
-			return new TypeSignature(Signature.RawType, Parameters);
+			IList<TypeSignatureParameter> parameters = signature.Arguments.Select(ClientTypeSignature.legacyClientTypeSignatureParameterToTypeSignatureParameter).ToList();
+			return new TypeSignature(signature.RawType, parameters);
 		}
 
-		private static TypeSignatureParameter LegacyClientTypeSignatureParameterToTypeSignatureParameter(ClientTypeSignatureParameter Parameter)
+		private static TypeSignatureParameter LegacyClientTypeSignatureParameterToTypeSignatureParameter(ClientTypeSignatureParameter parameter)
 		{
-			switch (Parameter.Kind)
+			switch (parameter.Kind)
 			{
 				case LONG:
 					throw new System.NotSupportedException("Unexpected long type literal returned by legacy server");
 				case TYPE:
-					return TypeSignatureParameter.of(ToTypeSignature(Parameter.TypeSignature));
+					return TypeSignatureParameter.of(ToTypeSignature(parameter.TypeSignature));
 				case NAMED_TYPE:
-					return TypeSignatureParameter.of(Parameter.NamedTypeSignature);
+					return TypeSignatureParameter.of(parameter.NamedTypeSignature);
 				default:
-					throw new System.NotSupportedException("Unknown parameter kind " + Parameter.Kind);
+					throw new System.NotSupportedException("Unknown parameter kind " + parameter.Kind);
 			}
 		}
 
@@ -111,7 +104,7 @@ namespace SharpPulsar.Sql
 		{
 			get
 			{
-				return arguments;
+				return _arguments;
 			}
 		}
 
@@ -125,22 +118,22 @@ namespace SharpPulsar.Sql
 		{
 			get
 			{
-				IList<ClientTypeSignature> Result = new List<ClientTypeSignature>();
-				foreach (ClientTypeSignatureParameter Argument in arguments)
+				IList<ClientTypeSignature> result = new List<ClientTypeSignature>();
+				foreach (ClientTypeSignatureParameter argument in _arguments)
 				{
-					switch (Argument.Kind)
+					switch (argument.Kind)
 					{
 						case TYPE:
-							Result.Add(Argument.TypeSignature);
+							result.Add(argument.TypeSignature);
 							break;
 						case NAMED_TYPE:
-							Result.Add(new ClientTypeSignature(Argument.NamedTypeSignature.TypeSignature));
+							result.Add(new ClientTypeSignature(argument.NamedTypeSignature.TypeSignature));
 							break;
 						default:
 							return new List<ClientTypeSignature>();
 					}
 				}
-				return Result;
+				return result;
 			}
 		}
 
@@ -154,19 +147,19 @@ namespace SharpPulsar.Sql
 		{
 			get
 			{
-				IList<object> Result = new List<object>();
-				foreach (ClientTypeSignatureParameter Argument in arguments)
+				IList<object> result = new List<object>();
+				foreach (ClientTypeSignatureParameter argument in _arguments)
 				{
-					switch (Argument.Kind)
+					switch (argument.Kind)
 					{
 						case NAMED_TYPE:
-							Result.Add(Argument.NamedTypeSignature.Name);
+							result.Add(argument.NamedTypeSignature.Name);
 							break;
 						default:
 							return new List<object>();
 					}
 				}
-				return Result;
+				return result;
 			}
 		}
 
@@ -178,23 +171,23 @@ namespace SharpPulsar.Sql
 			}
 			else
 			{
-				StringBuilder TypeName = new StringBuilder(RawType);
-				if (arguments.Count > 0)
+				StringBuilder typeName = new StringBuilder(RawType);
+				if (_arguments.Count > 0)
 				{
-					TypeName.Append("(");
-					bool First = true;
-					foreach (ClientTypeSignatureParameter Argument in arguments)
+					typeName.Append("(");
+					bool first = true;
+					foreach (ClientTypeSignatureParameter argument in _arguments)
 					{
-						if (!First)
+						if (!first)
 						{
-							TypeName.Append(",");
+							typeName.Append(",");
 						}
-						First = false;
-						TypeName.Append(Argument.ToString());
+						first = false;
+						typeName.Append(argument.ToString());
 					}
-					TypeName.Append(")");
+					typeName.Append(")");
 				}
-				return TypeName.ToString();
+				return typeName.ToString();
 			}
 		}
 
@@ -203,7 +196,7 @@ namespace SharpPulsar.Sql
 		{
 //JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
 //JAVA TO C# CONVERTER TODO TASK: Most Java stream collectors are not converted by Java to C# Converter:
-			string Fields = arguments.Select(ClientTypeSignatureParameter::getNamedTypeSignature).Select(parameter =>
+			string fields = _arguments.Select(ClientTypeSignatureParameter::getNamedTypeSignature).Select(parameter =>
 			{
 			if (parameter.Name.Present)
 			{
@@ -212,28 +205,28 @@ namespace SharpPulsar.Sql
 			return parameter.TypeSignature.ToString();
 			}).collect(Collectors.joining(","));
 
-			return format("row(%s)", Fields);
+			return format("row(%s)", fields);
 		}
 
-		public override bool Equals(object O)
+		public override bool Equals(object o)
 		{
-			if (this == O)
+			if (this == o)
 			{
 				return true;
 			}
-			if (O == null || this.GetType() != O.GetType())
+			if (o == null || this.GetType() != o.GetType())
 			{
 				return false;
 			}
 
-			ClientTypeSignature Other = (ClientTypeSignature) O;
+			ClientTypeSignature other = (ClientTypeSignature) o;
 
-			return Objects.equals(this.RawType.ToLower(Locale.ENGLISH), Other.RawType.ToLower(Locale.ENGLISH)) && Objects.equals(this.arguments, Other.arguments);
+			return Objects.equals(this.RawType.ToLower(Locale.ENGLISH), other.RawType.ToLower(Locale.ENGLISH)) && Objects.equals(this._arguments, other._arguments);
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(RawType.ToLower(Locale.ENGLISH), arguments);
+			return Objects.hash(RawType.ToLower(Locale.ENGLISH), _arguments);
 		}
 	}
 

@@ -35,10 +35,10 @@ namespace SharpPulsar.Sql.Facebook.Type
 		{
 			if(type == null)
 				throw new NullReferenceException( "type is null");
-			this._role = ParameterCondition.RequireNonNull(role,"Role", "role is null");
+			_role = ParameterCondition.RequireNonNull(role,"Role", "role is null");
 			if (type == Type.Role && !string.IsNullOrWhiteSpace(role))
 			{
-				throw new System.ArgumentException("Role must be present for the selected role type: " + type);
+				throw new ArgumentException("Role must be present for the selected role type: " + type);
 			}
 		}
 
@@ -55,12 +55,12 @@ namespace SharpPulsar.Sql.Facebook.Type
 			{
 				return true;
 			}
-			if (o == null || this.GetType() != o.GetType())
+			if (o == null || GetType() != o.GetType())
 			{
 				return false;
 			}
 			var that = (SelectedRole) o;
-			return Type == that.Type && object.Equals(_role, that._role);
+			return Type == that.Type && Equals(_role, that._role);
 		}
 
 		public override int GetHashCode()
@@ -86,7 +86,7 @@ namespace SharpPulsar.Sql.Facebook.Type
 				var role = m.Groups[3].Value;
 				return new SelectedRole((Type)type, role);
 			}
-			throw new System.ArgumentException("Could not parse selected role: " + value);
+			throw new ArgumentException("Could not parse selected role: " + value);
 		}
 	}
 
