@@ -33,16 +33,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// A generic json schema.
 	/// </summary>
-	public  class GenericJsonSchema : GenericSchemaImpl
+	public abstract class GenericJsonSchema : GenericSchemaImpl
 	{
-        private GenericSchemaImpl _genericSchemaImplImplementation;
-		private static ILogger _log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
+		private static readonly ILogger _log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
 
-        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+        protected GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-        public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+        protected GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 			Writer = new GenericJsonWriter();
 			
@@ -58,7 +57,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 				RecordSchema readerSchema;
 				if (UseProvidedSchemaAsReaderSchema)
 				{
-					readerSchema = Schema;
+					readerSchema = (RecordSchema)Schema;
 				}
 				else
 				{
@@ -68,7 +67,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 			else
 			{
-				_log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), _schemaInfo.SchemaDefinition);
+				_log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), SchemaInfo.SchemaDefinition);
 				return Reader;
 			}
 		}

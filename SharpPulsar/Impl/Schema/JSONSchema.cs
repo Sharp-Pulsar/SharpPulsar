@@ -28,10 +28,10 @@ using SharpPulsar.Util.Atomic.Threading;
 namespace SharpPulsar.Impl.Schema
 {
 	using DotNetty.Buffers;
-	using SharpPulsar.Api;
+	using Api;
 	using SharpPulsar.Api.Schema;
-	using SharpPulsar.Impl.Schema.Reader;
-	using SharpPulsar.Impl.Schema.Writer;
+	using Reader;
+	using Writer;
 
 	/// <summary>
 	/// A schema implementation to deal with json data.
@@ -75,7 +75,7 @@ namespace SharpPulsar.Impl.Schema
 					{
 						Name = "",
 						Properties = SchemaInfo.Properties,
-						Type = SchemaType.JSON,
+						Type = SchemaType.Json,
 						Schema = (sbyte[])(Array)objectMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
 					};
 				}
@@ -87,13 +87,11 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public override SchemaInfo SchemaInfo => throw new NotImplementedException();
-
 		public override ISchemaInfo SchemaInfo => throw new NotImplementedException();
 
 		public static JsonSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
 		{
-			return new JsonSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.JSON));
+			return new JsonSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.Json));
 		}
 
 		public static JsonSchema<T> Of(T pojo)
@@ -136,12 +134,12 @@ namespace SharpPulsar.Impl.Schema
 			throw new NotImplementedException();
 		}
 
-		public override ISchema<T1> Json<T1>(ISchemaDefinition<T1> schemaDefinition)
+		public override ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
 		{
 			throw new NotImplementedException();
 		}
 
-		public override ISchema<T> Json(Type pojo)
+		public override ISchema<T> Json(T pojo)
 		{
 			throw new NotImplementedException();
 		}

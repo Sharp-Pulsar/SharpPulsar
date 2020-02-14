@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,18 +30,16 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// </summary>
 	public class GenericJsonRecord : VersionedGenericRecord
     {
-        private readonly JsonDocument _jsonDocument;
-		public GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JsonDocument jd) : base(schemaVersion, fields)
+        private readonly JToken _jToken;
+		public GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JToken jd) : base(schemaVersion, fields)
 		{
-			_jsonDocument = jd;
+			_jToken = jd;
 		}
 
 
 		public override object GetField(string fieldName)
 		{
-			var fn = _jsonDocument.RootElement.EnumerateArray().Where(x => !string.IsNullOrWhiteSpace(x.GetProperty(fieldName).GetString()));
-            var jsonElements = fn as JsonElement[] ?? fn.ToArray();
-            return jsonElements;
+			return _jToken[fieldName].Value<JObject>().Properties().ToList();
         }
 
 		public override object GetField(Field field)

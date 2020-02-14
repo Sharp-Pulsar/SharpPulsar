@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl.Schema
 		static SchemaUtils()
 		{
 			// string
-			SchemaTypeClasses[SchemaType.STRING] = new List<Type>{ typeof(string) };
+			SchemaTypeClasses[SchemaType.String] = new List<Type>{ typeof(string) };
 			// bytes
 			SchemaTypeClasses[SchemaType.BYTES] = new List<Type>{typeof(sbyte[]), typeof(ByteBuffer), typeof(IByteBuffer)};
 			// build the reverse mapping

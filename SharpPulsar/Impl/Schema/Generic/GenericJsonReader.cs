@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			try
 			{
-				JsonNode jn = _objectMapper.ReadValue(StringHelper.NewString(bytes, offset, length, Encoding.UTF8.EncodingName), o);
+				var jn = _objectMapper.ReadValue(StringHelper.NewString(bytes, offset, length, Encoding.UTF8.EncodingName));
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			try
 			{
-				JsonNode jn = _objectMapper.ReadValue(inputStream);
+				var jn = _objectMapper.ReadValue(inputStream);
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)

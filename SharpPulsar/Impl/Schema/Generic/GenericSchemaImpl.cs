@@ -2,9 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SharpPulsar.Common.Enum;
+using Avro;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -57,13 +56,13 @@ namespace SharpPulsar.Impl.Schema.Generic
         protected GenericSchemaImpl(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
 		{
 
-			Fields = Schema.Fields.Select(f => new Field() { Name = f.Name, Index = f.Pos}).ToList();
+			Fields = ((RecordSchema)Schema).Fields.Select(f => new Field() { Name = f.Name, Index = f.Pos}).ToList();
 			UseProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
 		}
 
-		public virtual IList<Field> Fields { get; }
+		public  IList<Field> Fields { get; }
 
-		IList<Field> IGenericSchema<IGenericRecord>.Fields => throw new NotImplementedException();
+		//IList<Field> IGenericSchema<IGenericRecord>.Fields => throw new NotImplementedException();
 
 		/// <summary>
 		/// Create a generic schema out of a <tt>SchemaInfo</tt>.

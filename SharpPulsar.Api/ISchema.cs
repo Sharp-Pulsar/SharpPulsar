@@ -276,19 +276,6 @@ namespace SharpPulsar.Api
 		}
 	}
 
-	public static class SchemaFields
-	{
-		public static readonly ISchema<sbyte[]> Bytes = DefaultImplementation.newBytesSchema();
-		public static readonly ISchema<IByteBuffer> Bytebuffer = DefaultImplementation.newByteBufferSchema();
-		public static readonly ISchema<string> String = DefaultImplementation.newStringSchema();
-		public static readonly ISchema<sbyte> Int8 = DefaultImplementation.newByteSchema();
-		public static readonly ISchema<short> Int16 = DefaultImplementation.newShortSchema();
-		public static readonly ISchema<int> Int32 = DefaultImplementation.newIntSchema();
-		public static readonly ISchema<long> Int64 = DefaultImplementation.newLongSchema();
-		public static readonly ISchema<bool> Bool = DefaultImplementation.newBooleanSchema();
-		public static readonly ISchema<float> Float = DefaultImplementation.newFloatSchema();
-		public static readonly ISchema<double> Double = DefaultImplementation.newDoubleSchema();
-		public static readonly ISchema<DateTime> Date = DefaultImplementation.newDateSchema();
-	}
+	
 
 }

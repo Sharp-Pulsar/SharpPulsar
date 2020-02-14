@@ -17,17 +17,14 @@
 /// under the License.
 /// </summary>
 
+using System;
+using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Impl.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkState;
-
-	using SharpPulsar.Api;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
@@ -43,27 +40,25 @@ namespace SharpPulsar.Impl.Schema
 
 		public AutoProduceBytesSchema(ISchema<T> schema)
 		{
-			this._schema = schema;
-			SchemaInfo schemaInfo = schema.SchemaInfo;
-			this._requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
+			_schema = schema;
+			var schemaInfo = schema.SchemaInfo;
+			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
 		}
 
 		public virtual ISchema<T> Schema
 		{
-            get
-            {
-                return this._schema;
-            }
-			set
+            get => _schema;
+            set
 			{
-				this._schema = value;
-				this._requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
+				_schema = value;
+				_requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
 			}
 		}
 
 		private void EnsureSchemaInitialized()
 		{
-			checkState(SchemaInitialized(), "Schema is not initialized before used");
+			if(!SchemaInitialized())
+                throw new ArgumentException("Schema is not initialized before used");
 		}
 
 		public virtual bool SchemaInitialized()
@@ -71,14 +66,14 @@ namespace SharpPulsar.Impl.Schema
 			return _schema != null;
 		}
 
-		public override void Validate(sbyte[] message)
+		public void Validate(sbyte[] message)
 		{
 			EnsureSchemaInitialized();
 
 			_schema.Validate(message);
 		}
 
-		public override sbyte[] Encode(sbyte[] message)
+		public sbyte[] Encode(sbyte[] message)
 		{
 			EnsureSchemaInitialized();
 
@@ -91,7 +86,7 @@ namespace SharpPulsar.Impl.Schema
 			return message;
 		}
 
-		public override sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			EnsureSchemaInitialized();
 
@@ -104,7 +99,7 @@ namespace SharpPulsar.Impl.Schema
 			return bytes;
 		}
 
-		public virtual SchemaInfo SchemaInfo
+		public virtual ISchemaInfo SchemaInfo
 		{
 			get
 			{

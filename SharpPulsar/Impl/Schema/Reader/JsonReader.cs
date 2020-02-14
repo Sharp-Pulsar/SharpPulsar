@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
@@ -50,8 +52,10 @@ namespace SharpPulsar.Impl.Schema.Reader
 		public T Read(Stream inputStream)
 		{
 			try
-			{
-				return (T)_objectMapper.ReadValue(inputStream);
+            {
+                var t = _objectMapper.ReadValue(inputStream).Children<JObject>();
+				
+				return (T)t;
 			}
 			catch (IOException e)
 			{

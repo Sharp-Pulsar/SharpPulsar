@@ -8,4 +8,8 @@
     <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Facebook\" />
+  </ItemGroup>
+
 </Project>

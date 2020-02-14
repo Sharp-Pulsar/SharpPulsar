@@ -1065,7 +1065,7 @@ namespace SharpPulsar.Impl
 			SchemaInfo schemaInfo = null;
             if (Schema?.SchemaInfo != null)
             {
-                if (Schema.SchemaInfo.Type == SchemaType.JSON)
+                if (Schema.SchemaInfo.Type == SchemaType.Json)
                 {
                     // for backwards compatibility purposes
                     // JSONSchema originally generated a schema for pojo based of of the JSON schema standard

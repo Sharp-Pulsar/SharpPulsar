@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;

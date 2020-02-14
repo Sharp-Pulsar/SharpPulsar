@@ -35,8 +35,6 @@ namespace SharpPulsar.Sql
 		{
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonCreator public Column(@JsonProperty("name") String name, @JsonProperty("type") String type, @JsonProperty("typeSignature") ClientTypeSignature typeSignature)
 		public Column(string Name, string Type, ClientTypeSignature TypeSignature)
 		{
 			this.Name = requireNonNull(Name, "name is null");

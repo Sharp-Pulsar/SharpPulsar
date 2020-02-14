@@ -63,43 +63,43 @@ namespace SharpPulsar.Impl.Schema
 
 		public ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull)
 		{
-			this._alwaysAllowNull = alwaysAllowNull;
+			_alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
 
 		public ISchemaDefinitionBuilder<T> AddProperty(string key, string value)
 		{
-			this._properties[key] = value;
+			_properties[key] = value;
 			return this;
 		}
 
 		public ISchemaDefinitionBuilder<T> WithPojo(T clazz)
 		{
-			this._clazz = clazz;
+			_clazz = clazz;
 			return this;
 		}
 
 		public ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDef)
 		{
-			this._jsonDef = jsonDef;
+			_jsonDef = jsonDef;
 			return this;
 		}
 
 		public  ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning)
 		{
-			this._supportSchemaVersioning = supportSchemaVersioning;
+			_supportSchemaVersioning = supportSchemaVersioning;
 			return this;
 		}
 
 		public  ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties)
 		{
-			this._properties = properties;
+			_properties = properties;
 			return this;
 		}
 
 		public  ISchemaDefinition<T> Build()
 		{
-			_properties[AlwaysAllowNull] = this._alwaysAllowNull ? "true" : "false";
+			_properties[AlwaysAllowNull] = _alwaysAllowNull ? "true" : "false";
 			return new SchemaDefinitionImpl<T>(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning);
 
 		}

@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl.Schema
 	{
 		public abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo);
 
-		public abstract ISchema<object> GetSchema(SchemaInfo schemaInfo);
+		public abstract ISchema<T> GetSchema(SchemaInfo schemaInfo);
 
 		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema);
 
@@ -38,8 +38,8 @@ namespace SharpPulsar.Impl.Schema
 		public abstract ISchema<IGenericRecord> AutoConsume();
 		public abstract ISchema<IGenericRecord> Auto();
 
-		public abstract ISchema<T> Json<T>(ISchemaDefinition<T> schemaDefinition);
-		public abstract ISchema<T> Json(Type pojo);
+		public abstract ISchema<T> Json(ISchemaDefinition<T> schemaDefinition);
+		public abstract ISchema<T> Json(T pojo);
 
 		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();

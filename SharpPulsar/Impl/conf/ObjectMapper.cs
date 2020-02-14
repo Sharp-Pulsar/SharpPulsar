@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
+using Newtonsoft.Json.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -52,7 +53,11 @@ namespace SharpPulsar.Impl.Conf
 		{
 			return JsonSerializer.Deserialize(existingConfigJson, t);
 		}
-        public object ReadValue(byte[] param, int position, long length)
+        public JToken ReadValue(string existingConfigJson)
+        {
+            return JToken.Parse(existingConfigJson);
+        }
+		public object ReadValue(byte[] param, int position, long length)
         {
 			using var ms = new MemoryStream(param)
 			{
@@ -62,12 +67,13 @@ namespace SharpPulsar.Impl.Conf
 			IFormatter br = new BinaryFormatter();
 			return br.Deserialize(ms);
 		}
-        public object ReadValue(Stream stream)
+        public JToken ReadValue(Stream stream)
         {
             using (stream)
             {
                 IFormatter br = new BinaryFormatter();
-                return br.Deserialize(stream);
+                var st = br.Deserialize(stream).ToString();
+				return JToken.Parse(st);
             }
         }
 	}

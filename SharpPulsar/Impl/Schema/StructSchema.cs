@@ -1,11 +1,11 @@
-﻿using System;
+﻿using System.Collections.Concurrent;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading;
 using Avro;
-using Avro.IO;
 using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
-using Optional;
 using Org.BouncyCastle.Utilities.Encoders;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
@@ -13,7 +13,6 @@ using SharpPulsar.Exception;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using YamlDotNet.Core;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,9 +41,9 @@ namespace SharpPulsar.Impl.Schema
 	/// have multiple fields.
 	/// 
 	/// <para>Currently Pulsar supports 3 `Struct` types -
-	/// <seealso cref="SchemaType.AVRO"/>,
-	/// <seealso cref="SchemaType.JSON"/>,
-	/// and <seealso cref="SchemaType.PROTOBUF"/>.
+	/// <seealso cref="SchemaType.Avro"/>,
+	/// <seealso cref="SchemaType.Json"/>,
+	/// and <seealso cref="SchemaType.Protobuf"/>.
 	/// </para>
 	/// </summary>
 	public abstract class StructSchema<T> : AbstractSchema<T>
@@ -52,15 +51,16 @@ namespace SharpPulsar.Impl.Schema
 
 		protected internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(StructSchema<T>));
 
-		protected internal readonly RecordSchema Schema;
+		protected internal readonly Avro.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;
         private ISchemaReader<T> _reader;
         private ISchemaWriter<T> _writer;
         private ISchemaInfoProvider _schemaInfoProvider;
+		private readonly ConcurrentDictionary<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new ConcurrentDictionary<BytesSchemaVersion, ISchemaReader<T>>();
 
-		public StructSchema(SchemaInfo schemaInfo)
+        protected StructSchema(SchemaInfo schemaInfo)
 		{
-			this.Schema = ParseAvroSchema(new string(schemaInfo.Schema));
+			this.Schema = ParseAvroSchema(new string(Encoding.UTF8.GetString((byte[])(object)schemaInfo.Schema)));
 			_schemaInfo = schemaInfo;
 		}
 
@@ -68,7 +68,7 @@ namespace SharpPulsar.Impl.Schema
 
         public override sbyte[] Encode(T message)
 		{
-			return _writer.Invoke(message);
+			return _writer.Write(message);
 		}
 
 		public override T Decode(sbyte[] bytes)
@@ -80,7 +80,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			try
 			{
-				return readerCache.get(BytesSchemaVersion.of(SchemaVersion)).read(Bytes);
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(bytes);
 			}
 			catch (System.Exception e)
 			{
@@ -88,26 +88,27 @@ namespace SharpPulsar.Impl.Schema
 				{
 					throw new SchemaSerializationException(e);
 				}
-				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode(schemaVersion), e);
+				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode((byte[])(object)schemaVersion), e);
 				throw new System.Exception("Can't get generic schema for topic " + _schemaInfoProvider.TopicName);
 			}
 		}
 
-		public T Decode(IByteBuffer byteBuf)
-		{
-			return _reader.Read(new ByteBufInputStream(byteBuf));
+		public override T Decode(IByteBuffer byteBuf)
+        {
+            var msg = (sbyte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
+			return _reader.Read(msg);
 		}
 
-		public T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
+		public override T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
 		{
 			try
 			{
-				//return readerCache.get(BytesSchemaVersion.Of(SchemaVersion)).read(new ByteBufInputStream(ByteBuf));
-                return new ByteBufInputStream(byteBuf);
+                var msg = (sbyte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(msg);
             }
 			catch (System.Exception e)
 			{
-				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode(schemaVersion), e);
+				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode((byte[])(object)schemaVersion), e);
 				throw new System.Exception("Can't get generic schema for topic " + _schemaInfoProvider.TopicName);
 			}
 		}
@@ -124,7 +125,7 @@ namespace SharpPulsar.Impl.Schema
 			}
 			else if (pojo != null)
 			{
-				return schemaDefinition.AlwaysAllowNull ? Avro ReflectData.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
+                throw new System.Exception("Not yet implemented"); //schemaDefinition.AlwaysAllowNull ? Avro.Reflect.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
 			}
 			else
 			{

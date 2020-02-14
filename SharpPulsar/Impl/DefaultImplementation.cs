@@ -225,7 +225,7 @@ namespace SharpPulsar.Impl
 
 		public static IRecordSchemaBuilder NewRecordSchemaBuilder(string name)
 		{
-			return new RecordSchemaBuilderImpl(name);
+			return new ecordSchemaBuilderImpl(name);
 		}
 
 		/// <summary>

@@ -43,22 +43,22 @@ namespace SharpPulsar.Shared
 		/// <summary>
 		/// Simple String encoding with UTF-8.
 		/// </summary>
-		public static readonly SchemaType STRING = new SchemaType("STRING", InnerEnum.STRING, 1);
+		public static readonly SchemaType String = new SchemaType("STRING", InnerEnum.STRING, 1);
 
 		/// <summary>
 		/// JSON object encoding and validation.
 		/// </summary>
-		public static readonly SchemaType JSON = new SchemaType("JSON", InnerEnum.JSON, 2);
+		public static readonly SchemaType Json = new SchemaType("JSON", InnerEnum.JSON, 2);
 
 		/// <summary>
 		/// Protobuf message encoding and decoding.
 		/// </summary>
-		public static readonly SchemaType PROTOBUF = new SchemaType("PROTOBUF", InnerEnum.PROTOBUF, 3);
+		public static readonly SchemaType Protobuf = new SchemaType("PROTOBUF", InnerEnum.PROTOBUF, 3);
 
 		/// <summary>
 		/// Serialize and deserialize via avro.
 		/// </summary>
-		public static readonly SchemaType AVRO = new SchemaType("AVRO", InnerEnum.AVRO, 4);
+		public static readonly SchemaType Avro = new SchemaType("AVRO", InnerEnum.AVRO, 4);
 
 		/// <summary>
 		/// boolean schema defined.
@@ -150,10 +150,10 @@ namespace SharpPulsar.Shared
 		static SchemaType()
 		{
 			valueList.Add(NONE);
-			valueList.Add(STRING);
-			valueList.Add(JSON);
-			valueList.Add(PROTOBUF);
-			valueList.Add(AVRO);
+			valueList.Add(String);
+			valueList.Add(Json);
+			valueList.Add(Protobuf);
+			valueList.Add(Avro);
 			valueList.Add(BOOLEAN);
 			valueList.Add(INT8);
 			valueList.Add(INT16);
@@ -225,10 +225,10 @@ namespace SharpPulsar.Shared
 			return value switch
 			{
 				0 => NONE,
-				1 => STRING,
-				2 => JSON,
-				3 => PROTOBUF,
-				4 => AVRO,
+				1 => String,
+				2 => Json,
+				3 => Protobuf,
+				4 => Avro,
 				5 => BOOLEAN,
 				6 => INT8,
 				7 => INT16,

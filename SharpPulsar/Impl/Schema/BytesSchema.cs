@@ -16,53 +16,55 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using DotNetty.Buffers;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Shared;
+
 namespace SharpPulsar.Impl.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-
-	/// <summary>
+    /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
 	public class BytesSchema : AbstractSchema<sbyte[]>
 	{
 
-		private static readonly BytesSchema INSTANCE;
-		public virtual SchemaInfo {get;}
+		private static readonly BytesSchema Instance = new BytesSchema();
+		public override ISchemaInfo SchemaInfo {get;}
 
-		static BytesSchema()
+		public BytesSchema()
 		{
-			SchemaInfo = (new SchemaInfo()).setName("Bytes").setType(SchemaType.BYTES).setSchema(new sbyte[0]);
-			INSTANCE = new BytesSchema();
+            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new sbyte[0]};
+            SchemaInfo = s;
 		}
 
 		public static BytesSchema Of()
 		{
-			return INSTANCE;
+			return Instance;
 		}
 
-		public override sbyte[] Encode(sbyte[] Message)
+		public override sbyte[] Encode(sbyte[] message)
 		{
-			return Message;
+			return message;
 		}
 
-		public override sbyte[] Decode(sbyte[] Bytes)
+		public override sbyte[] Decode(sbyte[] bytes)
 		{
-			return Bytes;
+			return bytes;
 		}
 
-		public override sbyte[] Decode(ByteBuf ByteBuf)
+		public override sbyte[] Decode(IByteBuffer byteBuf)
 		{
-			if (ByteBuf == null)
+			if (byteBuf == null)
 			{
 				return null;
 			}
-			int Size = ByteBuf.readableBytes();
-			var Bytes = new sbyte[Size];
+			int size = byteBuf.ReadableBytes;
+			var bytes = new sbyte[size];
 
-			ByteBuf.readBytes(Bytes, 0, Size);
-			return Bytes;
+			byteBuf.ReadBytes((byte[])(object)bytes, 0, size);
+			return bytes;
 		}
 
 	}

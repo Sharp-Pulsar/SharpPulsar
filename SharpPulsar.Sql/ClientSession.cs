@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,13 +21,7 @@ namespace SharpPulsar.Sql
 	using ImmutableMap = com.google.common.collect.ImmutableMap;
 	using ImmutableSet = com.google.common.collect.ImmutableSet;
 	using Duration = io.airlift.units.Duration;
-
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.toStringHelper;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
+	
 	public class ClientSession
 	{
 		public virtual  string Server {get;}
@@ -54,10 +49,10 @@ namespace SharpPulsar.Sql
 
 		public static ClientSession StripTransactionId(ClientSession session)
 		{
-			return ClientSession.Builder(session).withoutTransactionId().build();
+			return Builder(session).WithoutTransactionId().Build();
 		}
 
-		public ClientSession(URI server, string user, string source, Optional<string> traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, Locale locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, Duration clientRequestTimeout)
+		public ClientSession(Uri server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, Locale locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, Duration clientRequestTimeout)
 		{
 			this.Server = requireNonNull(server, "server is null");
 			this.User = user;

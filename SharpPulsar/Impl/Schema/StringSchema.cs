@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private static readonly SchemaInfo DefaultSchemaInfo;
 		private static readonly CharSet DefaultCharset;
-		private static readonly StringSchema UTF8;
+		private static readonly StringSchema _utf8;
 
 		static StringSchema()
 		{
@@ -51,11 +51,11 @@ namespace SharpPulsar.Impl.Schema
 			DefaultSchemaInfo = new SchemaInfo()
             {
 				Name = "String",
-				Type = SchemaType.STRING,
+				Type = SchemaType.String,
 				Schema = Array.Empty<sbyte>()
 			};
 
-			UTF8 = new StringSchema(CharSet.Ansi);
+			_utf8 = new StringSchema(CharSet.Ansi);
 		}
 
 		private static readonly FastThreadLocal<sbyte[]> TmpBuffer = new FastThreadLocalAnonymousInnerClass();
@@ -70,12 +70,12 @@ namespace SharpPulsar.Impl.Schema
 
 		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
 		{
-			if(SchemaType.STRING != schemaInfo.Type)
+			if(SchemaType.String != schemaInfo.Type)
                 throw new ArgumentException("Not a string schema");
 			var charsetName = schemaInfo.Properties[CharsetKey];
 			if (null == charsetName)
 			{
-				return UTF8;
+				return _utf8;
 			}
 			else
             {
@@ -86,7 +86,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public static StringSchema Utf8()
 		{
-			return UTF8;
+			return _utf8;
 		}
 
 		private readonly CharSet _charset;
@@ -108,7 +108,7 @@ namespace SharpPulsar.Impl.Schema
 			this.SchemaInfo = new SchemaInfo()
             {
                 Name = DefaultSchemaInfo.Name,
-                Type = SchemaType.STRING,
+                Type = SchemaType.String,
                 Schema = DefaultSchemaInfo.Schema,
                 Properties = properties
             };
