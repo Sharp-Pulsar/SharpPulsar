@@ -1,5 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using SharpPulsar.Sql.Facebook;
+using SharpPulsar.Sql.Facebook.Type;
+using SharpPulsar.Sql.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,200 +21,161 @@ using System.Collections.Generic;
  */
 namespace SharpPulsar.Sql
 {
-	using SelectedRole = com.facebook.presto.spi.security.SelectedRole;
-	using TimeZoneKey = com.facebook.presto.spi.type.TimeZoneKey;
-	using ImmutableMap = com.google.common.collect.ImmutableMap;
-	using ImmutableSet = com.google.common.collect.ImmutableSet;
-	using Duration = io.airlift.units.Duration;
-	
 	public class ClientSession
 	{
-		public virtual  string Server {get;}
-		public virtual string User {get;}
-		public virtual string Source {get;}
+		public  string Server {get;}
+		public string User {get;}
+		public string Source {get;}
 		private readonly string _traceToken;
 		private readonly ISet<string> _clientTags;
-		public virtual string ClientInfo {get;}
-		public virtual string Catalog {get;}
-		public virtual string Schema {get;}
-		public virtual string TimeZone {get;}
-		public virtual string Locale {get;}
+		public string ClientInfo {get;}
+		public string Catalog {get;}
+		public string Schema {get;}
+		public TimeZoneKey TimeZone {get;}
+		public CultureInfo Locale {get;}
 		private readonly IDictionary<string, string> _resourceEstimates;
 		private readonly IDictionary<string, string> _properties;
-		private readonly IDictionary<string, string> _preparedStatements;
-		private readonly IDictionary<string, SelectedRole> _roles;
-		private readonly IDictionary<string, string> _extraCredentials;
-		public virtual string TransactionId {get;}
-		public virtual string ClientRequestTimeout {get;}
+        public  string TransactionId {get;}
+		public TimeSpan ClientRequestTimeout {get;}
 
-		public static Builder Builder(ClientSession clientSession)
+		public static Builder NewBuilder(ClientSession clientSession)
 		{
 			return new Builder(clientSession);
 		}
 
 		public static ClientSession StripTransactionId(ClientSession session)
 		{
-			return Builder(session).WithoutTransactionId().Build();
+			return NewBuilder(session).WithoutTransactionId().Build();
 		}
 
-		public ClientSession(Uri server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, Locale locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, Duration clientRequestTimeout)
+		public ClientSession(string server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout)
 		{
-			this.Server = requireNonNull(server, "server is null");
-			this.User = user;
-			this.Source = source;
-			this._traceToken = requireNonNull(traceToken, "traceToken is null");
-			this._clientTags = ImmutableSet.copyOf(requireNonNull(clientTags, "clientTags is null"));
-			this.ClientInfo = clientInfo;
-			this.Catalog = catalog;
-			this.Schema = schema;
-			this.Locale = locale;
-			this.TimeZone = TimeZoneKey.getTimeZoneKey(timeZoneId);
-			this.TransactionId = transactionId;
-			this._resourceEstimates = ImmutableMap.copyOf(requireNonNull(resourceEstimates, "resourceEstimates is null"));
-			this._properties = ImmutableMap.copyOf(requireNonNull(properties, "properties is null"));
-			this._preparedStatements = ImmutableMap.copyOf(requireNonNull(preparedStatements, "preparedStatements is null"));
-			this._roles = ImmutableMap.copyOf(requireNonNull(roles, "roles is null"));
-			this._extraCredentials = ImmutableMap.copyOf(requireNonNull(extraCredentials, "extraCredentials is null"));
-			this.ClientRequestTimeout = clientRequestTimeout;
+			Server = ParameterCondition.RequireNonNull(server,"Server", "server is null");
+			User = user;
+			Source = source;
+			_traceToken = ParameterCondition.RequireNonNull(traceToken,"TraceToken", "traceToken is null");
+			_clientTags = new HashSet<string>(ParameterCondition.RequireNonNull(clientTags, "ClientTags", "clientTags is null"));
+			ClientInfo = clientInfo;
+			Catalog = catalog;
+			Schema = schema;
+			Locale = locale;
+			TimeZone = TimeZoneKey.GetTimeZoneKey(timeZoneId);
+			TransactionId = transactionId;
+			_resourceEstimates = new Dictionary<string, string>(ParameterCondition.RequireNonNull(resourceEstimates, "ResourceEstimates", "resourceEstimates is null"));
+			_properties = new Dictionary<string, string>(ParameterCondition.RequireNonNull(properties, "properties is null"));
+			PreparedStatements = new Dictionary<string, string>(ParameterCondition.RequireNonNull(preparedStatements, "preparedStatements is null"));
+			Roles = new Dictionary<string, SelectedRole>(ParameterCondition.RequireNonNull(roles, "roles is null"));
+			ExtraCredentials = new Dictionary<string, string>(ParameterCondition.RequireNonNull(extraCredentials, "extraCredentials is null"));
+			ClientRequestTimeout = clientRequestTimeout;
 
 			foreach (string clientTag in clientTags)
 			{
-				checkArgument(!clientTag.Contains(","), "client tag cannot contain ','");
+				ParameterCondition.CheckArgument(!clientTag.Contains(","), "client tag cannot contain ','");
 			}
 
 			// verify that resource estimates are valid
-			CharsetEncoder charsetEncoder = US_ASCII.newEncoder();
+			var charsetEncoder = new ASCIIEncoding();
 			foreach (KeyValuePair<string, string> entry in resourceEstimates.SetOfKeyValuePairs())
 			{
-				checkArgument(!entry.Key.Empty, "Resource name is empty");
-				checkArgument(entry.Key.IndexOf('=') < 0, "Resource name must not contain '=': %s", entry.Key);
-				checkArgument(charsetEncoder.canEncode(entry.Key), "Resource name is not US_ASCII: %s", entry.Key);
+                ParameterCondition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Resource name is empty");
+                ParameterCondition.CheckArgument(entry.Key.IndexOf('=') < 0, "Resource name must not contain '=': %s", entry.Key);
+                //ParameterCondition.CheckArgument(charsetEncoder.canEncode(entry.Key), "Resource name is not US_ASCII: %s", entry.Key);
 			}
 
 			// verify the properties are valid
 			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
 			{
-				checkArgument(!entry.Key.Empty, "Session property name is empty");
-				checkArgument(entry.Key.IndexOf('=') < 0, "Session property name must not contain '=': %s", entry.Key);
-				checkArgument(charsetEncoder.canEncode(entry.Key), "Session property name is not US_ASCII: %s", entry.Key);
-				checkArgument(charsetEncoder.canEncode(entry.Value), "Session property value is not US_ASCII: %s", entry.Value);
+				ParameterCondition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Session property name is empty");
+                ParameterCondition.CheckArgument(entry.Key.IndexOf('=') < 0, "Session property name must not contain '=': %s", entry.Key);
+                ParameterCondition.CheckArgument(ParameterCondition.CanEncode(entry.Key), "Session property name is not US_ASCII: %s", entry.Key);
+                ParameterCondition.CheckArgument(ParameterCondition.CanEncode(entry.Value), "Session property value is not US_ASCII: %s", entry.Value);
 			}
 
 			// verify the extra credentials are valid
 			foreach (KeyValuePair<string, string> entry in extraCredentials.SetOfKeyValuePairs())
 			{
-				checkArgument(!entry.Key.Empty, "Credential name is empty");
-				checkArgument(entry.Key.IndexOf('=') < 0, "Credential name must not contain '=': %s", entry.Key);
-				checkArgument(charsetEncoder.canEncode(entry.Key), "Credential name is not US_ASCII: %s", entry.Key);
-				checkArgument(charsetEncoder.canEncode(entry.Value), "Credential value is not US_ASCII: %s", entry.Value);
+                ParameterCondition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Credential name is empty");
+                ParameterCondition.CheckArgument(entry.Key.IndexOf('=') < 0, "Credential name must not contain '=': %s", entry.Key);
+                ParameterCondition.CheckArgument(ParameterCondition.CanEncode(entry.Key), "Credential name is not US_ASCII: %s", entry.Key);
+                ParameterCondition.CheckArgument(ParameterCondition.CanEncode(entry.Value), "Credential value is not US_ASCII: %s", entry.Value);
 			}
 		}
 
 
 
 
-		public virtual Optional<string> TraceToken
-		{
-			get
-			{
-				return _traceToken;
-			}
-		}
+		public virtual string TraceToken => _traceToken;
 
-		public virtual ISet<string> ClientTags
-		{
-			get
-			{
-				return _clientTags;
-			}
-		}
+        public virtual ISet<string> ClientTags => _clientTags;
 
 
+        public virtual IDictionary<string, string> ResourceEstimates => _resourceEstimates;
 
+        public virtual IDictionary<string, string> Properties => _properties;
 
+        public virtual IDictionary<string, string> PreparedStatements { get; }
 
-
-		public virtual IDictionary<string, string> ResourceEstimates
-		{
-			get
-			{
-				return _resourceEstimates;
-			}
-		}
-
-		public virtual IDictionary<string, string> Properties
-		{
-			get
-			{
-				return _properties;
-			}
-		}
-
-		public virtual IDictionary<string, string> PreparedStatements
-		{
-			get
-			{
-				return _preparedStatements;
-			}
-		}
-
-		/// <summary>
+        /// <summary>
 		/// Returns the map of catalog name -> selected role
 		/// </summary>
-		public virtual IDictionary<string, SelectedRole> Roles
+		public virtual IDictionary<string, SelectedRole> Roles { get; }
+
+        public virtual IDictionary<string, string> ExtraCredentials { get; }
+
+
+        public virtual bool Debug => false;
+
+
+        public override string ToString()
 		{
-			get
-			{
-				return _roles;
-			}
-		}
-
-		public virtual IDictionary<string, string> ExtraCredentials
-		{
-			get
-			{
-				return _extraCredentials;
-			}
-		}
-
-
-		public virtual bool Debug
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-
-		public override string ToString()
-		{
-			return toStringHelper(this).add("server", Server).add("user", User).add("clientTags", _clientTags).add("clientInfo", ClientInfo).add("catalog", Catalog).add("schema", Schema).add("traceToken", _traceToken.orElse(null)).add("timeZone", TimeZone).add("locale", Locale).add("properties", _properties).add("transactionId", TransactionId).omitNullValues().ToString();
-		}
+			var str = new StringBuilder();
+            str.Append("server :"+Server);
+            str.Append(Environment.NewLine);
+            str.Append("user :" + User);
+            str.Append(Environment.NewLine);
+            str.Append("clientTags :" + _clientTags);
+            str.Append(Environment.NewLine);
+            str.Append("clientInfo :" + ClientInfo);
+            str.Append(Environment.NewLine);
+            str.Append("catalog :" + Catalog);
+            str.Append(Environment.NewLine);
+            str.Append("schema :" + Schema);
+            str.Append(Environment.NewLine);
+            str.Append("traceToken :" + _traceToken);
+            str.Append(Environment.NewLine);
+            str.Append("timeZone :" + TimeZone);
+            str.Append(Environment.NewLine);
+            str.Append("locale :" + Locale);
+            str.Append(Environment.NewLine);
+            str.Append("properties :" + _properties);
+            str.Append(Environment.NewLine);
+            str.Append("transactionId :" + TransactionId);
+            return str.ToString();
+        }
 
 		public sealed class Builder
 		{
-			internal URI Server;
+			internal string Server;
 			internal string User;
 			internal string Source;
-			internal Optional<string> TraceToken;
+			internal string TraceToken;
 			internal ISet<string> ClientTags;
 			internal string ClientInfo;
 			internal string Catalog;
 			internal string Schema;
 			internal TimeZoneKey TimeZone;
-			internal Locale Locale;
+			internal CultureInfo Locale;
 			internal IDictionary<string, string> ResourceEstimates;
 			internal IDictionary<string, string> Properties;
 			internal IDictionary<string, string> PreparedStatements;
 			internal IDictionary<string, SelectedRole> Roles;
 			internal IDictionary<string, string> Credentials;
 			internal string TransactionId;
-			internal Duration ClientRequestTimeout;
+			internal TimeSpan ClientRequestTimeout;
 
 			public Builder(ClientSession clientSession)
 			{
-				requireNonNull(clientSession, "clientSession is null");
+				ParameterCondition.RequireNonNull(clientSession, "clientSession", "clientSession is null");
 				Server = clientSession.Server;
 				User = clientSession.User;
 				Source = clientSession.Source;
@@ -231,49 +197,49 @@ namespace SharpPulsar.Sql
 
 			public Builder WithCatalog(string catalog)
 			{
-				this.Catalog = requireNonNull(catalog, "catalog is null");
+				Catalog = ParameterCondition.RequireNonNull(catalog, "catalog", "catalog is null");
 				return this;
 			}
 
 			public Builder WithSchema(string schema)
 			{
-				this.Schema = requireNonNull(schema, "schema is null");
+				Schema = ParameterCondition.RequireNonNull(schema, "schema", "schema is null");
 				return this;
 			}
 
 			public Builder WithProperties(IDictionary<string, string> properties)
 			{
-				this.Properties = requireNonNull(properties, "properties is null");
+				Properties = ParameterCondition.RequireNonNull(properties, "properties", "properties is null");
 				return this;
 			}
 
 			public Builder WithRoles(IDictionary<string, SelectedRole> roles)
 			{
-				this.Roles = roles;
+				Roles = roles;
 				return this;
 			}
 
 			public Builder WithCredentials(IDictionary<string, string> credentials)
 			{
-				this.Credentials = requireNonNull(credentials, "extraCredentials is null");
+				Credentials = ParameterCondition.RequireNonNull(credentials, "credentialsS", "extraCredentials is null");
 				return this;
 			}
 
 			public Builder WithPreparedStatements(IDictionary<string, string> preparedStatements)
 			{
-				this.PreparedStatements = requireNonNull(preparedStatements, "preparedStatements is null");
+				PreparedStatements = ParameterCondition.RequireNonNull(preparedStatements, "preparedStatements", "preparedStatements is null");
 				return this;
 			}
 
 			public Builder WithTransactionId(string transactionId)
 			{
-				this.TransactionId = requireNonNull(transactionId, "transactionId is null");
+				TransactionId = ParameterCondition.RequireNonNull(transactionId, "transactionId", "transactionId is null");
 				return this;
 			}
 
 			public Builder WithoutTransactionId()
 			{
-				this.TransactionId = null;
+				TransactionId = null;
 				return this;
 			}
 
@@ -281,6 +247,7 @@ namespace SharpPulsar.Sql
 			{
 				return new ClientSession(Server, User, Source, TraceToken, ClientTags, ClientInfo, Catalog, Schema, TimeZone.Id, Locale, ResourceEstimates, Properties, PreparedStatements, Roles, Credentials, TransactionId, ClientRequestTimeout);
 			}
+
 		}
 	}
 
