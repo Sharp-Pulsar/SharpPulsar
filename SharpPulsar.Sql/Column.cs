@@ -11,45 +11,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using SharpPulsar.Sql.Facebook.Type;
+using SharpPulsar.Sql.Precondition;
+
 namespace SharpPulsar.Sql
 {
-	using Type = com.facebook.presto.spi.type.Type;
-	using TypeSignature = com.facebook.presto.spi.type.TypeSignature;
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable public class Column
-	public class Column
+    public class Column
 	{
-		public virtual Name {get;}
-		public virtual Type {get;}
-		public virtual TypeSignature {get;}
+		public string Name {get;}
+		public string Type {get;}
+		public ClientTypeSignature TypeSignature {get;}
 
-		public Column(string Name, Type Type) : this(Name, Type.TypeSignature)
+		public Column(string name, IType type) : this(name, type.GetTypeSignature())
 		{
 		}
 
-		public Column(string Name, TypeSignature Signature) : this(Name, Signature.ToString(), new ClientTypeSignature(Signature))
+		public Column(string name, TypeSignature signature) : this(name, signature.ToString(), new ClientTypeSignature(signature))
 		{
 		}
 
-		public Column(string Name, string Type, ClientTypeSignature TypeSignature)
+		public Column(string name, string type, ClientTypeSignature typeSignature)
 		{
-			this.Name = requireNonNull(Name, "name is null");
-			this.Type = requireNonNull(Type, "type is null");
-			this.TypeSignature = TypeSignature;
+			this.Name = ParameterCondition.RequireNonNull(name, "name", "name is null");
+			this.Type = ParameterCondition.RequireNonNull(type, "type", "type is null");
+			this.TypeSignature = typeSignature;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public String getName()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public String getType()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public ClientTypeSignature getTypeSignature()
 	}
 
 }

@@ -126,31 +126,21 @@ namespace SharpPulsar.Sql
         public virtual bool Debug => false;
 
 
-        public override string ToString()
-		{
-			var str = new StringBuilder();
-            str.Append("server :"+Server);
-            str.Append(Environment.NewLine);
-            str.Append("user :" + User);
-            str.Append(Environment.NewLine);
-            str.Append("clientTags :" + _clientTags);
-            str.Append(Environment.NewLine);
-            str.Append("clientInfo :" + ClientInfo);
-            str.Append(Environment.NewLine);
-            str.Append("catalog :" + Catalog);
-            str.Append(Environment.NewLine);
-            str.Append("schema :" + Schema);
-            str.Append(Environment.NewLine);
-            str.Append("traceToken :" + _traceToken);
-            str.Append(Environment.NewLine);
-            str.Append("timeZone :" + TimeZone);
-            str.Append(Environment.NewLine);
-            str.Append("locale :" + Locale);
-            str.Append(Environment.NewLine);
-            str.Append("properties :" + _properties);
-            str.Append(Environment.NewLine);
-            str.Append("transactionId :" + TransactionId);
-            return str.ToString();
+		public String toString()
+        {
+            return StringHelper.Build(this)
+                .Add("server", Server)
+                .Add("user", User)
+                .Add("clientTags", ClientTags)
+                .Add("clientInfo", ClientInfo)
+                .Add("catalog", Catalog)
+                .Add("schema", Schema)
+                .Add("traceToken", TraceToken)
+                .Add("timeZone", TimeZone)
+                .Add("locale", Locale.Name)
+                .Add("properties", Properties)
+                .Add("transactionId", TransactionId)
+                .ToString();
         }
 
 		public sealed class Builder

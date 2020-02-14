@@ -11,43 +11,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using SharpPulsar.Sql.Facebook.Type;
+using SharpPulsar.Sql.Precondition;
+
 namespace SharpPulsar.Sql
 {
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.toStringHelper;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable public class ErrorLocation
 	public class ErrorLocation
 	{
-		public virtual LineNumber {get;}
-		public virtual ColumnNumber {get;}
+		public int LineNumber {get;}
+		public int ColumnNumber {get;}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonCreator public ErrorLocation(@JsonProperty("lineNumber") int lineNumber, @JsonProperty("columnNumber") int columnNumber)
-		public ErrorLocation(int LineNumber, int ColumnNumber)
+		public ErrorLocation(int lineNumber, int columnNumber)
 		{
-			checkArgument(LineNumber >= 1, "lineNumber must be at least one");
-			checkArgument(ColumnNumber >= 1, "columnNumber must be at least one");
+			ParameterCondition.CheckArgument(lineNumber >= 1, "lineNumber must be at least one");
+            ParameterCondition.CheckArgument(columnNumber >= 1, "columnNumber must be at least one");
 
-			this.LineNumber = LineNumber;
-			this.ColumnNumber = ColumnNumber;
+			LineNumber = lineNumber;
+			ColumnNumber = columnNumber;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public int getLineNumber()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public int getColumnNumber()
 
 		public override string ToString()
 		{
-			return toStringHelper(this).add("lineNumber", LineNumber).add("columnNumber", ColumnNumber).ToString();
+			return StringHelper.Build(this).Add("lineNumber", LineNumber).Add("columnNumber", ColumnNumber).ToString();
 		}
 	}
 

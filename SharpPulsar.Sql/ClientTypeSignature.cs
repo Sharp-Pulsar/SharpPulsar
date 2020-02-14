@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using SharpPulsar.Sql.Facebook.Type;
@@ -59,24 +61,26 @@ namespace SharpPulsar.Sql
 					{
 						object value = literalArguments[i];
 						ParameterCondition.CheckArgument(value is string, "Expected literalArgument %d in %s to be a string", i, literalArguments);
-						convertedArguments.Add(new ClientTypeSignatureParameter(new TypeSignatureParameter(new NamedTypeSignature((new RowFieldName((string) value, false)), ToTypeSignature(typeArguments[i])))));
+                        convertedArguments.Add(new ClientTypeSignatureParameter(TypeSignatureParameter.Of(new NamedTypeSignature(
+                            new RowFieldName((string)value, false),
+                            ToTypeSignature(typeArguments[i])))));
 					}
 				}
 				else
 				{
-					checkArgument(literalArguments.Count == 0, "Unexpected literal arguments from legacy server");
+                    ParameterCondition.CheckArgument(literalArguments.Count == 0, "Unexpected literal arguments from legacy server");
 					foreach (ClientTypeSignature typeArgument in typeArguments)
 					{
-						convertedArguments.add(new ClientTypeSignatureParameter(ParameterKind.Type, typeArgument));
+						convertedArguments.Add(new ClientTypeSignatureParameter(ParameterKind.Type, typeArgument));
 					}
 				}
-				this._arguments = convertedArguments.build();
+				this._arguments = convertedArguments;
 			}
 		}
 
 		private static TypeSignature ToTypeSignature(ClientTypeSignature signature)
 		{
-			IList<TypeSignatureParameter> parameters = signature.Arguments.Select(ClientTypeSignature.legacyClientTypeSignatureParameterToTypeSignatureParameter).ToList();
+			IList<TypeSignatureParameter> parameters = signature.Arguments.ToList().Select(LegacyClientTypeSignatureParameterToTypeSignatureParameter).ToList();
 			return new TypeSignature(signature.RawType, parameters);
 		}
 
@@ -84,35 +88,22 @@ namespace SharpPulsar.Sql
 		{
 			switch (parameter.Kind)
 			{
-				case LONG:
+				case ParameterKind.Long:
 					throw new System.NotSupportedException("Unexpected long type literal returned by legacy server");
-				case TYPE:
-					return TypeSignatureParameter.of(ToTypeSignature(parameter.TypeSignature));
-				case NAMED_TYPE:
-					return TypeSignatureParameter.of(parameter.NamedTypeSignature);
+				case ParameterKind.Type:
+					return TypeSignatureParameter.Of(ToTypeSignature(parameter.TypeSignature));
+				case ParameterKind.NamedType:
+					return TypeSignatureParameter.Of(parameter.NamedTypeSignature);
 				default:
 					throw new System.NotSupportedException("Unknown parameter kind " + parameter.Kind);
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public String getRawType()
+		public virtual IList<ClientTypeSignatureParameter> Arguments => _arguments;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public java.util.List<ClientTypeSignatureParameter> getArguments()
-		public virtual IList<ClientTypeSignatureParameter> Arguments
-		{
-			get
-			{
-				return _arguments;
-			}
-		}
-
-		/// <summary>
+        /// <summary>
 		/// This field is deprecated and clients should switch to <seealso cref="getArguments()"/>
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Deprecated @JsonProperty public java.util.List<ClientTypeSignature> getTypeArguments()
 		[Obsolete]
 		public virtual IList<ClientTypeSignature> TypeArguments
 		{
@@ -123,10 +114,10 @@ namespace SharpPulsar.Sql
 				{
 					switch (argument.Kind)
 					{
-						case TYPE:
+						case ParameterKind.Type:
 							result.Add(argument.TypeSignature);
 							break;
-						case NAMED_TYPE:
+						case ParameterKind.NamedType:
 							result.Add(new ClientTypeSignature(argument.NamedTypeSignature.TypeSignature));
 							break;
 						default:
@@ -140,8 +131,6 @@ namespace SharpPulsar.Sql
 		/// <summary>
 		/// This field is deprecated and clients should switch to <seealso cref="getArguments()"/>
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Deprecated @JsonProperty public java.util.List<Object> getLiteralArguments()
 		[Obsolete]
 		public virtual IList<object> LiteralArguments
 		{
@@ -152,7 +141,7 @@ namespace SharpPulsar.Sql
 				{
 					switch (argument.Kind)
 					{
-						case NAMED_TYPE:
+						case ParameterKind.NamedType:
 							result.Add(argument.NamedTypeSignature.Name);
 							break;
 						default:
@@ -165,7 +154,7 @@ namespace SharpPulsar.Sql
 
 		public override string ToString()
 		{
-			if (RawType.Equals(StandardTypes.ROW))
+			if (RawType.Equals(StandardTypes.Row))
 			{
 				return RowToString();
 			}
@@ -194,18 +183,12 @@ namespace SharpPulsar.Sql
 		[Obsolete]
 		private string RowToString()
 		{
-//JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
-//JAVA TO C# CONVERTER TODO TASK: Most Java stream collectors are not converted by Java to C# Converter:
-			string fields = _arguments.Select(ClientTypeSignatureParameter::getNamedTypeSignature).Select(parameter =>
-			{
-			if (parameter.Name.Present)
-			{
-				return format("%s %s", parameter.Name.get(), parameter.TypeSignature.ToString());
-			}
-			return parameter.TypeSignature.ToString();
-			}).collect(Collectors.joining(","));
+			var fields = _arguments.Select(x => x.NamedTypeSignature).Select(parameter =>
+            {
+                return !string.IsNullOrWhiteSpace(parameter.Name) ? string.Format("%s %s", parameter.Name, parameter.TypeSignature.ToString()) : parameter.TypeSignature.ToString();
+            });
 
-			return format("row(%s)", fields);
+			return $"row {string.Join(",", fields)}";
 		}
 
 		public override bool Equals(object o)
@@ -221,12 +204,12 @@ namespace SharpPulsar.Sql
 
 			ClientTypeSignature other = (ClientTypeSignature) o;
 
-			return Objects.equals(this.RawType.ToLower(Locale.ENGLISH), other.RawType.ToLower(Locale.ENGLISH)) && Objects.equals(this._arguments, other._arguments);
+			return object.Equals(this.RawType.ToLower(CultureInfo.GetCultureInfo("en-US")), other.RawType.ToLower(CultureInfo.GetCultureInfo("en-US"))) && object.Equals(this._arguments, other._arguments);
 		}
 
 		public override int GetHashCode()
 		{
-			return Objects.hash(RawType.ToLower(Locale.ENGLISH), _arguments);
+			return HashCode.Combine(RawType.ToLower(CultureInfo.GetCultureInfo("en-US")), _arguments);
 		}
 	}
 
