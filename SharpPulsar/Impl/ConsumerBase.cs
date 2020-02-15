@@ -493,7 +493,7 @@ namespace SharpPulsar.Impl
 		public virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
             if (!CanEnqueueMessage(message)) return HasEnoughMessagesForBatchReceive();
-            IncomingMessages.add(message);
+            IncomingMessages.Add(message);
             IncomingMessagesSize[this] = message.Data.Length;
             return HasEnoughMessagesForBatchReceive();
 		}

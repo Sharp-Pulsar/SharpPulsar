@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Enum;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

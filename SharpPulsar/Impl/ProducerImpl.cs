@@ -23,6 +23,7 @@ using SharpPulsar.Util.Atomic.Collections.Concurrent;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1163,7 +1164,7 @@ namespace SharpPulsar.Impl
 					ResetBackoff();
 					Log.LogInformation("[{}] [{}] Created producer on cnx {}", Topic, producerName, cnx.Ctx().Channel);
 					_connectionId = cnx.Ctx().Channel.ToString();
-					_connectedSince = DateFormatter.now();
+					_connectedSince = DateTime.Now.ToString(CultureInfo.InvariantCulture);
 					if (HandlerName is null)
 					{
 					

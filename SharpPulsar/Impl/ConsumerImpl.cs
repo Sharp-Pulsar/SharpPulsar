@@ -264,7 +264,7 @@ namespace SharpPulsar.Impl
 		{
             try
 			{
-				var message = IncomingMessages.take();
+				var message = IncomingMessages.Take();
 				MessageProcessed(message);
 				return BeforeConsume(message);
 			}
@@ -642,7 +642,7 @@ namespace SharpPulsar.Impl
 		private BatchMessageIdImpl ClearReceiverQueue()
 		{
 			IList<IMessage<object>> currentMessageQueue = new List<IMessage<object>>(IncomingMessages.size());
-			IncomingMessages.drainTo(currentMessageQueue);
+			IncomingMessages.DrainTo(currentMessageQueue);
 			IncomingMessagesSize[this] =  0;
 			if (currentMessageQueue.Count > 0)
 			{

@@ -18,6 +18,7 @@
 /// </summary>
 
 using DotNetty.Buffers;
+using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
@@ -31,9 +32,73 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
-		public override ISchemaInfo SchemaInfo {get;}
+        public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
 
-		public BytesSchema()
+        public override ISchema<sbyte[]> GetSchema(SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> AutoProduceBytes()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> AutoConsume()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> Auto()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> Json(ISchemaDefinition<sbyte[]> schemaDefinition)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> Json(sbyte[] pojo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override bool RequireFetchingSchemaInfo()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchemaInfo SchemaInfo {get;}
+        public override bool SupportSchemaVersioning()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchemaInfoProvider SchemaInfoProvider
+        {
+            set => throw new System.NotImplementedException();
+        }
+
+        public BytesSchema()
 		{
             var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new sbyte[0]};
             SchemaInfo = s;
@@ -49,7 +114,12 @@ namespace SharpPulsar.Impl.Schema
 			return message;
 		}
 
-		public override sbyte[] Decode(sbyte[] bytes)
+        public override void Validate(sbyte[] message)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override sbyte[] Decode(sbyte[] bytes)
 		{
 			return bytes;
 		}

@@ -109,7 +109,7 @@ namespace SharpPulsar.Impl.Schema
 			throw new NotImplementedException();
 		}
 
-		public override ISchema<object> GetSchema(SchemaInfo schemaInfo)
+		public override ISchema<T> GetSchema(SchemaInfo schemaInfo)
 		{
 			throw new NotImplementedException();
 		}

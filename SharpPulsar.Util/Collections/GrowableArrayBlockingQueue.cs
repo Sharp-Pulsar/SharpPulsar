@@ -1,8 +1,8 @@
 ﻿using DotNetty.Common.Internal;
-using java.util.concurrent.atomic;
 using SharpPulsar.Util.Atomic.Collections.Concurrent;
 using SharpPulsar.Util.Atomic.Locking;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -33,71 +33,70 @@ namespace SharpPulsar.Util.Collections
 	/// <para>When the capacity is reached, data will be moved to a bigger array.
 	/// </para>
 	/// </summary>
-	public class GrowableArrayBlockingQueue<T> : AbstractQueue<T>, BlockingQueue<T>
+	public class GrowableArrayBlockingQueue<T> : BlockingQueue<T>
 	{
-		private bool InstanceFieldsInitialized = false;
+		private bool _instanceFieldsInitialized = false;
 
 		private void InitializeInstanceFields()
 		{
-			isNotEmpty = headLock.NewCondition();
+			_isNotEmpty = _headLock.NewCondition();
 		}
 
 
-		private readonly ReentrantLock headLock = new ReentrantLock();
-		private readonly PaddedInt headIndex = new PaddedInt();
-		private readonly PaddedInt tailIndex = new PaddedInt();
-		private readonly ReentrantLock tailLock = new ReentrantLock();
-		private ICondition isNotEmpty;
+		private readonly ReentrantLock _headLock = new ReentrantLock();
+		private readonly PaddedInt _headIndex = new PaddedInt();
+		private readonly PaddedInt _tailIndex = new PaddedInt();
+		private readonly ReentrantLock _tailLock = new ReentrantLock();
+		private ICondition _isNotEmpty;
 
-		private T[] data;
-		private static readonly AtomicIntegerFieldUpdater<GrowableArrayBlockingQueue> SIZE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(typeof(GrowableArrayBlockingQueue), "size");
-		private volatile int size = 0;
-
+		private T[] _data;
+		static readonly ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int> SizeUpdater = new ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int>();
+		
 		public GrowableArrayBlockingQueue() : this(64)
 		{
-			if (!InstanceFieldsInitialized)
+			if (!_instanceFieldsInitialized)
 			{
 				InitializeInstanceFields();
-				InstanceFieldsInitialized = true;
+				_instanceFieldsInitialized = true;
 			}
 		}
 
 		public GrowableArrayBlockingQueue(int initialCapacity)
 		{
-			if (!InstanceFieldsInitialized)
+			if (!_instanceFieldsInitialized)
 			{
 				InitializeInstanceFields();
-				InstanceFieldsInitialized = true;
+				_instanceFieldsInitialized = true;
 			}
-			headIndex.value = 0;
-			tailIndex.value = 0;
+			_headIndex.Value = 0;
+			_tailIndex.Value = 0;
 
 			int capacity = MathUtil.FindNextPositivePowerOfTwo(initialCapacity);
-			data = (T[]) new object[capacity];
+			_data = (T[])Convert.ChangeType(new object[capacity], typeof(T).MakeArrayType());
 		}
 
-		public override T remove()
+		public T remove()
 		{
-			T item = poll();
+			T item = Poll();
 			if (item == null)
 			{
-				throw new NoSuchElementException();
+				throw new NullReferenceException();
 			}
 
 			return item;
 		}
 
-		public override T Poll()
+		public T Poll()
 		{
-			headLock.Lock();
+			_headLock.Lock();
 			try
 			{
-				if (SIZE_UPDATER.get(this) > 0)
+				if (SizeUpdater[this] > 0)
 				{
-					T item = data[headIndex.value];
-					data[headIndex.value] = default(T);
-					headIndex.value = (headIndex.value + 1) & (data.Length - 1);
-					SIZE_UPDATER.decrementAndGet(this);
+					T item = _data[_headIndex.Value];
+					_data[_headIndex.Value] = default(T);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+					SizeUpdater[this] = SizeUpdater[this]--;
 					return item;
 				}
 				else
@@ -107,29 +106,29 @@ namespace SharpPulsar.Util.Collections
 			}
 			finally
 			{
-				headLock.Unlock();
+				_headLock.Unlock();
 			}
 		}
 
-		public override T Element()
+		public  T Element()
 		{
-			T item = peek();
+			T item = Peek();
 			if (item == null)
 			{
-				throw new NoSuchElementException();
+				throw new NullReferenceException();
 			}
 
 			return item;
 		}
 
-		public override T Peek()
+		public T Peek()
 		{
-			headLock.@lock();
+			_headLock.Lock();;
 			try
 			{
-				if (SIZE_UPDATER.get(this) > 0)
+				if (SizeUpdater[this] > 0)
 				{
-					return data[headIndex.value];
+					return _data[_headIndex.Value];
 				}
 				else
 				{
@@ -138,128 +137,127 @@ namespace SharpPulsar.Util.Collections
 			}
 			finally
 			{
-				headLock.unlock();
+				_headLock.Unlock();
 			}
 		}
 
-		public override bool offer(T e)
+		public bool Offer(T e)
 		{
 			// Queue is unbounded and it will never reject new items
-			put(e);
+			Put(e);
 			return true;
 		}
 
-		public override void put(T e)
+		public void Put(T e)
 		{
-			tailLock.@lock();
+			_tailLock.Lock();
 
 			bool wasEmpty = false;
 
 			try
 			{
-				if (SIZE_UPDATER.get(this) == data.Length)
+				if (SizeUpdater[this] == _data.Length)
 				{
-					expandArray();
+					ExpandArray();
 				}
 
-				data[tailIndex.value] = e;
-				tailIndex.value = (tailIndex.value + 1) & (data.Length - 1);
-				if (SIZE_UPDATER.getAndIncrement(this) == 0)
+				_data[_tailIndex.Value] = e;
+				_tailIndex.Value = (_tailIndex.Value + 1) & (_data.Length - 1);
+				if (SizeUpdater[this] == 0)
 				{
 					wasEmpty = true;
 				}
 			}
 			finally
 			{
-				tailLock.unlock();
+				_tailLock.Unlock();
 			}
 
 			if (wasEmpty)
 			{
-				headLock.@lock();
+				_headLock.Lock();
 				try
 				{
-					isNotEmpty.signal();
+					_isNotEmpty.Signal();
 				}
 				finally
 				{
-					headLock.unlock();
+					_headLock.Unlock();
 				}
 			}
 		}
 
-		public override bool add(T e)
+		public bool Add(T e)
 		{
-			put(e);
+			Put(e);
 			return true;
 		}
 
-		public override bool offer(T e, long timeout, TimeUnit unit)
+		public bool Offer(T e, long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			// Queue is unbounded and it will never reject new items
-			put(e);
+			Put(e);
 			return true;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public T take() throws InterruptedException
-		public override T take()
+		public T Take()
 		{
-			headLock.lockInterruptibly();
+			_headLock.Lock();
 
 			try
 			{
-				while (SIZE_UPDATER.get(this) == 0)
+				while (SizeUpdater[this] == 0)
 				{
-					isNotEmpty.await();
+					_isNotEmpty.Await();
 				}
 
-				T item = data[headIndex.value];
-				data[headIndex.value] = default(T);
-				headIndex.value = (headIndex.value + 1) & (data.Length - 1);
-				if (SIZE_UPDATER.decrementAndGet(this) > 0)
+				T item = _data[_headIndex.Value];
+				_data[_headIndex.Value] = default(T);
+				_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+				if (SizeUpdater[this]-- > 0)
 				{
 					// There are still entries to consume
-					isNotEmpty.signal();
+					_isNotEmpty.Signal();
 				}
 				return item;
 			}
 			finally
 			{
-				headLock.unlock();
+				_headLock.Unlock();
 			}
 		}
 
 		public T Poll(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			headLock.lockInterruptibly();
+			_headLock.TryLock(3000);
 
 			try
 			{
 				long timeoutNanos = unit.ToNanos(timeout);
-				while (SIZE_UPDATER.get(this) == 0)
+				while (SizeUpdater[this] == 0)
 				{
 					if (timeoutNanos <= 0)
 					{
 						return default(T);
 					}
 
-					timeoutNanos = isNotEmpty.awaitNanos(timeoutNanos);
+                    _isNotEmpty.Await();
+					timeoutNanos = 3000;
 				}
 
-				T item = data[headIndex.value];
-				data[headIndex.value] = default(T);
-				headIndex.value = (headIndex.value + 1) & (data.Length - 1);
-				if (SIZE_UPDATER.decrementAndGet(this) > 0)
+				T item = _data[_headIndex.Value];
+				_data[_headIndex.Value] = default(T);
+				_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+				if (SizeUpdater[this]-- > 0)
 				{
 					// There are still entries to consume
-					isNotEmpty.Signal();
+					_isNotEmpty.Signal();
 				}
 				return item;
 			}
 			finally
 			{
-				headLock.Unlock();
+				_headLock.Unlock();
 			}
 		}
 
@@ -268,102 +266,100 @@ namespace SharpPulsar.Util.Collections
 			return int.MaxValue;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
-//ORIGINAL LINE: @Override public int drainTo(java.util.Collection<? super T> c)
-		public override int drainTo<T1>(ICollection<T1> c)
+		public int DrainTo(ICollection<T> c)
 		{
-			return drainTo(c, int.MaxValue);
+			return DrainTo(c, int.MaxValue);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
-//ORIGINAL LINE: @Override public int drainTo(java.util.Collection<? super T> c, int maxElements)
-		public override int drainTo<T1>(ICollection<T1> c, int maxElements)
+		public int DrainTo(ICollection<T> c, int maxElements)
 		{
-			headLock.@lock();
+			_headLock.Lock();
 
 			try
 			{
 				int drainedItems = 0;
-				int size = SIZE_UPDATER.get(this);
+				int size = SizeUpdater[this];
 
 				while (size > 0 && drainedItems < maxElements)
 				{
-					T item = data[headIndex.value];
-					data[headIndex.value] = default(T);
+					T item = _data[_headIndex.Value];
+					_data[_headIndex.Value] = default(T);
 					c.Add(item);
 
-					headIndex.value = (headIndex.value + 1) & (data.Length - 1);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
 					--size;
 					++drainedItems;
 				}
 
-				if (SIZE_UPDATER.addAndGet(this, -drainedItems) > 0)
+                SizeUpdater[this] = -drainedItems;
+				if (SizeUpdater[this] > 0)
 				{
 					// There are still entries to consume
-					isNotEmpty.signal();
+					_isNotEmpty.Signal();
 				}
 
 				return drainedItems;
 			}
 			finally
 			{
-				headLock.unlock();
+				_headLock.Unlock();
 			}
 		}
 
-		public override void clear()
+		public void clear()
 		{
-			headLock.@lock();
+			_headLock.Lock();
 
 			try
 			{
-				int size = SIZE_UPDATER.get(this);
+				int size = SizeUpdater[this];
 
 				for (int i = 0; i < size; i++)
 				{
-					data[headIndex.value] = default(T);
-					headIndex.value = (headIndex.value + 1) & (data.Length - 1);
+					_data[_headIndex.Value] = default(T);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
 				}
 
-				if (SIZE_UPDATER.addAndGet(this, -size) > 0)
+                SizeUpdater[this] = -size;
+                if (SizeUpdater[this] > 0)
 				{
 					// There are still entries to consume
-					isNotEmpty.signal();
+					_isNotEmpty.Signal();
 				}
 			}
 			finally
 			{
-				headLock.unlock();
+				_headLock.Unlock();
 			}
 		}
 
-		public override bool remove(object o)
+		public bool Remove(object o)
 		{
-			tailLock.@lock();
-			headLock.@lock();
+			_tailLock.Lock();
+			_headLock.Lock();
 
 			try
 			{
-				int index = this.headIndex.value;
-				int size = this.size_Conflict;
+				int index = this._headIndex.Value;
+				int size = this.size();
 
 				for (int i = 0; i < size; i++)
 				{
-					T item = data[index];
+					T item = _data[index];
 
-					if (Objects.equals(item, o))
+					if (object.Equals(item, o))
 					{
 						remove(index);
 						return true;
 					}
 
-					index = (index + 1) & (data.Length - 1);
+					index = (index + 1) & (_data.Length - 1);
 				}
 			}
 			finally
 			{
-				headLock.unlock();
-				tailLock.unlock();
+				_headLock.Unlock();
+				_tailLock.Unlock();
 			}
 
 			return false;
@@ -371,103 +367,101 @@ namespace SharpPulsar.Util.Collections
 
 		private void remove(int index)
 		{
-			int tailIndex = this.tailIndex.value;
+			int tailIndex = this._tailIndex.Value;
 
 			if (index < tailIndex)
 			{
-				Array.Copy(data, index + 1, data, index, tailIndex - index - 1);
-				this.tailIndex.value--;
+				Array.Copy(_data, index + 1, _data, index, tailIndex - index - 1);
+				this._tailIndex.Value--;
 			}
 			else
 			{
-				Array.Copy(data, index + 1, data, index, data.Length - index - 1);
-				data[data.Length - 1] = data[0];
+				Array.Copy(_data, index + 1, _data, index, _data.Length - index - 1);
+				_data[_data.Length - 1] = _data[0];
 				if (tailIndex > 0)
 				{
-					Array.Copy(data, 1, data, 0, tailIndex);
-					this.tailIndex.value--;
+					Array.Copy(_data, 1, _data, 0, tailIndex);
+					this._tailIndex.Value--;
 				}
 				else
 				{
-					this.tailIndex.value = data.Length - 1;
+					this._tailIndex.Value = _data.Length - 1;
 				}
 			}
 
 			if (tailIndex > 0)
 			{
-				data[tailIndex - 1] = default(T);
+				_data[tailIndex - 1] = default(T);
 			}
 			else
 			{
-				data[data.Length - 1] = default(T);
+				_data[_data.Length - 1] = default(T);
 			}
 
-			SIZE_UPDATER.decrementAndGet(this);
+			SizeUpdater[this] = SizeUpdater[this]--;
 		}
 
-		public override int size()
+		public int size()
 		{
-			return SIZE_UPDATER.get(this);
+			return SizeUpdater[this];
 		}
 
-		public override IEnumerator<T> iterator()
+		public IEnumerator<T> iterator()
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual IList<T> toList()
+		public virtual IList<T> ToList()
 		{
 			IList<T> list = new List<T>(size());
-			forEach(list.add);
+			ForEach(list.Add);
 			return list;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: There is no .NET equivalent to the Java 'super' constraint:
-//ORIGINAL LINE: @Override public void forEach(java.util.function.Consumer<? super T> action)
-		public override void forEach<T1>(Action<T1> action)
+		public void ForEach(Action<T> action)
 		{
-			tailLock.@lock();
-			headLock.@lock();
+			_tailLock.Lock();
+			_headLock.Lock();
 
 			try
 			{
-				int headIndex = this.headIndex.value;
-				int size = this.size_Conflict;
+				int headIndex = this._headIndex.Value;
+				int size = this.size();
 
 				for (int i = 0; i < size; i++)
 				{
-					T item = data[headIndex];
+					T item = _data[headIndex];
 
 					action(item);
 
-					headIndex = (headIndex + 1) & (data.Length - 1);
+					headIndex = (headIndex + 1) & (_data.Length - 1);
 				}
 
 			}
 			finally
 			{
-				headLock.unlock();
-				tailLock.unlock();
+				_headLock.Unlock();
+				_tailLock.Unlock();
 			}
 		}
 
-		public override string ToString()
+		public string ToString()
 		{
 			StringBuilder sb = new StringBuilder();
 
-			tailLock.@lock();
-			headLock.@lock();
+			_tailLock.Lock();
+			_headLock.Lock();
 
 			try
 			{
-				int headIndex = this.headIndex.value;
-				int size = SIZE_UPDATER.get(this);
+				int headIndex = this._headIndex.Value;
+				int size = SizeUpdater[this];
 
 				sb.Append('[');
 
 				for (int i = 0; i < size; i++)
 				{
-					T item = data[headIndex];
+					T item = _data[headIndex];
 					if (i > 0)
 					{
 						sb.Append(", ");
@@ -475,62 +469,60 @@ namespace SharpPulsar.Util.Collections
 
 					sb.Append(item);
 
-					headIndex = (headIndex + 1) & (data.Length - 1);
+					headIndex = (headIndex + 1) & (_data.Length - 1);
 				}
 
 				sb.Append(']');
 			}
 			finally
 			{
-				headLock.unlock();
-				tailLock.unlock();
+				_headLock.Unlock();
+				_tailLock.Unlock();
 			}
 			return sb.ToString();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("unchecked") private void expandArray()
-		private void expandArray()
+		private void ExpandArray()
 		{
 			// We already hold the tailLock
-			headLock.@lock();
+			_headLock.Lock();
 
 			try
 			{
-				int size = SIZE_UPDATER.get(this);
-				int newCapacity = data.Length * 2;
-				T[] newData = (T[]) new object[newCapacity];
+				int size = SizeUpdater[this];
+				int newCapacity = _data.Length * 2;
+				T[] newData = (T[])Convert.ChangeType(new object[newCapacity], typeof(T).MakeArrayType());
 
-				int oldHeadIndex = headIndex.value;
+				int oldHeadIndex = _headIndex.Value;
 				int newTailIndex = 0;
 
 				for (int i = 0; i < size; i++)
 				{
-					newData[newTailIndex++] = data[oldHeadIndex];
-					oldHeadIndex = (oldHeadIndex + 1) & (data.Length - 1);
+					newData[newTailIndex++] = _data[oldHeadIndex];
+					oldHeadIndex = (oldHeadIndex + 1) & (_data.Length - 1);
 				}
 
-				data = newData;
-				headIndex.value = 0;
-				tailIndex.value = size;
+				_data = newData;
+				_headIndex.Value = 0;
+				_tailIndex.Value = size;
 			}
 			finally
 			{
-				headLock.unlock();
+				_headLock.Unlock();
 			}
 		}
 
 		internal sealed class PaddedInt
 		{
-			internal int value;
+			internal int Value;
 
 			// Padding to avoid false sharing
-			public volatile int pi1 = 1;
-			public volatile long p1 = 1L, p2 = 2L, p3 = 3L, p4 = 4L, p5 = 5L, p6 = 6L;
+			public volatile int Pi1 = 1;
+			public  long P1 = 1L, P2 = 2L, P3 = 3L, P4 = 4L, P5 = 5L, P6 = 6L;
 
 			public long exposeToAvoidOptimization()
 			{
-				return pi1 + p1 + p2 + p3 + p4 + p5 + p6;
+				return Pi1 + P1 + P2 + P3 + P4 + P5 + P6;
 			}
 		}
 	}

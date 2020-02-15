@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 			long requestId = Client.NewRequestId();
 			var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, unit.ToMillis(timeout));
 			var op = OpForTxnIdCallBack.Create(cmd, callback);
-			_pendingRequests.TryAdd(requestId, op);
+			_pendingRequests.TryAdd(requestId, (OpBase<object>)Convert.ChangeType(op, typeof(OpBase<object>)));
 			_timeoutQueue.Enqueue(new ClientCnx.RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			cmd.Retain();
 			Cnx().Ctx().WriteAndFlushAsync(cmd);
@@ -139,14 +139,14 @@ namespace SharpPulsar.Impl
 			}
 			var callback = new TaskCompletionSource<Task>();
 
-			if (!CanSendRequest<Task>(callback))
+			if (!CanSendRequest(callback))
 			{
 				return new ValueTask(callback.Task);
 			}
 			long requestId = Client.NewRequestId();
 			var cmd = Commands.NewAddPartitionToTxn(requestId, txnId.LeastSigBits, txnId.MostSigBits);
-			var op = OpForVoidCallBack.Create(cmd, callback);
-			_pendingRequests[requestId] = op;
+			var op = OpForVoidCallBack<Task>.Create(cmd, callback);
+			_pendingRequests[requestId] = (OpBase<object>)Convert.ChangeType(op, typeof(OpBase<object>)); ;
 			_timeoutQueue.Enqueue(new ClientCnx.RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			cmd.Retain();
 			Cnx().Ctx().WriteAndFlushAsync(cmd);
@@ -188,14 +188,14 @@ namespace SharpPulsar.Impl
 			}
 			var callback = new TaskCompletionSource<TxnID>();
 
-			if (!CanSendRequest<TxnID>(callback))
+			if (!CanSendRequest(callback))
             {
                 return new ValueTask(callback.Task);
             }
 			long requestId = Client.NewRequestId();
 			var cmd = Commands.NewEndTxn(requestId, txnId.LeastSigBits, txnId.MostSigBits, TxnAction.Commit);
-			var op = OpForVoidCallBack.Create(cmd, callback);
-			_pendingRequests[requestId] =  op;
+			var op = OpForVoidCallBack<TxnID>.Create(cmd, callback);
+			_pendingRequests[requestId] = (OpBase<object>)Convert.ChangeType(op, typeof(OpBase<object>)); ;
 			_timeoutQueue.Enqueue(new ClientCnx.RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			cmd.Retain();
 			Cnx().Ctx().WriteAndFlushAsync(cmd);
@@ -216,8 +216,8 @@ namespace SharpPulsar.Impl
 			}
 			long requestId = Client.NewRequestId();
 			var cmd = Commands.NewEndTxn(requestId, txnId.LeastSigBits, txnId.MostSigBits, TxnAction.Abort);
-			var op = OpForVoidCallBack.Create(cmd, callback);
-			_pendingRequests[requestId] = op;
+			var op = OpForVoidCallBack<TxnID>.Create(cmd, callback);
+			_pendingRequests[requestId] = (OpBase<object>)Convert.ChangeType(op, typeof(OpBase<object>));
 			_timeoutQueue.Enqueue(new ClientCnx.RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			cmd.Retain();
 			Cnx().Ctx().WriteAndFlushAsync(cmd);
@@ -285,18 +285,18 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public class OpForVoidCallBack : OpBase<object>
+		public class OpForVoidCallBack<T> : OpBase<T>
 		{
-            internal static ThreadLocalPool<OpForVoidCallBack> _pool = new ThreadLocalPool<OpForVoidCallBack>(handle => new OpForVoidCallBack(handle), 1, true);
+            internal static ThreadLocalPool<OpForVoidCallBack<T>> _pool = new ThreadLocalPool<OpForVoidCallBack<T>>(handle => new OpForVoidCallBack<T>(handle), 1, true);
 
             internal ThreadLocalPool.Handle _handle;
             private OpForVoidCallBack(ThreadLocalPool.Handle handle)
             {
                 _handle = handle;
             }
-			internal static OpForVoidCallBack Create(IByteBuffer cmd, TaskCompletionSource<object> callback)
+			internal static OpForVoidCallBack<T> Create(IByteBuffer cmd, TaskCompletionSource<T> callback)
 			{
-				OpForVoidCallBack op = _pool.Take();
+				var op = _pool.Take();
 				op.Callback = callback;
 				op.Cmd = cmd;
 				return op;
@@ -451,6 +451,10 @@ namespace SharpPulsar.Impl
 		}
 
 		public new string HandlerName => "Transaction meta store handler [" + _transactionCoordinatorId + "]";
+        public void Dispose()
+        {
+            Close();
+        }
     }
 
 }

@@ -349,7 +349,7 @@ namespace SharpPulsar.Impl
 		{
             try
 			{
-				var message = IncomingMessages.take();
+				var message = IncomingMessages.Take();
 				IncomingMessagesSize[this] = -message.Data.Length;
                 if (message is TopicMessageImpl<T>)
                 {

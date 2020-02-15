@@ -29,7 +29,7 @@ namespace SharpPulsar.Util
 	public class FileModifiedTimeUpdater
 	{
 		public readonly string FileName;
-		public readonly DateTime LastModifiedTime;
+		public  DateTime LastModifiedTime;
 
 		public FileModifiedTimeUpdater(string fileName)
 		{

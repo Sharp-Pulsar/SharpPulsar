@@ -16,35 +16,40 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+using System.Web;
+using Microsoft.Extensions.Logging;
+
 namespace SharpPulsar.Util
 {
 
 	public class Codec
 	{
-		private static readonly Logger LOG = LoggerFactory.getLogger(typeof(Codec));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(Codec));
 
 		public static string encode(string s)
 		{
 			try
 			{
-				return URLEncoder.encode(s, StandardCharsets.UTF_8.ToString());
+				return HttpUtility.UrlEncode(s);
 			}
-			catch (UnsupportedEncodingException e)
+			catch (Exception e)
 			{
-				LOG.error(string.Format("{0} is Unknown", StandardCharsets.UTF_8.ToString()) + "exception - [{}]", e);
+				Log.LogError($"{e} is Unknown exception ");
 				return s;
 			}
 		}
 
-		public static string decode(string s)
+		public static string Decode(string s)
 		{
 			try
 			{
-				return URLDecoder.decode(s, StandardCharsets.UTF_8.ToString());
+				return HttpUtility.UrlDecode(s);
 			}
-			catch (UnsupportedEncodingException e)
+			catch (Exception e)
 			{
-				LOG.error(string.Format("{0} is Unknown", StandardCharsets.UTF_8.ToString()) + "exception - [{}]", e);
+				Log.LogError(($"{e} is Unknown exception "));
 				return s;
 			}
 		}

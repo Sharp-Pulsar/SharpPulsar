@@ -101,43 +101,9 @@ namespace SharpPulsar.Exception
 		}
 
 		public static TransactionCoordinatorClientException Unwrap(System.Exception t)
-		{
-			if (t is TransactionCoordinatorClientException)
-			{
-				return (TransactionCoordinatorClientException) t;
-			}
-			else if (t is System.Exception)
-			{
-				throw t;
-			}
-			else if (t is ThreadInterruptedException)
-			{
-				Thread.CurrentThread.Interrupt();
-				return new TransactionCoordinatorClientException(t);
-			}
-			else if (!(t is ExecutionException))
-			{
-				// Generic exception
-				return new TransactionCoordinatorClientException(t);
-			}
-
-			System.Exception cause = t.InnerException;
-			string msg = cause.Message;
-
-			if (cause is CoordinatorNotFoundException)
-			{
-				return new CoordinatorNotFoundException(msg);
-			}
-			else if (cause is InvalidTxnStatusException)
-			{
-				return new InvalidTxnStatusException(msg);
-			}
-			else
-			{
-				return new TransactionCoordinatorClientException(t);
-			}
-
-		}
+        {
+            throw t;
+        }
 	}
 
 }

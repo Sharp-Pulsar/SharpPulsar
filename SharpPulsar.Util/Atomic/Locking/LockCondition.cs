@@ -23,11 +23,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+using SharpPulsar.Util.Atomic.Collections;
+
 namespace SharpPulsar.Util.Atomic.Locking 
 {
     using System.Collections.Generic;
-
-    using CSharp.Collections;
     using SharpPulsar.Util.Atomic.Util;
 
 
@@ -43,7 +43,7 @@ namespace SharpPulsar.Util.Atomic.Locking
         private readonly HashStack<string, string> _threadSignals;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CSharp.Locking.LockCondition"/> class.
+        /// Initializes a new instance of the <see cref="LockCondition"/> class.
         /// </summary>
         /// <param name="signalId">Signal identifier used to notify waiting threads which condition was statisfied.</param>
         /// <param name="monitor">The <c>LockMonitor</c> used in the parent lock.</param>

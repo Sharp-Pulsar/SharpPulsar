@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using DotNetty.Buffers;
 using DotNetty.Common;
+using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
@@ -90,7 +91,6 @@ namespace SharpPulsar.Impl.Schema
 		}
 
 		private readonly CharSet _charset;
-        public new SchemaInfo SchemaInfo;
 
 		public StringSchema()
 		{
@@ -114,12 +114,83 @@ namespace SharpPulsar.Impl.Schema
             };
         }
 
-		public override sbyte[] Encode(string message)
+        public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<string> GetSchema(SchemaInfo schemaInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> AutoProduceBytes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> AutoConsume()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> Auto()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<string> Json(ISchemaDefinition<string> schemaDefinition)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchema<string> Json(string pojo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool RequireFetchingSchemaInfo()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Decode(sbyte[] bytes, sbyte[] schemaVersion)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchemaInfo SchemaInfo { get; }
+        public override bool SupportSchemaVersioning()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ISchemaInfoProvider SchemaInfoProvider
+        {
+            set => throw new NotImplementedException();
+        }
+
+        public override sbyte[] Encode(string message)
         {
             return message?.GetBytes(Encoding.GetEncoding(_charset.ToString()));
         }
 
-		public override string Decode(sbyte[] bytes)
+        public override void Validate(sbyte[] message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Decode(sbyte[] bytes)
         {
             return null == bytes ? null : StringHelper.NewString(bytes, _charset.ToString());
         }
