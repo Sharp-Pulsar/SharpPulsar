@@ -68,7 +68,21 @@ namespace SharpPulsar.Sql.Precondition
                 throw new ArgumentOutOfRangeException(BadPositionIndexes(start, end, size));
             }
         }
+        public static int CheckPositionIndex(int index, int size)
+        {
+            return CheckPositionIndex(index, size, "index");
+        }
 
+        public static int CheckPositionIndex(int index, int size, string desc)
+        {
+            // Carefully optimized for execution by hotspot (explanatory comment above)
+            if (index < 0 || index > size)
+            {
+                throw new ArgumentOutOfRangeException(BadPositionIndex(index, size, desc));
+            }
+
+            return index;
+        }
         private static string BadPositionIndex(int index, int size, string desc)
         {
             if (index < 0)

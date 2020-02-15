@@ -16,11 +16,6 @@
 namespace SharpPulsar.Sql
 {
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Strings.emptyToNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Strings.nullToEmpty;
-
 	public sealed class KerberosUtil
 	{
 		private const string FilePrefix = "FILE:";

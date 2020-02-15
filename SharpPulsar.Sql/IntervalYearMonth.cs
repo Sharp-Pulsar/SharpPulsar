@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,77 +16,70 @@
  */
 namespace SharpPulsar.Sql
 {
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Integer.parseInt;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Math.addExact;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Math.multiplyExact;
-
+	
 	public sealed class IntervalYearMonth
 	{
 		private const string IntMinValue = "-178956970-8";
 
-		private static readonly Pattern FORMAT = Pattern.compile(@"(\d+)-(\d+)");
+		private static readonly Regex Format = new Regex(@"(\d+)-(\d+)");
 
 		private IntervalYearMonth()
 		{
 		}
 
-		public static int ToMonths(int Year, int Months)
+		public static int ToMonths(int year, int months)
 		{
 			try
-			{
-				return addExact(multiplyExact(Year, 12), Months);
+            {
+                return (int)Decimal.Add(Decimal.Multiply(year, 12), months);
 			}
-			catch (ArithmeticException E)
+			catch (ArithmeticException e)
 			{
-				throw new System.ArgumentException(E);
+				throw new System.ArgumentException(e.Message);
 			}
 		}
 
-		public static string FormatMonths(int Months)
+		public static string FormatMonths(int months)
 		{
-			if (Months == int.MinValue)
+			if (months == int.MinValue)
 			{
 				return IntMinValue;
 			}
 
-			string Sign = "";
-			if (Months < 0)
+			string sign = "";
+			if (months < 0)
 			{
-				Sign = "-";
-				Months = -Months;
+				sign = "-";
+				months = -months;
 			}
 
-			return format("%s%d-%d", Sign, Months / 12, Months % 12);
+			return string.Format("%s%d-%d", sign, months / 12, months % 12);
 		}
 
-		public static int ParseMonths(string Value)
+		public static int ParseMonths(string value)
 		{
-			if (Value.Equals(IntMinValue))
+			if (value.Equals(IntMinValue))
 			{
 				return int.MinValue;
 			}
 
-			int Signum = 1;
-			if (Value.StartsWith("-", StringComparison.Ordinal))
+			int signum = 1;
+			if (value.StartsWith("-", StringComparison.Ordinal))
 			{
-				Signum = -1;
-				Value = Value.Substring(1);
+				signum = -1;
+				value = value.Substring(1);
 			}
 
-			Matcher Matcher = FORMAT.matcher(Value);
-			if (!Matcher.matches())
+			var matcher = Format.Match(value);
+			if (!matcher.Success)
 			{
-				throw new System.ArgumentException("Invalid year-month interval: " + Value);
+				throw new System.ArgumentException("Invalid year-month interval: " + value);
 			}
 
-			int Years = parseInt(Matcher.group(1));
-			int Months = parseInt(Matcher.group(2));
+			int years = int.Parse(matcher.Groups[1].Value);
+            int months = int.Parse(matcher.Groups[2].Value);
 
-			return ToMonths(Years, Months) * Signum;
+			return ToMonths(years, months) * signum;
 		}
 	}
 

@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using SharpPulsar.Sql.Facebook.Type;
+using SharpPulsar.Sql.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,214 +21,150 @@
  */
 namespace SharpPulsar.Sql
 {
-	using NamedTypeSignature = com.facebook.presto.spi.type.NamedTypeSignature;
-	using ParameterKind = com.facebook.presto.spi.type.ParameterKind;
-	using TypeSignature = com.facebook.presto.spi.type.TypeSignature;
-	using TypeSignatureParameter = com.facebook.presto.spi.type.TypeSignatureParameter;
-	using ImmutableList = com.google.common.collect.ImmutableList;
-
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.ARRAY;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.BIGINT;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.BING_TILE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.BOOLEAN;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.CHAR;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.DATE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.DECIMAL;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.DOUBLE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.GEOMETRY;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.INTEGER;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.INTERVAL_DAY_TO_SECOND;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.INTERVAL_YEAR_TO_MONTH;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.IPADDRESS;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.IPPREFIX;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.JSON;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.MAP;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.REAL;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.ROW;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.SMALLINT;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.TIME;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.TIMESTAMP;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.TIMESTAMP_WITH_TIME_ZONE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.TIME_WITH_TIME_ZONE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.TINYINT;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.StandardTypes.VARCHAR;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	public sealed class FixJsonDataUtils
+    public sealed class FixJsonDataUtils
 	{
 		private FixJsonDataUtils()
 		{
 		}
 
-		public static IEnumerable<IList<object>> FixData(IList<Column> Columns, IEnumerable<IList<object>> Data)
+		public static IList<object> FixData(IList<Column> columns, IEnumerable<IList<object>> data)
 		{
-			if (Data == null)
+			if (data == null)
 			{
 				return null;
 			}
-			requireNonNull(Columns, "columns is null");
-			IList<TypeSignature> Signatures = Columns.Select(column => parseTypeSignature(column.Type)).ToList();
-			ImmutableList.Builder<IList<object>> Rows = ImmutableList.builder();
-			foreach (IList<object> Row in Data)
+			ParameterCondition.RequireNonNull(columns, "columns", "columns is null");
+			IList<TypeSignature> signatures = columns.ToList().Select(column => ParseTypeSignature(column.Type)).ToList();
+			IList<object> rows = new List<object>();
+			foreach (IList<object> row in data)
 			{
-				checkArgument(Row.Count == Columns.Count, "row/column size mismatch");
-				IList<object> NewRow = new List<object>();
-				for (int I = 0; I < Row.Count; I++)
+				ParameterCondition.CheckArgument(row.Count == columns.Count, "row/column size mismatch");
+				IList<object> newRow = new List<object>();
+				for (int i = 0; i < row.Count; i++)
 				{
-					NewRow.Add(FixValue(Signatures[I], Row[I]));
+					newRow.Add(FixValue(signatures[i], row[i]));
 				}
-				Rows.add(unmodifiableList(NewRow)); // allow nulls in list
+				rows.Add(new List<object>(newRow)); // allow nulls in list
 			}
-			return Rows.build();
+			return rows.ToList();
 		}
 
 		/// <summary>
 		/// Force values coming from Jackson to have the expected object type.
 		/// </summary>
-		private static object FixValue(TypeSignature Signature, object Value)
+		private static object FixValue(TypeSignature signature, object value)
 		{
-			if (Value == null)
+			if (value == null)
 			{
 				return null;
 			}
 
-			if (Signature.Base.Equals(ARRAY))
+			if (signature.Base.Equals(StandardTypes.Array))
 			{
-				IList<object> FixedValue = new List<object>();
-				foreach (object Object in typeof(System.Collections.IList).cast(Value))
+				IList<object> fixedValue = new List<object>();
+				foreach (object @object in (IList<object>)value)
 				{
-					FixedValue.Add(FixValue(Signature.TypeParametersAsTypeSignatures.get(0), Object));
+					fixedValue.Add(FixValue(signature.GetTypeParametersAsTypeSignatures().ToList()[0], @object));
 				}
-				return FixedValue;
+				return fixedValue;
 			}
-			if (Signature.Base.Equals(MAP))
+			if (signature.Base.Equals(StandardTypes.Map))
 			{
-				TypeSignature KeySignature = Signature.TypeParametersAsTypeSignatures.get(0);
-				TypeSignature ValueSignature = Signature.TypeParametersAsTypeSignatures.get(1);
-				IDictionary<object, object> FixedValue = new Dictionary<object, object>();
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: for (java.util.Map.Entry<?, ?> entry : (java.util.Set<java.util.Map.Entry<?, ?>>) java.util.Map.class.cast(value).entrySet())
-				foreach (KeyValuePair<object, ?> Entry in (ISet<KeyValuePair<object, ?>>) typeof(System.Collections.IDictionary).cast(Value).entrySet())
+				TypeSignature keySignature = signature.GetTypeParametersAsTypeSignatures().ToList()[0];
+				TypeSignature valueSignature = signature.GetTypeParametersAsTypeSignatures().ToList()[1];
+				IDictionary<object, object> fixedValue = new Dictionary<object, object>();
+				foreach (var entry in ((IDictionary<object, object>)value).ToList())
 				{
-					FixedValue[FixValue(KeySignature, Entry.Key)] = FixValue(ValueSignature, Entry.Value);
+					fixedValue[FixValue(keySignature, entry.Key)] = FixValue(valueSignature, entry.Value);
 				}
-				return FixedValue;
+				return fixedValue;
 			}
-			if (Signature.Base.Equals(ROW))
+			if (signature.Base.Equals(StandardTypes.Row))
 			{
-				IDictionary<string, object> FixedValue = new LinkedHashMap<string, object>();
-				IList<object> ListValue = typeof(System.Collections.IList).cast(Value);
-				checkArgument(ListValue.Count == Signature.Parameters.size(), "Mismatched data values and row type");
-				for (int I = 0; I < ListValue.Count; I++)
+				IDictionary<string, object> fixedValue = new Dictionary<string, object>();
+				IList<object> listValue = (IList<object>)value;
+				ParameterCondition.CheckArgument(listValue.Count == signature.Parameters.Count(), "Mismatched data values and row type");
+				for (int i = 0; i < listValue.Count; i++)
 				{
-					TypeSignatureParameter Parameter = Signature.Parameters.get(I);
-					checkArgument(Parameter.Kind == ParameterKind.NAMED_TYPE, "Unexpected parameter [%s] for row type", Parameter);
-					NamedTypeSignature NamedTypeSignature = Parameter.NamedTypeSignature;
-					string Key = NamedTypeSignature.Name.orElse("field" + I);
-					FixedValue[Key] = FixValue(NamedTypeSignature.TypeSignature, ListValue[I]);
+					TypeSignatureParameter parameter = signature.Parameters.ToList()[i];
+                    ParameterCondition.CheckArgument(parameter.Kind == ParameterKind.NamedType, "Unexpected parameter [%s] for row type", parameter);
+					NamedTypeSignature namedTypeSignature = parameter.NamedTypeSignature;
+					string key = string.IsNullOrWhiteSpace(namedTypeSignature.Name) ?"field" + i: namedTypeSignature.Name;
+					fixedValue[key] = FixValue(namedTypeSignature.TypeSignature, listValue[i]);
 				}
-				return FixedValue;
+				return fixedValue;
 			}
-			switch (Signature.Base)
+			switch (signature.Base)
 			{
-				case BIGINT:
-					if (Value is string)
+				case "bigint":
+					if (value is string s)
 					{
-						return long.Parse((string) Value);
+						return long.Parse(s);
 					}
-					return ((Number) Value).longValue();
-				case INTEGER:
-					if (Value is string)
+					return ((long) value);
+				case "integer":
+					if (value is string value1)
 					{
-						return int.Parse((string) Value);
+						return int.Parse(value1);
 					}
-					return ((Number) Value).intValue();
-				case SMALLINT:
-					if (Value is string)
+					return ((int) value);
+				case "smallint":
+					if (value is string s1)
 					{
-						return short.Parse((string) Value);
+						return short.Parse(s1);
 					}
-					return ((Number) Value).shortValue();
-				case TINYINT:
-					if (Value is string)
+					return Convert.ToInt16(value);
+				case "tinyint":
+					if (value is string o)
 					{
-						return sbyte.Parse((string) Value);
+						return sbyte.Parse(o);
 					}
-					return ((Number) Value).byteValue();
-				case DOUBLE:
-					if (Value is string)
+					return (sbyte) value;
+				case "double":
+					if (value is string s2)
 					{
-						return double.Parse((string) Value);
+						return double.Parse(s2);
 					}
-					return ((Number) Value).doubleValue();
-				case REAL:
-					if (Value is string)
+					return (double) value;
+				case "real":
+					if (value is string value2)
 					{
-						return float.Parse((string) Value);
+						return float.Parse(value2);
 					}
-					return ((Number) Value).floatValue();
-				case BOOLEAN:
-					if (Value is string)
+					return (float) value;
+				case "boolean":
+					if (value is string s3)
 					{
-						return bool.Parse((string) Value);
+						return bool.Parse(s3);
 					}
-					return typeof(Boolean).cast(Value);
-				case VARCHAR:
-				case JSON:
-				case TIME:
-				case TIME_WITH_TIME_ZONE:
-				case TIMESTAMP:
-				case TIMESTAMP_WITH_TIME_ZONE:
-				case DATE:
-				case INTERVAL_YEAR_TO_MONTH:
-				case INTERVAL_DAY_TO_SECOND:
-				case IPADDRESS:
-				case IPPREFIX:
-				case DECIMAL:
-				case CHAR:
-				case GEOMETRY:
-					return typeof(string).cast(Value);
-				case BING_TILE:
+					return Convert.ToBoolean(value);
+				case "varchar":
+				case "json":
+				case "time":
+				case "time with time zone":
+				case "timestamp":
+				case "timestamp with time zone":
+				case "date":
+				case "interval year to month":
+				case "interval day to second":
+				case "ipaddress":
+				case "ipprefix":
+				case "decimal":
+				case "char":
+				case "Geometry":
+					return value.ToString();
+				case "BingTile":
 					// Bing tiles are serialized as strings when used as map keys,
 					// they are serialized as json otherwise (value will be a LinkedHashMap).
-					return Value;
+					return value;
 				default:
 					// for now we assume that only the explicit types above are passed
 					// as a plain text and everything else is base64 encoded binary
-					if (Value is string)
+					if (value is string value3)
 					{
-						return Base64.Decoder.decode((string) Value);
+						return Convert.ToBase64String(Encoding.UTF8.GetBytes(value3));
 					}
-					return Value;
+					return value;
 			}
 		}
 	}

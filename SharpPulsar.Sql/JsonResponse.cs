@@ -1,5 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
+using SharpPulsar.Sql.Facebook.Type;
+using System.Net.Http.Headers;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,54 +27,48 @@ namespace SharpPulsar.Sql
 	using Response = okhttp3.Response;
 	using ResponseBody = okhttp3.ResponseBody;
 
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.toStringHelper;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.net.HttpHeaders.LOCATION;
-
 	public sealed class JsonResponse<T>
 	{
-		public virtual StatusCode {get;}
-		public virtual StatusMessage {get;}
-		public virtual Headers {get;}
-		public virtual ResponseBody {get;}
-		private readonly bool hasValue;
-		private readonly T value;
-		public virtual Exception {get;}
+		public int StatusCode {get;}
+		public string StatusMessage {get;}
+		public object Headers {get;}
+		public string ResponseBody {get;}
+		private readonly bool _hasValue;
+		private readonly T _value;
+		public Exception Exception {get;}
 
-		private JsonResponse(int StatusCode, string StatusMessage, Headers Headers, string ResponseBody)
+		private JsonResponse(int statusCode, string statusMessage, Headers headers, string responseBody)
 		{
-			this.StatusCode = StatusCode;
-			this.StatusMessage = StatusMessage;
-			this.Headers = requireNonNull(Headers, "headers is null");
-			this.ResponseBody = requireNonNull(ResponseBody, "responseBody is null");
+			this.StatusCode = statusCode;
+			this.StatusMessage = statusMessage;
+			this.Headers = requireNonNull(headers, "headers is null");
+			this.ResponseBody = requireNonNull(responseBody, "responseBody is null");
 
-			this.hasValue = false;
-			this.value = default(T);
+			this._hasValue = false;
+			this._value = default(T);
 			this.Exception = null;
 		}
 
-		private JsonResponse(int StatusCode, string StatusMessage, Headers Headers, string ResponseBody, JsonCodec<T> JsonCodec)
+		private JsonResponse(int statusCode, string statusMessage, Headers headers, string responseBody, JsonCodec<T> jsonCodec)
 		{
-			this.StatusCode = StatusCode;
-			this.StatusMessage = StatusMessage;
-			this.Headers = requireNonNull(Headers, "headers is null");
-			this.ResponseBody = requireNonNull(ResponseBody, "responseBody is null");
+			this.StatusCode = statusCode;
+			this.StatusMessage = statusMessage;
+			this.Headers = requireNonNull(headers, "headers is null");
+			this.ResponseBody = requireNonNull(responseBody, "responseBody is null");
 
-			T Value = default(T);
-			System.ArgumentException Exception = null;
+			T value = default(T);
+			System.ArgumentException exception = null;
 			try
 			{
-				Value = JsonCodec.fromJson(ResponseBody);
+				value = jsonCodec.fromJson(responseBody);
 			}
-			catch (System.ArgumentException E)
+			catch (System.ArgumentException e)
 			{
-				Exception = new System.ArgumentException(format("Unable to create %s from JSON response:\n[%s]", JsonCodec.Type, ResponseBody), E);
+				exception = new System.ArgumentException(format("Unable to create %s from JSON response:\n[%s]", jsonCodec.Type, responseBody), e);
 			}
-			this.hasValue = (Exception == null);
-			this.value = Value;
-			this.Exception = Exception;
+			this._hasValue = (exception == null);
+			this._value = value;
+			this.Exception = exception;
 		}
 
 
@@ -79,71 +76,68 @@ namespace SharpPulsar.Sql
 
 		public bool HasValue()
 		{
-			return hasValue;
+			return _hasValue;
 		}
 
 		public T Value
 		{
 			get
 			{
-				if (!hasValue)
+				if (!_hasValue)
 				{
 					throw new System.InvalidOperationException("Response does not contain a JSON value", Exception);
 				}
-				return value;
+				return _value;
 			}
 		}
 
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable public IllegalArgumentException getException()
-
+		
 		public override string ToString()
 		{
-			return toStringHelper(this).add("statusCode", StatusCode).add("statusMessage", StatusMessage).add("headers", Headers.toMultimap()).add("hasValue", hasValue).add("value", value).omitNullValues().ToString();
+			return StringHelper.Build(this).Add("statusCode", StatusCode).Add("statusMessage", StatusMessage).Add("headers", Headers.ToMultimap()).Add("hasValue", _hasValue).Add("value", _value).ToString();
 		}
 
-		public static JsonResponse<T> Execute<T>(JsonCodec<T> Codec, OkHttpClient Client, Request Request)
+		public static JsonResponse<T> Execute<T>(JsonCodec<T> codec, OkHttpClient client, Request request)
 		{
 			try
 			{
-					using (Response Response = Client.newCall(Request).execute())
+					using (Response response = client.newCall(request).execute())
 					{
 					// TODO: fix in OkHttp: https://github.com/square/okhttp/issues/3111
-					if ((Response.code() == 307) || (Response.code() == 308))
+					if ((response.code() == 307) || (response.code() == 308))
 					{
-						string Location = Response.header(LOCATION);
-						if (!string.ReferenceEquals(Location, null))
+						string location = response.header(LOCATION);
+						if (!string.ReferenceEquals(location, null))
 						{
-							Request = Request.newBuilder().url(Location).build();
-							return Execute(Codec, Client, Request);
+							request = request.newBuilder().url(location).build();
+							return Execute(codec, client, request);
 						}
 					}
         
-					ResponseBody ResponseBody = requireNonNull(Response.body());
-					string Body = ResponseBody.@string();
-					if (IsJson(ResponseBody.contentType()))
+					ResponseBody responseBody = requireNonNull(response.body());
+					string body = responseBody.@string();
+					if (IsJson(responseBody.contentType()))
 					{
-						return new JsonResponse<T>(Response.code(), Response.message(), Response.headers(), Body, Codec);
+						return new JsonResponse<T>(response.code(), response.message(), response.headers(), body, codec);
 					}
-					return new JsonResponse<T>(Response.code(), Response.message(), Response.headers(), Body);
+					return new JsonResponse<T>(response.code(), response.message(), response.headers(), body);
 					}
 			}
-			catch (IOException E)
+			catch (IOException e)
 			{
 				// OkHttp throws this after clearing the interrupt status
 				// TODO: remove after updating to Okio 1.15.0+
-				if ((E is InterruptedIOException) && "thread interrupted".Equals(E.Message))
+				if ((e is InterruptedIOException) && "thread interrupted".Equals(e.Message))
 				{
 					Thread.CurrentThread.Interrupt();
 				}
-				throw new UncheckedIOException(E);
+				throw new UncheckedIOException(e);
 			}
 		}
 
-		private static bool IsJson(MediaType Type)
+		private static bool IsJson(MediaType type)
 		{
-			return (Type != null) && "application".Equals(Type.type()) && "json".Equals(Type.subtype());
+			return (type != null) && "application".Equals(type.type()) && "json".Equals(type.subtype());
 		}
 	}
 

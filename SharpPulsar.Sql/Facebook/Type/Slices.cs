@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using SharpPulsar.Sql.Precondition;
 
 namespace SharpPulsar.Sql.Facebook.Type
@@ -34,7 +32,47 @@ namespace SharpPulsar.Sql.Facebook.Type
         #endregion
 
         #region Public Static Methods
+        public static Slice EnsureSize(Slice existingSlice, int minWritableBytes)
+        {
+            if (existingSlice == null)
+            {
+                return Allocate(minWritableBytes);
+            }
 
+            if (minWritableBytes <= existingSlice.Length)
+            {
+                return existingSlice;
+            }
+
+            int newCapacity;
+            if (existingSlice.Length == 0)
+            {
+                newCapacity = 1;
+            }
+            else
+            {
+                newCapacity = existingSlice.Length;
+            }
+            while (newCapacity < minWritableBytes)
+            {
+                if (newCapacity < SliceAllocThreshold)
+                {
+                    newCapacity <<= 1;
+                }
+                else
+                {
+                    newCapacity *= (int)SliceAllowSkew; // double to int cast is saturating
+                    if (newCapacity > MaxArraySize && minWritableBytes <= MaxArraySize)
+                    {
+                        newCapacity = MaxArraySize;
+                    }
+                }
+            }
+
+            Slice newSlice = Allocate(newCapacity);
+            newSlice.SetBytes(0, existingSlice, 0, existingSlice.Length);
+            return newSlice;
+        }
         public static Slice Allocate(int capacity)
         {
             if (capacity == 0)

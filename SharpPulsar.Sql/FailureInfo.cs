@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using SharpPulsar.Sql.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,141 +18,99 @@ using System.Collections.Generic;
  */
 namespace SharpPulsar.Sql
 {
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-	using ImmutableList = com.google.common.collect.ImmutableList;
-
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable public class FailureInfo
 	public class FailureInfo
 	{
-		private static readonly Pattern STACK_TRACE_PATTERN = Pattern.compile(@"(.*)\.(.*)\(([^:]*)(?::(.*))?\)");
+		private static readonly Regex StackTracePattern = new Regex(@"(.*)\.(.*)\(([^:]*)(?::(.*))?\)");
 
-		public virtual Type {get;}
-		public virtual Message {get;}
-		public virtual Cause {get;}
-		private readonly IList<FailureInfo> suppressed;
-		private readonly IList<string> stack;
-		public virtual ErrorLocation {get;}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonCreator public FailureInfo(@JsonProperty("type") String type, @JsonProperty("message") String message, @JsonProperty("cause") FailureInfo cause, @JsonProperty("suppressed") java.util.List<FailureInfo> suppressed, @JsonProperty("stack") java.util.List<String> stack, @JsonProperty("errorLocation") @Nullable ErrorLocation errorLocation)
-		public FailureInfo(string Type, string Message, FailureInfo Cause, IList<FailureInfo> Suppressed, IList<string> System.Collections.Stack, ErrorLocation ErrorLocation)
+		public string Type {get;}
+		public string Message {get;}
+		public FailureInfo Cause {get;}
+        private ErrorLocation _errorLocation;
+		public FailureInfo(string type, string message, FailureInfo cause, IList<FailureInfo> suppressed, IList<string> stack, ErrorLocation errorLocation)
 		{
-			requireNonNull(Type, "type is null");
-			requireNonNull(Suppressed, "suppressed is null");
-			requireNonNull(Stack, "stack is null");
+			ParameterCondition.RequireNonNull(type, "type", "type is null");
+            ParameterCondition.RequireNonNull(suppressed, "suppressed", "suppressed is null");
+            ParameterCondition.RequireNonNull(stack, "stack", "stack is null");
 
-			this.Type = Type;
-			this.Message = Message;
-			this.Cause = Cause;
-			this.suppressed = ImmutableList.copyOf(Suppressed);
-			this.stack = ImmutableList.copyOf(Stack);
-			this.ErrorLocation = ErrorLocation;
+			this.Type = type;
+			this.Message = message;
+			this.Cause = cause;
+			this.Suppressed = new List<FailureInfo>(suppressed);
+			this.Stack = new List<string>(stack);
+			this._errorLocation = errorLocation;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public String getType()
+		public virtual IList<FailureInfo> Suppressed { get; }
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable @JsonProperty public String getMessage()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable @JsonProperty public FailureInfo getCause()
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public java.util.List<FailureInfo> getSuppressed()
-		public virtual IList<FailureInfo> Suppressed
-		{
-			get
-			{
-				return suppressed;
-			}
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonProperty public java.util.List<String> getStack()
-		public virtual IList<string> Stack
-		{
-			get
-			{
-				return stack;
-			}
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable @JsonProperty public ErrorLocation getErrorLocation()
+		public virtual IList<string> Stack { get; }
 
 		public virtual Exception ToException()
 		{
 			return ToException(this);
 		}
 
-		private static FailureException ToException(FailureInfo FailureInfo)
+		private static FailureException ToException(FailureInfo failureInfo)
 		{
-			if (FailureInfo == null)
+			if (failureInfo == null)
 			{
 				return null;
 			}
-			FailureException Failure = new FailureException(FailureInfo.Type, FailureInfo.Message, ToException(FailureInfo.Cause));
-			foreach (FailureInfo Suppressed in FailureInfo.Suppressed)
+			FailureException failure = new FailureException(failureInfo.Type, failureInfo.Message, ToException(failureInfo.Cause));
+			foreach (FailureInfo suppressed in failureInfo.Suppressed)
 			{
-				Failure.addSuppressed(ToException(Suppressed));
+				failure.AddSuppressed(ToException(suppressed));
 			}
-			ImmutableList.Builder<StackTraceElement> StackTraceBuilder = ImmutableList.builder();
-			foreach (string Stack in FailureInfo.Stack)
+			ImmutableList.Builder<StackTraceElement> stackTraceBuilder = ImmutableList.builder();
+			foreach (string stack in failureInfo.Stack)
 			{
-				StackTraceBuilder.add(ToStackTraceElement(Stack));
+				stackTraceBuilder.add(ToStackTraceElement(stack));
 			}
-			ImmutableList<StackTraceElement> StackTrace = StackTraceBuilder.build();
-			Failure.StackTrace = StackTrace.toArray(new StackTraceElement[StackTrace.size()]);
-			return Failure;
+			ImmutableList<StackTraceElement> stackTrace = stackTraceBuilder.build();
+			failure.StackTrace = stackTrace.toArray(new StackTraceElement[stackTrace.size()]);
+			return failure;
 		}
 
-		public static StackTraceElement ToStackTraceElement(string Stack)
+		public static StackTraceElement ToStackTraceElement(string stack)
 		{
-			Matcher Matcher = STACK_TRACE_PATTERN.matcher(Stack);
-			if (Matcher.matches())
+			Matcher matcher = StackTracePattern.matcher(stack);
+			if (matcher.matches())
 			{
-				string DeclaringClass = Matcher.group(1);
-				string MethodName = Matcher.group(2);
-				string FileName = Matcher.group(3);
-				int Number = -1;
-				if (FileName.Equals("Native Method"))
+				string declaringClass = matcher.group(1);
+				string methodName = matcher.group(2);
+				string fileName = matcher.group(3);
+				int number = -1;
+				if (fileName.Equals("Native Method"))
 				{
-					FileName = null;
-					Number = -2;
+					fileName = null;
+					number = -2;
 				}
-				else if (Matcher.group(4) != null)
+				else if (matcher.group(4) != null)
 				{
-					Number = int.Parse(Matcher.group(4));
+					number = int.Parse(matcher.group(4));
 				}
-				return new StackTraceElement(DeclaringClass, MethodName, FileName, Number);
+				return new StackTraceElement(declaringClass, methodName, fileName, number);
 			}
-			return new StackTraceElement("Unknown", Stack, null, -1);
+			return new StackTraceElement("Unknown", stack, null, -1);
 		}
 
 		public class FailureException : Exception
 		{
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-			internal readonly string TypeConflict;
+			internal readonly string Type;
 
-			public FailureException(string Type, string Message, FailureException Cause) : base(Message, Cause)
+			public FailureException(string type, string message, FailureException cause) : base(message, cause)
 			{
-				this.TypeConflict = requireNonNull(Type, "type is null");
+				this.Type = ParameterCondition.RequireNonNull(type, "type","type is null");
 			}
 
 
 			public override string ToString()
 			{
-				string Message = outerInstance.Message;
-				if (!string.ReferenceEquals(Message, null))
+				string message = outerInstance.Message;
+				if (!string.ReferenceEquals(message, null))
 				{
-					return TypeConflict + ": " + Message;
+					return Type + ": " + message;
 				}
-				return TypeConflict;
+				return Type;
 			}
 		}
 	}

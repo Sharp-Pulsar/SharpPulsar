@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,97 +17,90 @@
 namespace SharpPulsar.Sql
 {
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Long.parseLong;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Math.addExact;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static Math.multiplyExact;
-
 	public sealed class IntervalDayTime
 	{
 		private const long MillisInSecond = 1000;
-		private static readonly long MILLIS_IN_MINUTE = 60 * MillisInSecond;
-		private static readonly long MILLIS_IN_HOUR = 60 * MILLIS_IN_MINUTE;
-		private static readonly long MILLIS_IN_DAY = 24 * MILLIS_IN_HOUR;
+		private static readonly long MillisInMinute = 60 * MillisInSecond;
+		private static readonly long MillisInHour = 60 * MillisInMinute;
+		private static readonly long MillisInDay = 24 * MillisInHour;
 
 		private const string LongMinValue = "-106751991167 07:12:55.808";
 
-		private static readonly Pattern FORMAT = Pattern.compile(@"(\d+) (\d+):(\d+):(\d+).(\d+)");
+		private static readonly Regex Format = new Regex(@"(\d+) (\d+):(\d+):(\d+).(\d+)");
 
 		private IntervalDayTime()
 		{
 		}
 
-		public static long ToMillis(long Day, long Hour, long Minute, long Second, long Millis)
+		public static long ToMillis(long day, long hour, long minute, long second, long millis)
 		{
 			try
 			{
-				long Value = Millis;
-				Value = addExact(Value, multiplyExact(Day, MILLIS_IN_DAY));
-				Value = addExact(Value, multiplyExact(Hour, MILLIS_IN_HOUR));
-				Value = addExact(Value, multiplyExact(Minute, MILLIS_IN_MINUTE));
-				Value = addExact(Value, multiplyExact(Second, MillisInSecond));
-				return Value;
+				var value = millis;
+				value = (int)Decimal.Add(value, Decimal.Multiply(day, MillisInDay));
+				value = (int)Decimal.Add(value, Decimal.Multiply(hour, MillisInHour));
+				value = (int)Decimal.Add(value, Decimal.Multiply(minute, MillisInMinute));
+				value = (int)Decimal.Add(value, Decimal.Multiply(second, MillisInSecond));
+				return value;
 			}
-			catch (ArithmeticException E)
+			catch (ArithmeticException e)
 			{
-				throw new System.ArgumentException(E);
+				throw new System.ArgumentException(e.Message);
 			}
 		}
 
-		public static string FormatMillis(long Millis)
+		public static string FormatMillis(long millis)
 		{
-			if (Millis == long.MinValue)
+			if (millis == long.MinValue)
 			{
 				return LongMinValue;
 			}
-			string Sign = "";
-			if (Millis < 0)
+			var sign = "";
+			if (millis < 0)
 			{
-				Sign = "-";
-				Millis = -Millis;
+				sign = "-";
+				millis = -millis;
 			}
 
-			long Day = Millis / MILLIS_IN_DAY;
-			Millis %= MILLIS_IN_DAY;
-			long Hour = Millis / MILLIS_IN_HOUR;
-			Millis %= MILLIS_IN_HOUR;
-			long Minute = Millis / MILLIS_IN_MINUTE;
-			Millis %= MILLIS_IN_MINUTE;
-			long Second = Millis / MillisInSecond;
-			Millis %= MillisInSecond;
+			var day = millis / MillisInDay;
+			millis %= MillisInDay;
+			var hour = millis / MillisInHour;
+			millis %= MillisInHour;
+			var minute = millis / MillisInMinute;
+			millis %= MillisInMinute;
+			var second = millis / MillisInSecond;
+			millis %= MillisInSecond;
 
-			return format("%s%d %02d:%02d:%02d.%03d", Sign, Day, Hour, Minute, Second, Millis);
+			return string.Format("%s%d %02d:%02d:%02d.%03d", sign, day, hour, minute, second, millis);
 		}
 
-		public static long ParseMillis(string Value)
+		public static long ParseMillis(string value)
 		{
-			if (Value.Equals(LongMinValue))
+			if (value.Equals(LongMinValue))
 			{
 				return long.MinValue;
 			}
 
-			long Signum = 1;
-			if (Value.StartsWith("-", StringComparison.Ordinal))
+			long signum = 1;
+			if (value.StartsWith("-", StringComparison.Ordinal))
 			{
-				Signum = -1;
-				Value = Value.Substring(1);
+				signum = -1;
+				value = value.Substring(1);
 			}
 
-			Matcher Matcher = FORMAT.matcher(Value);
-			if (!Matcher.matches())
+			var matcher = Format.Match(value);
+			if (!matcher.Success)
 			{
-				throw new System.ArgumentException("Invalid day-time interval: " + Value);
+				throw new System.ArgumentException("Invalid day-time interval: " + value);
 			}
 
-			long Days = parseLong(Matcher.group(1));
-			long Hours = parseLong(Matcher.group(2));
-			long Minutes = parseLong(Matcher.group(3));
-			long Seconds = parseLong(Matcher.group(4));
-			long Millis = parseLong(Matcher.group(5));
+			var days = long.Parse(matcher.Groups[1].Value);
+			var hours = long.Parse(matcher.Groups[2].Value);
+			var minutes = long.Parse(matcher.Groups[3].Value);
+			var seconds = long.Parse(matcher.Groups[4].Value);
+			var millis = long.Parse(matcher.Groups[5].Value);
 
-			return ToMillis(Days, Hours, Minutes, Seconds, Millis) * Signum;
+			return ToMillis(days, hours, minutes, seconds, millis) * signum;
 		}
 	}
 

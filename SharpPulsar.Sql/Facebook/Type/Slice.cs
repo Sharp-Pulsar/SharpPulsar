@@ -15,14 +15,14 @@ namespace SharpPulsar.Sql.Facebook.Type
     {
         #region Private Fields
 
-        private static readonly int INSTANCE_SIZE = 0;
+        private static readonly int InstanceSize = 0;
 
-        private static readonly byte[] COMPACT = new byte[0];
+        private static readonly byte[] Compact = new byte[0];
 
-        private static readonly object NOT_COMPACT = null;
+        private static readonly object NotCompact = null;
 
         // sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
-        private static readonly int ARRAY_BYTE_BASE_OFFSET = 0;
+        private static readonly int ArrayByteBaseOffset = 0;
 
         #endregion
 
@@ -46,13 +46,7 @@ namespace SharpPulsar.Sql.Facebook.Type
 
         public int Size { get; }
 
-        public int Length
-        {
-            get
-            {
-                return Size;
-            }
-        }
+        public int Length => Size;
 
         /// <summary>
         /// Bytes retained by the slice
@@ -85,8 +79,8 @@ namespace SharpPulsar.Sql.Facebook.Type
             Base = null;
             Address = 0;
             Size = 0;
-            RetainedSize = INSTANCE_SIZE;
-            Reference = COMPACT;
+            RetainedSize = InstanceSize;
+            Reference = Compact;
         }
 
         /// <summary>
@@ -96,10 +90,10 @@ namespace SharpPulsar.Sql.Facebook.Type
         public Slice(byte[] @base)
         {
             Base = @base ?? throw new ArgumentNullException("base");
-            Address = ARRAY_BYTE_BASE_OFFSET;
+            Address = ArrayByteBaseOffset;
             Size = @base.Length;
-            RetainedSize = INSTANCE_SIZE + Marshal.SizeOf(@base);
-            Reference = COMPACT;
+            RetainedSize = InstanceSize + Marshal.SizeOf(@base);
+            Reference = Compact;
         }
 
         /// <summary>
@@ -113,12 +107,86 @@ namespace SharpPulsar.Sql.Facebook.Type
             ParameterCondition.OutOfRange(offset < @base.Length && offset + length < @base.Length, "offset");
 
             Base = @base ?? throw new ArgumentNullException("base");
-            Address = ARRAY_BYTE_BASE_OFFSET + offset;
+            Address = ArrayByteBaseOffset + offset;
             Size = length;
-            RetainedSize = INSTANCE_SIZE + Marshal.SizeOf(@base);
-            Reference = (offset == 0 && length == @base.Length) ? COMPACT : NOT_COMPACT;
+            RetainedSize = InstanceSize + Marshal.SizeOf(@base);
+            Reference = (offset == 0 && length == @base.Length) ? Compact : NotCompact;
         }
+        /// <summary>
+        /// Gets a byte at the specified absolute {@code index} in this buffer.
+        /// </summary>
+        /// <exception cref="IndexOutOfBoundsException"> if the specified {@code index} is less than {@code 0} or
+        /// {@code index + 1} is greater than {@code this.length()} </exception>
+        public sbyte GetByte(int index)
+        {
+            CheckIndexLength(index, sizeof(sbyte));
+            return GetByteUnchecked(index);
+        }
+        public void SetByte(int index, int value)
+        {
+            CheckIndexLength(index, sizeof(byte));
+            SetByteUnchecked(index, value);
+        }
+        public long GetLongUnchecked(int index)
+        {
+            return unchecked(Address + index);
+        }
+        public int GetIntUnchecked(int index)
+        {
+            return unchecked((int)Address + index);
+        }
+        public void SetIntUnchecked(int index, int value)
+        {
+            @unsafe.putInt(Base, Address + index, value);
+        }
+        public Slice ToSlice(int index, int length)
+        {
+            if ((index == 0) && (length == Length))
+            {
+                return this;
+            }
+            CheckIndexLength(index, length);
+            if (length == 0)
+            {
+                return Slices.EmptySlice;
+            }
 
+            if (Reference == Compact)
+            {
+                return new Slice(Base, Address + index, length, RetainedSize, NotCompact);
+            }
+            return new Slice(Base, Address + index, length, RetainedSize, Reference);
+        }
+        private void CheckIndexLength(int index, int length)
+        {
+            ParameterCondition.CheckPositionIndexes(index, index + length, Length);
+        }
+        /// <summary>
+        /// Creates a slice for directly accessing the base object.
+        /// </summary>
+        public Slice(object @base, long address, int size, long retainedSize, object reference)
+        {
+            if (address <= 0)
+            {
+                throw new System.ArgumentException($"Invalid address: {address}");
+            }
+            if (size <= 0)
+            {
+                throw new System.ArgumentException($"Invalid size: {size}");
+            }
+            ParameterCondition.CheckArgument((address + size) >= size, "Address + size is greater than 64 bits");
+
+            this.Reference = reference;
+            this.Base = @base;
+            this.Address = address;
+            this.Size = size;
+            // INSTANCE_SIZE is not included, as the caller is responsible for including it.
+            this.RetainedSize = retainedSize;
+        }
+        public sbyte GetByteUnchecked(int index)
+        {
+            return unchecked(Convert.ToSByte(Address + index));
+        }
         #endregion
 
         #region Public Methods
@@ -135,7 +203,7 @@ namespace SharpPulsar.Sql.Facebook.Type
         /// <returns></returns>
         public bool IsCompact()
         {
-            return Reference == COMPACT;
+            return Reference == Compact;
         }
 
         public void SetBytes(int index, Slice source)

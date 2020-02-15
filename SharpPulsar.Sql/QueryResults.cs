@@ -16,26 +16,7 @@ using System.Collections.Generic;
  */
 namespace SharpPulsar.Sql
 {
-	using PrestoWarning = com.facebook.presto.spi.PrestoWarning;
-	using JsonCreator = com.fasterxml.jackson.annotation.JsonCreator;
-	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
-	using ImmutableList = com.google.common.collect.ImmutableList;
-
-
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.facebook.presto.client.FixJsonDataUtils.fixData;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.firstNonNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.toStringHelper;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.collect.Iterables.unmodifiableIterable;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable public class QueryResults implements QueryStatusInfo, QueryData
+	
 	public class QueryResults : QueryStatusInfo, QueryData
 	{
 		public virtual Id {get;}
@@ -50,9 +31,7 @@ namespace SharpPulsar.Sql
 		public virtual UpdateType {get;}
 		private readonly long? updateCount;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @JsonCreator public QueryResults(@JsonProperty("id") String id, @JsonProperty("infoUri") java.net.URI infoUri, @JsonProperty("partialCancelUri") java.net.URI partialCancelUri, @JsonProperty("nextUri") java.net.URI nextUri, @JsonProperty("columns") java.util.List<Column> columns, @JsonProperty("data") java.util.List<java.util.List<Object>> data, @JsonProperty("stats") StatementStats stats, @JsonProperty("error") QueryError error, @JsonProperty("warnings") java.util.List<com.facebook.presto.spi.PrestoWarning> warnings, @JsonProperty("updateType") String updateType, @JsonProperty("updateCount") System.Nullable<long> updateCount)
-		public QueryResults(string Id, URI InfoUri, URI PartialCancelUri, URI NextUri, IList<Column> Columns, IList<IList<object>> Data, StatementStats Stats, QueryError Error, IList<PrestoWarning> Warnings, string UpdateType, long? UpdateCount) : this(Id, InfoUri, PartialCancelUri, NextUri, Columns, fixData(Columns, Data), Stats, Error, firstNonNull(Warnings, ImmutableList.of()), UpdateType, UpdateCount)
+        public QueryResults(string Id, URI InfoUri, URI PartialCancelUri, URI NextUri, IList<Column> Columns, IList<IList<object>> Data, StatementStats Stats, QueryError Error, IList<PrestoWarning> Warnings, string UpdateType, long? UpdateCount) : this(Id, InfoUri, PartialCancelUri, NextUri, Columns, fixData(Columns, Data), Stats, Error, firstNonNull(Warnings, ImmutableList.of()), UpdateType, UpdateCount)
 		{
 		}
 

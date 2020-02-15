@@ -17,11 +17,6 @@ namespace SharpPulsar.Sql
 	using JsonProperty = com.fasterxml.jackson.annotation.JsonProperty;
 
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.MoreObjects.toStringHelper;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Immutable public class QueryError
 	public class QueryError
 	{
 		public virtual Message {get;}
