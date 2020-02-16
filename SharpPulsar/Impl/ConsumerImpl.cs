@@ -21,6 +21,7 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Util;
 using SharpPulsar.Util.Atomic;
+using SharpPulsar.Utils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -7,17 +7,12 @@ using Microsoft.IO;
 using System.IO;
 using System.Net;
 using Google.Protobuf;
-using System.Text;
-using SharpPulsar.Protocol.Extension;
-using SharpPulsar.Common;
-using SharpPulsar.Util.Protobuf;
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Common.Entity;
 using System.Linq;
-using Optional;
-using SharpPulsar.Api.Schema;
+using SharpPulsar.Protocol.Circe;
+using SharpPulsar.Util.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,6 +41,7 @@ namespace SharpPulsar.Protocol
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
+		public static Crc32CIntChecksum _intChecksum = new Crc32CIntChecksum();
 
 		public const short MagicCrc32C = 0x0e01;
 		private const int ChecksumSize = 4;
@@ -1386,6 +1382,14 @@ namespace SharpPulsar.Protocol
 			return command;
 		}
 
+        public static int ComputeChecksum(IByteBuffer byteBuffer)
+        {
+            return Crc32CIntChecksum.ComputeChecksum(byteBuffer);
+        }
+        public static int ResumeChecksum(int prev, IByteBuffer byteBuffer)
+        {
+            return Crc32CIntChecksum.ResumeChecksum(prev, byteBuffer);
+        }
 		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType checksumType, MessageMetadata msgMetadata, IByteBuffer payload)
 		{
 			// / Wire format

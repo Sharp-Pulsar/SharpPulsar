@@ -15,6 +15,7 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Exception;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Util;
+using SharpPulsar.Utils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1031,7 +1031,7 @@ namespace SharpPulsar.Impl
 						var checksum = Commands.ReadChecksum(headerFrame);
 						// msg.readerIndex is already at header-payload index, Recompute checksum for headers-payload
 						int metadataChecksum = Commands.ComputeChecksum(headerFrame);
-						long computedChecksum = ResumeChecksum(metadataChecksum, msg.Second);
+						long computedChecksum = Commands.ResumeChecksum(metadataChecksum, msg.Second);
 						return checksum == computedChecksum;
 					}
 					else

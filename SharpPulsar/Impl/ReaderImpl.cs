@@ -23,6 +23,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Util;
+using SharpPulsar.Utils;
 
 namespace SharpPulsar.Impl
 {

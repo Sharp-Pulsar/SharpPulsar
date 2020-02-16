@@ -9,6 +9,7 @@ using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Util;
 using SharpPulsar.Util.Atomic.Locking;
+using SharpPulsar.Utils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

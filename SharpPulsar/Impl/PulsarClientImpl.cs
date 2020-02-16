@@ -21,6 +21,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Utils;
 using static SharpPulsar.Impl.ConsumerImpl<object>;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
