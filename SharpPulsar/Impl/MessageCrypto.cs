@@ -22,14 +22,19 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Avro.Generic;
 using crypto;
+using DotNetty.Buffers;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Security;
+using SharpPulsar.Api;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Shared;
 
 namespace SharpPulsar.Impl
 {
@@ -38,19 +43,6 @@ namespace SharpPulsar.Impl
 	using CacheLoader = com.google.common.cache.CacheLoader;
 	using LoadingCache = com.google.common.cache.LoadingCache;
 
-	using ByteBuf = io.netty.buffer.ByteBuf;
-
-
-
-	using CryptoKeyReader = Org.Apache.Pulsar.Client.Api.CryptoKeyReader;
-	using EncryptionKeyInfo = Org.Apache.Pulsar.Client.Api.EncryptionKeyInfo;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using CryptoException = Org.Apache.Pulsar.Client.Api.PulsarClientException.CryptoException;
-	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
-	using EncryptionKeys = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.EncryptionKeys;
-	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
 	using ASN1ObjectIdentifier = org.bouncycastle.asn1.ASN1ObjectIdentifier;
 	using PrivateKeyInfo = org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 	using SubjectPublicKeyInfo = org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -514,70 +506,70 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private bool DecryptDataKey(string KeyName, sbyte[] EncryptedDataKey, IList<KeyValue> EncKeyMeta, CryptoKeyReader KeyReader)
+		private bool DecryptDataKey(string keyName, byte[] encryptedDataKey, IList<KeyValue> encKeyMeta, ICryptoKeyReader keyReader)
 		{
 
-			IDictionary<string, string> KeyMeta = new Dictionary<string, string>();
-			EncKeyMeta.ForEach(kv =>
+			IDictionary<string, string> keyMeta = new Dictionary<string, string>();
+			encKeyMeta.ForEach(kv =>
 			{
-				KeyMeta[kv.Key] = kv.Value;
+				keyMeta[kv.Key] = kv.Value;
 			});
 
 			// Read the private key info using callback
-			EncryptionKeyInfo KeyInfo = KeyReader.getPrivateKey(KeyName, KeyMeta);
+			EncryptionKeyInfo keyInfo = keyReader.getPrivateKey(keyName, keyMeta);
 
 			// Convert key from byte to PivateKey
-			PrivateKey PrivateKey;
+			PrivateKey privateKey;
 			try
 			{
-				PrivateKey = LoadPrivateKey(KeyInfo.Key);
-				if (PrivateKey == null)
+				privateKey = LoadPrivateKey(keyInfo.Key);
+				if (privateKey == null)
 				{
-					log.error("{} Failed to load private key {}.", logCtx, KeyName);
+					log.error("{} Failed to load private key {}.", logCtx, keyName);
 					return false;
 				}
 			}
-			catch (Exception E)
+			catch (Exception e)
 			{
-				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, KeyName, E.Message);
+				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, keyName, e.Message);
 				return false;
 			}
 
 			// Decrypt data key to decrypt messages
-			Cipher DataKeyCipher = null;
-			sbyte[] DataKeyValue = null;
-			sbyte[] KeyDigest = null;
+			Cipher dataKeyCipher = null;
+			sbyte[] dataKeyValue = null;
+			sbyte[] keyDigest = null;
 
 			try
 			{
 
 				// Decrypt data key using private key
-				if (RSA.Equals(PrivateKey.Algorithm))
+				if (RSA.Equals(privateKey.Algorithm))
 				{
-					DataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
+					dataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
 				}
-				else if (ECDSA.Equals(PrivateKey.Algorithm))
+				else if (ECDSA.Equals(privateKey.Algorithm))
 				{
-					DataKeyCipher = Cipher.getInstance(ECIES, BouncyCastleProvider.PROVIDER_NAME);
+					dataKeyCipher = Cipher.getInstance(ECIES, BouncyCastleProvider.PROVIDER_NAME);
 				}
 				else
 				{
-					log.error("Unsupported key type {} for key {}.", PrivateKey.Algorithm, KeyName);
+					log.error("Unsupported key type {} for key {}.", privateKey.Algorithm, keyName);
 					return false;
 				}
-				DataKeyCipher.init(Cipher.DECRYPT_MODE, PrivateKey);
-				DataKeyValue = DataKeyCipher.doFinal(EncryptedDataKey);
+				dataKeyCipher.init(Cipher.DECRYPT_MODE, privateKey);
+				dataKeyValue = dataKeyCipher.doFinal(encryptedDataKey);
 
-				KeyDigest = Digest.digest(EncryptedDataKey);
+				keyDigest = Digest.digest(encryptedDataKey);
 
 			}
-			catch (Exception E) when (E is IllegalBlockSizeException || E is BadPaddingException || E is NoSuchAlgorithmException || E is NoSuchProviderException || E is NoSuchPaddingException || E is InvalidKeyException)
+			catch (Exception e) when (e is IllegalBlockSizeException || e is BadPaddingException || e is NoSuchAlgorithmException || e is NoSuchProviderException || e is NoSuchPaddingException || e is InvalidKeyException)
 			{
-				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, KeyName, E.Message);
+				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, keyName, e.Message);
 				return false;
 			}
-			dataKey = new SecretKeySpec(DataKeyValue, "AES");
-			dataKeyCache.put(ByteBuffer.wrap(KeyDigest), dataKey);
+			dataKey = new SecretKeySpec(dataKeyValue, "AES");
+			dataKeyCache.put(ByteBuffer.wrap(keyDigest), dataKey);
 			return true;
 		}
 
@@ -617,29 +609,29 @@ namespace SharpPulsar.Impl
 			return TargetBuf;
 		}
 
-		private ByteBuf GetKeyAndDecryptData(MessageMetadata MsgMetadata, ByteBuf Payload)
+		private IByteBuffer GetKeyAndDecryptData(MessageMetadata msgMetadata, IByteBuffer payload)
 		{
 
-			ByteBuf DecryptedData = null;
+            IByteBuffer decryptedData = null;
 
-			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
+			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
 
 			// Go through all keys to retrieve data key from cache
-			for (int I = 0; I < EncKeys.Count; I++)
+			for (int i = 0; i < encKeys.Count; i++)
 			{
 
-				sbyte[] MsgDataKey = EncKeys[I].Value.toByteArray();
-				sbyte[] KeyDigest = Digest.digest(MsgDataKey);
-				SecretKey StoredSecretKey = dataKeyCache.getIfPresent(ByteBuffer.wrap(KeyDigest));
-				if (StoredSecretKey != null)
+				byte[] msgDataKey = encKeys[i].Value.ToByteArray();
+				byte[] keyDigest = Digest.digest(msgDataKey);
+				SecretKey storedSecretKey = dataKeyCache.getIfPresent(ByteBuffer.wrap(keyDigest));
+				if (storedSecretKey != null)
 				{
 
 					// Taking a small performance hit here if the hash collides. When it
 					// retruns a different key, decryption fails. At this point, we would
 					// call decryptDataKey to refresh the cache and come here again to decrypt.
-					DecryptedData = DecryptData(StoredSecretKey, MsgMetadata, Payload);
+					decryptedData = DecryptData(storedSecretKey, msgMetadata, payload);
 					// If decryption succeeded, data is non null
-					if (DecryptedData != null)
+					if (decryptedData != null)
 					{
 						break;
 					}
@@ -647,11 +639,11 @@ namespace SharpPulsar.Impl
 				else
 				{
 					// First time, entry won't be present in cache
-					log.debug("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", logCtx);
+					Log.LogWarning("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", logCtx);
 				}
 
 			}
-			return DecryptedData;
+			return decryptedData;
 
 		}
 
@@ -666,36 +658,36 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return decryptedData if success, null otherwise
 		 */
-		public virtual ByteBuf Decrypt(MessageMetadata MsgMetadata, ByteBuf Payload, CryptoKeyReader KeyReader)
+		public IByteBuffer Decrypt(MessageMetadata msgMetadata, IByteBuffer payload, ICryptoKeyReader keyReader)
 		{
 
 			// If dataKey is present, attempt to decrypt using the existing key
 			if (dataKey != null)
 			{
-				ByteBuf DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
+				var decryptedData = GetKeyAndDecryptData(msgMetadata, payload);
 				// If decryption succeeded, data is non null
-				if (DecryptedData != null)
+				if (decryptedData != null)
 				{
-					return DecryptedData;
+					return decryptedData;
 				}
 			}
 
 			// dataKey is null or decryption failed. Attempt to regenerate data key
-			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
-			EncryptionKeys EncKeyInfo = EncKeys.Where(kbv =>
+			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
+			var encKeyInfo = encKeys.Where(kbv =>
 			{
-				sbyte[] EncDataKey = kbv.Value.toByteArray();
-				IList<KeyValue> EncKeyMeta = kbv.MetadataList;
-				return DecryptDataKey(kbv.Key, EncDataKey, EncKeyMeta, KeyReader);
-			}).First().orElse(null);
+				var encDataKey = kbv.Value.ToByteArray();
+				IList<KeyValue> encKeyMeta = kbv.Metadata;
+				return DecryptDataKey(kbv.Key, encDataKey, encKeyMeta, keyReader);
+			}).DefaultIfEmpty(null).First();
 
-			if (EncKeyInfo == null || dataKey == null)
+			if (encKeyInfo == null || dataKey == null)
 			{
 				// Unable to decrypt data key
 				return null;
 			}
 
-			return GetKeyAndDecryptData(MsgMetadata, Payload);
+			return GetKeyAndDecryptData(msgMetadata, payload);
 
 		}
 
