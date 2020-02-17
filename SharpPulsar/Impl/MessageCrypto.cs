@@ -236,8 +236,6 @@ namespace SharpPulsar.Impl
 			return PublicKey;
 		}
 
-		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		//ORIGINAL LINE: private java.security.PrivateKey loadPrivateKey(byte[] keyBytes) throws Exception
 		private PrivateKey LoadPrivateKey(sbyte[] KeyBytes)
 		{
 
@@ -510,13 +508,13 @@ namespace SharpPulsar.Impl
 		{
 
 			IDictionary<string, string> keyMeta = new Dictionary<string, string>();
-			encKeyMeta.ForEach(kv =>
+			encKeyMeta.ToList().ForEach(kv =>
 			{
 				keyMeta[kv.Key] = kv.Value;
 			});
 
 			// Read the private key info using callback
-			EncryptionKeyInfo keyInfo = keyReader.getPrivateKey(keyName, keyMeta);
+			EncryptionKeyInfo keyInfo = keyReader.GetPrivateKey(keyName, keyMeta);
 
 			// Convert key from byte to PivateKey
 			PrivateKey privateKey;
