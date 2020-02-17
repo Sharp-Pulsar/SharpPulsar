@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Utilities.Encoders;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;

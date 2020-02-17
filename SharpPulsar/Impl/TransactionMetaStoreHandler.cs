@@ -8,7 +8,6 @@ using DotNetty.Buffers;
 using DotNetty.Common;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Exception;
 using SharpPulsar.Protocol;
 using SharpPulsar.Transaction;
 using SharpPulsar.Utility;

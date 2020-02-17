@@ -1,6 +1,5 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using System;

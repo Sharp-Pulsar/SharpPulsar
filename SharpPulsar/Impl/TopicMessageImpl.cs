@@ -21,7 +21,6 @@
 
 namespace SharpPulsar.Impl
 {
-    using Optional;
     using Pulsar.Common.Auth;
     using Api;
 

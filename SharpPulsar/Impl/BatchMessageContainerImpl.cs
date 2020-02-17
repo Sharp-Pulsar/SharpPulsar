@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
-using SharpPulsar.Exception;
-using SharpPulsar.Shared;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>

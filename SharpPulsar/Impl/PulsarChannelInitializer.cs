@@ -24,12 +24,9 @@ namespace SharpPulsar.Impl
     using DotNetty.Codecs;
     using DotNetty.Handlers.Tls;
     using DotNetty.Transport.Channels;
-    using DotNetty.Transport.Channels.Sockets;
-    using SharpPulsar.Api;
     using SharpPulsar.Impl.Conf;
     using SharpPulsar.Protocol;
     using SharpPulsar.Shared;
-    using System.Security.Cryptography.X509Certificates;
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>
 	{

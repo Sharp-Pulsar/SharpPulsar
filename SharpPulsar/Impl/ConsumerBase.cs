@@ -4,7 +4,6 @@ using System.Threading;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Transaction;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Protocol.Proto;

@@ -12,7 +12,6 @@ using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;

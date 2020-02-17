@@ -24,16 +24,12 @@ using SharpPulsar.Utility;
 namespace SharpPulsar.Impl
 {
     using DotNetty.Buffers;
-    using Optional;
     using DotNetty.Common;
     using SharpPulsar.Api;
     using Pulsar.Common.Auth;
     using SharpPulsar.Protocol.Proto;
     using System.Linq;
-    using SharpPulsar.Impl.Schema;
     using SharpPulsar.Protocol;
-    using SharpPulsar.Shared;
-    using SharpPulsar.Common.Enum;
 
     public sealed class MessageImpl<T> : IMessage<T>
 	{

@@ -19,7 +19,6 @@
 
 using System;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 

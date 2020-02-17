@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -52,23 +53,11 @@ namespace SharpPulsar.Impl.Auth
 			// noop
 		}
 
-		public string AuthMethodName
-		{
-			get
-			{
-				return "token";
-			}
-		}
+		public string AuthMethodName => "token";
 
-		public IAuthenticationDataProvider AuthData
-		{
-			get
-			{
-				return new AuthenticationDataToken(tokenSupplier);
-			}
-		}
+        public IAuthenticationDataProvider AuthData => new AuthenticationDataToken(tokenSupplier);
 
-		public void Configure(string encodedAuthParamString)
+        public void Configure(string encodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix
@@ -79,17 +68,19 @@ namespace SharpPulsar.Impl.Auth
 			else if (encodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
 			{
 				// Read token from a file
-				URI filePath = URI.create(encodedAuthParamString);
-				this.tokenSupplier = () =>
+				var filePath = encodedAuthParamString;
+				tokenSupplier = () =>
 				{
-				try
-				{
-					return (new string(File.ReadAllBytes(Paths.get(filePath)), Charsets.UTF_8)).Trim();
-				}
-				catch (IOException e)
-				{
-					throw new Exception("Failed to read token from file", e);
-				}
+				    try
+                    {
+                        var by = File.ReadAllBytes(filePath);
+
+						return Encoding.UTF8.GetString(by).Trim();
+				    }
+				    catch (IOException e)
+				    {
+					    throw new Exception("Failed to read token from file", e);
+				    }
 				};
 			}
 			else
@@ -112,6 +103,10 @@ namespace SharpPulsar.Impl.Auth
 		{
 			throw new NotImplementedException();
 		}
-	}
+
+        public void Dispose()
+        {
+        }
+    }
 
 }

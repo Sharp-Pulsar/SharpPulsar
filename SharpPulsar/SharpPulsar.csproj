@@ -14,6 +14,7 @@
     <PackageReference Include="ConcurrentHashSet" Version="1.1.0" />
     <PackageReference Include="dotnetty.buffers" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Handlers" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />

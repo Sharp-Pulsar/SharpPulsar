@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DotNetty.Buffers;
 using Google.Protobuf;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
@@ -34,7 +33,6 @@ namespace SharpPulsar.Impl
     using System.Threading.Tasks;
     using Api;
     using Transaction;
-    using Protocol.Builder;
 
     [Serializable]
 	public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>

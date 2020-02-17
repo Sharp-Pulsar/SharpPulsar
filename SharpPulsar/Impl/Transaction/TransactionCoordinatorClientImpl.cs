@@ -1,6 +1,4 @@
 ﻿using SharpPulsar.Api.Transaction;
-
-using System;
 using System.Collections.Generic;
 using SharpPulsar.Utility;
 using SharpPulsar.Utility.Atomic;

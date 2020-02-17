@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using SharpPulsar.Exception;
 using System;
 using System.Collections.Concurrent;
 using DotNetty.Common.Utilities;

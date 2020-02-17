@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using DotNetty.Handlers.Tls;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Crypto.Tls;
 

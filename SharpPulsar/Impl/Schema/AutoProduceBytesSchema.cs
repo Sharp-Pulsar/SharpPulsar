@@ -20,7 +20,6 @@
 using System;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Impl.Schema

@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Google.Protobuf.Collections;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Utility;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;

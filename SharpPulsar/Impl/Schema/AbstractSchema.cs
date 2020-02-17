@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Api.Schema;
 using DotNetty.Buffers;
 using SharpPulsar.Api;
-using SharpPulsar.Exception;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
@@ -28,14 +27,6 @@ namespace SharpPulsar.Impl.Schema
 
     public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public abstract IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo);
-
-		public abstract ISchema<T> GetSchema(SchemaInfo schemaInfo);
-
-		public abstract ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema);
-
-		public abstract ISchema<sbyte[]> AutoProduceBytes();
-		public abstract ISchema<IGenericRecord> AutoConsume();
 		public abstract ISchema<IGenericRecord> Auto();
 
 		public abstract ISchema<T> Json(ISchemaDefinition<T> schemaDefinition);

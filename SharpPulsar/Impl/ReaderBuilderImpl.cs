@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SharpPulsar.Api;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;

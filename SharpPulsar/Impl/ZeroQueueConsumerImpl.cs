@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility.Atomic.Locking;

@@ -1,10 +1,8 @@
 ﻿using DotNetty.Common;
 using Google.Protobuf;
-using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using SharpPulsar.Utility.Protobuf;
 using static SharpPulsar.Utility.Protobuf.ByteBufCodedInputStream;
 using static SharpPulsar.Utility.Protobuf.ByteBufCodedOutputStream;

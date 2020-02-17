@@ -6,7 +6,6 @@ using SharpPulsar.Api.Transaction;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;

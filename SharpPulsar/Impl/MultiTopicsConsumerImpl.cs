@@ -6,7 +6,6 @@ using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;

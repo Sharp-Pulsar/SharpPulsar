@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Common.Schema;
+﻿using SharpPulsar.Common.Schema;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,11 +27,14 @@ namespace SharpPulsar.Api.Schema
 	public interface ISchemaDefinition<T>
     {
 
-        /// <summary>
-        /// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
-        /// </summary>
-        /// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-        ISchemaDefinitionBuilder<T> Builder();
+		/// <summary>
+		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
+		/// </summary>
+		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
+        static ISchemaDefinitionBuilder<T> Builder()
+        {
+            return DefaultImplementation.NewSchemaDefinitionBuilder<T>();
+        }
 
 		/// <summary>
 		/// Get schema whether always allow null or not.

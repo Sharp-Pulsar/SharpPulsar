@@ -1,5 +1,4 @@
-﻿using Optional;
-using SharpPulsar.Common.Naming;
+﻿using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Common.Schema;
 using System;

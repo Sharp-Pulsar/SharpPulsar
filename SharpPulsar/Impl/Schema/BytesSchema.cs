@@ -32,31 +32,7 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
-        public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<sbyte[]> GetSchema(SchemaInfo schemaInfo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<sbyte[]> AutoProduceBytes()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<IGenericRecord> AutoConsume()
-        {
-            throw new System.NotImplementedException();
-        }
-
+        
         public override ISchema<IGenericRecord> Auto()
         {
             throw new System.NotImplementedException();

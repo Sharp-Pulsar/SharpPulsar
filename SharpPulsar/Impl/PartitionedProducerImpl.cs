@@ -7,7 +7,6 @@ using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 

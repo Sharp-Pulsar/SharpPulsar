@@ -2,7 +2,6 @@
 using DotNetty.Common;
 using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
-using SharpPulsar.Shared;
 using System;
 using System.Net;
 using System.Threading.Tasks;

@@ -1,6 +1,5 @@
 ﻿using System;
 using DotNetty.Transport.Channels;
-using DotNetty.Transport.Libuv;
 using ServerBootstrap = DotNetty.Transport.Bootstrapping.ServerBootstrap;
 //using Epoll = DotNetty.Transport.Channels.Embedded..epoll.Epoll;
 //using EpollChannelOption = io.netty.channel.epoll.EpollChannelOption;
@@ -47,12 +46,12 @@ namespace SharpPulsar.Utility.Netty
 		/// </summary>
 		/// <param name="eventLoopGroup">
 		/// @return </param>
-		public static Type GetClientSocketChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetClientSocketChannelClass(MultithreadEventLoopGroup eventLoopGroup)
 		{
 			return typeof(NioSocketChannel);
 		}
 
-		public static Type GetServerSocketChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetServerSocketChannelClass(MultithreadEventLoopGroup eventLoopGroup)
 		{
 			/*if (eventLoopGroup is EpollEventLoopGroup)
 			{
@@ -65,7 +64,7 @@ namespace SharpPulsar.Utility.Netty
 			return typeof(NioServerSocketChannel);
 		}
 
-		public static Type GetDatagramChannelClass(EventLoopGroup eventLoopGroup)
+		public static Type GetDatagramChannelClass(IEventLoopGroup eventLoopGroup)
 		{
 			/*if (eventLoopGroup is EpollEventLoopGroup)
 			{

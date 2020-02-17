@@ -1,11 +1,9 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Common.Enum;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
-using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -124,14 +122,14 @@ namespace SharpPulsar.Impl
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
-		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
+		public static ISchema<T> GetSchema<T>(ISchemaInfo schemaInfo)
 		{
-			return (ISchema<object>)AutoConsumeSchema.GetSchema(schemaInfo);
+			return AutoConsumeSchema.GetSchema<T>((SchemaInfo)schemaInfo);
 		}
 
-		public static IGenericSchema<IGenericRecord> GetGenericSchema(SchemaInfo schemaInfo)
+		public static IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo)
 		{
-			return GenericSchemaImpl.Of(schemaInfo);
+			return GenericSchemaImpl.Of((SchemaInfo)schemaInfo);
 		}
 
 

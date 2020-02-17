@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using DotNetty.Buffers;
 using DotNetty.Common;
 using SharpPulsar.Shared;
 

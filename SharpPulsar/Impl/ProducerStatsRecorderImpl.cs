@@ -3,11 +3,9 @@ using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Utility;
 

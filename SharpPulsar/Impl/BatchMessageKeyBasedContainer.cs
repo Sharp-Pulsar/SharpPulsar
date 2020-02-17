@@ -6,7 +6,6 @@ using DotNetty.Common.Utilities;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exception;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Shared;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
@@ -139,16 +138,16 @@ namespace SharpPulsar.Impl.Schema
 			return GenericSchemaImpl.Of(schemaInfo, false);
 		}
 
-		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
+		public static ISchema<T> GetSchema<T>(SchemaInfo schemaInfo)
 		{
 			switch (schemaInfo.Type.Value)
 			{ 
                 case 1:
-					return (ISchema<object>)Convert.ChangeType(StringSchema.Utf8(), typeof(ISchema<object>));
+					return (ISchema<T>)Convert.ChangeType(StringSchema.Utf8(), typeof(ISchema<T>));
 				case -1:
-					return (ISchema<object>)Convert.ChangeType(BytesSchema.Of(), typeof(ISchema<object>));
+					return (ISchema<T>)Convert.ChangeType(BytesSchema.Of(), typeof(ISchema<T>));
 				case 2:
-					return (ISchema<object>)Convert.ChangeType(GenericSchemaImpl.Of(schemaInfo), typeof(ISchema<object>));
+					return (ISchema<T>)Convert.ChangeType(GenericSchemaImpl.Of(schemaInfo), typeof(ISchema<T>));
 				default:
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}
