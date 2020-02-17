@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

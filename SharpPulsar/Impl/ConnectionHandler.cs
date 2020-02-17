@@ -3,6 +3,7 @@ using SharpPulsar.Exception;
 using System;
 using System.Collections.Concurrent;
 using DotNetty.Common.Utilities;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

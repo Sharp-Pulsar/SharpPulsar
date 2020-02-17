@@ -4,7 +4,8 @@ using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using static SharpPulsar.Exception.PulsarClientException;
+using Newtonsoft.Json;
+using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

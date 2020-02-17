@@ -5,6 +5,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

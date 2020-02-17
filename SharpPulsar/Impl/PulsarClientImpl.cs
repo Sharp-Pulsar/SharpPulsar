@@ -23,6 +23,7 @@ using SharpPulsar.Utility.Netty;
 using SharpPulsar.Utils;
 using static SharpPulsar.Impl.ConsumerImpl<object>;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -208,12 +209,12 @@ namespace SharpPulsar.Impl
 				}
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
+					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.Partitions);
 				}
 				ProducerBase<T> producer;
-				if (metadata.partitions > 0)
+				if (metadata.Partitions > 0)
 				{
-					producer = new PartitionedProducerImpl<T>(this, topic, conf, metadata.partitions, producerCreated, schema, interceptors);
+					producer = new PartitionedProducerImpl<T>(this, topic, conf, metadata.Partitions, producerCreated, schema, interceptors);
 				}
 				else
 				{
@@ -257,7 +258,7 @@ namespace SharpPulsar.Impl
 				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Empty subscription name")));
 			}
 
-			if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.persistent) || (conf.SubscriptionType != SubscriptionType.Exclusive && conf.SubscriptionType != SubscriptionType.Failover)))
+			if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.Persistent) || (conf.SubscriptionType != SubscriptionType.Exclusive && conf.SubscriptionType != SubscriptionType.Failover)))
 			{
 				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive of failover persistent subscriptions")));
 			}
@@ -309,13 +310,13 @@ namespace SharpPulsar.Impl
 				var metadata = task.Result;
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
+					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.Partitions);
 				}
 				ConsumerBase<T> consumer;
 				var listenerThread = _executor;
-				if (metadata.partitions > 0)
+				if (metadata.Partitions > 0)
 				{
-					consumer = MultiTopicsConsumerImpl<T>.CreatePartitionedConsumer(this, conf, consumerSubscribedTask, metadata.partitions, schema, interceptors);
+					consumer = MultiTopicsConsumerImpl<T>.CreatePartitionedConsumer(this, conf, consumerSubscribedTask, metadata.Partitions, schema, interceptors);
 				}
 				else
 				{
@@ -444,9 +445,9 @@ namespace SharpPulsar.Impl
 			var metadata = topicRe.Result;
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
+				Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.Partitions);
 			}
-			if (metadata.partitions > 0)
+			if (metadata.Partitions > 0)
 			{
 				readerTask.SetException(new PulsarClientException("Topic reader cannot be created on a partitioned topic"));
 				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(readerTask.Task.Exception ?? throw new InvalidOperationException()));
@@ -624,7 +625,7 @@ namespace SharpPulsar.Impl
 
 		public ValueTask<int> GetNumberOfPartitions(string topic)
 		{
-			return new ValueTask<int>(GetPartitionedTopicMetadata(topic).Result.partitions);
+			return new ValueTask<int>(GetPartitionedTopicMetadata(topic).Result.Partitions);
 		}
 
 		public ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
@@ -678,12 +679,12 @@ namespace SharpPulsar.Impl
 		{
 			var lkup = GetPartitionedTopicMetadata(topic);
 			var metadata = lkup.Result;
-			if (metadata.partitions > 0)
+			if (metadata.Partitions > 0)
 			{
 				var topicName = TopicName.Get(topic);
-				IList<string> partitions = new List<string>(metadata.partitions);
+				IList<string> partitions = new List<string>(metadata.Partitions);
 				var topName = new TopicName();
-				for (var i = 0; i < metadata.partitions; i++)
+				for (var i = 0; i < metadata.Partitions; i++)
 				{
 					var prt = topName.GetPartition(i).ToString();
 					partitions.Add(prt);

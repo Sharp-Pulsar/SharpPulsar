@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Avro.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,7 +26,7 @@ namespace SharpPulsar.Impl.Schema
 
 
 	/// <summary>
-	/// Builder to build <seealso cref="SharpPulsar.api.schema.GenericRecord"/>.
+	/// Builder to build <seealso cref="GenericRecord"/>.
 	/// </summary>
 	public class SchemaDefinitionBuilderImpl<T> : ISchemaDefinitionBuilder<T>
 	{

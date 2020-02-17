@@ -21,6 +21,7 @@ using DotNetty.Handlers.Tls;
 using System.IO;
 using Google.Protobuf;
 using SharpPulsar.Utils;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

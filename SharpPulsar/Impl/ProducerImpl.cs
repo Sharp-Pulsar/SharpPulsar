@@ -26,6 +26,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utility.Atomic.Collections.Concurrent;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -103,67 +103,6 @@ namespace SharpPulsar.Impl
 			return new StringSchema(charset);
 		}
 		
-		/*public static ISchema<short> NewShortSchema()
-		{
-			return new ShortSchema();
-		}
-
-		public static ISchema<int> NewIntSchema()
-		{
-			return new IntSchema();
-		}
-
-		public static ISchema<long> NewLongSchema()
-		{
-			return new LongSchema();
-		}
-
-		public static ISchema<bool> NewBooleanSchema()
-		{
-			return new BoolSchema();
-		}
-
-		public static ISchema<ByteBuffer> NewByteBufferSchema()
-		{
-			return new ByteBufferSchema();
-		}
-
-		public static ISchema<float> NewFloatSchema()
-		{
-			return new FloatSchema();
-		}
-
-		public static ISchema<double> NewDoubleSchema()
-		{
-			return new DoubleSchema();
-		}
-
-		public static ISchema<DateTime> NewDateSchema()
-		{
-			return DateSchema.Of();
-		}
-
-		public static ISchema<Time> NewTimeSchema()
-		{
-			return catchExceptions(() => (Schema<Time>) getStaticMethod("SharpPulsar.Impl.Schema.TimeSchema", "of", null).invoke(null, null));
-		}
-
-		public static ISchema<Timestamp> NewTimestampSchema()
-		{
-			return catchExceptions(() => (Schema<Timestamp>) getStaticMethod("SharpPulsar.Impl.Schema.TimestampSchema", "of", null).invoke(null, null));
-		}
-
-		public static ISchema<T> NewAvroSchema<T>(ISchemaDefinition<T> schemaDefinition)
-		{
-			return AvroSchema<T>.Of(schemaDefinition);
-		}
-
-		public static ISchema<T> NewProtobufSchema<T>(ISchemaDefinition<T> schemaDefinition) //where T : com.google.protobuf.GeneratedMessageV3
-		{
-			return ProtobufSchema<T>.Of<T>(schemaDefinition.GetType());
-			//return catchExceptions(() => (Schema<T>) getStaticMethod("SharpPulsar.Impl.Schema.ProtobufSchema", "of", typeof(SchemaDefinition)).invoke(null, schemaDefinition));
-		}*/
-
 		public static ISchema<T> NewJsonSchema<T>(ISchemaDefinition<T> schemaDefinition)
 		{
 			return JsonSchema<T>.Of(schemaDefinition);
@@ -185,29 +124,6 @@ namespace SharpPulsar.Impl
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
-		/*public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
-		{
-			return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
-			//return catchExceptions(() => (Schema<KeyValue<sbyte[], sbyte[]>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "kvBytes").invoke(null));
-		}
-
-		public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
-		{
-			return KeyValueSchema<TK, TV>.Of(keySchema, valueSchema);
-			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, keySchema, valueSchema));
-		}
-
-		public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
-		{
-			return KeyValueSchema<TK, TV>.Of(keySchema, valueSchema, keyValueEncodingType);
-			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, keySchema, valueSchema, keyValueEncodingType));
-		}
-
-		public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(Type key, Type value, SchemaType type)
-		{
-			return KeyValueSchema<TK, TV>.Of(key, value, type);
-			//return catchExceptions(() => (Schema<KeyValue<K, V>>) getStaticMethod("SharpPulsar.Impl.Schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, key, value, type));
-		}*/
 		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
 		{
 			return (ISchema<object>)AutoConsumeSchema.GetSchema(schemaInfo);

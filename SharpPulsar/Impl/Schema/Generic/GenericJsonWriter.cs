@@ -21,6 +21,7 @@ using System;
 using System.IO;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 namespace SharpPulsar.Impl.Schema.Generic
 {

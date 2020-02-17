@@ -7,6 +7,7 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Shared;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

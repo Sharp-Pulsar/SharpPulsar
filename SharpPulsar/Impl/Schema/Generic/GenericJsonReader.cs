@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

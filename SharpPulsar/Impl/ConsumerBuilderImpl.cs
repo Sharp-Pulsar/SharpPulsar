@@ -9,6 +9,7 @@ using Google.Protobuf.Collections;
 using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Utility;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -2,6 +2,7 @@
 using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Exception;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

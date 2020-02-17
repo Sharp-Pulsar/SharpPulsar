@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using static SharpPulsar.Exception.PulsarClientException;
+using SharpPulsar.Impl;
+using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

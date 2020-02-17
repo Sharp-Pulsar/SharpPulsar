@@ -25,16 +25,13 @@ namespace SharpPulsar.Api.Schema
 	/// Interface for schema definition.
 	/// </summary>
 	public interface ISchemaDefinition<T>
-	{
+    {
 
-		/// <summary>
-		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
-		/// </summary>
-		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-		static ISchemaDefinitionBuilder<T> Builder()
-		{
-			return DefaultImplementation.newSchemaDefinitionBuilder();
-		}
+        /// <summary>
+        /// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
+        /// </summary>
+        /// <returns> the <seealso cref="SchemaDefinition"/> </returns>
+        ISchemaDefinitionBuilder<T> Builder();
 
 		/// <summary>
 		/// Get schema whether always allow null or not.

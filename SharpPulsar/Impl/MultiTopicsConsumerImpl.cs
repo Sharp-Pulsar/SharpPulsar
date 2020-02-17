@@ -13,6 +13,7 @@ using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utils;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -846,7 +847,7 @@ namespace SharpPulsar.Impl
                     }
 
                     var metadata = task.Result;
-                    SubscribeTopicPartitions(subscribeResult, topicName, metadata.partitions,
+                    SubscribeTopicPartitions(subscribeResult, topicName, metadata.Partitions,
                         createTopicIfDoesNotExist);
                 });
 

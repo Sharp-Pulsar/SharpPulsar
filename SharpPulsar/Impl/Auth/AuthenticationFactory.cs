@@ -1,8 +1,7 @@
 ﻿using SharpPulsar.Api;
-using SharpPulsar.Common;
 using System;
 using System.Collections.Generic;
-using static SharpPulsar.Exception.PulsarClientException;
+using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

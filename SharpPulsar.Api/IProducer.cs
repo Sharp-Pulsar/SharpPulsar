@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Impl;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

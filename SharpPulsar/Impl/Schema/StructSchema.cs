@@ -13,6 +13,7 @@ using SharpPulsar.Exception;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

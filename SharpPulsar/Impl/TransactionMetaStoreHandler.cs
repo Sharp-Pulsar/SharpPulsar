@@ -12,6 +12,8 @@ using SharpPulsar.Exception;
 using SharpPulsar.Protocol;
 using SharpPulsar.Transaction;
 using SharpPulsar.Utility;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
+using TransactionCoordinatorClientException = SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

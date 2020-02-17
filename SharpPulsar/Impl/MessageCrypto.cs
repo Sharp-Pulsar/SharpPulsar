@@ -28,6 +28,7 @@ using Org.BouncyCastle.X509.Store;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Digests;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

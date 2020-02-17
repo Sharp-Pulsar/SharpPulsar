@@ -74,18 +74,18 @@ namespace SharpPulsar.Impl.Transaction
 		{
 			if (StateUpdater.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
 			{
-				var tsk = _pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).AsTask().ContinueWith(partitionMeta =>
+				var tsk = _pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign).AsTask().ContinueWith(partitionMeta =>
 				{
 					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						Log.LogDebug("Transaction meta store assign partition is {}.", partitionMeta.Result.partitions);
+						Log.LogDebug("Transaction meta store assign partition is {}.", partitionMeta.Result.Partitions);
 					}
-					if (partitionMeta.Result.partitions > 0)
+					if (partitionMeta.Result.Partitions > 0)
 					{
-						_handlers = new TransactionMetaStoreHandler[partitionMeta.Result.partitions];
-						for (var i = 0; i < partitionMeta.Result.partitions; i++)
+						_handlers = new TransactionMetaStoreHandler[partitionMeta.Result.Partitions];
+						for (var i = 0; i < partitionMeta.Result.Partitions; i++)
 						{
-							var handler = new TransactionMetaStoreHandler(i, _pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + i);
+							var handler = new TransactionMetaStoreHandler(i, _pulsarClient, TopicName.TransactionCoordinatorAssign.ToString() + TopicName.PartitionedTopicSuffix + i);
 							_handlers[i] = handler;
 							_handlerMap.TryAdd(i, handler);
 						}
@@ -93,7 +93,7 @@ namespace SharpPulsar.Impl.Transaction
 					else
 					{
 						_handlers = new TransactionMetaStoreHandler[1];
-						var handler = new TransactionMetaStoreHandler(0, _pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
+						var handler = new TransactionMetaStoreHandler(0, _pulsarClient, TopicName.TransactionCoordinatorAssign.ToString());
 						_handlers[0] = handler;
 						_handlerMap.TryAdd(0, handler);
 					}

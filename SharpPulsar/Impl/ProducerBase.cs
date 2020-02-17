@@ -7,6 +7,8 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
+using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

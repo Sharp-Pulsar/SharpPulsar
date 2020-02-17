@@ -10,6 +10,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
+using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

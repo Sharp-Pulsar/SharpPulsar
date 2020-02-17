@@ -27,7 +27,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Message schema definition.
 	/// </summary>
-	public interface ISchema<T>
+	public partial interface ISchema<T>
 	{
 
 		/// <summary>
@@ -188,93 +188,71 @@ namespace SharpPulsar.Api
 
 		// CHECKSTYLE.OFF: MethodName
 
-		
-		/// <summary>
-		/// Create a JSON schema type by extracting the fields of the specified class.
-		/// </summary>
-		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
-		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json(T pojo)
-		{
-			return DefaultImplementation.newJSONSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
-		}
 
-		/// <summary>
-		/// Create a JSON schema type with schema definition.
-		/// </summary>
-		/// <param name="schemaDefinition"> the definition of the schema </param>
-		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
-		{
-			return DefaultImplementation.newJSONSchema(schemaDefinition);
-		}
+        /// <summary>
+        /// Create a JSON schema type by extracting the fields of the specified class.
+        /// </summary>
+        /// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
+        /// <returns> a Schema instance </returns>
+        ISchema<T> Json(T pojo);
 
-		/// <summary>
-		/// Create a schema instance that automatically deserialize messages
-		/// based on the current topic schema.
-		/// 
-		/// <para>The messages values are deserialized into a <seealso cref="IGenericRecord"/> object.
-		/// 
-		/// </para>
-		/// <para>Currently this is only supported with Avro and JSON schema types.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the auto schema instance </returns>
-		static ISchema<IGenericRecord> AutoConsume()
-		{
-			return DefaultImplementation.newAutoConsumeSchema();
-		}
+        /// <summary>
+        /// Create a JSON schema type with schema definition.
+        /// </summary>
+        /// <param name="schemaDefinition"> the definition of the schema </param>
+        /// <returns> a Schema instance </returns>
+        ISchema<T> Json(ISchemaDefinition<T> schemaDefinition);
 
-		/// <summary>
-		/// Create a schema instance that accepts a serialized payload
-		/// and validates it against the topic schema.
-		/// 
-		/// <para>Currently this is only supported with Avro and JSON schema types.
-		/// 
-		/// </para>
-		/// <para>This method can be used when publishing a raw JSON payload,
-		/// for which the format is known and a POJO class is not available.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the auto schema instance </returns>
-		static ISchema<sbyte[]> AutoProduceBytes()
-		{
-			return DefaultImplementation.newAutoProduceSchema();
-		}
+        /// <summary>
+        /// Create a schema instance that automatically deserialize messages
+        /// based on the current topic schema.
+        /// 
+        /// <para>The messages values are deserialized into a <seealso cref="IGenericRecord"/> object.
+        /// 
+        /// </para>
+        /// <para>Currently this is only supported with Avro and JSON schema types.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> the auto schema instance </returns>
+        ISchema<IGenericRecord> AutoConsume();
 
-		/// <summary>
-		/// Create a schema instance that accepts a serialized payload
-		/// and validates it against the schema specified.
-		/// </summary>
-		/// <returns> the auto schema instance
-		/// @since 2.5.0 </returns>
-		/// <seealso cref= #AUTO_PRODUCE_BYTES() </seealso>
-		static ISchema<sbyte[]> AutoProduceBytes<T1>(ISchema<T1> schema)
-		{
-			return DefaultImplementation.newAutoProduceSchema(schema);
-		}
+        /// <summary>
+        /// Create a schema instance that accepts a serialized payload
+        /// and validates it against the topic schema.
+        /// 
+        /// <para>Currently this is only supported with Avro and JSON schema types.
+        /// 
+        /// </para>
+        /// <para>This method can be used when publishing a raw JSON payload,
+        /// for which the format is known and a POJO class is not available.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> the auto schema instance </returns>
+        ISchema<sbyte[]> AutoProduceBytes();
 
-		static ISchema<T> GetSchema(ISchemaInfo schemaInfo)
-		{
-			return DefaultImplementation.getSchema(schemaInfo);
-		}
+        /// <summary>
+        /// Create a schema instance that accepts a serialized payload
+        /// and validates it against the schema specified.
+        /// </summary>
+        /// <returns> the auto schema instance
+        /// @since 2.5.0 </returns>
+        /// <seealso cref= #AUTO_PRODUCE_BYTES() </seealso>
+        ISchema<sbyte[]> AutoProduceBytes<T1>(ISchema<T1> schema);
 
-		/// <summary>
-		/// Returns a generic schema of existing schema info.
-		/// 
-		/// <para>Only supports AVRO and JSON.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="schemaInfo"> schema info </param>
-		/// <returns> a generic schema instance </returns>
-		static IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo)
-		{
-			return DefaultImplementation.getGenericSchema(schemaInfo);
-		}
-	}
+        
+        /// <summary>
+        /// Returns a generic schema of existing schema info.
+        /// 
+        /// <para>Only supports AVRO and JSON.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="schemaInfo"> schema info </param>
+        /// <returns> a generic schema instance </returns>
+        IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo);
+    }
 
 	
 
