@@ -23,13 +23,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Avro.Generic;
+using BAMCIS.Util.Concurrent;
 using crypto;
 using DotNetty.Buffers;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
@@ -58,8 +62,8 @@ namespace SharpPulsar.Impl
 	using PEMKeyPair = org.bouncycastle.openssl.PEMKeyPair;
 	using PEMParser = org.bouncycastle.openssl.PEMParser;
 	using JcaPEMKeyConverter = org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-	
 
+	//https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
 	public class MessageCrypto
 	{
 
@@ -72,17 +76,17 @@ namespace SharpPulsar.Impl
 		private const string RsaTrans = "RSA/NONE/OAEPWithSHA1AndMGF1Padding";
 		private const string AESGCM = "AES/GCM/NoPadding";
 
-		private static KeyGenerator keyGenerator;
+		private static SymmetricAlgorithm keyGenerator;//https://www.c-sharpcorner.com/article/generating-symmetric-private-key-in-c-sharp-and-net/
 		private const int TagLen = 16 * 8;
 		public const int IvLen = 12;
 		private sbyte[] iv = new sbyte[IvLen];
-		private Cipher cipher;
-		internal MessageDigest Digest;
+		private GcmBlockCipher cipher;
+		internal MD5 Digest;
 		private string logCtx;
 
 		// Data key which is used to encrypt message
-		private SecretKey dataKey;
-		private LoadingCache<ByteBuffer, SecretKey> dataKeyCache;
+		private AesManaged dataKey;//https://stackoverflow.com/questions/39093489/c-sharp-equivalent-of-the-java-secretkeyspec-for-aes
+		private LoadingCache<ByteBuffer, AesManaged> dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
 		private ConcurrentDictionary<string, EncryptionKeyInfo> encryptedDataKeyMap;
@@ -90,69 +94,69 @@ namespace SharpPulsar.Impl
 		internal static readonly SecureRandom SecureRandom;
 		static MessageCrypto()
 		{
-
-			Security.addProvider(new BouncyCastleProvider());
-			SecureRandom Rand = null;
+			SecureRandom rand = null;
 			try
 			{
-				Rand = SecureRandom.getInstance("NativePRNGNonBlocking");
+				rand = SecureRandom.GetInstance("NativePRNGNonBlocking");
 			}
-			catch (NoSuchAlgorithmException)
+			catch (Exception)
 			{
-				Rand = new SecureRandom();
+				rand = new SecureRandom();
 			}
 
-			SecureRandom = Rand;
+			SecureRandom = rand;
 
 			// Initial seed
-			SecureRandom.NextBytes(new sbyte[IvLen]);
+			SecureRandom.NextBytes(new byte[IvLen]);
 		}
 
-		public MessageCrypto(string LogCtx, bool KeyGenNeeded)
+		public MessageCrypto(string logCtx, bool keyGenNeeded)
 		{
 
-			this.logCtx = LogCtx;
+			this.logCtx = logCtx;
 			encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
 			dataKeyCache = CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
 
 			try
 			{
 
-				cipher = Cipher.getInstance(AESGCM, BouncyCastleProvider.PROVIDER_NAME);
-				// If keygen is not needed(e.g: consumer), data key will be decrypted from the message
-				if (!KeyGenNeeded)
+				cipher = new GcmBlockCipher(new AesEngine());//https://stackoverflow.com/questions/34206699/bouncycastle-aes-gcm-nopadding-and-secretkeyspec-in-c-sharp
+															 // If keygen is not needed(e.g: consumer), data key will be decrypted from the message
+				if (!keyGenNeeded)
 				{
 
-					Digest = MessageDigest.getInstance("MD5");
+					Digest = MD5.Create();//new MD5CryptoServiceProvider();
 
 					dataKey = null;
 					return;
 				}
-				keyGenerator = KeyGenerator.getInstance("AES");
-				int AesKeyLength = Cipher.getMaxAllowedKeyLength("AES");
-				if (AesKeyLength <= 128)
+				keyGenerator = new AesCryptoServiceProvider();
+				int aesKeyLength = keyGenerator.KeySize;
+				if (aesKeyLength <= 128)
 				{
-					log.warn("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", LogCtx, AesKeyLength);
-					keyGenerator.init(AesKeyLength, SecureRandom);
+					Log.LogWarning("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", logCtx, aesKeyLength);
+					keyGenerator.IV = SecureRandom.GetNextBytes(SecureRandom, aesKeyLength);
 				}
 				else
 				{
-					keyGenerator.init(256, SecureRandom);
+					keyGenerator.IV = SecureRandom.GetNextBytes(SecureRandom, 256);
 				}
 
 			}
-			catch (Exception e) when (e is NoSuchAlgorithmException || e is NoSuchProviderException || e is NoSuchPaddingException)
+			catch (Exception e) 
 			{
 
 				cipher = null;
-				log.error("{} MessageCrypto initialization Failed {}", LogCtx, e.Message);
+				Log.LogError("{} MessageCrypto initialization Failed {}", logCtx, e.Message);
 
 			}
 
 			// Generate data key to encrypt messages
-			dataKey = keyGenerator.generateKey();
+            keyGenerator.GenerateIV();
+			keyGenerator.GenerateKey();
+            dataKey = new AesManaged {Key = keyGenerator.Key, Mode = CipherMode.CBC, Padding = PaddingMode.PKCS7};
 
-			iv = new sbyte[IvLen];
+            iv = new sbyte[IvLen];
 		}
 
 		public class CacheLoaderAnonymousInnerClass : CacheLoader<ByteBuffer, SecretKey>

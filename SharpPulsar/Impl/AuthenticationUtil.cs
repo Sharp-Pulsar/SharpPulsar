@@ -4,7 +4,6 @@ using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Newtonsoft.Json;
 using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
