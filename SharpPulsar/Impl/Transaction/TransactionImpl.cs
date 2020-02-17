@@ -1,8 +1,8 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Api.Transaction;
-using SharpPulsar.Util.Atomic;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SharpPulsar.Utility.Atomic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,10 +1,10 @@
 ﻿using DotNetty.Common;
 using Google.Protobuf;
-using SharpPulsar.Util.Protobuf;
 using System;
 using System.Linq;
-using static SharpPulsar.Util.Protobuf.ByteBufCodedInputStream;
-using static SharpPulsar.Util.Protobuf.ByteBufCodedOutputStream;
+using SharpPulsar.Utility.Protobuf;
+using static SharpPulsar.Utility.Protobuf.ByteBufCodedInputStream;
+using static SharpPulsar.Utility.Protobuf.ByteBufCodedOutputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {

@@ -16,49 +16,34 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Auth
+
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Auth;
+
+namespace SharpPulsar.Test.Impl.auth
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
 
-	using Charsets = com.google.common.@base.Charsets;
-
-
-	using FileUtils = org.apache.commons.io.FileUtils;
-	using Authentication = Org.Apache.Pulsar.Client.Api.Authentication;
-	using AuthenticationDataProvider = Org.Apache.Pulsar.Client.Api.AuthenticationDataProvider;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using Test = org.testng.annotations.Test;
-
-	public class AuthenticationTokenTest
+    public class AuthenticationTokenTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthToken() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthToken()
+		public void TestAuthToken()
 		{
-			AuthenticationToken AuthToken = new AuthenticationToken("token-xyz");
-			assertEquals(AuthToken.AuthMethodName, "token");
+			AuthenticationToken authToken = new AuthenticationToken("token-xyz");
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "token-xyz");
+			IAuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "token-xyz");
 
-			assertFalse(AuthData.hasDataForTls());
-			assertNull(AuthData.TlsCertificates);
-			assertNull(AuthData.TlsPrivateKey);
+			assertFalse(authData.hasDataForTls());
+			assertNull(authData.TlsCertificates);
+			assertNull(authData.TlsPrivateKey);
 
-			assertTrue(AuthData.hasDataForHttp());
-			assertEquals(AuthData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
+			assertTrue(authData.hasDataForHttp());
+			assertEquals(authData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
 
-			AuthToken.Dispose();
+			authToken.DisposeAsync();
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -66,29 +51,29 @@ namespace Org.Apache.Pulsar.Client.Impl.Auth
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestAuthTokenClientConfig()
 		{
-			ClientConfigurationData ClientConfig = new ClientConfigurationData();
-			ClientConfig.ServiceUrl = "pulsar://service-url";
+			ClientConfigurationData clientConfig = new ClientConfigurationData();
+			clientConfig.ServiceUrl = "pulsar://service-url";
 //JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
-			ClientConfig.AuthPluginClassName = typeof(AuthenticationToken).FullName;
-			ClientConfig.AuthParams = "token-xyz";
+			clientConfig.AuthPluginClassName = typeof(AuthenticationToken).FullName;
+			clientConfig.AuthParams = "token-xyz";
 
-			PulsarClientImpl PulsarClient = new PulsarClientImpl(ClientConfig);
+			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig);
 
-			Authentication AuthToken = PulsarClient.Configuration.Authentication;
-			assertEquals(AuthToken.AuthMethodName, "token");
+			Authentication authToken = pulsarClient.Configuration.Authentication;
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "token-xyz");
+			AuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "token-xyz");
 
-			assertFalse(AuthData.hasDataForTls());
-			assertNull(AuthData.TlsCertificates);
-			assertNull(AuthData.TlsPrivateKey);
+			assertFalse(authData.hasDataForTls());
+			assertNull(authData.TlsCertificates);
+			assertNull(authData.TlsPrivateKey);
 
-			assertTrue(AuthData.hasDataForHttp());
-			assertEquals(AuthData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
+			assertTrue(authData.hasDataForHttp());
+			assertEquals(authData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
 
-			AuthToken.Dispose();
+			authToken.Dispose();
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -96,14 +81,14 @@ namespace Org.Apache.Pulsar.Client.Impl.Auth
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestAuthTokenConfig()
 		{
-			AuthenticationToken AuthToken = new AuthenticationToken();
-			AuthToken.configure("token:my-test-token-string");
-			assertEquals(AuthToken.AuthMethodName, "token");
+			AuthenticationToken authToken = new AuthenticationToken();
+			authToken.configure("token:my-test-token-string");
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "my-test-token-string");
-			AuthToken.Dispose();
+			AuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "my-test-token-string");
+			authToken.Dispose();
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -111,26 +96,26 @@ namespace Org.Apache.Pulsar.Client.Impl.Auth
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestAuthTokenConfigFromFile()
 		{
-			File TokenFile = File.createTempFile("pular-test-token", ".key");
-			TokenFile.deleteOnExit();
-			FileUtils.write(TokenFile, "my-test-token-string", Charsets.UTF_8);
+			File tokenFile = File.createTempFile("pular-test-token", ".key");
+			tokenFile.deleteOnExit();
+			FileUtils.write(tokenFile, "my-test-token-string", Charsets.UTF_8);
 
-			AuthenticationToken AuthToken = new AuthenticationToken();
-			AuthToken.configure("file://" + TokenFile);
-			assertEquals(AuthToken.AuthMethodName, "token");
+			AuthenticationToken authToken = new AuthenticationToken();
+			authToken.configure("file://" + tokenFile);
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "my-test-token-string");
+			AuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "my-test-token-string");
 
 			// Ensure if the file content changes, the token will get refreshed as well
-			FileUtils.write(TokenFile, "other-token", Charsets.UTF_8);
+			FileUtils.write(tokenFile, "other-token", Charsets.UTF_8);
 
-			AuthenticationDataProvider AuthData2 = AuthToken.AuthData;
-			assertTrue(AuthData2.hasDataFromCommand());
-			assertEquals(AuthData2.CommandData, "other-token");
+			AuthenticationDataProvider authData2 = authToken.AuthData;
+			assertTrue(authData2.hasDataFromCommand());
+			assertEquals(authData2.CommandData, "other-token");
 
-			AuthToken.Dispose();
+			authToken.Dispose();
 		}
 
 		/// <summary>
@@ -142,26 +127,26 @@ namespace Org.Apache.Pulsar.Client.Impl.Auth
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestAuthTokenConfigFromFileWithNewline()
 		{
-			File TokenFile = File.createTempFile("pular-test-token", ".key");
-			TokenFile.deleteOnExit();
-			FileUtils.write(TokenFile, "  my-test-token-string  \r\n", Charsets.UTF_8);
+			File tokenFile = File.createTempFile("pular-test-token", ".key");
+			tokenFile.deleteOnExit();
+			FileUtils.write(tokenFile, "  my-test-token-string  \r\n", Charsets.UTF_8);
 
-			AuthenticationToken AuthToken = new AuthenticationToken();
-			AuthToken.configure("file://" + TokenFile);
-			assertEquals(AuthToken.AuthMethodName, "token");
+			AuthenticationToken authToken = new AuthenticationToken();
+			authToken.configure("file://" + tokenFile);
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "my-test-token-string");
+			AuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "my-test-token-string");
 
 			// Ensure if the file content changes, the token will get refreshed as well
-			FileUtils.write(TokenFile, "other-token", Charsets.UTF_8);
+			FileUtils.write(tokenFile, "other-token", Charsets.UTF_8);
 
-			AuthenticationDataProvider AuthData2 = AuthToken.AuthData;
-			assertTrue(AuthData2.hasDataFromCommand());
-			assertEquals(AuthData2.CommandData, "other-token");
+			AuthenticationDataProvider authData2 = authToken.AuthData;
+			assertTrue(authData2.hasDataFromCommand());
+			assertEquals(authData2.CommandData, "other-token");
 
-			AuthToken.Dispose();
+			authToken.Dispose();
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -169,14 +154,14 @@ namespace Org.Apache.Pulsar.Client.Impl.Auth
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestAuthTokenConfigNoPrefix()
 		{
-			AuthenticationToken AuthToken = new AuthenticationToken();
-			AuthToken.configure("my-test-token-string");
-			assertEquals(AuthToken.AuthMethodName, "token");
+			AuthenticationToken authToken = new AuthenticationToken();
+			authToken.configure("my-test-token-string");
+			assertEquals(authToken.AuthMethodName, "token");
 
-			AuthenticationDataProvider AuthData = AuthToken.AuthData;
-			assertTrue(AuthData.hasDataFromCommand());
-			assertEquals(AuthData.CommandData, "my-test-token-string");
-			AuthToken.Dispose();
+			AuthenticationDataProvider authData = authToken.AuthData;
+			assertTrue(authData.hasDataFromCommand());
+			assertEquals(authData.CommandData, "my-test-token-string");
+			authToken.Dispose();
 		}
 	}
 

@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;
@@ -24,12 +24,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 //	import static org.mockito.Mockito.when;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
-
-	using HashingScheme = Org.Apache.Pulsar.Client.Api.HashingScheme;
-	using Org.Apache.Pulsar.Client.Api;
-	using Test = org.testng.annotations.Test;
-
-	/// <summary>
+/// <summary>
 	/// Unit test of <seealso cref="SinglePartitionMessageRouterImpl"/>.
 	/// </summary>
 	public class SinglePartitionMessageRouterImplTest

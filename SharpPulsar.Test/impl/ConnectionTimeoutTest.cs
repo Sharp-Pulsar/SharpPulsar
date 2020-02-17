@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,15 +18,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 
 	using ConnectTimeoutException = io.netty.channel.ConnectTimeoutException;
 	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
 
-	public class ConnectionTimeoutTest
+    public class ConnectionTimeoutTest
 	{
 
 		// 192.0.2.0/24 is assigned for documentation, should be a deadend
@@ -53,7 +51,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 					LowFuture.get();
 					Assert.fail("Shouldn't be able to connect to anything");
 				}
-				catch (Exception E)
+				catch (System.Exception E)
 				{
 					Assert.assertFalse(DefaultFuture.Done);
 					Assert.assertEquals(E.InnerException.InnerException.Cause.GetType(), typeof(ConnectTimeoutException));

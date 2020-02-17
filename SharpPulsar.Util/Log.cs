@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
     public class Log
     {

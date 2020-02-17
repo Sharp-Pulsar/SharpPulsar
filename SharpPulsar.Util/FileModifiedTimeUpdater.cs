@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.IO;
-using System.Runtime.InteropServices.ComTypes;
+using Microsoft.Extensions.Logging;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices.ComTypes;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 
 	/// <summary>

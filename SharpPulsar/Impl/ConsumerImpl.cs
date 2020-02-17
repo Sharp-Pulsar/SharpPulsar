@@ -19,8 +19,7 @@ using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Atomic;
+using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utils;
 
 /// <summary>
@@ -558,7 +557,7 @@ namespace SharpPulsar.Impl
 			}
 
 			var si = (SchemaInfo)Schema.SchemaInfo;
-			if (si != null && (SchemaType.BYTES == si.Type || SchemaType.NONE == si.Type))
+			if (si != null && (SchemaType.Bytes == si.Type || SchemaType.None == si.Type))
 			{
 				// don't set schema for Schema.BYTES
 				si = null;
@@ -579,7 +578,7 @@ namespace SharpPulsar.Impl
                         return;
                     }
                     Log.LogWarning("[{}][{}] Failed to subscribe to topic on {}", Topic, Subscription, ClientCnx.Channel().RemoteAddress);
-                    if (task.Exception.InnerException is PulsarClientException exception && Handler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
+                    if (task.Exception != null && (task.Exception.InnerException is PulsarClientException exception && Handler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout))
                     {
                         ReconnectLater(exception);
                     }
@@ -642,7 +641,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private BatchMessageIdImpl ClearReceiverQueue()
 		{
-			IList<IMessage<object>> currentMessageQueue = new List<IMessage<object>>(IncomingMessages.size());
+			IList<IMessage<T>> currentMessageQueue = new List<IMessage<T>>(IncomingMessages.size());
 			IncomingMessages.DrainTo(currentMessageQueue);
 			IncomingMessagesSize[this] =  0;
 			if (currentMessageQueue.Count > 0)
@@ -1150,12 +1149,12 @@ namespace SharpPulsar.Impl
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		public override void MessageProcessed<T1>(IMessage<T1> msg)
+		public override void MessageProcessed(IMessage<T> msg)
 		{
 			lock (this)
 			{
 				var currentCnx = Cnx();
-				var msgCnx = ((MessageImpl<object>) msg).Cnx;
+				var msgCnx = ((MessageImpl<T>) msg).Cnx;
 				LastDequeuedMessage = msg.MessageId;
         
 				if (msgCnx != currentCnx)
@@ -1324,7 +1323,7 @@ namespace SharpPulsar.Impl
 			if (Commands.HasChecksum(headersAndPayload))
 			{
 				var checksum = Commands.ReadChecksum(headersAndPayload);
-				int computedChecksum = ComputeChecksum(headersAndPayload);
+				int computedChecksum = Commands.ComputeChecksum(headersAndPayload);
 				if (checksum != computedChecksum)
 				{
 					Log.LogError("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", Topic, Subscription, messageId.LedgerId, messageId.EntryId, checksum.ToString("x"), computedChecksum.ToString("x"));

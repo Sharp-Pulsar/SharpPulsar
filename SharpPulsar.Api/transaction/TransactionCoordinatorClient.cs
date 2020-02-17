@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Transaction;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,10 +24,7 @@
 /// </summary>
 namespace SharpPulsar.Api.Transaction
 {
-
-	using TxnID = Org.Apache.Pulsar.Transaction.Impl.Common.TxnID;
-
-	/// <summary>
+    /// <summary>
 	/// Transaction coordinator client.
 	/// </summary>
 	public interface TransactionCoordinatorClient : System.IDisposable
@@ -45,9 +46,8 @@ namespace SharpPulsar.Api.Transaction
 		/// </para>
 		/// </summary>
 		/// <exception cref="TransactionCoordinatorClientException"> exception occur while start </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void start() throws TransactionCoordinatorClientException;
-		void Start();
+
+        void Start();
 
 		/// <summary>
 		/// Start transaction meta store client asynchronous.
@@ -57,21 +57,20 @@ namespace SharpPulsar.Api.Transaction
 		/// </para>
 		/// </summary>
 		/// <returns> a future represents the result of start transaction meta store </returns>
-		ValueTask<Void> StartAsync();
+		ValueTask StartAsync();
 
 		/// <summary>
 		/// Close the transaction meta store client asynchronous.
 		/// </summary>
 		/// <returns> a future represents the result of close transaction meta store </returns>
-		ValueTask<Void> CloseAsync();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Create a new transaction.
 		/// </summary>
 		/// <returns> <seealso cref="TxnID"/> as the identifier for identifying the transaction. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: org.apache.pulsar.transaction.impl.common.TxnID newTransaction() throws TransactionCoordinatorClientException;
-		TxnID NewTransaction();
+
+        TxnID NewTransaction();
 
 		/// <summary>
 		/// Create a new transaction asynchronously.
@@ -88,9 +87,8 @@ namespace SharpPulsar.Api.Transaction
 		/// <param name="unit"> time unit for new transaction
 		/// </param>
 		/// <returns> <seealso cref="TxnID"/> as the identifier for identifying the transaction. </returns>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: org.apache.pulsar.transaction.impl.common.TxnID newTransaction(long timeout, java.util.concurrent.TimeUnit unit) throws TransactionCoordinatorClientException;
-		TxnID NewTransaction(long timeout, TimeUnit unit);
+
+        TxnID NewTransaction(long timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Create a new transaction asynchronously.
@@ -108,9 +106,8 @@ namespace SharpPulsar.Api.Transaction
 		/// </summary>
 		/// <param name="txnID"> txn id which add partitions to. </param>
 		/// <param name="partitions"> partitions add to the txn. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void addPublishPartitionToTxn(org.apache.pulsar.transaction.impl.common.TxnID txnID, java.util.List<String> partitions) throws TransactionCoordinatorClientException;
-		void AddPublishPartitionToTxn(TxnID txnId, IList<string> partitions);
+
+        void AddPublishPartitionToTxn(TxnID txnId, IList<string> partitions);
 
 		/// <summary>
 		/// Add publish partition to txn asynchronously.
@@ -119,33 +116,31 @@ namespace SharpPulsar.Api.Transaction
 		/// <param name="partitions"> partitions add to the txn.
 		/// </param>
 		/// <returns> a future represents the result of add publish partition to txn. </returns>
-		ValueTask<Void> AddPublishPartitionToTxnAsync(TxnID txnId, IList<string> partitions);
+		ValueTask AddPublishPartitionToTxnAsync(TxnID txnId, IList<string> partitions);
 
 		/// <summary>
 		/// Commit txn. </summary>
 		/// <param name="txnID"> txn id to commit. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void commit(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws TransactionCoordinatorClientException;
-		void Commit(TxnID txnId);
+
+        void Commit(TxnID txnId);
 
 		/// <summary>
 		/// Commit txn asynchronously. </summary>
 		/// <param name="txnID"> txn id to commit. </param>
 		/// <returns> a future represents the result of commit txn. </returns>
-		ValueTask<Void> CommitAsync(TxnID txnId);
+		ValueTask CommitAsync(TxnID txnId);
 
 		/// <summary>
 		/// Abort txn. </summary>
 		/// <param name="txnID"> txn id to abort. </param>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void abort(org.apache.pulsar.transaction.impl.common.TxnID txnID) throws TransactionCoordinatorClientException;
-		void Abort(TxnID txnId);
+
+        void Abort(TxnID txnId);
 
 		/// <summary>
 		/// Abort txn asynchronously. </summary>
 		/// <param name="txnID"> txn id to abort. </param>
 		/// <returns> a future represents the result of abort txn. </returns>
-		ValueTask<Void> AbortAsync(TxnID txnId);
+		ValueTask AbortAsync(TxnID txnId);
 
 		/// <summary>
 		/// Get current state of the transaction meta store.

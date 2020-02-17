@@ -25,9 +25,16 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class PostSchemaPayload
 	{
-		private string type;
-		private string schema;
-		private IDictionary<string, string> properties;
-	}
+		private string _type;
+		private string _schema;
+		private IDictionary<string, string> _properties;
+
+        public PostSchemaPayload(string schema, IDictionary<string, string> properties, string type)
+        {
+            this._schema = schema;
+            this._properties = properties;
+            this._type = type;
+        }
+    }
 
 }

@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 
 	/// <summary>
@@ -47,14 +47,7 @@ namespace SharpPulsar.Util
 
 		public static Exception UnwrapCompletionException(Exception t)
 		{
-			if (t is CompletionException)
-			{
-				return UnwrapCompletionException(t.InnerException);
-			}
-			else
-			{
-				return t;
-			}
+            return t;
 		}
 	}
 

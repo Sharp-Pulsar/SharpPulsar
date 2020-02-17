@@ -8,7 +8,7 @@ using SharpPulsar.Exception;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
-using SharpPulsar.Util;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -106,7 +106,7 @@ namespace SharpPulsar.Impl
 
 		public ITypedMessageBuilder<T> Key(string key)
 		{
-			if (_schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
 				throw new PulsarClientException.NotSupportedException("KeyValue not supported");
 				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
@@ -119,7 +119,7 @@ namespace SharpPulsar.Impl
 
 		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
-			if (_schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
                 throw new PulsarClientException.NotSupportedException("KeyValue not supported");
 				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
@@ -141,7 +141,7 @@ namespace SharpPulsar.Impl
 
 			if(value == null)
                 throw new NullReferenceException("Need Non-Null content value");
-			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KEY_VALUE)
+			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
                 throw new PulsarClientException.NotSupportedException("KeyValue not supported");
 				/*KeyValueSchema kvSchema = (KeyValueSchema) _schema;

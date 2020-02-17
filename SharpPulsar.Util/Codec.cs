@@ -21,7 +21,7 @@ using System;
 using System.Web;
 using Microsoft.Extensions.Logging;
 
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 
 	public class Codec

@@ -16,14 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using ServiceUrlProvider = Org.Apache.Pulsar.Client.Api.ServiceUrlProvider;
-	using Test = org.testng.annotations.Test;
+    using ServiceUrlProvider = Org.Apache.Pulsar.Client.Api.ServiceUrlProvider;
 
-	public class ClientBuilderImplTest
+    public class ClientBuilderImplTest
 	{
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.FOO_FIELDS;
@@ -35,35 +35,22 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Data = lombok.Data;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-
-	using Schema = org.apache.avro.Schema;
+    using Schema = org.apache.avro.Schema;
 	using SchemaSerializationException = Org.Apache.Pulsar.Client.Api.SchemaSerializationException;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using SchemaValidationException = org.apache.avro.SchemaValidationException;
+    using SchemaValidationException = org.apache.avro.SchemaValidationException;
 	using SchemaValidator = org.apache.avro.SchemaValidator;
 	using SchemaValidatorBuilder = org.apache.avro.SchemaValidatorBuilder;
-	using AvroDefault = org.apache.avro.reflect.AvroDefault;
-	using Nullable = org.apache.avro.reflect.Nullable;
-	using ReflectData = org.apache.avro.reflect.ReflectData;
-	using RecordSchemaBuilder = Org.Apache.Pulsar.Client.Api.Schema.RecordSchemaBuilder;
-	using SchemaBuilder = Org.Apache.Pulsar.Client.Api.Schema.SchemaBuilder;
-	using NasaMission = Org.Apache.Pulsar.client.avro.generated.NasaMission;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
+    using RecordSchemaBuilder = Org.Apache.Pulsar.Client.Api.Schema.RecordSchemaBuilder;
+    using NasaMission = Org.Apache.Pulsar.client.avro.generated.NasaMission;
+	using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using DateTime = org.joda.time.DateTime;
+    using DateTime = org.joda.time.DateTime;
 	using LocalDate = org.joda.time.LocalDate;
 	using LocalTime = org.joda.time.LocalTime;
-	using ISOChronology = org.joda.time.chrono.ISOChronology;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
 
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class AvroSchemaTest
 	public class AvroSchemaTest
 	{
@@ -239,7 +226,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 				AvroSchema.encode(Foo2);
 
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
 				Assert.assertTrue(E is SchemaSerializationException);
 			}

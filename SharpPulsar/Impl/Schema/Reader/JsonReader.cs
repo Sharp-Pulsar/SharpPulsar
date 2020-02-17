@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl.Schema.Reader
             {
                 var t = _objectMapper.ReadValue(inputStream).Children<JObject>();
 				
-				return (T)t;
+				return (T)Convert.ChangeType(t, typeof(T));
 			}
 			catch (IOException e)
 			{

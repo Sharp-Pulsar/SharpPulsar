@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Test.Impl.schema.generic
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.any;
@@ -31,19 +31,11 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertTrue;
 
-	using Lists = com.google.common.collect.Lists;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Org.Apache.Pulsar.Client.Api;
-	using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using Test = org.testng.annotations.Test;
+using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
+    using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
 
-	/// <summary>
+/// <summary>
 	/// Unit testing generic schemas.
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

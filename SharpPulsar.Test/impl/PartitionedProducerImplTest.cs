@@ -19,26 +19,20 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 	using EventLoopGroup = io.netty.channel.EventLoopGroup;
 	using Timer = io.netty.util.Timer;
 
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-	using Org.Apache.Pulsar.Client.Api;
-	using MessageRouter = Org.Apache.Pulsar.Client.Api.MessageRouter;
-	using MessageRoutingMode = Org.Apache.Pulsar.Client.Api.MessageRoutingMode;
-	using Producer = Org.Apache.Pulsar.Client.Api.Producer;
-	using Org.Apache.Pulsar.Client.Api;
-	using TopicMetadata = Org.Apache.Pulsar.Client.Api.TopicMetadata;
+    using MessageRouter = Org.Apache.Pulsar.Client.Api.MessageRouter;
+    using Producer = Org.Apache.Pulsar.Client.Api.Producer;
+    using TopicMetadata = Org.Apache.Pulsar.Client.Api.TopicMetadata;
 	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
 	using ProducerConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ProducerConfigurationData;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using BeforeTest = org.testng.annotations.BeforeTest;
-	using Test = org.testng.annotations.Test;
 
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.when;

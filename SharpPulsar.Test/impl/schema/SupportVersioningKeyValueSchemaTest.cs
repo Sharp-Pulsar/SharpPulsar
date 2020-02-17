@@ -16,17 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using MultiVersionSchemaInfoProvider = Org.Apache.Pulsar.Client.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
+    using MultiVersionSchemaInfoProvider = Org.Apache.Pulsar.Client.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
+    using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.any;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;

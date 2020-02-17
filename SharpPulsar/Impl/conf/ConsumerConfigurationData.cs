@@ -1,8 +1,8 @@
 ﻿using SharpPulsar.Api;
-using SharpPulsar.Util;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

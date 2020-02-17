@@ -44,20 +44,22 @@ namespace SharpPulsar.Protocol.Schema
 
 		public static SchemaInfo NewSchemaInfo(Proto.Schema schema)
 		{
-			var si = new SchemaInfo();
-			si.Name = schema.Name;
-			si.Schema = (sbyte[])(Array)schema.SchemaData.ToByteArray();
-			si.Type = Commands.GetSchemaType(schema.Type);
-			if (schema.Properties.Count == 0)
+            var si = new SchemaInfo
+            {
+                Name = schema.Name,
+                Schema = (sbyte[]) (Array) schema.SchemaData.ToByteArray(),
+                Type = Commands.GetSchemaType(schema.Type)
+            };
+            if (schema.Properties.Count == 0)
 			{
 				si.Properties = Array.Empty<IDictionary<string, string>>()[0];
 			}
 			else
 			{
 				si.Properties = new SortedDictionary<string, string>();
-				for (int i = 0; i < schema.Properties.Count; i++)
+				for (var i = 0; i < schema.Properties.Count; i++)
 				{
-					Proto.KeyValue kv = schema.Properties[i];
+					var kv = schema.Properties[i];
 					si.Properties.Add(kv.Key, kv.Value);
 				}
 			}

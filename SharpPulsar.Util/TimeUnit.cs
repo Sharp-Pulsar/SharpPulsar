@@ -1,5 +1,5 @@
 ﻿
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
     public static class TimeUnit
     {

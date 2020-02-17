@@ -23,12 +23,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 /// 
-namespace SharpPulsar.Util.Atomic.Locking 
+
+using System;
+using System.Threading;
+
+namespace SharpPulsar.Utility.Atomic.Locking 
 {
-
-    using System;
-    using System.Threading;
-
     /// <summary>
     /// This class creates an inner object monitor, and exposes select methods from the <c>Monitor</c>
     /// class which use our inner monitor object as the parameter.

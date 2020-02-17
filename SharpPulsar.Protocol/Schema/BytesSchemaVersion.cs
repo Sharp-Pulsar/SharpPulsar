@@ -29,25 +29,25 @@ namespace SharpPulsar.Protocol.Schema
 	public class BytesSchemaVersion : SchemaVersion, IComparable<BytesSchemaVersion>
 	{
 
-		private static readonly char[] HEX_CHARS_UPPER = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+		private static readonly char[] HexCharsUpper = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-		private readonly sbyte[] bytes;
+		private readonly sbyte[] _bytes;
 		// cache the hash code for the string, default to 0
 		private int _hashCode;
 
-		private BytesSchemaVersion(sbyte[] Bytes)
+		private BytesSchemaVersion(sbyte[] bytes)
 		{
-			this.bytes = Bytes;
+			this._bytes = bytes;
 		}
 
 		public sbyte[] Bytes()
 		{
-			return bytes;
+			return _bytes;
 		}
 
-		public static BytesSchemaVersion Of(sbyte[] Bytes)
+		public static BytesSchemaVersion Of(sbyte[] bytes)
 		{
-			return Bytes != null ? new BytesSchemaVersion(Bytes) : null;
+			return bytes != null ? new BytesSchemaVersion(bytes) : null;
 		}
 
 		/// <summary>
@@ -55,7 +55,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// <returns> The underlying byte array </returns>
 		public virtual sbyte[] Get()
 		{
-			return this.bytes;
+			return this._bytes;
 		}
 
 		/// <summary>
@@ -67,44 +67,44 @@ namespace SharpPulsar.Protocol.Schema
 		{
 			if (_hashCode == 0)
 			{
-				_hashCode = bytes.GetHashCode();
+				_hashCode = _bytes.GetHashCode();
 			}
 			return _hashCode;
 		}
 
-		public override bool Equals(object Other)
+		public override bool Equals(object other)
 		{
-			if (this == Other)
+			if (this == other)
 			{
 				return true;
 			}
-			if (Other == null)
+			if (other == null)
 			{
 				return false;
 			}
 
 			// we intentionally use the function to compute hashcode here
-			if (this.GetHashCode() != Other.GetHashCode())
+			if (this.GetHashCode() != other.GetHashCode())
 			{
 				return false;
 			}
 
-			if (Other is BytesSchemaVersion)
+			if (other is BytesSchemaVersion version)
 			{
-				return Array.Equals(this.bytes, ((BytesSchemaVersion) Other).Get());
+				return Equals(_bytes, version.Get());
 			}
 
 			return false;
 		}
 
-		public int CompareTo(BytesSchemaVersion That)
+		public int CompareTo(BytesSchemaVersion that)
 		{
-			return BytesLexicoComparator.Compare(this.bytes, That.bytes);
+			return BytesLexicoComparator.Compare(this._bytes, that._bytes);
 		}
 
 		public override string ToString()
 		{
-			return BytesSchemaVersion.toString(bytes, 0, bytes.Length);
+			return BytesSchemaVersion.toString(_bytes, 0, _bytes.Length);
 		}
 
 		/// <summary>
@@ -120,41 +120,41 @@ namespace SharpPulsar.Protocol.Schema
 		/// <param name="off"> offset to start at </param>
 		/// <param name="len"> length to write </param>
 		/// <returns> string output </returns>
-		private static string toString(in sbyte[] B, int Off, int Len)
+		private static string toString(in sbyte[] b, int off, int len)
 		{
-			StringBuilder Result = new StringBuilder();
+			StringBuilder result = new StringBuilder();
 
-			if (B == null)
+			if (b == null)
 			{
-				return Result.ToString();
+				return result.ToString();
 			}
 
 			// just in case we are passed a 'len' that is > buffer length...
-			if (Off >= B.Length)
+			if (off >= b.Length)
 			{
-				return Result.ToString();
+				return result.ToString();
 			}
 
-			if (Off + Len > B.Length)
+			if (off + len > b.Length)
 			{
-				Len = B.Length - Off;
+				len = b.Length - off;
 			}
 
-			for (int I = Off; I < Off + Len; ++I)
+			for (int i = off; i < off + len; ++i)
 			{
-				int Ch = B[I] & 0xFF;
-				if (Ch >= ' ' && Ch <= '~' && Ch != '\\')
+				int ch = b[i] & 0xFF;
+				if (ch >= ' ' && ch <= '~' && ch != '\\')
 				{
-					Result.Append((char) Ch);
+					result.Append((char) ch);
 				}
 				else
 				{
-					Result.Append(@"\x");
-					Result.Append(HEX_CHARS_UPPER[Ch / 0x10]);
-					Result.Append(HEX_CHARS_UPPER[Ch % 0x10]);
+					result.Append(@"\x");
+					result.Append(HexCharsUpper[ch / 0x10]);
+					result.Append(HexCharsUpper[ch % 0x10]);
 				}
 			}
-			return Result.ToString();
+			return result.ToString();
 		}
 
 		/// <summary>
@@ -168,42 +168,42 @@ namespace SharpPulsar.Protocol.Schema
 		public interface ByteArrayComparator : IComparer<sbyte[]>
 		{
 
-			int Compare(in sbyte[] Buffer1, int Offset1, int Length1, in sbyte[] Buffer2, int Offset2, int Length2);
+			int Compare(in sbyte[] buffer1, int offset1, int length1, in sbyte[] buffer2, int offset2, int length2);
 		}
 
 		[Serializable]
 		public class LexicographicByteArrayComparator : ByteArrayComparator
 		{
 
-			internal const long SerialVersionUID = -1915703761143534937L;
+			internal const long SerialVersionUid = -1915703761143534937L;
 
-			public int Compare(sbyte[] Buffer1, sbyte[] Buffer2)
+			public int Compare(sbyte[] buffer1, sbyte[] buffer2)
 			{
-				return Compare(Buffer1, 0, Buffer1.Length, Buffer2, 0, Buffer2.Length);
+				return Compare(buffer1, 0, buffer1.Length, buffer2, 0, buffer2.Length);
 			}
 
-			public virtual int Compare(in sbyte[] Buffer1, int Offset1, int Length1, in sbyte[] Buffer2, int Offset2, int Length2)
+			public virtual int Compare(in sbyte[] buffer1, int offset1, int length1, in sbyte[] buffer2, int offset2, int length2)
 			{
 
 				// short circuit equal case
-				if (Buffer1 == Buffer2 && Offset1 == Offset2 && Length1 == Length2)
+				if (buffer1 == buffer2 && offset1 == offset2 && length1 == length2)
 				{
 					return 0;
 				}
 
 				// similar to Arrays.compare() but considers offset and length
-				int End1 = Offset1 + Length1;
-				int End2 = Offset2 + Length2;
-				for (int I = Offset1, j = Offset2; I < End1 && j < End2; I++, j++)
+				int end1 = offset1 + length1;
+				int end2 = offset2 + length2;
+				for (int i = offset1, j = offset2; i < end1 && j < end2; i++, j++)
 				{
-					int A = Buffer1[I] & 0xff;
-					int B = Buffer2[j] & 0xff;
-					if (A != B)
+					int a = buffer1[i] & 0xff;
+					int b = buffer2[j] & 0xff;
+					if (a != b)
 					{
-						return A - B;
+						return a - b;
 					}
 				}
-				return Length1 - Length2;
+				return length1 - length2;
 			}
 		}
 	}

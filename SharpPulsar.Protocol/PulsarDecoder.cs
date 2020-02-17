@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Utility.Protobuf;
+
 namespace SharpPulsar.Protocol
 {
 
@@ -26,7 +29,6 @@ namespace SharpPulsar.Protocol
     using System.Threading.Tasks;
     using System.Net;
     using DotNetty.Buffers;
-    using SharpPulsar.Util.Protobuf;
 
     /// <summary>
     /// Basic implementation of the channel handler to process inbound Pulsar data.
@@ -48,7 +50,7 @@ namespace SharpPulsar.Protocol
 				buffer.SetWriterIndex(buffer.ReaderIndex + cmdSize);
 				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.Get(buffer);
 				cmdBuilder = BaseCommand.NewBuilder();
-				cmd = cmdBuilder.MergeFrom(cmdInputStream, null).Build();
+				cmd = ((BaseCommand.Builder)cmdBuilder.MergeFrom(cmdInputStream, null)).Build();
 				buffer.SetWriterIndex(writerIndex);
 
 				cmdInputStream.Recycle();

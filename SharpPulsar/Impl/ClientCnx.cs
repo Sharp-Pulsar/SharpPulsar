@@ -20,7 +20,6 @@ using Microsoft.Extensions.Logging;
 using DotNetty.Handlers.Tls;
 using System.IO;
 using Google.Protobuf;
-using SharpPulsar.Util;
 using SharpPulsar.Utils;
 
 /// <summary>

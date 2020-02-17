@@ -100,7 +100,7 @@ namespace SharpPulsar.Impl.Schema
 
         public BytesSchema()
 		{
-            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new sbyte[0]};
+            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.Bytes, Schema = new sbyte[0]};
             SchemaInfo = s;
 		}
 

@@ -140,14 +140,14 @@ namespace SharpPulsar.Impl.Schema
 
 		public static ISchema<object> GetSchema(SchemaInfo schemaInfo)
 		{
-			switch (schemaInfo.Type)
-			{
-				case SchemaType.String:
-					return StringSchema.Utf8(schemaInfo.Schema);
-				case SchemaFields.Bytes:
-					return BytesSchema.Of();
-				case SchemaType.Json:
-					return GenericSchemaImpl.Of(schemaInfo);
+			switch (schemaInfo.Type.Value)
+			{ 
+                case 1:
+					return (ISchema<object>)Convert.ChangeType(StringSchema.Utf8(), typeof(ISchema<object>));
+				case -1:
+					return (ISchema<object>)Convert.ChangeType(BytesSchema.Of(), typeof(ISchema<object>));
+				case 2:
+					return (ISchema<object>)Convert.ChangeType(GenericSchemaImpl.Of(schemaInfo), typeof(ISchema<object>));
 				default:
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}

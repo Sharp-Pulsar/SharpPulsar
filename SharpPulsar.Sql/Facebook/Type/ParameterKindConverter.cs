@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -23,7 +22,7 @@ namespace SharpPulsar.Sql.Facebook.Type
         {
             var temp = reader.Value.ToString();
 
-            if (String.IsNullOrEmpty(temp))
+            if (string.IsNullOrEmpty(temp))
             {
                 return ParameterKind.Variable;
             }

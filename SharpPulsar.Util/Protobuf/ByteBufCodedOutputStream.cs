@@ -1,7 +1,7 @@
-﻿using DotNetty.Buffers;
+﻿using System;
+using DotNetty.Buffers;
 using DotNetty.Common;
 using Google.Protobuf;
-using System;
 
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
@@ -38,7 +38,7 @@ using System;
  * with adaptations to work directly with Netty ByteBuf instances.
  */
 
-namespace SharpPulsar.Util.Protobuf
+namespace SharpPulsar.Utility.Protobuf
 {
 	public class ByteBufCodedOutputStream
 	{
@@ -200,7 +200,7 @@ namespace SharpPulsar.Util.Protobuf
 			if (localBuf == null || localBuf.Length < value.Length)
 			{
 				localBuf = new sbyte[Math.Max(value.Length, 1024)];
-				localByteArray.Set(localBuf);
+				localByteArray.Value = localBuf;
 			}
 
 			value.CopyTo((byte[])(object)localBuf, 0);

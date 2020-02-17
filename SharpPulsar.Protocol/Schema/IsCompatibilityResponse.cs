@@ -23,9 +23,8 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class IsCompatibilityResponse
 	{
-		internal bool IsCompatibility;
-		internal string SchemaCompatibilityStrategy;
-
-	}
+		public bool IsCompatibility;
+		public string SchemaCompatibilityStrategy;
+    }
 
 }

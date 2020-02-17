@@ -1,10 +1,10 @@
-﻿using DotNetty.Common.Internal;
-using SharpPulsar.Util.Atomic.Collections.Concurrent;
-using SharpPulsar.Util.Atomic.Locking;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using DotNetty.Common.Internal;
+using SharpPulsar.Utility.Atomic.Collections.Concurrent;
+using SharpPulsar.Utility.Atomic.Locking;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +24,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util.Collections
+namespace SharpPulsar.Utility.Collections
 {
 
 	/// <summary>

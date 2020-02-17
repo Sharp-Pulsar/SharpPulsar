@@ -24,7 +24,12 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class DeleteSchemaResponse
 	{
-		private long version;
-	}
+		private long _version;
+
+        public DeleteSchemaResponse(long version)
+        {
+            this._version = version;
+        }
+    }
 
 }

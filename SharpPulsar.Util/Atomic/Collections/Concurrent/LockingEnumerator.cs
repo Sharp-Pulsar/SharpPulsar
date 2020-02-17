@@ -23,12 +23,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Collections.Concurrent {
-    using SharpPulsar.Util.Atomic.Locking;
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using SharpPulsar.Utility.Atomic.Locking;
 
+namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
     /// <summary>
     /// This class serves as a thread-safe wrapper for an <c>IEnumerator</c> implementation.
     /// It locks as soon as the instance is created and will release the lock once disposed.

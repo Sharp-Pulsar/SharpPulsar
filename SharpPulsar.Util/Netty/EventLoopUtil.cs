@@ -1,4 +1,6 @@
 ﻿using System;
+using DotNetty.Transport.Channels;
+using DotNetty.Transport.Libuv;
 using ServerBootstrap = DotNetty.Transport.Bootstrapping.ServerBootstrap;
 //using Epoll = DotNetty.Transport.Channels.Embedded..epoll.Epoll;
 //using EpollChannelOption = io.netty.channel.epoll.EpollChannelOption;
@@ -10,8 +12,6 @@ using ServerBootstrap = DotNetty.Transport.Bootstrapping.ServerBootstrap;
 using NioDatagramChannel = DotNetty.Transport.Channels.Sockets.SocketDatagramChannel;
 using NioServerSocketChannel = DotNetty.Transport.Channels.Sockets.TcpServerSocketChannel;
 using NioSocketChannel = DotNetty.Transport.Channels.Sockets.TcpSocketChannel;
-using DotNetty.Transport.Channels;
-using DotNetty.Transport.Libuv;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +31,7 @@ using DotNetty.Transport.Libuv;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util.Netty
+namespace SharpPulsar.Utility.Netty
 {
 	public class EventLoopUtil
 	{

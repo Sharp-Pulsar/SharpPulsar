@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Google.Protobuf.Collections;
 using SharpPulsar.Exception;
 using SharpPulsar.Extension;
-using SharpPulsar.Util;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

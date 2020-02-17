@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Utility;
+using SharpPulsar.Utility.Atomic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,10 +29,8 @@ namespace SharpPulsar.Impl.Transaction
 	using TransactionCoordinatorClient = TransactionCoordinatorClient;
 	using TransactionCoordinatorClientException = TransactionCoordinatorClientException;
 	using CoordinatorClientStateException = TransactionCoordinatorClientException.CoordinatorClientStateException;
-	using MathUtils = Util.MathUtils;
+	using MathUtils = MathUtils;
     using Microsoft.Extensions.Logging;
-    using SharpPulsar.Util.Collections;
-    using SharpPulsar.Util.Atomic;
     using System.Threading.Tasks;
     using SharpPulsar.Common.Naming;
     using System.Collections.Concurrent;
@@ -43,19 +43,19 @@ namespace SharpPulsar.Impl.Transaction
     public class TransactionCoordinatorClientImpl : TransactionCoordinatorClient
 	{
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger(typeof(TransactionCoordinatorClientImpl));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(TransactionCoordinatorClientImpl));
 
-		private readonly PulsarClientImpl pulsarClient;
-		private TransactionMetaStoreHandler[] handlers;
-		private ConcurrentLongHashMap<TransactionMetaStoreHandler> handlerMap = new ConcurrentLongHashMap<TransactionMetaStoreHandler>(16, 1);
-		private readonly AtomicLong epoch = new AtomicLong(0);
+		private readonly PulsarClientImpl _pulsarClient;
+		private TransactionMetaStoreHandler[] _handlers;
+		private ConcurrentDictionary<long, TransactionMetaStoreHandler> _handlerMap = new ConcurrentDictionary<long, TransactionMetaStoreHandler>(1, 16);
+		private readonly AtomicLong _epoch = new AtomicLong(0);
 
-		private static readonly ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> STATE_UPDATER = new ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState>();
-		private volatile TransactionCoordinatorClientState state = TransactionCoordinatorClientState.None;
+		private static readonly ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState> StateUpdater = new ConcurrentDictionary<TransactionCoordinatorClientImpl, TransactionCoordinatorClientState>();
+		private volatile TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClientImpl(IPulsarClient PulsarClient)
+		public TransactionCoordinatorClientImpl(IPulsarClient pulsarClient)
 		{
-			this.pulsarClient = (PulsarClientImpl) PulsarClient;
+			this._pulsarClient = (PulsarClientImpl) pulsarClient;
 		}
 
 		public void Start()
@@ -64,46 +64,46 @@ namespace SharpPulsar.Impl.Transaction
 			{
 				StartAsync();
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.Unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
 		public ValueTask StartAsync()
 		{
-			if (STATE_UPDATER.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
+			if (StateUpdater.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
 			{
-				var tsk = pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).AsTask().ContinueWith(partitionMeta =>
+				var tsk = _pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TRANSACTION_COORDINATOR_ASSIGN).AsTask().ContinueWith(partitionMeta =>
 				{
-					if (log.IsEnabled(LogLevel.Debug))
+					if (Log.IsEnabled(LogLevel.Debug))
 					{
-						log.LogDebug("Transaction meta store assign partition is {}.", partitionMeta.Result.partitions);
+						Log.LogDebug("Transaction meta store assign partition is {}.", partitionMeta.Result.partitions);
 					}
 					if (partitionMeta.Result.partitions > 0)
 					{
-						handlers = new TransactionMetaStoreHandler[partitionMeta.Result.partitions];
-						for (var I = 0; I < partitionMeta.Result.partitions; I++)
+						_handlers = new TransactionMetaStoreHandler[partitionMeta.Result.partitions];
+						for (var i = 0; i < partitionMeta.Result.partitions; i++)
 						{
-							var Handler = new TransactionMetaStoreHandler(I, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + I);
-							handlers[I] = Handler;
-							handlerMap.put(I, Handler);
+							var handler = new TransactionMetaStoreHandler(i, _pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString() + TopicName.PARTITIONED_TOPIC_SUFFIX + i);
+							_handlers[i] = handler;
+							_handlerMap.TryAdd(i, handler);
 						}
 					}
 					else
 					{
-						handlers = new TransactionMetaStoreHandler[1];
-						var Handler = new TransactionMetaStoreHandler(0, pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
-						handlers[0] = Handler;
-						handlerMap.put(0, Handler);
+						_handlers = new TransactionMetaStoreHandler[1];
+						var handler = new TransactionMetaStoreHandler(0, _pulsarClient, TopicName.TRANSACTION_COORDINATOR_ASSIGN.ToString());
+						_handlers[0] = handler;
+						_handlerMap.TryAdd(0, handler);
 					}
-					STATE_UPDATER[this]  = TransactionCoordinatorClientState.Ready;
+					StateUpdater[this]  = TransactionCoordinatorClientState.Ready;
 				});
 				return new ValueTask(tsk);
 			}
 			else
 			{
-				return new ValueTask(Task.FromException(new CoordinatorClientStateException("Can not start while current state is " + state)));
+				return new ValueTask(Task.FromException(new CoordinatorClientStateException("Can not start while current state is " + _state)));
 			}
 		}
 
@@ -113,37 +113,37 @@ namespace SharpPulsar.Impl.Transaction
 			{
 				CloseAsync();
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.Unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
 		public ValueTask CloseAsync()
 		{
-			var Result = new TaskCompletionSource<Task>();
+			var result = new TaskCompletionSource<Task>();
 			if (State == TransactionCoordinatorClientState.Closing || State == TransactionCoordinatorClientState.Closed)
 			{
-				log.LogWarning("The transaction meta store is closing or closed, doing nothing.");
-				Result.SetResult(null);
+				Log.LogWarning("The transaction meta store is closing or closed, doing nothing.");
+				result.SetResult(null);
 			}
 			else
 			{
-				foreach (var Handler in handlers)
+				foreach (var handler in _handlers)
 				{
 					try
 					{
-						Handler.Close();
+						handler.Close();
 					}
-					catch (System.Exception E)
+					catch (System.Exception e)
 					{
-						log.LogWarning("Close transaction meta store handler error", E);
+						Log.LogWarning("Close transaction meta store handler error", e);
 					}
 				}
-				this.handlers = null;
-				Result.SetResult(null);
+				this._handlers = null;
+				result.SetResult(null);
 			}
-			return new ValueTask(Result.Task);
+			return new ValueTask(result.Task);
 		}
 
 		public TxnID NewTransaction()
@@ -152,9 +152,9 @@ namespace SharpPulsar.Impl.Transaction
 			{
 				return NewTransactionAsync().Result;
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.Unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
@@ -163,102 +163,107 @@ namespace SharpPulsar.Impl.Transaction
 			return NewTransactionAsync(TransactionCoordinatorClientFields.DefaultTxnTtlMs, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
 		}
 
-		public TxnID NewTransaction(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public TxnID NewTransaction(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			try
 			{
-				return NewTransactionAsync(Timeout, Unit);
+				return NewTransactionAsync(timeout, unit).Result;
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.Unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
-		public ValueTask<TxnID> NewTransactionAsync(long Timeout, BAMCIS.Util.Concurrent.TimeUnit Unit)
+		public ValueTask<TxnID> NewTransactionAsync(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
-			return NextHandler().NewTransactionAsync(Timeout, Unit);
+			return NextHandler().NewTransactionAsync(timeout, unit);
 		}
 
-		public void AddPublishPartitionToTxn(TxnID TxnID, IList<string> Partitions)
-		{
-			try
-			{
-				AddPublishPartitionToTxnAsync(TxnID, Partitions);
-			}
-			catch (Exception E)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(E);
-			}
-		}
-
-		public ValueTask AddPublishPartitionToTxnAsync(TxnID TxnID, IList<string> Partitions)
-		{
-			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
-			if (Handler == null)
-			{
-				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(TxnID.MostSigBits));
-			}
-			return Handler.AddPublishPartitionToTxnAsync(TxnID, Partitions);
-		}
-
-		public void Commit(TxnID TxnID)
+		public void AddPublishPartitionToTxn(TxnID txnId, IList<string> partitions)
 		{
 			try
 			{
-				CommitAsync(TxnID).Result;
+				AddPublishPartitionToTxnAsync(txnId, partitions);
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
-		public ValueTask CommitAsync(TxnID TxnID)
+		public ValueTask AddPublishPartitionToTxnAsync(TxnID txnId, IList<string> partitions)
 		{
-			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
-			if (Handler == null)
+			var handler = _handlerMap[txnId.MostSigBits];
+			if (handler == null)
 			{
-				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(TxnID.MostSigBits));
+				return new ValueTask(Task.FromException(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnId.MostSigBits)));
 			}
-			return Handler.CommitAsync(TxnID);
+			return handler.AddPublishPartitionToTxnAsync(txnId, partitions);
 		}
 
-		public void Abort(TxnID TxnID)
+		public void Commit(TxnID txnId)
 		{
 			try
 			{
-				AbortAsync(TxnID).Result;
+				CommitAsync(txnId);
 			}
-			catch (Exception E)
+			catch (System.Exception e)
 			{
-				throw TransactionCoordinatorClientException.unwrap(E);
+				throw TransactionCoordinatorClientException.Unwrap(e);
 			}
 		}
 
-		public ValueTask<Void> AbortAsync(TxnID TxnID)
+		public ValueTask CommitAsync(TxnID txnId)
 		{
-			TransactionMetaStoreHandler Handler = handlerMap.Get(TxnID.MostSigBits);
-			if (Handler == null)
+			var handler = _handlerMap[txnId.MostSigBits];
+			if (handler == null)
 			{
-				return FutureUtil.failedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(TxnID.MostSigBits));
+				return new ValueTask(Task.FromException(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnId.MostSigBits)));
 			}
-			return Handler.abortAsync(TxnID);
+			return handler.CommitAsync(txnId);
+		}
+
+		public void Abort(TxnID txnId)
+		{
+			try
+			{
+				AbortAsync(txnId);
+			}
+			catch (System.Exception e)
+			{
+				throw TransactionCoordinatorClientException.Unwrap(e);
+			}
+		}
+
+		public ValueTask AbortAsync(TxnID txnId)
+		{
+			var handler = _handlerMap[txnId.MostSigBits];
+			if (handler == null)
+			{
+				return new ValueTask(Task.FromException(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnId.MostSigBits)));
+			}
+			return handler.AbortAsync(txnId);
 		}
 
 		public virtual TransactionCoordinatorClientState? State
 		{
 			get
 			{
-				return state;
+				return _state;
 			}
 		}
 
 		private TransactionMetaStoreHandler NextHandler()
 		{
-			int Index = MathUtils.signSafeMod(epoch.incrementAndGet(), handlers.Length);
-			return handlers[Index];
+			var index = MathUtils.SignSafeMod(_epoch.Increment(), _handlers.Length);
+			return _handlers[index];
 		}
-	}
+
+        public void Dispose()
+        {
+            Close();
+        }
+    }
 
 }

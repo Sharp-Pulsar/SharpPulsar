@@ -5,7 +5,6 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using SharpPulsar.Util.Atomic.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -74,7 +73,7 @@ namespace SharpPulsar.Impl.Schema
 					backwardsCompatibleSchemaInfo = new SchemaInfo
 					{
 						Name = "",
-						Properties = SchemaInfo.Properties,
+						//Properties = SchemaInfo.Properties,
 						Type = SchemaType.Json,
 						Schema = (sbyte[])(Array)objectMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
 					};

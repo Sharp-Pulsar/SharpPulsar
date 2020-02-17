@@ -23,13 +23,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Collections 
+using System.Collections.Generic;
+
+namespace SharpPulsar.Utility.Atomic.Collections 
 {
-
-    using System;
-    using System.Collections.Generic;
-
-
     /// <summary>
     /// This collection implementation uses an internal <c>Dictionary</c> as a hash 
     /// table using <c>Stack</c> instances for buckets. 

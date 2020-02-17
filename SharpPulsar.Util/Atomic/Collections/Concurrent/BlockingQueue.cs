@@ -23,15 +23,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Collections.Concurrent {
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using SharpPulsar.Utility.Atomic.Locking;
 
-    using System;
-    using System.Threading;
-    using System.Collections;
-    using System.Collections.Generic;
-    using SharpPulsar.Util.Atomic.Locking;
-
-
+namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
     /// <summary>
     /// This <c>IEnumerable</c> implementation can be used to throttle a producer/consumer model.
     /// </summary>

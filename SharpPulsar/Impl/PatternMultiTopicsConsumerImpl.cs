@@ -4,7 +4,6 @@ using System.Linq;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Util;
 using SharpPulsar.Utils;
 
 /// <summary>

@@ -18,22 +18,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api;
-	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using Org.Apache.Pulsar.Client.Api;
-	using Assert = org.testng.Assert;
-	using AfterClass = org.testng.annotations.AfterClass;
-	using BeforeClass = org.testng.annotations.BeforeClass;
-	using Test = org.testng.annotations.Test;
+using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
 
-	public class DefaultSchemasTest
+public class DefaultSchemasTest
 	{
 		private PulsarClient client;
 

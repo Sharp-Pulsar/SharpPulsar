@@ -18,24 +18,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using Maps = com.google.common.collect.Maps;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Org.Apache.Pulsar.Client.Api;
-	using SchemaSerializationException = Org.Apache.Pulsar.Client.Api.SchemaSerializationException;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Color = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Color;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
+using SchemaSerializationException = Org.Apache.Pulsar.Client.Api.SchemaSerializationException;
+    using Bar = SchemaTestUtils.Bar;
+	using Color = SchemaTestUtils.Color;
+	using Foo = SchemaTestUtils.Foo;
 
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

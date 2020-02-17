@@ -16,74 +16,66 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+
+using Microsoft.Extensions.Logging;
+using Moq;
+using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
+using Xunit;
+
+namespace SharpPulsar.Test.Api
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
 
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using Logger = org.slf4j.Logger;
-	using LoggerFactory = org.slf4j.LoggerFactory;
-	using Test = org.testng.annotations.Test;
-
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using ObjectWriter = com.fasterxml.jackson.databind.ObjectWriter;
-	using SerializationFeature = com.fasterxml.jackson.databind.SerializationFeature;
-
-	/// <summary>
+/// <summary>
 	/// Unit test of <seealso cref="ConsumerConfiguration"/>.
 	/// </summary>
 	public class ConsumerConfigurationTest
 	{
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ConsumerConfigurationTest));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger((typeof(ConsumerConfigurationTest));
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings({ "unchecked", "rawtypes" }) @Test public void testJsonIgnore() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		[Fact]
 		public virtual void TestJsonIgnore()
 		{
 
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<?> conf = new org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<>();
-			ConsumerConfigurationData<object> Conf = new ConsumerConfigurationData<object>();
-			Conf.ConsumerEventListener = new ConsumerEventListenerAnonymousInnerClass(this);
+            var conf = new ConsumerConfigurationData<object>
+            {
+                ConsumerEventListener = new ConsumerEventListenerAnonymousInnerClass(this),
+                MessageListener = (MessageListener) (consumer, msg)
+            };
 
-			Conf.MessageListener = (MessageListener)(consumer, msg) =>
-			{
+            {
 			};
 
-			Conf.CryptoKeyReader = mock(typeof(CryptoKeyReader));
+			conf.CryptoKeyReader = new Mock<ICryptoKeyReader>().Object;
 
-			ObjectMapper M = new ObjectMapper();
-			M.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-			ObjectWriter W = M.writerWithDefaultPrettyPrinter();
+			var m = new ObjectMapper();
+			//m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+			//ObjectWriter w = m.writerWithDefaultPrettyPrinter();
 
-			string ConfAsString = W.writeValueAsString(Conf);
-			log.info("conf : {}", ConfAsString);
+			var confAsString = m.WriteValueAsString(conf);
+			Log.LogInformation("conf : {}", confAsString);
 
-			assertFalse(ConfAsString.Contains("messageListener"));
-			assertFalse(ConfAsString.Contains("consumerEventListener"));
-			assertFalse(ConfAsString.Contains("cryptoKeyReader"));
+			Assert.DoesNotContain("messageListener", confAsString);
+            Assert.DoesNotContain("consumerEventListener", confAsString);
+            Assert.DoesNotContain("cryptoKeyReader", confAsString);
 		}
 
-		public class ConsumerEventListenerAnonymousInnerClass : ConsumerEventListener
+		public class ConsumerEventListenerAnonymousInnerClass : IConsumerEventListener
 		{
-			private readonly ConsumerConfigurationTest outerInstance;
+			private readonly ConsumerConfigurationTest _outerInstance;
 
-			public ConsumerEventListenerAnonymousInnerClass(ConsumerConfigurationTest OuterInstance)
+			public ConsumerEventListenerAnonymousInnerClass(ConsumerConfigurationTest outerInstance)
 			{
-				this.outerInstance = OuterInstance;
+				this._outerInstance = outerInstance;
 			}
 
 
-			public void becameActive<T1>(Consumer<T1> Consumer, int PartitionId)
+			public void BecameActive<T1>(IConsumer<T1> consumer, int partitionId)
 			{
 			}
 
-			public void becameInactive<T1>(Consumer<T1> Consumer, int PartitionId)
+			public void BecameInactive<T1>(IConsumer<T1> consumer, int partitionId)
 			{
 			}
 		}

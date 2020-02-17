@@ -20,6 +20,7 @@
 using System.Linq;
 using Avro;
 using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 
@@ -33,15 +34,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// A generic json schema.
 	/// </summary>
-	public abstract class GenericJsonSchema : GenericSchemaImpl
+	public class GenericJsonSchema : GenericSchemaImpl
 	{
 		private static readonly ILogger _log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
 
-        protected GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-        protected GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+        public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 			Writer = new GenericJsonWriter();
 			
@@ -76,6 +77,71 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}
-	}
+
+        public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<sbyte[]> AutoProduceBytes()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> AutoConsume()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> Auto()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<T> Json<T>(T pojo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override bool RequireFetchingSchemaInfo()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override bool SupportSchemaVersioning()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Validate(sbyte[] message)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> GetSchema(SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> Json(ISchemaDefinition<IGenericRecord> schemaDefinition)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override ISchema<IGenericRecord> Json(IGenericRecord pojo)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
 
 }

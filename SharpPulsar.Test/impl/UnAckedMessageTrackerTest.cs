@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -40,10 +40,8 @@ namespace Org.Apache.Pulsar.Client.Impl
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
 
 	using MessageId = Org.Apache.Pulsar.Client.Api.MessageId;
-	using Org.Apache.Pulsar.Common.Util.Collections;
-	using Test = org.testng.annotations.Test;
 
-	public class UnAckedMessageTrackerTest
+    public class UnAckedMessageTrackerTest
 	{
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

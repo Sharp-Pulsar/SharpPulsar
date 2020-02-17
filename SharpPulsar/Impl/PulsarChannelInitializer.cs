@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,7 +29,6 @@ namespace SharpPulsar.Impl
     using SharpPulsar.Impl.Conf;
     using SharpPulsar.Protocol;
     using SharpPulsar.Shared;
-    using SharpPulsar.Util;
     using System.Security.Cryptography.X509Certificates;
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>

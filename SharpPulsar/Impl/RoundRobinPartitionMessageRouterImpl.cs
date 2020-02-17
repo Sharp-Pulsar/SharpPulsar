@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -71,18 +72,18 @@ namespace SharpPulsar.Impl
 			// If the message has a key, it supersedes the round robin routing policy
 			if (msg.HasKey())
 			{
-				return Util.MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), topicMetadata.NumPartitions());
+				return MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), topicMetadata.NumPartitions());
 			}
 
 			if (_isBatchingEnabled)
 			{ // if batching is enabled, choose partition on `partitionSwitchMs` boundary.
 				long currentMs = _clock.Millisecond;
-				return Util.MathUtils.SignSafeMod(currentMs / _partitionSwitchMs + _startPtnIdx, topicMetadata.NumPartitions());
+				return MathUtils.SignSafeMod(currentMs / _partitionSwitchMs + _startPtnIdx, topicMetadata.NumPartitions());
 			}
 			else
             {
                 PartitionIndexUpdater[this] = PartitionIndexUpdater[this]++;
-				return Util.MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
+				return MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
 			}
 		}
 

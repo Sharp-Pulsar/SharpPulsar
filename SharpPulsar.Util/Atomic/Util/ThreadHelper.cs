@@ -23,12 +23,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Util 
+using System.Threading;
+
+namespace SharpPulsar.Utility.Atomic.Util 
 {
-    using System;
-    using System.Threading;
-
-
     /// <summary>
     /// This static class provides helper methods for working with <c>System.Threading</c>.
     /// </summary>

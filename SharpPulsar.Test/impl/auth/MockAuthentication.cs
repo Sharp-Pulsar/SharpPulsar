@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,54 +21,43 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Auth
+namespace SharpPulsar.Test.Impl.auth
 {
-	using Authentication = Org.Apache.Pulsar.Client.Api.Authentication;
-	using AuthenticationDataProvider = Org.Apache.Pulsar.Client.Api.AuthenticationDataProvider;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
 
-
-	[Serializable]
-	public class MockAuthentication : Authentication
+    [Serializable]
+	public class MockAuthentication : IAuthentication
 	{
 		public IDictionary<string, string> AuthParamsMap = new Dictionary<string, string>();
 
-		public virtual string AuthMethodName
+		public virtual string AuthMethodName => null;
+
+        public virtual IAuthenticationDataProvider AuthData => null;
+
+        public void Configure(string authParams)
+        {
+            AuthParamsMap = JsonSerializer.Deserialize<IDictionary<string, string>>(authParams);
+
+        }
+
+        public void Configure(IDictionary<string, string> authParams)
 		{
-			get
-			{
-				return null;
-			}
+			AuthParamsMap = authParams;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.AuthenticationDataProvider getAuthData() throws org.apache.pulsar.client.api.PulsarClientException
-		public virtual AuthenticationDataProvider AuthData
-		{
-			get
-			{
-				return null;
-			}
-		}
-
-		public override void Configure(IDictionary<string, string> AuthParams)
-		{
-			AuthParamsMap = AuthParams;
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void start() throws org.apache.pulsar.client.api.PulsarClientException
-		public override void Start()
+		public void Start()
 		{
 
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
-		public override void Close()
+		public void Close()
 		{
 
 		}
-	}
+
+        public void Dispose()
+        {
+            Close();
+        }
+    }
 
 }

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -32,10 +32,8 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 	using MessageId = Org.Apache.Pulsar.Client.Api.MessageId;
 	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using Test = org.testng.annotations.Test;
 
-	public class BuildersTest
+    public class BuildersTest
 	{
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

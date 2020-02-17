@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;
@@ -26,11 +26,8 @@ namespace Org.Apache.Pulsar.Client.Impl
 //	import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 	using Authentication = Org.Apache.Pulsar.Client.Api.Authentication;
-	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using Test = org.testng.annotations.Test;
 
-	public class ClientInitializationTest
+    public class ClientInitializationTest
 	{
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

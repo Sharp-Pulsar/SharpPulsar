@@ -30,13 +30,13 @@ namespace SharpPulsar.Protocol.Schema
     public class SchemaHash
 	{
 
-		private static SHA256Managed hashFunction = new SHA256Managed();
+		private static readonly SHA256Managed HashFunction = new SHA256Managed();
 
-		private readonly byte[] hash;
+		private readonly byte[] _hash;
 
 		private SchemaHash(byte[] hash)
 		{
-			this.hash = hash;
+			this._hash = hash;
 		}
 
 		public static SchemaHash Of<T>(ISchema<T> schema)
@@ -45,20 +45,20 @@ namespace SharpPulsar.Protocol.Schema
 			return Of(schem);
 		}
 
-		public static SchemaHash Of(SchemaData SchemaData)
+		public static SchemaHash Of(SchemaData schemaData)
 		{
-			return Of(SchemaData.Data);
+			return Of(schemaData.Data);
 		}
 
 		private static SchemaHash Of(sbyte[] schemaBytes)
 		{
 			var scmBy = (byte[])(Array)schemaBytes;
-			return new SchemaHash(hashFunction.ComputeHash(scmBy));
+			return new SchemaHash(HashFunction.ComputeHash(scmBy));
 		}
 
 		public virtual sbyte[] AsBytes()
 		{
-			var scmBy = (sbyte[])(Array)hash;
+			var scmBy = (sbyte[])(Array)_hash;
 			return scmBy;
 		}
 	}

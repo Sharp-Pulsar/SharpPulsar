@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.Exception\SharpPulsar.Exception.csproj" />
     <ProjectReference Include="..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Transaction\SharpPulsar.Transaction.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
-﻿using DotNetty.Buffers;
+﻿using System;
+using DotNetty.Buffers;
 using DotNetty.Common;
 using Google.Protobuf;
-using System;
 
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
@@ -38,7 +38,7 @@ using System;
  * with adaptations to work directly with Netty ByteBuf instances.
  */
 
-namespace SharpPulsar.Util.Protobuf
+namespace SharpPulsar.Utility.Protobuf
 {
 	public class ByteBufCodedInputStream
 	{
@@ -47,33 +47,33 @@ namespace SharpPulsar.Util.Protobuf
 			ByteBufMessageBuilder MergeFrom(ByteBufCodedInputStream input, ExtensionRegistry ext);
 		}
 
-		private IByteBuffer buf;
-		private int lastTag;
+		private IByteBuffer _buf;
+		private int _lastTag;
 
-		internal static ThreadLocalPool<ByteBufCodedInputStream> _pool = new ThreadLocalPool<ByteBufCodedInputStream>(handle => new ByteBufCodedInputStream(handle), 1, true);
+		internal static ThreadLocalPool<ByteBufCodedInputStream> Pool = new ThreadLocalPool<ByteBufCodedInputStream>(handle => new ByteBufCodedInputStream(handle), 1, true);
 
-		internal ThreadLocalPool.Handle _handle;
+		internal ThreadLocalPool.Handle Handle;
 		private ByteBufCodedInputStream(ThreadLocalPool.Handle handle)
 		{
-			_handle = handle;
+			Handle = handle;
 		}
 
 
 		public static ByteBufCodedInputStream Get(IByteBuffer buf)
 		{
-			ByteBufCodedInputStream stream = _pool.Take();
-			stream.buf = buf;
-			stream.lastTag = 0;
+			var stream = Pool.Take();
+			stream._buf = buf;
+			stream._lastTag = 0;
 			return stream;
 		}
 		
 
 		public virtual void Recycle()
 		{
-			this.buf = null;
-			if (_handle != null)
+			this._buf = null;
+			if (Handle != null)
 			{
-				_handle.Release(this);
+				Handle.Release(this);
 			}
 		}
 
@@ -81,18 +81,18 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			if (AtEnd)
 			{
-				lastTag = 0;
+				_lastTag = 0;
 				return 0;
 			}
 
-			lastTag = ReadRawVarint32();
-			if (WireFormat.GetTagFieldNumber((uint)lastTag) == 0)
+			_lastTag = ReadRawVarint32();
+			if (WireFormat.GetTagFieldNumber((uint)_lastTag) == 0)
 			{
 				// If we actually read zero (or any tag number corresponding to field
 				// number zero), that's not a valid tag.
 				throw new Exception("CodedInputStream encountered a malformed varint.");
 			}
-			return lastTag;
+			return _lastTag;
 		}
 
 		/// <summary>
@@ -115,7 +115,7 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			get
 			{
-				return !buf.IsReadable();
+				return !_buf.IsReadable();
 			}
 		}
 
@@ -123,56 +123,57 @@ namespace SharpPulsar.Util.Protobuf
 		/// Read an embedded message field value from the stream. </summary>
 		public virtual void ReadMessage(ByteBufMessageBuilder builder, ExtensionRegistry extensionRegistry)
 		{
-			int length = ReadRawVarint32();
+			var length = ReadRawVarint32();
 
-			int writerIdx = buf.WriterIndex;
-			buf.SetWriterIndex(buf.ReaderIndex + length);
+			var writerIdx = _buf.WriterIndex;
+			_buf.SetWriterIndex(_buf.ReaderIndex + length);
 			builder.MergeFrom(this, extensionRegistry);
 			CheckLastTagWas(0);
-			buf.SetWriterIndex(writerIdx);
+			_buf.SetWriterIndex(writerIdx);
 		}
 
-		private static readonly FastThreadLocal<sbyte[]> localByteArray = new FastThreadLocal<sbyte[]>();
+		private static readonly FastThreadLocal<sbyte[]> LocalByteArray = new FastThreadLocal<sbyte[]>();
 
 		/// <summary>
 		/// Read a {@code bytes} field value from the stream. </summary>
 		public virtual ByteString ReadBytes()
 		{
-			int size = ReadRawVarint32();
+			var size = ReadRawVarint32();
 			if (size == 0)
 			{
 				return ByteString.Empty;
 			}
 			else
 			{
-				sbyte[] localBuf = localByteArray.Value;
+				var localBuf = LocalByteArray.Value;
 				if (localBuf == null || localBuf.Length < size)
 				{
 					localBuf = new sbyte[Math.Max(size, 1024)];
-					localByteArray.Set(localBuf);
+					LocalByteArray.Value = localBuf;
 				}
 
-				buf.ReadBytes(localBuf, 0, size);
-				ByteString res = ByteString.CopyFrom(localBuf, 0, size);
+                var local = (byte[]) (object) localBuf;
+				_buf.ReadBytes(local, 0, size);
+				var res = ByteString.CopyFrom(local, 0, size);
 				return res;
 			}
 		}
 
-		internal const int TAG_TYPE_BITS = 3;
-		internal static readonly int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
+		internal const int TagTypeBits = 3;
+		internal static readonly int TagTypeMask = (1 << TagTypeBits) - 1;
 
 		/// <summary>
 		/// Given a tag value, determines the wire type (the lower 3 bits). </summary>
 		internal static int GetTagWireType(int tag)
 		{
-			return tag & TAG_TYPE_MASK;
+			return tag & TagTypeMask;
 		}
 
 		/// <summary>
 		/// Makes a tag value given a field number and wire type. </summary>
 		internal static int MakeTag(int fieldNumber, int wireType)
 		{
-			return (fieldNumber << TAG_TYPE_BITS) | wireType;
+			return (fieldNumber << TagTypeBits) | wireType;
 		}
 
 		/// <summary>
@@ -215,7 +216,7 @@ namespace SharpPulsar.Util.Protobuf
 		///             {@code value} does not match the last tag. </exception>
 		public virtual void CheckLastTagWas(int value)
 		{
-			if (lastTag != value)
+			if (_lastTag != value)
 			{
 				throw new Exception("Protocol message end-group tag did not match expected tag.");
 			}
@@ -281,11 +282,11 @@ namespace SharpPulsar.Util.Protobuf
 		/// Read a raw Varint from the stream. </summary>
 		public virtual long ReadRawVarint64()
 		{
-			int shift = 0;
+			var shift = 0;
 			long result = 0;
 			while (shift < 64)
 			{
-				sbyte b = (sbyte)(object)buf.ReadByte();
+				var b = (sbyte)(object)_buf.ReadByte();
 				result |= (long)(b & 0x7F) << shift;
 				if ((b & 0x80) == 0)
 				{
@@ -301,40 +302,40 @@ namespace SharpPulsar.Util.Protobuf
 		/// </summary>
 		public virtual int ReadRawVarint32()
 		{
-			sbyte tmp = (sbyte)(object)buf.ReadByte();
+			var tmp = (sbyte)(object)_buf.ReadByte();
 			if (tmp >= 0)
 			{
 				return tmp;
 			}
-			int result = tmp & 0x7f;
-			if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
+			var result = tmp & 0x7f;
+			if ((tmp = (sbyte)(object)_buf.ReadByte()) >= 0)
 			{
 				result |= tmp << 7;
 			}
 			else
 			{
 				result |= (tmp & 0x7f) << 7;
-				if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
+				if ((tmp = (sbyte)(object)_buf.ReadByte()) >= 0)
 				{
 					result |= tmp << 14;
 				}
 				else
 				{
 					result |= (tmp & 0x7f) << 14;
-					if ((tmp = (sbyte)(object)buf.ReadByte()) >= 0)
+					if ((tmp = (sbyte)(object)_buf.ReadByte()) >= 0)
 					{
 						result |= tmp << 21;
 					}
 					else
 					{
 						result |= (tmp & 0x7f) << 21;
-						result |= (tmp = (sbyte)(object)buf.ReadByte()) << 28;
+						result |= (tmp = (sbyte)(object)_buf.ReadByte()) << 28;
 						if (tmp < 0)
 						{
 							// Discard upper 32 bits.
-							for (int i = 0; i < 5; i++)
+							for (var i = 0; i < 5; i++)
 							{
-								if (buf.ReadByte() >= 0)
+								if (_buf.ReadByte() >= 0)
 								{
 									return result;
 								}
@@ -351,7 +352,7 @@ namespace SharpPulsar.Util.Protobuf
 		/// Read a 32-bit little-endian integer from the stream. </summary>
 		public virtual int ReadRawLittleEndian32()
 		{
-			return buf.ReadIntLE();
+			return _buf.ReadIntLE();
 
 		}
 
@@ -359,7 +360,7 @@ namespace SharpPulsar.Util.Protobuf
 		/// Read a 64-bit little-endian integer from the stream. </summary>
 		public virtual long ReadRawLittleEndian64()
 		{
-			return buf.ReadLongLE();
+			return _buf.ReadLongLE();
 		}
 		public virtual long RadSFixed64()
 		{
@@ -374,7 +375,7 @@ namespace SharpPulsar.Util.Protobuf
 		{
 			while (true)
 			{
-				int tag = ReadTag();
+				var tag = ReadTag();
 				if (tag == 0 || !SkipField(tag))
 				{
 					return;
@@ -394,12 +395,12 @@ namespace SharpPulsar.Util.Protobuf
 				throw new Exception("CodedInputStream encountered an embedded string or message " + "which claimed to have negative size.");
 			}
 
-			if (size > buf.ReadableBytes)
+			if (size > _buf.ReadableBytes)
 			{
 				throw new Exception("While parsing a protocol message, the input ended unexpectedly " + "in the middle of a field.  This could mean either than the " + "input has been truncated or that an embedded message " + "misreported its own length.");
 			}
 
-			buf.SetReaderIndex(buf.ReaderIndex + size);
+			_buf.SetReaderIndex(_buf.ReaderIndex + size);
 		}
 	}
 

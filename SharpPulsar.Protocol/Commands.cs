@@ -12,7 +12,8 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using SharpPulsar.Protocol.Circe;
-using SharpPulsar.Util.Protobuf;
+using SharpPulsar.Protocol.Extension;
+using SharpPulsar.Utility.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -623,7 +624,7 @@ namespace SharpPulsar.Protocol
 			if (type < 0)
 			{
 				// this is unexpected
-				return SchemaType.NONE;
+				return SchemaType.None;
 			}
 			else
 			{
@@ -635,7 +636,7 @@ namespace SharpPulsar.Protocol
 			if (type.Value < 0)
 			{
 				// this is unexpected
-				return SchemaType.NONE;
+				return SchemaType.None;
 			}
 			else
 			{
@@ -1433,8 +1434,8 @@ namespace SharpPulsar.Protocol
 			{
 				metadataAndPayload.MarkReaderIndex();
 				metadataAndPayload.SetReaderIndex(checksumReaderIndex + ChecksumSize);
-				int metadataChecksum = ComputeChecksum(metadataAndPayload);
-				int computedChecksum = ResumeChecksum(metadataChecksum, payload);
+				var metadataChecksum = ComputeChecksum(metadataAndPayload);
+				var computedChecksum = ResumeChecksum(metadataChecksum, payload);
 				// set computed checksum
 				metadataAndPayload.SetInt(checksumReaderIndex, computedChecksum);
 				metadataAndPayload.ResetReaderIndex();

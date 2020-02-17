@@ -16,57 +16,52 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+
+using Xunit;
+
+namespace SharpPulsar.Test.Api
 {
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
-	public class RangeTest
+    public class RangeTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testOf()
-		public virtual void TestOf()
+		[Fact]
+		public  void TestOf()
 		{
-			Range Range = Range.Of(0, 3);
-			Assert.assertEquals(0, Range.Start);
-			Assert.assertEquals(3, Range.End);
+			var range = SharpPulsar.Api.Range.Of(0, 3);
+			Assert.Equal(0, range.Start);
+			Assert.Equal(3, range.End);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testIntersect()
-		public virtual void TestIntersect()
+		[Fact]
+		public void TestIntersect()
 		{
-			Range Range1 = Range.Of(0, 9);
-			Range Range2 = Range.Of(0, 2);
-			Range IntersectRange = Range1.intersect(Range2);
-			Assert.assertEquals(0, IntersectRange.Start);
-			Assert.assertEquals(2, IntersectRange.End);
+            var range1 = SharpPulsar.Api.Range.Of(0, 9);
+            var range2 = SharpPulsar.Api.Range.Of(0, 2);
+            var intersectRange = range1.Intersect(range2);
+			Assert.Equal(0, intersectRange.Start);
+			Assert.Equal(2, intersectRange.End);
 
-			Range2 = Range.Of(10, 20);
-			IntersectRange = Range1.intersect(Range2);
-			Assert.assertNull(IntersectRange);
+			range2 = SharpPulsar.Api.Range.Of(10, 20);
+			intersectRange = range1.Intersect(range2);
+			Assert.Null(intersectRange);
 
-			Range2 = Range.Of(-10, -1);
-			IntersectRange = Range1.intersect(Range2);
-			Assert.assertNull(IntersectRange);
+			range2 = SharpPulsar.Api.Range.Of(-10, -1);
+			intersectRange = range1.Intersect(range2);
+			Assert.Null(intersectRange);
 
-			Range2 = Range.Of(-5, 5);
-			IntersectRange = Range1.intersect(Range2);
-			Assert.assertEquals(0, IntersectRange.Start);
-			Assert.assertEquals(5, IntersectRange.End);
+			range2 = SharpPulsar.Api.Range.Of(-5, 5);
+			intersectRange = range1.Intersect(range2);
+			Assert.Equal(0, intersectRange.Start);
+			Assert.Equal(5, intersectRange.End);
 
-			Range2 = Range.Of(5, 15);
-			IntersectRange = Range1.intersect(Range2);
-			Assert.assertEquals(5, IntersectRange.Start);
-			Assert.assertEquals(9, IntersectRange.End);
+			range2 = SharpPulsar.Api.Range.Of(5, 15);
+			intersectRange = range1.Intersect(range2);
+			Assert.Equal(5, intersectRange.Start);
+			Assert.Equal(9, intersectRange.End);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testInvalid()
-		public virtual void TestInvalid()
+		[Fact]
+		public  void TestInvalid()
 		{
-			Range.Of(0, -5);
+            SharpPulsar.Api.Range.Of(0, -5);
 		}
 	}
 

@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -25,12 +25,9 @@ namespace Org.Apache.Pulsar.Client.Impl
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertTrue;
 
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using Test = org.testng.annotations.Test;
+using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
 
-	/// <summary>
+/// <summary>
 	/// Unit test of <seealso cref="Message"/> methods.
 	/// </summary>
 	public class MessageTest

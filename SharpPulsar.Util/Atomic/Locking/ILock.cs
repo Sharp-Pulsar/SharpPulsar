@@ -23,12 +23,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Locking 
+using System;
+
+namespace SharpPulsar.Utility.Atomic.Locking 
 {
-
-    using System;
-
-
     /// <summary>
     /// This interface represents a thread access locking implementation.
     /// 

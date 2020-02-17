@@ -16,9 +16,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Utility;
+
 namespace SharpPulsar.Impl.Transaction
 {
-    using SharpPulsar.Util;
     using System.Threading.Tasks;
     using ITransaction = Api.Transaction.ITransaction;
 	using TransactionBuilder = Api.Transaction.TransactionBuilder;

@@ -2,12 +2,12 @@
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Util;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Threading;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

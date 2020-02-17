@@ -16,11 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
-{
-    using DotNetty.Buffers;
 
-	/// <summary>
+using DotNetty.Buffers;
+
+namespace SharpPulsar.Utility
+{
+    /// <summary>
 	/// Custom number formatter for {@code io.netty.buffer.ByteBuf}.
 	/// </summary>
 	public class NumberFormat
@@ -57,8 +58,8 @@ namespace SharpPulsar.Util
 			end--;
 			for (int i = 0; i <= (end - start) / 2; i++)
 			{
-				sbyte tmp = @out.GetByte(end - i);
-				@out.GetByte(end - i, @out.GetByte(start + i));
+				byte tmp = @out.GetByte(end - i);
+				@out.GetByte(start + i);
 				@out.SetByte(start + i, tmp);
 			}
 		}

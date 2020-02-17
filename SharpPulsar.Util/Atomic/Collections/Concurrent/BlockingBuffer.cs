@@ -23,14 +23,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Collections.Concurrent 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using SharpPulsar.Utility.Atomic.Locking;
+
+namespace SharpPulsar.Utility.Atomic.Collections.Concurrent 
 {
-    using SharpPulsar.Util.Atomic.Locking;
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-
-
     /// <summary>
     /// This collection is similar to the <c>BlockingQueue</c>. However, in addition to blocking
     /// the accessing thread on a <c>Dequeue()</c> when the buffer is empty, it will also block

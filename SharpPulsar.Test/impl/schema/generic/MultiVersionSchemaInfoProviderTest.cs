@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Test.Impl.schema.generic
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.ArgumentMatchers.any;
@@ -28,14 +28,10 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
 //	import static org.testng.Assert.assertEquals;
 
 
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
+using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
 
-	/// <summary>
+/// <summary>
 	/// Unit test for <seealso cref="MultiVersionSchemaInfoProvider"/>.
 	/// </summary>
 	public class MultiVersionSchemaInfoProviderTest

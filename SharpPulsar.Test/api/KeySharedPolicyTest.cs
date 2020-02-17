@@ -16,57 +16,54 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+
+using SharpPulsar.Common.Entity;
+using Xunit;
+
+namespace SharpPulsar.Test.Api
 {
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
-	public class KeySharedPolicyTest
+    public class KeySharedPolicyTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAutoSplit()
-		public virtual void TestAutoSplit()
+		[Fact]
+		public void TestAutoSplit()
 		{
 
-			KeySharedPolicy Policy = KeySharedPolicy.AutoSplitHashRange();
-			Assert.assertEquals(2 << 15, Policy.HashRangeTotal);
+			KeySharedPolicy policy = KeySharedPolicy.AutoSplitHashRange();
+			Assert.Equal(2 << 15, policy.HashRangeTotal);
 
-			Policy.validate();
+			policy.Validate();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testExclusiveHashRange()
-		public virtual void TestExclusiveHashRange()
+		[Fact]
+		public void TestExclusiveHashRange()
 		{
 
-			KeySharedPolicy.KeySharedPolicySticky Policy = KeySharedPolicy.StickyHashRange();
-			Assert.assertEquals(2 << 15, Policy.HashRangeTotal);
+			KeySharedPolicy.KeySharedPolicySticky policy = KeySharedPolicy.StickyHashRange();
+			Assert.Equal(2 << 15, policy.HashRangeTotal);
 
-			Policy.ranges(Range.Of(0, 1), Range.Of(1, 2));
-			Assert.assertEquals(Policy.Ranges.Count, 2);
+			policy.Ranges(Range.Of(0, 1), Range.Of(1, 2));
+			Assert.Equal(2, policy.Ranges().GetRanges.Count);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testExclusiveHashRangeInvalid()
-		public virtual void TestExclusiveHashRangeInvalid()
+		[Fact]
+		public void TestExclusiveHashRangeInvalid()
 		{
 
-			KeySharedPolicy.KeySharedPolicySticky Policy = KeySharedPolicy.StickyHashRange();
+			KeySharedPolicy.KeySharedPolicySticky policy = KeySharedPolicy.StickyHashRange();
 			try
 			{
-				Policy.validate();
-				Assert.fail("should be failed");
+				policy.Validate();
+				Assert.False(false,"should be failed");
 			}
 			catch (System.ArgumentException)
 			{
 			}
 
-			Policy.ranges(Range.Of(0, 9), Range.Of(0, 5));
+			policy.Ranges(Range.Of(0, 9), Range.Of(0, 5));
 			try
 			{
-				Policy.validate();
-				Assert.fail("should be failed");
+				policy.Validate();
+                Assert.False(false, "should be failed");
 			}
 			catch (System.ArgumentException)
 			{

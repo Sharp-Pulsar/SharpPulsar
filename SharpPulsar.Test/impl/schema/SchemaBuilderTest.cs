@@ -16,22 +16,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using Data = lombok.Data;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using ToString = lombok.ToString;
-	using Nullable = org.apache.avro.reflect.Nullable;
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using Test = org.testng.annotations.Test;
+using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 
-	/// <summary>
+/// <summary>
 	/// Schema Builder Test.
 	/// </summary>
 	public class SchemaBuilderTest

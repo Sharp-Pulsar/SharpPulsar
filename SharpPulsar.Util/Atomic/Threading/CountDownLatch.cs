@@ -23,13 +23,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Threading 
+using System;
+using System.Threading;
+
+namespace SharpPulsar.Utility.Atomic.Threading 
 {
-
-    using System;
-    using System.Threading;
-
-
     /// <summary>
     /// This class acts as a lock-less, thread safe count down which can be used to perform multiple async tasks 
     /// and await signals from all threads without having to wait for the thread to terminate. It's based on the 

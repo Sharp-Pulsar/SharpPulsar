@@ -23,11 +23,11 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public sealed class LatestVersion : SchemaVersion
 	{
-		private static readonly sbyte[] EMPTY = new sbyte[]{};
+		private static readonly sbyte[] Empty = new sbyte[]{};
 
 		public sbyte[] Bytes()
 		{
-			return EMPTY;
+			return Empty;
 		}
 	}
 

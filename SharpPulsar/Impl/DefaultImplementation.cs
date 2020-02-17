@@ -181,7 +181,7 @@ namespace SharpPulsar.Impl
 
 		public static ISchema<sbyte[]> NewAutoProduceSchema<T1>(ISchema<T1> schema)
 		{
-			return new AutoProduceBytesSchema<sbyte[]>(schema);
+			return new AutoProduceBytesSchema<T1>(schema);
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 

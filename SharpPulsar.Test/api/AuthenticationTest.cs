@@ -1,5 +1,9 @@
 ﻿using System;
+using SharpPulsar.Exception;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Test.Impl.auth;
 using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,99 +23,97 @@ using Xunit;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Api
 {
-	using MockEncodedAuthenticationParameterSupport = Org.Apache.Pulsar.Client.Impl.Auth.MockEncodedAuthenticationParameterSupport;
-	using MockAuthentication = Org.Apache.Pulsar.Client.Impl.Auth.MockAuthentication;
+	using MockEncodedAuthenticationParameterSupport = MockEncodedAuthenticationParameterSupport;
+	using MockAuthentication = MockAuthentication;
 
-	using Test = org.testng.annotations.Test;
-	using Assert = org.testng.Assert;
-
-	public class AuthenticationTest
+    public class AuthenticationTest
 	{
+        private readonly ITestOutputHelper _testOutputHelper;
 
-		public virtual void TestConfigureDefaultFormat()
+        public AuthenticationTest(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
+        [Fact]
+		public void TestConfigureDefaultFormat()
 		{
 			try
 			{
-				MockAuthentication TestAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "key1:value1,key2:value2");
-				Assert.assertEquals(TestAuthentication.AuthParamsMap["key1"], "value1");
-				Assert.assertEquals(TestAuthentication.AuthParamsMap["key2"], "value2");
+				MockAuthentication testAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "key1:value1,key2:value2");
+				Assert.Equal("value1", testAuthentication.AuthParamsMap["key1"]);
+				Assert.Equal("value2", testAuthentication.AuthParamsMap["key2"]);
 			}
-			catch (PulsarClientException.UnsupportedAuthenticationException E)
+			catch (PulsarClientException.UnsupportedAuthenticationException e)
 			{
-				Console.WriteLine(E.ToString());
-				Console.Write(E.StackTrace);
-				Assert.fail();
-			}
+				_testOutputHelper.WriteLine(e.ToString());
+                _testOutputHelper.WriteLine(e.StackTrace);
+                Assert.True(false, e.Message);
+            }
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigureWrongFormat()
-		public virtual void TestConfigureWrongFormat()
+		[Fact]
+		public void TestConfigureWrongFormat()
 		{
 			try
 			{
-				MockAuthentication TestAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "foobar");
-				Assert.assertTrue(TestAuthentication.AuthParamsMap.Count == 0);
+				MockAuthentication testAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "foobar");
+				Assert.True(testAuthentication.AuthParamsMap.Count == 0);
 			}
-			catch (PulsarClientException.UnsupportedAuthenticationException E)
+			catch (PulsarClientException.UnsupportedAuthenticationException e)
 			{
-				Console.WriteLine(E.ToString());
-				Console.Write(E.StackTrace);
-				Assert.fail();
+                _testOutputHelper.WriteLine(e.ToString());
+                _testOutputHelper.WriteLine(e.StackTrace);
+                Assert.True(false, "TestConfigureWrongFormat failed");
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigureNull()
-		public virtual void TestConfigureNull()
+		[Fact]
+		public  void TestConfigureNull()
 		{
 			try
 			{
-				MockAuthentication TestAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", (string) null);
-				Assert.assertTrue(TestAuthentication.AuthParamsMap.Count == 0);
+				MockAuthentication testAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", (string) null);
+				Assert.True(testAuthentication.AuthParamsMap.Count == 0);
 			}
-			catch (PulsarClientException.UnsupportedAuthenticationException E)
+			catch (PulsarClientException.UnsupportedAuthenticationException e)
 			{
-				Console.WriteLine(E.ToString());
-				Console.Write(E.StackTrace);
-				Assert.fail();
+				_testOutputHelper.WriteLine(e.ToString());
+				_testOutputHelper.WriteLine(e.StackTrace);
+                Assert.True(false, e.Message);
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigureEmpty()
-		public virtual void TestConfigureEmpty()
+		[Fact]
+		public void TestConfigureEmpty()
 		{
 			try
 			{
-				MockAuthentication TestAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "");
-				Assert.assertTrue(TestAuthentication.AuthParamsMap.Count == 0);
+				MockAuthentication testAuthentication = (MockAuthentication) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockAuthentication", "");
+				Assert.True(testAuthentication.AuthParamsMap.Count == 0);
 			}
-			catch (PulsarClientException.UnsupportedAuthenticationException E)
+			catch (PulsarClientException.UnsupportedAuthenticationException e)
 			{
-				Console.WriteLine(E.ToString());
-				Console.Write(E.StackTrace);
-				Assert.fail();
+				_testOutputHelper.WriteLine(e.ToString());
+				_testOutputHelper.WriteLine(e.StackTrace);
+                Assert.True(false, e.Message);
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigurePluginSide()
+		[Fact]
 		public virtual void TestConfigurePluginSide()
 		{
 			try
 			{
-				MockEncodedAuthenticationParameterSupport TestAuthentication = (MockEncodedAuthenticationParameterSupport) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockEncodedAuthenticationParameterSupport", "key1:value1;key2:value2");
-				Assert.assertEquals(TestAuthentication.AuthParamsMap["key1"], "value1");
-				Assert.assertEquals(TestAuthentication.AuthParamsMap["key2"], "value2");
+				MockEncodedAuthenticationParameterSupport testAuthentication = (MockEncodedAuthenticationParameterSupport) AuthenticationFactory.Create("org.apache.pulsar.client.impl.auth.MockEncodedAuthenticationParameterSupport", "key1:value1;key2:value2");
+				Assert.Equal("value1", testAuthentication.AuthParamsMap["key1"]);
+				Assert.Equal("value2", testAuthentication.AuthParamsMap["key2"]);
 			}
-			catch (PulsarClientException.UnsupportedAuthenticationException E)
+			catch (PulsarClientException.UnsupportedAuthenticationException e)
 			{
-				Console.WriteLine(E.ToString());
-				Console.Write(E.StackTrace);
-				Assert.fail();
+				_testOutputHelper.WriteLine(e.ToString());
+				_testOutputHelper.WriteLine(e.StackTrace);
+                Assert.True(false, e.Message);
 			}
 		}
 	}

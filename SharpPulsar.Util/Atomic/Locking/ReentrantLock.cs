@@ -23,13 +23,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Locking 
+using System;
+using System.Threading;
+
+namespace SharpPulsar.Utility.Atomic.Locking 
 {
-
-    using System;
-    using System.Threading;
-
-
     /// <summary>
     /// A reentrant mutual exclusion <c>ILock</c> with the same basic behavior and semantics as the 
     /// implicit monitor lock accessed using the <c>lock</c> keyword, but with some additional capabilities.

@@ -16,18 +16,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Test.Impl.schema.generic
 {
 	using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using FooV2 = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.FooV2;
-	using Assert = org.testng.Assert;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.any;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;

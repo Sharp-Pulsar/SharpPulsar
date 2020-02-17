@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -33,13 +33,9 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using DataProvider = org.testng.annotations.DataProvider;
-	using Test = org.testng.annotations.Test;
+    using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
 
-	/// <summary>
+    /// <summary>
 	/// Unit test <seealso cref="StringSchema"/>.
 	/// </summary>
 	public class StringSchemaTest

@@ -1,5 +1,5 @@
-﻿using DotNetty.Buffers;
-using System;
+﻿using System;
+using DotNetty.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +19,7 @@ using System;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 	
 	/// <summary>
@@ -37,14 +37,16 @@ namespace SharpPulsar.Util
 		}
 
 		public virtual SimpleTextOutputStream Write(sbyte[] a)
-		{
-			buffer.WriteBytes(a, 0, a.Length);
+        {
+            var ab = Unpooled.WrappedBuffer((byte[])(object)a, 0, a.Length);
+			buffer.WriteBytes(ab);
 			return this;
 		}
 
 		public virtual SimpleTextOutputStream Write(sbyte[] a, int offset, int len)
 		{
-			buffer.WriteBytes(a, offset, len);
+            var ab = Unpooled.WrappedBuffer((byte[])(object)a, offset, len);
+			buffer.WriteBytes(ab);
 			return this;
 		}
 

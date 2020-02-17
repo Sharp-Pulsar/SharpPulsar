@@ -9,7 +9,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Util;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

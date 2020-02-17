@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DotNetty.Common.Utilities;
-using SharpPulsar.Util;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

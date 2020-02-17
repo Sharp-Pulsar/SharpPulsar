@@ -1,7 +1,7 @@
 ﻿using DotNetty.Common;
 using Google.Protobuf;
-using SharpPulsar.Util.Protobuf;
 using System;
+using SharpPulsar.Utility.Protobuf;
 
 namespace SharpPulsar.Protocol.Proto
 {

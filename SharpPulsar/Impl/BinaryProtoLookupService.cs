@@ -3,7 +3,6 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol;
-using SharpPulsar.Util.Atomic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +13,7 @@ using Org.BouncyCastle.Asn1.Ocsp;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Exception;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Util;
+using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utils;
 
 /// <summary>

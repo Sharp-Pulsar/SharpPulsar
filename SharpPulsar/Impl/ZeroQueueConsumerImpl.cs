@@ -7,8 +7,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Atomic.Locking;
+using SharpPulsar.Utility.Atomic.Locking;
 using SharpPulsar.Utils;
 
 /// <summary>

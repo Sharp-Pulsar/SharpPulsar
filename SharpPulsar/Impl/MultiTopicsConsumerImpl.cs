@@ -11,8 +11,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Atomic;
+using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utils;
 
 /// <summary>
@@ -76,7 +75,7 @@ namespace SharpPulsar.Impl
 		private readonly ConsumerConfigurationData<T> _internalConfig;
 		private State _state = State.Closed;
 
-		public MultiTopicsConsumerImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : this(client, DummyTopicNamePrefix + Util.ConsumerName.GenerateRandomName(), conf, subscribeTask, schema, interceptors, createTopicIfDoesNotExist, executor)
+		public MultiTopicsConsumerImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, subscribeTask, schema, interceptors, createTopicIfDoesNotExist, executor)
 		{
 		}
 
@@ -309,7 +308,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void MessageProcessed<T1>(IMessage<T1> msg)
+		public override void MessageProcessed(IMessage<T> msg)
 		{
 			lock (this)
 			{

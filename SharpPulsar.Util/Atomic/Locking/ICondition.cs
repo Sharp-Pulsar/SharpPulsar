@@ -23,11 +23,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Locking 
+namespace SharpPulsar.Utility.Atomic.Locking 
 {
-
-    using System;
-
     /// <summary>
     /// This interface defines a condition instance that can be used for flow control
     /// within a lock. 

@@ -16,14 +16,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
 
-	public class ShortSchemaTest
+    public class ShortSchemaTest
 	{
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

@@ -23,13 +23,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Threading 
+using System;
+using System.Collections.Generic;
+
+namespace SharpPulsar.Utility.Atomic.Threading 
 {
-
-    using System;
-    using System.Collections.Generic;
-
-
     /// <summary>
     /// This class stores a static instance of <c>T</c> in each <c>Thread</c> it is
     /// accessed. It uses an internal implementation of the <c>ThreadStatic</c>

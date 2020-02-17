@@ -1,6 +1,4 @@
-﻿using Org.Apache.Pulsar;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,21 +19,9 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
-	using JsonProcessingException = com.fasterxml.jackson.core.JsonProcessingException;
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using Function = Org.Apache.Pulsar.Functions.Proto.Function;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class ProtobufSchemaTest
 	public class ProtobufSchemaTest
 	{

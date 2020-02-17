@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.any;
@@ -33,14 +33,10 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 
 	using Channel = io.netty.channel.Channel;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
+    using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
 	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
 	using PulsarHandler = Org.Apache.Pulsar.Common.Protocol.PulsarHandler;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using Test = org.testng.annotations.Test;
-
-	using ChannelFuture = io.netty.channel.ChannelFuture;
+    using ChannelFuture = io.netty.channel.ChannelFuture;
 	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
 	using EventLoopGroup = io.netty.channel.EventLoopGroup;
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
@@ -70,7 +66,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			{
 				Cnx.newLookup(null, 123).get();
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
 				assertTrue(E.InnerException is PulsarClientException.TimeoutException);
 			}
@@ -106,7 +102,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			{
 				Cnx.handleError(CommandError);
 			}
-			catch (Exception)
+			catch (System.Exception)
 			{
 				fail("should not throw any error");
 			}

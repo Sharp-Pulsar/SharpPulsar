@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,25 +18,18 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 
 	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.avro.Schema;
-	using SchemaSerializationException = Org.Apache.Pulsar.Client.Api.SchemaSerializationException;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using DerivedFoo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.DerivedFoo;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using NestedBar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.NestedBar;
-	using NestedBarList = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.NestedBarList;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
+    using Schema = org.apache.avro.Schema;
+    using Bar = SchemaTestUtils.Bar;
+	using DerivedFoo = SchemaTestUtils.DerivedFoo;
+	using Foo = SchemaTestUtils.Foo;
+	using NestedBar = SchemaTestUtils.NestedBar;
+	using NestedBarList = SchemaTestUtils.NestedBarList;
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.FOO_FIELDS;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.SCHEMA_JSON_NOT_ALLOW_NULL;
@@ -163,7 +155,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 				JsonSchema.encode(Foo2);
 
 			}
-			catch (Exception E)
+			catch (System.Exception E)
 			{
 				Assert.assertTrue(E is SchemaSerializationException);
 			}

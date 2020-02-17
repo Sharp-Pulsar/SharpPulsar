@@ -22,12 +22,11 @@
 //  THE SOFTWARE.
 //
 ////////////////////////////////////////////////////////////////////////////////
-namespace SharpPulsar.Util.Atomic
+
+using System.Threading;
+
+namespace SharpPulsar.Utility.Atomic
 {
-
-    using System;
-    using System.Threading;
-
     /// <summary>
     /// Provides lock-free atomic read/write utility for a <c>int</c> value. The atomic classes found in this package
     /// were are meant to replicate the <c>java.util.concurrent.atomic</c> package in Java by Doug Lea. The two main differences

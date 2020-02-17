@@ -16,23 +16,18 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
-{
 
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using SchemaTestUtils = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils;
+using SharpPulsar.Test.Impl.schema;
+
+namespace SharpPulsar.Test.Impl
+{
+    using SchemaTestUtils = SchemaTestUtils;
 	using MultiVersionSchemaInfoProvider = Org.Apache.Pulsar.Client.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
 	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
+    using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
 	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.any;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;

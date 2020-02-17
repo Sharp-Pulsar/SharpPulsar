@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			_schema = schema;
 			var schemaInfo = schema.SchemaInfo;
-			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
+			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.Bytes && schemaInfo.Type != SchemaType.None;
 		}
 
 		public virtual ISchema<T> Schema
@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Schema
             set
 			{
 				_schema = value;
-				_requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
+				_requireSchemaValidation = value.SchemaInfo != null && SchemaType.Bytes != value.SchemaInfo.Type && SchemaType.None != value.SchemaInfo.Type;
 			}
 		}
 

@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,7 +22,7 @@ using System.Security;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 
 	/// <summary>

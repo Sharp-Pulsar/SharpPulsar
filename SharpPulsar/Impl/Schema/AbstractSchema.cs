@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Api.Schema;
-using System;
 using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Exception;

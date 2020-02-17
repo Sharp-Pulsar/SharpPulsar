@@ -2,7 +2,7 @@
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
-using SharpPulsar.Util;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

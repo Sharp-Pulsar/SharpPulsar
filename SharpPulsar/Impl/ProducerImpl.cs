@@ -17,9 +17,6 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Atomic;
-using SharpPulsar.Util.Atomic.Collections.Concurrent;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -27,6 +24,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpPulsar.Utility.Atomic;
+using SharpPulsar.Utility.Atomic.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -1084,7 +1083,7 @@ namespace SharpPulsar.Impl
                         schemaInfo = (SchemaInfo)Schema.SchemaInfo;
                     }
                 }
-                else if (Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
+                else if (Schema.SchemaInfo.Type == SchemaType.Bytes || Schema.SchemaInfo.Type == SchemaType.None)
                 {
                     // don't set schema info for Schema.BYTES
                     schemaInfo = null;
@@ -1552,11 +1551,10 @@ namespace SharpPulsar.Impl
 		private void RecoverProcessOpSendMsgFrom(ClientCnx cnx, MessageImpl<object> @from)
 		{
 			var stripChecksum = cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
-            using var msgIterator = _pendingMessages.GetEnumerator();
+            var msgIterator = _pendingMessages.ToList();
 			OpSendMsg<T> pendingRegisteringOp = null;
-			while (msgIterator.MoveNext())
+			foreach (var op in msgIterator)
 			{
-				var op = msgIterator.Current;
 				if (@from != null)
 				{
 					if (op != null && op.Msg == (MessageImpl<T>) @from)
@@ -1578,10 +1576,10 @@ namespace SharpPulsar.Impl
 							break;
 						}
 					}
-					else if (op != null && (int)op.Msg.GetSchemaState() ==  2)
+					else if ((int)op.Msg.GetSchemaState() ==  2)
 					{
 						op.Recycle();
-						msgIterator.Remove(msgIterator.Current);
+						msgIterator.Remove(op);
 						continue;
 					}
 				}

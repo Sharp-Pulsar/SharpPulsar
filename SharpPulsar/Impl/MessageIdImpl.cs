@@ -4,7 +4,7 @@ using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Util.Protobuf;
+using SharpPulsar.Utility.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

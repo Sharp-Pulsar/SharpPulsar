@@ -16,10 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Utility;
+
 namespace SharpPulsar.Protocol
 {
     using Microsoft.Extensions.Logging;
-    using SharpPulsar.Util;
     using System.Net;
     using DotNetty.Transport.Channels;
     using System;

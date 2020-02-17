@@ -7,7 +7,7 @@
 
 using System.Threading;
 
-namespace SharpPulsar.Util.Atomic
+namespace SharpPulsar.Utility.Atomic
 {
     /// <summary>
     /// Implementation of the java.concurrent.util AtomicReference type.

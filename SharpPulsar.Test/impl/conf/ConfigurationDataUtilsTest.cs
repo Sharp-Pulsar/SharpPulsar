@@ -1,7 +1,4 @@
-﻿using Org.Apache.Pulsar.Client.Api;
-
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +18,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Conf
+namespace SharpPulsar.Test.Impl.conf
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -33,13 +30,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Conf
 //	import static org.testng.Assert.assertTrue;
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.fail;
-
-
-	using BatcherBuilder = Org.Apache.Pulsar.Client.Api.BatcherBuilder;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using Test = org.testng.annotations.Test;
-
-	/// <summary>
+/// <summary>
 	/// Unit test <seealso cref="ConfigurationDataUtils"/>.
 	/// </summary>
 	public class ConfigurationDataUtilsTest
@@ -130,7 +121,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Conf
 				ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ReaderConfigurationData));
 				fail("Should fail loading configuration data with unknown fields");
 			}
-			catch (Exception Re)
+			catch (System.Exception Re)
 			{
 				assertTrue(Re.InnerException is IOException);
 			}

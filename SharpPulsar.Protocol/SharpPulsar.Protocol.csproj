@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.Common\SharpPulsar.Common.csproj" />
-    <ProjectReference Include="..\SharpPulsar.Util\SharpPulsar.Util.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Util\SharpPulsar.Utility.csproj" />
   </ItemGroup>
 
 </Project>

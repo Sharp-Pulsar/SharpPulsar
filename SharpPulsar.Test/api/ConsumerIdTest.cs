@@ -16,75 +16,63 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+
+using System;
+using SharpPulsar.Impl;
+using Xunit;
+
+namespace SharpPulsar.Test.Api
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotEquals;
-
-	using Test = org.testng.annotations.Test;
-
-	using Objects = com.google.common.@base.Objects;
-
-	using ConsumerId = Org.Apache.Pulsar.Client.Impl.ConsumerId;
 
 	public class ConsumerIdTest
 	{
-//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods:
-		private const string TopicTest_Conflict = "my-topic-1";
-		private const string TopicTest_2 = "my-topic-2";
+		private const string TopicTestConflict = "my-topic-1";
+		private const string TopicTest2 = "my-topic-2";
 		private const string SubcribtionTest = "my-sub-1";
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void getTopicTest()
-		public virtual void getTopicTest()
+		[Fact]
+		public  void GetTopicTest()
 		{
-			ConsumerId TestConsumerId = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			assertEquals(TopicTest_Conflict, TestConsumerId.Topic);
+			var testConsumerId = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			Assert.Equal(TopicTestConflict, testConsumerId.Topic);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void getSubscribtionTest()
-		public virtual void getSubscribtionTest()
+		[Fact]
+		public void GetSubscribtionTest()
 		{
-			ConsumerId TestConsumerId = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			assertEquals(SubcribtionTest, TestConsumerId.Subscription);
+			var testConsumerId = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			Assert.Equal(SubcribtionTest, testConsumerId.Subscription);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void hashCodeTest()
-		public virtual void HashCodeTest()
+		[Fact]
+		public  void HashCodeTest()
 		{
-			ConsumerId TestConsumerId = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			assertEquals(Objects.hashCode(TopicTest_Conflict, SubcribtionTest), TestConsumerId.GetHashCode());
+			var testConsumerId = new ConsumerId(TopicTestConflict, SubcribtionTest);
+            Assert.Equal(HashCode.Combine(TopicTestConflict, SubcribtionTest), testConsumerId.GetHashCode());
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void equalTest()
+		[Fact]
 		public virtual void EqualTest()
 		{
-			ConsumerId TestConsumerId1 = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			ConsumerId TestConsumerId2 = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			ConsumerId TestConsumerId3 = new ConsumerId(TopicTest_2, SubcribtionTest);
+			var testConsumerId1 = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			var testConsumerId2 = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			var testConsumerId3 = new ConsumerId(TopicTest2, SubcribtionTest);
 
-			assertEquals(TestConsumerId2, TestConsumerId1);
+            Assert.Equal(testConsumerId2, testConsumerId1);
 
-			assertNotEquals(TestConsumerId3, TestConsumerId1);
+            Assert.Equal(testConsumerId3, testConsumerId1);
 
-			assertNotEquals("", TestConsumerId1);
+            Assert.Null(testConsumerId1);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void compareToTest()
-		public virtual void CompareToTest()
+		[Fact]
+		public void CompareToTest()
 		{
-			ConsumerId TestConsumerId1 = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			ConsumerId TestConsumerId2 = new ConsumerId(TopicTest_Conflict, SubcribtionTest);
-			ConsumerId TestConsumerId3 = new ConsumerId(TopicTest_2, SubcribtionTest);
+			var testConsumerId1 = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			var testConsumerId2 = new ConsumerId(TopicTestConflict, SubcribtionTest);
+			var testConsumerId3 = new ConsumerId(TopicTest2, SubcribtionTest);
 
-			assertEquals(0, TestConsumerId1.CompareTo(TestConsumerId2));
-			assertEquals(-1, TestConsumerId1.CompareTo(TestConsumerId3));
+            Assert.Equal(0, testConsumerId1.CompareTo(testConsumerId2));
+			Assert.Equal(-1, testConsumerId1.CompareTo(testConsumerId3));
 
 		}
 	}

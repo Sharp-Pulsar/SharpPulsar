@@ -8,9 +8,7 @@ using SharpPulsar.Exception;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Transaction;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Util;
-using SharpPulsar.Util.Atomic.Collections.Concurrent;
-using SharpPulsar.Util.Collections;
+using SharpPulsar.Utility.Collections;
 using SharpPulsar.Utils;
 
 /// <summary>
@@ -80,7 +78,7 @@ namespace SharpPulsar.Impl
 			_maxReceiverQueueSize = receiverQueueSize;
 			_subscription = conf.SubscriptionName;
 			Conf = conf;
-			_consumerName = conf.ConsumerName ?? Util.ConsumerName.GenerateRandomName();
+			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			SubscribeTask = subscribeTask;
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
@@ -593,7 +591,7 @@ namespace SharpPulsar.Impl
 			opBatchReceive.Task.SetResult(messages);
 		}
 
-		public abstract void MessageProcessed<T1>(IMessage<T1> msg);
+		public abstract void MessageProcessed(IMessage<T> msg);
 
 		public void Run(ITimeout timeout)
 		{

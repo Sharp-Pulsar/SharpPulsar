@@ -16,34 +16,29 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using Xunit;
+
+namespace SharpPulsar.Test.Api
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-	using BatchMessageIdImpl = Org.Apache.Pulsar.Client.Impl.BatchMessageIdImpl;
-	using MessageIdImpl = Org.Apache.Pulsar.Client.Impl.MessageIdImpl;
-	using Test = org.testng.annotations.Test;
-
-	public class MessageIdTest
+    public class MessageIdTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void messageIdTest()
-//JAVA TO C# CONVERTER NOTE: Members cannot have the same name as their enclosing type:
-		public virtual void MessageIdTestConflict()
+		[Fact]
+		public void MessageIdTestConflict()
 		{
-			MessageId MId = new MessageIdImpl(1, 2, 3);
-			assertEquals(MId.ToString(), "1:2:3");
+			IMessageId mId = new MessageIdImpl(1, 2, 3);
+			Assert.Equal("1:2:3", mId.ToString());
 
-			MId = new BatchMessageIdImpl(0, 2, 3, 4);
-			assertEquals(MId.ToString(), "0:2:3:4");
+			mId = new BatchMessageIdImpl(0, 2, 3, 4);
+            Assert.Equal("0:2:3:4", mId.ToString());
 
-			MId = new BatchMessageIdImpl(-1, 2, -3, 4);
-			assertEquals(MId.ToString(), "-1:2:-3:4");
+			mId = new BatchMessageIdImpl(-1, 2, -3, 4);
+            Assert.Equal("-1:2:-3:4", mId.ToString());
 
-			MId = new MessageIdImpl(0, -23, 3);
-			assertEquals(MId.ToString(), "0:-23:3");
+			mId = new MessageIdImpl(0, -23, 3);
+            Assert.Equal("0:-23:3", mId.ToString());
 		}
 	}
 

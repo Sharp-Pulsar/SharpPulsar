@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.mock;
@@ -31,15 +31,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 	using EventLoopGroup = io.netty.channel.EventLoopGroup;
 	using NioEventLoopGroup = io.netty.channel.nio.NioEventLoopGroup;
 
-
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using AckType = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.CommandAck.AckType;
-	using ProtocolVersion = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.ProtocolVersion;
-	using AfterClass = org.testng.annotations.AfterClass;
-	using BeforeClass = org.testng.annotations.BeforeClass;
-	using Test = org.testng.annotations.Test;
-
-	public class AcknowledgementsGroupingTrackerTest
+    public class AcknowledgementsGroupingTrackerTest
 	{
 
 		private ClientCnx cnx;

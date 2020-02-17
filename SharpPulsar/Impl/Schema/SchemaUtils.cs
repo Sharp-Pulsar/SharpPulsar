@@ -11,7 +11,6 @@ using Newtonsoft.Json.Linq;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Shared;
-using SharpPulsar.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -64,7 +63,7 @@ namespace SharpPulsar.Impl.Schema
 			// string
 			SchemaTypeClasses[SchemaType.String] = new List<Type>{ typeof(string) };
 			// bytes
-			SchemaTypeClasses[SchemaType.BYTES] = new List<Type>{typeof(sbyte[]), typeof(ByteBuffer), typeof(IByteBuffer)};
+			SchemaTypeClasses[SchemaType.Bytes] = new List<Type>{typeof(sbyte[]), typeof(ByteBuffer), typeof(IByteBuffer)};
 			// build the reverse mapping
 			SchemaTypeClasses.ToList().ForEach((x => x.Value.ToList().ForEach(clz => JavaClassSchemaTypes.Add(clz, x.Key))));
 		}
@@ -100,16 +99,16 @@ namespace SharpPulsar.Impl.Schema
 
 			switch (type.InnerEnumValue)
 			{
-				case SchemaType.InnerEnum.INT8:
-				case SchemaType.InnerEnum.INT16:
-				case SchemaType.InnerEnum.PROTOBUF:
-				case SchemaType.InnerEnum.AVRO:
-				case SchemaType.InnerEnum.AUTO_CONSUME:
-				case SchemaType.InnerEnum.AUTO_PUBLISH:
-				case SchemaType.InnerEnum.AUTO:
-				case SchemaType.InnerEnum.KEY_VALUE:
-				case SchemaType.InnerEnum.JSON:
-				case SchemaType.InnerEnum.NONE:
+				case SchemaType.InnerEnum.Int8:
+				case SchemaType.InnerEnum.Int16:
+				case SchemaType.InnerEnum.Protobuf:
+				case SchemaType.InnerEnum.Avro:
+				case SchemaType.InnerEnum.AutoConsume:
+				case SchemaType.InnerEnum.AutoPublish:
+				case SchemaType.InnerEnum.Auto:
+				case SchemaType.InnerEnum.KeyValue:
+				case SchemaType.InnerEnum.Json:
+				case SchemaType.InnerEnum.None:
 					throw new System.Exception("Currently " + type.GetType().Name + " is not supported");
 				default:
 					break;
@@ -124,8 +123,8 @@ namespace SharpPulsar.Impl.Schema
 			}
 			else if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
 			{
-				var bb = new ByteBuffer(schemaVersionBytes);
-				return bb.Long.ToString();
+				var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap((byte[])(object)schemaVersionBytes);
+				return bb.GetLong().ToString();
 			}
 			else if (schemaVersionBytes.Length == 0)
 			{

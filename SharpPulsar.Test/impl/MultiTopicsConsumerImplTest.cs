@@ -18,18 +18,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
-	using Sets = com.google.common.collect.Sets;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
+    using EventLoopGroup = io.netty.channel.EventLoopGroup;
 	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
 	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using Test = org.testng.annotations.Test;
 
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
 	/// <summary>

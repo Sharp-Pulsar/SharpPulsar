@@ -60,11 +60,11 @@ namespace SharpPulsar.Common.Schema
 
 				switch (Type.InnerEnumValue)
 				{
-					case SchemaType.InnerEnum.AVRO:
-					case SchemaType.InnerEnum.JSON:
-					case SchemaType.InnerEnum.PROTOBUF:
+					case SchemaType.InnerEnum.Avro:
+					case SchemaType.InnerEnum.Json:
+					case SchemaType.InnerEnum.Protobuf:
 						return StringHelper.NewString(Schema, "UTF8");
-					case SchemaType.InnerEnum.KEY_VALUE:
+					case SchemaType.InnerEnum.KeyValue:
 						KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(this);
 						return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
 					default:

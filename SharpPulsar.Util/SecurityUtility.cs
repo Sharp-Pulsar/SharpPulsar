@@ -1,19 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Security;
 using System.Security.Cryptography;
-using DotNetty.Handlers.Tls;
-using Org.BouncyCastle.Crypto.Parameters;
+using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Utilities.IO.Pem;
 using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
 
 /// <summary>
@@ -34,7 +29,7 @@ using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 	//using ClientAuth =  io.netty.handler.ssl.ClientAuth;
 	//using SslContext = TlsHandler io.netty.handler.ssl.SslContext;
@@ -54,50 +49,6 @@ namespace SharpPulsar.Util
 			//java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		}
 
-		public static SslContext CreateSslContext(bool allowInsecureConnection, X509Certificate[] trustCertificates)
-		{
-			return CreateSslContext(allowInsecureConnection, trustCertificates, (X509Certificate[])null, (AsymmetricAlgorithm)null);
-		}
-
-		
-		
-		public static SslContext CreateSslContext(bool allowInsecureConnection, string trustCertsFilePath, string certFilePath, string keyFilePath)
-		{
-			var trustCertificates = LoadCertificatesFromPemFile(trustCertsFilePath);
-			var certificates = LoadCertificatesFromPemFile(certFilePath);
-			var pri = LoadPrivateKeyFromPemFile(keyFilePath);
-			_publicKey = pub.ExportParameters(false);
-			_privateKey = pri.ExportParameters(true);
-            AsymmetricAlgorithm privateKey = LoadPrivateKeyFromPemFile(keyFilePath);
-			return CreateSslContext(allowInsecureConnection, trustCertificates, certificates, privateKey);
-		}
-
-		
-		
-		public static SslContext CreateNettySslContextForClient(bool allowInsecureConnection, string trustCertsFilePath, X509Certificate[] certificates, PrivateKey privateKey)
-		{
-			SslContextBuilder builder = SslContextBuilder.forClient();
-			SetupTrustCerts(builder, allowInsecureConnection, trustCertsFilePath);
-			SetupKeyManager(builder, privateKey, (X509Certificate[])certificates);
-			return builder.build();
-		}
-		
-		public static SslContext CreateSslContext(bool allowInsecureConnection, X509Certificate[] trustCertficates, X509Certificate[] certificates, PrivateKey privateKey)
-		{
-			var ksh = new KeyStoreHolder();
-			TrustManager[] trustManagers = null;
-			KeyManager[] keyManagers = null;
-
-			trustManagers = SetupTrustCerts(ksh, allowInsecureConnection, trustCertficates);
-			keyManagers = SetupKeyManager(ksh, privateKey, certificates);
-
-			SSLContext sslCtx = SSLContext.getInstance("TLS");
-			sslCtx.init(keyManagers, trustManagers, new SecureRandom());
-			sslCtx.DefaultSSLParameters;
-			return sslCtx;
-		}
-
-		
 		public static X509Certificate2[] LoadCertificatesFromPemFile(string certFilePath)
 		{
 			if (ReferenceEquals(certFilePath, null) || certFilePath.Length == 0)
@@ -106,18 +57,15 @@ namespace SharpPulsar.Util
 			}
 
 			try
-			{
-                
-				using (var input = new FileStream(certFilePath, FileMode.Open, FileAccess.Read))
-                using (var stream = new StreamReader(input))
-                {
-                    var c = new X509Certificate2();
-					var pemReader = new PemReader(stream);
-                    var obj = pemReader.ReadPemObject();
-                    c.Import(obj.Content);
-					return new []{c};
-				}
-			}
+            {
+                using var input = new FileStream(certFilePath, FileMode.Open, FileAccess.Read);
+                using var stream = new StreamReader(input);
+                var c = new X509Certificate2();
+                var pemReader = new PemReader(stream);
+                var obj = pemReader.ReadPemObject();
+                c.Import(obj.Content);
+                return new []{c};
+            }
 			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
 			{
 				throw new SecurityException("Certificate loading error", e);
@@ -130,12 +78,10 @@ namespace SharpPulsar.Util
         /// <returns>An X509 certificate</returns>
         public X509Certificate ImportCertificate(string certificateText)
         {
-            using (var textReader = new StringReader(certificateText))
-            {
-                var pemReader = new PemReader(textReader);
-                var certificate = (X509Certificate)pemReader.ReadObject();
-                return certificate;
-            }
+            using var textReader = new StringReader(certificateText);
+            var pemReader = new PemReader(textReader);
+            var certificate = (X509Certificate)pemReader.ReadObject();
+            return certificate;
         }
         /// <summary>
         /// Retrieves the key pair from PEM format
@@ -144,12 +90,10 @@ namespace SharpPulsar.Util
         /// <returns>Key pair</returns>
         public AsymmetricCipherKeyPair ImportKeyPair(string keyPairPemText)
         {
-            using (var textReader = new StringReader(keyPairPemText))
-            {
-                var pemReader = new PemReader(textReader);
-                var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-                return keyPair;
-            }
+            using var textReader = new StringReader(keyPairPemText);
+            var pemReader = new PemReader(textReader);
+            var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
+            return keyPair;
         }
         private RsaKeyParameters GenerateKeysFromPem(byte[] rawData)
         {
@@ -205,31 +149,27 @@ namespace SharpPulsar.Util
             if (!File.Exists(fileName))
                 throw new FileNotFoundException("The key file does not exist: " + fileName);
 
-            using (var file = new StreamReader(fileName))
-            {
-                var pRd = new PemReader(file);
+            using var file = new StreamReader(fileName);
+            var pRd = new PemReader(file);
 
-                var obj = pRd.ReadObject();
-                pRd.Reader.Close();
-                if (obj == null)
-                {
-                    throw new FormatException("The key file " + fileName + " is no valid PEM format");
-                }
-                return obj;
+            var obj = pRd.ReadObject();
+            pRd.Reader.Close();
+            if (obj == null)
+            {
+                throw new FormatException("The key file " + fileName + " is no valid PEM format");
             }
+            return obj;
         }
         public static byte[] Decrypt(byte[] buffer)
         {
-            using (TextReader sr = new StringReader(""/*PRIVATE_KEY*/))
-            {
-                var pemReader = new PemReader(sr);
-                var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-                var privateKey = (RsaKeyParameters)keyPair.Private;
-                IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
+            using TextReader sr = new StringReader(""/*PRIVATE_KEY*/);
+            var pemReader = new PemReader(sr);
+            var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
+            var privateKey = (RsaKeyParameters)keyPair.Private;
+            IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
 
-                cipher.Init(false, privateKey);
-                return cipher.ProcessBlock(buffer, 0, buffer.Length);
-            }
+            cipher.Init(false, privateKey);
+            return cipher.ProcessBlock(buffer, 0, buffer.Length);
         }
         public static AsymmetricKeyParameter ReadRsaPrivateKey(string path)
         {
@@ -289,132 +229,28 @@ namespace SharpPulsar.Util
             return (AsymmetricCipherKeyPair)o;
         }
 		private static RSACryptoServiceProvider GetPrivateKeyFromPemFile(string keyFilePath)
-		{
-			using (TextReader privateKeyTextReader = new StringReader(File.ReadAllText(keyFilePath)))
-			{
-				var readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
+        {
+            using TextReader privateKeyTextReader = new StringReader(File.ReadAllText(keyFilePath));
+            var readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
 
-				var rsaParams = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)readKeyPair.Private);
-                var csp = new RSACryptoServiceProvider();
-				csp.ImportParameters(rsaParams);
-                return csp;
-            }
-		}
+            var rsaParams = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)readKeyPair.Private);
+            var csp = new RSACryptoServiceProvider();
+            csp.ImportParameters(rsaParams);
+            return csp;
+        }
 
 		public static RSA GetPublicKeyFromPemFile(string filePath)
-		{
-			using (TextReader publicKeyTextReader = new StringReader(File.ReadAllText(filePath)))
-			{
-				var publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
+        {
+            using TextReader publicKeyTextReader = new StringReader(File.ReadAllText(filePath));
+            var publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
 
-				var rsaParams = DotNetUtilities.ToRSAParameters(publicKeyParam);
+            var rsaParams = DotNetUtilities.ToRSAParameters(publicKeyParam);
 
-                var rsa = RSA.Create();
-                rsa.ImportParameters(rsaParams);
-                return rsa;
-			}
-		}
+            var rsa = RSA.Create();
+            rsa.ImportParameters(rsaParams);
+            return rsa;
+        }
 		
-		private static void SetupTrustCerts(SslContextBuilder builder, bool allowInsecureConnection, string trustCertsFilePath)
-		{
-			if (allowInsecureConnection)
-			{
-				builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
-			}
-			else
-			{
-				if (!string.ReferenceEquals(trustCertsFilePath, null) && trustCertsFilePath.Length != 0)
-				{
-					using (var input = new FileStream(trustCertsFilePath, FileMode.Open, FileAccess.Read))
-					{
-						builder.trustManager(input);
-					}
-				}
-				else
-				{
-					builder.trustManager((File)null);
-				}
-			}
-		}
-
-		private static void SetupKeyManager(SslContextBuilder builder, PrivateKey privateKey, X509Certificate[] certificates)
-		{
-			builder.keyManager(privateKey, (X509Certificate[])certificates);
-		}
-
-		private static void SetupCiphers(SslContextBuilder builder, ISet<string> ciphers)
-		{
-			if (ciphers != null && ciphers.Count > 0)
-			{
-				builder.ciphers(ciphers);
-			}
-		}
-
-		private static void SetupProtocols(SslContextBuilder builder, ISet<string> protocols)
-		{
-			if (protocols != null && protocols.Count > 0)
-			{
-				builder.protocols(protocols.ToArray());
-			}
-		}
-
-		private static void SetupClientAuthentication(SslContextBuilder builder, bool requireTrustedClientCertOnConnect)
-		{
-			if (requireTrustedClientCertOnConnect)
-			{
-				builder.clientAuth(ClientAuth.REQUIRE);
-			}
-			else
-			{
-				builder.clientAuth(ClientAuth.OPTIONAL);
-			}
-		}
-        public static SslContextFactory CreateSslContextFactory(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, bool autoRefresh, long certRefreshInSec)
-		{
-			SslContextFactory sslCtxFactory = null;
-			if (autoRefresh)
-			{
-				sslCtxFactory = new SslContextFactoryWithAutoRefresh(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath, tlsRequireTrustedClientCertOnConnect, 0);
-			}
-			else
-			{
-				sslCtxFactory = new SslContextFactory();
-				SSLContext sslCtx = CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath);
-				sslCtxFactory.SslContext = sslCtx;
-			}
-			if (tlsRequireTrustedClientCertOnConnect)
-			{
-				sslCtxFactory.NeedClientAuth = true;
-			}
-			else
-			{
-				sslCtxFactory.WantClientAuth = true;
-			}
-			sslCtxFactory.TrustAll = true;
-			return sslCtxFactory;
-		}
-
-		/// <summary>
-		/// <seealso cref="SslContextFactory"/> that auto-refresh SSLContext.
-		/// </summary>
-		public class SslContextFactoryWithAutoRefresh : SslContextFactory
-		{
-
-			internal readonly DefaultSslContextBuilder SslCtxRefresher;
-			public SslContextFactoryWithAutoRefresh(bool tlsAllowInsecureConnection, string tlsTrustCertsFilePath, string tlsCertificateFilePath, string tlsKeyFilePath, bool tlsRequireTrustedClientCertOnConnect, long certRefreshInSec) : base()
-			{
-				SslCtxRefresher = new DefaultSslContextBuilder(tlsAllowInsecureConnection, tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath, tlsRequireTrustedClientCertOnConnect, certRefreshInSec);
-			}
-
-			public override SslContext SslContext
-			{
-				get
-				{
-					return SslCtxRefresher.Get();
-
-				}
-			}
-		}
 	}
 
 }

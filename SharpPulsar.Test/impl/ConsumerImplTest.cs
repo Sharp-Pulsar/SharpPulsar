@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,21 +18,15 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 	using Timer = io.netty.util.Timer;
 	using Consumer = Org.Apache.Pulsar.Client.Api.Consumer;
-	using Org.Apache.Pulsar.Client.Api;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using SubscriptionMode = Org.Apache.Pulsar.Client.Impl.ConsumerImpl.SubscriptionMode;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using Assert = org.testng.Assert;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
+    using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
+    using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
 
 
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.mockito.Mockito.*;
 
 	public class ConsumerImplTest
@@ -90,7 +84,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 		{
 			CompletableFuture<Message<ConsumerImpl>> ReceiveFuture = new CompletableFuture<Message<ConsumerImpl>>();
 			consumer.PendingReceives.add(ReceiveFuture);
-			Exception Exception = new PulsarClientException.InvalidMessageException("some random exception");
+			System.Exception Exception = new PulsarClientException.InvalidMessageException("some random exception");
 			consumer.NotifyPendingReceivedCallback(null, Exception);
 
 			try

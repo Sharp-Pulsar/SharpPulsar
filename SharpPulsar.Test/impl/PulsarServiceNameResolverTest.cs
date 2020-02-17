@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test.Impl
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
@@ -30,11 +30,8 @@ namespace Org.Apache.Pulsar.Client.Impl
 //	import static org.testng.Assert.fail;
 
 	using InvalidServiceURL = Org.Apache.Pulsar.Client.Api.PulsarClientException.InvalidServiceURL;
-	using ServiceURI = Org.Apache.Pulsar.Common.Net.ServiceURI;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
 
-	/// <summary>
+    /// <summary>
 	/// Unit test <seealso cref="PulsarServiceNameResolver"/>.
 	/// </summary>
 	public class PulsarServiceNameResolverTest

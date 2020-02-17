@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,7 +43,7 @@ namespace SharpPulsar.Impl
 			// If the message has a key, it supersedes the single partition routing policy
 			if (msg.HasKey())
 			{
-				return Util.MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), metadata.NumPartitions());
+				return MathUtils.SignSafeMod(Hash.MakeHash(msg.Key), metadata.NumPartitions());
 			}
 
 			return _partitionIndex;

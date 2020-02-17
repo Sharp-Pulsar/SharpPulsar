@@ -1,4 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Api;
+using System;
+using Moq;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,53 +21,34 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Api
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.eq;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.spy;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.times;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.verify;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-	using Test = org.testng.annotations.Test;
-
-	/// <summary>
+/// <summary>
 	/// Unit test of <seealso cref="MessageRouter"/>.
 	/// </summary>
 	public class MessageRouterTest
 	{
 
 		[Serializable]
-		public class TestMessageRouter : MessageRouter
+		public class TestMessageRouter : IMessageRouter
 		{
 
-			public override int ChoosePartition<T1>(Message<T1> Msg)
+			public int ChoosePartition<T1>(IMessage<T1> msg)
 			{
 				return 1234;
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @SuppressWarnings("deprecation") @Test public void testChoosePartition()
-		public virtual void TestChoosePartition()
+		[Fact]
+		public void TestChoosePartition()
 		{
-			MessageRouter Router = spy(new TestMessageRouter());
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: Message<?> mockedMsg = mock(Message.class);
-			Message<object> MockedMsg = mock(typeof(Message));
-			TopicMetadata MockedMetadata = mock(typeof(TopicMetadata));
+			var router = spy(new TestMessageRouter());
+			IMessage<object> mockedMsg = new Mock<IMessage<object>>().Object;
+			ITopicMetadata mockedMetadata = new Mock<ITopicMetadata>().Object;
 
-			assertEquals(1234, Router.choosePartition(MockedMsg));
-			assertEquals(1234, Router.choosePartition(MockedMsg, MockedMetadata));
+			assertEquals(1234, router.choosePartition(mockedMsg));
+			assertEquals(1234, router.choosePartition(mockedMsg, mockedMetadata));
 
-			verify(Router, times(2)).choosePartition(eq(MockedMsg));
+			Verify(router, times(2)).choosePartition(eq(mockedMsg));
 		}
 
 	}

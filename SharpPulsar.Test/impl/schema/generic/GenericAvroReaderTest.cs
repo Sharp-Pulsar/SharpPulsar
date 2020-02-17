@@ -16,19 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema.Generic
+namespace SharpPulsar.Test.Impl.schema.generic
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.assertEquals;
 
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Org.Apache.Pulsar.Client.Impl.Schema;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using FooV2 = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.FooV2;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
+using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
 //ORIGINAL LINE: @Slf4j public class GenericAvroReaderTest

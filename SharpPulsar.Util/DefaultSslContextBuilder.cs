@@ -1,4 +1,5 @@
 ﻿using DotNetty.Handlers.Tls;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -17,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Util
+namespace SharpPulsar.Utility
 {
 
 	public class DefaultSslContextBuilder : SslContextAutoRefreshBuilder<TlsHandler>
@@ -31,7 +32,7 @@ namespace SharpPulsar.Util
 		{
 			lock (this)
 			{
-				this.sslContext = SecurityUtility.CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.FileName, tlsCertificateFilePath.FileName, tlsKeyFilePath.FileName);
+				//this.sslContext = SecurityUtility.CreateSslContext(tlsAllowInsecureConnection, tlsTrustCertsFilePath.FileName, tlsCertificateFilePath.FileName, tlsKeyFilePath.FileName);
 				return this.sslContext;
 			}
 		}

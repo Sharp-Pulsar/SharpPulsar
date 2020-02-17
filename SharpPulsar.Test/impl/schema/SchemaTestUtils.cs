@@ -18,16 +18,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
-
-	using Data = lombok.Data;
-	using EqualsAndHashCode = lombok.EqualsAndHashCode;
-	using ToString = lombok.ToString;
-	using AvroDefault = org.apache.avro.reflect.AvroDefault;
-	using Nullable = org.apache.avro.reflect.Nullable;
-
-	/// <summary>
+    /// <summary>
 	/// Utils for testing avro.
 	/// </summary>
 	public class SchemaTestUtils

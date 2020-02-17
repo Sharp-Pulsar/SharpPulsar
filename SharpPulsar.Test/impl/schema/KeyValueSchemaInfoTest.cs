@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Impl.schema
 {
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.KEY_VALUE_SCHEMA_INFO_INCLUDE_PRIMITIVE;
@@ -34,20 +34,12 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.@internal.junit.ArrayAsserts.assertArrayEquals;
 
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api.Schema;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using DefaultImplementation = Org.Apache.Pulsar.Client.@internal.DefaultImplementation;
-	using Org.Apache.Pulsar.Common.Schema;
-	using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
+using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
+using KeyValueEncodingType = Org.Apache.Pulsar.Common.Schema.KeyValueEncodingType;
 	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-	using SchemaType = Org.Apache.Pulsar.Common.Schema.SchemaType;
-	using DataProvider = org.testng.annotations.DataProvider;
-	using Test = org.testng.annotations.Test;
 
-	/// <summary>
+/// <summary>
 	/// Unit test <seealso cref="KeyValueSchemaInfoTest"/>.
 	/// </summary>
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:

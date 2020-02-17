@@ -23,14 +23,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace SharpPulsar.Util.Atomic.Threading 
+using System;
+using System.Threading;
+using SharpPulsar.Utility.Atomic.Collections.Concurrent;
+
+namespace SharpPulsar.Utility.Atomic.Threading 
 {
-
-    using System;
-    using System.Threading;
-    using SharpPulsar.Util.Atomic.Collections.Concurrent;
-
-
     /// <summary>
     /// This delegate is used to handle exceptions that occur in the executor. 
     /// </summary>

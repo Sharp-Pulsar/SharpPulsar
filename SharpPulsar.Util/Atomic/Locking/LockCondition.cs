@@ -23,14 +23,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-using SharpPulsar.Util.Atomic.Collections;
+using System.Collections.Generic;
+using SharpPulsar.Utility.Atomic.Collections;
+using SharpPulsar.Utility.Atomic.Util;
 
-namespace SharpPulsar.Util.Atomic.Locking 
+namespace SharpPulsar.Utility.Atomic.Locking 
 {
-    using System.Collections.Generic;
-    using SharpPulsar.Util.Atomic.Util;
-
-
     /// <summary>
     /// The default <c>ICondition</c> implementation for use with <c>CSharp.Locking.ReentrantLock</c>. 
     /// It allows specific conditions to wait and signal, while being intrinsic to the root lock.
