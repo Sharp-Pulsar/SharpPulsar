@@ -103,31 +103,6 @@ namespace SharpPulsar.Impl.Schema
 			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
 
-		public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema<T> GetSchema(SchemaInfo schemaInfo)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema<sbyte[]> AutoProduceBytes()
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema<IGenericRecord> AutoConsume()
-		{
-			throw new NotImplementedException();
-		}
-
 		public override ISchema<IGenericRecord> Auto()
 		{
 			throw new NotImplementedException();

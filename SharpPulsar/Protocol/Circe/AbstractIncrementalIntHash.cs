@@ -62,7 +62,7 @@ namespace SharpPulsar.Protocol.Circe
 			return Resume(Initial(), input, index, length);
 		}
 
-		public int Calculate(ByteBuffer input)
+		public int Calculate(IByteBuffer input)
 		{
 			return Resume(Initial(), input);
 		}

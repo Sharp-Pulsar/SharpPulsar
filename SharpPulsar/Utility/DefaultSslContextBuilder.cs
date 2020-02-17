@@ -18,6 +18,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using DotNetty.Handlers.Tls;
+
 namespace SharpPulsar.Utility
 {
 
@@ -37,15 +40,9 @@ namespace SharpPulsar.Utility
 			}
 		}
 
-		protected internal override TlsHandler SslContext
-		{
-			get
-			{
-				return this.sslContext;
-			}
-		}
+		protected internal override TlsHandler SslContext => this.sslContext;
 
-		//protected internal override TlsHandler SslContext => throw new System.NotImplementedException();
+        //protected internal override TlsHandler SslContext => throw new System.NotImplementedException();
 	}
 
 }

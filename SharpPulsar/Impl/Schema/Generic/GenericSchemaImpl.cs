@@ -37,9 +37,6 @@ namespace SharpPulsar.Impl.Schema.Generic
 	public abstract class GenericSchemaImpl : StructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
 	{
 		public abstract IGenericRecordBuilder NewRecordBuilder();
-		public abstract override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T>(ISchema<T> schema);
-		public abstract override ISchema<sbyte[]> AutoProduceBytes();
-		public abstract override ISchema<IGenericRecord> AutoConsume();
 		public abstract override ISchema<IGenericRecord> Auto();
 		
         public abstract ISchema<T> Json<T>(T pojo);

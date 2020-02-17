@@ -1,24 +1,4 @@
-﻿using DotNetty.Buffers;
-using Google.Protobuf;
-using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Security;
-using SharpPulsar.Protocol.Proto;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Org.BouncyCastle.Crypto;
-using SharpPulsar.Api;
-using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
-using SharpPulsar.Shared;
-using System.Security.Cryptography;
-using Org.BouncyCastle.Crypto.Modes;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Crypto.Digests;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
-
+﻿
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -37,9 +17,24 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using Avro.Generic;
+using crypto;
+using Google.Protobuf;
+using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Security;
+using SharpPulsar.Protocol.Proto;
+
 namespace SharpPulsar.Impl
 {
-	/*using CacheBuilder = com.google.common.cache.CacheBuilder;
+	//https://pulsar.apache.org/docs/en/security-encryption/
+	using CacheBuilder = com.google.common.cache.CacheBuilder;
 	using CacheLoader = com.google.common.cache.CacheLoader;
 	using LoadingCache = com.google.common.cache.LoadingCache;
 
@@ -47,8 +42,15 @@ namespace SharpPulsar.Impl
 
 
 
-	using CryptoKeyReader = SharpPulsar.Api.CryptoKeyReader;
-	using EncryptionKeyInfo = SharpPulsar.Api.EncryptionKeyInfo;
+	using CryptoKeyReader = Org.Apache.Pulsar.Client.Api.CryptoKeyReader;
+	using EncryptionKeyInfo = Org.Apache.Pulsar.Client.Api.EncryptionKeyInfo;
+	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
+	using CryptoException = Org.Apache.Pulsar.Client.Api.PulsarClientException.CryptoException;
+	using PulsarByteBufAllocator = Org.Apache.Pulsar.Common.Allocator.PulsarByteBufAllocator;
+	using EncryptionKeys = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.EncryptionKeys;
+	using KeyValue = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.KeyValue;
+	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
+	using ByteString = Org.Apache.Pulsar.shaded.com.google.protobuf.v241.ByteString;
 	using ASN1ObjectIdentifier = org.bouncycastle.asn1.ASN1ObjectIdentifier;
 	using PrivateKeyInfo = org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 	using SubjectPublicKeyInfo = org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -56,150 +58,258 @@ namespace SharpPulsar.Impl
 	using X9ECParameters = org.bouncycastle.asn1.x9.X9ECParameters;
 	using BCECPrivateKey = org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 	using BCECPublicKey = org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
-	//using BouncyCastleProvider = org.bouncycastle.jce.provider.BouncyCastleProvider;
+	using BouncyCastleProvider = org.bouncycastle.jce.provider.BouncyCastleProvider;
 	using ECParameterSpec = org.bouncycastle.jce.spec.ECParameterSpec;
 	using ECPrivateKeySpec = org.bouncycastle.jce.spec.ECPrivateKeySpec;
 	using ECPublicKeySpec = org.bouncycastle.jce.spec.ECPublicKeySpec;
 	using PEMException = org.bouncycastle.openssl.PEMException;
 	using PEMKeyPair = org.bouncycastle.openssl.PEMKeyPair;
 	using PEMParser = org.bouncycastle.openssl.PEMParser;
-	using JcaPEMKeyConverter = org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;*/
+	using JcaPEMKeyConverter = org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+	
 
 	public class MessageCrypto
 	{
 
-		private const string Ecdsa = "ECDSA";
-		private const string Rsa = "RSA";
-		private const string Ecies = "ECIES";
+		private const string ECDSA = "ECDSA";
+		private const string RSA = "RSA";
+		private const string ECIES = "ECIES";
 
 		// Ideally the transformation should also be part of the message property. This will prevent client
 		// from assuming hardcoded value. However, it will increase the size of the message even further.
 		private const string RsaTrans = "RSA/NONE/OAEPWithSHA1AndMGF1Padding";
-		private const string Aesgcm = "AES/GCM/NoPadding";
+		private const string AESGCM = "AES/GCM/NoPadding";
 
-		private static CipherKeyGenerator _keyGenerator;
+		private static KeyGenerator keyGenerator;
 		private const int TagLen = 16 * 8;
 		public const int IvLen = 12;
-		private sbyte[] _iv = new sbyte[IvLen];
-		private GcmBlockCipher _cipher;
-		internal MD5Digest Digest;
-		private string _logCtx;
+		private sbyte[] iv = new sbyte[IvLen];
+		private Cipher cipher;
+		internal MessageDigest Digest;
+		private string logCtx;
 
 		// Data key which is used to encrypt message
-		private byte[] _dataKey;
-		//private LoadingCache<ByteBuffer, SecretKey> dataKeyCache;
+		private SecretKey dataKey;
+		private LoadingCache<ByteBuffer, SecretKey> dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
-		private ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
+		private ConcurrentDictionary<string, EncryptionKeyInfo> encryptedDataKeyMap;
 
 		internal static readonly SecureRandom SecureRandom;
 		static MessageCrypto()
 		{
-			SecureRandom rand = null;
+
+			Security.addProvider(new BouncyCastleProvider());
+			SecureRandom Rand = null;
 			try
 			{
-				rand = SecureRandom.GetInstance("NativePRNGNonBlocking");
+				Rand = SecureRandom.getInstance("NativePRNGNonBlocking");
 			}
 			catch (NoSuchAlgorithmException)
 			{
-				rand = new SecureRandom();
+				Rand = new SecureRandom();
 			}
 
-			SecureRandom = rand;
+			SecureRandom = Rand;
 
 			// Initial seed
-			SecureRandom.NextBytes(new byte[IvLen]);
+			SecureRandom.NextBytes(new sbyte[IvLen]);
 		}
 
-		public MessageCrypto(string logCtx, bool keyGenNeeded)
+		public MessageCrypto(string LogCtx, bool KeyGenNeeded)
 		{
 
-			_logCtx = logCtx;
-			_encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
-			//dataKeyCache = CacheBuilder.newBuilder().expireAfterAccess(4, BAMCIS.Util.Concurrent.TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
+			this.logCtx = LogCtx;
+			encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
+			dataKeyCache = CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
 
 			try
 			{
 
-				_cipher = new GcmBlockCipher(new AesEngine());
+				cipher = Cipher.getInstance(AESGCM, BouncyCastleProvider.PROVIDER_NAME);
 				// If keygen is not needed(e.g: consumer), data key will be decrypted from the message
-				if (!keyGenNeeded)
+				if (!KeyGenNeeded)
 				{
 
-					Digest = new MD5Digest();
+					Digest = MessageDigest.getInstance("MD5");
 
-					_dataKey = null;
+					dataKey = null;
 					return;
 				}
-				_keyGenerator = new CipherKeyGenerator();//.GetInstance("AES");
-				/*int AesKeyLength = Cipher.GetMaxAllowedKeyLength("AES");
+				keyGenerator = KeyGenerator.getInstance("AES");
+				int AesKeyLength = Cipher.getMaxAllowedKeyLength("AES");
 				if (AesKeyLength <= 128)
 				{
-					log.LogWarning("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", LogCtx, AesKeyLength);
-					keyGenerator.Init(new KeyGenerationParameters(SecureRandom, AesKeyLength));
+					log.warn("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", LogCtx, AesKeyLength);
+					keyGenerator.init(AesKeyLength, SecureRandom);
 				}
 				else
 				{
-					keyGenerator.Init(new KeyGenerationParameters(SecureRandom, 256));
-				}*/
-				_keyGenerator.Init(new KeyGenerationParameters(SecureRandom, 256));
+					keyGenerator.init(256, SecureRandom);
+				}
 
 			}
-			catch (System.Exception e) 
+			catch (Exception e) when (e is NoSuchAlgorithmException || e is NoSuchProviderException || e is NoSuchPaddingException)
 			{
 
-				_cipher = null;
-				Log.LogError("{} MessageCrypto initialization Failed {}", logCtx, e.Message);
+				cipher = null;
+				log.error("{} MessageCrypto initialization Failed {}", LogCtx, e.Message);
 
 			}
 
 			// Generate data key to encrypt messages
-			_dataKey = _keyGenerator.GenerateKey();
+			dataKey = keyGenerator.generateKey();
 
-			_iv = new sbyte[IvLen];
+			iv = new sbyte[IvLen];
 		}
 
-		
-		private AsymmetricKeyParameter LoadPublicKey(sbyte[] keyBytes)
+		public class CacheLoaderAnonymousInnerClass : CacheLoader<ByteBuffer, SecretKey>
 		{
+			private readonly MessageCrypto outerInstance;
 
-			var keyReader = new StringReader(StringHelper.NewString(keyBytes));
-			try
+			public CacheLoaderAnonymousInnerClass(MessageCrypto OuterInstance)
 			{
-				var pemReader = new PemReader(keyReader);
-				var pemObj = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-				if (pemObj != null)
-				{
-					return pemObj.Public;
-				}
-				else
-					throw new ArgumentException("Unknown key type");
+				this.outerInstance = OuterInstance;
 			}
-			catch (IOException e)
+
+
+			public override SecretKey load(ByteBuffer Key)
 			{
-				throw new System.Exception(e.Message, e);
+				return null;
 			}
+
 		}
-		
-		private AsymmetricKeyParameter LoadPrivateKey(sbyte[] keyBytes)
+
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: private java.security.PublicKey loadPublicKey(byte[] keyBytes) throws Exception
+		private PublicKey LoadPublicKey(sbyte[] KeyBytes)
 		{
 
-			var keyReader = new StringReader(StringHelper.NewString(keyBytes));
+			Reader<> KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
+			PublicKey PublicKey = null;
 			try
 			{
-				var pemReader = new PemReader(keyReader);
-				var pemObj = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-				if(pemObj != null)
+				using (PEMParser PemReader = new PEMParser(KeyReader))
 				{
-					return pemObj.Private;
+					object PemObj = PemReader.readObject();
+					JcaPEMKeyConverter PemConverter = new JcaPEMKeyConverter();
+					SubjectPublicKeyInfo KeyInfo = null;
+					X9ECParameters EcParam = null;
+
+					if (PemObj is ASN1ObjectIdentifier)
+					{
+
+						// make sure this is EC Parameter we're handling. In which case
+						// we'll store it and read the next object which should be our
+						// EC Public Key
+
+						ASN1ObjectIdentifier EcOID = (ASN1ObjectIdentifier)PemObj;
+						EcParam = ECNamedCurveTable.getByOID(EcOID);
+						if (EcParam == null)
+						{
+							throw new PEMException("Unable to find EC Parameter for the given curve oid: " + ((ASN1ObjectIdentifier)PemObj).Id);
+						}
+
+						PemObj = PemReader.readObject();
+					}
+					else if (PemObj is X9ECParameters)
+					{
+						EcParam = (X9ECParameters)PemObj;
+						PemObj = PemReader.readObject();
+					}
+
+					if (PemObj is org.bouncycastle.cert.X509CertificateHolder)
+					{
+						KeyInfo = ((org.bouncycastle.cert.X509CertificateHolder)PemObj).SubjectPublicKeyInfo;
+					}
+					else
+					{
+						KeyInfo = (SubjectPublicKeyInfo)PemObj;
+					}
+					PublicKey = PemConverter.getPublicKey(KeyInfo);
+
+					if (EcParam != null && ECDSA.Equals(PublicKey.Algorithm))
+					{
+						ECParameterSpec EcSpec = new ECParameterSpec(EcParam.Curve, EcParam.G, EcParam.N, EcParam.H, EcParam.Seed);
+						KeyFactory KeyFactory = KeyFactory.getInstance(ECDSA, BouncyCastleProvider.PROVIDER_NAME);
+						ECPublicKeySpec KeySpec = new ECPublicKeySpec(((BCECPublicKey)PublicKey).Q, EcSpec);
+						PublicKey = (PublicKey)KeyFactory.generatePublic(KeySpec);
+					}
 				}
-				else
-					throw new ArgumentException("Unknown key type");
 			}
-			catch (IOException e)
+			catch (Exception e) when (e is IOException || e is NoSuchAlgorithmException || e is NoSuchProviderException || e is InvalidKeySpecException)
 			{
-				throw new System.Exception(e.Message, e);
+				throw new Exception(e);
 			}
+			return PublicKey;
+		}
+
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: private java.security.PrivateKey loadPrivateKey(byte[] keyBytes) throws Exception
+		private PrivateKey LoadPrivateKey(sbyte[] KeyBytes)
+		{
+
+			Reader KeyReader = new StringReader(StringHelper.NewString(KeyBytes));
+			PrivateKey PrivateKey = null;
+			try
+			{
+				using (PEMParser PemReader = new PEMParser(KeyReader))
+				{
+					X9ECParameters EcParam = null;
+
+					object PemObj = PemReader.readObject();
+
+					if (PemObj is ASN1ObjectIdentifier)
+					{
+
+						// make sure this is EC Parameter we're handling. In which case
+						// we'll store it and read the next object which should be our
+						// EC Private Key
+
+						ASN1ObjectIdentifier EcOID = (ASN1ObjectIdentifier)PemObj;
+						EcParam = ECNamedCurveTable.getByOID(EcOID);
+						if (EcParam == null)
+						{
+							throw new PEMException("Unable to find EC Parameter for the given curve oid: " + EcOID.Id);
+						}
+
+						PemObj = PemReader.readObject();
+
+					}
+					else if (PemObj is X9ECParameters)
+					{
+
+						EcParam = (X9ECParameters)PemObj;
+						PemObj = PemReader.readObject();
+					}
+
+					if (PemObj is PEMKeyPair)
+					{
+
+						PrivateKeyInfo PKeyInfo = ((PEMKeyPair)PemObj).PrivateKeyInfo;
+						JcaPEMKeyConverter PemConverter = new JcaPEMKeyConverter();
+						PrivateKey = PemConverter.getPrivateKey(PKeyInfo);
+
+					}
+
+					// if our private key is EC type and we have parameters specified
+					// then we need to set it accordingly
+
+					if (EcParam != null && ECDSA.Equals(PrivateKey.Algorithm))
+					{
+						ECParameterSpec EcSpec = new ECParameterSpec(EcParam.Curve, EcParam.G, EcParam.N, EcParam.H, EcParam.Seed);
+						KeyFactory KeyFactory = KeyFactory.getInstance(ECDSA, BouncyCastleProvider.PROVIDER_NAME);
+						ECPrivateKeySpec KeySpec = new ECPrivateKeySpec(((BCECPrivateKey)PrivateKey).S, EcSpec);
+						PrivateKey = (PrivateKey)KeyFactory.generatePrivate(KeySpec);
+					}
+
+				}
+			}
+			catch (IOException E)
+			{
+				throw new Exception(E);
+			}
+			return PrivateKey;
 		}
 
 		/*
@@ -212,62 +322,81 @@ namespace SharpPulsar.Impl
 		 * @param keyReader Implementation to read the key values
 		 *
 		 */
-		public virtual void AddPublicKeyCipher(ISet<string> keyNames, ICryptoKeyReader keyReader)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: public synchronized void addPublicKeyCipher(java.util.Set<String> keyNames, org.apache.pulsar.client.api.CryptoKeyReader keyReader) throws org.apache.pulsar.client.api.PulsarClientException.CryptoException
+		public virtual void AddPublicKeyCipher(ISet<string> KeyNames, CryptoKeyReader KeyReader)
 		{
 			lock (this)
 			{
-        
+
 				// Generate data key
-				_dataKey = _keyGenerator.GenerateKey();
-        
-				foreach (var key in keyNames)
+				dataKey = keyGenerator.generateKey();
+
+				foreach (string Key in KeyNames)
 				{
-					AddPublicKeyCipher(key, keyReader);
+					AddPublicKeyCipher(Key, KeyReader);
 				}
 			}
 		}
 
-		private void AddPublicKeyCipher(string keyName, ICryptoKeyReader keyReader)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: private void addPublicKeyCipher(String keyName, org.apache.pulsar.client.api.CryptoKeyReader keyReader) throws org.apache.pulsar.client.api.PulsarClientException.CryptoException
+		private void AddPublicKeyCipher(string KeyName, CryptoKeyReader KeyReader)
 		{
 
-			if (string.ReferenceEquals(keyName, null) || keyReader == null)
+			if (string.ReferenceEquals(KeyName, null) || KeyReader == null)
 			{
 				throw new PulsarClientException.CryptoException("Keyname or KeyReader is null");
 			}
 
 			// Read the public key and its info using callback
-			var keyInfo = keyReader.GetPublicKey(keyName, null);
+			EncryptionKeyInfo KeyInfo = KeyReader.getPublicKey(KeyName, null);
 
-			AsymmetricKeyParameter pubKey;
-
-			try
-			{
-				pubKey = LoadPublicKey(keyInfo.Key);
-			}
-			catch (System.Exception e)
-			{
-				var msg = _logCtx + "Failed to load public key " + keyName + ". " + e.Message;
-				Log.LogError(msg);
-				throw new PulsarClientException.CryptoException(msg);
-			}
-			
-			sbyte[] encryptedKey;
+			PublicKey PubKey;
 
 			try
 			{
+				PubKey = LoadPublicKey(KeyInfo.Key);
+			}
+			catch (Exception E)
+			{
+				string Msg = logCtx + "Failed to load public key " + KeyName + ". " + E.Message;
+				log.error(Msg);
+				throw new PulsarClientException.CryptoException(Msg);
+			}
+
+			Cipher DataKeyCipher = null;
+			sbyte[] EncryptedKey;
+
+			try
+			{
+
 				// Encrypt data key using public key
-				
-				//cipher.i.init(Cipher.ENCRYPT_MODE, PubKey);
-				encryptedKey = (sbyte[])(object)_cipher.DoFinal(_dataKey, _dataKey.Length);
+				if (RSA.Equals(PubKey.Algorithm))
+				{
+					DataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
+				}
+				else if (ECDSA.Equals(PubKey.Algorithm))
+				{
+					DataKeyCipher = Cipher.getInstance(ECIES, BouncyCastleProvider.PROVIDER_NAME);
+				}
+				else
+				{
+					string Msg = logCtx + "Unsupported key type " + PubKey.Algorithm + " for key " + KeyName;
+					log.error(Msg);
+					throw new PulsarClientException.CryptoException(Msg);
+				}
+				DataKeyCipher.init(Cipher.ENCRYPT_MODE, PubKey);
+				EncryptedKey = DataKeyCipher.doFinal(dataKey.Encoded);
 
 			}
-			catch (System.Exception e)
+			catch (Exception E) when (E is IllegalBlockSizeException || E is BadPaddingException || E is NoSuchAlgorithmException || E is NoSuchProviderException || E is NoSuchPaddingException || E is InvalidKeyException)
 			{
-				Log.LogError("{} Failed to encrypt data key {}. {}", _logCtx, keyName, e.Message);
-				throw new PulsarClientException.CryptoException(e.Message);
+				log.error("{} Failed to encrypt data key {}. {}", logCtx, KeyName, E.Message);
+				throw new PulsarClientException.CryptoException(E.Message);
 			}
-			var eki = new EncryptionKeyInfo(encryptedKey, keyInfo.Metadata);
-			_encryptedDataKeyMap[keyName] = eki;
+			EncryptionKeyInfo Eki = new EncryptionKeyInfo(EncryptedKey, KeyInfo.Metadata);
+			encryptedDataKeyMap[KeyName] = Eki;
 		}
 
 		/*
@@ -279,14 +408,14 @@ namespace SharpPulsar.Impl
 		 */
 		/*
 		 */
-		public virtual bool RemoveKeyCipher(string keyName)
+		public virtual bool RemoveKeyCipher(string KeyName)
 		{
 
-			if (string.ReferenceEquals(keyName, null))
+			if (string.ReferenceEquals(KeyName, null))
 			{
 				return false;
 			}
-			_encryptedDataKeyMap.Remove(keyName, out var d);
+			encryptedDataKeyMap.Remove(KeyName);
 			return true;
 		}
 
@@ -301,215 +430,216 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return encryptedData if success
 		 */
-		public virtual IByteBuffer Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata.Builder msgMetadata, IByteBuffer payload)
+		//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		//ORIGINAL LINE: public synchronized io.netty.buffer.ByteBuf encrypt(java.util.Set<String> encKeys, org.apache.pulsar.client.api.CryptoKeyReader keyReader, org.apache.pulsar.common.api.proto.PulsarApi.MessageMetadata.Builder msgMetadata, io.netty.buffer.ByteBuf payload) throws org.apache.pulsar.client.api.PulsarClientException
+		public virtual ByteBuf Encrypt(ISet<string> EncKeys, CryptoKeyReader KeyReader, MessageMetadata.Builder MsgMetadata, ByteBuf Payload)
 		{
 			lock (this)
 			{
-        
-				if (encKeys.Count == 0)
+
+				if (EncKeys.Count == 0)
 				{
-					return payload;
+					return Payload;
 				}
-        
+
 				// Update message metadata with encrypted data key
-				foreach (var keyName in encKeys)
+				foreach (string KeyName in EncKeys)
 				{
-					if (_encryptedDataKeyMap[keyName] == null)
+					if (encryptedDataKeyMap[KeyName] == null)
 					{
 						// Attempt to load the key. This will allow us to load keys as soon as
 						// a new key is added to producer config
-						AddPublicKeyCipher(keyName, keyReader);
+						AddPublicKeyCipher(KeyName, KeyReader);
 					}
-					var keyInfo = _encryptedDataKeyMap[keyName];
-					if (keyInfo != null)
+					EncryptionKeyInfo KeyInfo = encryptedDataKeyMap[KeyName];
+					if (KeyInfo != null)
 					{
-						if (keyInfo.Metadata != null && keyInfo.Metadata.Count > 0)
+						if (KeyInfo.Metadata != null && KeyInfo.Metadata.Count > 0)
 						{
-							IList<KeyValue> kvList = new List<KeyValue>();
-							keyInfo.Metadata.ToList().ForEach(x =>
+							IList<KeyValue> KvList = new List<KeyValue>();
+							KeyInfo.Metadata.forEach((key, value) =>
 							{
-								kvList.Add(KeyValue.NewBuilder().SetKey(x.Key).SetValue(x.Value).Build());
+								KvList.Add(KeyValue.newBuilder().setKey(key).setValue(value).build());
 							});
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue(ByteString.CopyFrom((byte[])(object)keyInfo.Key)).AddAllMetadata(kvList).Build());
+							MsgMetadata.addEncryptionKeys(EncryptionKeys.newBuilder().setKey(KeyName).setValue(ByteString.copyFrom(KeyInfo.Key)).addAllMetadata(KvList).build());
 						}
 						else
 						{
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue(ByteString.CopyFrom((byte[])(object)keyInfo.Key)).Build());
+							MsgMetadata.addEncryptionKeys(EncryptionKeys.newBuilder().setKey(KeyName).setValue(ByteString.copyFrom(KeyInfo.Key)).build());
 						}
 					}
 					else
 					{
 						// We should never reach here.
-						Log.LogError("{} Failed to find encrypted Data key for key {}.", _logCtx, keyName);
+						log.error("{} Failed to find encrypted Data key for key {}.", logCtx, KeyName);
 					}
-        
+
 				}
 
 				// Create gcm param
 				// TODO: Replace random with counter and periodic refreshing based on timer/counter value
-				var iV = (byte[])(object)_iv;
-				SecureRandom.NextBytes(iV, 0, iV.Length);
-				var gcmParam = new AeadParameters(new KeyParameter(_dataKey), TagLen, iV);
-        
+				SecureRandom.NextBytes(iv);
+				GCMParameterSpec GcmParam = new GCMParameterSpec(TagLen, iv);
+
 				// Update message metadata with encryption param
-				msgMetadata.SetEncryptionParam(ByteString.CopyFrom(iV));
-        
-				IByteBuffer targetBuf = null;
+				MsgMetadata.EncryptionParam = ByteString.copyFrom(iv);
+
+				ByteBuf TargetBuf = null;
 				try
 				{
 					// Encrypt the data
-					_cipher.Init(true, gcmParam);
-        
-					var sourceNioBuf = payload.GetIoBuffer(payload.ReaderIndex, payload.ReadableBytes);
-        
-					var maxLength = _cipher.GetOutputSize(payload.ReadableBytes);
-					targetBuf = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
-					var targetNioBuf = targetBuf.GetIoBuffer(0, maxLength);
-        
-					var bytesStored = _cipher.DoFinal(sourceNioBuf.ToArray(), targetNioBuf.ToArray().Length);
-					targetBuf.SetWriterIndex(bytesStored);
-        
+					cipher.init(Cipher.ENCRYPT_MODE, dataKey, GcmParam);
+
+					ByteBuffer SourceNioBuf = Payload.nioBuffer(Payload.readerIndex(), Payload.readableBytes());
+
+					int MaxLength = cipher.getOutputSize(Payload.readableBytes());
+					TargetBuf = PulsarByteBufAllocator.DEFAULT.buffer(MaxLength, MaxLength);
+					ByteBuffer TargetNioBuf = TargetBuf.nioBuffer(0, MaxLength);
+
+					int BytesStored = cipher.doFinal(SourceNioBuf, TargetNioBuf);
+					TargetBuf.writerIndex(BytesStored);
+
 				}
-				catch (System.Exception e) 
+				catch (Exception e) when (e is IllegalBlockSizeException || e is BadPaddingException || e is InvalidKeyException || e is InvalidAlgorithmParameterException || e is ShortBufferException)
 				{
-                    targetBuf?.Release();
-                    Log.LogError("{} Failed to encrypt message. {}", _logCtx, e);
+
+					TargetBuf.release();
+					log.error("{} Failed to encrypt message. {}", logCtx, e);
 					throw new PulsarClientException.CryptoException(e.Message);
-        
+
 				}
-        
-				payload.Release();
-				return targetBuf;
+
+				Payload.release();
+				return TargetBuf;
 			}
 		}
 
-		private bool DecryptDataKey(string keyName, sbyte[] encryptedDataKey, IList<KeyValue> encKeyMeta, ICryptoKeyReader keyReader)
+		private bool DecryptDataKey(string KeyName, sbyte[] EncryptedDataKey, IList<KeyValue> EncKeyMeta, CryptoKeyReader KeyReader)
 		{
 
-			IDictionary<string, string> keyMeta = new Dictionary<string, string>();
-			encKeyMeta.ToList().ForEach(kv =>
+			IDictionary<string, string> KeyMeta = new Dictionary<string, string>();
+			EncKeyMeta.ForEach(kv =>
 			{
-				keyMeta[kv.Key] = kv.Value;
+				KeyMeta[kv.Key] = kv.Value;
 			});
 
 			// Read the private key info using callback
-			var keyInfo = keyReader.GetPrivateKey(keyName, keyMeta);
+			EncryptionKeyInfo KeyInfo = KeyReader.getPrivateKey(KeyName, KeyMeta);
 
 			// Convert key from byte to PivateKey
-			AsymmetricAlgorithm privateKey;
+			PrivateKey PrivateKey;
 			try
 			{
-				privateKey = LoadPrivateKey(keyInfo.Key);
-				if (privateKey == null)
+				PrivateKey = LoadPrivateKey(KeyInfo.Key);
+				if (PrivateKey == null)
 				{
-					Log.LogError("{} Failed to load private key {}.", _logCtx, keyName);
+					log.error("{} Failed to load private key {}.", logCtx, KeyName);
 					return false;
 				}
 			}
-			catch (System.Exception e)
+			catch (Exception E)
 			{
-				Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
+				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, KeyName, E.Message);
 				return false;
 			}
 
 			// Decrypt data key to decrypt messages
-            IAsymmetricBlockCipher dataKeyCipher = null;
-			sbyte[] dataKeyValue = null;
-			sbyte[] keyDigest = null;
+			Cipher DataKeyCipher = null;
+			sbyte[] DataKeyValue = null;
+			sbyte[] KeyDigest = null;
 
 			try
 			{
 
 				// Decrypt data key using private key
-				if (Rsa.Equals(privateKey.KeyExchangeAlgorithm))
-                {
-					//dataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
-                    dataKeyCipher = new RsaEngine();
-                }
-				else if (Ecdsa.Equals(privateKey.KeyExchangeAlgorithm))
+				if (RSA.Equals(PrivateKey.Algorithm))
 				{
-					dataKeyCipher = ecdaengine();
+					DataKeyCipher = Cipher.getInstance(RsaTrans, BouncyCastleProvider.PROVIDER_NAME);
+				}
+				else if (ECDSA.Equals(PrivateKey.Algorithm))
+				{
+					DataKeyCipher = Cipher.getInstance(ECIES, BouncyCastleProvider.PROVIDER_NAME);
 				}
 				else
 				{
-					Log.LogError("Unsupported key type {} for key {}.", privateKey.KeyExchangeAlgorithm, keyName);
+					log.error("Unsupported key type {} for key {}.", PrivateKey.Algorithm, KeyName);
 					return false;
 				}
-				dataKeyCipher.Init(Cipher.DECRYPT_MODE, privateKey);
-				dataKeyValue = dataKeyCipher.DoFinal(encryptedDataKey);
+				DataKeyCipher.init(Cipher.DECRYPT_MODE, PrivateKey);
+				DataKeyValue = DataKeyCipher.doFinal(EncryptedDataKey);
 
-				keyDigest = Digest.Digest(encryptedDataKey);
+				KeyDigest = Digest.digest(EncryptedDataKey);
 
 			}
-			catch (System.Exception e) 
+			catch (Exception E) when (E is IllegalBlockSizeException || E is BadPaddingException || E is NoSuchAlgorithmException || E is NoSuchProviderException || E is NoSuchPaddingException || E is InvalidKeyException)
 			{
-				Log.error("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
+				log.error("{} Failed to decrypt data key {} to decrypt messages {}", logCtx, KeyName, E.Message);
 				return false;
 			}
-			_dataKey = new SecretKeySpec(dataKeyValue, "AES");
-			dataKeyCache.put(ByteBuffer.Wrap(keyDigest), _dataKey);
+			dataKey = new SecretKeySpec(DataKeyValue, "AES");
+			dataKeyCache.put(ByteBuffer.wrap(KeyDigest), dataKey);
 			return true;
 		}
 
-		private IByteBuffer DecryptData(SecretKey dataKeySecret, MessageMetadata msgMetadata, IByteBuffer payload)
+		private ByteBuf DecryptData(SecretKey DataKeySecret, MessageMetadata MsgMetadata, ByteBuf Payload)
 		{
 
 			// unpack iv and encrypted data
-			var ivString = msgMetadata.EncryptionParam;
-			ivString.copyTo(_iv, 0);
+			ByteString IvString = MsgMetadata.EncryptionParam;
+			IvString.copyTo(iv, 0);
 
-			GCMParameterSpec gcmParams = new GCMParameterSpec(TagLen, _iv);
-			IByteBuffer targetBuf = null;
+			GCMParameterSpec GcmParams = new GCMParameterSpec(TagLen, iv);
+			ByteBuf TargetBuf = null;
 			try
 			{
-				_cipher.init(Cipher.DECRYPT_MODE, dataKeySecret, gcmParams);
+				cipher.init(Cipher.DECRYPT_MODE, DataKeySecret, GcmParams);
 
-				var sourceNioBuf = payload.GetIoBuffer(payload.ReaderIndex, payload.ReadableBytes);
+				ByteBuffer SourceNioBuf = Payload.nioBuffer(Payload.readerIndex(), Payload.readableBytes());
 
-				int maxLength = _cipher.getOutputSize(payload.ReadableBytes);
-				targetBuf = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
-				var targetNioBuf = targetBuf.GetIoBuffer(0, maxLength);
+				int MaxLength = cipher.getOutputSize(Payload.readableBytes());
+				TargetBuf = PulsarByteBufAllocator.DEFAULT.buffer(MaxLength, MaxLength);
+				ByteBuffer TargetNioBuf = TargetBuf.nioBuffer(0, MaxLength);
 
-				int decryptedSize = _cipher.doFinal(sourceNioBuf, targetNioBuf);
-				targetBuf.SetWriterIndex(decryptedSize);
+				int DecryptedSize = cipher.doFinal(SourceNioBuf, TargetNioBuf);
+				TargetBuf.writerIndex(DecryptedSize);
 
 			}
 			catch (Exception e) when (e is InvalidKeyException || e is InvalidAlgorithmParameterException || e is IllegalBlockSizeException || e is BadPaddingException || e is ShortBufferException)
 			{
-				Log.error("{} Failed to decrypt message {}", _logCtx, e.Message);
-				if (targetBuf != null)
+				log.error("{} Failed to decrypt message {}", logCtx, e.Message);
+				if (TargetBuf != null)
 				{
-					targetBuf.release();
-					targetBuf = null;
+					TargetBuf.release();
+					TargetBuf = null;
 				}
 			}
 
-			return targetBuf;
+			return TargetBuf;
 		}
 
-		private IByteBuffer GetKeyAndDecryptData(MessageMetadata msgMetadata, IByteBuffer payload)
+		private ByteBuf GetKeyAndDecryptData(MessageMetadata MsgMetadata, ByteBuf Payload)
 		{
 
-			IByteBuffer decryptedData = null;
+			ByteBuf DecryptedData = null;
 
-			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
+			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
 
 			// Go through all keys to retrieve data key from cache
-			for (var i = 0; i < encKeys.Count; i++)
+			for (int I = 0; I < EncKeys.Count; I++)
 			{
 
-				var msgDataKey = (sbyte[])(object)encKeys[i].Value.ToByteArray();
-				sbyte[] keyDigest = Digest.Update(msgDataKey);
-				SecretKey storedSecretKey = dataKeyCache.getIfPresent(ByteBuffer.Wrap(keyDigest));
-				if (storedSecretKey != null)
+				sbyte[] MsgDataKey = EncKeys[I].Value.toByteArray();
+				sbyte[] KeyDigest = Digest.digest(MsgDataKey);
+				SecretKey StoredSecretKey = dataKeyCache.getIfPresent(ByteBuffer.wrap(KeyDigest));
+				if (StoredSecretKey != null)
 				{
 
 					// Taking a small performance hit here if the hash collides. When it
 					// retruns a different key, decryption fails. At this point, we would
 					// call decryptDataKey to refresh the cache and come here again to decrypt.
-					decryptedData = DecryptData(storedSecretKey, msgMetadata, payload);
+					DecryptedData = DecryptData(StoredSecretKey, MsgMetadata, Payload);
 					// If decryption succeeded, data is non null
-					if (decryptedData != null)
+					if (DecryptedData != null)
 					{
 						break;
 					}
@@ -517,11 +647,11 @@ namespace SharpPulsar.Impl
 				else
 				{
 					// First time, entry won't be present in cache
-					Log.LogDebug("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", _logCtx);
+					log.debug("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", logCtx);
 				}
 
 			}
-			return decryptedData;
+			return DecryptedData;
 
 		}
 
@@ -536,41 +666,42 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return decryptedData if success, null otherwise
 		 */
-		public virtual IByteBuffer Decrypt(MessageMetadata msgMetadata, IByteBuffer payload, ICryptoKeyReader keyReader)
+		public virtual ByteBuf Decrypt(MessageMetadata MsgMetadata, ByteBuf Payload, CryptoKeyReader KeyReader)
 		{
 
 			// If dataKey is present, attempt to decrypt using the existing key
-			if (_dataKey != null)
+			if (dataKey != null)
 			{
-				var decryptedData = GetKeyAndDecryptData(msgMetadata, payload);
+				ByteBuf DecryptedData = GetKeyAndDecryptData(MsgMetadata, Payload);
 				// If decryption succeeded, data is non null
-				if (decryptedData != null)
+				if (DecryptedData != null)
 				{
-					return decryptedData;
+					return DecryptedData;
 				}
 			}
 
 			// dataKey is null or decryption failed. Attempt to regenerate data key
-			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
-			var encKeyInfo = encKeys.Where(kbv =>
+			IList<EncryptionKeys> EncKeys = MsgMetadata.EncryptionKeysList;
+			EncryptionKeys EncKeyInfo = EncKeys.Where(kbv =>
 			{
-				var encDataKey = (sbyte[])(object)kbv.Value.ToByteArray();
-				IList<KeyValue> encKeyMeta = kbv.Metadata;
-				return DecryptDataKey(kbv.Key, encDataKey, encKeyMeta, keyReader);
-			}).FirstOrDefault();
+				sbyte[] EncDataKey = kbv.Value.toByteArray();
+				IList<KeyValue> EncKeyMeta = kbv.MetadataList;
+				return DecryptDataKey(kbv.Key, EncDataKey, EncKeyMeta, KeyReader);
+			}).First().orElse(null);
 
-			if (encKeyInfo == null || _dataKey == null)
+			if (EncKeyInfo == null || dataKey == null)
 			{
 				// Unable to decrypt data key
 				return null;
 			}
 
-			return GetKeyAndDecryptData(msgMetadata, payload);
+			return GetKeyAndDecryptData(MsgMetadata, Payload);
 
 		}
 
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(MessageCrypto));
 
 	}
+
 
 }

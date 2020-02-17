@@ -15,6 +15,9 @@
 /// limitations under the License.
 /// *****************************************************************************
 /// </summary>
+
+using DotNetty.Buffers;
+
 namespace SharpPulsar.Protocol.Circe
 {
 
@@ -82,7 +85,7 @@ namespace SharpPulsar.Protocol.Circe
 			_intHash.Update(input, index, length);
 		}
 
-		public void Update(ByteBuffer input)
+		public void Update(IByteBuffer input)
 		{
 			_intHash.Update(input);
 		}

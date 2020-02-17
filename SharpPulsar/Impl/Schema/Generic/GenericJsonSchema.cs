@@ -78,21 +78,6 @@ namespace SharpPulsar.Impl.Schema.Generic
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}
 
-        public override ISchema<sbyte[]> AUTO_PRODUCE_BYTES<T1>(ISchema<T1> schema)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<sbyte[]> AutoProduceBytes()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<IGenericRecord> AutoConsume()
-        {
-            throw new System.NotImplementedException();
-        }
-
         public override ISchema<IGenericRecord> Auto()
         {
             throw new System.NotImplementedException();
@@ -118,16 +103,7 @@ namespace SharpPulsar.Impl.Schema.Generic
             throw new System.NotImplementedException();
         }
 
-        public override IGenericSchema<IGenericRecord> Generic(SchemaInfo schemaInfo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema<IGenericRecord> GetSchema(SchemaInfo schemaInfo)
-        {
-            throw new System.NotImplementedException();
-        }
-
+        
         public override ISchema<IGenericRecord> Json(ISchemaDefinition<IGenericRecord> schemaDefinition)
         {
             throw new System.NotImplementedException();
