@@ -57,16 +57,8 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
            _enumerator.Reset();
         }
 
-        public T Current {
-            get {
-                return _enumerator.Current;
-            }
-        }
+        public T Current => _enumerator.Current;
 
-        object IEnumerator.Current {
-            get {
-                return Current;
-            }
-        }
+        object IEnumerator.Current => Current;
     }
 }
