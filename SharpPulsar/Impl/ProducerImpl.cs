@@ -147,7 +147,7 @@ namespace SharpPulsar.Impl
 			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + Client.Configuration.OperationTimeoutMs;
 			if (Conf.BatchingEnabled)
 			{
-				var containerBuilder = Conf.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder<T>();
+				var containerBuilder = Conf.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
                 _batchMessageContainer = (BatchMessageContainerBase<T>)containerBuilder.Build<T>();
 				_batchMessageContainer.Producer = this;
 			}

@@ -102,25 +102,15 @@ namespace SharpPulsar.Api.Transaction
 
 		public static TransactionCoordinatorClientException Unwrap(System.Exception T)
 		{
-			if (T is TransactionCoordinatorClientException)
+			if (T is TransactionCoordinatorClientException exception)
 			{
-				return (TransactionCoordinatorClientException) T;
+				return exception;
 			}
-			else if (T is Exception)
+			else if (T != null)
 			{
 				throw (Exception) T;
 			}
-			else if (T is InterruptedException)
-			{
-				Thread.CurrentThread.Interrupt();
-				return new TransactionCoordinatorClientException(T);
-			}
-			else if (!(T is ExecutionException))
-			{
-				// Generic exception
-				return new TransactionCoordinatorClientException(T);
-			}
-
+			
 			Exception cause = T.InnerException;
 			string msg = cause.Message;
 

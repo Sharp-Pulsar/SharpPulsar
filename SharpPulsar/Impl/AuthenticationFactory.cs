@@ -41,7 +41,7 @@ namespace SharpPulsar.Api
 		/// <returns> the Authentication object initialized with the token credentials </returns>
 		public static IAuthentication Token(string token)
 		{
-			return DefaultImplementation.newAuthenticationToken(token);
+			return DefaultImplementation.NewAuthenticationToken(token);
 		}
 
 		/// <summary>
@@ -52,7 +52,7 @@ namespace SharpPulsar.Api
 		/// <returns> the Authentication object initialized with the token credentials </returns>
 		public static IAuthentication Token(Func<string> tokenSupplier)
 		{
-			return DefaultImplementation.newAuthenticationToken(tokenSupplier);
+			return DefaultImplementation.NewAuthenticationToken(tokenSupplier);
 		}
 
 		// CHECKSTYLE.OFF: MethodName
@@ -67,7 +67,7 @@ namespace SharpPulsar.Api
 		/// <returns> the Authentication object initialized with the TLS credentials </returns>
 		public static IAuthentication Tls(string certFilePath, string keyFilePath)
 		{
-			return DefaultImplementation.newAuthenticationTLS(certFilePath, keyFilePath);
+			return DefaultImplementation.NewAuthenticationTls(certFilePath, keyFilePath);
 		}
 
 		// CHECKSTYLE.ON: MethodName
@@ -86,11 +86,11 @@ namespace SharpPulsar.Api
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(authPluginClassName, authParamsString);
+				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParamsString);
 			}
 			catch (Exception T)
 			{
-				throw new UnsupportedAuthenticationException(T);
+				throw new UnsupportedAuthenticationException(T.Message);
 			}
 		}
 
@@ -105,11 +105,11 @@ namespace SharpPulsar.Api
 		{
 			try
 			{
-				return DefaultImplementation.createAuthentication(authPluginClassName, authParams);
+				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParams);
 			}
 			catch (Exception T)
 			{
-				throw new UnsupportedAuthenticationException(T);
+				throw new UnsupportedAuthenticationException(T.Message);
 			}
 		}
 	}

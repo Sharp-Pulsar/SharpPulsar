@@ -51,7 +51,7 @@ namespace SharpPulsar.Api
 		/// @since 2.0.0 </returns>
 		static IPulsarClientBuilder Builder()
 		{
-			return DefaultImplementation.newClientBuilder();
+			return DefaultImplementation.NewClientBuilder();
 		}
 
 		/// <summary>

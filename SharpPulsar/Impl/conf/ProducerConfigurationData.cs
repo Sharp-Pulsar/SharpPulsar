@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl.Conf
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
 		public bool BatchingEnabled = true; // enabled by default
 
-		public BatcherBuilder BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder<object>();
+		public BatcherBuilder BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder();
 
 		public ICryptoKeyReader CryptoKeyReader;
 

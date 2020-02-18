@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 		/// Get service uri.
 		/// </summary>
 		/// <returns> service uri </returns>
-		ServiceURI ServiceUri {get; }
+		ServiceUri ServiceUri {get; }
 
 		/// <summary>
 		/// Update service url.

@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
 
         public string ServiceUrl { get; }
 
-		public ServiceURI ServiceUri
+		public ServiceUri ServiceUri
         {
             get => throw new NotImplementedException();
             set => throw new NotImplementedException();
@@ -69,10 +69,10 @@ namespace SharpPulsar.Impl
 
         public void UpdateServiceUrl(string serviceUrl)
 		{
-			ServiceURI uri;
+			ServiceUri uri;
 			try
 			{
-				uri = ServiceURI.Create(serviceUrl);
+				uri = ServiceUri.Create(serviceUrl);
 			}
 			catch (System.Exception iae)
 			{

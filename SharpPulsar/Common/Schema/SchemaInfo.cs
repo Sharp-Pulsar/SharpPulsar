@@ -63,9 +63,9 @@ namespace SharpPulsar.Common.Schema
 					case SchemaType.InnerEnum.Json:
 					case SchemaType.InnerEnum.Protobuf:
 						return StringHelper.NewString(Schema, "UTF8");
-					case SchemaType.InnerEnum.KeyValue:
-						KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(this);
-						return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
+					//case SchemaType.InnerEnum.KeyValue:
+						//KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.d.DecodeKeyValueSchemaInfo(this);
+						//return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
 					default:
 						return Convert.ToBase64String((byte[])(object)Schema);
 				}

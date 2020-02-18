@@ -15,6 +15,9 @@
 /// limitations under the License.
 /// *****************************************************************************
 /// </summary>
+
+using DotNetty.Buffers;
+
 namespace SharpPulsar.Protocol.Circe
 {
 
@@ -65,7 +68,7 @@ namespace SharpPulsar.Protocol.Circe
 			Current = Stateless.Initial();
 		}
 
-		public new void Update(ByteBuffer input)
+		public new void Update(IByteBuffer input)
 		{
 			Current = Stateless.Resume(Current, input);
 		}

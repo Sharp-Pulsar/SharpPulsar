@@ -56,7 +56,7 @@ namespace SharpPulsar.Api
 		/// 
 		static IMessageId FromByteArray(sbyte[] data)
 		{
-			return DefaultImplementation.newMessageIdFromByteArray(data);
+			return DefaultImplementation.NewMessageIdFromByteArray(data);
 		}
 
 		/// <summary>
@@ -75,7 +75,7 @@ namespace SharpPulsar.Api
 		/// 
 		static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
-			return DefaultImplementation.newMessageIdFromByteArrayWithTopic(data, topicName);
+			return DefaultImplementation.NewMessageIdFromByteArrayWithTopic(data, topicName);
 		}
 
 		// CHECKSTYLE.OFF: ConstantName
@@ -93,8 +93,8 @@ namespace SharpPulsar.Api
 
 	public static class MessageIdFields
 	{
-		public static readonly IMessageId Earliest = DefaultImplementation.newMessageId(-1, -1, -1);
-		public static readonly IMessageId Latest = DefaultImplementation.newMessageId(long.MaxValue, long.MaxValue, -1);
+		public static readonly IMessageId Earliest = DefaultImplementation.NewMessageId(-1, -1, -1);
+		public static readonly IMessageId Latest = DefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1);
 	}
 
 }

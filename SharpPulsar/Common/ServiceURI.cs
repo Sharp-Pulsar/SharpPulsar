@@ -31,7 +31,7 @@ namespace SharpPulsar.Common
 	/// <seealso cref="https://github.com/apache/bookkeeper/blob/master/bookkeeper-common/src/main/java/org/apache/bookkeeper/common/net/ServiceURI.java"/>
 	/// </para>
 	/// </summary>
-	public class ServiceURI
+	public class ServiceUri
 	{
 
 		private const string BinaryService = "pulsar";
@@ -51,15 +51,15 @@ namespace SharpPulsar.Common
 		/// <returns> a service uri instance </returns>
 		/// <exception cref="NullPointerException"> if {@code uriStr} is null </exception>
 		/// <exception cref="IllegalArgumentException"> if the given string violates RFC&nbsp;2396 </exception>
-		public static ServiceURI Create(string UriStr)
+		public static ServiceUri Create(string uriStr)
 		{
-			if(string.IsNullOrWhiteSpace(UriStr))
+			if(string.IsNullOrWhiteSpace(uriStr))
 				throw new NullReferenceException("service uri string is null");
 
 			// a service uri first should be a valid java.net.URI
-			Uri Uri = new Uri(UriStr);
+			Uri uri = new Uri(uriStr);
 
-			return Create(Uri);
+			return Create(uri);
 		}
 
 		/// <summary>
@@ -69,153 +69,136 @@ namespace SharpPulsar.Common
 		/// <returns> a service uri instance </returns>
 		/// <exception cref="NullPointerException"> if {@code uriStr} is null </exception>
 		/// <exception cref="IllegalArgumentException"> if the given string violates RFC&nbsp;2396 </exception>
-		public static ServiceURI Create(Uri Uri)
+		public static ServiceUri Create(Uri uri)
 		{
-			if(Uri == null)
+			if(uri == null)
 				throw new NullReferenceException("service uri instance is null");
 
-			string ServiceName;
-			string[] ServiceInfos;
-			string Scheme = Uri.Scheme;
-			if (null != Scheme)
+			string serviceName;
+			string[] serviceInfos;
+			string scheme = uri.Scheme;
+            {
+                scheme = scheme.ToLower();
+                const string serviceSep = "+";
+                string[] schemeParts = scheme.Split(serviceSep);
+                serviceName = schemeParts[0];
+                serviceInfos = new string[schemeParts.Length - 1];
+                Array.Copy(schemeParts, 1, serviceInfos, 0, serviceInfos.Length);
+            }
+
+            string userAndHostInformation = uri.Authority;
+			if(string.IsNullOrWhiteSpace(userAndHostInformation))
+				throw new ArgumentNullException("authority component is missing in service uri : " + uri);
+
+			string serviceUser;
+			IList<string> serviceHosts;
+			int atIndex = userAndHostInformation.IndexOf('@');
+			if (atIndex > 0)
 			{
-				Scheme = Scheme.ToLower();
-				const string ServiceSep = "+";
-				string[] SchemeParts = Scheme.Split(ServiceSep);
-				ServiceName = SchemeParts[0];
-				ServiceInfos = new string[SchemeParts.Length - 1];
-				Array.Copy(SchemeParts, 1, ServiceInfos, 0, ServiceInfos.Length);
+				serviceUser = userAndHostInformation.Substring(0, atIndex);
+				serviceHosts = userAndHostInformation.Substring(atIndex + 1).Split(new char[] { ',', ';'});
 			}
 			else
 			{
-				ServiceName = null;
-				ServiceInfos = new string[0];
+				serviceUser = null;
+				serviceHosts = userAndHostInformation.Split(new char[] { ',', ';' });
 			}
+			serviceHosts = serviceHosts.Select(host => ValidateHostName(serviceName, serviceInfos, host)).ToList();
 
-			string UserAndHostInformation = Uri.Authority;
-			if(string.IsNullOrWhiteSpace(UserAndHostInformation))
-				throw new ArgumentNullException("authority component is missing in service uri : " + Uri);
+			string servicePath = uri.AbsolutePath;
+			if(string.IsNullOrWhiteSpace(servicePath))
+				throw new ArgumentNullException("service path component is missing in service uri : " + uri);
 
-			string ServiceUser;
-			IList<string> ServiceHosts;
-			int AtIndex = UserAndHostInformation.IndexOf('@');
-			if (AtIndex > 0)
-			{
-				ServiceUser = UserAndHostInformation.Substring(0, AtIndex);
-				ServiceHosts = UserAndHostInformation.Substring(AtIndex + 1).Split(new char[] { ',', ';'});
-			}
-			else
-			{
-				ServiceUser = null;
-				ServiceHosts = UserAndHostInformation.Split(new char[] { ',', ';' });
-			}
-			ServiceHosts = ServiceHosts.Select(host => ValidateHostName(ServiceName, ServiceInfos, host)).ToList();
+			//return new ServiceUri(serviceName, serviceInfos, serviceUser, ((List<string>)serviceHosts).ToArray(), servicePath, uri);
+            return null;
+        }
 
-			string ServicePath = Uri.AbsolutePath;
-			if(string.IsNullOrWhiteSpace(ServicePath))
-				throw new ArgumentNullException("service path component is missing in service uri : " + Uri);
-
-			return new ServiceURI(ServiceName, ServiceInfos, ServiceUser, ((List<string>)ServiceHosts).ToArray(), ServicePath, Uri);
-		}
-
-		private static string ValidateHostName(string ServiceName, string[] ServiceInfos, string Hostname)
+		private static string ValidateHostName(string serviceName, string[] serviceInfos, string hostname)
 		{
-			Uri Uri = null;
+			Uri uri = null;
 			try
 			{
-				Uri = new Uri("dummyscheme://" + Hostname);
+				uri = new Uri("dummyscheme://" + hostname);
 			}
 			catch (ArgumentException)
 			{
-				throw new ArgumentException("Invalid hostname : " + Hostname);
+				throw new ArgumentException("Invalid hostname : " + hostname);
 			}
-			string Host = Uri.Host;
-			if (string.ReferenceEquals(Host, null))
+			string host = uri.Host;
+			if (string.ReferenceEquals(host, null))
 			{
-				throw new ArgumentException("Invalid hostname : " + Hostname);
+				throw new ArgumentException("Invalid hostname : " + hostname);
 			}
-			int Port = Uri.Port;
-			if (Port == -1)
+			int port = uri.Port;
+			if (port == -1)
 			{
-				Port = GetServicePort(ServiceName, ServiceInfos);
+				port = GetServicePort(serviceName, serviceInfos);
 			}
-			return Host + ":" + Port;
+			return host + ":" + port;
 		}
 
-		private readonly string serviceName;
-		private readonly string[] serviceInfos;
-		private readonly string serviceUser;
-		private readonly string[] serviceHosts;
-		private readonly string servicePath;
-		private readonly Uri uri;
+		private readonly string _serviceName;
+		private readonly string[] _serviceInfos;
+		private readonly string _serviceUser;
+		private readonly string[] _serviceHosts;
+		private readonly string _servicePath;
+		private readonly Uri _uri;
 
-		public virtual string[] ServiceInfos
+		public virtual string[] ServiceInfos => _serviceInfos;
+
+        public virtual string[] ServiceHosts => _serviceHosts;
+
+        public virtual string ServiceScheme
 		{
 			get
 			{
-				return serviceInfos;
-			}
-		}
-
-		public virtual string[] ServiceHosts
-		{
-			get
-			{
-				return serviceHosts;
-			}
-		}
-
-		public virtual string ServiceScheme
-		{
-			get
-			{
-				if (null == serviceName)
+				if (null == _serviceName)
 				{
 					return null;
 				}
 				else
 				{
-					if (serviceInfos.Length == 0)
+					if (_serviceInfos.Length == 0)
 					{
-						return serviceName;
+						return _serviceName;
 					}
 					else
 					{
-						return serviceName + "+" + string.Join('+', serviceInfos);
+						return _serviceName + "+" + string.Join('+', _serviceInfos);
 					}
 				}
 			}
 		}
 
-		private static int GetServicePort(string ServiceName, string[] ServiceInfos)
+		private static int GetServicePort(string serviceName, string[] serviceInfos)
 		{
-			int Port;
-			switch (ServiceName.ToLower())
+			int port;
+			switch (serviceName.ToLower())
 			{
 				case BinaryService:
-					if (ServiceInfos.Length == 0)
+					if (serviceInfos.Length == 0)
 					{
-						Port = BinaryPort;
+						port = BinaryPort;
 					}
-					else if (ServiceInfos.Length == 1 && ServiceInfos[0].ToLower().Equals(SslService))
+					else if (serviceInfos.Length == 1 && serviceInfos[0].ToLower().Equals(SslService))
 					{
-						Port = BinaryTlsPort;
+						port = BinaryTlsPort;
 					}
 					else
 					{
-						throw new ArgumentException("Invalid pulsar service : " + ServiceName + "+" + ServiceInfos);
+						throw new ArgumentException("Invalid pulsar service : " + serviceName + "+" + serviceInfos);
 					}
 					break;
 				case HttpService:
-					Port = HttpPort;
+					port = HttpPort;
 					break;
 				case HttpsService:
-					Port = HttpsPort;
+					port = HttpsPort;
 					break;
 				default:
-					throw new ArgumentException("Invalid pulsar service : " + ServiceName);
+					throw new ArgumentException("Invalid pulsar service : " + serviceName);
 			}
-			return Port;
+			return port;
 		}
 
 	}

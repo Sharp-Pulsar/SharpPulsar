@@ -17,6 +17,7 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using DotNetty.Handlers.Tls;
 using Google.Protobuf;
 using SharpPulsar.Utils;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;

@@ -9,6 +9,7 @@ using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
+using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Utility.Protobuf;
