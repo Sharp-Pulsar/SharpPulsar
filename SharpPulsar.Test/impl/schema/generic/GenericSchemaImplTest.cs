@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.Logging;
+using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,179 +26,86 @@
 /// </summary>
 namespace SharpPulsar.Test.Impl.schema.generic
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
-using GenericRecord = Org.Apache.Pulsar.Client.Api.Schema.GenericRecord;
     using Bar = SchemaTestUtils.Bar;
 	using Foo = SchemaTestUtils.Foo;
 
 /// <summary>
 	/// Unit testing generic schemas.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class GenericSchemaImplTest
 	public class GenericSchemaImplTest
-	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGenericAvroSchema()
-		public virtual void TestGenericAvroSchema()
+{
+    private readonly ILogger Log = new LoggerFactory().CreateLogger<GenericSchemaImplTest>();
+		[Fact]
+		public void TestGenericJsonSchema()
 		{
-			Schema<Foo> EncodeSchema = Schema.AVRO(typeof(Foo));
-			GenericSchema DecodeSchema = GenericSchemaImpl.Of(EncodeSchema.SchemaInfo);
-			TestEncodeAndDecodeGenericRecord(EncodeSchema, DecodeSchema);
+			var encodeSchema = ISchema<Foo>.Json(new Foo());
+			var decodeSchema = GenericSchemaImpl.Of((SchemaInfo)encodeSchema.SchemaInfo);
+			TestEncodeAndDecodeGenericRecord(encodeSchema, decodeSchema);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGenericJsonSchema()
-		public virtual void TestGenericJsonSchema()
-		{
-			Schema<Foo> EncodeSchema = Schema.JSON(typeof(Foo));
-			GenericSchema DecodeSchema = GenericSchemaImpl.Of(EncodeSchema.SchemaInfo);
-			TestEncodeAndDecodeGenericRecord(EncodeSchema, DecodeSchema);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAutoAvroSchema()
-		public virtual void TestAutoAvroSchema()
-		{
-			// configure encode schema
-			Schema<Foo> EncodeSchema = Schema.AVRO(typeof(Foo));
-
-			// configure the schema info provider
-			MultiVersionSchemaInfoProvider MultiVersionGenericSchemaProvider = mock(typeof(MultiVersionSchemaInfoProvider));
-			when(MultiVersionGenericSchemaProvider.getSchemaByVersion(any(typeof(sbyte[])))).thenReturn(CompletableFuture.completedFuture(EncodeSchema.SchemaInfo));
-
-			// configure decode schema
-			AutoConsumeSchema DecodeSchema = new AutoConsumeSchema();
-			DecodeSchema.configureSchemaInfo("test-topic", "topic", EncodeSchema.SchemaInfo);
-			DecodeSchema.SchemaInfoProvider = MultiVersionGenericSchemaProvider;
-
-			TestEncodeAndDecodeGenericRecord(EncodeSchema, DecodeSchema);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAutoJsonSchema()
-		public virtual void TestAutoJsonSchema()
+		[Fact]
+		public void TestAutoJsonSchema()
 		{
 			// configure the schema info provider
-			MultiVersionSchemaInfoProvider MultiVersionSchemaInfoProvider = mock(typeof(MultiVersionSchemaInfoProvider));
-			GenericSchema GenericAvroSchema = GenericSchemaImpl.Of(Schema.AVRO(typeof(Foo)).SchemaInfo);
-			when(MultiVersionSchemaInfoProvider.getSchemaByVersion(any(typeof(sbyte[])))).thenReturn(CompletableFuture.completedFuture(GenericAvroSchema.SchemaInfo));
-
+			var multiVersionSchemaInfoProvider = new Moq.Mock<MultiVersionSchemaInfoProvider>().Object;
+			
 			// configure encode schema
-			Schema<Foo> EncodeSchema = Schema.JSON(typeof(Foo));
+			var encodeSchema = ISchema<Foo>.Json(new Foo());
 
 			// configure decode schema
-			AutoConsumeSchema DecodeSchema = new AutoConsumeSchema();
-			DecodeSchema.configureSchemaInfo("test-topic", "topic", EncodeSchema.SchemaInfo);
-			DecodeSchema.SchemaInfoProvider = MultiVersionSchemaInfoProvider;
+			var decodeSchema = new AutoConsumeSchema();
+			decodeSchema.ConfigureSchemaInfo("test-topic", "topic", (SchemaInfo)encodeSchema.SchemaInfo);
+			decodeSchema.SchemaInfoProvider = multiVersionSchemaInfoProvider;
 
-			TestEncodeAndDecodeGenericRecord(EncodeSchema, DecodeSchema);
+			TestEncodeAndDecodeGenericRecord(encodeSchema, decodeSchema);
 		}
 
-		private void TestEncodeAndDecodeGenericRecord(Schema<Foo> EncodeSchema, Schema<GenericRecord> DecodeSchema)
+		private void TestEncodeAndDecodeGenericRecord(ISchema<Foo> encodeSchema, ISchema<IGenericRecord> decodeSchema)
 		{
-			int NumRecords = 10;
-			for (int I = 0; I < NumRecords; I++)
+			var numRecords = 10;
+			for (var i = 0; i < numRecords; i++)
 			{
-				Foo Foo = NewFoo(I);
-				sbyte[] Data = EncodeSchema.encode(Foo);
+				var foo = NewFoo(i);
+				var data = encodeSchema.Encode(foo);
 
-				log.info("Decoding : {}", StringHelper.NewString(Data, UTF_8));
+				Log.LogInformation("Decoding : {}", StringHelper.NewString(data));
 
-				GenericRecord Record;
-				if (DecodeSchema is AutoConsumeSchema)
+                GenericJsonRecord record;
+				if (decodeSchema is AutoConsumeSchema)
 				{
-					Record = DecodeSchema.decode(Data, new sbyte[0]);
+					record = (GenericJsonRecord)decodeSchema.Decode(data, new sbyte[0]);
 				}
 				else
 				{
-					Record = DecodeSchema.decode(Data);
+					record = (GenericJsonRecord)decodeSchema.Decode(data);
 				}
-				VerifyFooRecord(Record, i);
+				VerifyFooRecord(record, i);
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueSchema()
-		public virtual void TestKeyValueSchema()
+		private static Foo NewFoo(int i)
 		{
-			// configure the schema info provider
-			MultiVersionSchemaInfoProvider MultiVersionSchemaInfoProvider = mock(typeof(MultiVersionSchemaInfoProvider));
-			GenericSchema GenericAvroSchema = GenericSchemaImpl.Of(Schema.AVRO(typeof(Foo)).SchemaInfo);
-			when(MultiVersionSchemaInfoProvider.getSchemaByVersion(any(typeof(sbyte[])))).thenReturn(CompletableFuture.completedFuture(KeyValueSchemaInfo.encodeKeyValueSchemaInfo(GenericAvroSchema, GenericAvroSchema, KeyValueEncodingType.INLINE)));
+            var foo = new Foo {Field1 = "field-1-" + i, Field2 = "field-2-" + i, Field3 = i};
+            var bar = new Bar {Field1 = i % 2 == 0};
+            foo.Field4 = bar;
+			foo.FieldUnableNull = "fieldUnableNull-1-" + i;
 
-			IList<Schema<Foo>> EncodeSchemas = Lists.newArrayList(Schema.JSON(typeof(Foo)), Schema.AVRO(typeof(Foo)));
-
-			foreach (Schema<Foo> KeySchema in EncodeSchemas)
-			{
-				foreach (Schema<Foo> ValueSchema in EncodeSchemas)
-				{
-					// configure encode schema
-					Schema<KeyValue<Foo, Foo>> KvSchema = KeyValueSchema.of(KeySchema, ValueSchema);
-
-					// configure decode schema
-					Schema<KeyValue<GenericRecord, GenericRecord>> DecodeSchema = KeyValueSchema.of(Schema.AUTO_CONSUME(), Schema.AUTO_CONSUME());
-					DecodeSchema.configureSchemaInfo("test-topic", "topic",KvSchema.SchemaInfo);
-					DecodeSchema.SchemaInfoProvider = MultiVersionSchemaInfoProvider;
-
-					TestEncodeAndDecodeKeyValues(KvSchema, DecodeSchema);
-				}
-			}
-
+			return foo;
 		}
 
-		private void TestEncodeAndDecodeKeyValues(Schema<KeyValue<Foo, Foo>> EncodeSchema, Schema<KeyValue<GenericRecord, GenericRecord>> DecodeSchema)
+		private static void VerifyFooRecord(IGenericRecord record, int i)
 		{
-			int NumRecords = 10;
-			for (int I = 0; I < NumRecords; I++)
-			{
-				Foo Foo = NewFoo(I);
-				sbyte[] Data = EncodeSchema.encode(new KeyValue<Foo, Foo>(Foo, Foo));
-
-				KeyValue<GenericRecord, GenericRecord> Kv = DecodeSchema.decode(Data, new sbyte[0]);
-				VerifyFooRecord(Kv.Key, I);
-				VerifyFooRecord(Kv.Value, I);
-			}
-		}
-
-		private static Foo NewFoo(int I)
-		{
-			Foo Foo = new Foo();
-			Foo.Field1 = "field-1-" + I;
-			Foo.Field2 = "field-2-" + I;
-			Foo.Field3 = I;
-			Bar Bar = new Bar();
-			Bar.Field1 = I % 2 == 0;
-			Foo.Field4 = Bar;
-			Foo.FieldUnableNull = "fieldUnableNull-1-" + I;
-
-			return Foo;
-		}
-
-		private static void VerifyFooRecord(GenericRecord Record, int I)
-		{
-			object Field1 = Record.getField("field1");
-			assertEquals("field-1-" + I, Field1, "Field 1 is " + Field1.GetType());
-			object Field2 = Record.getField("field2");
-			assertEquals("field-2-" + I, Field2, "Field 2 is " + Field2.GetType());
-			object Field3 = Record.getField("field3");
-			assertEquals(I, Field3, "Field 3 is " + Field3.GetType());
-			object Field4 = Record.getField("field4");
-			assertTrue(Field4 is GenericRecord);
-			GenericRecord Field4Record = (GenericRecord) Field4;
-			assertEquals(I % 2 == 0, Field4Record.getField("field1"));
-			object FieldUnableNull = Record.getField("fieldUnableNull");
-			assertEquals("fieldUnableNull-1-" + I, FieldUnableNull, "fieldUnableNull 1 is " + FieldUnableNull.GetType());
+			var field1 = record.GetField("field1");
+			Assert.Equal("field-1-" + i, field1);
+			var field2 = record.GetField("field2");
+            Assert.Equal("field-2-" + i, field2);
+			var field3 = record.GetField("field3");
+            Assert.Equal(i, field3);
+			var field4 = record.GetField("field4");
+			Assert.True(field4 is IGenericRecord);
+			IGenericRecord field4Record = (GenericJsonRecord) field4;
+            Assert.Equal(i % 2 == 0, field4Record.GetField("field1"));
+			var fieldUnableNull = record.GetField("fieldUnableNull");
+            Assert.Equal("fieldUnableNull-1-" + i, fieldUnableNull);
 		}
 
 	}

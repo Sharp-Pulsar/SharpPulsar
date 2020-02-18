@@ -1,4 +1,10 @@
-﻿using System.Text;
+﻿using System;
+using System.Runtime.InteropServices;
+using SharpPulsar.Api;
+using System.Text;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Schema;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,73 +26,60 @@
 /// </summary>
 namespace SharpPulsar.Test.Impl.schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
 
-using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-
-public class DefaultSchemasTest
+public class DefaultSchemasTest:IDisposable
 	{
-		private PulsarClient client;
+		private IPulsarClient _client;
 
 		private const string TestTopic = "persistent://sample/standalone/ns1/test-topic";
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeClass public void setup() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void Setup()
+        public DefaultSchemasTest()
+        {
+			_client = new PulsarClientBuilderImpl().ServiceUrl("pulsar://localhost:6650").Build();
+		}
+		
+
+		[Fact]
+		public void TestConsumerInstantiation()
 		{
-			client = PulsarClient.builder().serviceUrl("pulsar://localhost:6650").build();
+			var stringConsumerBuilder = _client.NewConsumer(new StringSchema()).Topic(TestTopic);
+			Assert.NotNull(stringConsumerBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConsumerInstantiation()
-		public virtual void TestConsumerInstantiation()
+		[Fact]
+		public void TestProducerInstantiation()
 		{
-			ConsumerBuilder<string> StringConsumerBuilder = client.NewConsumer(new StringSchema()).topic(TestTopic);
-			Assert.assertNotNull(StringConsumerBuilder);
+			var stringProducerBuilder = _client.NewProducer(new StringSchema()).Topic(TestTopic);
+			Assert.NotNull(stringProducerBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerInstantiation()
-		public virtual void TestProducerInstantiation()
+		[Fact]
+		public void TestReaderInstantiation()
 		{
-			ProducerBuilder<string> StringProducerBuilder = client.NewProducer(new StringSchema()).topic(TestTopic);
-			Assert.assertNotNull(StringProducerBuilder);
+			var stringReaderBuilder = _client.NewReader(new StringSchema()).Topic(TestTopic);
+			Assert.NotNull(stringReaderBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testReaderInstantiation()
-		public virtual void TestReaderInstantiation()
+		[Fact]
+		public void TestStringSchema()
 		{
-			ReaderBuilder<string> StringReaderBuilder = client.NewReader(new StringSchema()).topic(TestTopic);
-			Assert.assertNotNull(StringReaderBuilder);
+			var testString = "hello world";
+			var testBytes = testString.GetBytes(Encoding.UTF8);
+			var stringSchema = new StringSchema();
+			Assert.Equal(testString, stringSchema.Decode(testBytes));
+            Assert.Equal(stringSchema.Encode(testString), testBytes);
+
+            var bytes2 = (sbyte[])(object)Encoding.Unicode.GetBytes(testString);
+			var stringSchemaUtf16 = new StringSchema(CharSet.Unicode);
+            Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
+            Assert.Equal(stringSchemaUtf16.Encode(testString), bytes2);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testStringSchema() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestStringSchema()
-		{
-			string TestString = "hello world";
-			sbyte[] TestBytes = TestString.GetBytes(Encoding.UTF8);
-			StringSchema StringSchema = new StringSchema();
-			assertEquals(TestString, StringSchema.decode(TestBytes));
-			assertEquals(StringSchema.encode(TestString), TestBytes);
 
-			 sbyte[] Bytes2 = TestString.GetBytes(StandardCharsets.UTF_16);
-			StringSchema StringSchemaUtf16 = new StringSchema(StandardCharsets.UTF_16);
-			assertEquals(TestString, StringSchemaUtf16.decode(Bytes2));
-			assertEquals(StringSchemaUtf16.encode(TestString), Bytes2);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @AfterClass public void tearDown() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TearDown()
-		{
-			client.Dispose();
-		}
-	}
+        public void Dispose()
+        {
+		    _client.Dispose();
+	    }
+    }
 
 }

@@ -16,47 +16,45 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Text;
+using DotNetty.Buffers;
+using SharpPulsar.Api;
+using SharpPulsar.Impl.Schema;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl.schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertSame;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
 
     /// <summary>
 	/// Unit test <seealso cref="BytesSchema"/>.
 	/// </summary>
 	public class BytesSchemaTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testBytesSchemaOf()
-		public virtual void TestBytesSchemaOf()
+		[Fact]
+		public void TestBytesSchemaOf()
 		{
 			TestBytesSchema(BytesSchema.Of());
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaBYTES()
-		public virtual void TestSchemaBYTES()
+        [Fact]
+		public void TestSchemaBytes()
 		{
-			TestBytesSchema(SchemaFields.BYTES);
+			TestBytesSchema(SchemaFields.Bytes);
 		}
 
-		private void TestBytesSchema(Schema<sbyte[]> Schema)
+		private void TestBytesSchema(ISchema<sbyte[]> schema)
 		{
-			sbyte[] Data = "hello world".GetBytes(UTF_8);
+			var data = (sbyte[])(object)Encoding.UTF8.GetBytes("hello world");
 
-			sbyte[] SerializedData = Schema.encode(Data);
-			assertSame(Data, SerializedData);
+			var serializedData = schema.Encode(data);
+			Assert.Same(data, serializedData);
 
-			sbyte[] DeserializedData = Schema.decode(SerializedData);
-			assertSame(Data, DeserializedData);
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(DeserializedData.Length);
-			ByteBuf.writeBytes(DeserializedData);
-			assertEquals(Data, ((BytesSchema)Schema).decode(ByteBuf));
+			var deserializedData = schema.Decode(serializedData);
+            Assert.Same(data, deserializedData);
+			var byteBuf = UnpooledByteBufferAllocator.Default.Buffer(deserializedData.Length);
+			byteBuf.WriteBytes((byte[])(object)deserializedData);
+			Assert.Equal(data, ((BytesSchema)schema).Decode(byteBuf));
 
 		}
 

@@ -1,4 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,128 +24,110 @@
 /// </summary>
 namespace SharpPulsar.Test.Impl.conf
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
 //	import static org.testng.Assert.fail;
 /// <summary>
 	/// Unit test <seealso cref="ConfigurationDataUtils"/>.
 	/// </summary>
 	public class ConfigurationDataUtilsTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testLoadClientConfigurationData()
-		public virtual void TestLoadClientConfigurationData()
+		[Fact]
+		public void TestLoadClientConfigurationData()
 		{
-			ClientConfigurationData ConfData = new ClientConfigurationData();
-			ConfData.ServiceUrl = "pulsar://unknown:6650";
-			ConfData.MaxLookupRequest = 600;
-			ConfData.NumIoThreads = 33;
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["serviceUrl"] = "pulsar://localhost:6650";
-			Config["maxLookupRequest"] = 70000;
-			ConfData = ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ClientConfigurationData));
-			assertEquals("pulsar://localhost:6650", ConfData.ServiceUrl);
-			assertEquals(70000, ConfData.MaxLookupRequest);
-			assertEquals(33, ConfData.NumIoThreads);
+			ClientConfigurationData confData = new ClientConfigurationData();
+			confData.ServiceUrl = "pulsar://unknown:6650";
+			confData.MaxLookupRequest = 600;
+			confData.NumIoThreads = 33;
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["serviceUrl"] = "pulsar://localhost:6650";
+			config["maxLookupRequest"] = 70000;
+			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ClientConfigurationData));
+			Assert.Equal("pulsar://localhost:6650", confData.ServiceUrl);
+            Assert.Equal(70000, confData.MaxLookupRequest);
+            Assert.Equal(33, confData.NumIoThreads);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testLoadProducerConfigurationData()
-		public virtual void TestLoadProducerConfigurationData()
+		[Fact]
+		public void TestLoadProducerConfigurationData()
 		{
-			ProducerConfigurationData ConfData = new ProducerConfigurationData();
-			ConfData.ProducerName = "unset";
-			ConfData.BatchingEnabled = true;
-			ConfData.BatchingMaxMessages = 1234;
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["producerName"] = "test-producer";
-			Config["batchingEnabled"] = false;
-			ConfData.BatcherBuilder = BatcherBuilderFields.DEFAULT;
-			ConfData = ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ProducerConfigurationData));
-			assertEquals("test-producer", ConfData.ProducerName);
-			assertFalse(ConfData.BatchingEnabled);
-			assertEquals(1234, ConfData.BatchingMaxMessages);
+			ProducerConfigurationData confData = new ProducerConfigurationData();
+			confData.ProducerName = "unset";
+			confData.BatchingEnabled = true;
+			confData.BatchingMaxMessages = 1234;
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["producerName"] = "test-producer";
+			config["batchingEnabled"] = false;
+			confData.BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder();
+			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ProducerConfigurationData));
+            Assert.Equal("test-producer", confData.ProducerName);
+			Assert.False(confData.BatchingEnabled);
+            Assert.Equal(1234, confData.BatchingMaxMessages);
+		}
+		[Fact]
+		public void TestLoadConsumerConfigurationData()
+		{
+			ConsumerConfigurationData<object> confData = new ConsumerConfigurationData<object>();
+			confData.SubscriptionName = "unknown-subscription";
+			confData.PriorityLevel = 10000;
+			confData.ConsumerName = "unknown-consumer";
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["subscriptionName"] = "test-subscription";
+			config["priorityLevel"] = 100;
+			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ConsumerConfigurationData<object>));
+            Assert.Equal("test-subscription", confData.SubscriptionName);
+            Assert.Equal(100, confData.PriorityLevel);
+            Assert.Equal("unknown-consumer", confData.ConsumerName);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testLoadConsumerConfigurationData()
-		public virtual void TestLoadConsumerConfigurationData()
+		[Fact]
+		public void TestLoadReaderConfigurationData()
 		{
-			ConsumerConfigurationData ConfData = new ConsumerConfigurationData();
-			ConfData.SubscriptionName = "unknown-subscription";
-			ConfData.PriorityLevel = 10000;
-			ConfData.ConsumerName = "unknown-consumer";
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["subscriptionName"] = "test-subscription";
-			Config["priorityLevel"] = 100;
-			ConfData = ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ConsumerConfigurationData));
-			assertEquals("test-subscription", ConfData.SubscriptionName);
-			assertEquals(100, ConfData.PriorityLevel);
-			assertEquals("unknown-consumer", ConfData.ConsumerName);
+			ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>();
+			confData.TopicName = "unknown";
+			confData.ReceiverQueueSize = 1000000;
+			confData.ReaderName = "unknown-reader";
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["topicName"] = "test-topic";
+			config["receiverQueueSize"] = 100;
+			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ReaderConfigurationData<object>));
+            Assert.Equal("test-topic", confData.TopicName);
+            Assert.Equal(100, confData.ReceiverQueueSize);
+            Assert.Equal("unknown-reader", confData.ReaderName);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testLoadReaderConfigurationData()
-		public virtual void TestLoadReaderConfigurationData()
+		[Fact]
+		public void TestLoadConfigurationDataWithUnknownFields()
 		{
-			ReaderConfigurationData ConfData = new ReaderConfigurationData();
-			ConfData.TopicName = "unknown";
-			ConfData.ReceiverQueueSize = 1000000;
-			ConfData.ReaderName = "unknown-reader";
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["topicName"] = "test-topic";
-			Config["receiverQueueSize"] = 100;
-			ConfData = ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ReaderConfigurationData));
-			assertEquals("test-topic", ConfData.TopicName);
-			assertEquals(100, ConfData.ReceiverQueueSize);
-			assertEquals("unknown-reader", ConfData.ReaderName);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testLoadConfigurationDataWithUnknownFields()
-		public virtual void TestLoadConfigurationDataWithUnknownFields()
-		{
-			ReaderConfigurationData ConfData = new ReaderConfigurationData();
-			ConfData.TopicName = "unknown";
-			ConfData.ReceiverQueueSize = 1000000;
-			ConfData.ReaderName = "unknown-reader";
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["unknown"] = "test-topic";
-			Config["receiverQueueSize"] = 100;
+			ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>();
+			confData.TopicName = "unknown";
+			confData.ReceiverQueueSize = 1000000;
+			confData.ReaderName = "unknown-reader";
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["unknown"] = "test-topic";
+			config["receiverQueueSize"] = 100;
 			try
 			{
-				ConfigurationDataUtils.LoadData(Config, ConfData, typeof(ReaderConfigurationData));
-				fail("Should fail loading configuration data with unknown fields");
+				ConfigurationDataUtils.LoadData(config, confData, typeof(ReaderConfigurationData<object>));
+				Assert.False(false, "Should fail loading configuration data with unknown fields");
 			}
-			catch (System.Exception Re)
+			catch (System.Exception re)
 			{
-				assertTrue(Re.InnerException is IOException);
+				Assert.True(re.InnerException is IOException);
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConfigBuilder() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestConfigBuilder()
+		[Fact]
+		public void TestConfigBuilder()
 		{
-			ClientConfigurationData ClientConfig = new ClientConfigurationData();
-			ClientConfig.ServiceUrl = "pulsar://unknown:6650";
-			ClientConfig.StatsIntervalSeconds = 80;
+			ClientConfigurationData clientConfig = new ClientConfigurationData();
+			clientConfig.ServiceUrl = "pulsar://unknown:6650";
+			clientConfig.StatsIntervalSeconds = 80;
 
-			PulsarClientImpl PulsarClient = new PulsarClientImpl(ClientConfig);
-			assertNotNull(PulsarClient, "Pulsar client built using config should not be null");
+			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig);
+			Assert.NotNull(pulsarClient);
 
-			assertEquals(PulsarClient.Configuration.ServiceUrl, "pulsar://unknown:6650");
-			assertEquals(PulsarClient.Configuration.NumListenerThreads, 1, "builder default not set properly");
-			assertEquals(PulsarClient.Configuration.StatsIntervalSeconds, 80, "builder default should overrite if set explicitly");
+            Assert.Equal("pulsar://unknown:6650", pulsarClient.Configuration.ServiceUrl);
+            Assert.Equal(1, pulsarClient.Configuration.NumListenerThreads);
+            Assert.Equal(80, pulsarClient.Configuration.StatsIntervalSeconds);
 		}
 	}
 

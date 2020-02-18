@@ -16,49 +16,42 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Threading.Tasks;
+using DotNetty.Common.Concurrency;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl.schema.generic
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.ArgumentMatchers.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-
-using TopicName = Org.Apache.Pulsar.Common.Naming.TopicName;
-	using SchemaInfo = Org.Apache.Pulsar.Common.Schema.SchemaInfo;
-
 /// <summary>
 	/// Unit test for <seealso cref="MultiVersionSchemaInfoProvider"/>.
 	/// </summary>
 	public class MultiVersionSchemaInfoProviderTest
 	{
 
-		private MultiVersionSchemaInfoProvider schemaProvider;
+		private MultiVersionSchemaInfoProvider _schemaProvider;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeMethod public void setup()
-		public virtual void Setup()
+		public void Setup()
 		{
-			PulsarClientImpl Client = mock(typeof(PulsarClientImpl));
-			when(Client.Lookup).thenReturn(mock(typeof(LookupService)));
-			schemaProvider = new MultiVersionSchemaInfoProvider(TopicName.get("persistent://public/default/my-topic"), Client);
+			PulsarClientImpl client = new Moq.Mock<PulsarClientImpl>().Object;
+			When(client.Lookup).thenReturn(mock(typeof(LookupService)));
+			_schemaProvider = new MultiVersionSchemaInfoProvider(TopicName.Get("persistent://public/default/my-topic"), client);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGetSchema() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestGetSchema()
+		[Fact]
+		public void TestGetSchema()
 		{
-			CompletableFuture<Optional<SchemaInfo>> CompletableFuture = new CompletableFuture<Optional<SchemaInfo>>();
-			SchemaInfo SchemaInfo = AvroSchema.of(SchemaDefinition.builder<SchemaTestUtils>().withPojo(typeof(SchemaTestUtils)).build()).SchemaInfo;
-			CompletableFuture.complete(SchemaInfo);
-			when(schemaProvider.PulsarClient.Lookup.getSchema(any(typeof(TopicName)), any(typeof(sbyte[])))).thenReturn(CompletableFuture);
-			SchemaInfo SchemaInfoByVersion = schemaProvider.GetSchemaByVersion(new sbyte[0]).get();
-			assertEquals(SchemaInfoByVersion, SchemaInfo);
+			var task = new TaskCompletionSource<SchemaInfo>();
+			var schemaInfo = (SchemaInfo)JsonSchema<SchemaTestUtils>.Of(ISchemaDefinition<SchemaTestUtils>.Builder().WithPojo(new SchemaTestUtils()).Build()).SchemaInfo;
+			task.SetResult(schemaInfo);
+			when(_schemaProvider.PulsarClient.Lookup.GetSchema(any(typeof(TopicName)), any(typeof(sbyte[])))).thenReturn(completableFuture);
+			SchemaInfo schemaInfoByVersion = (SchemaInfo)_schemaProvider.GetSchemaByVersion(new sbyte[0]).Result;
+			Assert.Equal(schemaInfoByVersion, schemaInfo);
 		}
 	}
 

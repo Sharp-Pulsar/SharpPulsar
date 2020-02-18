@@ -350,7 +350,7 @@ namespace SharpPulsar.Impl
                     var len = _cipher.ProcessBytes(sourceNioBuf.ToArray(), 0, sourceNioBuf.ToArray().Length, targetNioBuf, 0);
 					var bytesStored = _cipher.DoFinal(targetNioBuf, len);
                     
-                    targetBuf.SetBytes(bytesStored, Unpooled.WrappedBuffer(targetNioBuf));
+                    targetBuf.WriteBytes(targetNioBuf);
 					targetBuf.SetWriterIndex(bytesStored);
 
 				}
@@ -465,7 +465,7 @@ namespace SharpPulsar.Impl
                 var len = _cipher.ProcessBytes(sourceNioBuf.ToArray(), 0, sourceNioBuf.ToArray().Length, targetNioBuf, 0);
                 var decryptedSize = _cipher.DoFinal(targetNioBuf, len);
 				//int decryptedSize = _cipher.doFinal(sourceNioBuf, targetNioBuf);
-                targetBuf.SetBytes(decryptedSize, Unpooled.WrappedBuffer(targetNioBuf));
+                targetBuf.WriteBytes(targetNioBuf);
                 targetBuf.SetWriterIndex(decryptedSize);
 
 			}
