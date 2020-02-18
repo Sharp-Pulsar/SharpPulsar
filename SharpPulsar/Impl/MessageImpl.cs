@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl
 		public string TopicName {get;} // only set for incoming messages
 
 		// Constructor for out-going message
-		internal static MessageImpl<T> Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
+		public static MessageImpl<T> Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
 		{
             var msg = _pool.Take();
 			msg.MessageBuilder = msgMetadataBuilder;

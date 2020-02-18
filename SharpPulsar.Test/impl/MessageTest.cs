@@ -16,77 +16,68 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using DotNetty.Buffers;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Protocol.Proto;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
-using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
 
 /// <summary>
 	/// Unit test of <seealso cref="Message"/> methods.
 	/// </summary>
 	public class MessageTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testMessageImplReplicatedInfo()
-		public virtual void TestMessageImplReplicatedInfo()
+		[Fact]
+		public void TestMessageImplReplicatedInfo()
 		{
-			string From = "ClusterNameOfReplicatedFrom";
-			MessageMetadata.Builder Builder = MessageMetadata.newBuilder().setReplicatedFrom(From);
-			ByteBuffer Payload = ByteBuffer.wrap(new sbyte[0]);
-			Message<sbyte[]> Msg = MessageImpl.Create(Builder, Payload, SchemaFields.BYTES);
+			var @from = "ClusterNameOfReplicatedFrom";
+			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
+			var payload = Unpooled.WrappedBuffer(new byte[0]);
+			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
-			assertTrue(Msg.Replicated);
-			assertEquals(Msg.ReplicatedFrom, From);
+			Assert.True(msg.Replicated);
+			Assert.Equal(@from, msg.ReplicatedFrom);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testMessageImplNoReplicatedInfo()
-		public virtual void TestMessageImplNoReplicatedInfo()
+		[Fact]
+		public  void TestMessageImplNoReplicatedInfo()
 		{
-			MessageMetadata.Builder Builder = MessageMetadata.newBuilder();
-			ByteBuffer Payload = ByteBuffer.wrap(new sbyte[0]);
-			Message<sbyte[]> Msg = MessageImpl.Create(Builder, Payload, SchemaFields.BYTES);
+			var builder = MessageMetadata.NewBuilder();
+            var payload = Unpooled.WrappedBuffer(new byte[0]);
+			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
-			assertFalse(Msg.Replicated);
-			assertTrue(Msg.ReplicatedFrom.Length == 0);
+			Assert.False(msg.Replicated);
+			Assert.True(msg.ReplicatedFrom.Length == 0);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testTopicMessageImplReplicatedInfo()
+		[Fact]
 		public virtual void TestTopicMessageImplReplicatedInfo()
 		{
-			string From = "ClusterNameOfReplicatedFromForTopicMessage";
-			string TopicName = "myTopic";
-			MessageMetadata.Builder Builder = MessageMetadata.newBuilder().setReplicatedFrom(From);
-			ByteBuffer Payload = ByteBuffer.wrap(new sbyte[0]);
-			MessageImpl<sbyte[]> Msg = MessageImpl.Create(Builder, Payload, SchemaFields.BYTES);
-			Msg.setMessageId(new MessageIdImpl(-1, -1, -1));
-			TopicMessageImpl<sbyte[]> TopicMessage = new TopicMessageImpl<sbyte[]>(TopicName, TopicName, Msg);
+			var @from = "ClusterNameOfReplicatedFromForTopicMessage";
+			var topicName = "myTopic";
+			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
+            var payload = Unpooled.WrappedBuffer(new byte[0]);
+			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
+			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
 
-			assertTrue(TopicMessage.Replicated);
-			assertEquals(Msg.ReplicatedFrom, From);
+			Assert.True(topicMessage.Replicated);
+			Assert.Equal(@from, msg.ReplicatedFrom);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testTopicMessageImplNoReplicatedInfo()
+		[Fact]
 		public virtual void TestTopicMessageImplNoReplicatedInfo()
 		{
-			string TopicName = "myTopic";
-			MessageMetadata.Builder Builder = MessageMetadata.newBuilder();
-			ByteBuffer Payload = ByteBuffer.wrap(new sbyte[0]);
-			MessageImpl<sbyte[]> Msg = MessageImpl.Create(Builder, Payload, SchemaFields.BYTES);
-			Msg.setMessageId(new MessageIdImpl(-1, -1, -1));
-			TopicMessageImpl<sbyte[]> TopicMessage = new TopicMessageImpl<sbyte[]>(TopicName, TopicName, Msg);
+			var topicName = "myTopic";
+			var builder = MessageMetadata.NewBuilder();
+            var payload = Unpooled.WrappedBuffer(new byte[0]);
+			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
+			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
 
-			assertFalse(TopicMessage.Replicated);
-			assertTrue(TopicMessage.ReplicatedFrom.Length == 0);
+			Assert.False(topicMessage.Replicated);
+			Assert.True(topicMessage.ReplicatedFrom.Length == 0);
 		}
 	}
 

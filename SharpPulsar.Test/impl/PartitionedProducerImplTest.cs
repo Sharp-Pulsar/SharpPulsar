@@ -52,8 +52,8 @@ namespace SharpPulsar.Test.Impl
             _schema = new Moq.Mock<ISchema<sbyte[]>>().Object;
 			_producerInterceptors = new Moq.Mock<ProducerInterceptors>().Object; 
 			_producerCreatedTask = new Moq.Mock<TaskCompletionSource<IProducer<sbyte[]>>>().Object;
-			ClientConfigurationData clientConfigurationData = new Moq.Mock<ClientConfigurationData>().Object;
-			HashedWheelTimer timer = new Moq.Mock<HashedWheelTimer>().Object;
+			var clientConfigurationData = new Moq.Mock<ClientConfigurationData>().Object;
+			var timer = new Moq.Mock<HashedWheelTimer>().Object;
 
 			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes); 
 
@@ -64,29 +64,35 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public void TestSinglePartitionMessageRouterImplInstance()
 		{
-			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
-			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.SinglePartition;
+            var producerConfigurationData = new ProducerConfigurationData
+            {
+                MessageRoutingMode = MessageRoutingMode.SinglePartition
+            };
 
-			var messageRouter = GetMessageRouter(producerConfigurationData);
+            var messageRouter = GetMessageRouter(producerConfigurationData);
 			Assert.True(messageRouter is SinglePartitionMessageRouterImpl);
 		}
 		[Fact]
 		public void TestRoundRobinPartitionMessageRouterImplInstance()
 		{
-			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
-			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.RoundRobinPartition;
+            var producerConfigurationData = new ProducerConfigurationData
+            {
+                MessageRoutingMode = MessageRoutingMode.RoundRobinPartition
+            };
 
-			var messageRouter = GetMessageRouter(producerConfigurationData);
+            var messageRouter = GetMessageRouter(producerConfigurationData);
 			Assert.True(messageRouter is RoundRobinPartitionMessageRouterImpl);
 		}
 		[Fact]
 		public void TestCustomMessageRouterInstance()
 		{
-			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
-			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
-			producerConfigurationData.CustomMessageRouter = new CustomMessageRouter(this);
+            var producerConfigurationData = new ProducerConfigurationData
+            {
+                MessageRoutingMode = MessageRoutingMode.CustomPartition,
+                CustomMessageRouter = new CustomMessageRouter(this)
+            };
 
-			var messageRouter = GetMessageRouter(producerConfigurationData);
+            var messageRouter = GetMessageRouter(producerConfigurationData);
 			Assert.True(messageRouter is CustomMessageRouter);
 		}
 
@@ -94,7 +100,7 @@ namespace SharpPulsar.Test.Impl
 		{
 			var impl = new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, _producerCreatedTask, _schema, _producerInterceptors);
 
-			System.Reflection.FieldInfo routerPolicy = impl.GetType().GetField("_routerPolicy");
+			var routerPolicy = impl.GetType().GetField("_routerPolicy");
 			//routerPolicy.se.Accessible = true;
 			var messageRouter = (IMessageRouter) routerPolicy.GetValue(impl);
 			Assert.NotNull(messageRouter);
@@ -113,28 +119,28 @@ namespace SharpPulsar.Test.Impl
 
 			public int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata)
 			{
-				int partitionIndex = int.Parse(msg.Key) % metadata.NumPartitions();
+				var partitionIndex = int.Parse(msg.Key) % metadata.NumPartitions();
 				return partitionIndex;
 			}
 		}
 		[Fact]
 		public void TestGetStats()
 		{
-			string topicName = "test-stats";
-			ClientConfigurationData conf = new ClientConfigurationData();
-			conf.ServiceUrl = "pulsar://localhost:6650";
-			conf.StatsIntervalSeconds = 100;
+			var topicName = "test-stats";
+            var conf = new ClientConfigurationData {ServiceUrl = "pulsar://localhost:6650", StatsIntervalSeconds = 100};
 
-			
-			var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
 
-			PulsarClientImpl clientImpl = new PulsarClientImpl(conf, eventLoopGroup);
+            var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
 
-			ProducerConfigurationData producerConfData = new ProducerConfigurationData();
-			producerConfData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
-			producerConfData.CustomMessageRouter = new CustomMessageRouter(this);
+			var clientImpl = new PulsarClientImpl(conf, eventLoopGroup);
 
-			Assert.Equal(clientImpl.Configuration.StatsIntervalSeconds,long.Parse("100"));
+            var producerConfData = new ProducerConfigurationData
+            {
+                MessageRoutingMode = MessageRoutingMode.CustomPartition,
+                CustomMessageRouter = new CustomMessageRouter(this)
+            };
+
+            Assert.Equal(clientImpl.Configuration.StatsIntervalSeconds,long.Parse("100"));
 
 			var impl = new PartitionedProducerImpl<sbyte[]>(clientImpl, topicName, producerConfData, 1, null, null, null);
 
