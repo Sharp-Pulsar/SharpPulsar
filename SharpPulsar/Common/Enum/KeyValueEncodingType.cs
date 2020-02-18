@@ -26,12 +26,12 @@ public enum KeyValueEncodingType
 		/// <summary>
 		/// Key is stored as message key, while value is stored as message payload.
 		/// </summary>
-		SEPARATED,
+		Separated,
 
 		/// <summary>
 		/// Key and value are stored as message payload.
 		/// </summary>
-		INLINE
+		Inline
 	}
 
 }

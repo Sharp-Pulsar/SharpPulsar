@@ -84,7 +84,7 @@ namespace SharpPulsar.Common.Schema
            
             return (sbyte[])(object)byteBuffer.ToArray();
 		}
-
+        
 		/// <summary>
 		/// Decode the value into a key/value pair.
 		/// </summary>

@@ -7,6 +7,8 @@ using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using SharpPulsar.Common.Enum;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -50,7 +52,26 @@ namespace SharpPulsar.Impl
 		{
 			return new MessageIdImpl(ledgerId, entryId, partitionIndex);
 		}
+        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
+        {
+            var k = KeyValueSchema<TK, TV>.Of(keySchema, valueSchema);
+            return k;
+        }
+        public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
+        {
+            return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
+        }
 
+        
+        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
+        {
+            return KeyValueSchema<TK, TV>.Of(keySchema, valueSchema, keyValueEncodingType);
+        }
+
+        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(TK key, TV value, SchemaType type)
+        {
+            return KeyValueSchema<TK, TV>.Of(key, value, type);
+        }
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
 			return MessageIdImpl.FromByteArray(data);

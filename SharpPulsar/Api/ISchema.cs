@@ -1,5 +1,8 @@
-﻿using SharpPulsar.Api.Schema;
+﻿using System;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -92,7 +95,14 @@ namespace SharpPulsar.Api
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null);
 		}
-
+        /// <summary>
+        /// Key Value Schema whose underneath key and value schemas are JSONSchema.
+        /// </summary>
+        static ISchema<KeyValue<TK, TV>> KeyValue<TK, TV>(TK key, TV value)
+        {
+            return DefaultImplementation.NewKeyValueSchema(key, value, SchemaType.Json);
+        }
+        
 		/// <summary>
 		/// Decode a byte array into an object using a given version.
 		/// </summary>
