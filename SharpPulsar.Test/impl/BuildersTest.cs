@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,66 +25,50 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotSame;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
-	using MessageId = Org.Apache.Pulsar.Client.Api.MessageId;
-	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
 
     public class BuildersTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void clientBuilderTest()
 		public virtual void ClientBuilderTest()
 		{
-			ClientBuilderImpl ClientBuilder = (ClientBuilderImpl) PulsarClient.builder().ioThreads(10).maxNumberOfRejectedRequestPerConnection(200).serviceUrl("pulsar://service:6650");
+			var clientBuilder = (PulsarClientImpl)new PulsarClientBuilderImpl().IoThreads(10).MaxNumberOfRejectedRequestPerConnection(200).ServiceUrl("pulsar://service:6650").Build();
 
-			assertFalse(ClientBuilder.Conf.UseTls);
-			assertEquals(ClientBuilder.Conf.ServiceUrl, "pulsar://service:6650");
+			Assert.False(clientBuilder.Configuration.UseTls);
+			Assert.Equal("pulsar://service:6650", clientBuilder.Configuration.ServiceUrl);
 
-			ClientBuilderImpl B2 = (ClientBuilderImpl) ClientBuilder.clone();
-			assertNotSame(B2, ClientBuilder);
+			ClientBuilderImpl b2 = (ClientBuilderImpl) clientBuilder.Clone();
+			assertNotSame(b2, clientBuilder);
 
-			B2.serviceUrl("pulsar://other-broker:6650");
+			b2.serviceUrl("pulsar://other-broker:6650");
 
-			assertEquals(ClientBuilder.Conf.ServiceUrl, "pulsar://service:6650");
-			assertEquals(B2.Conf.ServiceUrl, "pulsar://other-broker:6650");
+			assertEquals(clientBuilder.Conf.ServiceUrl, "pulsar://service:6650");
+			assertEquals(b2.Conf.ServiceUrl, "pulsar://other-broker:6650");
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void enableTlsTest()
 		public virtual void EnableTlsTest()
 		{
-			ClientBuilderImpl Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar://service:6650");
-			assertFalse(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "pulsar://service:6650");
+			ClientBuilderImpl builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar://service:6650");
+			assertFalse(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "pulsar://service:6650");
 
-			Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("http://service:6650");
-			assertFalse(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "http://service:6650");
+			builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("http://service:6650");
+			assertFalse(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "http://service:6650");
 
-			Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar+ssl://service:6650");
-			assertTrue(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "pulsar+ssl://service:6650");
+			builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar+ssl://service:6650");
+			assertTrue(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "pulsar+ssl://service:6650");
 
-			Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("https://service:6650");
-			assertTrue(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "https://service:6650");
+			builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("https://service:6650");
+			assertTrue(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "https://service:6650");
 
-			Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar://service:6650").enableTls(true);
-			assertTrue(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "pulsar://service:6650");
+			builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar://service:6650").enableTls(true);
+			assertTrue(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "pulsar://service:6650");
 
-			Builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar+ssl://service:6650").enableTls(false);
-			assertTrue(Builder.Conf.UseTls);
-			assertEquals(Builder.Conf.ServiceUrl, "pulsar+ssl://service:6650");
+			builder = (ClientBuilderImpl)PulsarClient.builder().serviceUrl("pulsar+ssl://service:6650").enableTls(false);
+			assertTrue(builder.Conf.UseTls);
+			assertEquals(builder.Conf.ServiceUrl, "pulsar+ssl://service:6650");
 		}
 
 //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
@@ -88,21 +76,21 @@ namespace SharpPulsar.Test.Impl
 //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void ReaderBuilderLoadConfTest()
 		{
-			PulsarClient Client = PulsarClient.builder().serviceUrl("pulsar://localhost:6650").build();
-			string TopicName = "test_src";
-			MessageId MessageId = new MessageIdImpl(1, 2, 3);
-			IDictionary<string, object> Config = new Dictionary<string, object>();
-			Config["topicName"] = TopicName;
-			Config["receiverQueueSize"] = 2000;
-			ReaderBuilderImpl<sbyte[]> Builder = (ReaderBuilderImpl<sbyte[]>) Client.newReader().startMessageId(MessageId).loadConf(Config);
+			PulsarClient client = PulsarClient.builder().serviceUrl("pulsar://localhost:6650").build();
+			string topicName = "test_src";
+			MessageId messageId = new MessageIdImpl(1, 2, 3);
+			IDictionary<string, object> config = new Dictionary<string, object>();
+			config["topicName"] = topicName;
+			config["receiverQueueSize"] = 2000;
+			ReaderBuilderImpl<sbyte[]> builder = (ReaderBuilderImpl<sbyte[]>) client.newReader().startMessageId(messageId).loadConf(config);
 
-			Type Clazz = Builder.GetType();
-			System.Reflection.FieldInfo Conf = Clazz.getDeclaredField("conf");
-			Conf.Accessible = true;
-			object Obj = Conf.get(Builder);
-			assertTrue(Obj is ReaderConfigurationData);
-			assertEquals(((ReaderConfigurationData) Obj).TopicName, TopicName);
-			assertEquals(((ReaderConfigurationData) Obj).StartMessageId, MessageId);
+			Type clazz = builder.GetType();
+			System.Reflection.FieldInfo conf = clazz.getDeclaredField("conf");
+			conf.Accessible = true;
+			object obj = conf.get(builder);
+			assertTrue(obj is ReaderConfigurationData<>);
+			assertEquals(((ReaderConfigurationData) obj).TopicName, topicName);
+			assertEquals(((ReaderConfigurationData) obj).StartMessageId, messageId);
 		}
 	}
 

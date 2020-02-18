@@ -16,72 +16,30 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Api;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl
 {
-	using PulsarClient = Org.Apache.Pulsar.Client.Api.PulsarClient;
-    using ServiceUrlProvider = Org.Apache.Pulsar.Client.Api.ServiceUrlProvider;
 
     public class ClientBuilderImplTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testClientBuilderWithServiceUrlAndServiceUrlProviderNotSet() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestClientBuilderWithServiceUrlAndServiceUrlProviderNotSet()
+		[Fact]
+		public  void TestClientBuilderWithServiceUrlAndServiceUrlProviderNotSet()
 		{
-			PulsarClient.builder().build();
+			IPulsarClient.Builder().Build();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testClientBuilderWithNullServiceUrl() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		[Fact]
 		public virtual void TestClientBuilderWithNullServiceUrl()
 		{
-			PulsarClient.builder().serviceUrl(null).build();
+            IPulsarClient.Builder().ServiceUrl(null).Build();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testClientBuilderWithNullServiceUrlProvider() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+		[Fact]
 		public virtual void TestClientBuilderWithNullServiceUrlProvider()
 		{
-			PulsarClient.builder().serviceUrlProvider(null).build();
+            IPulsarClient.Builder().ServiceUrlProvider(null).Build();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testClientBuilderWithServiceUrlAndServiceUrlProvider() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestClientBuilderWithServiceUrlAndServiceUrlProvider()
-		{
-			PulsarClient.builder().serviceUrlProvider(new ServiceUrlProviderAnonymousInnerClass(this))}@Test(expectedExceptions = typeof(System.ArgumentException)) public void testClientBuilderWithBlankServiceUrlInServiceUrlProvider() throws PulsarClientException{PulsarClient.builder().serviceUrlProvider(new ServiceUrlProvider(){@Override public void initialize(PulsarClient client){}@Override public string ServiceUrl{return "";
-		   .serviceUrl("pulsar://localhost:6650").build();
-		}
-
-				public class ServiceUrlProviderAnonymousInnerClass : ServiceUrlProvider
-				{
-					private readonly ClientBuilderImplTest outerInstance;
-
-					public ServiceUrlProviderAnonymousInnerClass(ClientBuilderImplTest OuterInstance)
-					{
-						this.outerInstance = OuterInstance;
-					}
-
-					public void initialize(PulsarClient Client)
-					{
-
-					}
-
-					public string ServiceUrl
-					{
-						get
-						{
-							return "pulsar://localhost:6650";
-						}
-					}
-				}
-	}
-		   ).build();
-}
 
 	}
 

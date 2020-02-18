@@ -25,63 +25,38 @@ namespace SharpPulsar.Test.Impl.schema
 	/// </summary>
 	public class SchemaTestUtils
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class Foo
 		public class Foo
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable private String field1;
 			internal string Field1;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable private String field2;
 			internal string Field2;
 			internal int Field3;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable private Bar field4;
 			internal Bar Field4;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable private Color color;
 			internal Color Color;
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @AvroDefault("\"defaultValue\"") private String fieldUnableNull;
 			internal string FieldUnableNull;
 		}
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class FooV2
 		public class FooV2
 		{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Nullable private String field1;
 			internal string Field1;
 			internal int Field3;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class Bar
 		public class Bar
 		{
 			internal bool Field1;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class NestedBar
 		public class NestedBar
 		{
 			internal bool Field1;
 			internal Bar Nested;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class NestedBarList
 		public class NestedBarList
 		{
 			internal bool Field1;
 			internal IList<Bar> List;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class DerivedFoo extends Foo
 		public class DerivedFoo : Foo
 		{
 			internal string Field5;
@@ -95,8 +70,6 @@ namespace SharpPulsar.Test.Impl.schema
 			BLUE
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Data @ToString @EqualsAndHashCode public static class DerivedDerivedFoo extends DerivedFoo
 		public class DerivedDerivedFoo : DerivedFoo
 		{
 			internal string Field7;

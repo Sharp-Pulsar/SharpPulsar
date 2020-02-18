@@ -1,5 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using BAMCIS.Util.Concurrent;
+using Moq;
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,354 +29,257 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Test.Impl
 {
-    using ProducerConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ProducerConfigurationData;
-
-
-    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.eq;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotNull;
 
 	/// <summary>
-	/// Unit tests of <seealso cref="ProducerBuilderImpl"/>.
+	/// Unit tests of <seealso cref="ProducerBuilderImpl{T}"/>.
 	/// </summary>
 	public class ProducerBuilderImplTest
 	{
 
 		private const string TopicName = "testTopicName";
-		private PulsarClientImpl client;
-		private ProducerBuilderImpl producerBuilderImpl;
+		private PulsarClientImpl _client;
+		private ProducerBuilderImpl<sbyte[]> _producerBuilderImpl;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeTest public void setup()
-		public virtual void Setup()
+		public ProducerBuilderImplTest()
 		{
-			Producer Producer = mock(typeof(Producer));
-			client = mock(typeof(PulsarClientImpl));
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			when(client.NewProducer()).thenReturn(producerBuilderImpl);
+			var producer = new Mock<IProducer<sbyte[]>>().Object;
+            var mock = new Mock<PulsarClientImpl>();
+			_client = mock.Object;
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			mock.Setup(x => x.NewProducer()).Returns(_producerBuilderImpl);
 
-			when(client.CreateProducerAsync(any(typeof(ProducerConfigurationData)), any(typeof(Schema)), eq(null))).thenReturn(CompletableFuture.completedFuture(Producer));
+            mock.Setup(x =>x.CreateProducerAsync(It.IsAny<ProducerConfigurationData>(), It.IsAny<ISchema<sbyte[]>>(),  It.Is<ProducerInterceptors>(y =>  y == null))).Returns(new ValueTask<IProducer<sbyte[]>>(producer));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImpl() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImpl()
+		[Fact]
+		public  void TestProducerBuilderImpl()
 		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key2"] = "Test-Value2";
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key2"] = "Test-Value2";
 
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).ProducerName("Test-Producer").maxPendingMessages(2).addEncryptionKey("Test-EncryptionKey").property("Test-Key", "Test-Value").properties(Properties).create();
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").MaxPendingMessages(2).AddEncryptionKey("Test-EncryptionKey").Property("Test-Key", "Test-Value").Properties(properties).Create();
 
-			assertNotNull(Producer);
+			Assert.NotNull(producer);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenMessageRoutingModeAndMessageRouterAreNotSet() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeAndMessageRouterAreNotSet()
+		[Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeAndMessageRouterAreNotSet()
 		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).Create();
-			assertNotNull(Producer);
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).Create();
+            Assert.NotNull(producer);
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartition()
+		{
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).Create();
+            Assert.NotNull(producer);
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartition()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).Create();
+            Assert.NotNull(producer);
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingIsSetImplicitly()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).MessageRouter(new CustomMessageRouter(this)).Create();
+            Assert.NotNull(producer);
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingIsCustomPartition()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).MessageRouter(new CustomMessageRouter(this)).Create();
+            Assert.NotNull(producer);
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartitionAndMessageRouterIsSet()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).MessageRouter(new CustomMessageRouter(this)).Create();
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartitionAndMessageRouterIsSet()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).MessageRouter(new CustomMessageRouter(this)).Create();
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenMessageRoutingModeIsCustomPartitionAndMessageRouterIsNotSet()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).Create();
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenTopicNameIsNull()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(null).Create();
+		}
+        [Fact]
+		public  void TestProducerBuilderImplWhenTopicNameIsBlank()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic("   ").Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenProducerNameIsNull()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).ProducerName(null).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenProducerNameIsBlank()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).ProducerName("   ").Create();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenMessageRoutingModeIsSinglePartition() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartition()
+		[Fact]
+		public  void TestProducerBuilderImplWhenSendTimeoutIsNegative()
 		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).create();
-			assertNotNull(Producer);
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").SendTimeout(-1, TimeUnit.MILLISECONDS).Create();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartition() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartition()
+		[Fact]
+		public  void TestProducerBuilderImplWhenMaxPendingMessagesIsNegative()
 		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).create();
-			assertNotNull(Producer);
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").MaxPendingMessages(-1).Create();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenMessageRoutingIsSetImplicitly() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingIsSetImplicitly()
+		[Fact]
+		public  void TestProducerBuilderImplWhenEncryptionKeyIsNull()
 		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).MessageRouter(new CustomMessageRouter(this)).create();
-			assertNotNull(Producer);
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).AddEncryptionKey(null).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenEncryptionKeyIsBlank()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).AddEncryptionKey("   ").Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertyKeyIsNull()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Property(null, "Test-Value").Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertyKeyIsBlank()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Property("   ", "Test-Value").Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertyValueIsNull()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Property("Test-Key", null).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertyValueIsBlank()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Property("Test-Key", "   ").Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesIsNull()
+		{
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(null).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesKeyIsNull()
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties[null] = "Test-Value";
+
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesKeyIsBlank()
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["   "] = "Test-Value";
+
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesValueIsNull()
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key"] = null;
+
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesValueIsBlank()
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key"] = "   ";
+
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenPropertiesIsEmpty()
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+
+            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenBatchingMaxPublishDelayPropertyIsNegative()
+		{
+			_producerBuilderImpl.BatchingMaxPublishDelay(-1, TimeUnit.MILLISECONDS);
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenSendTimeoutPropertyIsNegative()
+		{
+			_producerBuilderImpl.SendTimeout(-1, TimeUnit.SECONDS);
+		}
+		[Fact]
+		public  void TestProducerBuilderImplWhenMaxPendingMessagesAcrossPartitionsPropertyIsInvalid()
+		{
+			_producerBuilderImpl.MaxPendingMessagesAcrossPartitions(999);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenMessageRoutingIsCustomPartition() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingIsCustomPartition()
+		[Fact]
+		public  void TestProducerBuilderImplWhenNumericPropertiesAreValid()
 		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			Producer Producer = producerBuilderImpl.topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).messageRouter(new CustomMessageRouter(this)).create();
-			assertNotNull(Producer);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = PulsarClientException.class) public void testProducerBuilderImplWhenMessageRoutingModeIsSinglePartitionAndMessageRouterIsSet() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartitionAndMessageRouterIsSet()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).messageRouter(new CustomMessageRouter(this)).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = PulsarClientException.class) public void testProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartitionAndMessageRouterIsSet() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartitionAndMessageRouterIsSet()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).messageRouter(new CustomMessageRouter(this)).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = PulsarClientException.class) public void testProducerBuilderImplWhenMessageRoutingModeIsCustomPartitionAndMessageRouterIsNotSet() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMessageRoutingModeIsCustomPartitionAndMessageRouterIsNotSet()
-		{
-			ProducerBuilderImpl ProducerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			ProducerBuilderImpl.topic(TopicName).messageRoutingMode(MessageRoutingMode.CustomPartition).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenTopicNameIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenTopicNameIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(null).Create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenTopicNameIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenTopicNameIsBlank()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic("   ").Create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenProducerNameIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenProducerNameIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).ProducerName(null).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenProducerNameIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenProducerNameIsBlank()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).ProducerName("   ").create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenSendTimeoutIsNegative() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenSendTimeoutIsNegative()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).ProducerName("Test-Producer").sendTimeout(-1, TimeUnit.MILLISECONDS).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenMaxPendingMessagesIsNegative() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenMaxPendingMessagesIsNegative()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).ProducerName("Test-Producer").maxPendingMessages(-1).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenEncryptionKeyIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenEncryptionKeyIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).AddEncryptionKey(null).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenEncryptionKeyIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenEncryptionKeyIsBlank()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).AddEncryptionKey("   ").create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertyKeyIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertyKeyIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Property(null, "Test-Value").create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertyKeyIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertyKeyIsBlank()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Property("   ", "Test-Value").create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertyValueIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertyValueIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Property("Test-Key", null).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertyValueIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertyValueIsBlank()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Property("Test-Key", "   ").create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testProducerBuilderImplWhenPropertiesIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesIsNull()
-		{
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(null).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertiesKeyIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesKeyIsNull()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties[null] = "Test-Value";
-
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(Properties).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertiesKeyIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesKeyIsBlank()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["   "] = "Test-Value";
-
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(Properties).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertiesValueIsNull() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesValueIsNull()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key"] = null;
-
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(Properties).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertiesValueIsBlank() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesValueIsBlank()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key"] = "   ";
-
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(Properties).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenPropertiesIsEmpty() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestProducerBuilderImplWhenPropertiesIsEmpty()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
-			producerBuilderImpl.topic(TopicName).Properties(Properties).create();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenBatchingMaxPublishDelayPropertyIsNegative()
-		public virtual void TestProducerBuilderImplWhenBatchingMaxPublishDelayPropertyIsNegative()
-		{
-			producerBuilderImpl.batchingMaxPublishDelay(-1, TimeUnit.MILLISECONDS);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenSendTimeoutPropertyIsNegative()
-		public virtual void TestProducerBuilderImplWhenSendTimeoutPropertyIsNegative()
-		{
-			producerBuilderImpl.sendTimeout(-1, TimeUnit.SECONDS);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testProducerBuilderImplWhenMaxPendingMessagesAcrossPartitionsPropertyIsInvalid()
-		public virtual void TestProducerBuilderImplWhenMaxPendingMessagesAcrossPartitionsPropertyIsInvalid()
-		{
-			producerBuilderImpl.maxPendingMessagesAcrossPartitions(999);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerBuilderImplWhenNumericPropertiesAreValid()
-		public virtual void TestProducerBuilderImplWhenNumericPropertiesAreValid()
-		{
-			producerBuilderImpl.batchingMaxPublishDelay(1, TimeUnit.SECONDS);
-			producerBuilderImpl.batchingMaxMessages(2);
-			producerBuilderImpl.sendTimeout(1, TimeUnit.SECONDS);
-			producerBuilderImpl.maxPendingMessagesAcrossPartitions(1000);
+			_producerBuilderImpl.BatchingMaxPublishDelay(1, TimeUnit.SECONDS);
+			_producerBuilderImpl.BatchingMaxMessages(2);
+			_producerBuilderImpl.SendTimeout(1, TimeUnit.SECONDS);
+			_producerBuilderImpl.MaxPendingMessagesAcrossPartitions(1000);
 		}
 
 		[Serializable]
-		public class CustomMessageRouter : MessageRouter
+		public class CustomMessageRouter : IMessageRouter
 		{
-			private readonly ProducerBuilderImplTest outerInstance;
+			private readonly ProducerBuilderImplTest _outerInstance;
 
 			public CustomMessageRouter(ProducerBuilderImplTest outerInstance)
 			{
-				this.outerInstance = OuterInstance;
+				this._outerInstance = outerInstance;
 			}
 
-			public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata Metadata)
+			public  int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata)
 			{
-				int PartitionIndex = int.Parse(Msg.Key) % Metadata.numPartitions();
-				return PartitionIndex;
+				int partitionIndex = int.Parse(msg.Key) % metadata.NumPartitions();
+				return partitionIndex;
 			}
 		}
 	}

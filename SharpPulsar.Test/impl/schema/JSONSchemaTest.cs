@@ -1,4 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Text;
+using Avro;
+using DotNetty.Buffers;
+using SharpPulsar.Api.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Shared;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,337 +28,288 @@
 /// </summary>
 namespace SharpPulsar.Test.Impl.schema
 {
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-    using Schema = org.apache.avro.Schema;
     using Bar = SchemaTestUtils.Bar;
 	using DerivedFoo = SchemaTestUtils.DerivedFoo;
 	using Foo = SchemaTestUtils.Foo;
 	using NestedBar = SchemaTestUtils.NestedBar;
 	using NestedBarList = SchemaTestUtils.NestedBarList;
 
-    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.FOO_FIELDS;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.SCHEMA_JSON_NOT_ALLOW_NULL;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.SCHEMA_JSON_ALLOW_NULL;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class JSONSchemaTest
-	public class JSONSchemaTest
+	public class JsonSchemaTest
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullSchema()
-		public virtual void TestNotAllowNullSchema()
+		[Fact]
+		public void TestNotAllowNullSchema()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(JsonSchema.SchemaInfo.Type, SchemaType.JSON);
-			Schema.Parser Parser = new Schema.Parser();
-			string SchemaJson = new string(JsonSchema.SchemaInfo.Schema);
-			Assert.assertEquals(SchemaJson, SCHEMA_JSON_NOT_ALLOW_NULL);
-			Schema Schema = Parser.parse(SchemaJson);
+			var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).WithAlwaysAllowNull(false).Build());
+			Assert.Equal(SchemaType.Json,jsonSchema.SchemaInfo.Type);
+			
+			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
+            Assert.Equal(SchemaTestUtils.SchemaJsonNotAllowNull, schemaJson);
+			var schema = Schema.Parse(schemaJson);
 
-			foreach (string FieldName in FOO_FIELDS)
+			foreach (var fieldName in SchemaTestUtils.FooFields)
 			{
-				Schema.Field Field = Schema.getField(FieldName);
-				Assert.assertNotNull(Field);
-
-				if (Field.name().Equals("field4"))
+				var field = schema.GetProperty(fieldName);
+				Assert.NotNull(field);
+				
+				/*if (fieldName.Equals("field4"))
 				{
-					Assert.assertNotNull(Field.schema().Types.get(1).getField("field1"));
+					Assert.NotNull(field.schema().Types.get(1).getField("field1"));
 				}
-				if (Field.name().Equals("fieldUnableNull"))
+				if (field.name().Equals("fieldUnableNull"))
 				{
-					Assert.assertNotNull(Field.schema().Type);
-				}
+					Assert.assertNotNull(field.schema().Type);
+				}*/
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullSchema()
-		public virtual void TestAllowNullSchema()
+		[Fact]
+		public void TestAllowNullSchema()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			Assert.assertEquals(JsonSchema.SchemaInfo.Type, SchemaType.JSON);
-			Schema.Parser Parser = new Schema.Parser();
-			string SchemaJson = new string(JsonSchema.SchemaInfo.Schema);
-			Assert.assertEquals(SchemaJson, SCHEMA_JSON_ALLOW_NULL);
-			Schema Schema = Parser.parse(SchemaJson);
+            var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).Build());
+			Assert.Equal(SchemaType.Json, jsonSchema.SchemaInfo.Type);
+			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
+			Assert.Equal(schemaJson, SchemaTestUtils.SchemaJsonAllowNull);
+			var schema = Schema.Parse(schemaJson);
 
-			foreach (string FieldName in FOO_FIELDS)
+			foreach (var fieldName in SchemaTestUtils.FooFields)
 			{
-				Schema.Field Field = Schema.getField(FieldName);
-				Assert.assertNotNull(Field);
+                var field = schema.GetProperty(fieldName);
+                Assert.NotNull(field);
 
-				if (Field.name().Equals("field4"))
+				/*if (field.name().Equals("field4"))
 				{
-					Assert.assertNotNull(Field.schema().Types.get(1).getField("field1"));
+					Assert.assertNotNull(field.schema().Types.get(1).getField("field1"));
 				}
-				if (Field.name().Equals("fieldUnableNull"))
+				if (field.name().Equals("fieldUnableNull"))
 				{
-					Assert.assertNotNull(Field.schema().Type);
-				}
+					Assert.assertNotNull(field.schema().Type);
+				}*/
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullEncodeAndDecode()
-		public virtual void TestAllowNullEncodeAndDecode()
+		[Fact]
+		public void TestAllowNullEncodeAndDecode()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
+			var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).Build());
 
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+            var bar = new Bar {Field1 = true};
 
-			Foo Foo1 = new Foo();
-			Foo1.Field1 = "foo1";
-			Foo1.Field2 = "bar1";
-			Foo1.Field4 = Bar;
-			Foo1.Color = SchemaTestUtils.Color.BLUE;
+            var foo1 = new Foo {Field1 = "foo1", Field2 = "bar1", Field4 = bar, Color = SchemaTestUtils.Color.BLUE};
 
-			Foo Foo2 = new Foo();
-			Foo2.Field1 = "foo2";
-			Foo2.Field2 = "bar2";
+            var foo2 = new Foo {Field1 = "foo2", Field2 = "bar2"};
 
-			sbyte[] Bytes1 = JsonSchema.encode(Foo1);
-			Assert.assertTrue(Bytes1.Length > 0);
+            var bytes1 = jsonSchema.Encode(foo1);
+			Assert.True(bytes1.Length > 0);
 
-			sbyte[] Bytes2 = JsonSchema.encode(Foo2);
-			Assert.assertTrue(Bytes2.Length > 0);
+			var bytes2 = jsonSchema.Encode(foo2);
+			Assert.True(bytes2.Length > 0);
 
-			Foo Object1 = JsonSchema.decode(Bytes1);
-			Foo Object2 = JsonSchema.decode(Bytes2);
+			var object1 = jsonSchema.Decode(bytes1);
+			var object2 = jsonSchema.Decode(bytes2);
 
-			Assert.assertEquals(Object1, Foo1);
-			Assert.assertEquals(Object2, Foo2);
+			Assert.Equal(foo1,object1);
+			Assert.Equal(foo2, object2);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullEncodeAndDecode()
-		public virtual void TestNotAllowNullEncodeAndDecode()
+		[Fact]
+		public void TestNotAllowNullEncodeAndDecode()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
+			JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).WithAlwaysAllowNull(false).Build());
 
-			Foo Foo1 = new Foo();
-			Foo1.Field1 = "foo1";
-			Foo1.Field2 = "bar1";
-			Foo1.Field4 = new Bar();
-			Foo1.FieldUnableNull = "notNull";
+			var foo1 = new Foo();
+			foo1.Field1 = "foo1";
+			foo1.Field2 = "bar1";
+			foo1.Field4 = new Bar();
+			foo1.FieldUnableNull = "notNull";
 
-			Foo Foo2 = new Foo();
-			Foo2.Field1 = "foo2";
-			Foo2.Field2 = "bar2";
+			var foo2 = new Foo();
+			foo2.Field1 = "foo2";
+			foo2.Field2 = "bar2";
 
-			sbyte[] Bytes1 = JsonSchema.encode(Foo1);
-			Foo Object1 = JsonSchema.decode(Bytes1);
-			Assert.assertTrue(Bytes1.Length > 0);
-			assertEquals(Object1, Foo1);
+			sbyte[] bytes1 = jsonSchema.Encode(foo1);
+			Foo object1 = jsonSchema.Decode(bytes1);
+			Assert.True(bytes1.Length > 0);
+			Assert.Equal(foo1, object1);
 
 			try
 			{
 
-				JsonSchema.encode(Foo2);
+				jsonSchema.Encode(foo2);
 
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				Assert.assertTrue(E is SchemaSerializationException);
+				Assert.True(e is SchemaSerializationException);
 			}
 
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullNestedClasses()
-		public virtual void TestAllowNullNestedClasses()
+		[Fact]
+		public void TestAllowNullNestedClasses()
 		{
-			JSONSchema<NestedBar> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<NestedBar>().withPojo(typeof(NestedBar)).build());
-			JSONSchema<NestedBarList> ListJsonSchema = JSONSchema.Of(SchemaDefinition.builder<NestedBarList>().withPojo(typeof(NestedBarList)).build());
+			JsonSchema<NestedBar> jsonSchema = JsonSchema<NestedBar>.Of(ISchemaDefinition<NestedBar>.Builder().WithPojo(new NestedBar()).Build());
+			JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(new NestedBarList()).Build());
 
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+            var bar = new Bar {Field1 = true};
 
-			NestedBar Nested = new NestedBar();
-			Nested.Field1 = true;
-			Nested.Nested = Bar;
+            var nested = new NestedBar {Field1 = true, Nested = bar};
 
-			sbyte[] Bytes = JsonSchema.encode(Nested);
-			Assert.assertTrue(Bytes.Length > 0);
-			Assert.assertEquals(JsonSchema.decode(Bytes), Nested);
+            sbyte[] bytes = jsonSchema.Encode(nested);
+			Assert.True(bytes.Length > 0);
+			Assert.Equal( nested, jsonSchema.Decode(bytes));
 
-			IList<Bar> List = Collections.singletonList(Bar);
-			NestedBarList NestedList = new NestedBarList();
-			NestedList.Field1 = true;
-			NestedList.List = List;
+            IList<Bar> list = new List<Bar>{ bar};
+            var nestedList = new NestedBarList {Field1 = true, List = list};
 
-			Bytes = ListJsonSchema.encode(NestedList);
-			Assert.assertTrue(Bytes.Length > 0);
+            bytes = listJsonSchema.Encode(nestedList);
+			Assert.True(bytes.Length > 0);
 
-			Assert.assertEquals(ListJsonSchema.decode(Bytes), NestedList);
+			Assert.Equal( nestedList, listJsonSchema.Decode(bytes));
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullNestedClasses()
-		public virtual void TestNotAllowNullNestedClasses()
+		[Fact]
+		public void TestNotAllowNullNestedClasses()
 		{
-			JSONSchema<NestedBar> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<NestedBar>().withPojo(typeof(NestedBar)).withAlwaysAllowNull(false).build());
-			JSONSchema<NestedBarList> ListJsonSchema = JSONSchema.Of(SchemaDefinition.builder<NestedBarList>().withPojo(typeof(NestedBarList)).withAlwaysAllowNull(false).build());
+			JsonSchema<NestedBar> jsonSchema = JsonSchema<NestedBar>.Of(ISchemaDefinition<NestedBar>.Builder().WithPojo(new NestedBar()).WithAlwaysAllowNull(false).Build());
+			JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(new NestedBarList()).WithAlwaysAllowNull(false).Build());
 
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+            var bar = new Bar {Field1 = true};
 
-			NestedBar Nested = new NestedBar();
-			Nested.Field1 = true;
-			Nested.Nested = Bar;
+            var nested = new NestedBar {Field1 = true, Nested = bar};
 
-			sbyte[] Bytes = JsonSchema.encode(Nested);
-			Assert.assertTrue(Bytes.Length > 0);
-			Assert.assertEquals(JsonSchema.decode(Bytes), Nested);
+            sbyte[] bytes = jsonSchema.Encode(nested);
+			Assert.True(bytes.Length > 0);
+			Assert.Equal( nested, jsonSchema.Decode(bytes));
 
-			IList<Bar> List = Collections.singletonList(Bar);
-			NestedBarList NestedList = new NestedBarList();
-			NestedList.Field1 = true;
-			NestedList.List = List;
+			IList<Bar> list = new List<Bar> { bar };
+            var nestedList = new NestedBarList {Field1 = true, List = list};
 
-			Bytes = ListJsonSchema.encode(NestedList);
-			Assert.assertTrue(Bytes.Length > 0);
+            bytes = listJsonSchema.Encode(nestedList);
+			Assert.True(bytes.Length > 0);
 
-			Assert.assertEquals(ListJsonSchema.decode(Bytes), NestedList);
+			Assert.Equal( nestedList, listJsonSchema.Decode(bytes));
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullCorrectPolymorphism()
-		public virtual void TestNotAllowNullCorrectPolymorphism()
+        [Fact]
+		public void TestNotAllowNullCorrectPolymorphism()
 		{
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+            var bar = new Bar {Field1 = true};
 
-			DerivedFoo DerivedFoo = new DerivedFoo();
-			DerivedFoo.Field1 = "foo1";
-			DerivedFoo.Field2 = "bar2";
-			DerivedFoo.Field3 = 4;
-			DerivedFoo.Field4 = Bar;
-			DerivedFoo.Field5 = "derived1";
-			DerivedFoo.Field6 = 2;
+            var derivedFoo = new DerivedFoo
+            {
+                Field1 = "foo1",
+                Field2 = "bar2",
+                Field3 = 4,
+                Field4 = bar,
+                Field5 = "derived1",
+                Field6 = 2
+            };
 
-			Foo Foo = new Foo();
-			Foo.Field1 = "foo1";
-			Foo.Field2 = "bar2";
-			Foo.Field3 = 4;
-			Foo.Field4 = Bar;
+            var foo = new Foo {Field1 = "foo1", Field2 = "bar2", Field3 = 4, Field4 = bar};
 
-			SchemaTestUtils.DerivedDerivedFoo DerivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo();
-			DerivedDerivedFoo.Field1 = "foo1";
-			DerivedDerivedFoo.Field2 = "bar2";
-			DerivedDerivedFoo.Field3 = 4;
-			DerivedDerivedFoo.Field4 = Bar;
-			DerivedDerivedFoo.Field5 = "derived1";
-			DerivedDerivedFoo.Field6 = 2;
-			DerivedDerivedFoo.Foo2 = Foo;
-			DerivedDerivedFoo.DerivedFoo = DerivedFoo;
+            var derivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo
+            {
+                Field1 = "foo1",
+                Field2 = "bar2",
+                Field3 = 4,
+                Field4 = bar,
+                Field5 = "derived1",
+                Field6 = 2,
+                Foo2 = foo,
+                DerivedFoo = derivedFoo
+            };
 
-			// schema for base class
-			JSONSchema<Foo> BaseJsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(Foo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedFoo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedDerivedFoo)), Foo);
+            // schema for base class
+			JsonSchema<Foo> baseJsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).Build());
+			Assert.Equal(foo, baseJsonSchema.Decode(baseJsonSchema.Encode(foo)));
+            Assert.Equal(foo,baseJsonSchema.Decode(baseJsonSchema.Encode(derivedFoo)));
+            Assert.Equal(foo,baseJsonSchema.Decode(baseJsonSchema.Encode(derivedDerivedFoo)));
 
 			// schema for derived class
-			JSONSchema<DerivedFoo> DerivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<DerivedFoo>().withPojo(typeof(DerivedFoo)).build());
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedFoo)), DerivedFoo);
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedFoo);
+			JsonSchema<DerivedFoo> derivedJsonSchema = JsonSchema<DerivedFoo>.Of(ISchemaDefinition<DerivedFoo>.Builder().WithPojo(new DerivedFoo()).Build());
+            Assert.Equal(derivedFoo,derivedJsonSchema.Decode(derivedJsonSchema.Encode(derivedFoo)));
+            Assert.Equal(derivedFoo,derivedJsonSchema.Decode(derivedJsonSchema.Encode(derivedDerivedFoo)));
 
 			//schema for derived derived class
-			JSONSchema<SchemaTestUtils.DerivedDerivedFoo> DerivedDerivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<SchemaTestUtils.DerivedDerivedFoo>().withPojo(typeof(SchemaTestUtils.DerivedDerivedFoo)).build());
-			Assert.assertEquals(DerivedDerivedJsonSchema.decode(DerivedDerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedDerivedFoo);
+			JsonSchema<SchemaTestUtils.DerivedDerivedFoo> derivedDerivedJsonSchema = JsonSchema<SchemaTestUtils.DerivedDerivedFoo>.Of(ISchemaDefinition<SchemaTestUtils.DerivedDerivedFoo>.Builder().WithPojo(new SchemaTestUtils.DerivedDerivedFoo()).Build());
+			Assert.Equal(derivedDerivedJsonSchema.Decode(derivedDerivedJsonSchema.Encode(derivedDerivedFoo)), derivedDerivedFoo);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = org.apache.pulsar.client.api.SchemaSerializationException.class) public void testAllowNullDecodeWithInvalidContent()
-		public virtual void TestAllowNullDecodeWithInvalidContent()
+		[Fact]
+		public void TestAllowNullDecodeWithInvalidContent()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			JsonSchema.decode(new sbyte[0]);
+			JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).Build());
+			jsonSchema.Decode(new sbyte[0]);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullCorrectPolymorphism()
-		public virtual void TestAllowNullCorrectPolymorphism()
+		/*[Fact]
+		public void TestAllowNullCorrectPolymorphism()
 		{
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+			var bar = new Bar();
+			bar.Field1 = true;
 
-			DerivedFoo DerivedFoo = new DerivedFoo();
-			DerivedFoo.Field1 = "foo1";
-			DerivedFoo.Field2 = "bar2";
-			DerivedFoo.Field3 = 4;
-			DerivedFoo.Field4 = Bar;
-			DerivedFoo.Field5 = "derived1";
-			DerivedFoo.Field6 = 2;
+			var derivedFoo = new DerivedFoo();
+			derivedFoo.Field1 = "foo1";
+			derivedFoo.Field2 = "bar2";
+			derivedFoo.Field3 = 4;
+			derivedFoo.Field4 = bar;
+			derivedFoo.Field5 = "derived1";
+			derivedFoo.Field6 = 2;
 
-			Foo Foo = new Foo();
-			Foo.Field1 = "foo1";
-			Foo.Field2 = "bar2";
-			Foo.Field3 = 4;
-			Foo.Field4 = Bar;
+			var foo = new Foo();
+			foo.Field1 = "foo1";
+			foo.Field2 = "bar2";
+			foo.Field3 = 4;
+			foo.Field4 = bar;
 
-			SchemaTestUtils.DerivedDerivedFoo DerivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo();
-			DerivedDerivedFoo.Field1 = "foo1";
-			DerivedDerivedFoo.Field2 = "bar2";
-			DerivedDerivedFoo.Field3 = 4;
-			DerivedDerivedFoo.Field4 = Bar;
-			DerivedDerivedFoo.Field5 = "derived1";
-			DerivedDerivedFoo.Field6 = 2;
-			DerivedDerivedFoo.Foo2 = Foo;
-			DerivedDerivedFoo.DerivedFoo = DerivedFoo;
+			var derivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo();
+			derivedDerivedFoo.Field1 = "foo1";
+			derivedDerivedFoo.Field2 = "bar2";
+			derivedDerivedFoo.Field3 = 4;
+			derivedDerivedFoo.Field4 = bar;
+			derivedDerivedFoo.Field5 = "derived1";
+			derivedDerivedFoo.Field6 = 2;
+			derivedDerivedFoo.Foo2 = foo;
+			derivedDerivedFoo.DerivedFoo = derivedFoo;
 
 			// schema for base class
-			JSONSchema<Foo> BaseJsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(Foo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedFoo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedDerivedFoo)), Foo);
+			JSONSchema<Foo> baseJsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
+			Assert.assertEquals(baseJsonSchema.decode(baseJsonSchema.encode(foo)), foo);
+			Assert.assertEquals(baseJsonSchema.decode(baseJsonSchema.encode(derivedFoo)), foo);
+			Assert.assertEquals(baseJsonSchema.decode(baseJsonSchema.encode(derivedDerivedFoo)), foo);
 
 			// schema for derived class
-			JSONSchema<DerivedFoo> DerivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<DerivedFoo>().withPojo(typeof(DerivedFoo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedFoo)), DerivedFoo);
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedFoo);
+			JSONSchema<DerivedFoo> derivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<DerivedFoo>().withPojo(typeof(DerivedFoo)).withAlwaysAllowNull(false).build());
+			Assert.assertEquals(derivedJsonSchema.decode(derivedJsonSchema.encode(derivedFoo)), derivedFoo);
+			Assert.assertEquals(derivedJsonSchema.decode(derivedJsonSchema.encode(derivedDerivedFoo)), derivedFoo);
 
 			//schema for derived derived class
-			JSONSchema<SchemaTestUtils.DerivedDerivedFoo> DerivedDerivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<SchemaTestUtils.DerivedDerivedFoo>().withPojo(typeof(SchemaTestUtils.DerivedDerivedFoo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(DerivedDerivedJsonSchema.decode(DerivedDerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedDerivedFoo);
+			JSONSchema<SchemaTestUtils.DerivedDerivedFoo> derivedDerivedJsonSchema = JSONSchema.Of(SchemaDefinition.builder<SchemaTestUtils.DerivedDerivedFoo>().withPojo(typeof(SchemaTestUtils.DerivedDerivedFoo)).withAlwaysAllowNull(false).build());
+			Assert.assertEquals(derivedDerivedJsonSchema.decode(derivedDerivedJsonSchema.encode(derivedDerivedFoo)), derivedDerivedFoo);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = org.apache.pulsar.client.api.SchemaSerializationException.class) public void testNotAllowNullDecodeWithInvalidContent()
-		public virtual void TestNotAllowNullDecodeWithInvalidContent()
+		public void TestNotAllowNullDecodeWithInvalidContent()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			JsonSchema.decode(new sbyte[0]);
+			JSONSchema<Foo> jsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
+			jsonSchema.decode(new sbyte[0]);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testDecodeByteBuf()
-		public virtual void TestDecodeByteBuf()
+		*/
+		[Fact]
+		public void TestDecodeByteBuf()
 		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.Of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
+			JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(new Foo()).WithAlwaysAllowNull(false).Build());
 
-			Foo Foo1 = new Foo();
-			Foo1.Field1 = "foo1";
-			Foo1.Field2 = "bar1";
-			Foo1.Field4 = new Bar();
-			Foo1.FieldUnableNull = "notNull";
+			var foo1 = new Foo();
+			foo1.Field1 = "foo1";
+			foo1.Field2 = "bar1";
+			foo1.Field4 = new Bar();
+			foo1.FieldUnableNull = "notNull";
 
-			Foo Foo2 = new Foo();
-			Foo2.Field1 = "foo2";
-			Foo2.Field2 = "bar2";
+			var foo2 = new Foo();
+			foo2.Field1 = "foo2";
+			foo2.Field2 = "bar2";
 
-			sbyte[] Bytes1 = JsonSchema.encode(Foo1);
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Bytes1.Length);
-			ByteBuf.writeBytes(Bytes1);
-			Assert.assertTrue(Bytes1.Length > 0);
-			assertEquals(JsonSchema.decode(ByteBuf), Foo1);
+			sbyte[] bytes1 = jsonSchema.Encode(foo1);
+			var byteBuf = UnpooledByteBufferAllocator.Default.Buffer(bytes1.Length);
+			byteBuf.WriteBytes((byte[])(object)bytes1);
+			Assert.True(bytes1.Length > 0);
+			Assert.Equal( foo1, jsonSchema.Decode(byteBuf));
 
 		}
 	}

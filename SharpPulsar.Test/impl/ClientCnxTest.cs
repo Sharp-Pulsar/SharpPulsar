@@ -18,41 +18,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Threading.Channels;
+using DotNetty.Transport.Channels;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol;
+using SharpPulsar.Utility.Netty;
+
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.fail;
-
-
-	using Channel = io.netty.channel.Channel;
-    using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using PulsarApi = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi;
-	using PulsarHandler = Org.Apache.Pulsar.Common.Protocol.PulsarHandler;
-    using ChannelFuture = io.netty.channel.ChannelFuture;
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-
 	public class ClientCnxTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testClientCnxTimeout() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestClientCnxTimeout()
 		{
-			EventLoopGroup EventLoop = EventLoopUtil.newEventLoopGroup(1, new DefaultThreadFactory("testClientCnxTimeout"));
+			var eventLoop = new MultithreadEventLoopGroup(1); 
 			ClientConfigurationData Conf = new ClientConfigurationData();
 			Conf.OperationTimeoutMs = 10;
-			ClientCnx Cnx = new ClientCnx(Conf, EventLoop);
+			ClientCnx Cnx = new ClientCnx(Conf, eventLoop);
 
 			ChannelHandlerContext Ctx = mock(typeof(ChannelHandlerContext));
 			ChannelFuture ListenerFuture = mock(typeof(ChannelFuture));

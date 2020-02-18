@@ -7,6 +7,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Impl\BuildersTest.cs" />
+    <Compile Remove="Impl\ConnectionTimeoutTest.cs" />
+    <Compile Remove="Impl\HashTest.cs" />
+    <Compile Remove="Impl\MessageIdCompareToTest.cs" />
+    <Compile Remove="Impl\ProducerStatsRecorderImplTest.cs" />
+    <Compile Remove="Impl\PulsarServiceNameResolverTest.cs" />
+    <Compile Remove="Impl\RoundRobinPartitionMessageRouterImplTest.cs" />
+    <Compile Remove="Impl\schema\generic\MultiVersionSchemaInfoProviderTest.cs" />
+    <Compile Remove="Impl\schema\SchemaBuilderTest.cs" />
+    <Compile Remove="Impl\schema\SchemaInfoTest.cs" />
+    <Compile Remove="Impl\schema\StringSchemaTest.cs" />
+    <Compile Remove="Impl\schema\SupportVersioningAvroSchemaTest.cs" />
+    <Compile Remove="Impl\schema\SupportVersioningKeyValueSchemaTest.cs" />
+    <Compile Remove="Impl\SinglePartitionMessageRouterImplTest.cs" />
+    <Compile Remove="Impl\TopicMetadataImplTest.cs" />
+    <Compile Remove="Impl\TypedMessageBuilderImplTest.cs" />
+    <Compile Remove="Impl\UnAckedMessageTrackerTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="Moq" Version="4.5.28" />
     <PackageReference Include="xunit" Version="2.4.1" />
