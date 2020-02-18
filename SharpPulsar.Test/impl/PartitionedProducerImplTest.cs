@@ -1,5 +1,14 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using DotNetty.Common.Utilities;
+using DotNetty.Transport.Channels;
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Utility.Netty;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,150 +30,115 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test.Impl
 {
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using Timer = io.netty.util.Timer;
 
-	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-    using MessageRouter = Org.Apache.Pulsar.Client.Api.MessageRouter;
-    using Producer = Org.Apache.Pulsar.Client.Api.Producer;
-    using TopicMetadata = Org.Apache.Pulsar.Client.Api.TopicMetadata;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using ProducerConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ProducerConfigurationData;
-
-
-    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
 
 	/// <summary>
-	/// Unit Tests of <seealso cref="PartitionedProducerImpl"/>.
+	/// Unit Tests of <seealso cref="PartitionedProducerImpl{T}"/>.
 	/// </summary>
 	public class PartitionedProducerImplTest
 	{
 
 		private const string TopicName = "testTopicName";
-		private PulsarClientImpl client;
-		private ProducerBuilderImpl producerBuilderImpl;
-		private Schema schema;
-		private ProducerInterceptors producerInterceptors;
-		private CompletableFuture<Producer> producerCreatedFuture;
+		private PulsarClientImpl _client;
+		private ProducerBuilderImpl<sbyte[]> _producerBuilderImpl;
+		private ISchema<sbyte[]> _schema;
+		private ProducerInterceptors _producerInterceptors;
+		private TaskCompletionSource<IProducer<sbyte[]>> _producerCreatedTask;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeTest public void setup()
-		public virtual void Setup()
+		public PartitionedProducerImplTest()
 		{
-			client = mock(typeof(PulsarClientImpl));
-			schema = mock(typeof(Schema));
-			producerInterceptors = mock(typeof(ProducerInterceptors));
-			producerCreatedFuture = mock(typeof(CompletableFuture));
-			ClientConfigurationData ClientConfigurationData = mock(typeof(ClientConfigurationData));
-			Timer Timer = mock(typeof(Timer));
+			var mock = new Moq.Mock<PulsarClientImpl>();
+			_client = mock.Object;
+            _schema = new Moq.Mock<ISchema<sbyte[]>>().Object;
+			_producerInterceptors = new Moq.Mock<ProducerInterceptors>().Object; 
+			_producerCreatedTask = new Moq.Mock<TaskCompletionSource<IProducer<sbyte[]>>>().Object;
+			ClientConfigurationData clientConfigurationData = new Moq.Mock<ClientConfigurationData>().Object;
+			HashedWheelTimer timer = new Moq.Mock<HashedWheelTimer>().Object;
 
-			producerBuilderImpl = new ProducerBuilderImpl(client, SchemaFields.BYTES);
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes); 
 
-			when(client.Configuration).thenReturn(ClientConfigurationData);
-			when(client.Timer()).thenReturn(Timer);
-			when(client.NewProducer()).thenReturn(producerBuilderImpl);
+			mock.Setup(x => x.Configuration).Returns(clientConfigurationData);
+            mock.Setup(x => x.Timer).Returns(timer);
+            mock.Setup(x =>x.NewProducer()).Returns(_producerBuilderImpl);
+		}
+		[Fact]
+		public void TestSinglePartitionMessageRouterImplInstance()
+		{
+			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
+			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.SinglePartition;
+
+			var messageRouter = GetMessageRouter(producerConfigurationData);
+			Assert.True(messageRouter is SinglePartitionMessageRouterImpl);
+		}
+		[Fact]
+		public void TestRoundRobinPartitionMessageRouterImplInstance()
+		{
+			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
+			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.RoundRobinPartition;
+
+			var messageRouter = GetMessageRouter(producerConfigurationData);
+			Assert.True(messageRouter is RoundRobinPartitionMessageRouterImpl);
+		}
+		[Fact]
+		public void TestCustomMessageRouterInstance()
+		{
+			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
+			producerConfigurationData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
+			producerConfigurationData.CustomMessageRouter = new CustomMessageRouter(this);
+
+			var messageRouter = GetMessageRouter(producerConfigurationData);
+			Assert.True(messageRouter is CustomMessageRouter);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSinglePartitionMessageRouterImplInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestSinglePartitionMessageRouterImplInstance()
+		private IMessageRouter GetMessageRouter(ProducerConfigurationData producerConfigurationData)
 		{
-			ProducerConfigurationData ProducerConfigurationData = new ProducerConfigurationData();
-			ProducerConfigurationData.MessageRoutingMode = MessageRoutingMode.SinglePartition;
+			var impl = new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, _producerCreatedTask, _schema, _producerInterceptors);
 
-			MessageRouter MessageRouter = GetMessageRouter(ProducerConfigurationData);
-			assertTrue(MessageRouter is SinglePartitionMessageRouterImpl);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testRoundRobinPartitionMessageRouterImplInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestRoundRobinPartitionMessageRouterImplInstance()
-		{
-			ProducerConfigurationData ProducerConfigurationData = new ProducerConfigurationData();
-			ProducerConfigurationData.MessageRoutingMode = MessageRoutingMode.RoundRobinPartition;
-
-			MessageRouter MessageRouter = GetMessageRouter(ProducerConfigurationData);
-			assertTrue(MessageRouter is RoundRobinPartitionMessageRouterImpl);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testCustomMessageRouterInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestCustomMessageRouterInstance()
-		{
-			ProducerConfigurationData ProducerConfigurationData = new ProducerConfigurationData();
-			ProducerConfigurationData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
-			ProducerConfigurationData.CustomMessageRouter = new CustomMessageRouter(this);
-
-			MessageRouter MessageRouter = GetMessageRouter(ProducerConfigurationData);
-			assertTrue(MessageRouter is CustomMessageRouter);
-		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private org.apache.pulsar.client.api.MessageRouter getMessageRouter(org.apache.pulsar.client.impl.conf.ProducerConfigurationData producerConfigurationData) throws NoSuchFieldException, IllegalAccessException
-		private MessageRouter GetMessageRouter(ProducerConfigurationData ProducerConfigurationData)
-		{
-			PartitionedProducerImpl Impl = new PartitionedProducerImpl(client, TopicName, ProducerConfigurationData, 2, producerCreatedFuture, schema, producerInterceptors);
-
-			System.Reflection.FieldInfo RouterPolicy = Impl.GetType().getDeclaredField("routerPolicy");
-			RouterPolicy.Accessible = true;
-			MessageRouter MessageRouter = (MessageRouter) RouterPolicy.get(Impl);
-			assertNotNull(MessageRouter);
-			return MessageRouter;
+			System.Reflection.FieldInfo routerPolicy = impl.GetType().GetField("_routerPolicy");
+			//routerPolicy.se.Accessible = true;
+			var messageRouter = (IMessageRouter) routerPolicy.GetValue(impl);
+			Assert.NotNull(messageRouter);
+			return messageRouter;
 		}
 
 		[Serializable]
-		public class CustomMessageRouter : MessageRouter
+		public class CustomMessageRouter : IMessageRouter
 		{
-			private readonly PartitionedProducerImplTest outerInstance;
+			private readonly PartitionedProducerImplTest _outerInstance;
 
 			public CustomMessageRouter(PartitionedProducerImplTest outerInstance)
 			{
-				this.outerInstance = OuterInstance;
+				this._outerInstance = outerInstance;
 			}
 
-			public override int ChoosePartition<T1>(Message<T1> Msg, TopicMetadata Metadata)
+			public int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata)
 			{
-				int PartitionIndex = int.Parse(Msg.Key) % Metadata.numPartitions();
-				return PartitionIndex;
+				int partitionIndex = int.Parse(msg.Key) % metadata.NumPartitions();
+				return partitionIndex;
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGetStats() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestGetStats()
+		[Fact]
+		public void TestGetStats()
 		{
-			string TopicName = "test-stats";
-			ClientConfigurationData Conf = new ClientConfigurationData();
-			Conf.ServiceUrl = "pulsar://localhost:6650";
-			Conf.StatsIntervalSeconds = 100;
+			string topicName = "test-stats";
+			ClientConfigurationData conf = new ClientConfigurationData();
+			conf.ServiceUrl = "pulsar://localhost:6650";
+			conf.StatsIntervalSeconds = 100;
 
-			ThreadFactory ThreadFactory = new DefaultThreadFactory("client-test-stats", Thread.CurrentThread.Daemon);
-			EventLoopGroup EventLoopGroup = EventLoopUtil.newEventLoopGroup(Conf.NumIoThreads, ThreadFactory);
+			
+			var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
 
-			PulsarClientImpl ClientImpl = new PulsarClientImpl(Conf, EventLoopGroup);
+			PulsarClientImpl clientImpl = new PulsarClientImpl(conf, eventLoopGroup);
 
-			ProducerConfigurationData ProducerConfData = new ProducerConfigurationData();
-			ProducerConfData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
-			ProducerConfData.CustomMessageRouter = new CustomMessageRouter(this);
+			ProducerConfigurationData producerConfData = new ProducerConfigurationData();
+			producerConfData.MessageRoutingMode = MessageRoutingMode.CustomPartition;
+			producerConfData.CustomMessageRouter = new CustomMessageRouter(this);
 
-			assertEquals(long.Parse("100"), ClientImpl.Configuration.StatsIntervalSeconds);
+			Assert.Equal(clientImpl.Configuration.StatsIntervalSeconds,long.Parse("100"));
 
-			PartitionedProducerImpl Impl = new PartitionedProducerImpl(ClientImpl, TopicName, ProducerConfData, 1, null, null, null);
+			var impl = new PartitionedProducerImpl<sbyte[]>(clientImpl, topicName, producerConfData, 1, null, null, null);
 
-			Impl.Stats;
+			var s = impl.Stats;
 		}
 
 	}

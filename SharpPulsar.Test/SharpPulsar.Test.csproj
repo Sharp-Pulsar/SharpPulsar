@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Impl\AcknowledgementsGroupingTrackerTest.cs" />
+    <Compile Remove="Impl\BackoffTest.cs" />
+    <Compile Remove="Impl\BatchMessageAckerDisabledTest.cs" />
+    <Compile Remove="Impl\BatchMessageAckerTest.cs" />
+    <Compile Remove="Impl\BatchMessageIdImplTest.cs" />
     <Compile Remove="Impl\BuildersTest.cs" />
     <Compile Remove="Impl\ConnectionTimeoutTest.cs" />
     <Compile Remove="Impl\HashTest.cs" />
