@@ -17,150 +17,154 @@
 /// under the License.
 /// </summary>
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Conf;
+using Xunit;
 
 namespace SharpPulsar.Test.Impl.auth
 {
 
     public class AuthenticationTokenTest
 	{
-
+		[Fact]
 		public void TestAuthToken()
 		{
-			AuthenticationToken authToken = new AuthenticationToken("token-xyz");
-			assertEquals(authToken.AuthMethodName, "token");
+			var authToken = new AuthenticationToken("token-xyz");
+			Assert.Equal("token", authToken.AuthMethodName);
 
-			IAuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "token-xyz");
+			var authData = authToken.AuthData;
+			Assert.True(authData.HasDataFromCommand());
+            Assert.Equal("token-xyz", authData.CommandData);
 
-			assertFalse(authData.hasDataForTls());
-			assertNull(authData.TlsCertificates);
-			assertNull(authData.TlsPrivateKey);
+			Assert.False(authData.HasDataForTls());
+			Assert.Null(authData.TlsCertificates);
+			Assert.Null(authData.TlsPrivateKey);
 
-			assertTrue(authData.hasDataForHttp());
-			assertEquals(authData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
+			Assert.True(authData.HasDataForHttp());
+            Assert.Equal(new HashSet<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Authorization", "Bearer token-xyz") }, authData.HttpHeaders);
 
 			authToken.DisposeAsync();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthTokenClientConfig() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthTokenClientConfig()
+		[Fact]
+		public  void TestAuthTokenClientConfig()
 		{
-			ClientConfigurationData clientConfig = new ClientConfigurationData();
+			var clientConfig = new ClientConfigurationData();
 			clientConfig.ServiceUrl = "pulsar://service-url";
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
 			clientConfig.AuthPluginClassName = typeof(AuthenticationToken).FullName;
 			clientConfig.AuthParams = "token-xyz";
 
-			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig);
+			var pulsarClient = new PulsarClientImpl(clientConfig);
 
-			Authentication authToken = pulsarClient.Configuration.Authentication;
-			assertEquals(authToken.AuthMethodName, "token");
+			var authToken = pulsarClient.Configuration.Authentication;
+			Assert.Equal("token", authToken.AuthMethodName);
 
-			AuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "token-xyz");
+			var authData = authToken.AuthData;
+			Assert.True(authData.HasDataFromCommand());
+			Assert.Equal("token-xyz", authData.CommandData);
 
-			assertFalse(authData.hasDataForTls());
-			assertNull(authData.TlsCertificates);
-			assertNull(authData.TlsPrivateKey);
+			Assert.False(authData.HasDataForTls());
+			Assert.Null(authData.TlsCertificates);
+			Assert.Null(authData.TlsPrivateKey);
 
-			assertTrue(authData.hasDataForHttp());
-			assertEquals(authData.HttpHeaders, Collections.singletonMap("Authorization", "Bearer token-xyz").entrySet());
+			Assert.True(authData.HasDataForHttp());
+            Assert.Equal(new HashSet<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Authorization", "Bearer token-xyz") }, authData.HttpHeaders);
 
 			authToken.Dispose();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthTokenConfig() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthTokenConfig()
+		[Fact]
+		public void TestAuthTokenConfig()
 		{
-			AuthenticationToken authToken = new AuthenticationToken();
-			authToken.configure("token:my-test-token-string");
-			assertEquals(authToken.AuthMethodName, "token");
+			var authToken = new AuthenticationToken();
+			authToken.Configure("token:my-test-token-string");
+			Assert.Equal("token", authToken.AuthMethodName);
 
-			AuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "my-test-token-string");
+			var authData = authToken.AuthData;
+			Assert.True(authData.HasDataFromCommand());
+			Assert.Equal("my-test-token-string", authData.CommandData);
 			authToken.Dispose();
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthTokenConfigFromFile() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthTokenConfigFromFile()
+		[Fact]
+		public void TestAuthTokenConfigFromFile()
 		{
-			File tokenFile = File.createTempFile("pular-test-token", ".key");
-			tokenFile.deleteOnExit();
-			FileUtils.write(tokenFile, "my-test-token-string", Charsets.UTF_8);
+            var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
+            using (var fs = new FileStream(tokenFile, FileMode.Open))
+            {
+                var info = new UTF8Encoding(true).GetBytes("my-test-token-string");
+                fs.Write(info, 0, info.Length);
 
-			AuthenticationToken authToken = new AuthenticationToken();
-			authToken.configure("file://" + tokenFile);
-			assertEquals(authToken.AuthMethodName, "token");
+                var authToken = new AuthenticationToken();
+                authToken.Configure("file://" + tokenFile);
+                Assert.Equal("token", authToken.AuthMethodName);
 
-			AuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "my-test-token-string");
+                var authData = authToken.AuthData;
+                Assert.True(authData.HasDataFromCommand());
+                Assert.Equal("my-test-token-string", authData.CommandData);
 
-			// Ensure if the file content changes, the token will get refreshed as well
-			FileUtils.write(tokenFile, "other-token", Charsets.UTF_8);
+				// Ensure if the file content changes, the token will get refreshed as well
+				info = new UTF8Encoding(true).GetBytes("other-token");
+                fs.Write(info, 0, info.Length);
 
-			AuthenticationDataProvider authData2 = authToken.AuthData;
-			assertTrue(authData2.hasDataFromCommand());
-			assertEquals(authData2.CommandData, "other-token");
+                var authData2 = authToken.AuthData;
+                Assert.True(authData2.HasDataFromCommand());
+                Assert.Equal("other-token", authData2.CommandData);
 
-			authToken.Dispose();
+                authToken.Dispose();
+			}
+
+            File.Delete(tokenFile);
+			
 		}
 
 		/// <summary>
 		/// File can have spaces and newlines before or after the token. We should be able to read
 		/// the token correctly anyway.
 		/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthTokenConfigFromFileWithNewline() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthTokenConfigFromFileWithNewline()
+		[Fact]
+		public  void TestAuthTokenConfigFromFileWithNewline()
 		{
-			File tokenFile = File.createTempFile("pular-test-token", ".key");
-			tokenFile.deleteOnExit();
-			FileUtils.write(tokenFile, "  my-test-token-string  \r\n", Charsets.UTF_8);
+            var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
+            using (var fs = new FileStream(tokenFile, FileMode.Open))
+            {
+                var info = new UTF8Encoding(true).GetBytes("  my-test-token-string  \r\n");
+                fs.Write(info, 0, info.Length);
 
-			AuthenticationToken authToken = new AuthenticationToken();
-			authToken.configure("file://" + tokenFile);
-			assertEquals(authToken.AuthMethodName, "token");
+                var authToken = new AuthenticationToken();
+                authToken.Configure("file://" + tokenFile);
+                Assert.Equal("token", authToken.AuthMethodName);
 
-			AuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "my-test-token-string");
+                var authData = authToken.AuthData;
+                Assert.True(authData.HasDataFromCommand());
+                Assert.Equal("my-test-token-string", authData.CommandData);
 
-			// Ensure if the file content changes, the token will get refreshed as well
-			FileUtils.write(tokenFile, "other-token", Charsets.UTF_8);
+				// Ensure if the file content changes, the token will get refreshed as well
+				info = new UTF8Encoding(true).GetBytes("other-token");
+                fs.Write(info, 0, info.Length);
 
-			AuthenticationDataProvider authData2 = authToken.AuthData;
-			assertTrue(authData2.hasDataFromCommand());
-			assertEquals(authData2.CommandData, "other-token");
+				var authData2 = authToken.AuthData;
+                Assert.True(authData2.HasDataFromCommand());
+                Assert.Equal("other-token", authData2.CommandData);
 
-			authToken.Dispose();
+                authToken.Dispose();
+			}
+            File.Delete(tokenFile);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAuthTokenConfigNoPrefix() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAuthTokenConfigNoPrefix()
+		[Fact]
+		public void TestAuthTokenConfigNoPrefix()
 		{
-			AuthenticationToken authToken = new AuthenticationToken();
-			authToken.configure("my-test-token-string");
-			assertEquals(authToken.AuthMethodName, "token");
+			var authToken = new AuthenticationToken();
+			authToken.Configure("my-test-token-string");
+			Assert.Equal("token", authToken.AuthMethodName);
 
-			AuthenticationDataProvider authData = authToken.AuthData;
-			assertTrue(authData.hasDataFromCommand());
-			assertEquals(authData.CommandData, "my-test-token-string");
+			var authData = authToken.AuthData;
+			Assert.True(authData.HasDataFromCommand());
+			Assert.Equal("my-test-token-string", authData.CommandData);
 			authToken.Dispose();
 		}
 	}
