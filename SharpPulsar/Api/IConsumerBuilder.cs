@@ -275,7 +275,7 @@ namespace SharpPulsar.Api
 		/// <param name="action">
 		///            the action the consumer will take in case of decryption failures </param>
 		/// <returns> the consumer builder instance </returns>
-		IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
+		IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction? action);
 
 		/// <summary>
 		/// Sets the size of the consumer receive queue.

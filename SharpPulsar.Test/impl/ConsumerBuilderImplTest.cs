@@ -1,4 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using BAMCIS.Util.Concurrent;
+using Moq;
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,302 +29,232 @@
 /// </summary>
 namespace SharpPulsar.Test.Impl
 {
-    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotNull;
 
 	/// <summary>
-	/// Unit tests of <seealso cref="ConsumerBuilderImpl"/>.
+	/// Unit tests of <seealso cref="ConsumerBuilderImpl{T}"/>.
 	/// </summary>
 	public class ConsumerBuilderImplTest
 	{
 
 		private const string TopicName = "testTopicName";
-		private ConsumerBuilderImpl consumerBuilderImpl;
+		private ConsumerBuilderImpl<sbyte[]> _consumerBuilderImpl;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeTest public void setup()
-		public virtual void Setup()
+		public ConsumerBuilderImplTest()
 		{
-			PulsarClientImpl Client = mock(typeof(PulsarClientImpl));
-			ConsumerConfigurationData ConsumerConfigurationData = mock(typeof(ConsumerConfigurationData));
-			when(ConsumerConfigurationData.TopicsPattern).thenReturn(Pattern.compile(@"\w+"));
-			when(ConsumerConfigurationData.SubscriptionName).thenReturn("testSubscriptionName");
-			consumerBuilderImpl = new ConsumerBuilderImpl(Client, ConsumerConfigurationData, SchemaFields.BYTES);
+			PulsarClientImpl client = new Mock<PulsarClientImpl>().Object;
+			var mock = new Mock<ConsumerConfigurationData<sbyte[]>>();
+            var consumerConfigurationData = mock.Object;
+			mock.Setup(x => x.TopicsPattern).Returns(new Regex(@"\w+"));
+            mock.Setup(x => x.SubscriptionName).Returns("testSubscriptionName");
+			_consumerBuilderImpl = new ConsumerBuilderImpl<sbyte[]>(client, consumerConfigurationData, SchemaFields.Bytes);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConsumerBuilderImpl() throws PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestConsumerBuilderImpl()
+		[Fact]
+		public  void TestConsumerBuilderImpl()
 		{
-			Consumer Consumer = mock(typeof(Consumer));
-			when(consumerBuilderImpl.subscribeAsync()).thenReturn(CompletableFuture.completedFuture(Consumer));
-			assertNotNull(consumerBuilderImpl.topic(TopicName).Subscribe());
+			var consumer = new Mock<IConsumer<sbyte[]>>().Object;
+            var impl = Mock.Get(_consumerBuilderImpl);
+			impl.Setup(x => x.SubscribeAsync()).Returns(new ValueTask<IConsumer<sbyte[]>>(consumer));
+			Assert.NotNull(_consumerBuilderImpl.Topic(TopicName).Subscribe());
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesVarargsIsNull()
+		{
+			_consumerBuilderImpl.Topic(null);
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesVarargsHasNullTopic()
+		{
+			_consumerBuilderImpl.Topic("my-topic", null);
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesVarargsHasBlankTopic()
+		{
+			_consumerBuilderImpl.Topic("my-topic", "  ");
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesIsNull()
+		{
+			_consumerBuilderImpl.Topics(null);
+		}
+        [Fact]
+		public  void TestConsumerBuilderImplWhenTopicNamesIsEmpty()
+		{
+			_consumerBuilderImpl.Topics(new List<string>());
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesHasBlankTopic()
+		{
+			IList<string> topicNames = new List<string>(){"my-topic", " "};
+			_consumerBuilderImpl.Topics(topicNames);
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenTopicNamesHasNullTopic()
+		{
+			IList<string> topicNames = new List<string>(){"my-topic", null};
+			_consumerBuilderImpl.Topics(topicNames);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesVarargsIsNull()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesVarargsIsNull()
+		[Fact]
+		public void TestConsumerBuilderImplWhenSubscriptionNameIsNull()
 		{
-			consumerBuilderImpl.topic(null);
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionName(null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesVarargsHasNullTopic()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesVarargsHasNullTopic()
+		[Fact]
+		public void TestConsumerBuilderImplWhenSubscriptionNameIsBlank()
 		{
-			consumerBuilderImpl.topic("my-topic", null);
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionName(" ");
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenConsumerEventListenerIsNull()
+		{
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionName("subscriptionName").ConsumerEventListener(null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesVarargsHasBlankTopic()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesVarargsHasBlankTopic()
+        [Fact]
+		public void TestConsumerBuilderImplWhenCryptoKeyReaderIsNull()
 		{
-			consumerBuilderImpl.topic("my-topic", "  ");
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionName("subscriptionName").CryptoKeyReader(null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesIsNull()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenCryptoFailureActionIsNull()
 		{
-			consumerBuilderImpl.topics(null);
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionName("subscriptionName").CryptoFailureAction(null);
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenConsumerNameIsNull()
+		{
+			_consumerBuilderImpl.Topic(TopicName).ConsumerName(null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesIsEmpty()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesIsEmpty()
+        [Fact]
+		public void TestConsumerBuilderImplWhenConsumerNameIsBlank()
 		{
-			consumerBuilderImpl.topics(Arrays.asList());
+			_consumerBuilderImpl.Topic(TopicName).ConsumerName(" ");
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertyKeyIsNull()
+		{
+			_consumerBuilderImpl.Topic(TopicName).Property(null, "Test-Value");
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertyKeyIsBlank()
+		{
+			_consumerBuilderImpl.Topic(TopicName).Property("   ", "Test-Value");
+		}
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertyValueIsNull()
+		{
+			_consumerBuilderImpl.Topic(TopicName).Property("Test-Key", null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesHasBlankTopic()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesHasBlankTopic()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertyValueIsBlank()
 		{
-			IList<string> TopicNames = Arrays.asList("my-topic", " ");
-			consumerBuilderImpl.topics(TopicNames);
+			_consumerBuilderImpl.Topic(TopicName).Property("Test-Key", "   ");
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenTopicNamesHasNullTopic()
-		public virtual void TestConsumerBuilderImplWhenTopicNamesHasNullTopic()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesAreCorrect()
 		{
-			IList<string> TopicNames = Arrays.asList("my-topic", null);
-			consumerBuilderImpl.topics(TopicNames);
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key"] = "Test-Value";
+			properties["Test-Key2"] = "Test-Value2";
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenSubscriptionNameIsNull()
-		public virtual void TestConsumerBuilderImplWhenSubscriptionNameIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesKeyIsNull()
 		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionName(null);
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties[null] = "Test-Value";
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenSubscriptionNameIsBlank()
-		public virtual void TestConsumerBuilderImplWhenSubscriptionNameIsBlank()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesKeyIsBlank()
 		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionName(" ");
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["  "] = "Test-Value";
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenConsumerEventListenerIsNull()
-		public virtual void TestConsumerBuilderImplWhenConsumerEventListenerIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesValueIsNull()
 		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionName("subscriptionName").consumerEventListener(null);
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key"] = null;
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenCryptoKeyReaderIsNull()
-		public virtual void TestConsumerBuilderImplWhenCryptoKeyReaderIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesValueIsBlank()
 		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionName("subscriptionName").cryptoKeyReader(null);
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties["Test-Key"] = "   ";
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenCryptoFailureActionIsNull()
-		public virtual void TestConsumerBuilderImplWhenCryptoFailureActionIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesIsEmpty()
 		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionName("subscriptionName").cryptoFailureAction(null);
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+
+			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenConsumerNameIsNull()
-		public virtual void TestConsumerBuilderImplWhenConsumerNameIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPropertiesIsNull()
 		{
-			consumerBuilderImpl.topic(TopicName).ConsumerName(null);
+			_consumerBuilderImpl.Topic(TopicName).Properties(null);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenConsumerNameIsBlank()
-		public virtual void TestConsumerBuilderImplWhenConsumerNameIsBlank()
+        [Fact]
+		public void TestConsumerBuilderImplWhenSubscriptionInitialPositionIsNull()
 		{
-			consumerBuilderImpl.topic(TopicName).ConsumerName(" ");
+			_consumerBuilderImpl.Topic(TopicName).SubscriptionInitialPosition(null);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertyKeyIsNull()
-		public virtual void TestConsumerBuilderImplWhenPropertyKeyIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenSubscriptionTopicsModeIsNull()
 		{
-			consumerBuilderImpl.topic(TopicName).Property(null, "Test-Value");
+			//_consumerBuilderImpl.Topic(TopicName).SubscriptionTopicsMode(null);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertyKeyIsBlank()
-		public virtual void TestConsumerBuilderImplWhenPropertyKeyIsBlank()
+        [Fact]
+		public void TestConsumerBuilderImplWhenNegativeAckRedeliveryDelayPropertyIsNegative()
 		{
-			consumerBuilderImpl.topic(TopicName).Property("   ", "Test-Value");
+			_consumerBuilderImpl.NegativeAckRedeliveryDelay(-1, TimeUnit.MILLISECONDS);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertyValueIsNull()
-		public virtual void TestConsumerBuilderImplWhenPropertyValueIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPriorityLevelPropertyIsNegative()
 		{
-			consumerBuilderImpl.topic(TopicName).Property("Test-Key", null);
+			_consumerBuilderImpl.PriorityLevel(-1);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertyValueIsBlank()
-		public virtual void TestConsumerBuilderImplWhenPropertyValueIsBlank()
+        [Fact]
+		public void TestConsumerBuilderImplWhenMaxTotalReceiverQueueSizeAcrossPartitionsPropertyIsNegative()
 		{
-			consumerBuilderImpl.topic(TopicName).Property("Test-Key", "   ");
+			_consumerBuilderImpl.MaxTotalReceiverQueueSizeAcrossPartitions(-1);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConsumerBuilderImplWhenPropertiesAreCorrect()
-		public virtual void TestConsumerBuilderImplWhenPropertiesAreCorrect()
+        [Fact]
+		public void TestConsumerBuilderImplWhenPatternAutoDiscoveryPeriodPropertyIsNegative()
 		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key"] = "Test-Value";
-			Properties["Test-Key2"] = "Test-Value2";
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
+			_consumerBuilderImpl.PatternAutoDiscoveryPeriod(-1);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertiesKeyIsNull()
-		public virtual void TestConsumerBuilderImplWhenPropertiesKeyIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenBatchReceivePolicyIsNull()
 		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties[null] = "Test-Value";
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
+			_consumerBuilderImpl.BatchReceivePolicy(null);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertiesKeyIsBlank()
-		public virtual void TestConsumerBuilderImplWhenPropertiesKeyIsBlank()
+        [Fact]
+		public void TestConsumerBuilderImplWhenBatchReceivePolicyIsNotValid()
 		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["  "] = "Test-Value";
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
+			_consumerBuilderImpl.BatchReceivePolicy(new BatchReceivePolicy.Builder().MaxNumMessages(0).MaxNumBytes(0).Timeout(0, TimeUnit.MILLISECONDS).Build());
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertiesValueIsNull()
-		public virtual void TestConsumerBuilderImplWhenPropertiesValueIsNull()
+        [Fact]
+		public void TestConsumerBuilderImplWhenNumericPropertiesAreValid()
 		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key"] = null;
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertiesValueIsBlank()
-		public virtual void TestConsumerBuilderImplWhenPropertiesValueIsBlank()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties["Test-Key"] = "   ";
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPropertiesIsEmpty()
-		public virtual void TestConsumerBuilderImplWhenPropertiesIsEmpty()
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-
-			consumerBuilderImpl.topic(TopicName).Properties(Properties);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenPropertiesIsNull()
-		public virtual void TestConsumerBuilderImplWhenPropertiesIsNull()
-		{
-			consumerBuilderImpl.topic(TopicName).Properties(null);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenSubscriptionInitialPositionIsNull()
-		public virtual void TestConsumerBuilderImplWhenSubscriptionInitialPositionIsNull()
-		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionInitialPosition(null);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = NullPointerException.class) public void testConsumerBuilderImplWhenSubscriptionTopicsModeIsNull()
-		public virtual void TestConsumerBuilderImplWhenSubscriptionTopicsModeIsNull()
-		{
-			consumerBuilderImpl.topic(TopicName).SubscriptionTopicsMode(null);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenNegativeAckRedeliveryDelayPropertyIsNegative()
-		public virtual void TestConsumerBuilderImplWhenNegativeAckRedeliveryDelayPropertyIsNegative()
-		{
-			consumerBuilderImpl.negativeAckRedeliveryDelay(-1, TimeUnit.MILLISECONDS);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPriorityLevelPropertyIsNegative()
-		public virtual void TestConsumerBuilderImplWhenPriorityLevelPropertyIsNegative()
-		{
-			consumerBuilderImpl.priorityLevel(-1);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenMaxTotalReceiverQueueSizeAcrossPartitionsPropertyIsNegative()
-		public virtual void TestConsumerBuilderImplWhenMaxTotalReceiverQueueSizeAcrossPartitionsPropertyIsNegative()
-		{
-			consumerBuilderImpl.maxTotalReceiverQueueSizeAcrossPartitions(-1);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenPatternAutoDiscoveryPeriodPropertyIsNegative()
-		public virtual void TestConsumerBuilderImplWhenPatternAutoDiscoveryPeriodPropertyIsNegative()
-		{
-			consumerBuilderImpl.patternAutoDiscoveryPeriod(-1);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenBatchReceivePolicyIsNull()
-		public virtual void TestConsumerBuilderImplWhenBatchReceivePolicyIsNull()
-		{
-			consumerBuilderImpl.batchReceivePolicy(null);
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testConsumerBuilderImplWhenBatchReceivePolicyIsNotValid()
-		public virtual void TestConsumerBuilderImplWhenBatchReceivePolicyIsNotValid()
-		{
-			consumerBuilderImpl.batchReceivePolicy(BatchReceivePolicy.Builder().maxNumMessages(0).maxNumBytes(0).timeout(0, TimeUnit.MILLISECONDS).build());
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConsumerBuilderImplWhenNumericPropertiesAreValid()
-		public virtual void TestConsumerBuilderImplWhenNumericPropertiesAreValid()
-		{
-			consumerBuilderImpl.negativeAckRedeliveryDelay(1, TimeUnit.MILLISECONDS);
-			consumerBuilderImpl.priorityLevel(1);
-			consumerBuilderImpl.maxTotalReceiverQueueSizeAcrossPartitions(1);
-			consumerBuilderImpl.patternAutoDiscoveryPeriod(1);
+			_consumerBuilderImpl.NegativeAckRedeliveryDelay(1, TimeUnit.MILLISECONDS);
+			_consumerBuilderImpl.PriorityLevel(1);
+			_consumerBuilderImpl.MaxTotalReceiverQueueSizeAcrossPartitions(1);
+			_consumerBuilderImpl.PatternAutoDiscoveryPeriod(1);
 		}
 
 	}

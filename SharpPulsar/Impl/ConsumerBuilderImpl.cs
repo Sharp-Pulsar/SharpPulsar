@@ -198,11 +198,11 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
-		{
-			_conf.CryptoFailureAction = action;
-			return this;
-		}
+		public IConsumerBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction? action)
+        {
+            if (action != null) _conf.CryptoFailureAction = (ConsumerCryptoFailureAction) action;
+            return this;
+        }
 
 		public IConsumerBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
