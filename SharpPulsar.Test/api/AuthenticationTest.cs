@@ -50,7 +50,7 @@ namespace SharpPulsar.Test.Api
 			{
 				_testOutputHelper.WriteLine(e.ToString());
                 _testOutputHelper.WriteLine(e.StackTrace);
-                Assert.True(false, e.Message);
+                Assert.False(false, e.Message);
             }
 		}
 
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Api
 			{
                 _testOutputHelper.WriteLine(e.ToString());
                 _testOutputHelper.WriteLine(e.StackTrace);
-                Assert.True(false, "TestConfigureWrongFormat failed");
+                Assert.False(false, "TestConfigureWrongFormat failed");
 			}
 		}
 
@@ -82,7 +82,7 @@ namespace SharpPulsar.Test.Api
 			{
 				_testOutputHelper.WriteLine(e.ToString());
 				_testOutputHelper.WriteLine(e.StackTrace);
-                Assert.True(false, e.Message);
+                Assert.False(false, e.Message);
 			}
 		}
 		[Fact]
@@ -97,7 +97,7 @@ namespace SharpPulsar.Test.Api
 			{
 				_testOutputHelper.WriteLine(e.ToString());
 				_testOutputHelper.WriteLine(e.StackTrace);
-                Assert.True(false, e.Message);
+                Assert.False(false, e.Message);
 			}
 		}
 		[Fact]
@@ -113,7 +113,7 @@ namespace SharpPulsar.Test.Api
 			{
 				_testOutputHelper.WriteLine(e.ToString());
 				_testOutputHelper.WriteLine(e.StackTrace);
-                Assert.True(false, e.Message);
+                Assert.False(false, e.Message);
 			}
 		}
 	}

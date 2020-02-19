@@ -41,7 +41,9 @@ namespace SharpPulsar.Test.Api
 		[Fact]
 		public void TestChoosePartition()
         {
-            var mock = Mock.Get(new TestMessageRouter());
+            var t = new TestMessageRouter();
+
+			var mock = Mock.Get(t);
 			var router = mock.Object;
 			IMessage<object> mockedMsg = new Mock<IMessage<object>>().Object;
 			ITopicMetadata mockedMetadata = new Mock<ITopicMetadata>().Object;

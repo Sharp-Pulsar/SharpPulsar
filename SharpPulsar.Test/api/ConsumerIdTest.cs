@@ -60,9 +60,9 @@ namespace SharpPulsar.Test.Api
 
             Assert.Equal(testConsumerId2, testConsumerId1);
 
-            Assert.Equal(testConsumerId3, testConsumerId1);
+            Assert.NotEqual(testConsumerId3, testConsumerId1);
 
-            Assert.Null(testConsumerId1);
+            Assert.NotNull(testConsumerId1);
 		}
 		[Fact]
 		public void CompareToTest()
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test.Api
 			var testConsumerId3 = new ConsumerId(TopicTest2, SubcribtionTest);
 
             Assert.Equal(0, testConsumerId1.CompareTo(testConsumerId2));
-			Assert.Equal(-1, testConsumerId1.CompareTo(testConsumerId3));
+			Assert.Equal(1, testConsumerId1.CompareTo(testConsumerId3));
 
 		}
 	}

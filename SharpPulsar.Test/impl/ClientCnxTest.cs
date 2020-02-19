@@ -45,14 +45,15 @@ namespace SharpPulsar.Test.Impl
 
             var mock = new Mock<IChannelHandlerContext>();
             var ctx = mock.Object;
-			var mock2 = new Mock<Task>();
+            var t = new TaskCompletionSource<Task>();
+			var mock2 = Mock.Get(t);
             var listenerFuture = mock2.Object;
-			mock2.Setup(x => x.ContinueWith(t=>It.IsAny<Task>()).Result).Returns(listenerFuture);
-			mock.Setup(x => x.WriteAndFlushAsync(It.IsAny<object>())).Returns(listenerFuture);
+			mock2.Setup(x => x.Task.ContinueWith(t=>It.IsAny<Task>()).Result).Returns(listenerFuture.Task);
+			mock.Setup(x => x.WriteAndFlushAsync(It.IsAny<object>())).Returns(listenerFuture.Task);
 
 			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
 			//ctxField.Accessible = true;
-			ctxField.SetValue(cnx, ctx);
+			ctxField?.SetValue(cnx, ctx);
 			try
 			{
 				cnx.NewLookup(null, 123);

@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using System;
 using Xunit;
 
 namespace SharpPulsar.Test.Api
@@ -60,8 +61,9 @@ namespace SharpPulsar.Test.Api
 		}
 		[Fact]
 		public  void TestInvalid()
-		{
-            SharpPulsar.Api.Range.Of(0, -5);
+        {
+            var exception = Assert.Throws<ArgumentException>(() => SharpPulsar.Api.Range.Of(0, -5));
+            Assert.Equal("Range end must >= range start.", exception.Message);
 		}
 	}
 
