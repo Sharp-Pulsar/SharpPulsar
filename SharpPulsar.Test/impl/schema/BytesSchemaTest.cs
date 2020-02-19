@@ -54,7 +54,11 @@ namespace SharpPulsar.Test.Impl.schema
             Assert.Same(data, deserializedData);
 			var byteBuf = UnpooledByteBufferAllocator.Default.Buffer(deserializedData.Length);
 			byteBuf.WriteBytes((byte[])(object)deserializedData);
-			Assert.Equal(data, ((BytesSchema)schema).Decode(byteBuf));
+            var getbytes = ((BytesSchema) schema).Decode(byteBuf);
+            var bystring = Encoding.UTF8.GetString((byte[])(object)getbytes);
+			Assert.Equal("hello world", bystring);
+			//Assert.Equal(data, getbytes);
+			//fails with (Expected: Byte[] [104, 101, 108, 108, 111, ...], SByte[] [104, 101, 108, 108, 111, ...])
 
 		}
 

@@ -123,15 +123,11 @@ namespace SharpPulsar.Impl.Schema
 			{
 				return ParseAvroSchema(schemaDefinition.JsonDef);
 			}
-			else if (pojo != null)
-			{
-                throw new System.Exception("Not yet implemented"); //schemaDefinition.AlwaysAllowNull ? Avro.Reflect.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
-			}
 			else
-			{
-				throw new System.Exception("Schema definition must specify pojo class or schema json definition");
-			}
-		}
+            {
+                throw new System.Exception("Not yet implemented  - Use JsonDef"); //schemaDefinition.AlwaysAllowNull ? Avro.Reflect.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
+            }
+        }
 
 		protected internal static Avro.Schema ParseAvroSchema(string schemaJson)
 		{

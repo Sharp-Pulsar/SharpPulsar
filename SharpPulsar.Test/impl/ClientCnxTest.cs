@@ -45,7 +45,7 @@ namespace SharpPulsar.Test.Impl
 
             var mock = new Mock<IChannelHandlerContext>();
             var ctx = mock.Object;
-            var t = new TaskCompletionSource<Task>();
+            var t = Mock.Of<TaskCompletionSource<Task>>();
 			var mock2 = Mock.Get(t);
             var listenerFuture = mock2.Object;
 			mock2.Setup(x => x.Task.ContinueWith(t=>It.IsAny<Task>()).Result).Returns(listenerFuture.Task);

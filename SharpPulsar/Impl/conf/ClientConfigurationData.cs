@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl.Conf
 				}
 				return false;
 			}
-            set => throw new NotImplementedException();
+            set => _useTls = value;
         }
 
         public virtual ClientConfigurationData Clone()
