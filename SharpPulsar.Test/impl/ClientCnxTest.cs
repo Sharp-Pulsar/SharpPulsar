@@ -19,76 +19,79 @@
 /// under the License.
 /// </summary>
 
+using System.Reflection;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
+using Moq;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility.Netty;
+using Xunit;
 
 namespace SharpPulsar.Test.Impl
 {
 	public class ClientCnxTest
 	{
-		public virtual void TestClientCnxTimeout()
+		[Fact]
+		public void TestClientCnxTimeout()
 		{
-			var eventLoop = new MultithreadEventLoopGroup(1); 
-			ClientConfigurationData Conf = new ClientConfigurationData();
-			Conf.OperationTimeoutMs = 10;
-			ClientCnx Cnx = new ClientCnx(Conf, eventLoop);
+			var eventLoop = new MultithreadEventLoopGroup(1);
+            var conf = new ClientConfigurationData {OperationTimeoutMs = 10};
+            var cnx = new ClientCnx(conf, eventLoop);
 
-			ChannelHandlerContext Ctx = mock(typeof(ChannelHandlerContext));
-			ChannelFuture ListenerFuture = mock(typeof(ChannelFuture));
-			when(ListenerFuture.addListener(any())).thenReturn(ListenerFuture);
-			when(Ctx.writeAndFlush(any())).thenReturn(ListenerFuture);
+            var mock = new Mock<IChannelHandlerContext>();
+            var ctx = mock.Object;
+			var mock2 = new Mock<Task>();
+            var listenerFuture = mock2.Object;
+			mock2.Setup(x => x.ContinueWith(t=>It.IsAny<Task>()).Result).Returns(listenerFuture);
+			mock.Setup(x => x.WriteAndFlushAsync(It.IsAny<object>())).Returns(listenerFuture);
 
-			System.Reflection.FieldInfo CtxField = typeof(PulsarHandler).getDeclaredField("ctx");
-			CtxField.Accessible = true;
-			CtxField.set(Cnx, Ctx);
+			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
+			//ctxField.Accessible = true;
+			ctxField.SetValue(cnx, ctx);
 			try
 			{
-				Cnx.newLookup(null, 123).get();
+				cnx.NewLookup(null, 123);
 			}
-			catch (System.Exception E)
+			catch (System.Exception e)
 			{
-				assertTrue(E.InnerException is PulsarClientException.TimeoutException);
+				Assert.True(e.InnerException is PulsarClientException.TimeoutException);
 			}
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testReceiveErrorAtSendConnectFrameState() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestReceiveErrorAtSendConnectFrameState()
+		[Fact]
+		public void TestReceiveErrorAtSendConnectFrameState()
 		{
-			ThreadFactory ThreadFactory = new DefaultThreadFactory("testReceiveErrorAtSendConnectFrameState");
-			EventLoopGroup EventLoop = EventLoopUtil.newEventLoopGroup(1, ThreadFactory);
-			ClientConfigurationData Conf = new ClientConfigurationData();
-			Conf.OperationTimeoutMs = 10;
-			ClientCnx Cnx = new ClientCnx(Conf, EventLoop);
+			var eventLoop = new MultithreadEventLoopGroup(1);
+            var conf = new ClientConfigurationData {OperationTimeoutMs = 10};
+            var cnx = new ClientCnx(conf, eventLoop);
 
-			ChannelHandlerContext Ctx = mock(typeof(ChannelHandlerContext));
-			Channel Channel = mock(typeof(Channel));
-			when(Ctx.channel()).thenReturn(Channel);
+            var mock = new Mock<IChannelHandlerContext>();
+            var ctx = mock.Object;
+			var channel = new Mock<IChannel>().Object;
+			mock.Setup(x =>x.Channel).Returns(channel);
 
-			System.Reflection.FieldInfo CtxField = typeof(PulsarHandler).getDeclaredField("ctx");
-			CtxField.Accessible = true;
-			CtxField.set(Cnx, Ctx);
+			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
+			//ctxField.Accessible = true;
+			ctxField?.SetValue(cnx, ctx);
 
 			// set connection as SentConnectFrame
-			System.Reflection.FieldInfo CnxField = typeof(ClientCnx).getDeclaredField("state");
-			CnxField.Accessible = true;
-			CnxField.set(Cnx, ClientCnx.State.SentConnectFrame);
+			var cnxField = typeof(ClientCnx).GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance);
+			
+			cnxField?.SetValue(cnx, ClientCnx.State.SentConnectFrame);
 
 			// receive error
-			PulsarApi.CommandError CommandError = PulsarApi.CommandError.newBuilder().setRequestId(-1).setError(PulsarApi.ServerError.AuthenticationError).setMessage("authentication was failed").build();
+			var commandError = CommandError.NewBuilder().SetRequestId(-1).SetError(ServerError.AuthenticationError).SetMessage("authentication was failed").Build();
 			try
 			{
-				Cnx.handleError(CommandError);
+				cnx.HandleError(commandError);
 			}
 			catch (System.Exception)
 			{
-				fail("should not throw any error");
+				Assert.False(false,"should not throw any error");
 			}
 		}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetty.Common.Utilities;
@@ -100,9 +101,9 @@ namespace SharpPulsar.Test.Impl
 		{
 			var impl = new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, _producerCreatedTask, _schema, _producerInterceptors);
 
-			var routerPolicy = impl.GetType().GetField("_routerPolicy");
-			//routerPolicy.se.Accessible = true;
-			var messageRouter = (IMessageRouter) routerPolicy.GetValue(impl);
+			var routerPolicy = impl.GetType().GetField("_routerPolicy", BindingFlags.NonPublic | BindingFlags.Instance);
+			
+			var messageRouter = (IMessageRouter) routerPolicy?.GetValue(impl);
 			Assert.NotNull(messageRouter);
 			return messageRouter;
 		}
