@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 		private volatile ClientCnx _clientCnx = null;
 
 		protected internal readonly HandlerState State;
-		protected internal readonly Backoff Backoff;
+		public readonly Backoff Backoff;
 		protected internal long _epoch = 0L;
 
 		

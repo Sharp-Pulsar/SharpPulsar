@@ -18,147 +18,145 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+using System.Threading.Tasks;
+using BAMCIS.Util.Concurrent;
+using DotNetty.Common.Utilities;
+using Moq;
+using SharpPulsar.Api;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Utility;
+using SharpPulsar.Utils;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl
 {
-	using Timer = io.netty.util.Timer;
-	using Consumer = Org.Apache.Pulsar.Client.Api.Consumer;
-    using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-    using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-
-
-    //JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.*;
 
 	public class ConsumerImplTest
 	{
 
 
-		private readonly ExecutorService executorService = Executors.newSingleThreadExecutor();
-		private ConsumerImpl<ConsumerImpl> consumer;
-		private ConsumerConfigurationData consumerConf;
+		private readonly ScheduledThreadPoolExecutor _executorService = new ScheduledThreadPoolExecutor(1);
+		private ConsumerImpl<sbyte[]> _consumer;
+		private ConsumerConfigurationData<sbyte[]> _consumerConf;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeMethod public void setUp()
-		public virtual void SetUp()
+		public ConsumerImplTest()
 		{
-			consumerConf = new ConsumerConfigurationData<>();
-			ClientConfigurationData ClientConf = new ClientConfigurationData();
-			PulsarClientImpl Client = mock(typeof(PulsarClientImpl));
-			CompletableFuture<ClientCnx> ClientCnxFuture = new CompletableFuture<ClientCnx>();
-			CompletableFuture<Consumer<ConsumerImpl>> SubscribeFuture = new CompletableFuture<Consumer<ConsumerImpl>>();
-			string Topic = "non-persistent://tenant/ns1/my-topic";
+			var mock = new Mock<PulsarClientImpl>();
+			_consumerConf = new ConsumerConfigurationData<sbyte[]>();
+			ClientConfigurationData clientConf = new ClientConfigurationData();
+			PulsarClientImpl client = mock.Object;
+			ValueTask<ClientCnx> clientCnxTask = new ValueTask<ClientCnx>();
+			TaskCompletionSource<IConsumer<sbyte[]>> subscribeFuture = new TaskCompletionSource<IConsumer<sbyte[]>>();
+			string topic = "non-persistent://tenant/ns1/my-topic";
 
 			// Mock connection for grabCnx()
-			when(Client.getConnection(anyString())).thenReturn(ClientCnxFuture);
-			ClientConf.OperationTimeoutMs = 100;
-			ClientConf.StatsIntervalSeconds = 0;
-			when(Client.Configuration).thenReturn(ClientConf);
-			when(Client.timer()).thenReturn(mock(typeof(Timer)));
+			mock.Setup(x => x.GetConnection(It.IsAny<string>())).Returns(clientCnxTask);
+			clientConf.OperationTimeoutMs = 100;
+			clientConf.StatsIntervalSeconds = 0;
+			mock.Setup(x => x.Configuration).Returns(clientConf);
+			mock.Setup(x=> x.Timer).Returns(new Mock<HashedWheelTimer>().Object);
 
-			consumerConf.SubscriptionName = "test-sub";
-			consumer = ConsumerImpl.NewConsumerImpl(Client, Topic, consumerConf, executorService, -1, false, SubscribeFuture, SubscriptionMode.Durable, null, null, null, true);
+			_consumerConf.SubscriptionName = "test-sub";
+			_consumer = ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 1000) public void testNotifyPendingReceivedCallback_EmptyQueueNotThrowsException()
-		public virtual void TestNotifyPendingReceivedCallbackEmptyQueueNotThrowsException()
+		[Fact]
+		public void TestNotifyPendingReceivedCallbackEmptyQueueNotThrowsException()
 		{
-			consumer.NotifyPendingReceivedCallback(null, null);
+			_consumer.NotifyPendingReceivedCallback(null, null);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 500) public void testCorrectBackoffConfiguration()
-		public virtual void TestCorrectBackoffConfiguration()
+		[Fact]
+		public void TestCorrectBackoffConfiguration()
 		{
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final Backoff backoff = consumer.getConnectionHandler().backoff;
-			Backoff Backoff = consumer.ConnectionHandler.backoff;
-			ClientConfigurationData ClientConfigurationData = new ClientConfigurationData();
-			Assert.assertEquals(Backoff.Max, TimeUnit.NANOSECONDS.toMillis(ClientConfigurationData.MaxBackoffIntervalNanos));
-			Assert.assertEquals(Backoff.next(), TimeUnit.NANOSECONDS.toMillis(ClientConfigurationData.InitialBackoffIntervalNanos));
+			Backoff backoff = _consumer.Handler.Backoff;
+			ClientConfigurationData clientConfigurationData = new ClientConfigurationData();
+			Assert.Equal(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(clientConfigurationData.MaxBackoffIntervalNanos), backoff.Max);
+			Assert.Equal(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(clientConfigurationData.InitialBackoffIntervalNanos), backoff.Next());
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 1000) public void testNotifyPendingReceivedCallback_CompleteWithException()
-		public virtual void TestNotifyPendingReceivedCallbackCompleteWithException()
+		[Fact]
+		public void TestNotifyPendingReceivedCallbackCompleteWithException()
 		{
-			CompletableFuture<Message<ConsumerImpl>> ReceiveFuture = new CompletableFuture<Message<ConsumerImpl>>();
-			consumer.PendingReceives.add(ReceiveFuture);
-			System.Exception Exception = new PulsarClientException.InvalidMessageException("some random exception");
-			consumer.NotifyPendingReceivedCallback(null, Exception);
+			var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
+			_consumer.PendingReceives.Enqueue(receiveTask);
+			System.Exception exception = new PulsarClientException.InvalidMessageException("some random exception");
+			_consumer.NotifyPendingReceivedCallback(null, exception);
 
 			try
 			{
-				ReceiveFuture.join();
+				receiveTask.Task.Wait();
 			}
-			catch (CompletionException E)
+			catch (Exception e)
 			{
 				// Completion exception must be the same we provided at calling time
-				Assert.assertEquals(E.InnerException, Exception);
+				Assert.Equal(exception, e.InnerException);
 			}
 
-			Assert.assertTrue(ReceiveFuture.CompletedExceptionally);
+			Assert.True(receiveTask.Task.IsFaulted);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 1000) public void testNotifyPendingReceivedCallback_CompleteWithExceptionWhenMessageIsNull()
-		public virtual void TestNotifyPendingReceivedCallbackCompleteWithExceptionWhenMessageIsNull()
+		[Fact]
+		public void TestNotifyPendingReceivedCallbackCompleteWithExceptionWhenMessageIsNull()
 		{
-			CompletableFuture<Message<ConsumerImpl>> ReceiveFuture = new CompletableFuture<Message<ConsumerImpl>>();
-			consumer.PendingReceives.add(ReceiveFuture);
-			consumer.NotifyPendingReceivedCallback(null, null);
+            var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
+			_consumer.NotifyPendingReceivedCallback(null, null);
 
 			try
 			{
-				ReceiveFuture.join();
+				receiveTask.Task.Wait();
 			}
-			catch (CompletionException E)
+			catch (Exception e)
 			{
-				Assert.assertEquals("received message can't be null", E.InnerException.Message);
+				Assert.Equal("received message can't be null", e.InnerException?.Message);
 			}
 
-			Assert.assertTrue(ReceiveFuture.CompletedExceptionally);
+			Assert.True(receiveTask.Task.IsFaulted);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 1000) public void testNotifyPendingReceivedCallback_InterceptorsWorksWithPrefetchDisabled()
+		[Fact]
 		public virtual void TestNotifyPendingReceivedCallbackInterceptorsWorksWithPrefetchDisabled()
 		{
-			CompletableFuture<Message<ConsumerImpl>> ReceiveFuture = new CompletableFuture<Message<ConsumerImpl>>();
-			MessageImpl Message = mock(typeof(MessageImpl));
-			ConsumerImpl<ConsumerImpl> Spy = spy(consumer);
+            var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
+			var message = new Mock<MessageImpl<sbyte[]>>().Object; 
+			var spy = Mock.Get(_consumer);
 
-			consumer.PendingReceives.add(ReceiveFuture);
-			consumerConf.ReceiverQueueSize = 0;
-			doReturn(Message).when(Spy).beforeConsume(any());
-			Spy.notifyPendingReceivedCallback(Message, null);
-			Message<ConsumerImpl> ReceivedMessage = ReceiveFuture.join();
+			_consumer.PendingReceives.Enqueue(receiveTask);
 
-			verify(Spy, times(1)).beforeConsume(Message);
-			Assert.assertTrue(ReceiveFuture.Done);
-			Assert.assertFalse(ReceiveFuture.CompletedExceptionally);
-			Assert.assertEquals(ReceivedMessage, Message);
+			_consumerConf.ReceiverQueueSize = 0;
+            spy.Setup(x => x.BeforeConsume(It.IsAny<IMessage<sbyte[]>>())).Returns(message);
+			spy.Object.NotifyPendingReceivedCallback(message, null);
+			var receivedMessage = receiveTask.Task.Result;
+
+			spy.Verify(x=> x.BeforeConsume(message), Times.Once);
+			Assert.True(receiveTask.Task.IsCompleted);
+			Assert.False(receiveTask.Task.IsFaulted);
+			Assert.Equal(message,receivedMessage);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(invocationTimeOut = 1000) public void testNotifyPendingReceivedCallback_WorkNormally()
-		public virtual void TestNotifyPendingReceivedCallbackWorkNormally()
+		[Fact]
+		public  void TestNotifyPendingReceivedCallbackWorkNormally()
 		{
-			CompletableFuture<Message<ConsumerImpl>> ReceiveFuture = new CompletableFuture<Message<ConsumerImpl>>();
-			MessageImpl Message = mock(typeof(MessageImpl));
-			ConsumerImpl<ConsumerImpl> Spy = spy(consumer);
+            var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
+            var message = new Mock<MessageImpl<sbyte[]>>().Object;
+            var spy = Mock.Get(_consumer);
 
-			consumer.PendingReceives.add(ReceiveFuture);
-			doReturn(Message).when(Spy).beforeConsume(any());
-			doNothing().when(Spy).messageProcessed(Message);
-			Spy.notifyPendingReceivedCallback(Message, null);
-			Message<ConsumerImpl> ReceivedMessage = ReceiveFuture.join();
+            _consumer.PendingReceives.Enqueue(receiveTask);
+			spy.Setup(x => x.BeforeConsume(It.IsAny<IMessage<sbyte[]>>())).Returns(message);
+            spy.Setup(x => x.MessageProcessed(message));
 
-			verify(Spy, times(1)).beforeConsume(Message);
-			verify(Spy, times(1)).messageProcessed(Message);
-			Assert.assertTrue(ReceiveFuture.Done);
-			Assert.assertFalse(ReceiveFuture.CompletedExceptionally);
-			Assert.assertEquals(ReceivedMessage, Message);
+            spy.Object.NotifyPendingReceivedCallback(message, null);
+            var receivedMessage = receiveTask.Task.Result;
+
+            spy.Verify(x => x.BeforeConsume(message), Times.Once);
+            spy.Verify(x => x.MessageProcessed(message), Times.Once);
+
+			Assert.True(receiveTask.Task.IsCompleted);
+			Assert.False(receiveTask.Task.IsFaulted);
+			Assert.Equal(message, receivedMessage);
 		}
 	}
 

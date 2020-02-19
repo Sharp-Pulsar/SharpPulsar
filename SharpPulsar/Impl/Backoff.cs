@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl
 		public static readonly long DefaultIntervalInNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
 		public static readonly long MaxBackoffIntervalNanoseconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(30);
 		private readonly long _initial;
-		private readonly long _max;
+		public long Max;
 		private readonly DateTime _clock;
 		private long _next;
 		private long _mandatoryStop;
@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl
 		public Backoff(long initial, BAMCIS.Util.Concurrent.TimeUnit unitInitial, long max, BAMCIS.Util.Concurrent.TimeUnit unitMax, long mandatoryStop, BAMCIS.Util.Concurrent.TimeUnit unitMandatoryStop, DateTime clock)
 		{
 			this._initial = unitInitial.ToMillis(initial);
-			this._max = unitMax.ToMillis(max);
+			this.Max = unitMax.ToMillis(max);
 			this._next = this._initial;
 			this._mandatoryStop = unitMandatoryStop.ToMillis(mandatoryStop);
 			this._clock = clock;
@@ -52,9 +52,9 @@ namespace SharpPulsar.Impl
 		public virtual long Next()
 		{
 			var current = this._next;
-			if (current < _max)
+			if (current < Max)
 			{
-				this._next = Math.Min(this._next * 2, this._max);
+				this._next = Math.Min(this._next * 2, this.Max);
 			}
 
 			// Check for mandatory stop

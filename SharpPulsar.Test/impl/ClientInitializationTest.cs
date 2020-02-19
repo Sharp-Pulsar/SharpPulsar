@@ -16,33 +16,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using Moq;
+using SharpPulsar.Api;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.verify;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-	using Authentication = Org.Apache.Pulsar.Client.Api.Authentication;
 
     public class ClientInitializationTest
 	{
+		[Fact]
+		public  void TestInitializeAuthWithTls()
+        {
+            var mock = new Mock<IAuthentication>();
+			var auth = mock.Object;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testInitializeAuthWithTls() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestInitializeAuthWithTls()
-		{
-			Authentication Auth = mock(typeof(Authentication));
-
-			PulsarClient.builder().serviceUrl("pulsar+ssl://my-host:6650").authentication(Auth).build();
+			IPulsarClient.Builder().ServiceUrl("pulsar+ssl://my-host:6650").Authentication(auth).Build();
 
 			// Auth should only be started, though we shouldn't have tried to get credentials yet (until we first attempt to
 			// connect).
-			verify(Auth).start();
-			verifyNoMoreInteractions(Auth);
+			mock.Verify(x => x.Start(), Times.Once);
+            mock.VerifyAll();
 		}
 	}
 

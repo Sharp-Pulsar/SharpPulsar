@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
 		internal readonly GrowableArrayBlockingQueue<IMessage<T>> IncomingMessages;
-		protected internal readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
+		public readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
         private int _maxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
