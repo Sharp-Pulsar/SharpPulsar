@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Api
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerConfigurationTest));
 
 		[Fact]
-		public virtual void TestJsonIgnore()
+		public void TestJsonIgnore()
 		{
 
             var conf = new ConsumerConfigurationData<object>

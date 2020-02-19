@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
+using Moq;
 using SharpPulsar.Api;
+using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
@@ -48,13 +51,14 @@ namespace SharpPulsar.Test.Impl
 
 		public PartitionedProducerImplTest()
 		{
-			var mock = new Moq.Mock<PulsarClientImpl>();
-			_client = mock.Object;
-            _schema = new Moq.Mock<ISchema<sbyte[]>>().Object;
-			_producerInterceptors = new Moq.Mock<ProducerInterceptors>().Object; 
-			_producerCreatedTask = new Moq.Mock<TaskCompletionSource<IProducer<sbyte[]>>>().Object;
-			var clientConfigurationData = new Moq.Mock<ClientConfigurationData>().Object;
-			var timer = new Moq.Mock<HashedWheelTimer>().Object;
+            _schema = new Mock<ISchema<sbyte[]>>().Object;
+			_producerInterceptors = Mock.Get(new ProducerInterceptors(new List<IProducerInterceptor>())).Object; 
+			_producerCreatedTask = Mock.Get(new TaskCompletionSource<IProducer<sbyte[]>>()).Object;
+			var clientConfigurationData = Mock.Get(new ClientConfigurationData()).Object;
+            var c = new PulsarClientImpl(clientConfigurationData);
+            var mock = Mock.Get(c);
+            _client = mock.Object;
+			var timer = Mock.Get(new HashedWheelTimer()).Object;
 
 			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes); 
 

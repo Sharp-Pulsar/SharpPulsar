@@ -29,9 +29,9 @@ namespace SharpPulsar.Test.Impl.auth
 	{
 		public IDictionary<string, string> AuthParamsMap = new Dictionary<string, string>();
 
-		public virtual string AuthMethodName => null;
+		public string AuthMethodName => null;
 
-        public virtual IAuthenticationDataProvider AuthData => null;
+        public IAuthenticationDataProvider AuthData => null;
 
         public void Configure(string authParams)
         {

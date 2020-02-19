@@ -101,7 +101,7 @@ namespace SharpPulsar.Test.Api
 			}
 		}
 		[Fact]
-		public virtual void TestConfigurePluginSide()
+		public void TestConfigurePluginSide()
 		{
 			try
 			{

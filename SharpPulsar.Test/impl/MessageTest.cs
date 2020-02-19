@@ -53,7 +53,7 @@ namespace SharpPulsar.Test.Impl
 			Assert.True(msg.ReplicatedFrom.Length == 0);
 		}
 		[Fact]
-		public virtual void TestTopicMessageImplReplicatedInfo()
+		public void TestTopicMessageImplReplicatedInfo()
 		{
 			var @from = "ClusterNameOfReplicatedFromForTopicMessage";
 			var topicName = "myTopic";
@@ -67,7 +67,7 @@ namespace SharpPulsar.Test.Impl
 			Assert.Equal(@from, msg.ReplicatedFrom);
 		}
 		[Fact]
-		public virtual void TestTopicMessageImplNoReplicatedInfo()
+		public void TestTopicMessageImplNoReplicatedInfo()
 		{
 			var topicName = "myTopic";
 			var builder = MessageMetadata.NewBuilder();

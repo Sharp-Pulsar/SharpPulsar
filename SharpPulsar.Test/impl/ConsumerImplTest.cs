@@ -118,7 +118,7 @@ namespace SharpPulsar.Test.Impl
 			Assert.True(receiveTask.Task.IsFaulted);
 		}
 		[Fact]
-		public virtual void TestNotifyPendingReceivedCallbackInterceptorsWorksWithPrefetchDisabled()
+		public void TestNotifyPendingReceivedCallbackInterceptorsWorksWithPrefetchDisabled()
 		{
             var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
 			var message = new Mock<MessageImpl<sbyte[]>>().Object; 

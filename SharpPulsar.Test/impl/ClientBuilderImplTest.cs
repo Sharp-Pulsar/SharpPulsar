@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using System;
 using SharpPulsar.Api;
 using Xunit;
 
@@ -28,18 +29,24 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public  void TestClientBuilderWithServiceUrlAndServiceUrlProviderNotSet()
 		{
-			IPulsarClient.Builder().Build();
+            var exception = Assert.Throws<ArgumentException>(()=> IPulsarClient.Builder().Build());
+            //The thrown exception can be used for even more detailed assertions.
+            Assert.Equal("service URL or service URL provider needs to be specified on the ClientBuilder object.", exception.Message);
+			
 		}
 		[Fact]
-		public virtual void TestClientBuilderWithNullServiceUrl()
+		public void TestClientBuilderWithNullServiceUrl()
 		{
-            IPulsarClient.Builder().ServiceUrl(null).Build();
+            var exception = Assert.Throws<ArgumentException>(() => IPulsarClient.Builder().ServiceUrl(null).Build());
+			//IPulsarClient.Builder().ServiceUrl(null).Build();
+			Assert.Equal("Param serviceUrl must not be blank.", exception.Message);
 		}
 		[Fact]
-		public virtual void TestClientBuilderWithNullServiceUrlProvider()
+		public void TestClientBuilderWithNullServiceUrlProvider()
 		{
-            IPulsarClient.Builder().ServiceUrlProvider(null).Build();
-		}
+            var exception = Assert.Throws<ArgumentException>(() => IPulsarClient.Builder().ServiceUrlProvider(null).Build());
+			Assert.Equal("Param serviceUrlProvider must not be null.", exception.Message);
+        }
 
 	}
 

@@ -52,7 +52,7 @@ namespace SharpPulsar.Test.Api
 		}
 
 		[Fact]
-		public virtual void EqualTest()
+		public void EqualTest()
 		{
 			var testConsumerId1 = new ConsumerId(TopicTestConflict, SubcribtionTest);
 			var testConsumerId2 = new ConsumerId(TopicTestConflict, SubcribtionTest);

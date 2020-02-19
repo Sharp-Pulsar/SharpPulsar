@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Impl.auth
 			}
 		}
 
-		public virtual string AuthMethodName => null;
+		public string AuthMethodName => null;
 
         public IAuthenticationDataProvider AuthData => null;
 
