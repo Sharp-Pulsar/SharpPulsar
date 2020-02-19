@@ -11,33 +11,30 @@ namespace SharpPulsar.Protocol.Proto
 	public partial class BaseCommand: ByteBufGeneratedMessage
 	{
 		// Use BaseCommand.newBuilder() to construct.
-		internal static ThreadLocalPool<BaseCommand> _pool = new ThreadLocalPool<BaseCommand>(handle => new BaseCommand(handle), 1, true);
+		public static ThreadLocalPool<BaseCommand> _pool = new ThreadLocalPool<BaseCommand>(handle => new BaseCommand(handle), 1, true);
 
-		internal ThreadLocalPool.Handle _handle;
+		public ThreadLocalPool.Handle _handle;
 		private BaseCommand(ThreadLocalPool.Handle handle)
 		{
 			_handle = handle;
 		}
-		internal int _bitField0 = 0;
-		internal int _bitField1 = 0;
+		public int _bitField0 = 0;
+		public int _bitField1 = 0;
 		public void Recycle()
 		{
 			InitFields();
 			MemoizedIsInitialized = -1;
 			_hasBits0 = 0;
 			MemoizedSerializedSize = -1;
-			if (_handle != null)
-			{
-				_handle.Release(this);
-			}
-		}
+            _handle?.Release(this);
+        }
 
 		public BaseCommand(bool NoInit)
 		{
 		}
 
 		
-		internal static readonly BaseCommand _defaultInstance;
+		public static readonly BaseCommand _defaultInstance;
 		public static BaseCommand DefaultInstance => _defaultInstance;
 
         public BaseCommand DefaultInstanceForType => _defaultInstance;
@@ -97,12 +94,12 @@ namespace SharpPulsar.Protocol.Proto
 			EndTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
 			EndTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
 		}
-		internal sbyte MemoizedIsInitialized = -1;
+		public sbyte MemoizedIsInitialized = -1;
 		public bool Initialized
 		{
 			get
 			{
-				sbyte IsInitialized = MemoizedIsInitialized;
+				var IsInitialized = MemoizedIsInitialized;
 				if (IsInitialized != -1)
 				{
 					return IsInitialized == 1;
@@ -496,10 +493,10 @@ namespace SharpPulsar.Protocol.Proto
 
 		public int SerializedSize => CalculateSize();
 
-		internal int MemoizedSerializedSize = -1;
+		public int MemoizedSerializedSize = -1;
 		
 
-		internal const long SerialVersionUID = 0L;
+		public const long SerialVersionUID = 0L;
 		
 		
 		public static Builder NewBuilder()
@@ -735,13 +732,13 @@ namespace SharpPulsar.Protocol.Proto
 		public  class Builder: ByteBufMessageBuilder
 		{
 			// Construct using org.apache.pulsar.common.api.proto.BaseCommand.newBuilder()
-			internal static ThreadLocalPool<Builder> _pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
-			internal int _bitField0 = 0;
-			internal int _bitField1 = 0;
-			internal ThreadLocalPool.Handle _handle;
+			public static ThreadLocalPool<Builder> Pool = new ThreadLocalPool<Builder>(handle => new Builder(handle), 1, true);
+			public int BitField0 = 0;
+			public int BitField1 = 0;
+			public ThreadLocalPool.Handle Handle;
 			private Builder(ThreadLocalPool.Handle handle)
 			{
-				_handle = handle;
+				Handle = handle;
 				MaybeForceBuilderInitialization();
 			}
 			
@@ -749,24 +746,21 @@ namespace SharpPulsar.Protocol.Proto
 			public void Recycle()
 			{
 				Clear();
-				if (_handle != null)
-				{
-					_handle.Release(this);
-				}
-				
-			}
+                Handle?.Release(this);
+
+            }
 			
 			public void MaybeForceBuilderInitialization()
 			{
 			}
-			internal static Builder Create()
+			public static Builder Create()
 			{
-				return _pool.Take();
+				return Pool.Take();
 			}
 
 			public Builder Clear()
 			{
-				ClearType();
+                _type = 0;
 				ClearConnect();
 				ClearConnected();
 				ClearSubscribe();
@@ -825,500 +819,501 @@ namespace SharpPulsar.Protocol.Proto
 
             public BaseCommand Build()
 			{
-				BaseCommand result = BuildPartial();
-				if (!result.IsInitialized())
+				var result = BuildPartial();
+				//proto3 always returns true
+				/*if (!result.IsInitialized())
 				{
 					throw new NullReferenceException("BaseCommand not initialized");
-				}
+				}*/
 				return result;
 			}
 			Types.Type _type;
 			
 			public BaseCommand BuildPartial()
 			{
-				BaseCommand Result = BaseCommand._pool.Take();
-				int From_bitField0 = _bitField0;
-				int FromBitField1_ = _bitField1;
-				int To_bitField0 = 0;
-				int ToBitField1_ = 0;
-				if (((From_bitField0 & 0x00000001) == 0x00000001))
+				var result = BaseCommand._pool.Take();
+				var fromBitField0 = BitField0;
+				var fromBitField1 = BitField1;
+				var toBitField0 = 0;
+				var toBitField1 = 0;
+				if (((fromBitField0 & 0x00000001) == 0x00000001))
 				{
-					To_bitField0 |= 0x00000001;
+					toBitField0 |= 0x00000001;
 				}
-				Result.Type = _type;
-				if (((From_bitField0 & 0x00000002) == 0x00000002))
+				result.Type = _type;
+				if (((fromBitField0 & 0x00000002) == 0x00000002))
 				{
-					To_bitField0 |= 0x00000002;
+					toBitField0 |= 0x00000002;
 				}
-				Result.Connect = _connect;
-				if (((From_bitField0 & 0x00000004) == 0x00000004))
+				result.Connect = Connect;
+				if (((fromBitField0 & 0x00000004) == 0x00000004))
 				{
-					To_bitField0 |= 0x00000004;
+					toBitField0 |= 0x00000004;
 				}
-				Result.Connected = _connected;
-				if (((From_bitField0 & 0x00000008) == 0x00000008))
+				result.Connected = Connected;
+				if (((fromBitField0 & 0x00000008) == 0x00000008))
 				{
-					To_bitField0 |= 0x00000008;
+					toBitField0 |= 0x00000008;
 				}
-				Result.Subscribe = Subscribe_;
-				if (((From_bitField0 & 0x00000010) == 0x00000010))
+				result.Subscribe = Subscribe;
+				if (((fromBitField0 & 0x00000010) == 0x00000010))
 				{
-					To_bitField0 |= 0x00000010;
+					toBitField0 |= 0x00000010;
 				}
-				Result.Producer = Producer_;
-				if (((From_bitField0 & 0x00000020) == 0x00000020))
+				result.Producer = Producer;
+				if (((fromBitField0 & 0x00000020) == 0x00000020))
 				{
-					To_bitField0 |= 0x00000020;
+					toBitField0 |= 0x00000020;
 				}
-				Result.Send = Send_;
-				if (((From_bitField0 & 0x00000040) == 0x00000040))
+				result.Send = Send;
+				if (((fromBitField0 & 0x00000040) == 0x00000040))
 				{
-					To_bitField0 |= 0x00000040;
+					toBitField0 |= 0x00000040;
 				}
-				Result.SendReceipt = SendReceipt_;
-				if (((From_bitField0 & 0x00000080) == 0x00000080))
+				result.SendReceipt = SendReceipt;
+				if (((fromBitField0 & 0x00000080) == 0x00000080))
 				{
-					To_bitField0 |= 0x00000080;
+					toBitField0 |= 0x00000080;
 				}
-				Result.SendError = SendError_;
-				if (((From_bitField0 & 0x00000100) == 0x00000100))
+				result.SendError = SendError;
+				if (((fromBitField0 & 0x00000100) == 0x00000100))
 				{
-					To_bitField0 |= 0x00000100;
+					toBitField0 |= 0x00000100;
 				}
-				Result.Message = Message_;
-				if (((From_bitField0 & 0x00000200) == 0x00000200))
+				result.Message = Message;
+				if (((fromBitField0 & 0x00000200) == 0x00000200))
 				{
-					To_bitField0 |= 0x00000200;
+					toBitField0 |= 0x00000200;
 				}
-				Result.Ack = Ack_;
-				if (((From_bitField0 & 0x00000400) == 0x00000400))
+				result.Ack = Ack;
+				if (((fromBitField0 & 0x00000400) == 0x00000400))
 				{
-					To_bitField0 |= 0x00000400;
+					toBitField0 |= 0x00000400;
 				}
-				Result.Flow = Flow_;
-				if (((From_bitField0 & 0x00000800) == 0x00000800))
+				result.Flow = Flow;
+				if (((fromBitField0 & 0x00000800) == 0x00000800))
 				{
-					To_bitField0 |= 0x00000800;
+					toBitField0 |= 0x00000800;
 				}
-				Result.Unsubscribe = Unsubscribe_;
-				if (((From_bitField0 & 0x00001000) == 0x00001000))
+				result.Unsubscribe = Unsubscribe;
+				if (((fromBitField0 & 0x00001000) == 0x00001000))
 				{
-					To_bitField0 |= 0x00001000;
+					toBitField0 |= 0x00001000;
 				}
-				Result.Success = Success_;
-				if (((From_bitField0 & 0x00002000) == 0x00002000))
+				result.Success = Success;
+				if (((fromBitField0 & 0x00002000) == 0x00002000))
 				{
-					To_bitField0 |= 0x00002000;
+					toBitField0 |= 0x00002000;
 				}
-				Result.Error = Error_;
-				if (((From_bitField0 & 0x00004000) == 0x00004000))
+				result.Error = Error;
+				if (((fromBitField0 & 0x00004000) == 0x00004000))
 				{
-					To_bitField0 |= 0x00004000;
+					toBitField0 |= 0x00004000;
 				}
-				Result.CloseProducer = CloseProducer_;
-				if (((From_bitField0 & 0x00008000) == 0x00008000))
+				result.CloseProducer = CloseProducer;
+				if (((fromBitField0 & 0x00008000) == 0x00008000))
 				{
-					To_bitField0 |= 0x00008000;
+					toBitField0 |= 0x00008000;
 				}
-				Result.CloseConsumer = CloseConsumer_;
-				if (((From_bitField0 & 0x00010000) == 0x00010000))
+				result.CloseConsumer = CloseConsumer;
+				if (((fromBitField0 & 0x00010000) == 0x00010000))
 				{
-					To_bitField0 |= 0x00010000;
+					toBitField0 |= 0x00010000;
 				}
-				Result.ProducerSuccess = ProducerSuccess_;
-				if (((From_bitField0 & 0x00020000) == 0x00020000))
+				result.ProducerSuccess = ProducerSuccess;
+				if (((fromBitField0 & 0x00020000) == 0x00020000))
 				{
-					To_bitField0 |= 0x00020000;
+					toBitField0 |= 0x00020000;
 				}
-				Result.Ping = Ping_;
-				if (((From_bitField0 & 0x00040000) == 0x00040000))
+				result.Ping = Ping;
+				if (((fromBitField0 & 0x00040000) == 0x00040000))
 				{
-					To_bitField0 |= 0x00040000;
+					toBitField0 |= 0x00040000;
 				}
-				Result.Pong = Pong_;
-				if (((From_bitField0 & 0x00080000) == 0x00080000))
+				result.Pong = Pong;
+				if (((fromBitField0 & 0x00080000) == 0x00080000))
 				{
-					To_bitField0 |= 0x00080000;
+					toBitField0 |= 0x00080000;
 				}
-				Result.RedeliverUnacknowledgedMessages = RedeliverUnacknowledgedMessages_;
-				if (((From_bitField0 & 0x00100000) == 0x00100000))
+				result.RedeliverUnacknowledgedMessages = RedeliverUnacknowledgedMessages;
+				if (((fromBitField0 & 0x00100000) == 0x00100000))
 				{
-					To_bitField0 |= 0x00100000;
+					toBitField0 |= 0x00100000;
 				}
-				Result.PartitionMetadata = PartitionMetadata_;
-				if (((From_bitField0 & 0x00200000) == 0x00200000))
+				result.PartitionMetadata = PartitionMetadata;
+				if (((fromBitField0 & 0x00200000) == 0x00200000))
 				{
-					To_bitField0 |= 0x00200000;
+					toBitField0 |= 0x00200000;
 				}
-				Result.PartitionMetadataResponse = PartitionMetadataResponse_;
-				if (((From_bitField0 & 0x00400000) == 0x00400000))
+				result.PartitionMetadataResponse = PartitionMetadataResponse;
+				if (((fromBitField0 & 0x00400000) == 0x00400000))
 				{
-					To_bitField0 |= 0x00400000;
+					toBitField0 |= 0x00400000;
 				}
-				Result.LookupTopic = LookupTopic_;
-				if (((From_bitField0 & 0x00800000) == 0x00800000))
+				result.LookupTopic = LookupTopic;
+				if (((fromBitField0 & 0x00800000) == 0x00800000))
 				{
-					To_bitField0 |= 0x00800000;
+					toBitField0 |= 0x00800000;
 				}
-				Result.LookupTopicResponse = LookupTopicResponse_;
-				if (((From_bitField0 & 0x01000000) == 0x01000000))
+				result.LookupTopicResponse = LookupTopicResponse;
+				if (((fromBitField0 & 0x01000000) == 0x01000000))
 				{
-					To_bitField0 |= 0x01000000;
+					toBitField0 |= 0x01000000;
 				}
-				Result.ConsumerStats = ConsumerStats_;
-				if (((From_bitField0 & 0x02000000) == 0x02000000))
+				result.ConsumerStats = ConsumerStats;
+				if (((fromBitField0 & 0x02000000) == 0x02000000))
 				{
-					To_bitField0 |= 0x02000000;
+					toBitField0 |= 0x02000000;
 				}
-				Result.ConsumerStatsResponse = ConsumerStatsResponse_;
-				if (((From_bitField0 & 0x04000000) == 0x04000000))
+				result.ConsumerStatsResponse = ConsumerStatsResponse;
+				if (((fromBitField0 & 0x04000000) == 0x04000000))
 				{
-					To_bitField0 |= 0x04000000;
+					toBitField0 |= 0x04000000;
 				}
-				Result.ReachedEndOfTopic = ReachedEndOfTopic_;
-				if (((From_bitField0 & 0x08000000) == 0x08000000))
+				result.ReachedEndOfTopic = ReachedEndOfTopic;
+				if (((fromBitField0 & 0x08000000) == 0x08000000))
 				{
-					To_bitField0 |= 0x08000000;
+					toBitField0 |= 0x08000000;
 				}
-				Result.Seek = Seek_;
-				if (((From_bitField0 & 0x10000000) == 0x10000000))
+				result.Seek = Seek;
+				if (((fromBitField0 & 0x10000000) == 0x10000000))
 				{
-					To_bitField0 |= 0x10000000;
+					toBitField0 |= 0x10000000;
 				}
-				Result.GetLastMessageId = GetLastMessageId_;
-				if (((From_bitField0 & 0x20000000) == 0x20000000))
+				result.GetLastMessageId = GetLastMessageId;
+				if (((fromBitField0 & 0x20000000) == 0x20000000))
 				{
-					To_bitField0 |= 0x20000000;
+					toBitField0 |= 0x20000000;
 				}
-				Result.GetLastMessageIdResponse = GetLastMessageIdResponse_;
-				if (((From_bitField0 & 0x40000000) == 0x40000000))
+				result.GetLastMessageIdResponse = GetLastMessageIdResponse;
+				if (((fromBitField0 & 0x40000000) == 0x40000000))
 				{
-					To_bitField0 |= 0x40000000;
+					toBitField0 |= 0x40000000;
 				}
-				Result.ActiveConsumerChange = ActiveConsumerChange_;
-				if (((From_bitField0 & 0x80000000) == 0x80000000))
+				result.ActiveConsumerChange = ActiveConsumerChange;
+				if (((fromBitField0 & 0x80000000) == 0x80000000))
 				{
-					To_bitField0 |= unchecked((int)0x80000000);
+					toBitField0 |= unchecked((int)0x80000000);
 				}
-				Result.GetTopicsOfNamespace = GetTopicsOfNamespace_;
-				if (((FromBitField1_ & 0x00000001) == 0x00000001))
+				result.GetTopicsOfNamespace = GetTopicsOfNamespace;
+				if (((fromBitField1 & 0x00000001) == 0x00000001))
 				{
-					ToBitField1_ |= 0x00000001;
+					toBitField1 |= 0x00000001;
 				}
-				Result.GetTopicsOfNamespaceResponse = GetTopicsOfNamespaceResponse_;
-				if (((FromBitField1_ & 0x00000002) == 0x00000002))
+				result.GetTopicsOfNamespaceResponse = GetTopicsOfNamespaceResponse;
+				if (((fromBitField1 & 0x00000002) == 0x00000002))
 				{
-					ToBitField1_ |= 0x00000002;
+					toBitField1 |= 0x00000002;
 				}
-				Result.GetSchema = GetSchema_;
-				if (((FromBitField1_ & 0x00000004) == 0x00000004))
+				result.GetSchema = GetSchema;
+				if (((fromBitField1 & 0x00000004) == 0x00000004))
 				{
-					ToBitField1_ |= 0x00000004;
+					toBitField1 |= 0x00000004;
 				}
-				Result.GetSchemaResponse = GetSchemaResponse_;
-				if (((FromBitField1_ & 0x00000008) == 0x00000008))
+				result.GetSchemaResponse = GetSchemaResponse;
+				if (((fromBitField1 & 0x00000008) == 0x00000008))
 				{
-					ToBitField1_ |= 0x00000008;
+					toBitField1 |= 0x00000008;
 				}
-				Result.AuthChallenge = AuthChallenge_;
-				if (((FromBitField1_ & 0x00000010) == 0x00000010))
+				result.AuthChallenge = AuthChallenge;
+				if (((fromBitField1 & 0x00000010) == 0x00000010))
 				{
-					ToBitField1_ |= 0x00000010;
+					toBitField1 |= 0x00000010;
 				}
-				Result.AuthResponse = AuthResponse_;
-				if (((FromBitField1_ & 0x00000020) == 0x00000020))
+				result.AuthResponse = AuthResponse;
+				if (((fromBitField1 & 0x00000020) == 0x00000020))
 				{
-					ToBitField1_ |= 0x00000020;
+					toBitField1 |= 0x00000020;
 				}
-				Result.AckResponse = AckResponse_;
-				if (((FromBitField1_ & 0x00000040) == 0x00000040))
+				result.AckResponse = AckResponse;
+				if (((fromBitField1 & 0x00000040) == 0x00000040))
 				{
-					ToBitField1_ |= 0x00000040;
+					toBitField1 |= 0x00000040;
 				}
-				Result.GetOrCreateSchema = GetOrCreateSchema_;
-				if (((FromBitField1_ & 0x00000080) == 0x00000080))
+				result.GetOrCreateSchema = GetOrCreateSchema;
+				if (((fromBitField1 & 0x00000080) == 0x00000080))
 				{
-					ToBitField1_ |= 0x00000080;
+					toBitField1 |= 0x00000080;
 				}
-				Result.GetOrCreateSchemaResponse = GetOrCreateSchemaResponse_;
-				if (((FromBitField1_ & 0x00000100) == 0x00000100))
+				result.GetOrCreateSchemaResponse = GetOrCreateSchemaResponse;
+				if (((fromBitField1 & 0x00000100) == 0x00000100))
 				{
-					ToBitField1_ |= 0x00000100;
+					toBitField1 |= 0x00000100;
 				}
-				Result.NewTxn = NewTxn_;
-				if (((FromBitField1_ & 0x00000200) == 0x00000200))
+				result.NewTxn = NewTxn;
+				if (((fromBitField1 & 0x00000200) == 0x00000200))
 				{
-					ToBitField1_ |= 0x00000200;
+					toBitField1 |= 0x00000200;
 				}
-				Result.NewTxnResponse = NewTxnResponse_;
-				if (((FromBitField1_ & 0x00000400) == 0x00000400))
+				result.NewTxnResponse = NewTxnResponse;
+				if (((fromBitField1 & 0x00000400) == 0x00000400))
 				{
-					ToBitField1_ |= 0x00000400;
+					toBitField1 |= 0x00000400;
 				}
-				Result.AddPartitionToTxn = AddPartitionToTxn_;
-				if (((FromBitField1_ & 0x00000800) == 0x00000800))
+				result.AddPartitionToTxn = AddPartitionToTxn;
+				if (((fromBitField1 & 0x00000800) == 0x00000800))
 				{
-					ToBitField1_ |= 0x00000800;
+					toBitField1 |= 0x00000800;
 				}
-				Result.AddPartitionToTxnResponse = AddPartitionToTxnResponse_;
-				if (((FromBitField1_ & 0x00001000) == 0x00001000))
+				result.AddPartitionToTxnResponse = AddPartitionToTxnResponse;
+				if (((fromBitField1 & 0x00001000) == 0x00001000))
 				{
-					ToBitField1_ |= 0x00001000;
+					toBitField1 |= 0x00001000;
 				}
-				Result.AddSubscriptionToTxn = AddSubscriptionToTxn_;
-				if (((FromBitField1_ & 0x00002000) == 0x00002000))
+				result.AddSubscriptionToTxn = AddSubscriptionToTxn;
+				if (((fromBitField1 & 0x00002000) == 0x00002000))
 				{
-					ToBitField1_ |= 0x00002000;
+					toBitField1 |= 0x00002000;
 				}
-				Result.AddSubscriptionToTxnResponse = AddSubscriptionToTxnResponse_;
-				if (((FromBitField1_ & 0x00004000) == 0x00004000))
+				result.AddSubscriptionToTxnResponse = AddSubscriptionToTxnResponse;
+				if (((fromBitField1 & 0x00004000) == 0x00004000))
 				{
-					ToBitField1_ |= 0x00004000;
+					toBitField1 |= 0x00004000;
 				}
-				Result.EndTxn = EndTxn_;
-				if (((FromBitField1_ & 0x00008000) == 0x00008000))
+				result.EndTxn = EndTxn;
+				if (((fromBitField1 & 0x00008000) == 0x00008000))
 				{
-					ToBitField1_ |= 0x00008000;
+					toBitField1 |= 0x00008000;
 				}
-				Result.EndTxnResponse = EndTxnResponse_;
-				if (((FromBitField1_ & 0x00010000) == 0x00010000))
+				result.EndTxnResponse = EndTxnResponse;
+				if (((fromBitField1 & 0x00010000) == 0x00010000))
 				{
-					ToBitField1_ |= 0x00010000;
+					toBitField1 |= 0x00010000;
 				}
-				Result.EndTxnOnPartition = EndTxnOnPartition_;
-				if (((FromBitField1_ & 0x00020000) == 0x00020000))
+				result.EndTxnOnPartition = EndTxnOnPartition;
+				if (((fromBitField1 & 0x00020000) == 0x00020000))
 				{
-					ToBitField1_ |= 0x00020000;
+					toBitField1 |= 0x00020000;
 				}
-				Result.EndTxnOnPartitionResponse = EndTxnOnPartitionResponse_;
-				if (((FromBitField1_ & 0x00040000) == 0x00040000))
+				result.EndTxnOnPartitionResponse = EndTxnOnPartitionResponse;
+				if (((fromBitField1 & 0x00040000) == 0x00040000))
 				{
-					ToBitField1_ |= 0x00040000;
+					toBitField1 |= 0x00040000;
 				}
-				Result.EndTxnOnSubscription = _endTxnOnSubscription;
-				if (((FromBitField1_ & 0x00080000) == 0x00080000))
+				result.EndTxnOnSubscription = EndTxnOnSubscription;
+				if (((fromBitField1 & 0x00080000) == 0x00080000))
 				{
-					ToBitField1_ |= 0x00080000;
+					toBitField1 |= 0x00080000;
 				}
-				Result.EndTxnOnSubscriptionResponse = _endTxnOnSubscriptionResponse;
-				Result._hasBits0 = To_bitField0;
-				Result._bitField1 = ToBitField1_;
-				return Result;
+				result.EndTxnOnSubscriptionResponse = EndTxnOnSubscriptionResponse;
+				result._hasBits0 = toBitField0;
+				result._bitField1 = toBitField1;
+				return result;
 			}
 
-			public Builder MergeFrom(BaseCommand Other)
+			public Builder MergeFrom(BaseCommand other)
 			{
-				if (Other == DefaultInstance)
+				if (other == DefaultInstance)
 				{
 					return this;
 				}
-				if (Other.HasType)
+				if (other.HasType)
 				{
-					SetType(Other.Type);
+					SetType(other.Type);
 				}
-				if (Other.HasConnect)
+				if (other.HasConnect)
 				{
-					MergeConnect(Other.Connect);
+					MergeConnect(other.Connect);
 				}
-				if (Other.HasConnected)
+				if (other.HasConnected)
 				{
-					MergeConnected(Other.Connected);
+					MergeConnected(other.Connected);
 				}
-				if (Other.HasSubscribe)
+				if (other.HasSubscribe)
 				{
-					MergeSubscribe(Other.Subscribe);
+					MergeSubscribe(other.Subscribe);
 				}
-				if (Other.HasProducer)
+				if (other.HasProducer)
 				{
-					MergeProducer(Other.Producer);
+					MergeProducer(other.Producer);
 				}
-				if (Other.HasSend)
+				if (other.HasSend)
 				{
-					MergeSend(Other.Send);
+					MergeSend(other.Send);
 				}
-				if (Other.HasSendReceipt)
+				if (other.HasSendReceipt)
 				{
-					MergeSendReceipt(Other.SendReceipt);
+					MergeSendReceipt(other.SendReceipt);
 				}
-				if (Other.HasSendError)
+				if (other.HasSendError)
 				{
-					MergeSendError(Other.SendError);
+					MergeSendError(other.SendError);
 				}
-				if (Other.HasMessage)
+				if (other.HasMessage)
 				{
-					MergeMessage(Other.Message);
+					MergeMessage(other.Message);
 				}
-				if (Other.HasAck)
+				if (other.HasAck)
 				{
-					MergeAck(Other.Ack);
+					MergeAck(other.Ack);
 				}
-				if (Other.HasFlow)
+				if (other.HasFlow)
 				{
-					MergeFlow(Other.Flow);
+					MergeFlow(other.Flow);
 				}
-				if (Other.HasUnsubscribe)
+				if (other.HasUnsubscribe)
 				{
-					MergeUnsubscribe(Other.Unsubscribe);
+					MergeUnsubscribe(other.Unsubscribe);
 				}
-				if (Other.HasSuccess)
+				if (other.HasSuccess)
 				{
-					MergeSuccess(Other.Success);
+					MergeSuccess(other.Success);
 				}
-				if (Other.HasError)
+				if (other.HasError)
 				{
-					MergeError(Other.Error);
+					MergeError(other.Error);
 				}
-				if (Other.HasCloseProducer)
+				if (other.HasCloseProducer)
 				{
-					MergeCloseProducer(Other.CloseProducer);
+					MergeCloseProducer(other.CloseProducer);
 				}
-				if (Other.HasCloseConsumer)
+				if (other.HasCloseConsumer)
 				{
-					MergeCloseConsumer(Other.CloseConsumer);
+					MergeCloseConsumer(other.CloseConsumer);
 				}
-				if (Other.HasProducerSuccess)
+				if (other.HasProducerSuccess)
 				{
-					MergeProducerSuccess(Other.ProducerSuccess);
+					MergeProducerSuccess(other.ProducerSuccess);
 				}
-				if (Other.HasPing)
+				if (other.HasPing)
 				{
-					MergePing(Other.Ping);
+					MergePing(other.Ping);
 				}
-				if (Other.HasPong)
+				if (other.HasPong)
 				{
-					MergePong(Other.Pong);
+					MergePong(other.Pong);
 				}
-				if (Other.HasRedeliverUnacknowledgedMessages)
+				if (other.HasRedeliverUnacknowledgedMessages)
 				{
-					MergeRedeliverUnacknowledgedMessages(Other.RedeliverUnacknowledgedMessages);
+					MergeRedeliverUnacknowledgedMessages(other.RedeliverUnacknowledgedMessages);
 				}
-				if (Other.HasPartitionMetadata)
+				if (other.HasPartitionMetadata)
 				{
-					MergePartitionMetadata(Other.PartitionMetadata);
+					MergePartitionMetadata(other.PartitionMetadata);
 				}
-				if (Other.HasPartitionMetadataResponse)
+				if (other.HasPartitionMetadataResponse)
 				{
-					MergePartitionMetadataResponse(Other.PartitionMetadataResponse);
+					MergePartitionMetadataResponse(other.PartitionMetadataResponse);
 				}
-				if (Other.HasLookupTopic)
+				if (other.HasLookupTopic)
 				{
-					MergeLookupTopic(Other.LookupTopic);
+					MergeLookupTopic(other.LookupTopic);
 				}
-				if (Other.HasLookupTopicResponse)
+				if (other.HasLookupTopicResponse)
 				{
-					MergeLookupTopicResponse(Other.LookupTopicResponse);
+					MergeLookupTopicResponse(other.LookupTopicResponse);
 				}
-				if (Other.HasConsumerStats)
+				if (other.HasConsumerStats)
 				{
-					MergeConsumerStats(Other.ConsumerStats);
+					MergeConsumerStats(other.ConsumerStats);
 				}
-				if (Other.HasConsumerStatsResponse)
+				if (other.HasConsumerStatsResponse)
 				{
-					MergeConsumerStatsResponse(Other.ConsumerStatsResponse);
+					MergeConsumerStatsResponse(other.ConsumerStatsResponse);
 				}
-				if (Other.HasReachedEndOfTopic)
+				if (other.HasReachedEndOfTopic)
 				{
-					MergeReachedEndOfTopic(Other.ReachedEndOfTopic);
+					MergeReachedEndOfTopic(other.ReachedEndOfTopic);
 				}
-				if (Other.HasSeek)
+				if (other.HasSeek)
 				{
-					MergeSeek(Other.Seek);
+					MergeSeek(other.Seek);
 				}
-				if (Other.HasGetLastMessageId)
+				if (other.HasGetLastMessageId)
 				{
-					MergeGetLastMessageId(Other.GetLastMessageId);
+					MergeGetLastMessageId(other.GetLastMessageId);
 				}
-				if (Other.HasGetLastMessageIdResponse)
+				if (other.HasGetLastMessageIdResponse)
 				{
-					MergeGetLastMessageIdResponse(Other.GetLastMessageIdResponse);
+					MergeGetLastMessageIdResponse(other.GetLastMessageIdResponse);
 				}
-				if (Other.HasActiveConsumerChange)
+				if (other.HasActiveConsumerChange)
 				{
-					MergeActiveConsumerChange(Other.ActiveConsumerChange);
+					MergeActiveConsumerChange(other.ActiveConsumerChange);
 				}
-				if (Other.HasGetTopicsOfNamespace)
+				if (other.HasGetTopicsOfNamespace)
 				{
-					MergeGetTopicsOfNamespace(Other.GetTopicsOfNamespace);
+					MergeGetTopicsOfNamespace(other.GetTopicsOfNamespace);
 				}
-				if (Other.HasGetTopicsOfNamespaceResponse)
+				if (other.HasGetTopicsOfNamespaceResponse)
 				{
-					MergeGetTopicsOfNamespaceResponse(Other.GetTopicsOfNamespaceResponse);
+					MergeGetTopicsOfNamespaceResponse(other.GetTopicsOfNamespaceResponse);
 				}
-				if (Other.HasGetSchema)
+				if (other.HasGetSchema)
 				{
-					MergeGetSchema(Other.GetSchema);
+					MergeGetSchema(other.GetSchema);
 				}
-				if (Other.HasGetSchemaResponse)
+				if (other.HasGetSchemaResponse)
 				{
-					MergeGetSchemaResponse(Other.GetSchemaResponse);
+					MergeGetSchemaResponse(other.GetSchemaResponse);
 				}
-				if (Other.HasAuthChallenge)
+				if (other.HasAuthChallenge)
 				{
-					MergeAuthChallenge(Other.AuthChallenge);
+					MergeAuthChallenge(other.AuthChallenge);
 				}
-				if (Other.HasAuthResponse)
+				if (other.HasAuthResponse)
 				{
-					MergeAuthResponse(Other.AuthResponse);
+					MergeAuthResponse(other.AuthResponse);
 				}
-				if (Other.HasAckResponse)
+				if (other.HasAckResponse)
 				{
-					MergeAckResponse(Other.AckResponse);
+					MergeAckResponse(other.AckResponse);
 				}
-				if (Other.HasGetOrCreateSchema)
+				if (other.HasGetOrCreateSchema)
 				{
-					MergeGetOrCreateSchema(Other.GetOrCreateSchema);
+					MergeGetOrCreateSchema(other.GetOrCreateSchema);
 				}
-				if (Other.HasGetOrCreateSchemaResponse)
+				if (other.HasGetOrCreateSchemaResponse)
 				{
-					MergeGetOrCreateSchemaResponse(Other.GetOrCreateSchemaResponse);
+					MergeGetOrCreateSchemaResponse(other.GetOrCreateSchemaResponse);
 				}
-				if (Other.HasNewTxn)
+				if (other.HasNewTxn)
 				{
-					MergeNewTxn(Other.NewTxn);
+					MergeNewTxn(other.NewTxn);
 				}
-				if (Other.HasNewTxnResponse)
+				if (other.HasNewTxnResponse)
 				{
-					MergeNewTxnResponse(Other.NewTxnResponse);
+					MergeNewTxnResponse(other.NewTxnResponse);
 				}
-				if (Other.HasAddPartitionToTxn)
+				if (other.HasAddPartitionToTxn)
 				{
-					MergeAddPartitionToTxn(Other.AddPartitionToTxn);
+					MergeAddPartitionToTxn(other.AddPartitionToTxn);
 				}
-				if (Other.HasAddPartitionToTxnResponse)
+				if (other.HasAddPartitionToTxnResponse)
 				{
-					MergeAddPartitionToTxnResponse(Other.AddPartitionToTxnResponse);
+					MergeAddPartitionToTxnResponse(other.AddPartitionToTxnResponse);
 				}
-				if (Other.HasAddSubscriptionToTxn)
+				if (other.HasAddSubscriptionToTxn)
 				{
-					MergeAddSubscriptionToTxn(Other.AddSubscriptionToTxn);
+					MergeAddSubscriptionToTxn(other.AddSubscriptionToTxn);
 				}
-				if (Other.HasAddSubscriptionToTxnResponse)
+				if (other.HasAddSubscriptionToTxnResponse)
 				{
-					MergeAddSubscriptionToTxnResponse(Other.AddSubscriptionToTxnResponse);
+					MergeAddSubscriptionToTxnResponse(other.AddSubscriptionToTxnResponse);
 				}
-				if (Other.HasEndTxn)
+				if (other.HasEndTxn)
 				{
-					MergeEndTxn(Other.EndTxn);
+					MergeEndTxn(other.EndTxn);
 				}
-				if (Other.HasEndTxnResponse)
+				if (other.HasEndTxnResponse)
 				{
-					MergeEndTxnResponse(Other.EndTxnResponse);
+					MergeEndTxnResponse(other.EndTxnResponse);
 				}
-				if (Other.HasEndTxnOnPartition)
+				if (other.HasEndTxnOnPartition)
 				{
-					MergeEndTxnOnPartition(Other.EndTxnOnPartition);
+					MergeEndTxnOnPartition(other.EndTxnOnPartition);
 				}
-				if (Other.HasEndTxnOnPartitionResponse)
+				if (other.HasEndTxnOnPartitionResponse)
 				{
-					MergeEndTxnOnPartitionResponse(Other.EndTxnOnPartitionResponse);
+					MergeEndTxnOnPartitionResponse(other.EndTxnOnPartitionResponse);
 				}
-				if (Other.HasEndTxnOnSubscription)
+				if (other.HasEndTxnOnSubscription)
 				{
-					MergeEndTxnOnSubscription(Other.EndTxnOnSubscription);
+					MergeEndTxnOnSubscription(other.EndTxnOnSubscription);
 				}
-				if (Other.HasEndTxnOnSubscriptionResponse)
+				if (other.HasEndTxnOnSubscriptionResponse)
 				{
-					MergeEndTxnOnSubscriptionResponse(Other.EndTxnOnSubscriptionResponse);
+					MergeEndTxnOnSubscriptionResponse(other.EndTxnOnSubscriptionResponse);
 				}
 				return this;
 			}
@@ -1326,15 +1321,15 @@ namespace SharpPulsar.Protocol.Proto
 			{
 				while (true)
 				{
-					int Tag = input.ReadTag();
-					switch (Tag)
+					var tag = input.ReadTag();
+					switch (tag)
 					{
 						case 0:
 
 							return this;
 						default:
 							{
-								if (!input.SkipField(Tag))
+								if (!input.SkipField(tag))
 								{
 
 									return this;
@@ -1343,625 +1338,625 @@ namespace SharpPulsar.Protocol.Proto
 							}
 						case 8:
 							{
-								int RawValue = input.ReadEnum();
-								Types.Type Value = Enum.GetValues(typeof(Types.Type)).Cast<Types.Type>().ToList()[RawValue];
-								if (Value != null)
+								var rawValue = input.ReadEnum();
+								var value = Enum.GetValues(typeof(Types.Type)).Cast<Types.Type>().ToList()[rawValue];
+								if (value != null)
 								{
-									_bitField0 |= 0x00000001;
-									_type = Value;
+									BitField0 |= 0x00000001;
+									_type = value;
 								}
 								break;
 							}
 						case 18:
 							{
-								CommandConnect.Builder SubBuilder = CommandConnect.NewBuilder();
+								var subBuilder = CommandConnect.NewBuilder();
 								if (HasConnect())
 								{
-									SubBuilder.MergeFrom(GetConnect());
+									subBuilder.MergeFrom(GetConnect());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetConnect(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetConnect(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 26:
 							{
-								CommandConnected.Builder SubBuilder = CommandConnected.NewBuilder();
+								var subBuilder = CommandConnected.NewBuilder();
 								if (HasConnected())
 								{
-									SubBuilder.MergeFrom(GetConnected());
+									subBuilder.MergeFrom(GetConnected());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetConnected(SubBuilder);
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetConnected(subBuilder);
+								subBuilder.Recycle();
 								break;
 							}
 						case 34:
 							{
-								CommandSubscribe.Builder SubBuilder = CommandSubscribe.NewBuilder();
+								var subBuilder = CommandSubscribe.NewBuilder();
 								if (HasSubscribe())
 								{
-									SubBuilder.MergeFrom(GetSubscribe());
+									subBuilder.MergeFrom(GetSubscribe());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSubscribe(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSubscribe(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 42:
 							{
-								CommandProducer.Builder SubBuilder = CommandProducer.NewBuilder();
+								var subBuilder = CommandProducer.NewBuilder();
 								if (HasProducer())
 								{
-									SubBuilder.MergeFrom(GetProducer());
+									subBuilder.MergeFrom(GetProducer());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetProducer(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetProducer(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 50:
 							{
-								CommandSend.Builder SubBuilder = CommandSend.NewBuilder();
+								var subBuilder = CommandSend.NewBuilder();
 								if (HasSend())
 								{
-									SubBuilder.MergeFrom(GetSend());
+									subBuilder.MergeFrom(GetSend());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSend(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSend(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 58:
 							{
-								CommandSendReceipt.Builder SubBuilder = CommandSendReceipt.NewBuilder();
+								var subBuilder = CommandSendReceipt.NewBuilder();
 								if (HasSendReceipt())
 								{
-									SubBuilder.MergeFrom(GetSendReceipt());
+									subBuilder.MergeFrom(GetSendReceipt());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSendReceipt(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSendReceipt(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 66:
 							{
-								CommandSendError.Builder SubBuilder = CommandSendError.NewBuilder();
+								var subBuilder = CommandSendError.NewBuilder();
 								if (HasSendError())
 								{
-									SubBuilder.MergeFrom(GetSendError());
+									subBuilder.MergeFrom(GetSendError());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSendError(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSendError(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 74:
 							{
-								CommandMessage.Builder SubBuilder = CommandMessage.NewBuilder();
+								var subBuilder = CommandMessage.NewBuilder();
 								if (HasMessage())
 								{
-									SubBuilder.MergeFrom(GetMessage());
+									subBuilder.MergeFrom(GetMessage());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetMessage(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetMessage(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 82:
 							{
-								CommandAck.Builder SubBuilder = CommandAck.NewBuilder();
+								var subBuilder = CommandAck.NewBuilder();
 								if (HasAck())
 								{
-									SubBuilder.MergeFrom(GetAck());
+									subBuilder.MergeFrom(GetAck());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAck(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAck(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 90:
 							{
-								CommandFlow.Builder SubBuilder = CommandFlow.NewBuilder();
+								var subBuilder = CommandFlow.NewBuilder();
 								if (HasFlow())
 								{
-									SubBuilder.MergeFrom(GetFlow());
+									subBuilder.MergeFrom(GetFlow());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetFlow(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetFlow(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 98:
 							{
-								CommandUnsubscribe.Builder SubBuilder = CommandUnsubscribe.NewBuilder();
+								var subBuilder = CommandUnsubscribe.NewBuilder();
 								if (HasUnsubscribe())
 								{
-									SubBuilder.MergeFrom(GetUnsubscribe());
+									subBuilder.MergeFrom(GetUnsubscribe());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetUnsubscribe(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetUnsubscribe(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 106:
 							{
-								CommandSuccess.Builder SubBuilder = CommandSuccess.NewBuilder();
+								var subBuilder = CommandSuccess.NewBuilder();
 								if (HasSuccess())
 								{
-									SubBuilder.MergeFrom(GetSuccess());
+									subBuilder.MergeFrom(GetSuccess());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSuccess(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSuccess(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 114:
 							{
-								CommandError.Builder SubBuilder = CommandError.NewBuilder();
+								var subBuilder = CommandError.NewBuilder();
 								if (HasError())
 								{
-									SubBuilder.MergeFrom(GetError());
+									subBuilder.MergeFrom(GetError());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetError(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetError(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 122:
 							{
-								CommandCloseProducer.Builder SubBuilder = CommandCloseProducer.NewBuilder();
+								var subBuilder = CommandCloseProducer.NewBuilder();
 								if (HasCloseProducer())
 								{
-									SubBuilder.MergeFrom(GetCloseProducer());
+									subBuilder.MergeFrom(GetCloseProducer());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetCloseProducer(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetCloseProducer(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 130:
 							{
-								CommandCloseConsumer.Builder SubBuilder = CommandCloseConsumer.NewBuilder();
+								var subBuilder = CommandCloseConsumer.NewBuilder();
 								if (HasCloseConsumer())
 								{
-									SubBuilder.MergeFrom(GetCloseConsumer());
+									subBuilder.MergeFrom(GetCloseConsumer());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetCloseConsumer(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetCloseConsumer(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 138:
 							{
-								CommandProducerSuccess.Builder SubBuilder = CommandProducerSuccess.NewBuilder();
+								var subBuilder = CommandProducerSuccess.NewBuilder();
 								if (HasProducerSuccess())
 								{
-									SubBuilder.MergeFrom(GetProducerSuccess());
+									subBuilder.MergeFrom(GetProducerSuccess());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetProducerSuccess(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetProducerSuccess(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 146:
 							{
-								CommandPing.Builder SubBuilder = CommandPing.NewBuilder();
+								var subBuilder = CommandPing.NewBuilder();
 								if (HasPing())
 								{
-									SubBuilder.MergeFrom(GetPing());
+									subBuilder.MergeFrom(GetPing());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetPing(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetPing(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 154:
 							{
-								CommandPong.Builder SubBuilder = CommandPong.NewBuilder();
+								var subBuilder = CommandPong.NewBuilder();
 								if (HasPong())
 								{
-									SubBuilder.MergeFrom(GetPong());
+									subBuilder.MergeFrom(GetPong());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetPong(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetPong(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 162:
 							{
-								CommandRedeliverUnacknowledgedMessages.Builder SubBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
+								var subBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
 								if (HasRedeliverUnacknowledgedMessages())
 								{
-									SubBuilder.MergeFrom(GetRedeliverUnacknowledgedMessages());
+									subBuilder.MergeFrom(GetRedeliverUnacknowledgedMessages());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetRedeliverUnacknowledgedMessages(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetRedeliverUnacknowledgedMessages(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 170:
 							{
-								CommandPartitionedTopicMetadata.Builder SubBuilder = CommandPartitionedTopicMetadata.NewBuilder();
+								var subBuilder = CommandPartitionedTopicMetadata.NewBuilder();
 								if (HasPartitionMetadata())
 								{
-									SubBuilder.MergeFrom(GetPartitionMetadata());
+									subBuilder.MergeFrom(GetPartitionMetadata());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetPartitionMetadata(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetPartitionMetadata(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 178:
 							{
-								CommandPartitionedTopicMetadataResponse.Builder SubBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
+								var subBuilder = CommandPartitionedTopicMetadataResponse.NewBuilder();
 								if (HasPartitionMetadataResponse())
 								{
-									SubBuilder.MergeFrom(GetPartitionMetadataResponse());
+									subBuilder.MergeFrom(GetPartitionMetadataResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetPartitionMetadataResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetPartitionMetadataResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 186:
 							{
-								CommandLookupTopic.Builder SubBuilder = CommandLookupTopic.NewBuilder();
+								var subBuilder = CommandLookupTopic.NewBuilder();
 								if (HasLookupTopic())
 								{
-									SubBuilder.MergeFrom(GetLookupTopic());
+									subBuilder.MergeFrom(GetLookupTopic());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetLookupTopic(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetLookupTopic(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 194:
 							{
-								CommandLookupTopicResponse.Builder SubBuilder = CommandLookupTopicResponse.NewBuilder();
+								var subBuilder = CommandLookupTopicResponse.NewBuilder();
 								if (HasLookupTopicResponse())
 								{
-									SubBuilder.MergeFrom(GetLookupTopicResponse());
+									subBuilder.MergeFrom(GetLookupTopicResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetLookupTopicResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetLookupTopicResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 202:
 							{
-								CommandConsumerStats.Builder SubBuilder = CommandConsumerStats.NewBuilder();
+								var subBuilder = CommandConsumerStats.NewBuilder();
 								if (HasConsumerStats())
 								{
-									SubBuilder.MergeFrom(GetConsumerStats());
+									subBuilder.MergeFrom(GetConsumerStats());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetConsumerStats(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetConsumerStats(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 210:
 							{
-								CommandConsumerStatsResponse.Builder SubBuilder = CommandConsumerStatsResponse.NewBuilder();
+								var subBuilder = CommandConsumerStatsResponse.NewBuilder();
 								if (HasConsumerStatsResponse())
 								{
-									SubBuilder.MergeFrom(GetConsumerStatsResponse());
+									subBuilder.MergeFrom(GetConsumerStatsResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetConsumerStatsResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetConsumerStatsResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 218:
 							{
-								CommandReachedEndOfTopic.Builder SubBuilder = CommandReachedEndOfTopic.NewBuilder();
+								var subBuilder = CommandReachedEndOfTopic.NewBuilder();
 								if (HasReachedEndOfTopic())
 								{
-									SubBuilder.MergeFrom(GetReachedEndOfTopic());
+									subBuilder.MergeFrom(GetReachedEndOfTopic());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetReachedEndOfTopic(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetReachedEndOfTopic(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 226:
 							{
-								CommandSeek.Builder SubBuilder = CommandSeek.NewBuilder();
+								var subBuilder = CommandSeek.NewBuilder();
 								if (HasSeek())
 								{
-									SubBuilder.MergeFrom(GetSeek());
+									subBuilder.MergeFrom(GetSeek());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetSeek(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetSeek(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 234:
 							{
-								CommandGetLastMessageId.Builder SubBuilder = CommandGetLastMessageId.NewBuilder();
+								var subBuilder = CommandGetLastMessageId.NewBuilder();
 								if (HasGetLastMessageId())
 								{
-									SubBuilder.MergeFrom(GetGetLastMessageId());
+									subBuilder.MergeFrom(GetGetLastMessageId());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetLastMessageId(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetLastMessageId(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 242:
 							{
-								CommandGetLastMessageIdResponse.Builder SubBuilder = CommandGetLastMessageIdResponse.NewBuilder();
+								var subBuilder = CommandGetLastMessageIdResponse.NewBuilder();
 								if (HasGetLastMessageIdResponse())
 								{
-									SubBuilder.MergeFrom(GetGetLastMessageIdResponse());
+									subBuilder.MergeFrom(GetGetLastMessageIdResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetLastMessageIdResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetLastMessageIdResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 250:
 							{
-								CommandActiveConsumerChange.Builder SubBuilder = CommandActiveConsumerChange.NewBuilder();
+								var subBuilder = CommandActiveConsumerChange.NewBuilder();
 								if (HasActiveConsumerChange())
 								{
-									SubBuilder.MergeFrom(GetActiveConsumerChange());
+									subBuilder.MergeFrom(GetActiveConsumerChange());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetActiveConsumerChange(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetActiveConsumerChange(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 258:
 							{
-								CommandGetTopicsOfNamespace.Builder SubBuilder = CommandGetTopicsOfNamespace.NewBuilder();
+								var subBuilder = CommandGetTopicsOfNamespace.NewBuilder();
 								if (HasGetTopicsOfNamespace())
 								{
-									SubBuilder.MergeFrom(GetGetTopicsOfNamespace());
+									subBuilder.MergeFrom(GetGetTopicsOfNamespace());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetTopicsOfNamespace(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetTopicsOfNamespace(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 266:
 							{
-								CommandGetTopicsOfNamespaceResponse.Builder SubBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
+								var subBuilder = CommandGetTopicsOfNamespaceResponse.NewBuilder();
 								if (HasGetTopicsOfNamespaceResponse())
 								{
-									SubBuilder.MergeFrom(GetGetTopicsOfNamespaceResponse());
+									subBuilder.MergeFrom(GetGetTopicsOfNamespaceResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetTopicsOfNamespaceResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetTopicsOfNamespaceResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 274:
 							{
-								CommandGetSchema.Builder SubBuilder = CommandGetSchema.NewBuilder();
+								var subBuilder = CommandGetSchema.NewBuilder();
 								if (HasGetSchema())
 								{
-									SubBuilder.MergeFrom(GetGetSchema());
+									subBuilder.MergeFrom(GetGetSchema());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetSchema(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetSchema(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 282:
 							{
-								CommandGetSchemaResponse.Builder SubBuilder = CommandGetSchemaResponse.NewBuilder();
+								var subBuilder = CommandGetSchemaResponse.NewBuilder();
 								if (HasGetSchemaResponse())
 								{
-									SubBuilder.MergeFrom(GetGetSchemaResponse());
+									subBuilder.MergeFrom(GetGetSchemaResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetSchemaResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetSchemaResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 290:
 							{
-								CommandAuthChallenge.Builder SubBuilder = CommandAuthChallenge.NewBuilder();
+								var subBuilder = CommandAuthChallenge.NewBuilder();
 								if (HasAuthChallenge())
 								{
-									SubBuilder.MergeFrom(GetAuthChallenge());
+									subBuilder.MergeFrom(GetAuthChallenge());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAuthChallenge(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAuthChallenge(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 298:
 							{
-								CommandAuthResponse.Builder SubBuilder = CommandAuthResponse.NewBuilder();
+								var subBuilder = CommandAuthResponse.NewBuilder();
 								if (HasAuthResponse())
 								{
-									SubBuilder.MergeFrom(GetAuthResponse());
+									subBuilder.MergeFrom(GetAuthResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAuthResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAuthResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 306:
 							{
-								CommandAckResponse.Builder SubBuilder = CommandAckResponse.NewBuilder();
+								var subBuilder = CommandAckResponse.NewBuilder();
 								if (HasAckResponse())
 								{
-									SubBuilder.MergeFrom(GetAckResponse());
+									subBuilder.MergeFrom(GetAckResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAckResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAckResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 314:
 							{
-								CommandGetOrCreateSchema.Builder SubBuilder = CommandGetOrCreateSchema.NewBuilder();
+								var subBuilder = CommandGetOrCreateSchema.NewBuilder();
 								if (HasGetOrCreateSchema())
 								{
-									SubBuilder.MergeFrom(GetGetOrCreateSchema());
+									subBuilder.MergeFrom(GetGetOrCreateSchema());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetOrCreateSchema(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetOrCreateSchema(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 322:
 							{
-								CommandGetOrCreateSchemaResponse.Builder SubBuilder = CommandGetOrCreateSchemaResponse.NewBuilder();
+								var subBuilder = CommandGetOrCreateSchemaResponse.NewBuilder();
 								if (HasGetOrCreateSchemaResponse())
 								{
-									SubBuilder.MergeFrom(GetGetOrCreateSchemaResponse());
+									subBuilder.MergeFrom(GetGetOrCreateSchemaResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetGetOrCreateSchemaResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetGetOrCreateSchemaResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 402:
 							{
-								CommandNewTxn.Builder SubBuilder = CommandNewTxn.NewBuilder();
+								var subBuilder = CommandNewTxn.NewBuilder();
 								if (HasNewTxn())
 								{
-									SubBuilder.MergeFrom(GetNewTxn());
+									subBuilder.MergeFrom(GetNewTxn());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetNewTxn(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetNewTxn(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 410:
 							{
-								CommandNewTxnResponse.Builder SubBuilder = CommandNewTxnResponse.NewBuilder();
+								var subBuilder = CommandNewTxnResponse.NewBuilder();
 								if (HasNewTxnResponse())
 								{
-									SubBuilder.MergeFrom(GetNewTxnResponse());
+									subBuilder.MergeFrom(GetNewTxnResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetNewTxnResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetNewTxnResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 418:
 							{
-								CommandAddPartitionToTxn.Builder SubBuilder = CommandAddPartitionToTxn.NewBuilder();
+								var subBuilder = CommandAddPartitionToTxn.NewBuilder();
 								if (HasAddPartitionToTxn())
 								{
-									SubBuilder.MergeFrom(GetAddPartitionToTxn());
+									subBuilder.MergeFrom(GetAddPartitionToTxn());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAddPartitionToTxn(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAddPartitionToTxn(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 426:
 							{
-								CommandAddPartitionToTxnResponse.Builder SubBuilder = CommandAddPartitionToTxnResponse.NewBuilder();
+								var subBuilder = CommandAddPartitionToTxnResponse.NewBuilder();
 								if (HasAddPartitionToTxnResponse())
 								{
-									SubBuilder.MergeFrom(GetAddPartitionToTxnResponse());
+									subBuilder.MergeFrom(GetAddPartitionToTxnResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAddPartitionToTxnResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAddPartitionToTxnResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 434:
 							{
-								CommandAddSubscriptionToTxn.Builder SubBuilder = CommandAddSubscriptionToTxn.NewBuilder();
+								var subBuilder = CommandAddSubscriptionToTxn.NewBuilder();
 								if (HasAddSubscriptionToTxn())
 								{
-									SubBuilder.MergeFrom(GetAddSubscriptionToTxn());
+									subBuilder.MergeFrom(GetAddSubscriptionToTxn());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAddSubscriptionToTxn(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAddSubscriptionToTxn(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 442:
 							{
-								CommandAddSubscriptionToTxnResponse.Builder SubBuilder = CommandAddSubscriptionToTxnResponse.NewBuilder();
+								var subBuilder = CommandAddSubscriptionToTxnResponse.NewBuilder();
 								if (HasAddSubscriptionToTxnResponse())
 								{
-									SubBuilder.MergeFrom(GetAddSubscriptionToTxnResponse());
+									subBuilder.MergeFrom(GetAddSubscriptionToTxnResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetAddSubscriptionToTxnResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetAddSubscriptionToTxnResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 450:
 							{
-								CommandEndTxn.Builder SubBuilder = CommandEndTxn.NewBuilder();
+								var subBuilder = CommandEndTxn.NewBuilder();
 								if (HasEndTxn())
 								{
-									SubBuilder.MergeFrom(GetEndTxn());
+									subBuilder.MergeFrom(GetEndTxn());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxn(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxn(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 458:
 							{
-								CommandEndTxnResponse.Builder SubBuilder = CommandEndTxnResponse.NewBuilder();
+								var subBuilder = CommandEndTxnResponse.NewBuilder();
 								if (HasEndTxnResponse())
 								{
-									SubBuilder.MergeFrom(GetEndTxnResponse());
+									subBuilder.MergeFrom(GetEndTxnResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxnResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxnResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 466:
 							{
-								CommandEndTxnOnPartition.Builder SubBuilder = CommandEndTxnOnPartition.NewBuilder();
+								var subBuilder = CommandEndTxnOnPartition.NewBuilder();
 								if (HasEndTxnOnPartition())
 								{
-									SubBuilder.MergeFrom(GetEndTxnOnPartition());
+									subBuilder.MergeFrom(GetEndTxnOnPartition());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxnOnPartition(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxnOnPartition(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 474:
 							{
-								CommandEndTxnOnPartitionResponse.Builder SubBuilder = CommandEndTxnOnPartitionResponse.NewBuilder();
+								var subBuilder = CommandEndTxnOnPartitionResponse.NewBuilder();
 								if (HasEndTxnOnPartitionResponse())
 								{
-									SubBuilder.MergeFrom(GetEndTxnOnPartitionResponse());
+									subBuilder.MergeFrom(GetEndTxnOnPartitionResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxnOnPartitionResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxnOnPartitionResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 482:
 							{
-								CommandEndTxnOnSubscription.Builder SubBuilder = CommandEndTxnOnSubscription.NewBuilder();
+								var subBuilder = CommandEndTxnOnSubscription.NewBuilder();
 								if (HasEndTxnOnSubscription())
 								{
-									SubBuilder.MergeFrom(GetEndTxnOnSubscription());
+									subBuilder.MergeFrom(GetEndTxnOnSubscription());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxnOnSubscription(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxnOnSubscription(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 						case 490:
 							{
-								CommandEndTxnOnSubscriptionResponse.Builder SubBuilder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
+								var subBuilder = CommandEndTxnOnSubscriptionResponse.NewBuilder();
 								if (HasEndTxnOnSubscriptionResponse())
 								{
-									SubBuilder.MergeFrom(GetEndTxnOnSubscriptionResponse());
+									subBuilder.MergeFrom(GetEndTxnOnSubscriptionResponse());
 								}
-								input.ReadMessage(SubBuilder, extensionRegistry);
-								SetEndTxnOnSubscriptionResponse(SubBuilder.BuildPartial());
-								SubBuilder.Recycle();
+								input.ReadMessage(subBuilder, extensionRegistry);
+								SetEndTxnOnSubscriptionResponse(subBuilder.BuildPartial());
+								subBuilder.Recycle();
 								break;
 							}
 					}
@@ -2357,2569 +2352,2361 @@ namespace SharpPulsar.Protocol.Proto
 				}
 			}
 
-			public Builder SetType(Types.Type Value)
+			public Builder SetType(Types.Type value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				_type = Value;
+                _type = value;
 
 				return this;
 			}
 			public Builder ClearType()
 			{
-				ClearType();
+				Clear();
 
 				return this;
 			}
 			public bool HasType()
 			{
-				return ((_bitField0 & 0x00000001) == 0x00000001);
+				return ((BitField0 & 0x00000001) == 0x00000001);
 			}
-			internal CommandConnect _connect = CommandConnect.DefaultInstance;
+			public CommandConnect Connect = CommandConnect.DefaultInstance;
 			public bool HasConnect()
 			{
 				return (((int)_type & 0x00000002) == 0x00000002);
 			}
 			public CommandConnect GetConnect()
 			{
-				return _connect;
+				return Connect;
 			}
-			public Builder SetConnect(CommandConnect Value)
+			public Builder SetConnect(CommandConnect value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				_connect = Value;
+                Connect = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder SetConnect(CommandConnect.Builder builder)
 			{
-				_connect = builder.Build();
+				Connect = builder.Build();
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder MergeConnect(CommandConnect value)
 			{
-				if (((_bitField0 & 0x00000002) == 0x00000002) && _connect != CommandConnect.DefaultInstance)
+				if (((BitField0 & 0x00000002) == 0x00000002) && Connect != CommandConnect.DefaultInstance)
 				{
-					_connect = CommandConnect.NewBuilder(_connect).MergeFrom(value).BuildPartial();
+					Connect = CommandConnect.NewBuilder(Connect).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					_connect = value;
+					Connect = value;
 				}
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
 			
 			// optional .pulsar.proto.CommandConnected connected = 3;
-			internal CommandConnected _connected = CommandConnected.DefaultInstance;
+			public CommandConnected Connected = CommandConnected.DefaultInstance;
 			public bool HasConnected()
 			{
-				return ((_bitField0 & 0x00000004) == 0x00000004);
+				return ((BitField0 & 0x00000004) == 0x00000004);
 			}
 			public CommandConnected GetConnected()
 			{
-				return _connected;
+				return Connected;
 			}
-			public Builder GetConnected(CommandConnected Value)
+			public Builder GetConnected(CommandConnected value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				_connected = Value;
+                Connected = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000004;
+				BitField0 |= 0x00000004;
 				return this;
 			}
-			public Builder SetConnected(CommandConnected.Builder BuilderForValue)
+			public Builder SetConnected(CommandConnected.Builder builderForValue)
 			{
-				_connected = BuilderForValue.Build();
-				_bitField0 |= 0x00000004;
+				Connected = builderForValue.Build();
+				BitField0 |= 0x00000004;
 				return this;
 			}
-			public Builder MergeConnected(CommandConnected Value)
+			public Builder MergeConnected(CommandConnected value)
 			{
-				if (((_bitField0 & 0x00000004) == 0x00000004) && _connected != CommandConnected.DefaultInstance)
+				if (((BitField0 & 0x00000004) == 0x00000004) && Connected != CommandConnected.DefaultInstance)
 				{
-					_connected = CommandConnected.NewBuilder(_connected).MergeFrom(Value).BuildPartial();
+					Connected = CommandConnected.NewBuilder(Connected).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					_connected = Value;
+					Connected = value;
 				}
 
-				_bitField0 |= 0x00000004;
+				BitField0 |= 0x00000004;
 				return this;
 			}
 
 			public Builder ClearConnect()
 			{
-				_connect = CommandConnect.DefaultInstance;
+				Connect = CommandConnect.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000002);
+				BitField0 = (BitField0 & ~0x00000002);
 				return this;
 			}
 			public Builder ClearConnected()
 			{
-				_connected = CommandConnected.DefaultInstance;
+				Connected = CommandConnected.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000004);
+				BitField0 = (BitField0 & ~0x00000004);
 				return this;
 			}
 
-			internal CommandSubscribe Subscribe_ = CommandSubscribe.DefaultInstance;
+			public CommandSubscribe Subscribe = CommandSubscribe.DefaultInstance;
 			public bool HasSubscribe()
 			{
-				return ((_bitField0 & 0x00000008) == 0x00000008);
+				return ((BitField0 & 0x00000008) == 0x00000008);
 			}
 			public CommandSubscribe GetSubscribe()
 			{
-				return Subscribe_;
+				return Subscribe;
 			}
-			public Builder SetSubscribe(CommandSubscribe Value)
+			public Builder SetSubscribe(CommandSubscribe value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Subscribe_ = Value;
+                Subscribe = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
-			public Builder SetSubscribe(CommandSubscribe.Builder BuilderForValue)
+			public Builder SetSubscribe(CommandSubscribe.Builder builderForValue)
 			{
-				Subscribe_ = BuilderForValue.Build();
+				Subscribe = builderForValue.Build();
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
-			public Builder MergeSubscribe(CommandSubscribe Value)
+			public Builder MergeSubscribe(CommandSubscribe value)
 			{
-				if (((_bitField0 & 0x00000008) == 0x00000008) && Subscribe_ != CommandSubscribe.DefaultInstance)
+				if (((BitField0 & 0x00000008) == 0x00000008) && Subscribe != CommandSubscribe.DefaultInstance)
 				{
-					Subscribe_ = CommandSubscribe.NewBuilder(Subscribe_).MergeFrom(Value).BuildPartial();
+					Subscribe = CommandSubscribe.NewBuilder(Subscribe).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Subscribe_ = Value;
+					Subscribe = value;
 				}
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder ClearSubscribe()
 			{
-				Subscribe_ = CommandSubscribe.DefaultInstance;
+				Subscribe = CommandSubscribe.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000008);
+				BitField0 = (BitField0 & ~0x00000008);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandProducer producer = 5;
-			internal CommandProducer Producer_ = CommandProducer.DefaultInstance;
+			public CommandProducer Producer = CommandProducer.DefaultInstance;
 			public bool HasProducer()
 			{
-				return ((_bitField0 & 0x00000010) == 0x00000010);
+				return ((BitField0 & 0x00000010) == 0x00000010);
 			}
 			public CommandProducer GetProducer()
 			{
-				return Producer_;
+				return Producer;
 			}
-			public Builder SetProducer(CommandProducer Value)
+			public Builder SetProducer(CommandProducer value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Producer_ = Value;
+                Producer = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
-			public Builder SetProducer(CommandProducer.Builder BuilderForValue)
+			public Builder SetProducer(CommandProducer.Builder builderForValue)
 			{
-				Producer_ = BuilderForValue.Build();
+				Producer = builderForValue.Build();
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
-			public Builder MergeProducer(CommandProducer Value)
+			public Builder MergeProducer(CommandProducer value)
 			{
-				if (((_bitField0 & 0x00000010) == 0x00000010) && Producer_ != CommandProducer.DefaultInstance)
+				if (((BitField0 & 0x00000010) == 0x00000010) && Producer != CommandProducer.DefaultInstance)
 				{
-					Producer_ = CommandProducer.NewBuilder(Producer_).MergeFrom(Value).BuildPartial();
+					Producer = CommandProducer.NewBuilder(Producer).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Producer_ = Value;
+					Producer = value;
 				}
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder ClearProducer()
 			{
-				Producer_ = CommandProducer.DefaultInstance;
+				Producer = CommandProducer.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000010);
+				BitField0 = (BitField0 & ~0x00000010);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandSend send = 6;
-			internal CommandSend Send_ = CommandSend.DefaultInstance;
+			public CommandSend Send = CommandSend.DefaultInstance;
 			public bool HasSend()
 			{
-				return ((_bitField0 & 0x00000020) == 0x00000020);
+				return ((BitField0 & 0x00000020) == 0x00000020);
 			}
 			public CommandSend GetSend()
 			{
-				return Send_;
+				return Send;
 			}
-			public Builder SetSend(CommandSend Value)
+			public Builder SetSend(CommandSend value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Send_ = Value;
+                Send = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
-			public Builder SetSend(CommandSend.Builder BuilderForValue)
+			public Builder SetSend(CommandSend.Builder builderForValue)
 			{
-				Send_ = BuilderForValue.Build();
+				Send = builderForValue.Build();
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
-			public Builder MergeSend(CommandSend Value)
+			public Builder MergeSend(CommandSend value)
 			{
-				if (((_bitField0 & 0x00000020) == 0x00000020) && Send_ != CommandSend.DefaultInstance)
+				if (((BitField0 & 0x00000020) == 0x00000020) && Send != CommandSend.DefaultInstance)
 				{
-					Send_ = CommandSend.NewBuilder(Send_).MergeFrom(Value).BuildPartial();
+					Send = CommandSend.NewBuilder(Send).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Send_ = Value;
+					Send = value;
 				}
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder ClearSend()
 			{
-				Send_ = CommandSend.DefaultInstance;
+				Send = CommandSend.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000020);
+				BitField0 = (BitField0 & ~0x00000020);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandSendReceipt send_receipt = 7;
-			internal CommandSendReceipt SendReceipt_ = CommandSendReceipt.DefaultInstance;
+			public CommandSendReceipt SendReceipt = CommandSendReceipt.DefaultInstance;
 			public bool HasSendReceipt()
 			{
-				return ((_bitField0 & 0x00000040) == 0x00000040);
+				return ((BitField0 & 0x00000040) == 0x00000040);
 			}
 			public CommandSendReceipt GetSendReceipt()
 			{
-				return SendReceipt_;
+				return SendReceipt;
 			}
-			public Builder SetSendReceipt(CommandSendReceipt Value)
+			public Builder SetSendReceipt(CommandSendReceipt value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				SendReceipt_ = Value;
+                SendReceipt = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
-			public Builder SetSendReceipt(CommandSendReceipt.Builder BuilderForValue)
+			public Builder SetSendReceipt(CommandSendReceipt.Builder builderForValue)
 			{
-				SendReceipt_ = BuilderForValue.Build();
+				SendReceipt = builderForValue.Build();
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
-			public Builder MergeSendReceipt(CommandSendReceipt Value)
+			public Builder MergeSendReceipt(CommandSendReceipt value)
 			{
-				if (((_bitField0 & 0x00000040) == 0x00000040) && SendReceipt_ != CommandSendReceipt.DefaultInstance)
+				if (((BitField0 & 0x00000040) == 0x00000040) && SendReceipt != CommandSendReceipt.DefaultInstance)
 				{
-					SendReceipt_ = CommandSendReceipt.NewBuilder(SendReceipt_).MergeFrom(Value).BuildPartial();
+					SendReceipt = CommandSendReceipt.NewBuilder(SendReceipt).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					SendReceipt_ = Value;
+					SendReceipt = value;
 				}
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder ClearSendReceipt()
 			{
-				SendReceipt_ = CommandSendReceipt.DefaultInstance;
+				SendReceipt = CommandSendReceipt.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000040);
+				BitField0 = (BitField0 & ~0x00000040);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandSendError send_error = 8;
-			internal CommandSendError SendError_ = CommandSendError.DefaultInstance;
+			public CommandSendError SendError = CommandSendError.DefaultInstance;
 			public bool HasSendError()
 			{
-				return ((_bitField0 & 0x00000080) == 0x00000080);
+				return ((BitField0 & 0x00000080) == 0x00000080);
 			}
 			public CommandSendError GetSendError()
 			{
-				return SendError_;
+				return SendError;
 			}
-			public Builder SetSendError(CommandSendError Value)
+			public Builder SetSendError(CommandSendError value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				SendError_ = Value;
+                SendError = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
-			public Builder SetSendError(CommandSendError.Builder BuilderForValue)
+			public Builder SetSendError(CommandSendError.Builder builderForValue)
 			{
-				SendError_ = BuilderForValue.Build();
+				SendError = builderForValue.Build();
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
-			public Builder MergeSendError(CommandSendError Value)
+			public Builder MergeSendError(CommandSendError value)
 			{
-				if (((_bitField0 & 0x00000080) == 0x00000080) && SendError_ != CommandSendError.DefaultInstance)
+				if (((BitField0 & 0x00000080) == 0x00000080) && SendError != CommandSendError.DefaultInstance)
 				{
-					SendError_ = CommandSendError.NewBuilder(SendError_).MergeFrom(Value).BuildPartial();
+					SendError = CommandSendError.NewBuilder(SendError).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					SendError_ = Value;
+					SendError = value;
 				}
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder ClearSendError()
 			{
-				SendError_ = CommandSendError.DefaultInstance;
+				SendError = CommandSendError.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000080);
+				BitField0 = (BitField0 & ~0x00000080);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandMessage message = 9;
-			internal CommandMessage Message_ = CommandMessage.DefaultInstance;
+			public CommandMessage Message = CommandMessage.DefaultInstance;
 			public bool HasMessage()
 			{
-				return ((_bitField0 & 0x00000100) == 0x00000100);
+				return ((BitField0 & 0x00000100) == 0x00000100);
 			}
 			public CommandMessage GetMessage()
 			{
-				return Message_;
+				return Message;
 			}
-			public Builder SetMessage(CommandMessage Value)
+			public Builder SetMessage(CommandMessage value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Message_ = Value;
+                Message = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
-			public Builder SetMessage(CommandMessage.Builder BuilderForValue)
+			public Builder SetMessage(CommandMessage.Builder builderForValue)
 			{
-				Message_ = BuilderForValue.Build();
+				Message = builderForValue.Build();
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
-			public Builder MergeMessage(CommandMessage Value)
+			public Builder MergeMessage(CommandMessage value)
 			{
-				if (((_bitField0 & 0x00000100) == 0x00000100) && Message_ != CommandMessage.DefaultInstance)
+				if (((BitField0 & 0x00000100) == 0x00000100) && Message != CommandMessage.DefaultInstance)
 				{
-					Message_ = CommandMessage.NewBuilder(Message_).MergeFrom(Value).BuildPartial();
+					Message = CommandMessage.NewBuilder(Message).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Message_ = Value;
+					Message = value;
 				}
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder ClearMessage()
 			{
-				Message_ = CommandMessage.DefaultInstance;
+				Message = CommandMessage.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000100);
+				BitField0 = (BitField0 & ~0x00000100);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAck ack = 10;
-			internal CommandAck Ack_ = CommandAck.DefaultInstance;
+			public CommandAck Ack = CommandAck.DefaultInstance;
 			public bool HasAck()
 			{
-				return ((_bitField0 & 0x00000200) == 0x00000200);
+				return ((BitField0 & 0x00000200) == 0x00000200);
 			}
 			public CommandAck GetAck()
 			{
-				return Ack_;
+				return Ack;
 			}
-			public Builder SetAck(CommandAck Value)
+			public Builder SetAck(CommandAck value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Ack_ = Value;
+                Ack = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
-			public Builder SetAck(CommandAck.Builder BuilderForValue)
+			public Builder SetAck(CommandAck.Builder builderForValue)
 			{
-				Ack_ = BuilderForValue.Build();
+				Ack = builderForValue.Build();
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
-			public Builder MergeAck(CommandAck Value)
+			public Builder MergeAck(CommandAck value)
 			{
-				if (((_bitField0 & 0x00000200) == 0x00000200) && Ack_ != CommandAck.DefaultInstance)
+				if (((BitField0 & 0x00000200) == 0x00000200) && Ack != CommandAck.DefaultInstance)
 				{
-					Ack_ = CommandAck.NewBuilder(Ack_).MergeFrom(Value).BuildPartial();
+					Ack = CommandAck.NewBuilder(Ack).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Ack_ = Value;
+					Ack = value;
 				}
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder ClearAck()
 			{
-				Ack_ = CommandAck.DefaultInstance;
+				Ack = CommandAck.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000200);
+				BitField0 = (BitField0 & ~0x00000200);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandFlow flow = 11;
-			internal CommandFlow Flow_ = CommandFlow.DefaultInstance;
+			public CommandFlow Flow = CommandFlow.DefaultInstance;
 			public bool HasFlow()
 			{
-				return ((_bitField0 & 0x00000400) == 0x00000400);
+				return ((BitField0 & 0x00000400) == 0x00000400);
 			}
 			public CommandFlow GetFlow()
 			{
-				return Flow_;
+				return Flow;
 			}
-			public Builder SetFlow(CommandFlow Value)
+			public Builder SetFlow(CommandFlow value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Flow_ = Value;
+                Flow = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
-			public Builder SetFlow(CommandFlow.Builder BuilderForValue)
+			public Builder SetFlow(CommandFlow.Builder builderForValue)
 			{
-				Flow_ = BuilderForValue.Build();
+				Flow = builderForValue.Build();
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
-			public Builder MergeFlow(CommandFlow Value)
+			public Builder MergeFlow(CommandFlow value)
 			{
-				if (((_bitField0 & 0x00000400) == 0x00000400) && Flow_ != CommandFlow.DefaultInstance)
+				if (((BitField0 & 0x00000400) == 0x00000400) && Flow != CommandFlow.DefaultInstance)
 				{
-					Flow_ = CommandFlow.NewBuilder(Flow_).MergeFrom(Value).BuildPartial();
+					Flow = CommandFlow.NewBuilder(Flow).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Flow_ = Value;
+					Flow = value;
 				}
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder ClearFlow()
 			{
-				Flow_ = CommandFlow.DefaultInstance;
+				Flow = CommandFlow.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000400);
+				BitField0 = (BitField0 & ~0x00000400);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandUnsubscribe unsubscribe = 12;
-			internal CommandUnsubscribe Unsubscribe_ = CommandUnsubscribe.DefaultInstance;
+			public CommandUnsubscribe Unsubscribe = CommandUnsubscribe.DefaultInstance;
 			public bool HasUnsubscribe()
 			{
-				return ((_bitField0 & 0x00000800) == 0x00000800);
+				return ((BitField0 & 0x00000800) == 0x00000800);
 			}
 			public CommandUnsubscribe GetUnsubscribe()
 			{
-				return Unsubscribe_;
+				return Unsubscribe;
 			}
-			public Builder SetUnsubscribe(CommandUnsubscribe Value)
+			public Builder SetUnsubscribe(CommandUnsubscribe value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Unsubscribe_ = Value;
+                Unsubscribe = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
-			public Builder SetUnsubscribe(CommandUnsubscribe.Builder BuilderForValue)
+			public Builder SetUnsubscribe(CommandUnsubscribe.Builder builderForValue)
 			{
-				Unsubscribe_ = BuilderForValue.Build();
+				Unsubscribe = builderForValue.Build();
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
-			public Builder MergeUnsubscribe(CommandUnsubscribe Value)
+			public Builder MergeUnsubscribe(CommandUnsubscribe value)
 			{
-				if (((_bitField0 & 0x00000800) == 0x00000800) && Unsubscribe_ != CommandUnsubscribe.DefaultInstance)
+				if (((BitField0 & 0x00000800) == 0x00000800) && Unsubscribe != CommandUnsubscribe.DefaultInstance)
 				{
-					Unsubscribe_ = CommandUnsubscribe.NewBuilder(Unsubscribe_).MergeFrom(Value).BuildPartial();
+					Unsubscribe = CommandUnsubscribe.NewBuilder(Unsubscribe).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Unsubscribe_ = Value;
+					Unsubscribe = value;
 				}
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder ClearUnsubscribe()
 			{
-				Unsubscribe_ = CommandUnsubscribe.DefaultInstance;
+				Unsubscribe = CommandUnsubscribe.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000800);
+				BitField0 = (BitField0 & ~0x00000800);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandSuccess success = 13;
-			internal CommandSuccess Success_ = CommandSuccess.DefaultInstance;
+			public CommandSuccess Success = CommandSuccess.DefaultInstance;
 			public bool HasSuccess()
 			{
-				return ((_bitField0 & 0x00001000) == 0x00001000);
+				return ((BitField0 & 0x00001000) == 0x00001000);
 			}
 			public CommandSuccess GetSuccess()
 			{
-				return Success_;
+				return Success;
 			}
-			public Builder SetSuccess(CommandSuccess Value)
+			public Builder SetSuccess(CommandSuccess value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Success_ = Value;
+                Success = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
-			public Builder SetSuccess(CommandSuccess.Builder BuilderForValue)
+			public Builder SetSuccess(CommandSuccess.Builder builderForValue)
 			{
-				Success_ = BuilderForValue.Build();
+				Success = builderForValue.Build();
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
-			public Builder MergeSuccess(CommandSuccess Value)
+			public Builder MergeSuccess(CommandSuccess value)
 			{
-				if (((_bitField0 & 0x00001000) == 0x00001000) && Success_ != CommandSuccess.DefaultInstance)
+				if (((BitField0 & 0x00001000) == 0x00001000) && Success != CommandSuccess.DefaultInstance)
 				{
-					Success_ = CommandSuccess.NewBuilder(Success_).MergeFrom(Value).BuildPartial();
+					Success = CommandSuccess.NewBuilder(Success).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Success_ = Value;
+					Success = value;
 				}
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder ClearSuccess()
 			{
-				Success_ = CommandSuccess.DefaultInstance;
+				Success = CommandSuccess.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00001000);
+				BitField0 = (BitField0 & ~0x00001000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandError error = 14;
-			internal CommandError Error_ = CommandError.DefaultInstance;
+			public CommandError Error = CommandError.DefaultInstance;
 			public bool HasError()
 			{
-				return ((_bitField0 & 0x00002000) == 0x00002000);
+				return ((BitField0 & 0x00002000) == 0x00002000);
 			}
 			public CommandError GetError()
 			{
-				return Error_;
+				return Error;
 			}
-			public Builder SetError(CommandError Value)
+			public Builder SetError(CommandError value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Error_ = Value;
+                Error = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
-			public Builder SetError(CommandError.Builder BuilderForValue)
+			public Builder SetError(CommandError.Builder builderForValue)
 			{
-				Error_ = BuilderForValue.Build();
+				Error = builderForValue.Build();
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
-			public Builder MergeError(CommandError Value)
+			public Builder MergeError(CommandError value)
 			{
-				if (((_bitField0 & 0x00002000) == 0x00002000) && Error_ != CommandError.DefaultInstance)
+				if (((BitField0 & 0x00002000) == 0x00002000) && Error != CommandError.DefaultInstance)
 				{
-					Error_ = CommandError.NewBuilder(Error_).MergeFrom(Value).BuildPartial();
+					Error = CommandError.NewBuilder(Error).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Error_ = Value;
+					Error = value;
 				}
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder ClearError()
 			{
-				Error_ = CommandError.DefaultInstance;
+				Error = CommandError.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00002000);
+				BitField0 = (BitField0 & ~0x00002000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandCloseProducer close_producer = 15;
-			internal CommandCloseProducer CloseProducer_ = CommandCloseProducer.DefaultInstance;
+			public CommandCloseProducer CloseProducer = CommandCloseProducer.DefaultInstance;
 			public bool HasCloseProducer()
 			{
-				return ((_bitField0 & 0x00004000) == 0x00004000);
+				return ((BitField0 & 0x00004000) == 0x00004000);
 			}
 			public CommandCloseProducer GetCloseProducer()
 			{
-				return CloseProducer_;
+				return CloseProducer;
 			}
-			public Builder SetCloseProducer(CommandCloseProducer Value)
+			public Builder SetCloseProducer(CommandCloseProducer value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				CloseProducer_ = Value;
+                CloseProducer = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
-			public Builder SetCloseProducer(CommandCloseProducer.Builder BuilderForValue)
+			public Builder SetCloseProducer(CommandCloseProducer.Builder builderForValue)
 			{
-				CloseProducer_ = BuilderForValue.Build();
+				CloseProducer = builderForValue.Build();
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
-			public Builder MergeCloseProducer(CommandCloseProducer Value)
+			public Builder MergeCloseProducer(CommandCloseProducer value)
 			{
-				if (((_bitField0 & 0x00004000) == 0x00004000) && CloseProducer_ != CommandCloseProducer.DefaultInstance)
+				if (((BitField0 & 0x00004000) == 0x00004000) && CloseProducer != CommandCloseProducer.DefaultInstance)
 				{
-					CloseProducer_ = CommandCloseProducer.NewBuilder(CloseProducer_).MergeFrom(Value).BuildPartial();
+					CloseProducer = CommandCloseProducer.NewBuilder(CloseProducer).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					CloseProducer_ = Value;
+					CloseProducer = value;
 				}
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder ClearCloseProducer()
 			{
-				CloseProducer_ = CommandCloseProducer.DefaultInstance;
+				CloseProducer = CommandCloseProducer.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00004000);
+				BitField0 = (BitField0 & ~0x00004000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandCloseConsumer close_consumer = 16;
-			internal CommandCloseConsumer CloseConsumer_ = CommandCloseConsumer.DefaultInstance;
+			public CommandCloseConsumer CloseConsumer = CommandCloseConsumer.DefaultInstance;
 			public bool HasCloseConsumer()
 			{
-				return ((_bitField0 & 0x00008000) == 0x00008000);
+				return ((BitField0 & 0x00008000) == 0x00008000);
 			}
 			public CommandCloseConsumer GetCloseConsumer()
 			{
-				return CloseConsumer_;
+				return CloseConsumer;
 			}
-			public Builder SetCloseConsumer(CommandCloseConsumer Value)
+			public Builder SetCloseConsumer(CommandCloseConsumer value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				CloseConsumer_ = Value;
+                CloseConsumer = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
-			public Builder SetCloseConsumer(CommandCloseConsumer.Builder BuilderForValue)
+			public Builder SetCloseConsumer(CommandCloseConsumer.Builder builderForValue)
 			{
-				CloseConsumer_ = BuilderForValue.Build();
+				CloseConsumer = builderForValue.Build();
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
-			public Builder MergeCloseConsumer(CommandCloseConsumer Value)
+			public Builder MergeCloseConsumer(CommandCloseConsumer value)
 			{
-				if (((_bitField0 & 0x00008000) == 0x00008000) && CloseConsumer_ != CommandCloseConsumer.DefaultInstance)
+				if (((BitField0 & 0x00008000) == 0x00008000) && CloseConsumer != CommandCloseConsumer.DefaultInstance)
 				{
-					CloseConsumer_ = CommandCloseConsumer.NewBuilder(CloseConsumer_).MergeFrom(Value).BuildPartial();
+					CloseConsumer = CommandCloseConsumer.NewBuilder(CloseConsumer).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					CloseConsumer_ = Value;
+					CloseConsumer = value;
 				}
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder ClearCloseConsumer()
 			{
-				CloseConsumer_ = CommandCloseConsumer.DefaultInstance;
+				CloseConsumer = CommandCloseConsumer.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00008000);
+				BitField0 = (BitField0 & ~0x00008000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandProducerSuccess producer_success = 17;
-			internal CommandProducerSuccess ProducerSuccess_ = CommandProducerSuccess.DefaultInstance;
+			public CommandProducerSuccess ProducerSuccess = CommandProducerSuccess.DefaultInstance;
 			public bool HasProducerSuccess()
 			{
-				return ((_bitField0 & 0x00010000) == 0x00010000);
+				return ((BitField0 & 0x00010000) == 0x00010000);
 			}
 			public CommandProducerSuccess GetProducerSuccess()
 			{
-				return ProducerSuccess_;
+				return ProducerSuccess;
 			}
-			public Builder SetProducerSuccess(CommandProducerSuccess Value)
+			public Builder SetProducerSuccess(CommandProducerSuccess value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				ProducerSuccess_ = Value;
+                ProducerSuccess = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
-			public Builder SetProducerSuccess(CommandProducerSuccess.Builder BuilderForValue)
+			public Builder SetProducerSuccess(CommandProducerSuccess.Builder builderForValue)
 			{
-				ProducerSuccess_ = BuilderForValue.Build();
+				ProducerSuccess = builderForValue.Build();
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
-			public Builder MergeProducerSuccess(CommandProducerSuccess Value)
+			public Builder MergeProducerSuccess(CommandProducerSuccess value)
 			{
-				if (((_bitField0 & 0x00010000) == 0x00010000) && ProducerSuccess_ != CommandProducerSuccess.DefaultInstance)
+				if (((BitField0 & 0x00010000) == 0x00010000) && ProducerSuccess != CommandProducerSuccess.DefaultInstance)
 				{
-					ProducerSuccess_ = CommandProducerSuccess.NewBuilder(ProducerSuccess_).MergeFrom(Value).BuildPartial();
+					ProducerSuccess = CommandProducerSuccess.NewBuilder(ProducerSuccess).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					ProducerSuccess_ = Value;
+					ProducerSuccess = value;
 				}
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder ClearProducerSuccess()
 			{
-				ProducerSuccess_ = CommandProducerSuccess.DefaultInstance;
+				ProducerSuccess = CommandProducerSuccess.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00010000);
+				BitField0 = (BitField0 & ~0x00010000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandPing ping = 18;
-			internal CommandPing Ping_ = CommandPing.DefaultInstance;
+			public CommandPing Ping = CommandPing.DefaultInstance;
 			public bool HasPing()
 			{
-				return ((_bitField0 & 0x00020000) == 0x00020000);
+				return ((BitField0 & 0x00020000) == 0x00020000);
 			}
 			public CommandPing GetPing()
 			{
-				return Ping_;
+				return Ping;
 			}
-			public Builder SetPing(CommandPing Value)
+			public Builder SetPing(CommandPing value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Ping_ = Value;
+                Ping = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
-			public Builder SetPing(CommandPing.Builder BuilderForValue)
+			public Builder SetPing(CommandPing.Builder builderForValue)
 			{
-				Ping_ = BuilderForValue.Build();
+				Ping = builderForValue.Build();
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
-			public Builder MergePing(CommandPing Value)
+			public Builder MergePing(CommandPing value)
 			{
-				if (((_bitField0 & 0x00020000) == 0x00020000) && Ping_ != CommandPing.DefaultInstance)
+				if (((BitField0 & 0x00020000) == 0x00020000) && Ping != CommandPing.DefaultInstance)
 				{
-					Ping_ = CommandPing.NewBuilder(Ping_).MergeFrom(Value).BuildPartial();
+					Ping = CommandPing.NewBuilder(Ping).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Ping_ = Value;
+					Ping = value;
 				}
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder ClearPing()
 			{
-				Ping_ = CommandPing.DefaultInstance;
+				Ping = CommandPing.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00020000);
+				BitField0 = (BitField0 & ~0x00020000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandPong pong = 19;
-			internal CommandPong Pong_ = CommandPong.DefaultInstance;
+			public CommandPong Pong = CommandPong.DefaultInstance;
 			public bool HasPong()
 			{
-				return ((_bitField0 & 0x00040000) == 0x00040000);
+				return ((BitField0 & 0x00040000) == 0x00040000);
 			}
 			public CommandPong GetPong()
 			{
-				return Pong_;
+				return Pong;
 			}
-			public Builder SetPong(CommandPong Value)
+			public Builder SetPong(CommandPong value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Pong_ = Value;
+                Pong = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
-			public Builder SetPong(CommandPong.Builder BuilderForValue)
+			public Builder SetPong(CommandPong.Builder builderForValue)
 			{
-				Pong_ = BuilderForValue.Build();
+				Pong = builderForValue.Build();
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
-			public Builder MergePong(CommandPong Value)
+			public Builder MergePong(CommandPong value)
 			{
-				if (((_bitField0 & 0x00040000) == 0x00040000) && Pong_ != CommandPong.DefaultInstance)
+				if (((BitField0 & 0x00040000) == 0x00040000) && Pong != CommandPong.DefaultInstance)
 				{
-					Pong_ = CommandPong.NewBuilder(Pong_).MergeFrom(Value).BuildPartial();
+					Pong = CommandPong.NewBuilder(Pong).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Pong_ = Value;
+					Pong = value;
 				}
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder ClearPong()
 			{
-				Pong_ = CommandPong.DefaultInstance;
+				Pong = CommandPong.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00040000);
+				BitField0 = (BitField0 & ~0x00040000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandRedeliverUnacknowledgedMessages redeliverUnacknowledgedMessages = 20;
-			internal CommandRedeliverUnacknowledgedMessages RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
+			public CommandRedeliverUnacknowledgedMessages RedeliverUnacknowledgedMessages = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
 			public bool HasRedeliverUnacknowledgedMessages()
 			{
-				return ((_bitField0 & 0x00080000) == 0x00080000);
+				return ((BitField0 & 0x00080000) == 0x00080000);
 			}
 			public CommandRedeliverUnacknowledgedMessages GetRedeliverUnacknowledgedMessages()
 			{
-				return RedeliverUnacknowledgedMessages_;
+				return RedeliverUnacknowledgedMessages;
 			}
-			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages Value)
+			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				RedeliverUnacknowledgedMessages_ = Value;
+                RedeliverUnacknowledgedMessages = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
-			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages.Builder BuilderForValue)
+			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages.Builder builderForValue)
 			{
-				RedeliverUnacknowledgedMessages_ = BuilderForValue.Build();
+				RedeliverUnacknowledgedMessages = builderForValue.Build();
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
-			public Builder MergeRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages Value)
+			public Builder MergeRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages value)
 			{
-				if (((_bitField0 & 0x00080000) == 0x00080000) && RedeliverUnacknowledgedMessages_ != CommandRedeliverUnacknowledgedMessages.DefaultInstance)
+				if (((BitField0 & 0x00080000) == 0x00080000) && RedeliverUnacknowledgedMessages != CommandRedeliverUnacknowledgedMessages.DefaultInstance)
 				{
-					RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.NewBuilder(RedeliverUnacknowledgedMessages_).MergeFrom(Value).BuildPartial();
+					RedeliverUnacknowledgedMessages = CommandRedeliverUnacknowledgedMessages.NewBuilder(RedeliverUnacknowledgedMessages).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					RedeliverUnacknowledgedMessages_ = Value;
+					RedeliverUnacknowledgedMessages = value;
 				}
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder ClearRedeliverUnacknowledgedMessages()
 			{
-				RedeliverUnacknowledgedMessages_ = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
+				RedeliverUnacknowledgedMessages = CommandRedeliverUnacknowledgedMessages.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00080000);
+				BitField0 = (BitField0 & ~0x00080000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandPartitionedTopicMetadata partitionMetadata = 21;
-			internal CommandPartitionedTopicMetadata PartitionMetadata_ = CommandPartitionedTopicMetadata.DefaultInstance;
+			public CommandPartitionedTopicMetadata PartitionMetadata = CommandPartitionedTopicMetadata.DefaultInstance;
 			public bool HasPartitionMetadata()
 			{
-				return ((_bitField0 & 0x00100000) == 0x00100000);
+				return ((BitField0 & 0x00100000) == 0x00100000);
 			}
 			public CommandPartitionedTopicMetadata GetPartitionMetadata()
 			{
-				return PartitionMetadata_;
+				return PartitionMetadata;
 			}
-			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata Value)
+			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				PartitionMetadata_ = Value;
+                PartitionMetadata = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00100000;
+				BitField0 |= 0x00100000;
 				return this;
 			}
-			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata.Builder BuilderForValue)
+			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata.Builder builderForValue)
 			{
-				PartitionMetadata_ = BuilderForValue.Build();
+				PartitionMetadata = builderForValue.Build();
 
-				_bitField0 |= 0x00100000;
+				BitField0 |= 0x00100000;
 				return this;
 			}
-			public Builder MergePartitionMetadata(CommandPartitionedTopicMetadata Value)
+			public Builder MergePartitionMetadata(CommandPartitionedTopicMetadata value)
 			{
-				if (((_bitField0 & 0x00100000) == 0x00100000) && PartitionMetadata_ != CommandPartitionedTopicMetadata.DefaultInstance)
+				if (((BitField0 & 0x00100000) == 0x00100000) && PartitionMetadata != CommandPartitionedTopicMetadata.DefaultInstance)
 				{
-					PartitionMetadata_ = CommandPartitionedTopicMetadata.NewBuilder(PartitionMetadata_).MergeFrom(Value).BuildPartial();
+					PartitionMetadata = CommandPartitionedTopicMetadata.NewBuilder(PartitionMetadata).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					PartitionMetadata_ = Value;
+					PartitionMetadata = value;
 				}
 
-				_bitField0 |= 0x00100000;
+				BitField0 |= 0x00100000;
 				return this;
 			}
 			public Builder ClearPartitionMetadata()
 			{
-				PartitionMetadata_ = CommandPartitionedTopicMetadata.DefaultInstance;
+				PartitionMetadata = CommandPartitionedTopicMetadata.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00100000);
+				BitField0 = (BitField0 & ~0x00100000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandPartitionedTopicMetadataResponse partitionMetadataResponse = 22;
-			internal CommandPartitionedTopicMetadataResponse PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.DefaultInstance;
+			public CommandPartitionedTopicMetadataResponse PartitionMetadataResponse = CommandPartitionedTopicMetadataResponse.DefaultInstance;
 			public bool HasPartitionMetadataResponse()
 			{
-				return ((_bitField0 & 0x00200000) == 0x00200000);
+				return ((BitField0 & 0x00200000) == 0x00200000);
 			}
 			public CommandPartitionedTopicMetadataResponse GetPartitionMetadataResponse()
 			{
-				return PartitionMetadataResponse_;
+				return PartitionMetadataResponse;
 			}
-			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse Value)
+			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				PartitionMetadataResponse_ = Value;
+                PartitionMetadataResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00200000;
+				BitField0 |= 0x00200000;
 				return this;
 			}
-			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse.Builder BuilderForValue)
+			public Builder SetPartitionMetadataResponse(CommandPartitionedTopicMetadataResponse.Builder builderForValue)
 			{
-				PartitionMetadataResponse_ = BuilderForValue.Build();
+				PartitionMetadataResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00200000;
+				BitField0 |= 0x00200000;
 				return this;
 			}
-			public Builder MergePartitionMetadataResponse(CommandPartitionedTopicMetadataResponse Value)
+			public Builder MergePartitionMetadataResponse(CommandPartitionedTopicMetadataResponse value)
 			{
-				if (((_bitField0 & 0x00200000) == 0x00200000) && PartitionMetadataResponse_ != CommandPartitionedTopicMetadataResponse.DefaultInstance)
+				if (((BitField0 & 0x00200000) == 0x00200000) && PartitionMetadataResponse != CommandPartitionedTopicMetadataResponse.DefaultInstance)
 				{
-					PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.NewBuilder(PartitionMetadataResponse_).MergeFrom(Value).BuildPartial();
+					PartitionMetadataResponse = CommandPartitionedTopicMetadataResponse.NewBuilder(PartitionMetadataResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					PartitionMetadataResponse_ = Value;
+					PartitionMetadataResponse = value;
 				}
 
-				_bitField0 |= 0x00200000;
+				BitField0 |= 0x00200000;
 				return this;
 			}
 			public Builder ClearPartitionMetadataResponse()
 			{
-				PartitionMetadataResponse_ = CommandPartitionedTopicMetadataResponse.DefaultInstance;
+				PartitionMetadataResponse = CommandPartitionedTopicMetadataResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00200000);
+				BitField0 = (BitField0 & ~0x00200000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandLookupTopic lookupTopic = 23;
-			internal CommandLookupTopic LookupTopic_ = CommandLookupTopic.DefaultInstance;
+			public CommandLookupTopic LookupTopic = CommandLookupTopic.DefaultInstance;
 			public bool HasLookupTopic()
 			{
-				return ((_bitField0 & 0x00400000) == 0x00400000);
+				return ((BitField0 & 0x00400000) == 0x00400000);
 			}
 			public CommandLookupTopic GetLookupTopic()
 			{
-				return LookupTopic_;
+				return LookupTopic;
 			}
-			public Builder SetLookupTopic(CommandLookupTopic Value)
+			public Builder SetLookupTopic(CommandLookupTopic value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				LookupTopic_ = Value;
+                LookupTopic = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00400000;
+				BitField0 |= 0x00400000;
 				return this;
 			}
-			public Builder SetLookupTopic(CommandLookupTopic.Builder BuilderForValue)
+			public Builder SetLookupTopic(CommandLookupTopic.Builder builderForValue)
 			{
-				LookupTopic_ = BuilderForValue.Build();
+				LookupTopic = builderForValue.Build();
 
-				_bitField0 |= 0x00400000;
+				BitField0 |= 0x00400000;
 				return this;
 			}
-			public Builder MergeLookupTopic(CommandLookupTopic Value)
+			public Builder MergeLookupTopic(CommandLookupTopic value)
 			{
-				if (((_bitField0 & 0x00400000) == 0x00400000) && LookupTopic_ != CommandLookupTopic.DefaultInstance)
+				if (((BitField0 & 0x00400000) == 0x00400000) && LookupTopic != CommandLookupTopic.DefaultInstance)
 				{
-					LookupTopic_ = CommandLookupTopic.NewBuilder(LookupTopic_).MergeFrom(Value).BuildPartial();
+					LookupTopic = CommandLookupTopic.NewBuilder(LookupTopic).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					LookupTopic_ = Value;
+					LookupTopic = value;
 				}
 
-				_bitField0 |= 0x00400000;
+				BitField0 |= 0x00400000;
 				return this;
 			}
 			public Builder ClearLookupTopic()
 			{
-				LookupTopic_ = CommandLookupTopic.DefaultInstance;
+				LookupTopic = CommandLookupTopic.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00400000);
+				BitField0 = (BitField0 & ~0x00400000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandLookupTopicResponse lookupTopicResponse = 24;
-			internal CommandLookupTopicResponse LookupTopicResponse_ = CommandLookupTopicResponse.DefaultInstance;
+			public CommandLookupTopicResponse LookupTopicResponse = CommandLookupTopicResponse.DefaultInstance;
 			public bool HasLookupTopicResponse()
 			{
-				return ((_bitField0 & 0x00800000) == 0x00800000);
+				return ((BitField0 & 0x00800000) == 0x00800000);
 			}
 			public CommandLookupTopicResponse GetLookupTopicResponse()
 			{
-				return LookupTopicResponse_;
+				return LookupTopicResponse;
 			}
-			public Builder SetLookupTopicResponse(CommandLookupTopicResponse Value)
+			public Builder SetLookupTopicResponse(CommandLookupTopicResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				LookupTopicResponse_ = Value;
+                LookupTopicResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00800000;
+				BitField0 |= 0x00800000;
 				return this;
 			}
-			public Builder SetLookupTopicResponse(CommandLookupTopicResponse.Builder BuilderForValue)
+			public Builder SetLookupTopicResponse(CommandLookupTopicResponse.Builder builderForValue)
 			{
-				LookupTopicResponse_ = BuilderForValue.Build();
+				LookupTopicResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00800000;
+				BitField0 |= 0x00800000;
 				return this;
 			}
-			public Builder MergeLookupTopicResponse(CommandLookupTopicResponse Value)
+			public Builder MergeLookupTopicResponse(CommandLookupTopicResponse value)
 			{
-				if (((_bitField0 & 0x00800000) == 0x00800000) && LookupTopicResponse_ != CommandLookupTopicResponse.DefaultInstance)
+				if (((BitField0 & 0x00800000) == 0x00800000) && LookupTopicResponse != CommandLookupTopicResponse.DefaultInstance)
 				{
-					LookupTopicResponse_ = CommandLookupTopicResponse.NewBuilder(LookupTopicResponse_).MergeFrom(Value).BuildPartial();
+					LookupTopicResponse = CommandLookupTopicResponse.NewBuilder(LookupTopicResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					LookupTopicResponse_ = Value;
+					LookupTopicResponse = value;
 				}
 
-				_bitField0 |= 0x00800000;
+				BitField0 |= 0x00800000;
 				return this;
 			}
 			public Builder ClearLookupTopicResponse()
 			{
-				LookupTopicResponse_ = CommandLookupTopicResponse.DefaultInstance;
+				LookupTopicResponse = CommandLookupTopicResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00800000);
+				BitField0 = (BitField0 & ~0x00800000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandConsumerStats consumerStats = 25;
-			internal CommandConsumerStats ConsumerStats_ = CommandConsumerStats.DefaultInstance;
+			public CommandConsumerStats ConsumerStats = CommandConsumerStats.DefaultInstance;
 			public bool HasConsumerStats()
 			{
-				return ((_bitField0 & 0x01000000) == 0x01000000);
+				return ((BitField0 & 0x01000000) == 0x01000000);
 			}
 			public CommandConsumerStats GetConsumerStats()
 			{
-				return ConsumerStats_;
+				return ConsumerStats;
 			}
-			public Builder SetConsumerStats(CommandConsumerStats Value)
+			public Builder SetConsumerStats(CommandConsumerStats value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				ConsumerStats_ = Value;
+                ConsumerStats = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x01000000;
+				BitField0 |= 0x01000000;
 				return this;
 			}
-			public Builder SetConsumerStats(CommandConsumerStats.Builder BuilderForValue)
+			public Builder SetConsumerStats(CommandConsumerStats.Builder builderForValue)
 			{
-				ConsumerStats_ = BuilderForValue.Build();
+				ConsumerStats = builderForValue.Build();
 
-				_bitField0 |= 0x01000000;
+				BitField0 |= 0x01000000;
 				return this;
 			}
-			public Builder MergeConsumerStats(CommandConsumerStats Value)
+			public Builder MergeConsumerStats(CommandConsumerStats value)
 			{
-				if (((_bitField0 & 0x01000000) == 0x01000000) && ConsumerStats_ != CommandConsumerStats.DefaultInstance)
+				if (((BitField0 & 0x01000000) == 0x01000000) && ConsumerStats != CommandConsumerStats.DefaultInstance)
 				{
-					ConsumerStats_ = CommandConsumerStats.NewBuilder(ConsumerStats_).MergeFrom(Value).BuildPartial();
+					ConsumerStats = CommandConsumerStats.NewBuilder(ConsumerStats).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					ConsumerStats_ = Value;
+					ConsumerStats = value;
 				}
 
-				_bitField0 |= 0x01000000;
+				BitField0 |= 0x01000000;
 				return this;
 			}
 			public Builder ClearConsumerStats()
 			{
-				ConsumerStats_ = CommandConsumerStats.DefaultInstance;
+				ConsumerStats = CommandConsumerStats.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x01000000);
+				BitField0 = (BitField0 & ~0x01000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandConsumerStatsResponse consumerStatsResponse = 26;
-			internal CommandConsumerStatsResponse ConsumerStatsResponse_ = CommandConsumerStatsResponse.DefaultInstance;
+			public CommandConsumerStatsResponse ConsumerStatsResponse = CommandConsumerStatsResponse.DefaultInstance;
 			public bool HasConsumerStatsResponse()
 			{
-				return ((_bitField0 & 0x02000000) == 0x02000000);
+				return ((BitField0 & 0x02000000) == 0x02000000);
 			}
 			public CommandConsumerStatsResponse GetConsumerStatsResponse()
 			{
-				return ConsumerStatsResponse_;
+				return ConsumerStatsResponse;
 			}
-			public Builder SetConsumerStatsResponse(CommandConsumerStatsResponse Value)
+			public Builder SetConsumerStatsResponse(CommandConsumerStatsResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				ConsumerStatsResponse_ = Value;
+                ConsumerStatsResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x02000000;
+				BitField0 |= 0x02000000;
 				return this;
 			}
-			public Builder SetConsumerStatsResponse(CommandConsumerStatsResponse.Builder BuilderForValue)
+			public Builder SetConsumerStatsResponse(CommandConsumerStatsResponse.Builder builderForValue)
 			{
-				ConsumerStatsResponse_ = BuilderForValue.Build();
+				ConsumerStatsResponse = builderForValue.Build();
 
-				_bitField0 |= 0x02000000;
+				BitField0 |= 0x02000000;
 				return this;
 			}
-			public Builder MergeConsumerStatsResponse(CommandConsumerStatsResponse Value)
+			public Builder MergeConsumerStatsResponse(CommandConsumerStatsResponse value)
 			{
-				if (((_bitField0 & 0x02000000) == 0x02000000) && ConsumerStatsResponse_ != CommandConsumerStatsResponse.DefaultInstance)
+				if (((BitField0 & 0x02000000) == 0x02000000) && ConsumerStatsResponse != CommandConsumerStatsResponse.DefaultInstance)
 				{
-					ConsumerStatsResponse_ = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse_).MergeFrom(Value).BuildPartial();
+					ConsumerStatsResponse = CommandConsumerStatsResponse.NewBuilder(ConsumerStatsResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					ConsumerStatsResponse_ = Value;
+					ConsumerStatsResponse = value;
 				}
 
-				_bitField0 |= 0x02000000;
+				BitField0 |= 0x02000000;
 				return this;
 			}
 			public Builder ClearConsumerStatsResponse()
 			{
-				ConsumerStatsResponse_ = CommandConsumerStatsResponse.DefaultInstance;
+				ConsumerStatsResponse = CommandConsumerStatsResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x02000000);
+				BitField0 = (BitField0 & ~0x02000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandReachedEndOfTopic reachedEndOfTopic = 27;
-			internal CommandReachedEndOfTopic ReachedEndOfTopic_ = CommandReachedEndOfTopic.DefaultInstance;
+			public CommandReachedEndOfTopic ReachedEndOfTopic = CommandReachedEndOfTopic.DefaultInstance;
 			public bool HasReachedEndOfTopic()
 			{
-				return ((_bitField0 & 0x04000000) == 0x04000000);
+				return ((BitField0 & 0x04000000) == 0x04000000);
 			}
 			public CommandReachedEndOfTopic GetReachedEndOfTopic()
 			{
-				return ReachedEndOfTopic_;
+				return ReachedEndOfTopic;
 			}
-			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic Value)
+			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				ReachedEndOfTopic_ = Value;
+                ReachedEndOfTopic = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x04000000;
+				BitField0 |= 0x04000000;
 				return this;
 			}
-			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic.Builder BuilderForValue)
+			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic.Builder builderForValue)
 			{
-				ReachedEndOfTopic_ = BuilderForValue.Build();
+				ReachedEndOfTopic = builderForValue.Build();
 
-				_bitField0 |= 0x04000000;
+				BitField0 |= 0x04000000;
 				return this;
 			}
-			public Builder MergeReachedEndOfTopic(CommandReachedEndOfTopic Value)
+			public Builder MergeReachedEndOfTopic(CommandReachedEndOfTopic value)
 			{
-				if (((_bitField0 & 0x04000000) == 0x04000000) && ReachedEndOfTopic_ != CommandReachedEndOfTopic.DefaultInstance)
+				if (((BitField0 & 0x04000000) == 0x04000000) && ReachedEndOfTopic != CommandReachedEndOfTopic.DefaultInstance)
 				{
-					ReachedEndOfTopic_ = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic_).MergeFrom(Value).BuildPartial();
+					ReachedEndOfTopic = CommandReachedEndOfTopic.NewBuilder(ReachedEndOfTopic).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					ReachedEndOfTopic_ = Value;
+					ReachedEndOfTopic = value;
 				}
 
-				_bitField0 |= 0x04000000;
+				BitField0 |= 0x04000000;
 				return this;
 			}
 			public Builder ClearReachedEndOfTopic()
 			{
-				ReachedEndOfTopic_ = CommandReachedEndOfTopic.DefaultInstance;
+				ReachedEndOfTopic = CommandReachedEndOfTopic.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x04000000);
+				BitField0 = (BitField0 & ~0x04000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandSeek seek = 28;
-			internal CommandSeek Seek_ = CommandSeek.DefaultInstance;
+			public CommandSeek Seek = CommandSeek.DefaultInstance;
 			public bool HasSeek()
 			{
-				return ((_bitField0 & 0x08000000) == 0x08000000);
+				return ((BitField0 & 0x08000000) == 0x08000000);
 			}
 			public CommandSeek GetSeek()
 			{
-				return Seek_;
+				return Seek;
 			}
-			public Builder SetSeek(CommandSeek Value)
+			public Builder SetSeek(CommandSeek value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				Seek_ = Value;
+                Seek = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x08000000;
+				BitField0 |= 0x08000000;
 				return this;
 			}
-			public Builder SetSeek(CommandSeek.Builder BuilderForValue)
+			public Builder SetSeek(CommandSeek.Builder builderForValue)
 			{
-				Seek_ = BuilderForValue.Build();
+				Seek = builderForValue.Build();
 
-				_bitField0 |= 0x08000000;
+				BitField0 |= 0x08000000;
 				return this;
 			}
-			public Builder MergeSeek(CommandSeek Value)
+			public Builder MergeSeek(CommandSeek value)
 			{
-				if (((_bitField0 & 0x08000000) == 0x08000000) && Seek_ != CommandSeek.DefaultInstance)
+				if (((BitField0 & 0x08000000) == 0x08000000) && Seek != CommandSeek.DefaultInstance)
 				{
-					Seek_ = CommandSeek.NewBuilder(Seek_).MergeFrom(Value).BuildPartial();
+					Seek = CommandSeek.NewBuilder(Seek).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					Seek_ = Value;
+					Seek = value;
 				}
 
-				_bitField0 |= 0x08000000;
+				BitField0 |= 0x08000000;
 				return this;
 			}
 			public Builder ClearSeek()
 			{
-				Seek_ = CommandSeek.DefaultInstance;
+				Seek = CommandSeek.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x08000000);
+				BitField0 = (BitField0 & ~0x08000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetLastMessageId GetLastMessageId = 29;
-			internal CommandGetLastMessageId GetLastMessageId_ = CommandGetLastMessageId.DefaultInstance;
+			public CommandGetLastMessageId GetLastMessageId = CommandGetLastMessageId.DefaultInstance;
 			public bool HasGetLastMessageId()
 			{
-				return ((_bitField0 & 0x10000000) == 0x10000000);
+				return ((BitField0 & 0x10000000) == 0x10000000);
 			}
 			public CommandGetLastMessageId GetGetLastMessageId()
 			{
-				return GetLastMessageId_;
+				return GetLastMessageId;
 			}
-			public Builder SetGetLastMessageId(CommandGetLastMessageId Value)
+			public Builder SetGetLastMessageId(CommandGetLastMessageId value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetLastMessageId_ = Value;
+                GetLastMessageId = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x10000000;
+				BitField0 |= 0x10000000;
 				return this;
 			}
-			public Builder SetGetLastMessageId(CommandGetLastMessageId.Builder BuilderForValue)
+			public Builder SetGetLastMessageId(CommandGetLastMessageId.Builder builderForValue)
 			{
-				GetLastMessageId_ = BuilderForValue.Build();
+				GetLastMessageId = builderForValue.Build();
 
-				_bitField0 |= 0x10000000;
+				BitField0 |= 0x10000000;
 				return this;
 			}
-			public Builder MergeGetLastMessageId(CommandGetLastMessageId Value)
+			public Builder MergeGetLastMessageId(CommandGetLastMessageId value)
 			{
-				if (((_bitField0 & 0x10000000) == 0x10000000) && GetLastMessageId_ != CommandGetLastMessageId.DefaultInstance)
+				if (((BitField0 & 0x10000000) == 0x10000000) && GetLastMessageId != CommandGetLastMessageId.DefaultInstance)
 				{
-					GetLastMessageId_ = CommandGetLastMessageId.NewBuilder(GetLastMessageId_).MergeFrom(Value).BuildPartial();
+					GetLastMessageId = CommandGetLastMessageId.NewBuilder(GetLastMessageId).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetLastMessageId_ = Value;
+					GetLastMessageId = value;
 				}
 
-				_bitField0 |= 0x10000000;
+				BitField0 |= 0x10000000;
 				return this;
 			}
 			public Builder ClearGetLastMessageId()
 			{
-				GetLastMessageId_ = CommandGetLastMessageId.DefaultInstance;
+				GetLastMessageId = CommandGetLastMessageId.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x10000000);
+				BitField0 = (BitField0 & ~0x10000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetLastMessageIdResponse GetLastMessageIdResponse = 30;
-			internal CommandGetLastMessageIdResponse GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.DefaultInstance;
+			public CommandGetLastMessageIdResponse GetLastMessageIdResponse = CommandGetLastMessageIdResponse.DefaultInstance;
 			public bool HasGetLastMessageIdResponse()
 			{
-				return ((_bitField0 & 0x20000000) == 0x20000000);
+				return ((BitField0 & 0x20000000) == 0x20000000);
 			}
 			public CommandGetLastMessageIdResponse GetGetLastMessageIdResponse()
 			{
-				return GetLastMessageIdResponse_;
+				return GetLastMessageIdResponse;
 			}
-			public Builder SetGetLastMessageIdResponse(CommandGetLastMessageIdResponse Value)
+			public Builder SetGetLastMessageIdResponse(CommandGetLastMessageIdResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetLastMessageIdResponse_ = Value;
+                GetLastMessageIdResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x20000000;
+				BitField0 |= 0x20000000;
 				return this;
 			}
-			public Builder SetGetLastMessageIdResponse(CommandGetLastMessageIdResponse.Builder BuilderForValue)
+			public Builder SetGetLastMessageIdResponse(CommandGetLastMessageIdResponse.Builder builderForValue)
 			{
-				GetLastMessageIdResponse_ = BuilderForValue.Build();
+				GetLastMessageIdResponse = builderForValue.Build();
 
-				_bitField0 |= 0x20000000;
+				BitField0 |= 0x20000000;
 				return this;
 			}
-			public Builder MergeGetLastMessageIdResponse(CommandGetLastMessageIdResponse Value)
+			public Builder MergeGetLastMessageIdResponse(CommandGetLastMessageIdResponse value)
 			{
-				if (((_bitField0 & 0x20000000) == 0x20000000) && GetLastMessageIdResponse_ != CommandGetLastMessageIdResponse.DefaultInstance)
+				if (((BitField0 & 0x20000000) == 0x20000000) && GetLastMessageIdResponse != CommandGetLastMessageIdResponse.DefaultInstance)
 				{
-					GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse_).MergeFrom(Value).BuildPartial();
+					GetLastMessageIdResponse = CommandGetLastMessageIdResponse.NewBuilder(GetLastMessageIdResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetLastMessageIdResponse_ = Value;
+					GetLastMessageIdResponse = value;
 				}
 
-				_bitField0 |= 0x20000000;
+				BitField0 |= 0x20000000;
 				return this;
 			}
 			public Builder ClearGetLastMessageIdResponse()
 			{
-				GetLastMessageIdResponse_ = CommandGetLastMessageIdResponse.DefaultInstance;
+				GetLastMessageIdResponse = CommandGetLastMessageIdResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x20000000);
+				BitField0 = (BitField0 & ~0x20000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandActiveConsumerChange active_consumer_change = 31;
-			internal CommandActiveConsumerChange ActiveConsumerChange_ = CommandActiveConsumerChange.DefaultInstance;
+			public CommandActiveConsumerChange ActiveConsumerChange = CommandActiveConsumerChange.DefaultInstance;
 			public bool HasActiveConsumerChange()
 			{
-				return ((_bitField0 & 0x40000000) == 0x40000000);
+				return ((BitField0 & 0x40000000) == 0x40000000);
 			}
 			public CommandActiveConsumerChange GetActiveConsumerChange()
 			{
-				return ActiveConsumerChange_;
+				return ActiveConsumerChange;
 			}
-			public Builder SetActiveConsumerChange(CommandActiveConsumerChange Value)
+			public Builder SetActiveConsumerChange(CommandActiveConsumerChange value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				ActiveConsumerChange_ = Value;
+                ActiveConsumerChange = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x40000000;
+				BitField0 |= 0x40000000;
 				return this;
 			}
-			public Builder SetActiveConsumerChange(CommandActiveConsumerChange.Builder BuilderForValue)
+			public Builder SetActiveConsumerChange(CommandActiveConsumerChange.Builder builderForValue)
 			{
-				ActiveConsumerChange_ = BuilderForValue.Build();
+				ActiveConsumerChange = builderForValue.Build();
 
-				_bitField0 |= 0x40000000;
+				BitField0 |= 0x40000000;
 				return this;
 			}
-			public Builder MergeActiveConsumerChange(CommandActiveConsumerChange Value)
+			public Builder MergeActiveConsumerChange(CommandActiveConsumerChange value)
 			{
-				if (((_bitField0 & 0x40000000) == 0x40000000) && ActiveConsumerChange_ != CommandActiveConsumerChange.DefaultInstance)
+				if (((BitField0 & 0x40000000) == 0x40000000) && ActiveConsumerChange != CommandActiveConsumerChange.DefaultInstance)
 				{
-					ActiveConsumerChange_ = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange_).MergeFrom(Value).BuildPartial();
+					ActiveConsumerChange = CommandActiveConsumerChange.NewBuilder(ActiveConsumerChange).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					ActiveConsumerChange_ = Value;
+					ActiveConsumerChange = value;
 				}
 
-				_bitField0 |= 0x40000000;
+				BitField0 |= 0x40000000;
 				return this;
 			}
 			public Builder ClearActiveConsumerChange()
 			{
-				ActiveConsumerChange_ = CommandActiveConsumerChange.DefaultInstance;
+				ActiveConsumerChange = CommandActiveConsumerChange.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x40000000);
+				BitField0 = (BitField0 & ~0x40000000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetTopicsOfNamespace GetTopicsOfNamespace = 32;
-			internal CommandGetTopicsOfNamespace GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.DefaultInstance;
+			public CommandGetTopicsOfNamespace GetTopicsOfNamespace = CommandGetTopicsOfNamespace.DefaultInstance;
 			public bool HasGetTopicsOfNamespace()
 			{
-				return ((_bitField0 & 0x80000000) == 0x80000000);
+				return ((BitField0 & 0x80000000) == 0x80000000);
 			}
 			public CommandGetTopicsOfNamespace GetGetTopicsOfNamespace()
 			{
-				return GetTopicsOfNamespace_;
+				return GetTopicsOfNamespace;
 			}
-			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace Value)
+			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetTopicsOfNamespace_ = Value;
+                GetTopicsOfNamespace = value ?? throw new NullReferenceException();
 
-				_bitField0 |= unchecked((int)0x80000000);
+				BitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
-			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace.Builder BuilderForValue)
+			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace.Builder builderForValue)
 			{
-				GetTopicsOfNamespace_ = BuilderForValue.Build();
+				GetTopicsOfNamespace = builderForValue.Build();
 
-				_bitField0 |= unchecked((int)0x80000000);
+				BitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
-			public Builder MergeGetTopicsOfNamespace(CommandGetTopicsOfNamespace Value)
+			public Builder MergeGetTopicsOfNamespace(CommandGetTopicsOfNamespace value)
 			{
-				if (((_bitField0 & 0x80000000) == 0x80000000) && GetTopicsOfNamespace_ != CommandGetTopicsOfNamespace.DefaultInstance)
+				if (((BitField0 & 0x80000000) == 0x80000000) && GetTopicsOfNamespace != CommandGetTopicsOfNamespace.DefaultInstance)
 				{
-					GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace_).MergeFrom(Value).BuildPartial();
+					GetTopicsOfNamespace = CommandGetTopicsOfNamespace.NewBuilder(GetTopicsOfNamespace).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetTopicsOfNamespace_ = Value;
+					GetTopicsOfNamespace = value;
 				}
 
-				_bitField0 |= unchecked((int)0x80000000);
+				BitField0 |= unchecked((int)0x80000000);
 				return this;
 			}
 			public Builder ClearGetTopicsOfNamespace()
 			{
-				GetTopicsOfNamespace_ = CommandGetTopicsOfNamespace.DefaultInstance;
+				GetTopicsOfNamespace = CommandGetTopicsOfNamespace.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~unchecked((int)0x80000000));
+				BitField0 = (BitField0 & ~unchecked((int)0x80000000));
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse = 33;
-			internal CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
+			public CommandGetTopicsOfNamespaceResponse GetTopicsOfNamespaceResponse = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
 			public bool HasGetTopicsOfNamespaceResponse()
 			{
-				return ((_bitField0 & 0x00000001) == 0x00000001);
+				return ((BitField0 & 0x00000001) == 0x00000001);
 			}
 			public CommandGetTopicsOfNamespaceResponse GetGetTopicsOfNamespaceResponse()
 			{
-				return GetTopicsOfNamespaceResponse_;
+				return GetTopicsOfNamespaceResponse;
 			}
-			public Builder SetGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse Value)
+			public Builder SetGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetTopicsOfNamespaceResponse_ = Value;
+                GetTopicsOfNamespaceResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000001;
+				BitField0 |= 0x00000001;
 				return this;
 			}
-			public Builder SetGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse.Builder BuilderForValue)
+			public Builder SetGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse.Builder builderForValue)
 			{
-				GetTopicsOfNamespaceResponse_ = BuilderForValue.Build();
+				GetTopicsOfNamespaceResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000001;
+				BitField0 |= 0x00000001;
 				return this;
 			}
-			public Builder MergeGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse Value)
+			public Builder MergeGetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse value)
 			{
-				if (((_bitField0 & 0x00000001) == 0x00000001) && GetTopicsOfNamespaceResponse_ != CommandGetTopicsOfNamespaceResponse.DefaultInstance)
+				if (((BitField0 & 0x00000001) == 0x00000001) && GetTopicsOfNamespaceResponse != CommandGetTopicsOfNamespaceResponse.DefaultInstance)
 				{
-					GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse_).MergeFrom(Value).BuildPartial();
+					GetTopicsOfNamespaceResponse = CommandGetTopicsOfNamespaceResponse.NewBuilder(GetTopicsOfNamespaceResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetTopicsOfNamespaceResponse_ = Value;
+					GetTopicsOfNamespaceResponse = value;
 				}
 
-				_bitField0 |= 0x00000001;
+				BitField0 |= 0x00000001;
 				return this;
 			}
 			public Builder ClearGetTopicsOfNamespaceResponse()
 			{
-				GetTopicsOfNamespaceResponse_ = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
+				GetTopicsOfNamespaceResponse = CommandGetTopicsOfNamespaceResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000001);
+				BitField0 = (BitField0 & ~0x00000001);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetSchema GetSchema = 34;
-			internal CommandGetSchema GetSchema_ = CommandGetSchema.DefaultInstance;
+			public CommandGetSchema GetSchema = CommandGetSchema.DefaultInstance;
 			public bool HasGetSchema()
 			{
-				return ((_bitField0 & 0x00000002) == 0x00000002);
+				return ((BitField0 & 0x00000002) == 0x00000002);
 			}
 			public CommandGetSchema GetGetSchema()
 			{
-				return GetSchema_;
+				return GetSchema;
 			}
-			public Builder SetGetSchema(CommandGetSchema Value)
+			public Builder SetGetSchema(CommandGetSchema value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetSchema_ = Value;
+                GetSchema = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
-			public Builder SetGetSchema(CommandGetSchema.Builder BuilderForValue)
+			public Builder SetGetSchema(CommandGetSchema.Builder builderForValue)
 			{
-				GetSchema_ = BuilderForValue.Build();
+				GetSchema = builderForValue.Build();
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
-			public Builder MergeGetSchema(CommandGetSchema Value)
+			public Builder MergeGetSchema(CommandGetSchema value)
 			{
-				if (((_bitField0 & 0x00000002) == 0x00000002) && GetSchema_ != CommandGetSchema.DefaultInstance)
+				if (((BitField0 & 0x00000002) == 0x00000002) && GetSchema != CommandGetSchema.DefaultInstance)
 				{
-					GetSchema_ = CommandGetSchema.NewBuilder(GetSchema_).MergeFrom(Value).BuildPartial();
+					GetSchema = CommandGetSchema.NewBuilder(GetSchema).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetSchema_ = Value;
+					GetSchema = value;
 				}
 
-				_bitField0 |= 0x00000002;
+				BitField0 |= 0x00000002;
 				return this;
 			}
 			public Builder ClearGetSchema()
 			{
-				GetSchema_ = CommandGetSchema.DefaultInstance;
+				GetSchema = CommandGetSchema.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000002);
+				BitField0 = (BitField0 & ~0x00000002);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetSchemaResponse GetSchemaResponse = 35;
-			internal CommandGetSchemaResponse GetSchemaResponse_ = CommandGetSchemaResponse.DefaultInstance;
+			public CommandGetSchemaResponse GetSchemaResponse = CommandGetSchemaResponse.DefaultInstance;
 			public bool HasGetSchemaResponse()
 			{
-				return ((_bitField0 & 0x00000004) == 0x00000004);
+				return ((BitField0 & 0x00000004) == 0x00000004);
 			}
 			public CommandGetSchemaResponse GetGetSchemaResponse()
 			{
-				return GetSchemaResponse_;
+				return GetSchemaResponse;
 			}
-			public Builder SetGetSchemaResponse(CommandGetSchemaResponse Value)
+			public Builder SetGetSchemaResponse(CommandGetSchemaResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetSchemaResponse_ = Value;
+                GetSchemaResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000004;
+				BitField0 |= 0x00000004;
 				return this;
 			}
-			public Builder SetGetSchemaResponse(CommandGetSchemaResponse.Builder BuilderForValue)
+			public Builder SetGetSchemaResponse(CommandGetSchemaResponse.Builder builderForValue)
 			{
-				GetSchemaResponse_ = BuilderForValue.Build();
+				GetSchemaResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000004;
+				BitField0 |= 0x00000004;
 				return this;
 			}
-			public Builder MergeGetSchemaResponse(CommandGetSchemaResponse Value)
+			public Builder MergeGetSchemaResponse(CommandGetSchemaResponse value)
 			{
-				if (((_bitField0 & 0x00000004) == 0x00000004) && GetSchemaResponse_ != CommandGetSchemaResponse.DefaultInstance)
+				if (((BitField0 & 0x00000004) == 0x00000004) && GetSchemaResponse != CommandGetSchemaResponse.DefaultInstance)
 				{
-					GetSchemaResponse_ = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse_).MergeFrom(Value).BuildPartial();
+					GetSchemaResponse = CommandGetSchemaResponse.NewBuilder(GetSchemaResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetSchemaResponse_ = Value;
+					GetSchemaResponse = value;
 				}
 
-				_bitField0 |= 0x00000004;
+				BitField0 |= 0x00000004;
 				return this;
 			}
 			public Builder ClearGetSchemaResponse()
 			{
-				GetSchemaResponse_ = CommandGetSchemaResponse.DefaultInstance;
+				GetSchemaResponse = CommandGetSchemaResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000004);
+				BitField0 = (BitField0 & ~0x00000004);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAuthChallenge authChallenge = 36;
-			internal CommandAuthChallenge AuthChallenge_ = CommandAuthChallenge.DefaultInstance;
+			public CommandAuthChallenge AuthChallenge = CommandAuthChallenge.DefaultInstance;
 			public bool HasAuthChallenge()
 			{
-				return ((_bitField0 & 0x00000008) == 0x00000008);
+				return ((BitField0 & 0x00000008) == 0x00000008);
 			}
 			public CommandAuthChallenge GetAuthChallenge()
 			{
-				return AuthChallenge_;
+				return AuthChallenge;
 			}
-			public Builder SetAuthChallenge(CommandAuthChallenge Value)
+			public Builder SetAuthChallenge(CommandAuthChallenge value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AuthChallenge_ = Value;
+                AuthChallenge = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
-			public Builder SetAuthChallenge(CommandAuthChallenge.Builder BuilderForValue)
+			public Builder SetAuthChallenge(CommandAuthChallenge.Builder builderForValue)
 			{
-				AuthChallenge_ = BuilderForValue.Build();
+				AuthChallenge = builderForValue.Build();
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
-			public Builder MergeAuthChallenge(CommandAuthChallenge Value)
+			public Builder MergeAuthChallenge(CommandAuthChallenge value)
 			{
-				if (((_bitField0 & 0x00000008) == 0x00000008) && AuthChallenge_ != CommandAuthChallenge.DefaultInstance)
+				if (((BitField0 & 0x00000008) == 0x00000008) && AuthChallenge != CommandAuthChallenge.DefaultInstance)
 				{
-					AuthChallenge_ = CommandAuthChallenge.NewBuilder(AuthChallenge_).MergeFrom(Value).BuildPartial();
+					AuthChallenge = CommandAuthChallenge.NewBuilder(AuthChallenge).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AuthChallenge_ = Value;
+					AuthChallenge = value;
 				}
 
-				_bitField0 |= 0x00000008;
+				BitField0 |= 0x00000008;
 				return this;
 			}
 			public Builder ClearAuthChallenge()
 			{
-				AuthChallenge_ = CommandAuthChallenge.DefaultInstance;
+				AuthChallenge = CommandAuthChallenge.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000008);
+				BitField0 = (BitField0 & ~0x00000008);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAuthResponse authResponse = 37;
-			internal CommandAuthResponse AuthResponse_ = CommandAuthResponse.DefaultInstance;
+			public CommandAuthResponse AuthResponse = CommandAuthResponse.DefaultInstance;
 			public bool HasAuthResponse()
 			{
-				return ((_bitField0 & 0x00000010) == 0x00000010);
+				return ((BitField0 & 0x00000010) == 0x00000010);
 			}
 			public CommandAuthResponse GetAuthResponse()
 			{
-				return AuthResponse_;
+				return AuthResponse;
 			}
-			public Builder SetAuthResponse(CommandAuthResponse Value)
+			public Builder SetAuthResponse(CommandAuthResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AuthResponse_ = Value;
+                AuthResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
-			public Builder SetAuthResponse(CommandAuthResponse.Builder BuilderForValue)
+			public Builder SetAuthResponse(CommandAuthResponse.Builder builderForValue)
 			{
-				AuthResponse_ = BuilderForValue.Build();
+				AuthResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
-			public Builder MergeAuthResponse(CommandAuthResponse Value)
+			public Builder MergeAuthResponse(CommandAuthResponse value)
 			{
-				if (((_bitField0 & 0x00000010) == 0x00000010) && AuthResponse_ != CommandAuthResponse.DefaultInstance)
+				if (((BitField0 & 0x00000010) == 0x00000010) && AuthResponse != CommandAuthResponse.DefaultInstance)
 				{
-					AuthResponse_ = CommandAuthResponse.NewBuilder(AuthResponse_).MergeFrom(Value).BuildPartial();
+					AuthResponse = CommandAuthResponse.NewBuilder(AuthResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AuthResponse_ = Value;
+					AuthResponse = value;
 				}
 
-				_bitField0 |= 0x00000010;
+				BitField0 |= 0x00000010;
 				return this;
 			}
 			public Builder ClearAuthResponse()
 			{
-				AuthResponse_ = CommandAuthResponse.DefaultInstance;
+				AuthResponse = CommandAuthResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000010);
+				BitField0 = (BitField0 & ~0x00000010);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAckResponse ackResponse = 38;
-			internal CommandAckResponse AckResponse_ = CommandAckResponse.DefaultInstance;
+			public CommandAckResponse AckResponse = CommandAckResponse.DefaultInstance;
 			public bool HasAckResponse()
 			{
-				return ((_bitField0 & 0x00000020) == 0x00000020);
+				return ((BitField0 & 0x00000020) == 0x00000020);
 			}
 			public CommandAckResponse GetAckResponse()
 			{
-				return AckResponse_;
+				return AckResponse;
 			}
-			public Builder SetAckResponse(CommandAckResponse Value)
+			public Builder SetAckResponse(CommandAckResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AckResponse_ = Value;
+                AckResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
-			public Builder SetAckResponse(CommandAckResponse.Builder BuilderForValue)
+			public Builder SetAckResponse(CommandAckResponse.Builder builderForValue)
 			{
-				AckResponse_ = BuilderForValue.Build();
+				AckResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
-			public Builder MergeAckResponse(CommandAckResponse Value)
+			public Builder MergeAckResponse(CommandAckResponse value)
 			{
-				if (((_bitField0 & 0x00000020) == 0x00000020) && AckResponse_ != CommandAckResponse.DefaultInstance)
+				if (((BitField0 & 0x00000020) == 0x00000020) && AckResponse != CommandAckResponse.DefaultInstance)
 				{
-					AckResponse_ = CommandAckResponse.NewBuilder(AckResponse_).MergeFrom(Value).BuildPartial();
+					AckResponse = CommandAckResponse.NewBuilder(AckResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AckResponse_ = Value;
+					AckResponse = value;
 				}
 
-				_bitField0 |= 0x00000020;
+				BitField0 |= 0x00000020;
 				return this;
 			}
 			public Builder ClearAckResponse()
 			{
-				AckResponse_ = CommandAckResponse.DefaultInstance;
+				AckResponse = CommandAckResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000020);
+				BitField0 = (BitField0 & ~0x00000020);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetOrCreateSchema GetOrCreateSchema = 39;
-			internal CommandGetOrCreateSchema GetOrCreateSchema_ = CommandGetOrCreateSchema.DefaultInstance;
+			public CommandGetOrCreateSchema GetOrCreateSchema = CommandGetOrCreateSchema.DefaultInstance;
 			public bool HasGetOrCreateSchema()
 			{
-				return ((_bitField0 & 0x00000040) == 0x00000040);
+				return ((BitField0 & 0x00000040) == 0x00000040);
 			}
 			public CommandGetOrCreateSchema GetGetOrCreateSchema()
 			{
-				return GetOrCreateSchema_;
+				return GetOrCreateSchema;
 			}
-			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema Value)
+			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetOrCreateSchema_ = Value;
+                GetOrCreateSchema = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
-			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema.Builder BuilderForValue)
+			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema.Builder builderForValue)
 			{
-				GetOrCreateSchema_ = BuilderForValue.Build();
+				GetOrCreateSchema = builderForValue.Build();
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
-			public Builder MergeGetOrCreateSchema(CommandGetOrCreateSchema Value)
+			public Builder MergeGetOrCreateSchema(CommandGetOrCreateSchema value)
 			{
-				if (((_bitField0 & 0x00000040) == 0x00000040) && GetOrCreateSchema_ != CommandGetOrCreateSchema.DefaultInstance)
+				if (((BitField0 & 0x00000040) == 0x00000040) && GetOrCreateSchema != CommandGetOrCreateSchema.DefaultInstance)
 				{
-					GetOrCreateSchema_ = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema_).MergeFrom(Value).BuildPartial();
+					GetOrCreateSchema = CommandGetOrCreateSchema.NewBuilder(GetOrCreateSchema).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetOrCreateSchema_ = Value;
+					GetOrCreateSchema = value;
 				}
 
-				_bitField0 |= 0x00000040;
+				BitField0 |= 0x00000040;
 				return this;
 			}
 			public Builder ClearGetOrCreateSchema()
 			{
-				GetOrCreateSchema_ = CommandGetOrCreateSchema.DefaultInstance;
+				GetOrCreateSchema = CommandGetOrCreateSchema.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000040);
+				BitField0 = (BitField0 & ~0x00000040);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse = 40;
-			internal CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.DefaultInstance;
+			public CommandGetOrCreateSchemaResponse GetOrCreateSchemaResponse = CommandGetOrCreateSchemaResponse.DefaultInstance;
 			public bool HasGetOrCreateSchemaResponse()
 			{
-				return ((_bitField0 & 0x00000080) == 0x00000080);
+				return ((BitField0 & 0x00000080) == 0x00000080);
 			}
 			public CommandGetOrCreateSchemaResponse GetGetOrCreateSchemaResponse()
 			{
-				return GetOrCreateSchemaResponse_;
+				return GetOrCreateSchemaResponse;
 			}
-			public Builder SetGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse Value)
+			public Builder SetGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				GetOrCreateSchemaResponse_ = Value;
+                GetOrCreateSchemaResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
-			public Builder SetGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse.Builder BuilderForValue)
+			public Builder SetGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse.Builder builderForValue)
 			{
-				GetOrCreateSchemaResponse_ = BuilderForValue.Build();
+				GetOrCreateSchemaResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
-			public Builder MergeGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse Value)
+			public Builder MergeGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse value)
 			{
-				if (((_bitField0 & 0x00000080) == 0x00000080) && GetOrCreateSchemaResponse_ != CommandGetOrCreateSchemaResponse.DefaultInstance)
+				if (((BitField0 & 0x00000080) == 0x00000080) && GetOrCreateSchemaResponse != CommandGetOrCreateSchemaResponse.DefaultInstance)
 				{
-					GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse_).MergeFrom(Value).BuildPartial();
+					GetOrCreateSchemaResponse = CommandGetOrCreateSchemaResponse.NewBuilder(GetOrCreateSchemaResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					GetOrCreateSchemaResponse_ = Value;
+					GetOrCreateSchemaResponse = value;
 				}
 
-				_bitField0 |= 0x00000080;
+				BitField0 |= 0x00000080;
 				return this;
 			}
 			public Builder ClearGetOrCreateSchemaResponse()
 			{
-				GetOrCreateSchemaResponse_ = CommandGetOrCreateSchemaResponse.DefaultInstance;
+				GetOrCreateSchemaResponse = CommandGetOrCreateSchemaResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000080);
+				BitField0 = (BitField0 & ~0x00000080);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandNewTxn newTxn = 50;
-			internal CommandNewTxn NewTxn_ = CommandNewTxn.DefaultInstance;
+			public CommandNewTxn NewTxn = CommandNewTxn.DefaultInstance;
 			public bool HasNewTxn()
 			{
-				return ((_bitField0 & 0x00000100) == 0x00000100);
+				return ((BitField0 & 0x00000100) == 0x00000100);
 			}
 			public CommandNewTxn GetNewTxn()
 			{
-				return NewTxn_;
+				return NewTxn;
 			}
-			public Builder SetNewTxn(CommandNewTxn Value)
+			public Builder SetNewTxn(CommandNewTxn value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				NewTxn_ = Value;
+                NewTxn = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
-			public Builder SetNewTxn(CommandNewTxn.Builder BuilderForValue)
+			public Builder SetNewTxn(CommandNewTxn.Builder builderForValue)
 			{
-				NewTxn_ = BuilderForValue.Build();
+				NewTxn = builderForValue.Build();
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
-			public Builder MergeNewTxn(CommandNewTxn Value)
+			public Builder MergeNewTxn(CommandNewTxn value)
 			{
-				if (((_bitField0 & 0x00000100) == 0x00000100) && NewTxn_ != CommandNewTxn.DefaultInstance)
+				if (((BitField0 & 0x00000100) == 0x00000100) && NewTxn != CommandNewTxn.DefaultInstance)
 				{
-					NewTxn_ = CommandNewTxn.NewBuilder(NewTxn_).MergeFrom(Value).BuildPartial();
+					NewTxn = CommandNewTxn.NewBuilder(NewTxn).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					NewTxn_ = Value;
+					NewTxn = value;
 				}
 
-				_bitField0 |= 0x00000100;
+				BitField0 |= 0x00000100;
 				return this;
 			}
 			public Builder ClearNewTxn()
 			{
-				NewTxn_ = CommandNewTxn.DefaultInstance;
+				NewTxn = CommandNewTxn.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000100);
+				BitField0 = (BitField0 & ~0x00000100);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandNewTxnResponse newTxnResponse = 51;
-			internal CommandNewTxnResponse NewTxnResponse_ = CommandNewTxnResponse.DefaultInstance;
+			public CommandNewTxnResponse NewTxnResponse = CommandNewTxnResponse.DefaultInstance;
 			public bool HasNewTxnResponse()
 			{
-				return ((_bitField0 & 0x00000200) == 0x00000200);
+				return ((BitField0 & 0x00000200) == 0x00000200);
 			}
 			public CommandNewTxnResponse GetNewTxnResponse()
 			{
-				return NewTxnResponse_;
+				return NewTxnResponse;
 			}
-			public Builder SetNewTxnResponse(CommandNewTxnResponse Value)
+			public Builder SetNewTxnResponse(CommandNewTxnResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				NewTxnResponse_ = Value;
+                NewTxnResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
-			public Builder SetNewTxnResponse(CommandNewTxnResponse.Builder BuilderForValue)
+			public Builder SetNewTxnResponse(CommandNewTxnResponse.Builder builderForValue)
 			{
-				NewTxnResponse_ = BuilderForValue.Build();
+				NewTxnResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
-			public Builder MergeNewTxnResponse(CommandNewTxnResponse Value)
+			public Builder MergeNewTxnResponse(CommandNewTxnResponse value)
 			{
-				if (((_bitField0 & 0x00000200) == 0x00000200) && NewTxnResponse_ != CommandNewTxnResponse.DefaultInstance)
+				if (((BitField0 & 0x00000200) == 0x00000200) && NewTxnResponse != CommandNewTxnResponse.DefaultInstance)
 				{
-					NewTxnResponse_ = CommandNewTxnResponse.NewBuilder(NewTxnResponse_).MergeFrom(Value).BuildPartial();
+					NewTxnResponse = CommandNewTxnResponse.NewBuilder(NewTxnResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					NewTxnResponse_ = Value;
+					NewTxnResponse = value;
 				}
 
-				_bitField0 |= 0x00000200;
+				BitField0 |= 0x00000200;
 				return this;
 			}
 			public Builder ClearNewTxnResponse()
 			{
-				NewTxnResponse_ = CommandNewTxnResponse.DefaultInstance;
+				NewTxnResponse = CommandNewTxnResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000200);
+				BitField0 = (BitField0 & ~0x00000200);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAddPartitionToTxn addPartitionToTxn = 52;
-			internal CommandAddPartitionToTxn AddPartitionToTxn_ = CommandAddPartitionToTxn.DefaultInstance;
+			public CommandAddPartitionToTxn AddPartitionToTxn = CommandAddPartitionToTxn.DefaultInstance;
 			public bool HasAddPartitionToTxn()
 			{
-				return ((_bitField0 & 0x00000400) == 0x00000400);
+				return ((BitField0 & 0x00000400) == 0x00000400);
 			}
 			public CommandAddPartitionToTxn GetAddPartitionToTxn()
 			{
-				return AddPartitionToTxn_;
+				return AddPartitionToTxn;
 			}
-			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn Value)
+			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AddPartitionToTxn_ = Value;
+                AddPartitionToTxn = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
-			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn.Builder BuilderForValue)
+			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn.Builder builderForValue)
 			{
-				AddPartitionToTxn_ = BuilderForValue.Build();
+				AddPartitionToTxn = builderForValue.Build();
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
-			public Builder MergeAddPartitionToTxn(CommandAddPartitionToTxn Value)
+			public Builder MergeAddPartitionToTxn(CommandAddPartitionToTxn value)
 			{
-				if (((_bitField0 & 0x00000400) == 0x00000400) && AddPartitionToTxn_ != CommandAddPartitionToTxn.DefaultInstance)
+				if (((BitField0 & 0x00000400) == 0x00000400) && AddPartitionToTxn != CommandAddPartitionToTxn.DefaultInstance)
 				{
-					AddPartitionToTxn_ = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn_).MergeFrom(Value).BuildPartial();
+					AddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder(AddPartitionToTxn).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AddPartitionToTxn_ = Value;
+					AddPartitionToTxn = value;
 				}
 
-				_bitField0 |= 0x00000400;
+				BitField0 |= 0x00000400;
 				return this;
 			}
 			public Builder ClearAddPartitionToTxn()
 			{
-				AddPartitionToTxn_ = CommandAddPartitionToTxn.DefaultInstance;
+				AddPartitionToTxn = CommandAddPartitionToTxn.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000400);
+				BitField0 = (BitField0 & ~0x00000400);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAddPartitionToTxnResponse addPartitionToTxnResponse = 53;
-			internal CommandAddPartitionToTxnResponse AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.DefaultInstance;
+			public CommandAddPartitionToTxnResponse AddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.DefaultInstance;
 			public bool HasAddPartitionToTxnResponse()
 			{
-				return ((_bitField0 & 0x00000800) == 0x00000800);
+				return ((BitField0 & 0x00000800) == 0x00000800);
 			}
 			public CommandAddPartitionToTxnResponse GetAddPartitionToTxnResponse()
 			{
-				return AddPartitionToTxnResponse_;
+				return AddPartitionToTxnResponse;
 			}
-			public Builder SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse Value)
+			public Builder SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AddPartitionToTxnResponse_ = Value;
+                AddPartitionToTxnResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
-			public Builder SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse.Builder BuilderForValue)
+			public Builder SetAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse.Builder builderForValue)
 			{
-				AddPartitionToTxnResponse_ = BuilderForValue.Build();
+				AddPartitionToTxnResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
-			public Builder MergeAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse Value)
+			public Builder MergeAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse value)
 			{
-				if (((_bitField0 & 0x00000800) == 0x00000800) && AddPartitionToTxnResponse_ != CommandAddPartitionToTxnResponse.DefaultInstance)
+				if (((BitField0 & 0x00000800) == 0x00000800) && AddPartitionToTxnResponse != CommandAddPartitionToTxnResponse.DefaultInstance)
 				{
-					AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse_).MergeFrom(Value).BuildPartial();
+					AddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.NewBuilder(AddPartitionToTxnResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AddPartitionToTxnResponse_ = Value;
+					AddPartitionToTxnResponse = value;
 				}
 
-				_bitField0 |= 0x00000800;
+				BitField0 |= 0x00000800;
 				return this;
 			}
 			public Builder ClearAddPartitionToTxnResponse()
 			{
-				AddPartitionToTxnResponse_ = CommandAddPartitionToTxnResponse.DefaultInstance;
+				AddPartitionToTxnResponse = CommandAddPartitionToTxnResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00000800);
+				BitField0 = (BitField0 & ~0x00000800);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAddSubscriptionToTxn addSubscriptionToTxn = 54;
-			internal CommandAddSubscriptionToTxn AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.DefaultInstance;
+			public CommandAddSubscriptionToTxn AddSubscriptionToTxn = CommandAddSubscriptionToTxn.DefaultInstance;
 			public bool HasAddSubscriptionToTxn()
 			{
-				return ((_bitField0 & 0x00001000) == 0x00001000);
+				return ((BitField0 & 0x00001000) == 0x00001000);
 			}
 			public CommandAddSubscriptionToTxn GetAddSubscriptionToTxn()
 			{
-				return AddSubscriptionToTxn_;
+				return AddSubscriptionToTxn;
 			}
-			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn Value)
+			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AddSubscriptionToTxn_ = Value;
+                AddSubscriptionToTxn = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
-			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn.Builder BuilderForValue)
+			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn.Builder builderForValue)
 			{
-				AddSubscriptionToTxn_ = BuilderForValue.Build();
+				AddSubscriptionToTxn = builderForValue.Build();
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
-			public Builder MergeAddSubscriptionToTxn(CommandAddSubscriptionToTxn Value)
+			public Builder MergeAddSubscriptionToTxn(CommandAddSubscriptionToTxn value)
 			{
-				if (((_bitField0 & 0x00001000) == 0x00001000) && AddSubscriptionToTxn_ != CommandAddSubscriptionToTxn.DefaultInstance)
+				if (((BitField0 & 0x00001000) == 0x00001000) && AddSubscriptionToTxn != CommandAddSubscriptionToTxn.DefaultInstance)
 				{
-					AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn_).MergeFrom(Value).BuildPartial();
+					AddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder(AddSubscriptionToTxn).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AddSubscriptionToTxn_ = Value;
+					AddSubscriptionToTxn = value;
 				}
 
-				_bitField0 |= 0x00001000;
+				BitField0 |= 0x00001000;
 				return this;
 			}
 			public Builder ClearAddSubscriptionToTxn()
 			{
-				AddSubscriptionToTxn_ = CommandAddSubscriptionToTxn.DefaultInstance;
+				AddSubscriptionToTxn = CommandAddSubscriptionToTxn.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00001000);
+				BitField0 = (BitField0 & ~0x00001000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandAddSubscriptionToTxnResponse addSubscriptionToTxnResponse = 55;
-			internal CommandAddSubscriptionToTxnResponse AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.DefaultInstance;
+			public CommandAddSubscriptionToTxnResponse AddSubscriptionToTxnResponse = CommandAddSubscriptionToTxnResponse.DefaultInstance;
 			public bool HasAddSubscriptionToTxnResponse()
 			{
-				return ((_bitField0 & 0x00002000) == 0x00002000);
+				return ((BitField0 & 0x00002000) == 0x00002000);
 			}
 			public CommandAddSubscriptionToTxnResponse GetAddSubscriptionToTxnResponse()
 			{
-				return AddSubscriptionToTxnResponse_;
+				return AddSubscriptionToTxnResponse;
 			}
-			public Builder SetAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse Value)
+			public Builder SetAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				AddSubscriptionToTxnResponse_ = Value;
+                AddSubscriptionToTxnResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
-			public Builder SetAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse.Builder BuilderForValue)
+			public Builder SetAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse.Builder builderForValue)
 			{
-				AddSubscriptionToTxnResponse_ = BuilderForValue.Build();
+				AddSubscriptionToTxnResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
-			public Builder MergeAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse Value)
+			public Builder MergeAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse value)
 			{
-				if (((_bitField0 & 0x00002000) == 0x00002000) && AddSubscriptionToTxnResponse_ != CommandAddSubscriptionToTxnResponse.DefaultInstance)
+				if (((BitField0 & 0x00002000) == 0x00002000) && AddSubscriptionToTxnResponse != CommandAddSubscriptionToTxnResponse.DefaultInstance)
 				{
-					AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse_).MergeFrom(Value).BuildPartial();
+					AddSubscriptionToTxnResponse = CommandAddSubscriptionToTxnResponse.NewBuilder(AddSubscriptionToTxnResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					AddSubscriptionToTxnResponse_ = Value;
+					AddSubscriptionToTxnResponse = value;
 				}
 
-				_bitField0 |= 0x00002000;
+				BitField0 |= 0x00002000;
 				return this;
 			}
 			public Builder ClearAddSubscriptionToTxnResponse()
 			{
-				AddSubscriptionToTxnResponse_ = CommandAddSubscriptionToTxnResponse.DefaultInstance;
+				AddSubscriptionToTxnResponse = CommandAddSubscriptionToTxnResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00002000);
+				BitField0 = (BitField0 & ~0x00002000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandEndTxn endTxn = 56;
-			internal CommandEndTxn EndTxn_ = CommandEndTxn.DefaultInstance;
+			public CommandEndTxn EndTxn = CommandEndTxn.DefaultInstance;
 			public bool HasEndTxn()
 			{
-				return ((_bitField0 & 0x00004000) == 0x00004000);
+				return ((BitField0 & 0x00004000) == 0x00004000);
 			}
 			public CommandEndTxn GetEndTxn()
 			{
-				return EndTxn_;
+				return EndTxn;
 			}
-			public Builder SetEndTxn(CommandEndTxn Value)
+			public Builder SetEndTxn(CommandEndTxn value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				EndTxn_ = Value;
+                EndTxn = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
-			public Builder SetEndTxn(CommandEndTxn.Builder BuilderForValue)
+			public Builder SetEndTxn(CommandEndTxn.Builder builderForValue)
 			{
-				EndTxn_ = BuilderForValue.Build();
+				EndTxn = builderForValue.Build();
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
-			public Builder MergeEndTxn(CommandEndTxn Value)
+			public Builder MergeEndTxn(CommandEndTxn value)
 			{
-				if (((_bitField0 & 0x00004000) == 0x00004000) && EndTxn_ != CommandEndTxn.DefaultInstance)
+				if (((BitField0 & 0x00004000) == 0x00004000) && EndTxn != CommandEndTxn.DefaultInstance)
 				{
-					EndTxn_ = CommandEndTxn.NewBuilder(EndTxn_).MergeFrom(Value).BuildPartial();
+					EndTxn = CommandEndTxn.NewBuilder(EndTxn).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					EndTxn_ = Value;
+					EndTxn = value;
 				}
 
-				_bitField0 |= 0x00004000;
+				BitField0 |= 0x00004000;
 				return this;
 			}
 			public Builder ClearEndTxn()
 			{
-				EndTxn_ = CommandEndTxn.DefaultInstance;
+				EndTxn = CommandEndTxn.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00004000);
+				BitField0 = (BitField0 & ~0x00004000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandEndTxnResponse endTxnResponse = 57;
-			internal CommandEndTxnResponse EndTxnResponse_ = CommandEndTxnResponse.DefaultInstance;
+			public CommandEndTxnResponse EndTxnResponse = CommandEndTxnResponse.DefaultInstance;
 			public bool HasEndTxnResponse()
 			{
-				return ((_bitField0 & 0x00008000) == 0x00008000);
+				return ((BitField0 & 0x00008000) == 0x00008000);
 			}
 			public CommandEndTxnResponse GetEndTxnResponse()
 			{
-				return EndTxnResponse_;
+				return EndTxnResponse;
 			}
-			public Builder SetEndTxnResponse(CommandEndTxnResponse Value)
+			public Builder SetEndTxnResponse(CommandEndTxnResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				EndTxnResponse_ = Value;
+                EndTxnResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
-			public Builder SetEndTxnResponse(CommandEndTxnResponse.Builder BuilderForValue)
+			public Builder SetEndTxnResponse(CommandEndTxnResponse.Builder builderForValue)
 			{
-				EndTxnResponse_ = BuilderForValue.Build();
+				EndTxnResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
-			public Builder MergeEndTxnResponse(CommandEndTxnResponse Value)
+			public Builder MergeEndTxnResponse(CommandEndTxnResponse value)
 			{
-				if (((_bitField0 & 0x00008000) == 0x00008000) && EndTxnResponse_ != CommandEndTxnResponse.DefaultInstance)
+				if (((BitField0 & 0x00008000) == 0x00008000) && EndTxnResponse != CommandEndTxnResponse.DefaultInstance)
 				{
-					EndTxnResponse_ = CommandEndTxnResponse.NewBuilder(EndTxnResponse_).MergeFrom(Value).BuildPartial();
+					EndTxnResponse = CommandEndTxnResponse.NewBuilder(EndTxnResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					EndTxnResponse_ = Value;
+					EndTxnResponse = value;
 				}
 
-				_bitField0 |= 0x00008000;
+				BitField0 |= 0x00008000;
 				return this;
 			}
 			public Builder ClearEndTxnResponse()
 			{
-				EndTxnResponse_ = CommandEndTxnResponse.DefaultInstance;
+				EndTxnResponse = CommandEndTxnResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00008000);
+				BitField0 = (BitField0 & ~0x00008000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandEndTxnOnPartition endTxnOnPartition = 58;
-			internal CommandEndTxnOnPartition EndTxnOnPartition_ = CommandEndTxnOnPartition.DefaultInstance;
+			public CommandEndTxnOnPartition EndTxnOnPartition = CommandEndTxnOnPartition.DefaultInstance;
 			public bool HasEndTxnOnPartition()
 			{
-				return ((_bitField0 & 0x00010000) == 0x00010000);
+				return ((BitField0 & 0x00010000) == 0x00010000);
 			}
 			public CommandEndTxnOnPartition GetEndTxnOnPartition()
 			{
-				return EndTxnOnPartition_;
+				return EndTxnOnPartition;
 			}
-			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition Value)
+			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				EndTxnOnPartition_ = Value;
+                EndTxnOnPartition = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
-			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition.Builder BuilderForValue)
+			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition.Builder builderForValue)
 			{
-				EndTxnOnPartition_ = BuilderForValue.Build();
+				EndTxnOnPartition = builderForValue.Build();
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
-			public Builder MergeEndTxnOnPartition(CommandEndTxnOnPartition Value)
+			public Builder MergeEndTxnOnPartition(CommandEndTxnOnPartition value)
 			{
-				if (((_bitField0 & 0x00010000) == 0x00010000) && EndTxnOnPartition_ != CommandEndTxnOnPartition.DefaultInstance)
+				if (((BitField0 & 0x00010000) == 0x00010000) && EndTxnOnPartition != CommandEndTxnOnPartition.DefaultInstance)
 				{
-					EndTxnOnPartition_ = CommandEndTxnOnPartition.NewBuilder(EndTxnOnPartition_).MergeFrom(Value).BuildPartial();
+					EndTxnOnPartition = CommandEndTxnOnPartition.NewBuilder(EndTxnOnPartition).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					EndTxnOnPartition_ = Value;
+					EndTxnOnPartition = value;
 				}
 
-				_bitField0 |= 0x00010000;
+				BitField0 |= 0x00010000;
 				return this;
 			}
 			public Builder ClearEndTxnOnPartition()
 			{
-				EndTxnOnPartition_ = CommandEndTxnOnPartition.DefaultInstance;
+				EndTxnOnPartition = CommandEndTxnOnPartition.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00010000);
+				BitField0 = (BitField0 & ~0x00010000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandEndTxnOnPartitionResponse endTxnOnPartitionResponse = 59;
-			internal CommandEndTxnOnPartitionResponse EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.DefaultInstance;
+			public CommandEndTxnOnPartitionResponse EndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.DefaultInstance;
 			public bool HasEndTxnOnPartitionResponse()
 			{
-				return ((_bitField0 & 0x00020000) == 0x00020000);
+				return ((BitField0 & 0x00020000) == 0x00020000);
 			}
 			public CommandEndTxnOnPartitionResponse GetEndTxnOnPartitionResponse()
 			{
-				return EndTxnOnPartitionResponse_;
+				return EndTxnOnPartitionResponse;
 			}
-			public Builder SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse Value)
+			public Builder SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				EndTxnOnPartitionResponse_ = Value;
+                EndTxnOnPartitionResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
-			public Builder SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse.Builder BuilderForValue)
+			public Builder SetEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse.Builder builderForValue)
 			{
-				EndTxnOnPartitionResponse_ = BuilderForValue.Build();
+				EndTxnOnPartitionResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
-			public Builder MergeEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse Value)
+			public Builder MergeEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse value)
 			{
-				if (((_bitField0 & 0x00020000) == 0x00020000) && EndTxnOnPartitionResponse_ != CommandEndTxnOnPartitionResponse.DefaultInstance)
+				if (((BitField0 & 0x00020000) == 0x00020000) && EndTxnOnPartitionResponse != CommandEndTxnOnPartitionResponse.DefaultInstance)
 				{
-					EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse_).MergeFrom(Value).BuildPartial();
+					EndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.NewBuilder(EndTxnOnPartitionResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					EndTxnOnPartitionResponse_ = Value;
+					EndTxnOnPartitionResponse = value;
 				}
 
-				_bitField0 |= 0x00020000;
+				BitField0 |= 0x00020000;
 				return this;
 			}
 			public Builder ClearEndTxnOnPartitionResponse()
 			{
-				EndTxnOnPartitionResponse_ = CommandEndTxnOnPartitionResponse.DefaultInstance;
+				EndTxnOnPartitionResponse = CommandEndTxnOnPartitionResponse.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00020000);
+				BitField0 = (BitField0 & ~0x00020000);
 				return this;
 			}
 
 			// optional .pulsar.proto.CommandEndTxnOnSubscription endTxnOnSubscription = 60;
-			internal CommandEndTxnOnSubscription _endTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
+			public CommandEndTxnOnSubscription EndTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
 			public bool HasEndTxnOnSubscription()
 			{
-				return ((_bitField0 & 0x00040000) == 0x00040000);
+				return ((BitField0 & 0x00040000) == 0x00040000);
 			}
 			public CommandEndTxnOnSubscription GetEndTxnOnSubscription()
 			{
-				return _endTxnOnSubscription;
+				return EndTxnOnSubscription;
 			}
-			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription Value)
+			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				_endTxnOnSubscription = Value;
+                EndTxnOnSubscription = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
-			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription.Builder BuilderForValue)
+			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription.Builder builderForValue)
 			{
-				_endTxnOnSubscription = BuilderForValue.Build();
+				EndTxnOnSubscription = builderForValue.Build();
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
-			public Builder MergeEndTxnOnSubscription(CommandEndTxnOnSubscription Value)
+			public Builder MergeEndTxnOnSubscription(CommandEndTxnOnSubscription value)
 			{
-				if (((_bitField0 & 0x00040000) == 0x00040000) && _endTxnOnSubscription != CommandEndTxnOnSubscription.DefaultInstance)
+				if (((BitField0 & 0x00040000) == 0x00040000) && EndTxnOnSubscription != CommandEndTxnOnSubscription.DefaultInstance)
 				{
-					_endTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder(_endTxnOnSubscription).MergeFrom(Value).BuildPartial();
+					EndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder(EndTxnOnSubscription).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					_endTxnOnSubscription = Value;
+					EndTxnOnSubscription = value;
 				}
 
-				_bitField0 |= 0x00040000;
+				BitField0 |= 0x00040000;
 				return this;
 			}
 			public Builder ClearEndTxnOnSubscription()
 			{
-				_endTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
+				EndTxnOnSubscription = CommandEndTxnOnSubscription.DefaultInstance;
 
-				_bitField0 = (_bitField0 & ~0x00040000);
+				BitField0 = (BitField0 & ~0x00040000);
 				return this;
 			}
 
 			
-			internal CommandEndTxnOnSubscriptionResponse _endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
+			public CommandEndTxnOnSubscriptionResponse EndTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
 			public bool HasEndTxnOnSubscriptionResponse()
 			{
-				return ((_bitField0 & 0x00080000) == 0x00080000);
+				return ((BitField0 & 0x00080000) == 0x00080000);
 			}
 			public CommandEndTxnOnSubscriptionResponse GetEndTxnOnSubscriptionResponse()
 			{
-				return _endTxnOnSubscriptionResponse;
+				return EndTxnOnSubscriptionResponse;
 			}
-			public Builder SetEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse Value)
+			public Builder SetEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse value)
 			{
-				if (Value == null)
-				{
-					throw new NullReferenceException();
-				}
-				_endTxnOnSubscriptionResponse = Value;
+                EndTxnOnSubscriptionResponse = value ?? throw new NullReferenceException();
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
-			public Builder SetEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse.Builder BuilderForValue)
+			public Builder SetEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse.Builder builderForValue)
 			{
-				_endTxnOnSubscriptionResponse = BuilderForValue.Build();
+				EndTxnOnSubscriptionResponse = builderForValue.Build();
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
-			public Builder MergeEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse Value)
+			public Builder MergeEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse value)
 			{
-				if (((_bitField0 & 0x00080000) == 0x00080000) && _endTxnOnSubscriptionResponse != CommandEndTxnOnSubscriptionResponse.DefaultInstance)
+				if (((BitField0 & 0x00080000) == 0x00080000) && EndTxnOnSubscriptionResponse != CommandEndTxnOnSubscriptionResponse.DefaultInstance)
 				{
-					_endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.NewBuilder(_endTxnOnSubscriptionResponse).MergeFrom(Value).BuildPartial();
+					EndTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.NewBuilder(EndTxnOnSubscriptionResponse).MergeFrom(value).BuildPartial();
 				}
 				else
 				{
-					_endTxnOnSubscriptionResponse = Value;
+					EndTxnOnSubscriptionResponse = value;
 				}
 
-				_bitField0 |= 0x00080000;
+				BitField0 |= 0x00080000;
 				return this;
 			}
 			public Builder ClearEndTxnOnSubscriptionResponse()
 			{
-				_endTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
+				EndTxnOnSubscriptionResponse = CommandEndTxnOnSubscriptionResponse.DefaultInstance;
 				_type = 0;
 				return this;
 			}

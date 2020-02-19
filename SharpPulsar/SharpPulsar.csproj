@@ -32,4 +32,10 @@
     <PackageReference Include="ZstdNet" Version="1.3.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Protocol\Proto\PulsarApi.proto">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
