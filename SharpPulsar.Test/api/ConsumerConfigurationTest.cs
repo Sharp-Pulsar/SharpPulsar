@@ -32,7 +32,7 @@ namespace SharpPulsar.Test.Api
 	public class ConsumerConfigurationTest
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger((typeof(ConsumerConfigurationTest));
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerConfigurationTest));
 
 		[Fact]
 		public virtual void TestJsonIgnore()
@@ -41,11 +41,8 @@ namespace SharpPulsar.Test.Api
             var conf = new ConsumerConfigurationData<object>
             {
                 ConsumerEventListener = new ConsumerEventListenerAnonymousInnerClass(this),
-                MessageListener = (MessageListener) (consumer, msg)
+                //MessageListener = (MessageListener) (consumer, msg)
             };
-
-            {
-			};
 
 			conf.CryptoKeyReader = new Mock<ICryptoKeyReader>().Object;
 

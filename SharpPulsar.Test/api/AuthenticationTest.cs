@@ -1,5 +1,5 @@
 ﻿using System;
-using SharpPulsar.Exception;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Test.Impl.auth;
 using Xunit;

@@ -52,7 +52,7 @@ namespace SharpPulsar.Impl
 		{
 			return new MessageIdImpl(ledgerId, entryId, partitionIndex);
 		}
-        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
+        /*public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
         {
             var k = KeyValueSchema<TK, TV>.Of(keySchema, valueSchema);
             return k;
@@ -71,7 +71,7 @@ namespace SharpPulsar.Impl
         public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(TK key, TV value, SchemaType type)
         {
             return KeyValueSchema<TK, TV>.Of(key, value, type);
-        }
+        }*/
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
 			return MessageIdImpl.FromByteArray(data);

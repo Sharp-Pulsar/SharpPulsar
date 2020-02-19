@@ -27,7 +27,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Message schema definition.
 	/// </summary>
-	public partial interface ISchema<T>
+	public interface ISchema<T>
 	{
 
 		/// <summary>
@@ -98,10 +98,10 @@ namespace SharpPulsar.Api
         /// <summary>
         /// Key Value Schema whose underneath key and value schemas are JSONSchema.
         /// </summary>
-        static ISchema<KeyValue<TK, TV>> KeyValue<TK, TV>(TK key, TV value)
+        /*static ISchema<KeyValue<TK, TV>> KeyValue<TK, TV>(TK key, TV value)
         {
             return DefaultImplementation.NewKeyValueSchema(key, value, SchemaType.Json);
-        }
+        }*/
         
 		/// <summary>
 		/// Decode a byte array into an object using a given version.

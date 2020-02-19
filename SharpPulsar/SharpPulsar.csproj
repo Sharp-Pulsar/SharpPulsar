@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <Compile Remove="Common\Compression\CompressionCodecZLib.cs" />
+    <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
+    <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
