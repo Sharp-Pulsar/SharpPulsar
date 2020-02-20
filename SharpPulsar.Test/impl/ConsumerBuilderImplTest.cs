@@ -41,12 +41,10 @@ namespace SharpPulsar.Test.Impl
 
 		public ConsumerBuilderImplTest()
         {
-            var config = A.Fake<ConsumerConfigurationData<sbyte[]>>();
+            var config = A.Fake<ConsumerConfigurationData<sbyte[]>>(x=> x.ConfigureFake(c=> c.TopicsPattern = new Regex(@"\w+")).ConfigureFake(d=> d.SubscriptionName = "testSubscriptionName"));
             var clientConfig = A.Fake<ClientConfigurationData>(x=> x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
             var pulsarClientclient = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfig)));
 			
-			A.CallToSet(() => config.TopicsPattern).To(new Regex(@"\w+"));
-            A.CallToSet(() => config.SubscriptionName).To("testSubscriptionName");
 			_consumerBuilderImpl =  A.Fake<ConsumerBuilderImpl<sbyte[]>>(x=>x.WithArgumentsForConstructor(()=> new ConsumerBuilderImpl<sbyte[]>(pulsarClientclient, config, SchemaFields.Bytes)));
 		}
 

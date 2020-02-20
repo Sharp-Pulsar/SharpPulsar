@@ -66,9 +66,8 @@ namespace SharpPulsar.Test.Impl
 			var eventLoop = new MultithreadEventLoopGroup(1);
             var conf = new ClientConfigurationData {OperationTimeoutMs = 10};
             var cnx = new ClientCnx(conf, eventLoop);
-
+            var channel = A.Fake<IChannel>();
             var ctx = A.Fake<IChannelHandlerContext>();
-			var channel = A.Fake<IChannel>();
 			//A.CallToSet(() => ctx.Channel).To(channel);
 
 			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
