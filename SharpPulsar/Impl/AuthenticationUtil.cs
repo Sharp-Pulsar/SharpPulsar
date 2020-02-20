@@ -70,8 +70,8 @@ namespace SharpPulsar.Impl
 		public static IAuthentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
-			{
-				if (!string.IsNullOrWhiteSpace(authPluginClassName))
+            {
+                if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
 					var authClass = Type.GetType(authPluginClassName);
 					var auth = (IAuthentication) Activator.CreateInstance(authClass);
@@ -88,11 +88,9 @@ namespace SharpPulsar.Impl
 					}
 					return auth;
 				}
-				else
-				{
-					return new AuthenticationDisabled();
-				}
-			}
+
+                return new AuthenticationDisabled();
+            }
 			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t.Message);
@@ -112,19 +110,17 @@ namespace SharpPulsar.Impl
 		public static IAuthentication Create(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			try
-			{
-				if (!string.IsNullOrWhiteSpace(authPluginClassName))
+            {
+                if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
 					var AuthClass = Type.GetType(authPluginClassName);
 					var auth = (IAuthentication) Activator.CreateInstance(AuthClass);
 					auth.Configure(JsonSerializer.Serialize(authParams));
 					return auth;
 				}
-				else
-				{
-					return new AuthenticationDisabled();
-				}
-			}
+
+                return new AuthenticationDisabled();
+            }
 			catch (System.Exception t)
 			{
 				throw new UnsupportedAuthenticationException(t.Message);

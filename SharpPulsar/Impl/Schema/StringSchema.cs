@@ -172,20 +172,18 @@ namespace SharpPulsar.Impl.Schema
 			{
 				return null;
 			}
-			else
-			{
-				var size = byteBuf.ReadableBytes;
-				var bytes = TmpBuffer.Value;
-				if (size > bytes.Length)
-				{
-					bytes = new sbyte[size * 2];
-					TmpBuffer.Value = bytes;
-				}
-				byteBuf.WriteBytes((byte[])(Array)bytes, 0, size);
 
-				return StringHelper.NewString(bytes, 0, size, _charset.ToString());
-			}
-		}
+            var size = byteBuf.ReadableBytes;
+            var bytes = TmpBuffer.Value;
+            if (size > bytes.Length)
+            {
+                bytes = new sbyte[size * 2];
+                TmpBuffer.Value = bytes;
+            }
+            byteBuf.WriteBytes((byte[])(Array)bytes, 0, size);
+
+            return StringHelper.NewString(bytes, 0, size, _charset.ToString());
+        }
 
 	}
 

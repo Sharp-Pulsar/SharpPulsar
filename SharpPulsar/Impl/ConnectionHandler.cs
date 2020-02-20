@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
 	{
 		private static readonly ConcurrentDictionary<ConnectionHandler, ClientCnx> ClientCnxUpdater = new ConcurrentDictionary<ConnectionHandler, ClientCnx>();
 
-		private volatile ClientCnx _clientCnx = null;
+		//private volatile ClientCnx _clientCnx = null;
 
 		protected internal readonly HandlerState State;
 		public readonly Backoff Backoff;
@@ -46,9 +46,9 @@ namespace SharpPulsar.Impl
 
 		public ConnectionHandler(HandlerState state, Backoff backoff, IConnection connection)
 		{
-			this.State = state;
-			this.Connection = connection;
-			this.Backoff = backoff;
+			State = state;
+			Connection = connection;
+			Backoff = backoff;
 			ClientCnxUpdater.TryAdd(this, null);
 		}
 
@@ -68,7 +68,7 @@ namespace SharpPulsar.Impl
 			if (!ValidStateForReconnection)
 			{
 				// Ignore connection closed when we are shutting down
-				Log.LogInformation("[{}] [{}] Ignoring reconnection request (state: {})", this.State.Topic, State.HandlerName, State.GetState());
+				Log.LogInformation("[{}] [{}] Ignoring reconnection request (state: {})", State.Topic, State.HandlerName, State.GetState());
 				return;
 			}
 
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
                         Connection.ConnectionOpened(cnx.Result);
                 });
             }
-            catch (System.Exception T)
+            catch (Exception T)
             {
                 Log.LogWarning("[{}] [{}] Exception thrown while getting connection: ", State.Topic, State.HandlerName,
                     T);
@@ -90,7 +90,7 @@ namespace SharpPulsar.Impl
             }
         }
 
-		private void HandleConnectionError(System.Exception exception)
+		private void HandleConnectionError(Exception exception)
 		{
 			Log.LogWarning("[{}] [{}] Error connecting to broker: {}", State.Topic, State.HandlerName, exception.Message);
 			Connection.ConnectionFailed(new PulsarClientException(exception.Message));
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual void ReconnectLater(System.Exception exception)
+		public virtual void ReconnectLater(Exception exception)
 		{
 			ClientCnxUpdater[this] =  null;
 			if (!ValidStateForReconnection)

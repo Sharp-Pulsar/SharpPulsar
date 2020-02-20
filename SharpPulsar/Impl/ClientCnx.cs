@@ -783,10 +783,8 @@ namespace SharpPulsar.Impl
                 {
                     throw new NullReferenceException("TopicNotFound");
                 }
-                else
-                {
-                    throw GetPulsarClientException(rc, result.ErrorMessage);
-                }
+
+                throw GetPulsarClientException(rc, result.ErrorMessage);
             }
         }
 
@@ -829,10 +827,8 @@ namespace SharpPulsar.Impl
                 {
                     return SchemaVersionFields.Empty.Bytes();
                 }
-                else
-                {
-                    throw GetPulsarClientException(rc, response.ErrorMessage);
-                }
+
+                throw GetPulsarClientException(rc, response.ErrorMessage);
             }
         }
 
@@ -1063,11 +1059,7 @@ namespace SharpPulsar.Impl
 					requestTask.SetException(new PulsarClientException.TimeoutException(request.RequestId + " lookup request timedout after ms " + _operationTimeoutMs));
 					Log.LogWarning("{} request {} timed out after {} ms", Ctx().Channel, request.RequestId, _operationTimeoutMs);
 				}
-				else
-				{
-					// request is already completed successfully.
-				}
-			}
+            }
 		}
 
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ClientCnx>();

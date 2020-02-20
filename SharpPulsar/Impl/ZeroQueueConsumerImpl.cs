@@ -136,17 +136,15 @@ namespace SharpPulsar.Impl
 		}
 
 		public override bool CanEnqueueMessage(IMessage<T> message)
-		{
-			if (Listener != null)
+        {
+            if (Listener != null)
 			{
 				TriggerZeroQueueSizeListener(message);
 				return false;
 			}
-			else
-			{
-				return true;
-			}
-		}
+
+            return true;
+        }
 
 		private void TriggerZeroQueueSizeListener(IMessage<T> message)
 		{

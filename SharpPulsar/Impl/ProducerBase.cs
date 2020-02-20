@@ -170,16 +170,14 @@ namespace SharpPulsar.Impl
 		}
 
 		public virtual IMessage<T> BeforeSend(IMessage<T> message)
-		{
-			if (Interceptors != null)
+        {
+            if (Interceptors != null)
 			{
 				return Interceptors.BeforeSend(this, message);
 			}
-			else
-			{
-				return message;
-			}
-		}
+
+            return message;
+        }
 
 		public virtual void OnSendAcknowledgement(IMessage<T> message, IMessageId msgId, System.Exception exception)
         {

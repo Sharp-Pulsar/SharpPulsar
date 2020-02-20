@@ -71,12 +71,11 @@ namespace SharpPulsar.Impl
 		//protected internal static readonly AtomicLongFieldUpdater<ConsumerBase> IncomingMessagesSizeUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ConsumerBase), "incomingMessagesSize");
 		protected internal ConcurrentDictionary<ConsumerBase<T>, long> IncomingMessagesSize = new ConcurrentDictionary<ConsumerBase<T>, long>();
 		protected internal volatile ITimeout BatchReceiveTimeout = null;
-        public State ConsumerState;
 
         protected ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ScheduledThreadPoolExecutor listenerExecutor, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors) : base(client, topic)
         {
             Topic = topic;
-            ConsumerState = State.Uninitialized;
+			ChangeToState(State.Uninitialized);
 			_maxReceiverQueueSize = receiverQueueSize;
 			_subscription = conf.SubscriptionName;
 			Conf = conf;
@@ -333,11 +332,9 @@ namespace SharpPulsar.Impl
 				// register the ackFuture as part of the transaction
 				return new ValueTask(Task.FromResult(txn.RegisterAckOp(doAcknowledge)));
 			}
-			else
-			{
-				return new ValueTask(Task.FromResult(doAcknowledge.Task));
-			}
-		}
+
+            return new ValueTask(Task.FromResult(doAcknowledge.Task));
+        }
 
 		public abstract TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
 		public void NegativeAcknowledge<T1>(IMessages<T1> messages)
@@ -509,7 +506,7 @@ namespace SharpPulsar.Impl
 
 		private void VerifyConsumerState()
 		{
-			switch (ConsumerState)
+			switch (GetState())
 			{
 				case State.Ready:
 				case State.Connecting:
@@ -606,7 +603,7 @@ namespace SharpPulsar.Impl
 			lock (this)
 			{
 				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if (ConsumerState == State.Closing || ConsumerState == State.Closed)
+				if (GetState() == State.Closing || GetState() == State.Closed)
 				{
 					return;
 				}

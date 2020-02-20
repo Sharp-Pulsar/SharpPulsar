@@ -94,10 +94,7 @@ namespace SharpPulsar.Impl
 					{
 						task.Result.Close();
 					}
-					else
-					{
-					}
-				}
+                }
 				else
 				{
 					task.ContinueWith(x => x.Result.Close()/*ClientCnx.Close()*/);

@@ -49,7 +49,7 @@ namespace SharpPulsar.Utility.Collections
 		private readonly ReentrantLock _tailLock = new ReentrantLock();
 		private ICondition _isNotEmpty;
 
-		private T[] _data;
+		private List<T> _data;
 		static readonly ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int> SizeUpdater = new ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int>();
 		
 		public GrowableArrayBlockingQueue() : this(64)
@@ -71,13 +71,13 @@ namespace SharpPulsar.Utility.Collections
 			_headIndex.Value = 0;
 			_tailIndex.Value = 0;
 
-			int capacity = MathUtil.FindNextPositivePowerOfTwo(initialCapacity);
-			_data = (T[])Convert.ChangeType(new object[capacity], typeof(T).MakeArrayType());
+			var capacity = MathUtil.FindNextPositivePowerOfTwo(initialCapacity);
+			_data = new List<T>(capacity);
 		}
 
 		public T remove()
 		{
-			T item = Poll();
+			var item = Poll();
 			if (item == null)
 			{
 				throw new NullReferenceException();
@@ -93,9 +93,9 @@ namespace SharpPulsar.Utility.Collections
 			{
 				if (SizeUpdater[this] > 0)
 				{
-					T item = _data[_headIndex.Value];
+					var item = _data[_headIndex.Value];
 					_data[_headIndex.Value] = default(T);
-					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 					SizeUpdater[this] = SizeUpdater[this]--;
 					return item;
 				}
@@ -112,7 +112,7 @@ namespace SharpPulsar.Utility.Collections
 
 		public  T Element()
 		{
-			T item = Peek();
+			var item = Peek();
 			if (item == null)
 			{
 				throw new NullReferenceException();
@@ -152,17 +152,17 @@ namespace SharpPulsar.Utility.Collections
 		{
 			_tailLock.Lock();
 
-			bool wasEmpty = false;
+			var wasEmpty = false;
 
 			try
 			{
-				if (SizeUpdater[this] == _data.Length)
+				if (SizeUpdater[this] == _data.Count)
 				{
 					ExpandArray();
 				}
 
 				_data[_tailIndex.Value] = e;
-				_tailIndex.Value = (_tailIndex.Value + 1) & (_data.Length - 1);
+				_tailIndex.Value = (_tailIndex.Value + 1) & (_data.Count - 1);
 				if (SizeUpdater[this] == 0)
 				{
 					wasEmpty = true;
@@ -211,9 +211,9 @@ namespace SharpPulsar.Utility.Collections
 					_isNotEmpty.Await();
 				}
 
-				T item = _data[_headIndex.Value];
+				var item = _data[_headIndex.Value];
 				_data[_headIndex.Value] = default(T);
-				_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+				_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				if (SizeUpdater[this]-- > 0)
 				{
 					// There are still entries to consume
@@ -233,7 +233,7 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				long timeoutNanos = unit.ToNanos(timeout);
+				var timeoutNanos = unit.ToNanos(timeout);
 				while (SizeUpdater[this] == 0)
 				{
 					if (timeoutNanos <= 0)
@@ -245,9 +245,9 @@ namespace SharpPulsar.Utility.Collections
 					timeoutNanos = 3000;
 				}
 
-				T item = _data[_headIndex.Value];
+				var item = _data[_headIndex.Value];
 				_data[_headIndex.Value] = default(T);
-				_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+				_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				if (SizeUpdater[this]-- > 0)
 				{
 					// There are still entries to consume
@@ -277,16 +277,16 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				int drainedItems = 0;
-				int size = SizeUpdater[this];
+				var drainedItems = 0;
+				var size = SizeUpdater[this];
 
 				while (size > 0 && drainedItems < maxElements)
 				{
-					T item = _data[_headIndex.Value];
+					var item = _data[_headIndex.Value];
 					_data[_headIndex.Value] = default(T);
 					c.Add(item);
 
-					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 					--size;
 					++drainedItems;
 				}
@@ -312,12 +312,12 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				int size = SizeUpdater[this];
+				var size = SizeUpdater[this];
 
-				for (int i = 0; i < size; i++)
+				for (var i = 0; i < size; i++)
 				{
 					_data[_headIndex.Value] = default(T);
-					_headIndex.Value = (_headIndex.Value + 1) & (_data.Length - 1);
+					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				}
 
                 SizeUpdater[this] = -size;
@@ -340,12 +340,12 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				int index = this._headIndex.Value;
-				int size = this.size();
+				var index = this._headIndex.Value;
+				var size = this.size();
 
-				for (int i = 0; i < size; i++)
+				for (var i = 0; i < size; i++)
 				{
-					T item = _data[index];
+					var item = _data[index];
 
 					if (object.Equals(item, o))
 					{
@@ -353,7 +353,7 @@ namespace SharpPulsar.Utility.Collections
 						return true;
 					}
 
-					index = (index + 1) & (_data.Length - 1);
+					index = (index + 1) & (_data.Count - 1);
 				}
 			}
 			finally
@@ -367,25 +367,25 @@ namespace SharpPulsar.Utility.Collections
 
 		private void remove(int index)
 		{
-			int tailIndex = this._tailIndex.Value;
+			var tailIndex = this._tailIndex.Value;
 
 			if (index < tailIndex)
 			{
-				Array.Copy(_data, index + 1, _data, index, tailIndex - index - 1);
+				Array.Copy(_data.ToArray(), index + 1, _data.ToArray(), index, tailIndex - index - 1);
 				this._tailIndex.Value--;
 			}
 			else
 			{
-				Array.Copy(_data, index + 1, _data, index, _data.Length - index - 1);
-				_data[_data.Length - 1] = _data[0];
+				Array.Copy(_data.ToArray(), index + 1, _data.ToArray(), index, _data.Count - index - 1);
+				_data[_data.Count - 1] = _data[0];
 				if (tailIndex > 0)
 				{
-					Array.Copy(_data, 1, _data, 0, tailIndex);
+					Array.Copy(_data.ToArray(), 1, _data.ToArray(), 0, tailIndex);
 					this._tailIndex.Value--;
 				}
 				else
 				{
-					this._tailIndex.Value = _data.Length - 1;
+					this._tailIndex.Value = _data.Count - 1;
 				}
 			}
 
@@ -395,7 +395,7 @@ namespace SharpPulsar.Utility.Collections
 			}
 			else
 			{
-				_data[_data.Length - 1] = default(T);
+				_data[_data.Count - 1] = default(T);
 			}
 
 			SizeUpdater[this] = SizeUpdater[this]--;
@@ -425,16 +425,16 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				int headIndex = this._headIndex.Value;
-				int size = this.size();
+				var headIndex = this._headIndex.Value;
+				var size = this.size();
 
-				for (int i = 0; i < size; i++)
+				for (var i = 0; i < size; i++)
 				{
-					T item = _data[headIndex];
+					var item = _data[headIndex];
 
 					action(item);
 
-					headIndex = (headIndex + 1) & (_data.Length - 1);
+					headIndex = (headIndex + 1) & (_data.Count - 1);
 				}
 
 			}
@@ -447,21 +447,21 @@ namespace SharpPulsar.Utility.Collections
 
 		public string ToString()
 		{
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 
 			_tailLock.Lock();
 			_headLock.Lock();
 
 			try
 			{
-				int headIndex = this._headIndex.Value;
-				int size = SizeUpdater[this];
+				var headIndex = this._headIndex.Value;
+				var size = SizeUpdater[this];
 
 				sb.Append('[');
 
-				for (int i = 0; i < size; i++)
+				for (var i = 0; i < size; i++)
 				{
-					T item = _data[headIndex];
+					var item = _data[headIndex];
 					if (i > 0)
 					{
 						sb.Append(", ");
@@ -469,7 +469,7 @@ namespace SharpPulsar.Utility.Collections
 
 					sb.Append(item);
 
-					headIndex = (headIndex + 1) & (_data.Length - 1);
+					headIndex = (headIndex + 1) & (_data.Count - 1);
 				}
 
 				sb.Append(']');
@@ -489,17 +489,17 @@ namespace SharpPulsar.Utility.Collections
 
 			try
 			{
-				int size = SizeUpdater[this];
-				int newCapacity = _data.Length * 2;
-				T[] newData = (T[])Convert.ChangeType(new object[newCapacity], typeof(T).MakeArrayType());
+				var size = SizeUpdater[this];
+				var newCapacity = _data.Count * 2;
+				var newData = new List<T>(newCapacity);
 
-				int oldHeadIndex = _headIndex.Value;
-				int newTailIndex = 0;
+				var oldHeadIndex = _headIndex.Value;
+				var newTailIndex = 0;
 
-				for (int i = 0; i < size; i++)
+				for (var i = 0; i < size; i++)
 				{
 					newData[newTailIndex++] = _data[oldHeadIndex];
-					oldHeadIndex = (oldHeadIndex + 1) & (_data.Length - 1);
+					oldHeadIndex = (oldHeadIndex + 1) & (_data.Count - 1);
 				}
 
 				_data = newData;

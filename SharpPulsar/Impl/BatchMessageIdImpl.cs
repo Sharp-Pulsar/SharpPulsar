@@ -65,11 +65,12 @@ namespace SharpPulsar.Impl
 			{
                 return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
 			}
-			else if (obj is MessageIdImpl other)
-			{
+
+            if (obj is MessageIdImpl other)
+            {
                 return LedgerId == other.LedgerId && EntryId == other.EntryId && PartitionIndex == other.PartitionIndex && BatchIndex == NoBatch;
-			}
-			return false;
+            }
+            return false;
 		}
 
 		public override string ToString()

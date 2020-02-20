@@ -45,13 +45,10 @@ namespace SharpPulsar.Impl
 			{
 				return list[0];
 			}
-			else
-			{
-				_currentIndex = (_currentIndex + 1) % list.Count;
-				return list[_currentIndex];
 
-			}
-		}
+            _currentIndex = (_currentIndex + 1) % list.Count;
+            return list[_currentIndex];
+        }
 
 		public Uri ResolveHostUri()
 		{

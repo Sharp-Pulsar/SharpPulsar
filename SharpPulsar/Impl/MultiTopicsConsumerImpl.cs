@@ -184,12 +184,10 @@ namespace SharpPulsar.Impl
 			{
 				return true;
 			}
-			else
-			{
-				Log.LogWarning("Topic names not unique. unique/all : {}/{}", set.Count, topics.Count);
-				return false;
-			}
-		}
+
+            Log.LogWarning("Topic names not unique. unique/all : {}/{}", set.Count, topics.Count);
+            return false;
+        }
 
 		private void StartReceivingMessages(IList<ConsumerImpl<T>> newConsumers)
 		{
@@ -398,11 +396,9 @@ namespace SharpPulsar.Impl
 					_stats.IncrementNumBatchReceiveFailed();
 					throw PulsarClientException.Unwrap(e);
 				}
-				else
-				{
-					return null;
-				}
-			}
+
+                return null;
+            }
 		}
 
 		public override ValueTask<IMessages<T>> InternalBatchReceiveAsync()
@@ -500,13 +496,11 @@ namespace SharpPulsar.Impl
                         task.SetResult(individualConsumer.AcknowledgeCumulativeAsync(innerId).AsTask());
                         return task;
                     }
-                    else
-                    {
-                        task.SetException(new PulsarClientException.NotConnectedException());
-                        return task;
-                    }
+
+                    task.SetException(new PulsarClientException.NotConnectedException());
+                    return task;
                 }
-                else
+
                 {
                     var consumer = _consumers[topicMessageId.TopicPartitionName];
 
@@ -515,11 +509,11 @@ namespace SharpPulsar.Impl
                         .ContinueWith(_=>
                         {
                             var b = UnAckedTopicMessageTracker.Remove(topicMessageId);
-							return new ValueTask(Task.FromResult(b));
+                            return new ValueTask(Task.FromResult(b));
                         }).Result;
-					task.SetResult(t.AsTask());
+                    task.SetResult(t.AsTask());
                 }
-			}
+            }
             return task;
         }
 
@@ -1004,11 +998,9 @@ namespace SharpPulsar.Impl
 					    toCloseNum.Increment();
 					    return true;
 				    }
-				    else
-				    {
-					    return false;
-				    }
-			    }).ToList().ForEach(consumer2 =>
+
+                    return false;
+                }).ToList().ForEach(consumer2 =>
 			    {
 				    consumer2.CloseAsync().AsTask().ContinueWith(ts =>
 				    {
@@ -1055,11 +1047,9 @@ namespace SharpPulsar.Impl
 			    {
 				    return true;
 			    }
-			    else
-			    {
-				    return false;
-			    }
-			}).ToList();
+
+                return false;
+            }).ToList();
 
 			var taskList = consumersToUnsub.Select(x => x.UnsubscribeAsync().AsTask()).ToList();
 
@@ -1111,11 +1101,9 @@ namespace SharpPulsar.Impl
 			    {
 				    return true;
 			    }
-			    else
-			    {
-				    return false;
-			    }
-			}).ToList();
+
+                return false;
+            }).ToList();
 
 			var taskList = consumersToClose.Select(x=> x.CloseAsync().AsTask()).ToList();
 
@@ -1227,41 +1215,42 @@ namespace SharpPulsar.Impl
 				    task.SetResult(null);
 				    return;
 			    }
-			    else if (oldPartitionNumber < currentPartitionNumber)
-			    {
-				    IList<string> newPartitions = list.Skip(currentPartitionNumber).Take(oldPartitionNumber - currentPartitionNumber).ToList();
-				    var taskList = newPartitions.Select(partitionName =>
-				    {
-					    var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					    var subTask = new TaskCompletionSource<IConsumer<T>>();
-					    var configurationData = InternalConsumerConfig;
-					    var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, true);
-					    _consumers.GetOrAdd(newConsumer.Topic, newConsumer);
-					    if (Log.IsEnabled(LogLevel.Debug))
-					    {
-						    Log.LogDebug("[{}] create consumer {} for partitionName: {}", topicName.ToString(), newConsumer.Topic, partitionName);
-					    }
-					    return subTask.Task;
-				    }).ToList();
-				    Task.WhenAll(taskList).ContinueWith(finalTask =>
-				    {
+
+                if (oldPartitionNumber < currentPartitionNumber)
+                {
+                    IList<string> newPartitions = list.Skip(currentPartitionNumber).Take(oldPartitionNumber - currentPartitionNumber).ToList();
+                    var taskList = newPartitions.Select(partitionName =>
+                    {
+                        var partitionIndex = TopicName.GetPartitionIndex(partitionName);
+                        var subTask = new TaskCompletionSource<IConsumer<T>>();
+                        var configurationData = InternalConsumerConfig;
+                        var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, true);
+                        _consumers.GetOrAdd(newConsumer.Topic, newConsumer);
+                        if (Log.IsEnabled(LogLevel.Debug))
+                        {
+                            Log.LogDebug("[{}] create consumer {} for partitionName: {}", topicName.ToString(), newConsumer.Topic, partitionName);
+                        }
+                        return subTask.Task;
+                    }).ToList();
+                    Task.WhenAll(taskList).ContinueWith(finalTask =>
+                    {
                         if (finalTask.IsFaulted)
                         {
                             Log.LogWarning("[{}] Failed to subscribe {} partition: {} - {}", Topic, topicName.ToString(), oldPartitionNumber, currentPartitionNumber, finalTask.Exception.Message);
                             task.SetException(finalTask.Exception ?? throw new InvalidOperationException());
                             return;
-						}
-					    IList<ConsumerImpl<T>> newConsumerList = newPartitions.Select(partitionTopic => _consumers[partitionTopic]).ToList();
-					    StartReceivingMessages(newConsumerList);
-					    task.SetResult(null);
-				    });
-			    }
-			    else
-			    {
-				    Log.LogError("[{}] not support shrink topic partitions. old: {}, new: {}", topicName.ToString(), oldPartitionNumber, currentPartitionNumber);
-				    task.SetException(new NotSupportedException("not support shrink topic partitions"));
-			    }
-			});
+                        }
+                        IList<ConsumerImpl<T>> newConsumerList = newPartitions.Select(partitionTopic => _consumers[partitionTopic]).ToList();
+                        StartReceivingMessages(newConsumerList);
+                        task.SetResult(null);
+                    });
+                }
+                else
+                {
+                    Log.LogError("[{}] not support shrink topic partitions. old: {}, new: {}", topicName.ToString(), oldPartitionNumber, currentPartitionNumber);
+                    task.SetException(new NotSupportedException("not support shrink topic partitions"));
+                }
+            });
 
 			return new ValueTask(task.Task);
 		}

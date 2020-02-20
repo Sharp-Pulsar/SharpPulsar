@@ -80,12 +80,10 @@ namespace SharpPulsar.Impl
 				long currentMs = _clock.Millisecond;
 				return MathUtils.SignSafeMod(currentMs / _partitionSwitchMs + _startPtnIdx, topicMetadata.NumPartitions());
 			}
-			else
-            {
-                PartitionIndexUpdater[this] = PartitionIndexUpdater[this]++;
-				return MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
-			}
-		}
+
+            PartitionIndexUpdater[this] = PartitionIndexUpdater[this]++;
+            return MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
+        }
 
 		public override int ChoosePartition<T1>(IMessage<T1> msg)
 		{

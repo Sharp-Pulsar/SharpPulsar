@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl
 		{
 			return (StateUpdater.TryUpdate(this, State.Ready, State.Uninitialized) || StateUpdater.TryUpdate(this, State.Ready, State.Connecting) || StateUpdater.TryUpdate(this, State.Ready, State.RegisteringSchema));
 		}
-        public virtual void ChangeToState(State state)
+        public  void ChangeToState(State state)
         {
             StateUpdater[this] = state;
         }
@@ -65,7 +65,7 @@ namespace SharpPulsar.Impl
 			return StateUpdater[this];
 		}
 
-		public virtual void SetState(State s)
+		public void SetState(State s)
 		{
 			StateUpdater[this] =  s;
 		}

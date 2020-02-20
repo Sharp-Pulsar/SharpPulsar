@@ -31,6 +31,8 @@ using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace SharpPulsar.Test.Impl
 {
@@ -42,9 +44,11 @@ namespace SharpPulsar.Test.Impl
 		private readonly ScheduledThreadPoolExecutor _executorService = new ScheduledThreadPoolExecutor(1);
 		private ConsumerImpl<sbyte[]> _consumer;
 		private ConsumerConfigurationData<sbyte[]> _consumerConf;
+        private readonly ITestOutputHelper _output;
 
 		public ConsumerImplTest()
 		{
+			_output= new TestOutputHelper();
             var clientConf = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
 			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf)).ConfigureFake(c=> c.Timer= new HashedWheelTimer()));
 			_consumerConf = new ConsumerConfigurationData<sbyte[]>();
@@ -82,12 +86,12 @@ namespace SharpPulsar.Test.Impl
 		{
 			var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
 			_consumer.PendingReceives.Enqueue(receiveTask);
-			System.Exception exception = new PulsarClientException.InvalidMessageException("some random exception");
+			Exception exception = new PulsarClientException.InvalidMessageException("some random exception");
 			_consumer.NotifyPendingReceivedCallback(null, exception);
 
 			try
 			{
-				receiveTask.Task.Wait();
+				receiveTask.Task.Start();
 			}
 			catch (Exception e)
 			{
@@ -101,16 +105,16 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public void TestNotifyPendingReceivedCallbackCompleteWithExceptionWhenMessageIsNull()
 		{
-            var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
-			_consumer.NotifyPendingReceivedCallback(null, null);
-
+            _consumer.NotifyPendingReceivedCallback(null, null);
+            _consumer.PendingReceives.TryPeek(out var receiveTask);
 			try
 			{
-				receiveTask.Task.Wait();
+				receiveTask.Task.Start();
 			}
 			catch (Exception e)
 			{
 				Assert.Equal("received message can't be null", e.InnerException?.Message);
+                _output.WriteLine(e.ToString());
 			}
 
 			Assert.True(receiveTask.Task.IsFaulted);

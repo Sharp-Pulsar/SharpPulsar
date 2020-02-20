@@ -187,12 +187,10 @@ namespace SharpPulsar.Impl
 				autoProduceBytesSchema.Schema = schemaInfoOptional != null ? ISchema<T>.GetSchema(schemaInfoOptional) : autoProduceBytesSchema.Schema;
 				return CreateProducerAsync(topic, conf, schema, interceptors);
 			}
-			else
-			{
-				return CreateProducerAsync(topic, conf, schema, interceptors);
-			}
 
-		}
+            return CreateProducerAsync(topic, conf, schema, interceptors);
+
+        }
 
 		private ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
 		{
@@ -276,15 +274,13 @@ namespace SharpPulsar.Impl
 				}
 				return PatternTopicSubscribeAsync(conf, schema, interceptors);
 			}
-			else if (conf.TopicNames.Count == 1)
-			{
-				return SingleTopicSubscribeAsync(conf, schema, interceptors);
-			}
-			else
-			{
-				return MultiTopicSubscribeAsync(conf, schema, interceptors);
-			}
-		}
+
+            if (conf.TopicNames.Count == 1)
+            {
+                return SingleTopicSubscribeAsync(conf, schema, interceptors);
+            }
+            return MultiTopicSubscribeAsync(conf, schema, interceptors);
+        }
 
 		private ValueTask<IConsumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
@@ -690,11 +686,9 @@ namespace SharpPulsar.Impl
 				}
 				return new ValueTask<IList<string>>(partitions);
 			}
-			else
-			{
-				return new ValueTask<IList<string>>(new List<string>() { topic });
-			}
-		}
+
+            return new ValueTask<IList<string>>(new List<string>() { topic });
+        }
 		private static MultithreadEventLoopGroup GetEventLoopGroup(ClientConfigurationData conf)
 		{
 			return EventLoopUtil.NewEventLoopGroup(conf.NumIoThreads);

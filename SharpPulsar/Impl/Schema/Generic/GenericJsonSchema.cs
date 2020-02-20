@@ -66,12 +66,10 @@ namespace SharpPulsar.Impl.Schema.Generic
 				}
 				return new GenericJsonReader(schemaVersion.Get(), readerSchema.Fields.Select(f => new Field(){Name = f.Name, Index = f.Pos}).ToList());
 			}
-			else
-			{
-				_log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), SchemaInfo.SchemaDefinition);
-				return Reader;
-			}
-		}
+
+            _log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), SchemaInfo.SchemaDefinition);
+            return Reader;
+        }
 
 		public override IGenericRecordBuilder NewRecordBuilder()
 		{

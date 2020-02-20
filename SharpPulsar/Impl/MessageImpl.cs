@@ -207,14 +207,12 @@ namespace SharpPulsar.Impl
 				{
 					return (sbyte[])(object) DataBuffer.Array;
 				}
-				else
-				{
-					// Need to copy into a smaller byte array
-					var data = new byte[DataBuffer.ReadableBytes];
-					DataBuffer.ReadBytes(data);
-					return (sbyte[])(object)data;
-				}
-			}
+
+                // Need to copy into a smaller byte array
+                var data = new byte[DataBuffer.ReadableBytes];
+                DataBuffer.ReadBytes(data);
+                return (sbyte[])(object)data;
+            }
 		}
 
 		public ISchema<T> Schema => _schema;
@@ -224,22 +222,20 @@ namespace SharpPulsar.Impl
         public sbyte[] SchemaVersion
 		{
 			get
-			{
-				if (MessageBuilder != null && MessageBuilder.HasSchemaVersion())
+            {
+                if (MessageBuilder != null && MessageBuilder.HasSchemaVersion())
 				{
 					return (sbyte[])(object)MessageBuilder.GetSchemaVersion().ToByteArray();
 				}
-				else
-				{
-					return null;
-				}
-			}
+
+                return null;
+            }
 		}
 
 		public T Value
 		{
 			get
-			{
+            {
                 // check if the schema passed in from client supports schema versioning or not
                 // this is an optimization to only get schema version when necessary
                 if (_schema.SupportSchemaVersioning())
@@ -249,16 +245,12 @@ namespace SharpPulsar.Impl
                     {
                         return _schema.Decode(Data);
                     }
-                    else
-                    {
-                        return _schema.Decode(Data, schemaversion);
-                    }
+
+                    return _schema.Decode(Data, schemaversion);
                 }
-                else
-                {
-                    return _schema.Decode(Data);
-                }
-				/*if (_schema.SchemaInfo != null && SchemaType.KEY_VALUE == _schema.SchemaInfo.Type)
+
+                return _schema.Decode(Data);
+                /*if (_schema.SchemaInfo != null && SchemaType.KEY_VALUE == _schema.SchemaInfo.Type)
 				{
 					if (_schema.SupportSchemaVersioning())
 					{
@@ -290,7 +282,7 @@ namespace SharpPulsar.Impl
 						return _schema.Decode(Data);
 					}
 				}*/
-			}
+            }
 		}
 
 		/*private T KeyValueBySchemaVersion
@@ -432,11 +424,9 @@ namespace SharpPulsar.Impl
 				{
 					return (sbyte[])(object)Convert.FromBase64String(Key);
 				}
-				else
-				{
-					return (sbyte[])(object)Encoding.UTF8.GetBytes(Key);
-				}
-			}
+
+                return (sbyte[])(object)Encoding.UTF8.GetBytes(Key);
+            }
 		}
 
 		public bool HasOrderingKey()

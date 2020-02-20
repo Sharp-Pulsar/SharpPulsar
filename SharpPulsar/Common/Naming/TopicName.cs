@@ -87,7 +87,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			try
 			{
-				if(Cache.ContainsKey(topic))
+				if(!Cache.ContainsKey(topic))
 					Cache[topic] = new TopicName(topic);
 				return Cache[topic];
 			}

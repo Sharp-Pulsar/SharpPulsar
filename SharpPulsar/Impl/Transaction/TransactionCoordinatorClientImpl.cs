@@ -69,8 +69,8 @@ namespace SharpPulsar.Impl.Transaction
 		}
 
 		public ValueTask StartAsync()
-		{
-			if (StateUpdater.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
+        {
+            if (StateUpdater.TryUpdate(this, TransactionCoordinatorClientState.Starting, TransactionCoordinatorClientState.None))
 			{
 				var tsk = _pulsarClient.Lookup.GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign).AsTask().ContinueWith(partitionMeta =>
 				{
@@ -99,11 +99,9 @@ namespace SharpPulsar.Impl.Transaction
 				});
 				return new ValueTask(tsk);
 			}
-			else
-			{
-				return new ValueTask(Task.FromException(new CoordinatorClientStateException("Can not start while current state is " + _state)));
-			}
-		}
+
+            return new ValueTask(Task.FromException(new CoordinatorClientStateException("Can not start while current state is " + _state)));
+        }
 
 		public  void Close()
 		{

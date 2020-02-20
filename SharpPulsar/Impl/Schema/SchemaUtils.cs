@@ -118,21 +118,18 @@ namespace SharpPulsar.Impl.Schema
 			{
 				return "NULL";
 			}
-			else if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
-			{
-				var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap((byte[])(object)schemaVersionBytes);
-				return bb.GetLong().ToString();
-			}
-			else if (schemaVersionBytes.Length == 0)
-			{
-				return "EMPTY";
-			}
-			else
-			{
-				return Convert.ToBase64String((byte[])(Array)schemaVersionBytes);
-			}
 
-		}
+            if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
+            {
+                var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap((byte[])(object)schemaVersionBytes);
+                return bb.GetLong().ToString();
+            }
+            if (schemaVersionBytes.Length == 0)
+            {
+                return "EMPTY";
+            }
+            return Convert.ToBase64String((byte[])(Array)schemaVersionBytes);
+        }
 
 		/// <summary>
 		/// Jsonify the schema info.

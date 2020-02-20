@@ -243,10 +243,8 @@ namespace SharpPulsar.Impl
                 {
                     throw new NullReferenceException("properties' key/value cannot be blank");
                 }
-                else
-                {
-					_conf.Properties.Add(key, value);
-				}
+
+                _conf.Properties.Add(key, value);
             });
 			return this;
 		}

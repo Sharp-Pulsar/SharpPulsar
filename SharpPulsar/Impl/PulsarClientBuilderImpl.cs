@@ -49,16 +49,14 @@ namespace SharpPulsar.Impl
 				throw new ArgumentException("Can only chose one way service URL or service URL provider.");
 			}
 			if (Conf.ServiceUrlProvider != null)
-			{
-				if (string.IsNullOrWhiteSpace(Conf.ServiceUrlProvider.ServiceUrl))
+            {
+                if (string.IsNullOrWhiteSpace(Conf.ServiceUrlProvider.ServiceUrl))
 				{
 					throw new ArgumentException("Cannot get service url from service url provider.");
 				}
-				else
-				{
-					Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
-				}
-			}
+
+                Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
+            }
 			IPulsarClient client = new PulsarClientImpl(Conf);
             Conf.ServiceUrlProvider?.Initialize(client);
             return client;

@@ -62,11 +62,12 @@ namespace SharpPulsar.Impl
 			{
                 return other1.Equals(this);
 			}
-			else if (obj is MessageIdImpl other)
-			{
+
+            if (obj is MessageIdImpl other)
+            {
                 return _ledgerId == other._ledgerId && _entryId == other._entryId && _partitionIndex == other._partitionIndex;
-			}
-			return false;
+            }
+            return false;
 		}
 
 		public override string ToString()
@@ -203,22 +204,21 @@ namespace SharpPulsar.Impl
                 {
                     return -1;
                 }
-				else if ((_entryId < other.EntryId) && (_ledgerId < other.LedgerId) && (_partitionIndex < other.PartitionIndex))
+
+                if ((_entryId < other.EntryId) && (_ledgerId < other.LedgerId) && (_partitionIndex < other.PartitionIndex))
                 {
                     return 1;
                 }
 
                 return 0;
             }
-			else if (o is TopicMessageIdImpl impl)
-			{
-				return CompareTo(impl.InnerMessageId);
-			}
-			else
-			{
-				throw new ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
-			}
-		}
+
+            if (o is TopicMessageIdImpl impl)
+            {
+                return CompareTo(impl.InnerMessageId);
+            }
+            throw new ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
+        }
 	}
 
 }

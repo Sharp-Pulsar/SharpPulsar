@@ -592,16 +592,14 @@ namespace SharpPulsar.Impl
 		private Commands.ChecksumType ChecksumType
 		{
 			get
-			{
-				if (ConnectionHandler.ClientCnx == null || ConnectionHandler.ClientCnx.RemoteEndpointProtocolVersion >= BrokerChecksumSupportedVersion())
+            {
+                if (ConnectionHandler.ClientCnx == null || ConnectionHandler.ClientCnx.RemoteEndpointProtocolVersion >= BrokerChecksumSupportedVersion())
 				{
 					return Commands.ChecksumType.Crc32C;
 				}
-				else
-				{
-					return Commands.ChecksumType.None;
-				}
-			}
+
+                return Commands.ChecksumType.None;
+            }
 		}
 
 		private bool CanAddToBatch(MessageImpl<T> msg)
@@ -979,15 +977,13 @@ namespace SharpPulsar.Impl
 							op.Recycle();
 							return;
 						}
-						else
-						{
-							if (Log.IsEnabled(LogLevel.Debug))
-							{
-								Log.LogDebug("[{}] [{}] Message is not corrupted, retry send-message with sequenceId {}", Topic, HandlerName, sequenceId);
-							}
-						}
-        
-					}
+
+                        if (Log.IsEnabled(LogLevel.Debug))
+                        {
+                            Log.LogDebug("[{}] [{}] Message is not corrupted, retry send-message with sequenceId {}", Topic, HandlerName, sequenceId);
+                        }
+
+                    }
 					else
 					{
 						if (Log.IsEnabled(LogLevel.Debug))
@@ -1042,12 +1038,10 @@ namespace SharpPulsar.Impl
 				}
 				return true;
 			}
-			else
-			{
-				Log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (op.Cmd == null ? null : op.Cmd.GetType().FullName));
-				return false;
-			}
-		}
+
+            Log.LogWarning("[{}] Failed while casting {} into ByteBufPair", HandlerName, (op.Cmd == null ? null : op.Cmd.GetType().FullName));
+            return false;
+        }
 
         public void ConnectionOpened(ClientCnx cnx)
 		{
@@ -1213,12 +1207,10 @@ namespace SharpPulsar.Impl
 						ProducerCreatedTask.SetResult(this);
 						return;
 					}
-					else
-					{
-						cnx.Channel().CloseAsync();
-						return;
-					}
-				}
+
+                    cnx.Channel().CloseAsync();
+                    return;
+                }
 				Log.LogInformation("[{}] [{}] Re-Sending {} messages to server", Topic, HandlerName, messagesToResend);
 				RecoverProcessOpSendMsgFrom(cnx, null);
 			}
