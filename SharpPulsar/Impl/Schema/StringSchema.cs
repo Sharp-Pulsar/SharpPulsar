@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl.Schema
 				Schema = Array.Empty<sbyte>()
 			};
 
-			_utf8 = new StringSchema(CharSet.Ansi);
+			_utf8 = new StringSchema(Encoding.UTF8.EncodingName);
 		}
 
 		private static readonly FastThreadLocal<sbyte[]> TmpBuffer = new FastThreadLocalAnonymousInnerClass();
@@ -78,27 +78,23 @@ namespace SharpPulsar.Impl.Schema
 			{
 				return _utf8;
 			}
-			else
-            {
-                var charSet = Enum.GetValues(typeof(CharSet)).Cast<CharSet>().FirstOrDefault(x => x.ToString().Equals(charsetName, StringComparison.OrdinalIgnoreCase));
-				return new StringSchema(charSet);
-			}
-		}
+            return new StringSchema(Encoding.GetEncoding(charsetName).EncodingName);
+        }
 
 		public static StringSchema Utf8()
 		{
 			return _utf8;
 		}
 
-		private readonly CharSet _charset;
+		private readonly string _charset;
 
 		public StringSchema()
 		{
-			this._charset = DefaultCharset;
+			this._charset = Encoding.UTF8.EncodingName;
 			this.SchemaInfo = DefaultSchemaInfo;
 		}
 
-		public StringSchema(CharSet charset)
+		public StringSchema(string charset)
 		{
 			this._charset = charset;
 			IDictionary<string, string> properties = new Dictionary<string, string>

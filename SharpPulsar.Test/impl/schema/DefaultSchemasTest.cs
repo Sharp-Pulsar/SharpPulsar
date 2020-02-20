@@ -70,7 +70,7 @@ public class DefaultSchemasTest:IDisposable
             Assert.Equal(stringSchema.Encode(testString), testBytes);
 
             var bytes2 = (sbyte[])(object)Encoding.Unicode.GetBytes(testString);
-			var stringSchemaUtf16 = new StringSchema(CharSet.Unicode);
+			var stringSchemaUtf16 = new StringSchema(Encoding.UTF8.EncodingName);
             Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
             Assert.Equal(stringSchemaUtf16.Encode(testString), bytes2);
 		}

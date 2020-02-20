@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl
 
         private const long SerialVersionUid = 1L;
         internal ITimeout StatTimeout { get; set; }
-        [NonSerialized] private ProducerImpl<object> _producer;
+        [NonSerialized] private IProducer<T> _producer;
         [NonSerialized] private PulsarClientImpl _pulsarClient;
         private long _oldTime;
         private long _statsIntervalSeconds;
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl
         }
 
         public ProducerStatsRecorderImpl(PulsarClientImpl pulsarClient, ProducerConfigurationData conf,
-            ProducerImpl<T> producer)
+            IProducer<T> producer)
         {
             Dec.NumberDecimalSeparator = "0.000";
             ThroughputFormat.NumberDecimalSeparator = "0.00";
@@ -263,7 +263,7 @@ namespace SharpPulsar.Impl
                             "[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " +
                             "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " +
                             "Ack received rate: {} ack/s --- Failed messages: {}", _outerInstance._producer.Topic,
-                            _outerInstance._producer.ProducerName, _outerInstance._producer.PendingQueueSize,
+                            //_outerInstance._producer.ProducerName, _outerInstance._producer.PendingQueueSize,
                             _outerInstance.SendMsgsRate.ToString(ThroughputFormat),
                             (_outerInstance.SendBytesRate / 1024 / 1024 * 8).ToString(ThroughputFormat),
                             (_outerInstance._latencyPctValues[0] / 1000.0).ToString(Dec),

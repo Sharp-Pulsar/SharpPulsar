@@ -101,7 +101,8 @@ namespace SharpPulsar.Impl.Auth
 
 		public ValueTask DisposeAsync()
 		{
-			throw new NotImplementedException();
+			Dispose();
+			return new ValueTask(Task.CompletedTask);
 		}
 
         public void Dispose()

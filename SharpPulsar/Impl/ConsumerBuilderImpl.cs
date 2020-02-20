@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask<IConsumer<T>> SubscribeAsync()
+		public virtual ValueTask<IConsumer<T>> SubscribeAsync()
 		{
 			if (_conf.TopicNames.Count < 1 && _conf.TopicsPattern == null)
 			{
@@ -98,9 +98,9 @@ namespace SharpPulsar.Impl
 
 		public IConsumerBuilder<T> Topic(params string[] topicNames)
 		{
-			if(topicNames != null && (topicNames == null && topicNames.Length < 1))
+			if(topicNames == null || topicNames.Length < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
-			(topicNames ?? throw new ArgumentNullException(nameof(topicNames))).ToList().ForEach(topicName =>
+			(topicNames).ToList().ForEach(topicName =>
             {
                 if (string.IsNullOrWhiteSpace(topicName))
                     throw new ArgumentException("topicNames cannot have blank topic");
@@ -113,9 +113,9 @@ namespace SharpPulsar.Impl
 
 		public IConsumerBuilder<T> Topics(IList<string> topicNames)
 		{
-            if (topicNames != null && (topicNames == null && topicNames.Count < 1))
+            if (topicNames == null || topicNames.Count < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
-            (topicNames ?? throw new ArgumentNullException(nameof(topicNames))).ToList().ForEach(topicName =>
+            (topicNames).ToList().ForEach(topicName =>
             {
                 if (string.IsNullOrWhiteSpace(topicName))
                     throw new ArgumentException("topicNames cannot have blank topic");
@@ -250,9 +250,11 @@ namespace SharpPulsar.Impl
                 throw new ArgumentException("properties cannot be empty");
 			properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
             {
-                if (string.IsNullOrWhiteSpace(entry.Key) && string.IsNullOrWhiteSpace(entry.Value))
+                if (entry.Key == null || entry.Value == null)
                     throw new ArgumentException("properties' key/value cannot be blank");
-                _conf.Properties.Add(entry.Key, entry.Value);
+                if (string.IsNullOrWhiteSpace(entry.Key) || string.IsNullOrWhiteSpace(entry.Value))
+                    throw new ArgumentException("properties' key/value cannot be blank");
+				_conf.Properties.Add(entry.Key, entry.Value);
 
 			});
             return this;

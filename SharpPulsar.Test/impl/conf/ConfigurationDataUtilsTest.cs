@@ -34,7 +34,7 @@ namespace SharpPulsar.Test.Impl.conf
 		public void TestLoadClientConfigurationData()
 		{
 			ClientConfigurationData confData = new ClientConfigurationData();
-			confData.ServiceUrl = "pulsar://unknown:6650";
+			confData.ServiceUrl = "pulsar://localhost:6650";
 			confData.MaxLookupRequest = 600;
 			confData.NumIoThreads = 33;
 			IDictionary<string, object> config = new Dictionary<string, object>();
@@ -119,13 +119,13 @@ namespace SharpPulsar.Test.Impl.conf
 		public void TestConfigBuilder()
 		{
 			ClientConfigurationData clientConfig = new ClientConfigurationData();
-			clientConfig.ServiceUrl = "pulsar://unknown:6650";
+			clientConfig.ServiceUrl = "pulsar://localhost:6650";
 			clientConfig.StatsIntervalSeconds = 80;
 
 			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig);
 			Assert.NotNull(pulsarClient);
 
-            Assert.Equal("pulsar://unknown:6650", pulsarClient.Configuration.ServiceUrl);
+            Assert.Equal("pulsar://localhost:6650", pulsarClient.Configuration.ServiceUrl);
             Assert.Equal(1, pulsarClient.Configuration.NumListenerThreads);
             Assert.Equal(80, pulsarClient.Configuration.StatsIntervalSeconds);
 		}

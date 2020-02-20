@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using Xunit;
@@ -46,8 +49,10 @@ namespace SharpPulsar.Test.Impl.schema.generic
 		[Fact]
 		public void TestAutoJsonSchema()
 		{
+            var config = new ClientConfigurationData {ServiceUrl = "pulsar://localhost:6650"};
+            var client = new PulsarClientImpl(config);
 			// configure the schema info provider
-			var multiVersionSchemaInfoProvider = A.Fake<MultiVersionSchemaInfoProvider>();
+			var multiVersionSchemaInfoProvider = A.Fake<MultiVersionSchemaInfoProvider>(x=> x.WithArgumentsForConstructor(()=> new MultiVersionSchemaInfoProvider(new TopicName(), client)));
 			
 			// configure encode schema
 			var encodeSchema = ISchema<Foo>.Json(new Foo());

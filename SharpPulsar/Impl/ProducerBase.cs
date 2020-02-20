@@ -48,8 +48,8 @@ namespace SharpPulsar.Impl
 
 
         protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
-		{
-			Stats = new ProducerStatsRecorderImpl<T>(client, conf, (ProducerImpl<T>)producerCreatedFuture.Task.Result);
+        {
+			Stats = new ProducerStatsRecorderImpl<T>(client, conf, this);
 			ProducerCreatedTask = producerCreatedFuture;
 			Conf = conf;
 			Schema = schema;
@@ -159,7 +159,7 @@ namespace SharpPulsar.Impl
 
 		public abstract ValueTask CloseAsync();
 
-		public virtual string Topic => Topic;
+        public new virtual string Topic { get; set; }
 
         public virtual ProducerConfigurationData Configuration => Conf;
 
@@ -182,12 +182,9 @@ namespace SharpPulsar.Impl
 		}
 
 		public virtual void OnSendAcknowledgement(IMessage<T> message, IMessageId msgId, System.Exception exception)
-		{
-			if (Interceptors != null)
-			{
-				Interceptors.OnSendAcknowledgement(this, message, msgId,exception);
-			}
-		}
+        {
+            Interceptors?.OnSendAcknowledgement(this, message, msgId,exception);
+        }
 
 		public override string ToString()
 		{

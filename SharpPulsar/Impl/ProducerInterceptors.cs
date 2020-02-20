@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 	/// A container that holds the list<seealso cref="ProducerInterceptor"/>
 	/// and wraps calls to the chain of custom interceptors.
 	/// </summary>
-	public sealed class ProducerInterceptors : IDisposable
+	public class ProducerInterceptors : IDisposable
 	{
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ProducerInterceptors>();
 

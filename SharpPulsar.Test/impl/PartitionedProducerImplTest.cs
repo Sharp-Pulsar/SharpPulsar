@@ -54,14 +54,11 @@ namespace SharpPulsar.Test.Impl
             _schema = A.Fake<ISchema<sbyte[]>>();
 			_producerInterceptors = A.Fake<ProducerInterceptors>(x=> x.WithArgumentsForConstructor(()=> new ProducerInterceptors(new List<IProducerInterceptor>()))); 
 			_producerCreatedTask =A.Fake<TaskCompletionSource<IProducer<sbyte[]>>>();
-            var clientConfigurationData = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));// Mock.Get(new ClientConfigurationData()).Object;
-            _client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfigurationData))); 
-			var timer = A.Fake<HashedWheelTimer>();
+            var clientConfigurationData = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
+            _client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfigurationData)).ConfigureFake(c => c.Configuration = clientConfigurationData).ConfigureFake(c => c.Timer = new HashedWheelTimer())); 
+			var timer = A.Fake<ITimer>();
 
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes); 
-
-			A.CallToSet(() => _client.Configuration).To(clientConfigurationData);
-            A.CallToSet(() => _client.Timer).To(timer);
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
             A.CallTo(() =>_client.NewProducer()).Returns(_producerBuilderImpl);
 		}
 		[Fact]
@@ -100,12 +97,14 @@ namespace SharpPulsar.Test.Impl
 		}
 
 		private IMessageRouter GetMessageRouter(ProducerConfigurationData producerConfigurationData)
-		{
-			var impl = new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, _producerCreatedTask, _schema, _producerInterceptors);
+        {
+            var t = _producerCreatedTask;
+            var impl = new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, t,
+                _schema, _producerInterceptors);//A.Fake<PartitionedProducerImpl<sbyte[]>>(x=> x.WithArgumentsForConstructor(() => new PartitionedProducerImpl<sbyte[]>(_client, TopicName, producerConfigurationData, 2, t, _schema, _producerInterceptors))); 
 
 			var routerPolicy = impl.GetType().GetField("_routerPolicy", BindingFlags.NonPublic | BindingFlags.Instance);
 			
-			var messageRouter = (IMessageRouter) routerPolicy?.GetValue(impl);
+			var messageRouter = (IMessageRouter) routerPolicy?.GetValue(null);
 			Assert.NotNull(messageRouter);
 			return messageRouter;
 		}

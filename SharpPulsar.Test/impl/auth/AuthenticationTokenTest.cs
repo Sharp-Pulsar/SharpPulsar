@@ -54,12 +54,14 @@ namespace SharpPulsar.Test.Impl.auth
 		[Fact]
 		public  void TestAuthTokenClientConfig()
 		{
-			var clientConfig = new ClientConfigurationData();
-			clientConfig.ServiceUrl = "pulsar://service-url";
-			clientConfig.AuthPluginClassName = typeof(AuthenticationToken).FullName;
-			clientConfig.AuthParams = "token-xyz";
+            var clientConfig = new ClientConfigurationData
+            {
+                ServiceUrl = "pulsar://localhost:6650",
+                AuthPluginClassName = typeof(AuthenticationToken).FullName,
+                AuthParams = "token-xyz"
+            };
 
-			var pulsarClient = new PulsarClientImpl(clientConfig);
+            var pulsarClient = new PulsarClientImpl(clientConfig);
 
 			var authToken = pulsarClient.Configuration.Authentication;
 			Assert.Equal("token", authToken.AuthMethodName);
@@ -93,7 +95,7 @@ namespace SharpPulsar.Test.Impl.auth
 		public void TestAuthTokenConfigFromFile()
 		{
             var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
-            using (var fs = new FileStream(tokenFile, FileMode.Open))
+            using (var fs = new FileStream(tokenFile, FileMode.OpenOrCreate))
             {
                 var info = new UTF8Encoding(true).GetBytes("my-test-token-string");
                 fs.Write(info, 0, info.Length);
@@ -129,7 +131,7 @@ namespace SharpPulsar.Test.Impl.auth
 		public  void TestAuthTokenConfigFromFileWithNewline()
 		{
             var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
-            using (var fs = new FileStream(tokenFile, FileMode.Open))
+            using (var fs = new FileStream(tokenFile, FileMode.OpenOrCreate))
             {
                 var info = new UTF8Encoding(true).GetBytes("  my-test-token-string  \r\n");
                 fs.Write(info, 0, info.Length);

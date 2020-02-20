@@ -112,7 +112,7 @@ namespace SharpPulsar.Impl
 
 
 
-		public IProducerBuilder<sbyte[]> NewProducer()
+		public virtual IProducerBuilder<sbyte[]> NewProducer()
 		{
 			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
 		}
@@ -152,7 +152,7 @@ namespace SharpPulsar.Impl
 			return CreateProducerAsync(conf, schema, null);
 		}
 
-		public ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
+		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
 		{
 			if (conf == null)
 			{
@@ -582,7 +582,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask<ClientCnx> GetConnection(in string topic)
+		public virtual ValueTask<ClientCnx> GetConnection(in string topic)
 		{
 			var topicName = TopicName.Get(topic);
 			var lkup = Lookup.GetBroker(topicName).Result;
@@ -819,7 +819,7 @@ namespace SharpPulsar.Impl
 
 		public void Dispose()
 		{
-			throw new NotImplementedException();
+			
 		}
 	}
 

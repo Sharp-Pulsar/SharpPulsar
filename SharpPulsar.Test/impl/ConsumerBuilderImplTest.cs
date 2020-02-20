@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
@@ -58,51 +59,60 @@ namespace SharpPulsar.Test.Impl
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesVarargsIsNull()
 		{
-			_consumerBuilderImpl.Topic(null);
+            Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(null));
+            //Assert.Equal("Value cannot be null. (Parameter 'topicNames')", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesVarargsHasNullTopic()
 		{
-			_consumerBuilderImpl.Topic("my-topic", null);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic("my-topic", null));
+            Assert.Equal("topicNames cannot have blank topic", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesVarargsHasBlankTopic()
 		{
-			_consumerBuilderImpl.Topic("my-topic", "  ");
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic("my-topic", "  "));
+            Assert.Equal("topicNames cannot have blank topic", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesIsNull()
 		{
-			_consumerBuilderImpl.Topics(null);
+            Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topics(null));
+            //Assert.Equal("Value cannot be null. (Parameter 'topicNames')", exception.Message);
 		}
         [Fact]
 		public  void TestConsumerBuilderImplWhenTopicNamesIsEmpty()
 		{
-			_consumerBuilderImpl.Topics(new List<string>());
-		}
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topics(new List<string>()));
+			Assert.Equal("Passed in topicNames should not be null or empty.", exception.Message);
+        }
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesHasBlankTopic()
 		{
 			IList<string> topicNames = new List<string>(){"my-topic", " "};
-			_consumerBuilderImpl.Topics(topicNames);
+			var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topics(topicNames));
+            Assert.Equal("topicNames cannot have blank topic", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenTopicNamesHasNullTopic()
 		{
 			IList<string> topicNames = new List<string>(){"my-topic", null};
-			_consumerBuilderImpl.Topics(topicNames);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topics(topicNames));
+            Assert.Equal("topicNames cannot have blank topic", exception.Message);
 		}
 
 		[Fact]
 		public void TestConsumerBuilderImplWhenSubscriptionNameIsNull()
 		{
-			_consumerBuilderImpl.Topic(TopicName).SubscriptionName(null);
+            var exception = Assert.Throws<NullReferenceException>(() => _consumerBuilderImpl.Topic(TopicName).SubscriptionName(null));
+            Assert.Equal("subscriptionName cannot be blank", exception.Message);
 		}
 
 		[Fact]
 		public void TestConsumerBuilderImplWhenSubscriptionNameIsBlank()
 		{
-			_consumerBuilderImpl.Topic(TopicName).SubscriptionName(" ");
+            var exception = Assert.Throws<NullReferenceException>(() => _consumerBuilderImpl.Topic(TopicName).SubscriptionName(" "));
+            Assert.Equal("subscriptionName cannot be blank", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenConsumerEventListenerIsNull()
@@ -124,18 +134,21 @@ namespace SharpPulsar.Test.Impl
         [Fact]
 		public void TestConsumerBuilderImplWhenConsumerNameIsNull()
 		{
-			_consumerBuilderImpl.Topic(TopicName).ConsumerName(null);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(TopicName).ConsumerName(null));
+			Assert.Equal("consumerName cannot be blank", exception.Message);
 		}
 
         [Fact]
 		public void TestConsumerBuilderImplWhenConsumerNameIsBlank()
 		{
-			_consumerBuilderImpl.Topic(TopicName).ConsumerName(" ");
+			var exception = Assert.Throws<ArgumentException>(()=>_consumerBuilderImpl.Topic(TopicName).ConsumerName(" "));
+			Assert.Equal("consumerName cannot be blank", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertyKeyIsNull()
 		{
-			_consumerBuilderImpl.Topic(TopicName).Property(null, "Test-Value");
+            var exception = Assert.Throws<ArgumentNullException>(() => _consumerBuilderImpl.Topic(TopicName).Property(null, "Test-Value"));
+            Assert.Equal("Value cannot be null. (Parameter 'key')", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertyKeyIsBlank()
@@ -162,49 +175,43 @@ namespace SharpPulsar.Test.Impl
 
 			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
 		}
-        [Fact]
-		public void TestConsumerBuilderImplWhenPropertiesKeyIsNull()
-		{
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties[null] = "Test-Value";
-
-			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
-		}
+        
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertiesKeyIsBlank()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
 			properties["  "] = "Test-Value";
-
-			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
-		}
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(TopicName).Properties(properties));
+			Assert.Equal("properties' key/value cannot be blank", exception.Message);
+        }
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertiesValueIsNull()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
 			properties["Test-Key"] = null;
-
-			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(TopicName).Properties(properties));
+            Assert.Equal("properties' key/value cannot be blank", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertiesValueIsBlank()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
 			properties["Test-Key"] = "   ";
-
-			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(TopicName).Properties(properties));
+            Assert.Equal("properties' key/value cannot be blank", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertiesIsEmpty()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
-
-			_consumerBuilderImpl.Topic(TopicName).Properties(properties);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.Topic(TopicName).Properties(properties));
+            Assert.Equal("properties cannot be empty", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPropertiesIsNull()
 		{
-			_consumerBuilderImpl.Topic(TopicName).Properties(null);
+            Assert.Throws<NullReferenceException>(() => _consumerBuilderImpl.Topic(TopicName).Properties(null));
+           
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenSubscriptionInitialPositionIsNull()
@@ -219,22 +226,26 @@ namespace SharpPulsar.Test.Impl
         [Fact]
 		public void TestConsumerBuilderImplWhenNegativeAckRedeliveryDelayPropertyIsNegative()
 		{
-			_consumerBuilderImpl.NegativeAckRedeliveryDelay(-1, TimeUnit.MILLISECONDS);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.NegativeAckRedeliveryDelay(-1, TimeUnit.MILLISECONDS));
+            Assert.Equal("redeliveryDelay needs to be >= 0", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenPriorityLevelPropertyIsNegative()
 		{
-			_consumerBuilderImpl.PriorityLevel(-1);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.PriorityLevel(-1));
+            Assert.Equal("priorityLevel needs to be >= 0", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenMaxTotalReceiverQueueSizeAcrossPartitionsPropertyIsNegative()
 		{
-			_consumerBuilderImpl.MaxTotalReceiverQueueSizeAcrossPartitions(-1);
-		}
+			var exception = Assert.Throws<ArgumentException>(()=>_consumerBuilderImpl.MaxTotalReceiverQueueSizeAcrossPartitions(-1));
+			Assert.Equal("maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0", exception.Message);
+        }
         [Fact]
 		public void TestConsumerBuilderImplWhenPatternAutoDiscoveryPeriodPropertyIsNegative()
 		{
-			_consumerBuilderImpl.PatternAutoDiscoveryPeriod(-1);
+            var exception = Assert.Throws<ArgumentException>(() => _consumerBuilderImpl.PatternAutoDiscoveryPeriod(-1));
+            Assert.Equal("periodInMinutes needs to be >= 0", exception.Message);
 		}
         [Fact]
 		public void TestConsumerBuilderImplWhenBatchReceivePolicyIsNull()

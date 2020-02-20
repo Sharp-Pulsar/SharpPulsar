@@ -117,7 +117,7 @@ namespace SharpPulsar.Impl
 			return new StringSchema();
 		}
 
-		public static ISchema<string> NewStringSchema(CharSet charset)
+		public static ISchema<string> NewStringSchema(string charset)
 		{
 			return new StringSchema(charset);
 		}

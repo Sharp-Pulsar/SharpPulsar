@@ -46,19 +46,17 @@ namespace SharpPulsar.Test.Impl
 		public ConsumerImplTest()
 		{
             var clientConf = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
-			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf)));
+			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf)).ConfigureFake(c=> c.Timer= new HashedWheelTimer()));
 			_consumerConf = new ConsumerConfigurationData<sbyte[]>();
 
-			ValueTask<ClientCnx> clientCnxTask = new ValueTask<ClientCnx>();
-			TaskCompletionSource<IConsumer<sbyte[]>> subscribeFuture = new TaskCompletionSource<IConsumer<sbyte[]>>();
-			string topic = "non-persistent://tenant/ns1/my-topic";
+			var clientCnxTask = new ValueTask<ClientCnx>();
+			var subscribeFuture = new TaskCompletionSource<IConsumer<sbyte[]>>();
+			var topic = "non-persistent://tenant/ns1/my-topic";
 
 			// Mock connection for grabCnx()
 			A.CallTo(() => client.GetConnection(A<string>._)).Returns(clientCnxTask);
 			clientConf.OperationTimeoutMs = 100;
 			clientConf.StatsIntervalSeconds = 0;
-            A.CallTo(() => client.Configuration).Returns(clientConf);
-            A.CallToSet(()=> client.Timer).To(new HashedWheelTimer());
 
 			_consumerConf.SubscriptionName = "test-sub";
 			_consumer = ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true);
@@ -73,8 +71,8 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public void TestCorrectBackoffConfiguration()
 		{
-			Backoff backoff = _consumer.Handler.Backoff;
-			ClientConfigurationData clientConfigurationData = new ClientConfigurationData();
+			var backoff = _consumer.Handler.Backoff;
+			var clientConfigurationData = new ClientConfigurationData();
 			Assert.Equal(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(clientConfigurationData.MaxBackoffIntervalNanos), backoff.Max);
 			Assert.Equal(BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(clientConfigurationData.InitialBackoffIntervalNanos), backoff.Next());
 		}

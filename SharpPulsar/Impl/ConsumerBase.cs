@@ -56,7 +56,8 @@ namespace SharpPulsar.Impl
 		private readonly string _subscription;
 		public readonly ConsumerConfigurationData<T> Conf;
 		private readonly string _consumerName;
-        public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
+
+		public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
@@ -74,6 +75,7 @@ namespace SharpPulsar.Impl
 
         protected ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ScheduledThreadPoolExecutor listenerExecutor, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors) : base(client, topic)
         {
+            Topic = topic;
             ConsumerState = State.Uninitialized;
 			_maxReceiverQueueSize = receiverQueueSize;
 			_subscription = conf.SubscriptionName;
@@ -427,9 +429,8 @@ namespace SharpPulsar.Impl
 
 		public abstract int NumMessagesInQueue();
 
-		
-		public  string Topic => Topic;
 
+        public new string Topic { get; }
         public  string Subscription => _subscription;
 
         public virtual string ConsumerName => _consumerName;
