@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 		Closing,
 		Closed
 	}
-	public sealed class PulsarClientImpl : IPulsarClient
+	public class PulsarClientImpl : IPulsarClient
 	{
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger<PulsarClientImpl>();
 

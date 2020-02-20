@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Impl;
@@ -51,20 +51,18 @@ namespace SharpPulsar.Test.Impl
 
 		public PartitionedProducerImplTest()
 		{
-            _schema = new Mock<ISchema<sbyte[]>>().Object;
-			_producerInterceptors = Mock.Get(new ProducerInterceptors(new List<IProducerInterceptor>())).Object; 
-			_producerCreatedTask = Mock.Get(new TaskCompletionSource<IProducer<sbyte[]>>()).Object;
-			var clientConfigurationData = Mock.Get(new ClientConfigurationData()).Object;
-            var c = new PulsarClientImpl(clientConfigurationData);
-            var mock = Mock.Get(c);
-            _client = mock.Object;
-			var timer = Mock.Get(new HashedWheelTimer()).Object;
+            _schema = A.Fake<ISchema<sbyte[]>>();
+			_producerInterceptors = A.Fake<ProducerInterceptors>(x=> x.WithArgumentsForConstructor(()=> new ProducerInterceptors(new List<IProducerInterceptor>()))); 
+			_producerCreatedTask =A.Fake<TaskCompletionSource<IProducer<sbyte[]>>>();
+            var clientConfigurationData = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));// Mock.Get(new ClientConfigurationData()).Object;
+            _client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfigurationData))); 
+			var timer = A.Fake<HashedWheelTimer>();
 
 			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes); 
 
-			mock.Setup(x => x.Configuration).Returns(clientConfigurationData);
-            mock.Setup(x => x.Timer).Returns(timer);
-            mock.Setup(x =>x.NewProducer()).Returns(_producerBuilderImpl);
+			A.CallToSet(() => _client.Configuration).To(clientConfigurationData);
+            A.CallToSet(() => _client.Timer).To(timer);
+            A.CallTo(() =>_client.NewProducer()).Returns(_producerBuilderImpl);
 		}
 		[Fact]
 		public void TestSinglePartitionMessageRouterImplInstance()

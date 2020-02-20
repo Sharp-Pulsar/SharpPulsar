@@ -44,6 +44,15 @@ namespace SharpPulsar.Common
 		private const int HttpPort = 80;
 		private const int HttpsPort = 443;
 
+        private ServiceUri(string serviceName, string[] serviceInfos, string serviceUser, string[] serviceHosts, string servicePath, Uri uri)
+        {
+            _serviceName = serviceName;
+            _serviceInfos = serviceInfos;
+            _serviceUser = serviceUser;
+            _serviceHosts = serviceHosts;
+            _servicePath = servicePath;
+            _uri = uri;
+        }
 		/// <summary>
 		/// Create a service uri instance from a uri string.
 		/// </summary>
@@ -57,7 +66,7 @@ namespace SharpPulsar.Common
 				throw new NullReferenceException("service uri string is null");
 
 			// a service uri first should be a valid java.net.URI
-			Uri uri = new Uri(uriStr);
+			var uri = new Uri(uriStr);
 
 			return Create(uri);
 		}
@@ -76,23 +85,23 @@ namespace SharpPulsar.Common
 
 			string serviceName;
 			string[] serviceInfos;
-			string scheme = uri.Scheme;
+			var scheme = uri.Scheme;
             {
                 scheme = scheme.ToLower();
                 const string serviceSep = "+";
-                string[] schemeParts = scheme.Split(serviceSep);
+                var schemeParts = scheme.Split(serviceSep);
                 serviceName = schemeParts[0];
                 serviceInfos = new string[schemeParts.Length - 1];
                 Array.Copy(schemeParts, 1, serviceInfos, 0, serviceInfos.Length);
             }
 
-            string userAndHostInformation = uri.Authority;
+            var userAndHostInformation = uri.Authority;
 			if(string.IsNullOrWhiteSpace(userAndHostInformation))
 				throw new ArgumentNullException("authority component is missing in service uri : " + uri);
 
 			string serviceUser;
 			IList<string> serviceHosts;
-			int atIndex = userAndHostInformation.IndexOf('@');
+			var atIndex = userAndHostInformation.IndexOf('@');
 			if (atIndex > 0)
 			{
 				serviceUser = userAndHostInformation.Substring(0, atIndex);
@@ -105,12 +114,12 @@ namespace SharpPulsar.Common
 			}
 			serviceHosts = serviceHosts.Select(host => ValidateHostName(serviceName, serviceInfos, host)).ToList();
 
-			string servicePath = uri.AbsolutePath;
+			var servicePath = uri.AbsolutePath;
 			if(string.IsNullOrWhiteSpace(servicePath))
 				throw new ArgumentNullException("service path component is missing in service uri : " + uri);
 
-			//return new ServiceUri(serviceName, serviceInfos, serviceUser, ((List<string>)serviceHosts).ToArray(), servicePath, uri);
-            return null;
+			return new ServiceUri(serviceName, serviceInfos, serviceUser, ((List<string>)serviceHosts).ToArray(), servicePath, uri);
+           
         }
 
 		private static string ValidateHostName(string serviceName, string[] serviceInfos, string hostname)
@@ -124,12 +133,12 @@ namespace SharpPulsar.Common
 			{
 				throw new ArgumentException("Invalid hostname : " + hostname);
 			}
-			string host = uri.Host;
+			var host = uri.Host;
 			if (string.ReferenceEquals(host, null))
 			{
 				throw new ArgumentException("Invalid hostname : " + hostname);
 			}
-			int port = uri.Port;
+			var port = uri.Port;
 			if (port == -1)
 			{
 				port = GetServicePort(serviceName, serviceInfos);
@@ -143,16 +152,20 @@ namespace SharpPulsar.Common
 		private readonly string[] _serviceHosts;
 		private readonly string _servicePath;
 		private readonly Uri _uri;
+        private readonly string _serviceScheme;
 
+		public virtual string ServiceUser => _serviceUser;
+        public virtual string ServicePath => _servicePath;
+        public virtual Uri Uri => _uri;
 		public virtual string[] ServiceInfos => _serviceInfos;
 
-        public virtual string[] ServiceHosts => _serviceHosts;
+		public virtual string[] ServiceHosts => _serviceHosts;
 
         public virtual string ServiceScheme
 		{
 			get
 			{
-				if (null == _serviceName)
+				if (string.IsNullOrWhiteSpace(_serviceName))
 				{
 					return null;
 				}

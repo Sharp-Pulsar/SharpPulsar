@@ -32,6 +32,7 @@ namespace SharpPulsar.Impl
     {
 		private  int _currentIndex;
 		private volatile IList<IPEndPoint> _addressList;
+        private ServiceUri _serviceUri;
 
 		public  IPEndPoint ResolveHost()
 		{
@@ -63,8 +64,8 @@ namespace SharpPulsar.Impl
 
 		public ServiceUri ServiceUri
         {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
+            get => _serviceUri;
+            set => _serviceUri = value;
         }
 
         public void UpdateServiceUrl(string serviceUrl)
@@ -97,7 +98,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 			_addressList = addresses;
-			ServiceUri = uri;
+			_serviceUri = uri;
 			_currentIndex = RandomIndex(addresses.Count);
 		}
 

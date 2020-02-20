@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FakeItEasy;
+using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
@@ -46,7 +47,7 @@ namespace SharpPulsar.Test.Impl.schema.generic
 		public void TestAutoJsonSchema()
 		{
 			// configure the schema info provider
-			var multiVersionSchemaInfoProvider = new Moq.Mock<MultiVersionSchemaInfoProvider>().Object;
+			var multiVersionSchemaInfoProvider = A.Fake<MultiVersionSchemaInfoProvider>();
 			
 			// configure encode schema
 			var encodeSchema = ISchema<Foo>.Json(new Foo());

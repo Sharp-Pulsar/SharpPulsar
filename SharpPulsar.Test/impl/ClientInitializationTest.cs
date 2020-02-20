@@ -16,8 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+/// 
 
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Api;
 using Xunit;
 
@@ -29,15 +30,14 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public  void TestInitializeAuthWithTls()
         {
-            var mock = new Mock<IAuthentication>();
-			var auth = mock.Object;
+			var auth = A.Fake <IAuthentication> ();
 
-			IPulsarClient.Builder().ServiceUrl("pulsar+ssl://my-host:6650").Authentication(auth).Build();
+			IPulsarClient.Builder().ServiceUrl("pulsar+ssl://localhost:6650").Authentication(auth).Build();
 
 			// Auth should only be started, though we shouldn't have tried to get credentials yet (until we first attempt to
 			// connect).
-			mock.Verify(x => x.Start(), Times.Once);
-            mock.VerifyAll();
+			A.CallTo(() => auth.Start()).MustHaveHappened(1, Times.Exactly);
+            
 		}
 	}
 

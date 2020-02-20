@@ -17,8 +17,8 @@
 /// under the License.
 /// </summary>
 
+using FakeItEasy;
 using Microsoft.Extensions.Logging;
-using Moq;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using Xunit;
@@ -44,7 +44,7 @@ namespace SharpPulsar.Test.Api
                 //MessageListener = (MessageListener) (consumer, msg)
             };
 
-			conf.CryptoKeyReader = new Mock<ICryptoKeyReader>().Object;
+			conf.CryptoKeyReader = A.Fake<ICryptoKeyReader>();
 
 			var m = new ObjectMapper();
 			//m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

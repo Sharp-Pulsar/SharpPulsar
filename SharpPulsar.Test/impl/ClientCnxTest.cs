@@ -23,7 +23,7 @@ using System.Reflection;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -43,13 +43,10 @@ namespace SharpPulsar.Test.Impl
             var conf = new ClientConfigurationData {OperationTimeoutMs = 10};
             var cnx = new ClientCnx(conf, eventLoop);
 
-            var mock = new Mock<IChannelHandlerContext>();
-            var ctx = mock.Object;
-            var t = Mock.Of<TaskCompletionSource<Task>>();
-			var mock2 = Mock.Get(t);
-            var listenerFuture = mock2.Object;
-			mock2.Setup(x => x.Task.ContinueWith(t=>It.IsAny<Task>()).Result).Returns(listenerFuture.Task);
-			mock.Setup(x => x.WriteAndFlushAsync(It.IsAny<object>())).Returns(listenerFuture.Task);
+            var ctx = A.Fake<IChannelHandlerContext>();
+            var t = A.Fake<TaskCompletionSource<Task>>();
+			//mock2.Setup(x => x.Task.ContinueWith(delegate { return It.IsAny<Task>(); }).Result).Returns(listenerFuture.Task);
+			A.CallTo(() => ctx.WriteAndFlushAsync(A<object>._)).Returns(t.Task);
 
 			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
 			//ctxField.Accessible = true;
@@ -70,10 +67,9 @@ namespace SharpPulsar.Test.Impl
             var conf = new ClientConfigurationData {OperationTimeoutMs = 10};
             var cnx = new ClientCnx(conf, eventLoop);
 
-            var mock = new Mock<IChannelHandlerContext>();
-            var ctx = mock.Object;
-			var channel = new Mock<IChannel>().Object;
-			mock.Setup(x =>x.Channel).Returns(channel);
+            var ctx = A.Fake<IChannelHandlerContext>();
+			var channel = A.Fake<IChannel>();
+			//A.CallToSet(() => ctx.Channel).To(channel);
 
 			var ctxField = typeof(PulsarHandler).GetField("Context", BindingFlags.NonPublic | BindingFlags.Instance);
 			//ctxField.Accessible = true;

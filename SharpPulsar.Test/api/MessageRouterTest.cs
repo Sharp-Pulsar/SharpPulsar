@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Api;
 using System;
-using Moq;
+using FakeItEasy;
 using Xunit;
 
 /// <summary>
@@ -41,11 +41,9 @@ namespace SharpPulsar.Test.Api
 		[Fact]
 		public void TestChoosePartition()
         {
-			var instance = Mock.Of<TestMessageRouter>();
-            var mock = Mock.Get(instance);
-			var router = mock.Object;
-			IMessage<object> mockedMsg = new Mock<IMessage<object>>().Object;
-			ITopicMetadata mockedMetadata = new Mock<ITopicMetadata>().Object;
+			var router = A.Fake<TestMessageRouter>();
+			IMessage<object> mockedMsg = A.Fake<IMessage<object>>();
+			ITopicMetadata mockedMetadata = A.Fake<ITopicMetadata>();
 
 			Assert.Equal(1234, router.ChoosePartition(mockedMsg));
 			//Assert.Equal(1234, router.ChoosePartition(mockedMsg, mockedMetadata));

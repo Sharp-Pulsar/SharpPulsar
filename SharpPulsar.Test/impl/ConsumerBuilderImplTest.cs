@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -40,21 +40,21 @@ namespace SharpPulsar.Test.Impl
 		private ConsumerBuilderImpl<sbyte[]> _consumerBuilderImpl;
 
 		public ConsumerBuilderImplTest()
-		{
-			PulsarClientImpl client = new Mock<PulsarClientImpl>().Object;
-			var mock = new Mock<ConsumerConfigurationData<sbyte[]>>();
-            var consumerConfigurationData = mock.Object;
-			mock.Setup(x => x.TopicsPattern).Returns(new Regex(@"\w+"));
-            mock.Setup(x => x.SubscriptionName).Returns("testSubscriptionName");
-			_consumerBuilderImpl = new ConsumerBuilderImpl<sbyte[]>(client, consumerConfigurationData, SchemaFields.Bytes);
+        {
+            var config = A.Fake<ConsumerConfigurationData<sbyte[]>>();
+            var clientConfig = A.Fake<ClientConfigurationData>(x=> x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
+            var pulsarClientclient = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfig)));
+			
+			A.CallToSet(() => config.TopicsPattern).To(new Regex(@"\w+"));
+            A.CallToSet(() => config.SubscriptionName).To("testSubscriptionName");
+			_consumerBuilderImpl =  A.Fake<ConsumerBuilderImpl<sbyte[]>>(x=>x.WithArgumentsForConstructor(()=> new ConsumerBuilderImpl<sbyte[]>(pulsarClientclient, config, SchemaFields.Bytes)));
 		}
 
 		[Fact]
 		public  void TestConsumerBuilderImpl()
 		{
-			var consumer = new Mock<IConsumer<sbyte[]>>().Object;
-            var impl = Mock.Get(_consumerBuilderImpl);
-			impl.Setup(x => x.SubscribeAsync()).Returns(new ValueTask<IConsumer<sbyte[]>>(consumer));
+			var consumer = A.Fake<IConsumer<sbyte[]>>();
+            A.CallTo(() => _consumerBuilderImpl.SubscribeAsync()).Returns(new ValueTask<IConsumer<sbyte[]>>(consumer));
 			Assert.NotNull(_consumerBuilderImpl.Topic(TopicName).Subscribe());
 		}
         [Fact]

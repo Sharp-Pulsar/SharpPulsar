@@ -23,7 +23,7 @@ using System;
 using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
 using DotNetty.Common.Utilities;
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
@@ -45,20 +45,20 @@ namespace SharpPulsar.Test.Impl
 
 		public ConsumerImplTest()
 		{
-			var mock = new Mock<PulsarClientImpl>();
+            var clientConf = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
+			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf)));
 			_consumerConf = new ConsumerConfigurationData<sbyte[]>();
-			ClientConfigurationData clientConf = new ClientConfigurationData();
-			PulsarClientImpl client = mock.Object;
+
 			ValueTask<ClientCnx> clientCnxTask = new ValueTask<ClientCnx>();
 			TaskCompletionSource<IConsumer<sbyte[]>> subscribeFuture = new TaskCompletionSource<IConsumer<sbyte[]>>();
 			string topic = "non-persistent://tenant/ns1/my-topic";
 
 			// Mock connection for grabCnx()
-			mock.Setup(x => x.GetConnection(It.IsAny<string>())).Returns(clientCnxTask);
+			A.CallTo(() => client.GetConnection(A<string>._)).Returns(clientCnxTask);
 			clientConf.OperationTimeoutMs = 100;
 			clientConf.StatsIntervalSeconds = 0;
-			mock.Setup(x => x.Configuration).Returns(clientConf);
-			mock.Setup(x=> x.Timer).Returns(new Mock<HashedWheelTimer>().Object);
+            A.CallTo(() => client.Configuration).Returns(clientConf);
+            A.CallToSet(()=> client.Timer).To(new HashedWheelTimer());
 
 			_consumerConf.SubscriptionName = "test-sub";
 			_consumer = ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true);
@@ -121,17 +121,16 @@ namespace SharpPulsar.Test.Impl
 		public void TestNotifyPendingReceivedCallbackInterceptorsWorksWithPrefetchDisabled()
 		{
             var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
-			var message = new Mock<MessageImpl<sbyte[]>>().Object; 
-			var spy = Mock.Get(_consumer);
+			var message = A.Fake<MessageImpl<sbyte[]>>(); 
 
 			_consumer.PendingReceives.Enqueue(receiveTask);
 
 			_consumerConf.ReceiverQueueSize = 0;
-            spy.Setup(x => x.BeforeConsume(It.IsAny<IMessage<sbyte[]>>())).Returns(message);
-			spy.Object.NotifyPendingReceivedCallback(message, null);
+            A.CallTo(() => _consumer.BeforeConsume(A<IMessage<sbyte[]>>._)).Returns(message);
+			_consumer.NotifyPendingReceivedCallback(message, null);
 			var receivedMessage = receiveTask.Task.Result;
 
-			spy.Verify(x=> x.BeforeConsume(message), Times.Once);
+			A.CallTo(()=> _consumer.BeforeConsume(message)).MustHaveHappened(1, Times.Exactly);
 			Assert.True(receiveTask.Task.IsCompleted);
 			Assert.False(receiveTask.Task.IsFaulted);
 			Assert.Equal(message,receivedMessage);
@@ -141,18 +140,17 @@ namespace SharpPulsar.Test.Impl
 		public  void TestNotifyPendingReceivedCallbackWorkNormally()
 		{
             var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
-            var message = new Mock<MessageImpl<sbyte[]>>().Object;
-            var spy = Mock.Get(_consumer);
+            var message = A.Fake<MessageImpl<sbyte[]>>();
 
             _consumer.PendingReceives.Enqueue(receiveTask);
-			spy.Setup(x => x.BeforeConsume(It.IsAny<IMessage<sbyte[]>>())).Returns(message);
-            spy.Setup(x => x.MessageProcessed(message));
+			A.CallTo(()=> _consumer.BeforeConsume(A<IMessage<sbyte[]>>._)).Returns(message);
+            A.CallTo(() => _consumer.MessageProcessed(message)).DoesNothing();
 
-            spy.Object.NotifyPendingReceivedCallback(message, null);
+            _consumer.NotifyPendingReceivedCallback(message, null);
             var receivedMessage = receiveTask.Task.Result;
 
-            spy.Verify(x => x.BeforeConsume(message), Times.Once);
-            spy.Verify(x => x.MessageProcessed(message), Times.Once);
+            A.CallTo(() => _consumer.BeforeConsume(message)).MustHaveHappened(1, Times.Exactly);
+			A.CallTo(() => _consumer.MessageProcessed(message)).MustHaveHappened(1, Times.Exactly);
 
 			Assert.True(receiveTask.Task.IsCompleted);
 			Assert.False(receiveTask.Task.IsFaulted);

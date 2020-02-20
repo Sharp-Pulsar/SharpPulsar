@@ -68,16 +68,9 @@ namespace SharpPulsar.Impl.Conf
 		[NonSerialized]
 		public DateTime Clock = DateTime.Now;
 
-		public virtual IAuthentication Authentication
+		public IAuthentication Authentication
 		{
-			get
-			{
-				if (_authentication == null)
-				{
-					_authentication = new AuthenticationDisabled();
-				}
-				return _authentication;
-			}
+			get { return _authentication ??= new AuthenticationDisabled(); }
 			set => _authentication = value;
         }
 

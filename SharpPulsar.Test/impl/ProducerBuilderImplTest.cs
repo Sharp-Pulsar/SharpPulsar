@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
-using Moq;
+using FakeItEasy;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -42,13 +42,14 @@ namespace SharpPulsar.Test.Impl
 
 		public ProducerBuilderImplTest()
 		{
-			var producer = new Mock<IProducer<sbyte[]>>().Object;
-            var mock = new Mock<PulsarClientImpl>();
-			_client = mock.Object;
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			mock.Setup(x => x.NewProducer()).Returns(_producerBuilderImpl);
+			var producer = A.Fake<IProducer<sbyte[]>>();
+			var clientConfigurationData = A.Fake<ClientConfigurationData>(x => x.ConfigureFake(c => c.ServiceUrl = "pulsar://localhost:6650"));
+            _client = A.Fake<PulsarClientImpl>(x => x.WithArgumentsForConstructor(() => new PulsarClientImpl(clientConfigurationData)));
 
-            mock.Setup(x =>x.CreateProducerAsync(It.IsAny<ProducerConfigurationData>(), It.IsAny<ISchema<sbyte[]>>(),  It.Is<ProducerInterceptors>(y =>  y == null))).Returns(new ValueTask<IProducer<sbyte[]>>(producer));
+			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			A.CallTo(() => _client.NewProducer()).Returns(_producerBuilderImpl);
+
+            A.CallTo(() => _client.CreateProducerAsync(A<ProducerConfigurationData>._, A<ISchema<sbyte[]>>._,  A<ProducerInterceptors>._)).Returns(new ValueTask<IProducer<sbyte[]>>(producer));
 		}
 
 		[Fact]
