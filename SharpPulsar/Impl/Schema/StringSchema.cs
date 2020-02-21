@@ -90,7 +90,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public StringSchema()
 		{
-			this._charset = Encoding.UTF8.EncodingName;
+			this._charset = Encoding.UTF8.WebName;
 			this.SchemaInfo = DefaultSchemaInfo;
 		}
 

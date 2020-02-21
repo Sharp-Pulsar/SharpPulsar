@@ -64,15 +64,27 @@ public class DefaultSchemasTest:IDisposable
 		public void TestStringSchema()
 		{
 			var testString = "hello world";
-			var testBytes = testString.GetBytes(Encoding.UTF8);
+			var testBytes = Encoding.UTF8.GetBytes(testString);
 			var stringSchema = new StringSchema();
-			Assert.Equal(testString, stringSchema.Decode(testBytes));
-            Assert.Equal(stringSchema.Encode(testString), testBytes);
-
+            var actl = stringSchema.Encode(testString);
+			Assert.Equal(testString, stringSchema.Decode((sbyte[])(object)testBytes));
+            for (var i = 0; i < testBytes.Length; i++)
+            {
+                var expected = testBytes[i];
+                var actual = actl[i];
+				Assert.True(expected == actual);
+			}
             var bytes2 = (sbyte[])(object)Encoding.Unicode.GetBytes(testString);
-			var stringSchemaUtf16 = new StringSchema(Encoding.UTF8.EncodingName);
-            Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
-            Assert.Equal(stringSchemaUtf16.Encode(testString), bytes2);
+			var stringSchemaUtf16 = new StringSchema(Encoding.Unicode.WebName);
+            var given = stringSchemaUtf16.Encode(testString);
+
+			Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
+            for (var i = 0; i < bytes2.Length; i++)
+            {
+                var expected = bytes2[i];
+                var actual = given[i];
+                Assert.True(expected == actual);
+			}
 		}
 
 
