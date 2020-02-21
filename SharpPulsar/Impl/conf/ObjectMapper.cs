@@ -32,7 +32,8 @@ namespace SharpPulsar.Impl.Conf
 			var jsonObject = new JsonSerializerOptions
 			{
 				IgnoreNullValues = true,
-				WriteIndented = true
+				WriteIndented = true,
+                MaxDepth = 256
 			};
 			return jsonObject;
 		}
@@ -53,7 +54,11 @@ namespace SharpPulsar.Impl.Conf
 		{
 			return JsonSerializer.Deserialize(existingConfigJson, t);
 		}
-        public JToken ReadValue(string existingConfigJson)
+        public object ReadValue(string existingConfigJson, Type t, JsonSerializerOptions options)
+        {
+            return JsonSerializer.Deserialize(existingConfigJson, t, options);
+        }
+		public JToken ReadValue(string existingConfigJson)
         {
             return JToken.Parse(existingConfigJson);
         }

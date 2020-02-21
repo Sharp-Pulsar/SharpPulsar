@@ -23,7 +23,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Batch message container for individual messages being published until they are batched and sent to broker.
 	/// </summary>
-	public interface BatchMessageContainer
+	public interface IBatchMessageContainer
 	{
 
 		/// <summary>

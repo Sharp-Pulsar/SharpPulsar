@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl
 		public IReaderBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
 			var startMessageId = _conf.StartMessageId;
-			_conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ReaderConfigurationData<T>));
+			_conf = ConfigurationDataUtils.LoadData(config, _conf);
 			_conf.StartMessageId = startMessageId;
 			return this;
 		}

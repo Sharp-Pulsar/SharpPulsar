@@ -60,16 +60,10 @@ namespace SharpPulsar.Impl.Auth
 			// noop
 		}
 
-		public string AuthMethodName
-		{
-			get
-			{
-				return "tls";
-			}
-		}
+		public string AuthMethodName => "tls";
 
 
-		public IAuthenticationDataProvider AuthData
+        public IAuthenticationDataProvider AuthData
 		{
 			get
 			{
@@ -128,21 +122,9 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		public virtual string CertFilePath
-		{
-			get
-			{
-				return certFilePath;
-			}
-		}
-		public virtual string KeyFilePath
-		{
-			get
-			{
-				return keyFilePath;
-			}
-		}
+		public virtual string CertFilePath => certFilePath;
 
-	}
+        public virtual string KeyFilePath => keyFilePath;
+    }
 
 }

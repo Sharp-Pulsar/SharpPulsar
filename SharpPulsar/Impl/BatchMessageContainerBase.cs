@@ -22,7 +22,7 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public interface BatchMessageContainerBase<T> : BatchMessageContainer
+	public interface BatchMessageContainerBase<T> : IBatchMessageContainer
 	{
 
 		/// <summary>

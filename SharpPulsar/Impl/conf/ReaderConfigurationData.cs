@@ -25,38 +25,55 @@ namespace SharpPulsar.Impl.Conf
 	public class ReaderConfigurationData<T> : ICloneable
 	{
 		[NonSerialized]
-		public string TopicName;
-		public IMessageId StartMessageId;
-		public long StartMessageFromRollbackDurationInSec;
+		private string _topicName;
+		public IMessageId StartMessageId { get; set; }
+		public long StartMessageFromRollbackDurationInSec { get; set; }
 
-		public int ReceiverQueueSize = 1000;
+		public int ReceiverQueueSize { get; set; } = 1000;
 
-		public IReaderListener<T> ReaderListener;
+		public IReaderListener<T> ReaderListener { get; set; }
 		[NonSerialized]
-		public string ReaderName = null;
+		private string _readerName;
 		[NonSerialized]
-		public string SubscriptionRolePrefix = null;
+		private string _subscriptionRolePrefix;
 
-		public ICryptoKeyReader CryptoKeyReader = null;
-		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.Fail;
+		public ICryptoKeyReader CryptoKeyReader { get; set; }
+		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
-		public bool ReadCompacted = false;
-		public bool ResetIncludeHead = false;
+		public bool ReadCompacted { get; set; } = false;
+		public bool ResetIncludeHead { get; set; } = false;
 		public virtual ReaderConfigurationData<T> Clone()
 		{
 			try
 			{
 				return (ReaderConfigurationData<T>) base.MemberwiseClone();
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
-				throw new System.Exception("Failed to clone ReaderConfigurationData", e);
+				throw new Exception("Failed to clone ReaderConfigurationData", e);
 			}
 		}
 
+        public string SubscriptionRolePrefix
+        {
+            get => _subscriptionRolePrefix;
+            set => _subscriptionRolePrefix = value;
+        }
+
+		public string TopicName
+        {
+            get => _topicName;
+            set => _topicName = value;
+        }
+
+        public string ReaderName
+        {
+            get => _readerName;
+            set => _readerName = value;
+        }
 		object ICloneable.Clone()
 		{
-			throw new NotImplementedException();
+			return this;
 		}
 	}
 

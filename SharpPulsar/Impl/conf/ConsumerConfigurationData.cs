@@ -30,66 +30,119 @@ namespace SharpPulsar.Impl.Conf
 	{
 		private const long SerialVersionUid = 1L;
 
-		public ISet<string> TopicNames = new SortedSet<string>();
+		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 
 		[NonSerialized]
-		public Regex TopicsPattern;
+		private Regex _topicsPattern;
 
 		[NonSerialized]
-		public string SubscriptionName;
+		private string _subscriptionName;
 
-		public SubscriptionType SubscriptionType = SubscriptionType.Exclusive;
-		public IMessageListener<T> MessageListener;
-		public IConsumerEventListener ConsumerEventListener;
+		public SubscriptionType SubscriptionType { get; set; } = SubscriptionType.Exclusive;
+		public IMessageListener<T> MessageListener { get; set; }
+		public IConsumerEventListener ConsumerEventListener { get; set; }
 
-		public int ReceiverQueueSize = 1000;
+		public int ReceiverQueueSize { get; set; } = 1000;
 
-		public long AcknowledgementsGroupTimeMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(100);
+		public long AcknowledgementsGroupTimeMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(100);
 
-		public long NegativeAckRedeliveryDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMicros(1);
+		public long NegativeAckRedeliveryDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMicros(1);
 
-		public int MaxTotalReceiverQueueSizeAcrossPartitions = 50000;
-
-		[NonSerialized]
-		public string ConsumerName = null;
-
-		public long AckTimeoutMillis = 0;
-
-		public long TickDurationMillis = 1000;
-
-		public int PriorityLevel = 0;
-
-		public ICryptoKeyReader CryptoKeyReader = null;
-
-		public ConsumerCryptoFailureAction CryptoFailureAction = ConsumerCryptoFailureAction.Fail;
+		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 
 		[NonSerialized]
-		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
+		private string _consumerName;
+
+		public long AckTimeoutMillis { get; set; } = 0;
+
+		public long TickDurationMillis { get; set; } = 1000;
+
+		public int PriorityLevel { get; set; } = 0;
+
+		public ICryptoKeyReader CryptoKeyReader { get; set; }
+
+		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
 		[NonSerialized]
-		public bool ReadCompacted = false;
+		private SortedDictionary<string, string> _properties  = new SortedDictionary<string, string>();
 
 		[NonSerialized]
-		public SubscriptionInitialPosition SubscriptionInitialPosition = SubscriptionInitialPosition.Latest;
-
-		public int PatternAutoDiscoveryPeriod = 1;
-
-		public RegexSubscriptionMode RegexSubscriptionMode = RegexSubscriptionMode.PersistentOnly;
+		private bool _readCompacted = false;
 
 		[NonSerialized]
-		public DeadLetterPolicy DeadLetterPolicy;
-		[NonSerialized]
-		public BatchReceivePolicy BatchReceivePolicy;
+		private SubscriptionInitialPosition _subscriptionInitialPosition = SubscriptionInitialPosition.Latest;
 
-		public bool AutoUpdatePartitions = true;
+		public int PatternAutoDiscoveryPeriod { get; set; } = 1;
 
-		public bool ReplicateSubscriptionState = false;
-
-		public bool ResetIncludeHead = false;
+		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
 		[NonSerialized]
-		public KeySharedPolicy KeySharedPolicy;
+		private DeadLetterPolicy _deadLetterPolicy;
+		[NonSerialized]
+		private BatchReceivePolicy _batchReceivePolicy;
 
+        public BatchReceivePolicy BatchReceivePolicy
+        {
+            get => _batchReceivePolicy;
+            set => _batchReceivePolicy = value;
+        }
+
+		public bool AutoUpdatePartitions { get; set; } = true;
+
+		public bool ReplicateSubscriptionState { get; set; } = false;
+
+		public bool ResetIncludeHead { get; set; } = false;
+
+		[NonSerialized]
+		private KeySharedPolicy _keySharedPolicy;
+
+        public KeySharedPolicy KeySharedPolicy
+        {
+            get => _keySharedPolicy;
+            set => _keySharedPolicy = value;
+        }
+
+
+		public bool ReadCompacted
+        {
+            get => _readCompacted;
+            set => _readCompacted = value;
+        }
+
+        public DeadLetterPolicy DeadLetterPolicy
+        {
+            get => _deadLetterPolicy;
+            set => _deadLetterPolicy = value;
+        }
+
+		public SubscriptionInitialPosition SubscriptionInitialPosition
+        {
+            get => _subscriptionInitialPosition;
+            set => _subscriptionInitialPosition = value;
+        }
+		public Regex TopicsPattern
+        {
+            get => _topicsPattern;
+            set => _topicsPattern = value;
+        }
+
+        public SortedDictionary<string, string> Properties
+        {
+            get => _properties;
+            set => _properties = value;
+        }
+
+		public string ConsumerName
+        {
+            get => _consumerName;
+            set => _consumerName = value;
+        }
+
+		public string SubscriptionName
+        {
+            get => _subscriptionName;
+            set => _subscriptionName = value;
+        }
 		public virtual string SingleTopic
 		{
 			get
@@ -120,7 +173,7 @@ namespace SharpPulsar.Impl.Conf
 
 		object ICloneable.Clone()
 		{
-			throw new NotImplementedException();
+			return this;
 		}
 	}
 

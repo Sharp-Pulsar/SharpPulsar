@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
 
 		public IPulsarClientBuilder LoadConf(IDictionary<string, object> config)
 		{
-			Conf = ConfigurationDataUtils.LoadData(config, Conf, typeof(ClientConfigurationData));
+			Conf = ConfigurationDataUtils.LoadData(config, Conf);
 			return this;
 		}
 

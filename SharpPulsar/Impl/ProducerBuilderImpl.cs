@@ -95,7 +95,7 @@ namespace SharpPulsar.Impl
 
 		public IProducerBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			_conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ProducerConfigurationData));
+			_conf = ConfigurationDataUtils.LoadData(config, _conf);
 			return this;
 		}
 
@@ -211,7 +211,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> BatcherBuilder(BatcherBuilder batcherBuilder)
+		public IProducerBuilder<T> BatcherBuilder(IBatcherBuilder batcherBuilder)
 		{
 			_conf.BatcherBuilder = batcherBuilder;
 			return this;

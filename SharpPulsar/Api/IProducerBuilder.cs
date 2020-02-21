@@ -436,7 +436,7 @@ namespace SharpPulsar.Api
 		/// <param name="batcherBuilder">
 		///          batcher builder </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> BatcherBuilder(BatcherBuilder batcherBuilder);
+		IProducerBuilder<T> BatcherBuilder(IBatcherBuilder batcherBuilder);
 
 		/// <summary>
 		/// Set the baseline for the sequence ids for messages published by the producer.

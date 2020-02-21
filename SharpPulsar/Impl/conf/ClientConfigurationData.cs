@@ -32,41 +32,41 @@ namespace SharpPulsar.Impl.Conf
 	public class ClientConfigurationData : ICloneable
 	{
 		public const long SerialVersionUid = 1L;
+        [NonSerialized] 
+        private string _serviceUrl;
 		[NonSerialized]
-		public string ServiceUrl;
-		[NonSerialized]
-		public ServiceUrlProvider ServiceUrlProvider;
+		private ServiceUrlProvider _serviceUrlProvider;
 		[NonSerialized]
 		private IAuthentication _authentication = new AuthenticationDisabled();
 		[NonSerialized]
-		public string AuthPluginClassName;
+		private string _authPluginClassName;
 		[NonSerialized]
-		public string AuthParams;
+		private string _authParams;
 
-		public long OperationTimeoutMs = 30000;
-		public long StatsIntervalSeconds = 60;
+		public long OperationTimeoutMs { get; set; } = 30000;
+		public long StatsIntervalSeconds { get; set; } = 60;
 
-		public int NumIoThreads = 1;
-		public int NumListenerThreads = 1;
-		public int ConnectionsPerBroker = 1;
+		public int NumIoThreads { get; set; } = 1;
+		public int NumListenerThreads { get; set; } = 1;
+		public int ConnectionsPerBroker { get; set; } = 1;
 
-		public bool UseTcpNoDelay = true;
+		public bool UseTcpNoDelay { get; set; } = true;
 
 		private bool _useTls = false;
+        [NonSerialized] 
+        private string _tlsTrustCertsFilePath;
+		public bool TlsAllowInsecureConnection { get; set; } = false;
+		public bool TlsHostnameVerificationEnable { get; set; } = false;
+		public int ConcurrentLookupRequest { get; set; } = 5000;
+		public int MaxLookupRequest { get; set; } = 50000;
+		public int MaxNumberOfRejectedRequestPerConnection { get; set; } = 50;
+		public int KeepAliveIntervalSeconds { get; set; } = 30;
+		public int ConnectionTimeoutMs { get; set; } = 10000;
+		public int RequestTimeoutMs { get; set; } = 60000;
+		public long InitialBackoffIntervalNanos { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
+		public long MaxBackoffIntervalNanos { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
 		[NonSerialized]
-		public string TlsTrustCertsFilePath;
-		public bool TlsAllowInsecureConnection = false;
-		public bool TlsHostnameVerificationEnable = false;
-		public int ConcurrentLookupRequest = 5000;
-		public int MaxLookupRequest = 50000;
-		public int MaxNumberOfRejectedRequestPerConnection = 50;
-		public int KeepAliveIntervalSeconds = 30;
-		public int ConnectionTimeoutMs = 10000;
-		public int RequestTimeoutMs = 60000;
-		public long InitialBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
-		public long MaxBackoffIntervalNanos = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
-		[NonSerialized]
-		public DateTime Clock = DateTime.Now;
+		private DateTime _clock = DateTime.Now;
 
 		public IAuthentication Authentication
 		{
@@ -74,6 +74,22 @@ namespace SharpPulsar.Impl.Conf
 			set => _authentication = value;
         }
 
+        public ServiceUrlProvider ServiceUrlProvider
+        {
+            get => _serviceUrlProvider;
+            set => _serviceUrlProvider = value;
+        }
+		public string AuthPluginClassName
+        {
+            get => _authPluginClassName;
+            set => _authPluginClassName = value;
+        }
+
+		public string AuthParams
+        {
+            get => _authParams;
+            set => _authParams = value;
+        }
 		public virtual bool UseTls
         {
             get
@@ -82,7 +98,7 @@ namespace SharpPulsar.Impl.Conf
 				{
 					return true;
 				}
-				if (ServiceUrl != null && (this.ServiceUrl.StartsWith("pulsar+ssl") || this.ServiceUrl.StartsWith("https")))
+				if (_serviceUrl != null && (this._serviceUrl.StartsWith("pulsar+ssl") || this._serviceUrl.StartsWith("https")))
 				{
 					_useTls = true;
 					return true;
@@ -92,6 +108,23 @@ namespace SharpPulsar.Impl.Conf
             set => _useTls = value;
         }
 
+        public string ServiceUrl
+        {
+            get => _serviceUrl;
+            set => _serviceUrl = value;
+        }
+
+		public string TlsTrustCertsFilePath
+        {
+            get => _tlsTrustCertsFilePath;
+            set => _tlsTrustCertsFilePath = value;
+        }
+
+		public DateTime Clock
+        {
+            get => _clock;
+            set => _clock = value;
+        }
         public virtual ClientConfigurationData Clone()
 		{
 			try

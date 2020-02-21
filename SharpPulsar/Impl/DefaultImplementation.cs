@@ -249,12 +249,12 @@ namespace SharpPulsar.Impl
 			return SchemaUtils.ConvertKeyValueDataStringToSchemaInfoSchema(keyValueSchemaInfoDataJsonBytes);
 		}
 
-		public static BatcherBuilder NewDefaultBatcherBuilder()
+		public static IBatcherBuilder NewDefaultBatcherBuilder()
 		{
 			return new DefaultBatcherBuilder();
 		}
 
-		public static BatcherBuilder NewKeyBasedBatcherBuilder()
+		public static IBatcherBuilder NewKeyBasedBatcherBuilder()
 		{
 			return new KeyBasedBatcherBuilder();
 		}

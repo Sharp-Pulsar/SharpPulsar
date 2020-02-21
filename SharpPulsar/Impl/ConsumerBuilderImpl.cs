@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl
 
 		public IConsumerBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			this._conf = ConfigurationDataUtils.LoadData(config, _conf, typeof(ConsumerConfigurationData<T>));
+			this._conf = ConfigurationDataUtils.LoadData(config, _conf);
 			return this;
 		}
 

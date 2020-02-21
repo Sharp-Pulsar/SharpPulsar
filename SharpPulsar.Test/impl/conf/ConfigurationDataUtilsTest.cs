@@ -33,14 +33,16 @@ namespace SharpPulsar.Test.Impl.conf
 		[Fact]
 		public void TestLoadClientConfigurationData()
 		{
-			ClientConfigurationData confData = new ClientConfigurationData();
-			confData.ServiceUrl = "pulsar://localhost:6650";
-			confData.MaxLookupRequest = 600;
-			confData.NumIoThreads = 33;
-			IDictionary<string, object> config = new Dictionary<string, object>();
-			config["serviceUrl"] = "pulsar://localhost:6650";
-			config["maxLookupRequest"] = 70000;
-			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ClientConfigurationData));
+            ClientConfigurationData confData = new ClientConfigurationData
+            {
+                ServiceUrl = "pulsar://localhost:6650", MaxLookupRequest = 600, NumIoThreads = 33
+            };
+			IDictionary<string, object> config = new Dictionary<string, object>
+			{
+				["ServiceUrl"] = "pulsar://localhost:6650",
+				["MaxLookupRequest"] = 70000
+			};
+			confData = ConfigurationDataUtils.LoadData(config, confData);
 			Assert.Equal("pulsar://localhost:6650", confData.ServiceUrl);
             Assert.Equal(70000, confData.MaxLookupRequest);
             Assert.Equal(33, confData.NumIoThreads);
@@ -49,15 +51,17 @@ namespace SharpPulsar.Test.Impl.conf
 		[Fact]
 		public void TestLoadProducerConfigurationData()
 		{
-			ProducerConfigurationData confData = new ProducerConfigurationData();
-			confData.ProducerName = "unset";
-			confData.BatchingEnabled = true;
-			confData.BatchingMaxMessages = 1234;
-			IDictionary<string, object> config = new Dictionary<string, object>();
-			config["producerName"] = "test-producer";
-			config["batchingEnabled"] = false;
+            ProducerConfigurationData confData = new ProducerConfigurationData
+            {
+                ProducerName = "unset", BatchingEnabled = true, BatchingMaxMessages = 1234
+            };
+			IDictionary<string, object> config = new Dictionary<string, object>
+			{
+				["ProducerName"] = "test-producer",
+				["BatchingEnabled"] = false
+			};
 			confData.BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder();
-			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ProducerConfigurationData));
+			confData = ConfigurationDataUtils.LoadData(config, confData);
             Assert.Equal("test-producer", confData.ProducerName);
 			Assert.False(confData.BatchingEnabled);
             Assert.Equal(1234, confData.BatchingMaxMessages);
@@ -65,14 +69,16 @@ namespace SharpPulsar.Test.Impl.conf
 		[Fact]
 		public void TestLoadConsumerConfigurationData()
 		{
-			ConsumerConfigurationData<object> confData = new ConsumerConfigurationData<object>();
-			confData.SubscriptionName = "unknown-subscription";
-			confData.PriorityLevel = 10000;
-			confData.ConsumerName = "unknown-consumer";
-			IDictionary<string, object> config = new Dictionary<string, object>();
-			config["subscriptionName"] = "test-subscription";
-			config["priorityLevel"] = 100;
-			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ConsumerConfigurationData<object>));
+            ConsumerConfigurationData<object> confData = new ConsumerConfigurationData<object>
+            {
+                SubscriptionName = "unknown-subscription", PriorityLevel = 10000, ConsumerName = "unknown-consumer"
+            };
+			IDictionary<string, object> config = new Dictionary<string, object>
+			{
+				["SubscriptionName"] = "test-subscription",
+				["PriorityLevel"] = 100
+			};
+			confData = ConfigurationDataUtils.LoadData(config, confData);
             Assert.Equal("test-subscription", confData.SubscriptionName);
             Assert.Equal(100, confData.PriorityLevel);
             Assert.Equal("unknown-consumer", confData.ConsumerName);
@@ -81,14 +87,16 @@ namespace SharpPulsar.Test.Impl.conf
 		[Fact]
 		public void TestLoadReaderConfigurationData()
 		{
-			ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>();
-			confData.TopicName = "unknown";
-			confData.ReceiverQueueSize = 1000000;
-			confData.ReaderName = "unknown-reader";
-			IDictionary<string, object> config = new Dictionary<string, object>();
-			config["topicName"] = "test-topic";
-			config["receiverQueueSize"] = 100;
-			confData = ConfigurationDataUtils.LoadData(config, confData, typeof(ReaderConfigurationData<object>));
+            ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>
+            {
+                TopicName = "unknown", ReceiverQueueSize = 1000000, ReaderName = "unknown-reader"
+            };
+			IDictionary<string, object> config = new Dictionary<string, object>
+			{
+				["TopicName"] = "test-topic",
+				["ReceiverQueueSize"] = 100
+			};
+			confData = ConfigurationDataUtils.LoadData(config, confData);
             Assert.Equal("test-topic", confData.TopicName);
             Assert.Equal(100, confData.ReceiverQueueSize);
             Assert.Equal("unknown-reader", confData.ReaderName);
@@ -97,21 +105,23 @@ namespace SharpPulsar.Test.Impl.conf
 		[Fact]
 		public void TestLoadConfigurationDataWithUnknownFields()
 		{
-			ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>();
-			confData.TopicName = "unknown";
-			confData.ReceiverQueueSize = 1000000;
-			confData.ReaderName = "unknown-reader";
-			IDictionary<string, object> config = new Dictionary<string, object>();
-			config["unknown"] = "test-topic";
-			config["receiverQueueSize"] = 100;
+            ReaderConfigurationData<object> confData = new ReaderConfigurationData<object>
+            {
+                TopicName = "unknown", ReceiverQueueSize = 1000000, ReaderName = "unknown-reader"
+            };
+			IDictionary<string, object> config = new Dictionary<string, object>
+			{
+				["unknown"] = "test-topic",
+				["receiverQueueSize"] = 100
+			};
 			try
 			{
-				ConfigurationDataUtils.LoadData(config, confData, typeof(ReaderConfigurationData<object>));
+				ConfigurationDataUtils.LoadData(config, confData);
 				Assert.False(false, "Should fail loading configuration data with unknown fields");
 			}
 			catch (System.Exception re)
 			{
-				Assert.True(re.InnerException is IOException);
+				Assert.True(re is IOException);
 			}
 		}
 

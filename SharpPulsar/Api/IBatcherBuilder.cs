@@ -21,7 +21,7 @@ namespace SharpPulsar.Api
     /// <summary>
 	/// Batcher builder.
 	/// </summary>
-	public interface BatcherBuilder
+	public interface IBatcherBuilder
 	{
 
 		/// <summary>
@@ -51,7 +51,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Build a new batch message container. </summary>
 		/// <returns> new batch message container </returns>
-		BatchMessageContainer Build<T>();
+		IBatchMessageContainer Build<T>();
 
 	}
 

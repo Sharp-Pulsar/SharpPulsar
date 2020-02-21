@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -29,49 +30,74 @@ namespace SharpPulsar.Impl.Conf
 
 		private const long SerialVersionUid = 1L;
 
-		public const int DefaultBatchingMaxMessages = 1000;
+		public const int DefaultBatchingMaxMessages  = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
 
 		[NonSerialized]
-		public string TopicName = null;
+		private string _topicName;
+
+        public string TopicName
+        {
+            get => _topicName;
+            set => _topicName = value;
+        }
 		[NonSerialized]
-		private string _producerName = null;
-		public long SendTimeoutMs = 30000;
-		public bool BlockIfQueueFull = false;
+		private string _producerName;
+		public long SendTimeoutMs { get; set; } = 30000;
+		public bool BlockIfQueueFull { get; set; } = false;
 		private int _maxPendingMessages = DefaultMaxPendingMessages;
 		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
         [NonSerialized]
-		public MessageRoutingMode? MessageRoutingMode;
-		public HashingScheme HashingScheme = HashingScheme.JavaStringHash;
+		private MessageRoutingMode? _messageRoutingMode;
 
-		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.Fail;
-		public IMessageRouter CustomMessageRouter = null;
+        public MessageRoutingMode? MessageRoutingMode
+        {
+            get => _messageRoutingMode;
+            set => _messageRoutingMode = value;
+        }
+		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
 
-		public long BatchingMaxPublishDelayMicros = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
+		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
+        public IMessageRouter CustomMessageRouter { get; set; } = null;
+
+		public long BatchingMaxPublishDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
 		private int _batchingMaxMessages = DefaultBatchingMaxMessages;
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-		public bool BatchingEnabled = true; // enabled by default
+		public bool BatchingEnabled { get; set; } = true; // enabled by default
 
-		public BatcherBuilder BatcherBuilder = DefaultImplementation.NewDefaultBatcherBuilder();
+        [JsonIgnore]
+		public IBatcherBuilder BatcherBuilder { get; set; } = DefaultImplementation.NewDefaultBatcherBuilder();
 
-		public ICryptoKeyReader CryptoKeyReader;
+        [JsonIgnore]
+		public ICryptoKeyReader CryptoKeyReader { get; set; } = null;
 
-		public ISet<string> EncryptionKeys = new SortedSet<string>();
+		public ISet<string> EncryptionKeys { get; set; } = new SortedSet<string>();
 
-		public ICompressionType CompressionType = ICompressionType.None;
-
-		[NonSerialized]
-		public long?InitialSequenceId = null;
-
-		public bool AutoUpdatePartitions = true;
-
-		public bool MultiSchema = true;
+		public ICompressionType CompressionType { get; set; } = ICompressionType.None;
 
 		[NonSerialized]
-		public SortedDictionary<string, string> Properties = new SortedDictionary<string, string>();
+		private long? _initialSequenceId;
 
+        public long? InitialSequenceId
+        {
+            get => _initialSequenceId;
+            set => _initialSequenceId = value;
+        }
+
+		public bool AutoUpdatePartitions { get; set; } = true;
+
+		public bool MultiSchema { get; set; } = true;
+
+		[NonSerialized]
+		private SortedDictionary<string, string> _properties = new SortedDictionary<string, string>();
+
+        public SortedDictionary<string, string> Properties
+        {
+            get => _properties;
+            set => _properties = value;
+        }
 		/// 
 		/// <summary>
 		/// Returns true if encryption keys are added

@@ -40,6 +40,10 @@ namespace SharpPulsar.Api
 
 		private static readonly IList<SubscriptionInitialPosition> ValueList = new List<SubscriptionInitialPosition>();
 
+        public SubscriptionInitialPosition()
+        {
+                
+        }
 		static SubscriptionInitialPosition()
 		{
 			ValueList.Add(Latest);
