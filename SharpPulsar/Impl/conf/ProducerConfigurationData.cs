@@ -41,7 +41,8 @@ namespace SharpPulsar.Impl.Conf
 		public bool BlockIfQueueFull = false;
 		private int _maxPendingMessages = DefaultMaxPendingMessages;
 		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
-		public MessageRoutingMode MessageRoutingMode;
+        [NonSerialized]
+		public MessageRoutingMode? MessageRoutingMode;
 		public HashingScheme HashingScheme = HashingScheme.JavaStringHash;
 
 		public ProducerCryptoFailureAction CryptoFailureAction = ProducerCryptoFailureAction.Fail;
@@ -100,7 +101,7 @@ namespace SharpPulsar.Impl.Conf
             set
 			{
 				if (string.IsNullOrWhiteSpace(value))
-					throw new System.Exception("producerName cannot be blank");
+					throw new ArgumentException("producerName cannot be blank or null");
 				_producerName = value;
 			}
 		}
@@ -111,7 +112,7 @@ namespace SharpPulsar.Impl.Conf
             set
 			{
 				if(value < 1)
-					throw new System.Exception("maxPendingMessages needs to be > 0");
+					throw new ArgumentException("maxPendingMessages needs to be > 0");
 				_maxPendingMessages = value;
 			}
 		}
@@ -141,7 +142,7 @@ namespace SharpPulsar.Impl.Conf
 		public virtual void SetSendTimeoutMs(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if (sendTimeout < 1)
-				throw new System.Exception("sendTimeout needs to be >= 0");
+				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = timeUnit.ToMillis(sendTimeout);
 		}
 
@@ -149,7 +150,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 			var delayInMs = timeUnit.ToMillis(batchDelay);
 			if (delayInMs < 1)
-				throw new System.Exception("configured value for batch delay must be at least 1ms");
+				throw new ArgumentException("configured value for batch delay must be at least 1ms");
 			BatchingMaxPublishDelayMicros = delayInMs;
 		}
 

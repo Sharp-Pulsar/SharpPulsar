@@ -95,33 +95,29 @@ namespace SharpPulsar.Test.Impl.auth
 		public void TestAuthTokenConfigFromFile()
 		{
             var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
-            using (var fs = new FileStream(tokenFile, FileMode.OpenOrCreate))
-            {
-                var info = new UTF8Encoding(true).GetBytes("my-test-token-string");
-                fs.Write(info, 0, info.Length);
 
-                var authToken = new AuthenticationToken();
-                authToken.Configure("file://" + tokenFile);
-                Assert.Equal("token", authToken.AuthMethodName);
+            var info = new UTF8Encoding(true).GetBytes("my-test-token-string");
+			File.WriteAllBytes(tokenFile, info);
 
-                var authData = authToken.AuthData;
-                Assert.True(authData.HasDataFromCommand());
-                Assert.Equal("my-test-token-string", authData.CommandData);
+            var authToken = new AuthenticationToken();
+            authToken.Configure(tokenFile);
+            Assert.Equal("token", authToken.AuthMethodName);
 
-				// Ensure if the file content changes, the token will get refreshed as well
-				info = new UTF8Encoding(true).GetBytes("other-token");
-                fs.Write(info, 0, info.Length);
+            var authData = authToken.AuthData;
+            Assert.True(authData.HasDataFromCommand());
+            Assert.Equal("my-test-token-string", authData.CommandData);
 
-                var authData2 = authToken.AuthData;
-                Assert.True(authData2.HasDataFromCommand());
-                Assert.Equal("other-token", authData2.CommandData);
+			// Ensure if the file content changes, the token will get refreshed as well
+			info = new UTF8Encoding(true).GetBytes("other-token");
+            File.WriteAllBytes(tokenFile, info);
 
-                authToken.Dispose();
-			}
+			var authData2 = authToken.AuthData;
+            Assert.True(authData2.HasDataFromCommand());
+            Assert.Equal("other-token", authData2.CommandData);
 
+            authToken.Dispose();
             File.Delete(tokenFile);
-			
-		}
+        }
 
 		/// <summary>
 		/// File can have spaces and newlines before or after the token. We should be able to read
@@ -131,30 +127,27 @@ namespace SharpPulsar.Test.Impl.auth
 		public  void TestAuthTokenConfigFromFileWithNewline()
 		{
             var tokenFile = Path.GetTempPath() + Guid.NewGuid() + "pular-test-token.key";
-            using (var fs = new FileStream(tokenFile, FileMode.OpenOrCreate))
-            {
-                var info = new UTF8Encoding(true).GetBytes("  my-test-token-string  \r\n");
-                fs.Write(info, 0, info.Length);
+            var info = new UTF8Encoding(true).GetBytes("  my-test-token-string  \r\n");
+            File.WriteAllBytes(tokenFile, info);
 
-                var authToken = new AuthenticationToken();
-                authToken.Configure("file://" + tokenFile);
-                Assert.Equal("token", authToken.AuthMethodName);
+			var authToken = new AuthenticationToken();
+            authToken.Configure(tokenFile);
+            Assert.Equal("token", authToken.AuthMethodName);
 
-                var authData = authToken.AuthData;
-                Assert.True(authData.HasDataFromCommand());
-                Assert.Equal("my-test-token-string", authData.CommandData);
+            var authData = authToken.AuthData;
+            Assert.True(authData.HasDataFromCommand());
+            Assert.Equal("my-test-token-string", authData.CommandData);
 
-				// Ensure if the file content changes, the token will get refreshed as well
-				info = new UTF8Encoding(true).GetBytes("other-token");
-                fs.Write(info, 0, info.Length);
+            // Ensure if the file content changes, the token will get refreshed as well
+            info = new UTF8Encoding(true).GetBytes("other-token");
+            File.WriteAllBytes(tokenFile, info);
 
-				var authData2 = authToken.AuthData;
-                Assert.True(authData2.HasDataFromCommand());
-                Assert.Equal("other-token", authData2.CommandData);
+			var authData2 = authToken.AuthData;
+            Assert.True(authData2.HasDataFromCommand());
+            Assert.Equal("other-token", authData2.CommandData);
 
-                authToken.Dispose();
-			}
-            File.Delete(tokenFile);
+            authToken.Dispose();
+			File.Delete(tokenFile);
 		}
 
 		[Fact]

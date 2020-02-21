@@ -63,9 +63,9 @@ namespace SharpPulsar.Impl.Auth
 			// the prefix
 			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
 			{
-				this.tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
+				tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
 			}
-			else if (encodedAuthParamString.StartsWith("file:", StringComparison.Ordinal))
+			else if (encodedAuthParamString.EndsWith(".key", StringComparison.Ordinal))
 			{
 				// Read token from a file
 				var filePath = encodedAuthParamString;
@@ -79,7 +79,7 @@ namespace SharpPulsar.Impl.Auth
 				    }
 				    catch (IOException e)
 				    {
-					    throw new Exception("Failed to read token from file", e);
+					    throw new IOException("Failed to read token from file", e);
 				    }
 				};
 			}

@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 		{
 			try
 			{
-				return CreateAsync().Result;
+				return CreateAsync().GetAwaiter().GetResult();
 			}
 			catch (System.Exception e)
 			{
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl
 		public IProducerBuilder<T> Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))
-				throw new ArgumentNullException("topicName cannot be blank");
+				throw new ArgumentException("topicName cannot be blank or null");
 			_conf.TopicName = topicName.Trim();
 			return this;
 		}
@@ -176,7 +176,7 @@ namespace SharpPulsar.Impl
 		public IProducerBuilder<T> AddEncryptionKey(string key)
 		{
 			if(string.IsNullOrWhiteSpace(key))
-				throw new ArgumentNullException("Encryption key cannot be blank");
+				throw new ArgumentException("Encryption key cannot be blank or null");
 			_conf.EncryptionKeys.Add(key);
 			return this;
 		}
@@ -226,22 +226,26 @@ namespace SharpPulsar.Impl
 
 		public IProducerBuilder<T> Property(string key, string value)
 		{
-			if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
-				throw new ArgumentNullException("property key/value cannot be blank");
+			if(string.IsNullOrWhiteSpace(key))
+				throw new ArgumentException("property key cannot be blank or null");
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("property value cannot be blank or null");
 			_conf.Properties.Add(key, value);
 			return this;
 		}
 
 		public IProducerBuilder<T> Properties(IDictionary<string, string> properties)
-		{
-			if(properties.Count < 1)
-				throw new ArgumentNullException("properties cannot be empty");
+        {
+            if (properties == null)
+                throw new ArgumentException("properties cannot be null");
+			if (properties.Count == 0)
+				throw new ArgumentException("properties cannot be empty");
 			properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
             {
                 var (key, value) = entry;
-                if (string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
                 {
-                    throw new NullReferenceException("properties' key/value cannot be blank");
+                    throw new ArgumentException("properties' key/value cannot be blank");
                 }
 
                 _conf.Properties.Add(key, value);
@@ -273,6 +277,7 @@ namespace SharpPulsar.Impl
 
 		private void SetMessageRoutingMode()
 		{
+
 			if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter == null)
 			{
 				MessageRoutingMode(Api.MessageRoutingMode.RoundRobinPartition);
@@ -281,7 +286,8 @@ namespace SharpPulsar.Impl
 			{
 				MessageRoutingMode(Api.MessageRoutingMode.CustomPartition);
 			}
-			else if ((_conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter == null) || (_conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter != null))
+			else 
+			if ((_conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter == null) || (_conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter != null))
 			{
 				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + Api.MessageRoutingMode.CustomPartition);
 			}

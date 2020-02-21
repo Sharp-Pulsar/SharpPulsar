@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -67,9 +68,9 @@ namespace SharpPulsar.Impl.Auth
 				{
 					return _tokenSupplier.Invoke();
 				}
-				catch (System.Exception t)
+				catch (Exception t)
 				{
-					throw new System.Exception("failed to get client token", t);
+					throw new IOException("failed to get client token", t);
 				}
 			}
 		}

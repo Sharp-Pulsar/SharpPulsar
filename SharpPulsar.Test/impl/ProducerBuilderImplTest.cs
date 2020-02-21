@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
 using FakeItEasy;
 using SharpPulsar.Api;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
@@ -46,7 +47,7 @@ namespace SharpPulsar.Test.Impl
 			var clientConfigurationData = A.Fake<ClientConfigurationData>(x => x.ConfigureFake(c => c.ServiceUrl = "pulsar://localhost:6650"));
             _client = A.Fake<PulsarClientImpl>(x => x.WithArgumentsForConstructor(() => new PulsarClientImpl(clientConfigurationData)));
 
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
+			_producerBuilderImpl = A.Fake<ProducerBuilderImpl<sbyte[]>>(x=> x.WithArgumentsForConstructor(()=> new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes)));
 			A.CallTo(() => _client.NewProducer()).Returns(_producerBuilderImpl);
 
             A.CallTo(() => _client.CreateProducerAsync(A<ProducerConfigurationData>._, A<ISchema<sbyte[]>>._,  A<ProducerInterceptors>._)).Returns(new ValueTask<IProducer<sbyte[]>>(producer));
@@ -57,8 +58,6 @@ namespace SharpPulsar.Test.Impl
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
 			properties["Test-Key2"] = "Test-Value2";
-
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").MaxPendingMessages(2).AddEncryptionKey("Test-EncryptionKey").Property("Test-Key", "Test-Value").Properties(properties).Create();
 
 			Assert.NotNull(producer);
@@ -67,190 +66,189 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeAndMessageRouterAreNotSet()
 		{
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).Create();
             Assert.NotNull(producer);
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartition()
 		{
-			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).Create();
             Assert.NotNull(producer);
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartition()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).Create();
             Assert.NotNull(producer);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingIsSetImplicitly()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).MessageRouter(new CustomMessageRouter(this)).Create();
             Assert.NotNull(producer);
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingIsCustomPartition()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
 			var producer = _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).MessageRouter(new CustomMessageRouter(this)).Create();
             Assert.NotNull(producer);
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeIsSinglePartitionAndMessageRouterIsSet()
-		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).MessageRouter(new CustomMessageRouter(this)).Create();
+        {
+            var exception = Assert.Throws<PulsarClientException>(() => _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.SinglePartition).MessageRouter(new CustomMessageRouter(this)).Create());
+			Assert.Equal("When 'messageRouter' is set, 'messageRoutingMode' should be set as CustomPartition", exception.Message);
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeIsRoundRobinPartitionAndMessageRouterIsSet()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).MessageRouter(new CustomMessageRouter(this)).Create();
+            var exception = Assert.Throws<PulsarClientException>(() => _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).MessageRouter(new CustomMessageRouter(this)).Create());
+            Assert.Equal("When 'messageRouter' is set, 'messageRoutingMode' should be set as CustomPartition", exception.Message);
+			
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenMessageRoutingModeIsCustomPartitionAndMessageRouterIsNotSet()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).Create();
+            var exception = Assert.Throws<PulsarClientException>(() => _producerBuilderImpl.Topic(TopicName).MessageRoutingMode(MessageRoutingMode.CustomPartition).Create());
+            Assert.Equal("When 'messageRouter' is set, 'messageRoutingMode' should be set as CustomPartition", exception.Message);
+			
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenTopicNameIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(null).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(null).Create());
+            Assert.Equal("topicName cannot be blank or null", exception.Message);
+			
 		}
         [Fact]
 		public  void TestProducerBuilderImplWhenTopicNameIsBlank()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic("   ").Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic("   ").Create());
+            Assert.Equal("topicName cannot be blank or null", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenProducerNameIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).ProducerName(null).Create();
-		}
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).ProducerName(null).Create());
+            Assert.Equal("producerName cannot be blank or null", exception.Message);
+        }
 		[Fact]
 		public  void TestProducerBuilderImplWhenProducerNameIsBlank()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).ProducerName("   ").Create();
-		}
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).ProducerName("   ").Create());
+            Assert.Equal("producerName cannot be blank or null", exception.Message);
+        }
 
 		[Fact]
 		public  void TestProducerBuilderImplWhenSendTimeoutIsNegative()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").SendTimeout(-1, TimeUnit.MILLISECONDS).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").SendTimeout(-1, TimeUnit.MILLISECONDS).Create());
+            Assert.Equal("sendTimeout needs to be >= 0", exception.Message);
+			
 		}
 
 		[Fact]
 		public  void TestProducerBuilderImplWhenMaxPendingMessagesIsNegative()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").MaxPendingMessages(-1).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).ProducerName("Test-Producer").MaxPendingMessages(-1).Create());
+            Assert.Equal("maxPendingMessages needs to be > 0", exception.Message);
+			
 		}
 
 		[Fact]
 		public  void TestProducerBuilderImplWhenEncryptionKeyIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).AddEncryptionKey(null).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).AddEncryptionKey(null).Create());
+            Assert.Equal("Encryption key cannot be blank or null", exception.Message);
+			
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenEncryptionKeyIsBlank()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).AddEncryptionKey("   ").Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).AddEncryptionKey("   ").Create());
+            Assert.Equal("Encryption key cannot be blank or null", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertyKeyIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Property(null, "Test-Value").Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Property(null, "Test-Value").Create());
+            Assert.Equal("property key cannot be blank or null", exception.Message);
+			
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertyKeyIsBlank()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Property("   ", "Test-Value").Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Property("   ", "Test-Value").Create());
+            Assert.Equal("property key cannot be blank or null", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertyValueIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Property("Test-Key", null).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Property("Test-Key", null).Create());
+            Assert.Equal("property value cannot be blank or null", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertyValueIsBlank()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Property("Test-Key", "   ").Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Property("Test-Key", "   ").Create());
+            Assert.Equal("property value cannot be blank or null", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertiesIsNull()
 		{
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(null).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Properties(null).Create());
+            Assert.Equal("properties cannot be null", exception.Message);
 		}
-		[Fact]
-		public  void TestProducerBuilderImplWhenPropertiesKeyIsNull()
-		{
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties[null] = "Test-Value";
-
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
-		}
+		
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertiesKeyIsBlank()
 		{
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties["   "] = "Test-Value";
-
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+			IDictionary<string, string> properties = new Dictionary<string, string>
+			{
+				["   "] = "Test-Value"
+			};
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Properties(properties).Create());
+            Assert.Equal("properties' key/value cannot be blank", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertiesValueIsNull()
 		{
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties["Test-Key"] = null;
-
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+			IDictionary<string, string> properties = new Dictionary<string, string>
+			{
+				["Test-Key"] = null
+			};
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Properties(properties).Create());
+            Assert.Equal("properties' key/value cannot be blank", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertiesValueIsBlank()
 		{
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties["Test-Key"] = "   ";
-
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+			IDictionary<string, string> properties = new Dictionary<string, string>
+			{
+				["Test-Key"] = "   "
+			};
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Properties(properties).Create());
+            Assert.Equal("properties' key/value cannot be blank", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenPropertiesIsEmpty()
 		{
 			IDictionary<string, string> properties = new Dictionary<string, string>();
-
-            _producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
-			_producerBuilderImpl.Topic(TopicName).Properties(properties).Create();
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.Topic(TopicName).Properties(properties).Create());
+            Assert.Equal("properties cannot be empty", exception.Message);
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenBatchingMaxPublishDelayPropertyIsNegative()
-		{
-			_producerBuilderImpl.BatchingMaxPublishDelay(-1, TimeUnit.MILLISECONDS);
-		}
+        {
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.BatchingMaxPublishDelay(-1, TimeUnit.MILLISECONDS));
+			Assert.Equal("configured value for batch delay must be at least 1ms", exception.Message);
+        }
 		[Fact]
 		public  void TestProducerBuilderImplWhenSendTimeoutPropertyIsNegative()
 		{
-			_producerBuilderImpl.SendTimeout(-1, TimeUnit.SECONDS);
+            var exception = Assert.Throws<ArgumentException>(() => _producerBuilderImpl.SendTimeout(-1, TimeUnit.SECONDS));
+            Assert.Equal("sendTimeout needs to be >= 0", exception.Message);
+			
 		}
 		[Fact]
 		public  void TestProducerBuilderImplWhenMaxPendingMessagesAcrossPartitionsPropertyIsInvalid()
