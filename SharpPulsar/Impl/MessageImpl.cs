@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
     using System.Linq;
     using SharpPulsar.Protocol;
 
-    public sealed class MessageImpl<T> : IMessage<T>
+    public class MessageImpl<T> : IMessage<T>
 	{
 		public MessageMetadata.Builder MessageBuilder;
 		public ClientCnx Cnx;

@@ -63,7 +63,8 @@ namespace SharpPulsar.Test.Impl
 			clientConf.StatsIntervalSeconds = 0;
 
 			_consumerConf.SubscriptionName = "test-sub";
-			_consumer = ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true);
+			//_consumer = A.Fake<ConsumerImpl<sbyte[]>>(x=> x.ConfigureFake( c=> ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true)));
+            _consumer = A.Fake<ConsumerImpl<sbyte[]>>(x => x.WithArgumentsForConstructor(() => new ConsumerImpl<sbyte[]>(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, 0, null, null, true)));
 		}
 
 		[Fact]
@@ -91,12 +92,12 @@ namespace SharpPulsar.Test.Impl
 
 			try
 			{
-				receiveTask.Task.Start();
+                receiveTask.Task.GetAwaiter().GetResult();
 			}
 			catch (Exception e)
 			{
 				// Completion exception must be the same we provided at calling time
-				Assert.Equal(exception, e.InnerException);
+				Assert.Equal(exception, e);
 			}
 
 			Assert.True(receiveTask.Task.IsFaulted);
@@ -105,16 +106,17 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public void TestNotifyPendingReceivedCallbackCompleteWithExceptionWhenMessageIsNull()
 		{
-            _consumer.NotifyPendingReceivedCallback(null, null);
-            _consumer.PendingReceives.TryPeek(out var receiveTask);
+            var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
+            _consumer.PendingReceives.Enqueue(receiveTask);
+			_consumer.NotifyPendingReceivedCallback(null, null);
 			try
 			{
-				receiveTask.Task.Start();
+				receiveTask.Task.GetAwaiter().GetResult();
 			}
 			catch (Exception e)
 			{
-				Assert.Equal("received message can't be null", e.InnerException?.Message);
-                _output.WriteLine(e.ToString());
+				Assert.Equal("received message can't be null", e.Message);
+                //_output.WriteLine(e.ToString());
 			}
 
 			Assert.True(receiveTask.Task.IsFaulted);
@@ -149,7 +151,7 @@ namespace SharpPulsar.Test.Impl
             A.CallTo(() => _consumer.MessageProcessed(message)).DoesNothing();
 
             _consumer.NotifyPendingReceivedCallback(message, null);
-            var receivedMessage = receiveTask.Task.Result;
+            var receivedMessage = receiveTask.Task.GetAwaiter().GetResult();
 
             A.CallTo(() => _consumer.BeforeConsume(message)).MustHaveHappened(1, Times.Exactly);
 			A.CallTo(() => _consumer.MessageProcessed(message)).MustHaveHappened(1, Times.Exactly);

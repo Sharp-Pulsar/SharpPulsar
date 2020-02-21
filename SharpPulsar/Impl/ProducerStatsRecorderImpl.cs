@@ -105,8 +105,7 @@ namespace SharpPulsar.Impl
             }
 
             _oldTime = DateTime.Now.Millisecond;
-            StatTimeout =
-                _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
+            StatTimeout = _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
         }
 
 

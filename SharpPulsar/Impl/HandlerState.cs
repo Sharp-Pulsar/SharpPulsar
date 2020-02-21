@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl
         protected HandlerState(PulsarClientImpl client, string topic)
 		{
 			Client = client;
-			this.Topic = topic;
+			Topic = topic;
 			StateUpdater[this] =  State.Uninitialized;
 		}
 

@@ -104,7 +104,7 @@ namespace SharpPulsar.Test.Impl
 
 			var routerPolicy = impl.GetType().GetField("_routerPolicy", BindingFlags.NonPublic | BindingFlags.Instance);
 			
-			var messageRouter = (IMessageRouter) routerPolicy?.GetValue(null);
+			var messageRouter = (IMessageRouter) routerPolicy?.GetValue(impl);
 			Assert.NotNull(messageRouter);
 			return messageRouter;
 		}
@@ -134,7 +134,7 @@ namespace SharpPulsar.Test.Impl
 
             var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
 
-			var clientImpl = new PulsarClientImpl(conf, eventLoopGroup);
+            var clientImpl = new PulsarClientImpl(conf, eventLoopGroup) {Timer = new HashedWheelTimer()};
 
             var producerConfData = new ProducerConfigurationData
             {

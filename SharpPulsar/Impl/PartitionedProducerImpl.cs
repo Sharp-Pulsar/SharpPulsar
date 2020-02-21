@@ -41,6 +41,7 @@ namespace SharpPulsar.Impl
 		private readonly IMessageRouter _routerPolicy;
 		private readonly ProducerStatsRecorderImpl<T> _stats;
 		private ITopicMetadata _topicMetadata;
+        private string _topic;
 
 		// timeout related to auto check and subscribe partition increasement
 		public  ITimeout PartitionsAutoUpdateTimeout;
@@ -48,7 +49,8 @@ namespace SharpPulsar.Impl
 		internal TaskCompletionSource<Task> PartitionsAutoUpdateTask = null;
 
 		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
-		{
+        {
+            _topic = topic;
 			_producers = new List<ProducerImpl<T>>(numPartitions);
 			_topicMetadata = new TopicMetadataImpl(numPartitions);
 			_routerPolicy = MessageRouter;
@@ -66,7 +68,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private IMessageRouter MessageRouter
+        public override string Topic
+        {
+            get => _topic;
+            set => _topic = value;
+        }
+
+        private IMessageRouter MessageRouter
 		{
 			get
             {
@@ -99,7 +107,17 @@ namespace SharpPulsar.Impl
 
 		public override string ProducerName
         {
-            get => _producers[0].ProducerName;
+            get
+            {
+                try
+                {
+                    return _producers[0].ProducerName;
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
             set => _producers[0].ProducerName = value;
         }
 
