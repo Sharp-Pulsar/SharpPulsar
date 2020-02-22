@@ -42,7 +42,7 @@ namespace SharpPulsar.Test.Impl.schema.generic
 		[Fact]
 		public void TestGenericJsonSchema()
 		{
-			var encodeSchema = ISchema<Foo>.Json(new Foo());
+			var encodeSchema = ISchema<Foo>.Json(typeof(Foo));
 			var decodeSchema = GenericSchemaImpl.Of((SchemaInfo)encodeSchema.SchemaInfo);
 			TestEncodeAndDecodeGenericRecord(encodeSchema, decodeSchema);
 		}
@@ -55,7 +55,7 @@ namespace SharpPulsar.Test.Impl.schema.generic
 			var multiVersionSchemaInfoProvider = A.Fake<MultiVersionSchemaInfoProvider>(x=> x.WithArgumentsForConstructor(()=> new MultiVersionSchemaInfoProvider(new TopicName(), client)));
 			
 			// configure encode schema
-			var encodeSchema = ISchema<Foo>.Json(new Foo());
+			var encodeSchema = ISchema<Foo>.Json(typeof(Foo));
 
 			// configure decode schema
 			var decodeSchema = new AutoConsumeSchema();

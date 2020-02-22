@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -57,7 +58,7 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="pojo"> pojo schema definition
 		/// </param>
 		/// <returns> schema definition builder </returns>
-		ISchemaDefinitionBuilder<T> WithPojo(T pojo);
+		ISchemaDefinitionBuilder<T> WithPojo(Type pojo);
 
 		/// <summary>
 		/// Set schema of json definition.

@@ -201,7 +201,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json(T pojo)
+		static ISchema<T> Json(Type pojo)
 		{
             return DefaultImplementation.NewJsonSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
         }

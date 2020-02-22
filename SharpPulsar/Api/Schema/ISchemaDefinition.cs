@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using SharpPulsar.Impl;
 
 /// <summary>
@@ -58,7 +59,7 @@ namespace SharpPulsar.Api.Schema
 		/// Get pojo schema definition.
 		/// </summary>
 		/// <returns> pojo schema </returns>
-		T Pojo {get;}
+		Type Pojo {get;}
 
 		/// <summary>
 		/// Get supportSchemaVersioning schema definition.

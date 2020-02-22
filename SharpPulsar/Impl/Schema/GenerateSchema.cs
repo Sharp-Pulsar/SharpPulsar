@@ -43,7 +43,8 @@ namespace SharpPulsar.Impl.Schema
                 }
                 else
                 {
-                    var d = new Dictionary<string, object> { { "name", p.Name }, { "type", ToAvroDataType(p.PropertyType.Name) } };
+                    var dT = ToAvroDataType(p.PropertyType.Name);
+                    var d = new Dictionary<string, object> { { "name", p.Name }, { "type", new List<string>{dT, "null"} } };
                     propertiesCollections.Add(d);
                 }
             }
@@ -85,7 +86,8 @@ namespace SharpPulsar.Impl.Schema
                 }
                 else
                 {
-                    var d = new Dictionary<string, object> { { "name", p.Name }, { "type", ToAvroDataType(p.PropertyType.Name) } };
+                    var dT = ToAvroDataType(p.PropertyType.Name);
+                    var d = new Dictionary<string, object> { { "name", p.Name }, { "type", new List<string> { dT, "null" } } };
                     propertiesCollections.Add(d);
                 }
             }

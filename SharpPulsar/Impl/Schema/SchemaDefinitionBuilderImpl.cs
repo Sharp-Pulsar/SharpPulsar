@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Avro.Generic;
 
 /// <summary>
@@ -35,7 +36,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <summary>
 		/// the schema definition class
 		/// </summary>
-		private T _clazz;
+		private Type _clazz;
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 
@@ -73,7 +74,7 @@ namespace SharpPulsar.Impl.Schema
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder<T> WithPojo(T clazz)
+		public ISchemaDefinitionBuilder<T> WithPojo(Type clazz)
 		{
 			_clazz = clazz;
 			return this;

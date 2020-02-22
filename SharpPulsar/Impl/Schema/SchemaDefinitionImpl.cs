@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 /// <summary>
@@ -30,12 +31,12 @@ namespace SharpPulsar.Impl.Schema
 	/// <seealso cref="ISchemaDefinition<T>"/> for the json schema definition.
 	/// </summary>
 	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
-	{
+    {
 
-		/// <summary>
-		/// the schema definition class
-		/// </summary>
-		private T _pojo;
+        /// <summary>
+        /// the schema definition class
+        /// </summary>
+        private Type _pojo;
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 
@@ -52,7 +53,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public virtual bool SupportSchemaVersioning {get;}
 
-		public SchemaDefinitionImpl(T pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning)
+		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning)
 		{
 			AlwaysAllowNull = alwaysAllowNull;
 			_properties = properties;
@@ -73,7 +74,7 @@ namespace SharpPulsar.Impl.Schema
 		/// Get pojo schema definition
 		/// </summary>
 		/// <returns> pojo class </returns>
-		public virtual T Pojo => _pojo;
+		public virtual Type Pojo => _pojo;
 
 
         /// <summary>

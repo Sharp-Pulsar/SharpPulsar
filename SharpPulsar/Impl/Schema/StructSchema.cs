@@ -80,6 +80,8 @@ namespace SharpPulsar.Impl.Schema
 
 		public override T Decode(sbyte[] bytes)
 		{
+			if(_reader == null)
+				_reader = new GenericAvroReader(Schema, new SByte[]{0});
 			return _reader.Read<T>((byte[])(object)bytes);
 		}
 
@@ -132,7 +134,7 @@ namespace SharpPulsar.Impl.Schema
 				return ParseAvroSchema(schemaDefinition.JsonDef);
 			}
 
-            var schema = pojo.GetType().GetSchema();
+            var schema = pojo.GetSchema();
             return ParseAvroSchema(schema);
 
         }
