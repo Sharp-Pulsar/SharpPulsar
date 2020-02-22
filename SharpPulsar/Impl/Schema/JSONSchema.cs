@@ -45,9 +45,10 @@ namespace SharpPulsar.Impl.Schema
 		// return shaded version of object mapper
 		private readonly ObjectMapper _mapper = new ObjectMapper();
 
-		private JsonSchema(SchemaInfo schemaInfo) : base(schemaInfo)
-		{
-		}
+        private JsonSchema(SchemaInfo schemaInfo) : base(schemaInfo)
+        {
+            SchemaInfo = schemaInfo;
+        }
 
 		public override GenericAvroReader LoadReader(BytesSchemaVersion schemaVersion)
 		{
@@ -88,9 +89,9 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public override ISchemaInfo SchemaInfo => throw new NotImplementedException();
+		public override ISchemaInfo SchemaInfo { get; }
 
-		public static JsonSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
+        public static JsonSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
 		{
 			return new JsonSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.Json));
 		}
@@ -166,10 +167,12 @@ namespace SharpPulsar.Impl.Schema
 		{
 			throw new NotImplementedException();
 		}
-		
+        
 		public new T Decode(IByteBuffer byteBuf)
 		{
-			throw new NotImplementedException();
+            if (Reader == null)
+                Reader = new GenericAvroReader(Schema, new sbyte[] { 0 });
+            return Reader.Read<T>(byteBuf.Array);
 		}
 
 	}

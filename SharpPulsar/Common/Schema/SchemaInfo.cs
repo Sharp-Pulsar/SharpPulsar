@@ -2,6 +2,7 @@
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using SharpPulsar.Impl;
 
 /// <summary>
@@ -62,7 +63,7 @@ namespace SharpPulsar.Common.Schema
 					case SchemaType.InnerEnum.Avro:
 					case SchemaType.InnerEnum.Json:
 					case SchemaType.InnerEnum.Protobuf:
-						return StringHelper.NewString(Schema, "UTF8");
+						return StringHelper.NewString(Schema, Encoding.UTF8.WebName);
 					//case SchemaType.InnerEnum.KeyValue:
 						//KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.d.DecodeKeyValueSchemaInfo(this);
 						//return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);

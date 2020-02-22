@@ -29,6 +29,14 @@ namespace SharpPulsar.Test
             output.WriteLine(simple);
             Assert.Contains("Age", simple);
         }
+        [Fact]
+        public void TestFooCustom()
+        {
+            var simple = typeof(FooCustom).GetSchema();
+            output.WriteLine(simple);
+            Assert.Contains("EntryYear", simple);
+            Assert.Contains("Level", simple);
+        }
     }
 
     public class SimpleFoo
@@ -47,5 +55,23 @@ namespace SharpPulsar.Test
         public List<string> Courses { get; set; }
         public Dictionary<string, string> Normal { get; set; }
 
+    }
+    public class FooCustom
+    {
+        public SimpleFoo Fo { get; set; }
+        public List<Course> Courses { get; set; }
+        public Dictionary<string, Lecturers> Departments { get; set; }
+    }
+
+    public class Course
+    {
+        public string Level { get; set; }
+        public int Year { get; set; }
+    }
+
+    public class Lecturers
+    {
+        public int EntryYear { get; set; }
+        public string Name { get; set; }
     }
 }

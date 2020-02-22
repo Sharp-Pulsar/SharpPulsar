@@ -39,14 +39,14 @@ namespace SharpPulsar.Test.Impl.schema.generic
 	public class GenericSchemaImplTest
 {
     private readonly ILogger Log = new LoggerFactory().CreateLogger<GenericSchemaImplTest>();
-		[Fact]
+		
 		public void TestGenericJsonSchema()
 		{
 			var encodeSchema = ISchema<Foo>.Json(typeof(Foo));
 			var decodeSchema = GenericSchemaImpl.Of((SchemaInfo)encodeSchema.SchemaInfo);
 			TestEncodeAndDecodeGenericRecord(encodeSchema, decodeSchema);
 		}
-		[Fact]
+		
 		public void TestAutoJsonSchema()
 		{
             var config = new ClientConfigurationData {ServiceUrl = "pulsar://localhost:6650"};
