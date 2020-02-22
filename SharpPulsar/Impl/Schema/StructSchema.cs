@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Utilities.Encoders;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
@@ -55,12 +57,12 @@ namespace SharpPulsar.Impl.Schema
 
 		protected internal readonly Avro.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;
-        private ISchemaReader<T> _reader;
-        private ISchemaWriter<T> _writer;
+        private GenericAvroReader _reader;
+        private GenericAvroWriter _writer;
         private ISchemaInfoProvider _schemaInfoProvider;
-		private readonly ConcurrentDictionary<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new ConcurrentDictionary<BytesSchemaVersion, ISchemaReader<T>>();
+        private readonly ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader> _readerCache = new ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader>();
 
-        protected StructSchema(SchemaInfo schemaInfo)
+		protected StructSchema(SchemaInfo schemaInfo)
 		{
 			this.Schema = ParseAvroSchema(new string(Encoding.UTF8.GetString((byte[])(object)schemaInfo.Schema)));
 			_schemaInfo = schemaInfo;
@@ -70,19 +72,22 @@ namespace SharpPulsar.Impl.Schema
 
         public override sbyte[] Encode(T message)
 		{
-			return _writer.Write(message);
-		}
+			if(_writer == null)
+				_writer = new GenericAvroWriter(Schema);
+			var w = _writer.Write(message);
+            return (sbyte[]) (object) w.ToArray();
+        }
 
 		public override T Decode(sbyte[] bytes)
 		{
-			return _reader.Read(bytes);
+			return _reader.Read<T>((byte[])(object)bytes);
 		}
 
-		public override T Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public T Decode(byte[] bytes, sbyte[] schemaVersion)
 		{
 			try
 			{
-				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(bytes);
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read<T>(bytes);
 			}
 			catch (System.Exception e)
 			{
@@ -93,20 +98,21 @@ namespace SharpPulsar.Impl.Schema
 				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode((byte[])(object)schemaVersion), e);
 				throw new System.Exception("Can't get generic schema for topic " + _schemaInfoProvider.TopicName);
 			}
-		}
+
+        }
 
 		public override T Decode(IByteBuffer byteBuf)
         {
-            var msg = (sbyte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
-			return _reader.Read(msg);
+            var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
+			return _reader.Read<T>(msg);
 		}
 
 		public override T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
 		{
 			try
 			{
-                var msg = (sbyte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
-				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(msg);
+                var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read<T>(msg);
             }
 			catch (System.Exception e)
 			{
@@ -151,7 +157,7 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		public abstract ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion);
+		public abstract GenericAvroReader LoadReader(BytesSchemaVersion schemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async
@@ -173,12 +179,12 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public  ISchemaWriter<T> Writer
+		public  GenericAvroWriter Writer
 		{
 			set => _writer = value;
         }
 
-		public  ISchemaReader<T> Reader
+		public  GenericAvroReader Reader
 		{
 			set => _reader = value;
             get => _reader;

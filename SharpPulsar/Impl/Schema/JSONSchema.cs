@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using Avro.IO;
+using Avro.Reflect;
 using Newtonsoft.Json.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
 
@@ -43,11 +47,9 @@ namespace SharpPulsar.Impl.Schema
 
 		private JsonSchema(SchemaInfo schemaInfo) : base(schemaInfo)
 		{
-			Writer = new JsonWriter<T>(_mapper);
-			Reader = new JsonReader<T>(_mapper);
 		}
 
-		public override ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion)
+		public override GenericAvroReader LoadReader(BytesSchemaVersion schemaVersion)
 		{
 			throw new System.Exception("JSONSchema don't support schema versioning");
 		}
@@ -102,6 +104,33 @@ namespace SharpPulsar.Impl.Schema
 		{
 			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
+        private static TS Deserialize<TS>(Stream ms, Avro.Schema ws, Avro.Schema rs) where TS : class
+        {
+            long initialPos = ms.Position;
+            var r = new ReflectReader<TS>(ws, rs);
+            Decoder d = new BinaryDecoder(ms);
+            TS output = r.Read(null, d);
+            //Assert.AreEqual(ms.Length, ms.Position); // Ensure we have read everything.
+            CheckAlternateDeserializers(output, ms, initialPos, ws, rs);
+            return output;
+        }
+        private static void CheckAlternateSerializers<T>(T value, Avro.Schema ws)
+        {
+            var ms = new MemoryStream();
+            var writer = new ReflectWriter<T>(ws);
+            var e = new BinaryEncoder(ms);
+            writer.Write(value, e);
+            //var output = ms.ToArray();
+        }
+        private static void CheckAlternateDeserializers<TS>(TS expected, Stream input, long startPos, Avro.Schema ws, Avro.Schema rs) where TS : class
+        {
+            input.Position = startPos;
+            var reader = new ReflectReader<TS>(ws, rs);
+            Decoder d = new BinaryDecoder(input);
+            TS output = reader.Read(null, d);
+            //Assert.AreEqual(input.Length, input.Position); // Ensure we have read everything.
+            //AssertReflectRecordEqual(rs, expected, ws, output, reader.Reader.ClassCache);
+        }
 
 		public override ISchema<IGenericRecord> Auto()
 		{

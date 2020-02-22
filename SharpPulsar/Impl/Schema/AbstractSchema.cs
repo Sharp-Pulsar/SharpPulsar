@@ -80,7 +80,7 @@ namespace SharpPulsar.Impl.Schema
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf);
 		}
-        public abstract T Decode(sbyte[] bytes, sbyte[] schemaVersion);
+        
         public abstract T Decode(sbyte[] bytes);
 	}
 

@@ -1,4 +1,9 @@
-﻿/// <summary>
+﻿using System.IO;
+using Avro.IO;
+using Avro.Reflect;
+using Microsoft.Extensions.Logging;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,41 +21,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using System;
-using System.IO;
-using System.Linq;
-using Avro.IO;
-using SharpPulsar.Api.Schema;
-
-using Avro.Reflect;
-using SharpPulsar.Impl.Conf;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
-
-namespace SharpPulsar.Impl.Schema.Writer
+namespace SharpPulsar.Impl.Schema.Generic
 {
 
-	public class JsonWriter<T> : ISchemaWriter<T>
+    public class GenericAvroReader
 	{
+        private readonly Avro.Schema _schema;
+		private readonly sbyte[] _schemaVersion;
+		
+		public GenericAvroReader(Avro.Schema schema, sbyte[] schemaVersion)
+        {
+            _schema = schema;
+            _schemaVersion = schemaVersion;
+        }
 
-		private readonly ObjectMapper _objectMapper;
-
-		public JsonWriter(ObjectMapper objectMapper)
-		{
-			this._objectMapper = objectMapper;
-		}
-
-		public sbyte[] Write(T message)
-		{
-			try
-			{
-				return (sbyte[])(Array)_objectMapper.WriteValueAsBytes(message);
-			}
-			catch (System.Exception e)
-			{
-				throw new SchemaSerializationException(e);
-			}
-		}
-    }
+		public T Read<T>(byte[] message)
+        {
+            var r = new ReflectReader<T>(_schema, _schema);
+            using var stream = new MemoryStream(message);
+            return r.Read(default(T), new BinaryDecoder(stream));
+        }
+		
+		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(GenericAvroReader));
+	}
 
 }

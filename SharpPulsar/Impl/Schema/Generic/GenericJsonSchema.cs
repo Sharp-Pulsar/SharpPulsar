@@ -44,29 +44,10 @@ namespace SharpPulsar.Impl.Schema.Generic
 
         public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
-			Writer = new GenericJsonWriter();
-			
-			Reader = new GenericJsonReader(Fields);
 		}
 
-		public override ISchemaReader<IGenericRecord> LoadReader(BytesSchemaVersion schemaVersion)
+		public override GenericAvroReader LoadReader(BytesSchemaVersion schemaVersion)
 		{
-			var schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
-			if (schemaInfo != null)
-			{
-				_log.LogInformation("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), schemaInfo.SchemaDefinition);
-				RecordSchema readerSchema;
-				if (UseProvidedSchemaAsReaderSchema)
-				{
-					readerSchema = (RecordSchema)Schema;
-				}
-				else
-				{
-					readerSchema = (RecordSchema)ParseAvroSchema(schemaInfo.SchemaDefinition);
-				}
-				return new GenericJsonReader(schemaVersion.Get(), readerSchema.Fields.Select(f => new Field(){Name = f.Name, Index = f.Pos}).ToList());
-			}
-
             _log.LogWarning("No schema found for version({}), use latest schema : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), SchemaInfo.SchemaDefinition);
             return Reader;
         }

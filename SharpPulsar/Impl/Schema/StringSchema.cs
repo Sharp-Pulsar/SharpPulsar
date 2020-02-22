@@ -135,10 +135,6 @@ namespace SharpPulsar.Impl.Schema
             throw new NotImplementedException();
         }
 
-        public override string Decode(sbyte[] bytes, sbyte[] schemaVersion)
-        {
-            throw new NotImplementedException();
-        }
 
         public override ISchemaInfo SchemaInfo { get; }
         public override bool SupportSchemaVersioning()

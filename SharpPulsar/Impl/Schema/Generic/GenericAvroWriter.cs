@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using System.IO;
+using Avro.IO;
+using Avro.Reflect;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,41 +20,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using System;
-using System.IO;
-using System.Linq;
-using Avro.IO;
-using SharpPulsar.Api.Schema;
-
-using Avro.Reflect;
-using SharpPulsar.Impl.Conf;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
-
-namespace SharpPulsar.Impl.Schema.Writer
+namespace SharpPulsar.Impl.Schema.Generic
 {
 
-	public class JsonWriter<T> : ISchemaWriter<T>
+    public class GenericAvroWriter
 	{
+        private Avro.Schema _schema;
 
-		private readonly ObjectMapper _objectMapper;
-
-		public JsonWriter(ObjectMapper objectMapper)
+		public GenericAvroWriter(Avro.Schema schema)
 		{
-			this._objectMapper = objectMapper;
-		}
+            _schema = schema;
+        }
 
-		public sbyte[] Write(T message)
+		public byte[] Write<T>(T message)
 		{
-			try
-			{
-				return (sbyte[])(Array)_objectMapper.WriteValueAsBytes(message);
-			}
-			catch (System.Exception e)
-			{
-				throw new SchemaSerializationException(e);
-			}
-		}
-    }
+            var writer = new ReflectWriter<T>(_schema);
+            using var stream = new MemoryStream(256);
+            writer.Write(message, new BinaryEncoder(stream));
+            return stream.ToArray();
+        }
+	}
 
 }
