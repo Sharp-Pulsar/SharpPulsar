@@ -97,7 +97,7 @@ namespace SharpPulsar.Test.Impl.schema
 
             var bar = new Bar {Field1 = true};
 
-            var foo1 = new Foo {Field1 = "foo1", Field2 = "bar1", Field4 = bar, Color = SchemaTestUtils.Color.BLUE};
+            var foo1 = new Foo {Field1 = "foo1", Field2 = "bar1", Field4 = bar, Color = SchemaTestUtils.Color.Blue};
 
             var foo2 = new Foo {Field1 = "foo2", Field2 = "bar2"};
 
@@ -161,7 +161,7 @@ namespace SharpPulsar.Test.Impl.schema
 			Assert.True(bytes.Length > 0);
 			Assert.Equal( nested, jsonSchema.Decode(bytes));
 
-            IList<Bar> list = new List<Bar>{ bar};
+            List<Bar> list = new List<Bar>{ bar};
             var nestedList = new NestedBarList {Field1 = true, List = list};
 
             bytes = listJsonSchema.Encode(nestedList);
@@ -183,7 +183,7 @@ namespace SharpPulsar.Test.Impl.schema
 			Assert.True(bytes.Length > 0);
 			Assert.Equal( nested, jsonSchema.Decode(bytes));
 
-			IList<Bar> list = new List<Bar> { bar };
+			List<Bar> list = new List<Bar> { bar };
             var nestedList = new NestedBarList {Field1 = true, List = list};
 
             bytes = listJsonSchema.Encode(nestedList);

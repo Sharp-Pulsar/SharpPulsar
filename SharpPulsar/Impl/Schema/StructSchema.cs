@@ -4,6 +4,8 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using Avro;
+using Avro.Generic;
+using Avro.Specific;
 using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Utilities.Encoders;
@@ -124,7 +126,9 @@ namespace SharpPulsar.Impl.Schema
 				return ParseAvroSchema(schemaDefinition.JsonDef);
 			}
 
-            throw new System.Exception("Not yet implemented  - Use JsonDef"); //schemaDefinition.AlwaysAllowNull ? Avro.Reflect.AllowNull.get().getSchema(Pojo) : ReflectData.get().getSchema(Pojo);
+            var schema = pojo.GetType().GetSchema();
+            return ParseAvroSchema(schema);
+
         }
 
 		protected internal static Avro.Schema ParseAvroSchema(string schemaJson)

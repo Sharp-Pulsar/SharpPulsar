@@ -27,55 +27,55 @@ namespace SharpPulsar.Test.Impl.schema
 	{
 		public class Foo
 		{
-			internal string Field1;
-			internal string Field2;
-			internal int Field3;
-			internal Bar Field4;
-			internal Color Color;
-			internal string FieldUnableNull;
+			public string Field1 { get; set; }
+			public string Field2 { get; set; }
+			public int Field3 { get; set; }
+			public Bar Field4 { get; set; }
+			public Color Color { get; set; }
+			public string FieldUnableNull { get; set; }
 		}
 		public class FooV2
 		{
-			internal string Field1;
-			internal int Field3;
+			public string Field1 { get; set; }
+			public int Field3 { get; set; }
 		}
 
 		public class Bar
 		{
-			internal bool Field1;
+			public bool Field1 { get; set; }
 		}
 
 		public class NestedBar
 		{
-			internal bool Field1;
-			internal Bar Nested;
+			public bool Field1 { get; set; }
+			public Bar Nested { get; set; }
 		}
 
 		public class NestedBarList
 		{
-			internal bool Field1;
-			internal IList<Bar> List;
+			public bool Field1 { get; set; }
+			public List<Bar> List { get; set; }
 		}
 
 		public class DerivedFoo : Foo
 		{
-			internal string Field5;
-			internal int Field6;
-			internal Foo Foo;
+			public string Field5 { get; set; }
+			public int Field6 { get; set; }
+			public Foo Foo { get; set; }
 		}
 
 		public enum Color
 		{
-			RED,
-			BLUE
+			Red,
+			Blue
 		}
 
 		public class DerivedDerivedFoo : DerivedFoo
 		{
-			internal string Field7;
-			internal int Field8;
-			internal DerivedFoo DerivedFoo;
-			internal Foo Foo2;
+			public string Field7 { get; set; }
+			public int Field8;
+			public DerivedFoo DerivedFoo { get; set; }
+			public Foo Foo2 { get; set; }
 		}
 
 		public const string SchemaAvroNotAllowNull = @"{""type"":""record"",""name"":""Foo"",""namespace"":""org.apache.pulsar.client.impl.schema.SchemaTestUtils$"",""fields"":[{""name"":""field1"",""type"":[""null"",""string""]," + @"""default"":null},{""name"":""field2"",""type"":[""null"",""string""],""default"":null},{""name"":""field3"",""type"":""int""},{""name"":""field4"",""type"":[""null"",{""type"":" + @"""record"",""name"":""Bar"",""fields"":[{""name"":""field1"",""type"":""boolean""}]}],""default"":null},{""name"":""color"",""type"":[""null"",{""type"":""enum"",""name"":""Color""," + @"""symbols"":[""RED"",""BLUE""]}],""default"":null},{""name"":""fieldUnableNull"",""type"":""string"",""default"":""defaultValue""}]}";
