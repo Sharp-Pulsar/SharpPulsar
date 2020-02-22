@@ -191,9 +191,9 @@ namespace SharpPulsar.Impl
 						}
 						else
 						{
-							Log.LogWarning("[{}] Connection handshake failed: {}", cnnx.Result.Channel(), cnnx.Exception.Message);
-							cxnTask.SetException(cnnx.Exception);
-							CleanupConnection(cnx.RemoteHostName, connectionKey);
+							Log.LogWarning("[{}] Connection handshake failed: {}", cnnx.Result.Channel(), cnnx.Exception?.Message);
+                            if (cnnx.Exception != null) cxnTask.SetException(cnnx.Exception);
+                            CleanupConnection(cnx.RemoteHostName, connectionKey);
 							cnnx.Result.Ctx().CloseAsync();
 						}
 
@@ -201,9 +201,9 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					Log.LogWarning("Failed to open connection to {} : {}", physicalAddress, connectionTask.Exception.Message);
+					Log.LogWarning("Failed to open connection to {} : {}", physicalAddress, connectionTask.Exception?.Message);
 					CleanupConnection(connectionTask.Result.RemoteAddress.ToString(), connectionKey);
-					cxnTask.SetException(new PulsarClientException(connectionTask.Exception.Message));
+					cxnTask.SetException(new PulsarClientException(connectionTask.Exception?.Message));
 				}
 			});
 
@@ -228,41 +228,17 @@ namespace SharpPulsar.Impl
 		/// Try to connect to a sequence of IP addresses until a successfull connection can be made, or fail if no address is
 		/// working
 		/// </summary>
-		private ValueTask<IChannel> ConnectToResolvedAddresses(IEnumerator<IPAddress> unresolvedAddresses, int port)
+		private async ValueTask<IChannel> ConnectToResolvedAddresses(IEnumerator<IPAddress> unresolvedAddresses, int port)
 		{
-			var channelTask = new TaskCompletionSource<IChannel>();
-			var connected = false;
-			while(unresolvedAddresses.MoveNext() && !connected)
-			{
-				ConnectToAddress(unresolvedAddresses.Current.ToString(), port).AsTask().ContinueWith(task =>
-				{
-					if (task.Status != TaskStatus.Faulted)
-					{
-						channelTask.SetResult(task.Result);
-						connected = true;
-					}
-					else if (unresolvedAddresses.MoveNext())
-					{
-						ConnectToAddress(unresolvedAddresses.Current.ToString(), port).AsTask().ContinueWith(task2 =>
-						{
-							if (task2.Status != TaskStatus.Faulted)
-							{
-								channelTask.SetResult(task2.Result);
-								connected = true;
-							}
-							else
-							{
-								channelTask.SetException(task2.Exception);
-							}
-						});
-					}
-					else
-					{
-						channelTask.SetException(task.Exception);
-					}
-				});
+			while(unresolvedAddresses.MoveNext())
+            {
+                var c = await ConnectToAddress(unresolvedAddresses.Current?.ToString(), port);
+                if (c.Open)
+                {
+                    return c;
+                }
 			}
-			return new ValueTask<IChannel>(channelTask.Task.Result);
+			throw new Exception("Could not connect to server!");
 		}
 
 		public  ValueTask<IList<IPAddress>> ResolveName(string hostname)
@@ -274,32 +250,21 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Attempt to establish a TCP connection to an already resolved single IP address
 		/// </summary>
-		private ValueTask<IChannel> ConnectToAddress(string server, int port)
+		private async ValueTask<IChannel> ConnectToAddress(string server, int port)
 		{
-			var channelTask = new TaskCompletionSource<IChannel>();
+            var b = await _bootstrap.ConnectAsync(server, port);
 
-			_bootstrap.ConnectAsync(server, port).ContinueWith(task =>
-			{
-				if (task.Status == TaskStatus.RanToCompletion)
-				{
-					channelTask.SetResult(task.Result);
-				}
-				else
-				{
-					channelTask.SetException(task.Exception);
-				}
-			});
-
-			return new ValueTask<IChannel>(channelTask.Task.Result);
+			return b;
 		}
 
 		public void Close()
 		{
 			try
 			{
-				_eventLoopGroup.ShutdownGracefullyAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5)).Wait();
+				_eventLoopGroup.ShutdownGracefullyAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5)).GetAwaiter();
+				CloseAllConnections();
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				Log.LogWarning("EventLoopGroup shutdown was interrupted", e);
 			}
@@ -310,11 +275,8 @@ namespace SharpPulsar.Impl
 		{
 			Task<ClientCnx> connectionTask = null;
 			var map = _pool[server];
-			if (map != null)
-			{
-				map.Remove(connectionKey, out connectionTask);
-			}
-			return connectionTask;
+            map?.Remove(connectionKey, out connectionTask);
+            return connectionTask;
 		}
 
 		public static int SignSafeMod(long dividend, int divisor)
@@ -329,7 +291,7 @@ namespace SharpPulsar.Impl
 
 		public void Dispose()
 		{
-			throw new NotImplementedException();
+			Close();
 		}
 
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConnectionPool));

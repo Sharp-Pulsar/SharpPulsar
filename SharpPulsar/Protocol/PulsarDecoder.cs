@@ -643,97 +643,103 @@ namespace SharpPulsar.Protocol
 
 		public void ChannelRegistered(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelUnregistered(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelActive(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelInactive(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelRead(IChannelHandlerContext context, object message)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelReadComplete(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void ChannelWritabilityChanged(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void HandlerAdded(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+			Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void HandlerRemoved(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public Task WriteAsync(IChannelHandlerContext context, object message)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
 		}
 
 		public void Flush(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
 		}
 
 		public Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
 		{
-			throw new NotImplementedException();
-		}
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
+        }
 
 		public Task DisconnectAsync(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
 		}
 
 		public Task CloseAsync(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
 		}
 
 		public void ExceptionCaught(IChannelHandlerContext context, Exception exception)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(exception.Message);
 		}
 
 		public Task DeregisterAsync(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
+            return Task.CompletedTask;
 		}
 
 		public void Read(IChannelHandlerContext context)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		public void UserEventTriggered(IChannelHandlerContext context, object evt)
 		{
-			throw new NotImplementedException();
+            Console.WriteLine(context.Channel.RemoteAddress);
 		}
 
 		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarDecoder));

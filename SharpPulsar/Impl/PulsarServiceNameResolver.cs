@@ -38,9 +38,9 @@ namespace SharpPulsar.Impl
 		{
 			var list = _addressList;
 			if(list == null)
-				throw new ArgumentNullException("No service url is provided yet");
+				throw new ArgumentException("No service url is provided yet");
 			if(list.Count < 1)
-				throw new ArgumentNullException("No hosts found for service url : " + ServiceUrl);
+				throw new ArgumentException("No hosts found for service url : " + ServiceUrl);
 			if (list.Count == 1)
 			{
 				return list[0];

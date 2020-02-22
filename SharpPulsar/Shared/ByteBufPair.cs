@@ -101,102 +101,105 @@ namespace SharpPulsar.Shared
 		{
 			public Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public void ChannelActive(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelInactive(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelRead(IChannelHandlerContext context, object message)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelReadComplete(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelRegistered(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelUnregistered(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelWritabilityChanged(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public Task CloseAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
+                return Task.CompletedTask;
 			}
 
 			public Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
+                return Task.CompletedTask;
 			}
 
 			public Task DeregisterAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
+                return Task.CompletedTask;
 			}
 
 			public Task DisconnectAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
+                return Task.CompletedTask;
 			}
 
 			public void ExceptionCaught(IChannelHandlerContext context, Exception exception)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(exception.Message);
 			}
 
 			public void Flush(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void HandlerAdded(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void HandlerRemoved(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void Read(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void UserEventTriggered(IChannelHandlerContext context, object evt)
 			{
-				throw new NotImplementedException();
+                Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			
 			public async Task WriteAsync(IChannelHandlerContext context, object msg)
 			{
-				if (msg is ByteBufPair)
+				if (msg is ByteBufPair b)
 				{
-					ByteBufPair b = (ByteBufPair)msg;
-
-					// Write each buffer individually on the socket. The retain() here is needed to preserve the fact that
+                    // Write each buffer individually on the socket. The retain() here is needed to preserve the fact that
 					// ByteBuf are automatically released after a write. If the ByteBufPair ref count is increased and it
 					// gets written multiple times, the individual buffers refcount should be reflected as well.
 					try
@@ -221,92 +224,97 @@ namespace SharpPulsar.Shared
 		{
 			public Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public void ChannelActive(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelInactive(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelRead(IChannelHandlerContext context, object message)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelReadComplete(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelRegistered(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelUnregistered(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void ChannelWritabilityChanged(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public Task CloseAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public Task DeregisterAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public Task DisconnectAsync(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
+                 return Task.CompletedTask;
 			}
 
 			public void ExceptionCaught(IChannelHandlerContext context, Exception exception)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void Flush(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void HandlerAdded(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void HandlerRemoved(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void Read(IChannelHandlerContext context)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 			public void UserEventTriggered(IChannelHandlerContext context, object evt)
 			{
-				throw new NotImplementedException();
+				 Console.WriteLine(context.Channel.RemoteAddress);
 			}
 
 
