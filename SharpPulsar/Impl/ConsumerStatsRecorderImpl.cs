@@ -260,7 +260,7 @@ namespace SharpPulsar.Impl
         public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
 
 
-        private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerStatsRecorderImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerStatsRecorderImpl<T>));
 	}
 
 }

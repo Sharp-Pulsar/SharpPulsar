@@ -1320,7 +1320,7 @@ namespace SharpPulsar.Impl
 				return new ValueTask<IMessageId>(returnTask.Task);
 			}
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<MultiTopicsConsumerImpl<T>>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<MultiTopicsConsumerImpl<T>>();
 	}
 
 }

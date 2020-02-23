@@ -288,7 +288,7 @@ namespace SharpPulsar.Impl
             }
         }
 
-        private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
         
         //https://stackoverflow.com/questions/8137391/percentile-calculation
         public double[] GetQuantiles(double[] ranks)

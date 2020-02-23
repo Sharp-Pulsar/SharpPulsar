@@ -25,7 +25,7 @@ namespace SharpPulsar.Protocol.Circe
     public class Crc32CIntChecksum
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(Crc32CIntChecksum));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(Crc32CIntChecksum));
 
 		internal static readonly IncrementalIntHash Crc32CHash;
 

@@ -94,7 +94,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger((typeof(AuthenticationDataTls)));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger((typeof(AuthenticationDataTls)));
 	}
 
 }

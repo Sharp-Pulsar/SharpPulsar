@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 
 	public class UnAckedMessageTracker<T> : IDisposable
     {
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(UnAckedMessageTracker<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(UnAckedMessageTracker<T>));
 
 		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentHashSet<IMessageId>> MessageIdPartitionMap;
 		protected internal readonly LinkedList<ConcurrentHashSet<IMessageId>> TimePartitions;

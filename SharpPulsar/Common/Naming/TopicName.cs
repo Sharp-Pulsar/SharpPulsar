@@ -31,7 +31,7 @@ namespace SharpPulsar.Common.Naming
 	public class TopicName : ServiceUnitId
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(TopicName));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(TopicName));
 
 		public const string PublicTenant = "public";
 		public const string DefaultNamespace = "default";

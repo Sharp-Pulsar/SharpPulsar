@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl
     public class PartitionedProducerImpl<T> : ProducerBase<T>
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PartitionedProducerImpl<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PartitionedProducerImpl<T>));
 
 		private readonly IList<ProducerImpl<T>> _producers;
 		private readonly IMessageRouter _routerPolicy;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl
 		internal TopicsPartitionChangedListener TopicPartitionChangedListener;
 		internal TaskCompletionSource<Task> PartitionsAutoUpdateTask = null;
 
-		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
+		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer<T>> producerCreated, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreated, schema, interceptors)
         {
             _topic = topic;
 			_producers = new List<ProducerImpl<T>>(numPartitions);
@@ -129,40 +129,35 @@ namespace SharpPulsar.Impl
 
         private void Start()
 		{
-			var createFail = new AtomicReference<System.Exception>();
+			var createFail = new AtomicReference<Exception>();
 			var completed = new AtomicInteger();
 			for (var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
-				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = new ProducerImpl<T>(Client, partitionName, Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, Schema, Interceptors);
-				_producers.Add(producer);
-				producer.ProducerCreatedTask.Task.ContinueWith(task =>
+                try
                 {
-                    var createException = task.Exception;
-				    if (createException != null)
-				    {
-					    SetState(State.Failed);
-					    createFail.CompareAndSet(null, createException);
-				    }
-				    if (completed.Increment() == _topicMetadata.NumPartitions())
-				    {
-					    if (createFail.Value == null)
-					    {
+                    var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
+                    var producer = new ProducerImpl<T>(Client, partitionName, Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, Schema, Interceptors);
+					if (completed.Increment() == _topicMetadata.NumPartitions())
+                    {
+                        if (createFail.Value == null)
+                        {
                             SetState(State.Ready);
-						    Log.LogInformation("[{}] Created partitioned producer", Topic);
-						    ProducerCreatedTask.SetResult(this);
-					    }
-					    else
-					    {
-						    Log.LogError("[{}] Could not create partitioned producer.", Topic, createFail.Value.InnerException);
-						    CloseAsync().AsTask().ContinueWith(ex =>
-						    {
-							    ProducerCreatedTask.SetException(createFail.Value);
-							    Client.CleanupProducer(this);
-						    });
-					    }
-				    }
-				});
+                            Log.LogInformation("[{}] Created partitioned producer", Topic);
+                        }
+                        else
+                        {
+                            Log.LogError("[{}] Could not create partitioned producer.", Topic, createFail.Value.InnerException);
+                            CloseAsync();
+                            throw createFail.Value;
+                        }
+                    }
+					_producers.Add(producer);
+                }
+                catch (Exception e)
+                {
+					SetState(State.Failed);
+                    createFail.CompareAndSet(null, e);
+                }
 			}
 
 		}
@@ -172,21 +167,27 @@ namespace SharpPulsar.Impl
 			var t = new TaskCompletionSource<IMessageId>();
 			switch (GetState())
 			{
-			case State.Ready:
-			case State.Connecting:
-				break; // Ok
-			case State.Closing:
-			case State.Closed:
-				t.SetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-				return t;
-			case State.Terminated:
-				t.SetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-				return t;
-			case State.Failed:
-			case State.Uninitialized:
-				t.SetException(new PulsarClientException.NotConnectedException());
-				return t;
-			}
+			    case State.Ready:
+			    case State.Connecting:
+				    break; // Ok
+			    case State.Closing:
+			    case State.Closed:
+				    t.SetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+				    return t;
+			    case State.Terminated:
+				    t.SetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+				    return t;
+			    case State.Failed:
+			    case State.Uninitialized:
+				    t.SetException(new PulsarClientException.NotConnectedException());
+				    return t;
+                case State.RegisteringSchema:
+                    break;
+                case null:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
 			var partition = _routerPolicy.ChoosePartition(message, _topicMetadata);
 			if(partition <= 0 && partition > _topicMetadata.NumPartitions())

@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
 	/// </summary>
 	public class ProducerInterceptors : IDisposable
 	{
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ProducerInterceptors>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<ProducerInterceptors>();
 
 		private readonly IList<IProducerInterceptor> _interceptors;
 

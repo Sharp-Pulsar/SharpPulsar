@@ -1066,10 +1066,6 @@ namespace SharpPulsar.Impl
                     {
                         schemaInfo = (SchemaInfo)Schema.SchemaInfo;
                     }
-                    else if (Schema is JsonSchema<T> jsonSchema)
-                    {
-                        schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
-                    }
                     else
                     {
                         schemaInfo = (SchemaInfo)Schema.SchemaInfo;
@@ -1086,70 +1082,27 @@ namespace SharpPulsar.Impl
                 }
             }
 
-            cnx.SendRequestWithId(Commands.NewProducer(Topic, ProducerId, requestId, HandlerName, Conf.EncryptionEnabled, _metadata, schemaInfo, ConnectionHandler.Epoch, _userProvidedProducerName), requestId)
-		    .AsTask().ContinueWith(task =>
-			{
-                if (task.IsFaulted)
-                {
-                    System.Exception cause = task.Exception;
-                    cnx.RemoveProducer(ProducerId);
-                    if (GetState() == State.Closing || GetState() == State.Closed)
-                    {
-                        cnx.Channel().CloseAsync();
-                        //return null;
-                    }
-                    Log.LogError("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, cause.Message);
-                    if (cause is PulsarClientException.ProducerBlockedQuotaExceededException)
-                    {
-                        lock (this)
-                        {
-                            Log.LogWarning("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
-                            if (Log.IsEnabled(LogLevel.Debug))
-                            {
-                                Log.LogDebug("[{}] [{}] Pending messages: {}", Topic, HandlerName, _pendingMessages.Count);
-                            }
-                            PulsarClientException bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(string.Format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
-                            FailPendingMessages(cnx, bqe);
-                        }
-                    }
-                    else if (cause is PulsarClientException.ProducerBlockedQuotaExceededError)
-                    {
-                        Log.LogWarning("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
-                    }
-                    if (cause is PulsarClientException.TopicTerminatedException)
-                    {
-                        ChangeToState(State.Terminated);
-                        FailPendingMessages(cnx, (PulsarClientException)cause);
-                        ProducerCreatedTask.SetException(cause);
-                        Client.CleanupProducer(this);
-                    }
-                    else if (ProducerCreatedTask.Task.IsCompletedSuccessfully || (cause is PulsarClientException exception && ConnectionHandler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
-                    {
-                        ReconnectLater(cause);
-                    }
-                    else
-                    {
-                        ChangeToState(State.Failed);
-                        ProducerCreatedTask.SetException(cause);
-                        Client.CleanupProducer(this);
-                    }
-                    return;
-				}
-				var response = task.Result;
+            try
+            {
+                var response =
+                    cnx.SendRequestWithId(
+                        Commands.NewProducer(Topic, ProducerId, requestId, HandlerName, Conf.EncryptionEnabled, _metadata,
+                            schemaInfo, ConnectionHandler.Epoch, _userProvidedProducerName), requestId).GetAwaiter().GetResult();
+				
 				var producerName = response.ProducerName;
 				var lastSequenceId = response.LastSequenceId;
 				var schemaVersion = response.SchemaVersion;
-				if(schemaVersion != null)
+				if (schemaVersion != null)
 				{
 					SchemaCache.TryAdd(SchemaHash.Of(Schema), schemaVersion);
 				}
-				
+
 				lock (this)
 				{
 					if (GetState() == State.Closing || GetState() == State.Closed)
 					{
 						cnx.RemoveProducer(ProducerId);
-						cnx.Channel().CloseAsync();
+						cnx.Channel().CloseAsync().GetAwaiter();
 						return;
 					}
 					ResetBackoff();
@@ -1158,8 +1111,7 @@ namespace SharpPulsar.Impl
 					_connectedSince = DateTime.Now.ToString(CultureInfo.InvariantCulture);
 					if (HandlerName is null)
 					{
-					
-						HandlerName = producerName;
+                        HandlerName = producerName;
 					}
 					if (MsgIdGenerator[this] == 0 && Conf.InitialSequenceId == null)
 					{
@@ -1167,13 +1119,60 @@ namespace SharpPulsar.Impl
 						MsgIdGenerator[this] = LastSequenceId + 1;
 					}
 					if (!ProducerCreatedTask.Task.IsCompletedSuccessfully && BatchMessagingEnabled)
-                    {
-                        Client.Timer.NewTimeout(new TimerTaskAnonymousInnerClass(this), TimeSpan.FromTicks(Conf.BatchingMaxPublishDelayMicros));
-                    }
+					{
+						Client.Timer.NewTimeout(new TimerTaskAnonymousInnerClass(this), TimeSpan.FromTicks(Conf.BatchingMaxPublishDelayMicros));
+					}
 					ResendMessages(cnx);
 				}
-			});
-		}
+			}
+            catch (Exception e)
+            {
+                cnx.RemoveProducer(ProducerId);
+                if (GetState() == State.Closing || GetState() == State.Closed)
+                {
+                    cnx.Channel().CloseAsync().GetAwaiter();
+                    //return null;
+                }
+                Log.LogError("[{}] [{}] Failed to create producer: {}", Topic, HandlerName, e.Message);
+                if (e is PulsarClientException.ProducerBlockedQuotaExceededException)
+                {
+                    lock (this)
+                    {
+                        Log.LogWarning("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, HandlerName);
+                        if (Log.IsEnabled(LogLevel.Debug))
+                        {
+                            Log.LogDebug("[{}] [{}] Pending messages: {}", Topic, HandlerName, _pendingMessages.Count);
+                        }
+                        PulsarClientException bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(string.Format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, HandlerName));
+                        FailPendingMessages(cnx, bqe);
+                    }
+                }
+                else if (e is PulsarClientException.ProducerBlockedQuotaExceededError)
+                {
+                    Log.LogWarning("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", HandlerName, Topic);
+                }
+                if (e is PulsarClientException.TopicTerminatedException)
+                {
+                    ChangeToState(State.Terminated);
+                    FailPendingMessages(cnx, (PulsarClientException)e);
+                    ProducerCreatedTask.SetException(e);
+					Client.CleanupProducer(this);
+                    
+                }
+                else if (ProducerCreatedTask.Task.IsCompletedSuccessfully || (e is PulsarClientException exception && ConnectionHandler.IsRetriableError(exception) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
+                {
+                    ReconnectLater(e);
+                }
+                else
+                {
+                    ChangeToState(State.Failed);
+                    ProducerCreatedTask.SetException(e);
+                    Client.CleanupProducer(this);
+                }
+                return;
+            }
+
+        }
 	
 		public void ConnectionFailed(PulsarClientException exception)
 		{
@@ -1188,32 +1187,32 @@ namespace SharpPulsar.Impl
 		{
 			cnx.Ctx().Channel.EventLoop.Execute(() =>
 			{
-			lock (this)
-			{
-				if (GetState() == State.Closing || GetState() == State.Closed)
-				{
-					cnx.Channel().CloseAsync();
-					return;
-				}
-				var messagesToResend = _pendingMessages.Count();
-				if (messagesToResend == 0)
-				{
-					if (Log.IsEnabled(LogLevel.Debug))
-					{
-						Log.LogDebug("[{}] [{}] No pending messages to resend {}", Topic, HandlerName, messagesToResend);
-					}
-					if (ChangeToReadyState())
-					{
-						ProducerCreatedTask.SetResult(this);
-						return;
-					}
+			    lock (this)
+			    {
+				    if (GetState() == State.Closing || GetState() == State.Closed)
+				    {
+					    cnx.Channel().CloseAsync();
+					    return;
+				    }
+				    var messagesToResend = _pendingMessages.Count();
+				    if (messagesToResend == 0)
+				    {
+					    if (Log.IsEnabled(LogLevel.Debug))
+					    {
+						    Log.LogDebug("[{}] [{}] No pending messages to resend {}", Topic, HandlerName, messagesToResend);
+					    }
+					    if (ChangeToReadyState())
+					    {
+						    ProducerCreatedTask.SetResult(this);
+						    return;
+					    }
 
-                    cnx.Channel().CloseAsync();
-                    return;
-                }
-				Log.LogInformation("[{}] [{}] Re-Sending {} messages to server", Topic, HandlerName, messagesToResend);
-				RecoverProcessOpSendMsgFrom(cnx, null);
-			}
+                        cnx.Channel().CloseAsync();
+                        return;
+                    }
+				    Log.LogInformation("[{}] [{}] Re-Sending {} messages to server", Topic, HandlerName, messagesToResend);
+				    RecoverProcessOpSendMsgFrom(cnx, null);
+			    }
 			});
 		}
 
@@ -1674,7 +1673,7 @@ namespace SharpPulsar.Impl
 
 		public Semaphore Semaphore => _semaphore;
 
-        private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ProducerImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerImpl<T>));
 	}
 
 }

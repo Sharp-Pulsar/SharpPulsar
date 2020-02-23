@@ -47,10 +47,10 @@ namespace SharpPulsar.Impl
 		public MultiSchemaMode ProducerMultiSchemaMode;
 
 
-        protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
+        protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
         {
 			Stats = new ProducerStatsRecorderImpl<T>(client, conf, this);
-			ProducerCreatedTask = producerCreatedFuture;
+			ProducerCreatedTask = producerCreatedTask;
 			Conf = conf;
 			Schema = schema;
 			Interceptors = interceptors;
@@ -189,10 +189,11 @@ namespace SharpPulsar.Impl
 			return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
 		}
 
-		public void Dispose()
-		{
-			throw new NotImplementedException();
-		}
+        public ValueTask DisposeAsync()
+        {
+            return CloseAsync();
+        }
+
 		
 
         public static explicit operator ProducerBase<object>(ProducerBase<T> v)

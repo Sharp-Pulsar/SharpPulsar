@@ -52,7 +52,7 @@ namespace SharpPulsar.Impl
 	}
 	public class PulsarClientImpl : IPulsarClient
 	{
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<PulsarClientImpl>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<PulsarClientImpl>();
 
 		public ClientConfigurationData Configuration;
 		public ILookupService Lookup;
@@ -152,80 +152,79 @@ namespace SharpPulsar.Impl
 			return CreateProducerAsync(conf, schema, null);
 		}
 
-		public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
+		public virtual async ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
 		{
 			if (conf == null)
 			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined")));
+				throw new PulsarClientException.InvalidConfigurationException("Producer configuration undefined");
 			}
 
 			if (schema is AutoConsumeSchema)
 			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically")));
+				throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
 			}
 
 			if (_state != State.Open)
 			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.AlreadyClosedException("Client already closed : state = " + _state)));
+				throw new PulsarClientException.AlreadyClosedException("Client already closed : state = " + _state);
 			}
 
 			var topic = conf.TopicName;
 
 			if (!TopicName.IsValid(topic))
 			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'")));
+				throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
 			}
 
 			if (schema is AutoProduceBytesSchema<T> autoProduceBytesSchema)
 			{
                 if (autoProduceBytesSchema.SchemaInitialized())
 				{
-					return CreateProducerAsync(topic, conf, schema, interceptors);
+					return await CreateProducerAsync(topic, conf, schema, interceptors);
 				}
 				var lkup = Lookup.GetSchema(TopicName.Get(conf.TopicName));
 				var schemaInfoOptional = lkup.Result;
 				autoProduceBytesSchema.Schema = schemaInfoOptional != null ? ISchema<T>.GetSchema(schemaInfoOptional) : autoProduceBytesSchema.Schema;
-				return CreateProducerAsync(topic, conf, schema, interceptors);
+				return await CreateProducerAsync(topic, conf, schema, interceptors);
 			}
 
-            return CreateProducerAsync(topic, conf, schema, interceptors);
+            return await CreateProducerAsync(topic, conf, schema, interceptors);
 
         }
 
-		private ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
+		private async ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
 		{
 			var producerCreated = new TaskCompletionSource<IProducer<T>>();
 
-			GetPartitionedTopicMetadata(topic).AsTask().ContinueWith(metadataTask => 
-			{
-				var metadata = metadataTask.Result;
-				if (metadataTask.IsFaulted){
-					Log.LogWarning("[{}] Failed to get partitioned topic metadata: {}", topic, metadataTask.Exception.Message);
-					producerCreated.SetException(metadataTask.Exception);
-					return;
-				}
-				if (Log.IsEnabled(LogLevel.Debug))
-				{
-					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.Partitions);
-				}
-				ProducerBase<T> producer;
-				if (metadata.Partitions > 0)
-				{
-					producer = new PartitionedProducerImpl<T>(this, topic, conf, metadata.Partitions, producerCreated, schema, interceptors);
-				}
-				else
-				{
-					producer = new ProducerImpl<T>(this, topic, conf, producerCreated, -1, schema, interceptors);
-				}
-				lock (_producers)
-				{
-					var p = (ProducerBase<object>)Convert.ChangeType(producer, typeof(IProducer<object>));
-					_producers.Add(p);//pend
-				}
-				producerCreated.SetResult(producer);
-			});
+            var metadata = await GetPartitionedTopicMetadata(topic);
+            if (Log.IsEnabled(LogLevel.Debug))
+            {
+                Log.LogDebug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}" );
+            }
+            ProducerBase<T> producer;
+            if (metadata.Partitions > 0)
+            {
+                producer = new PartitionedProducerImpl<T>(this, topic, conf, metadata.Partitions, producerCreated, schema, interceptors);
+            }
+            else
+            {
+                producer = new ProducerImpl<T>(this, topic, conf, producerCreated, -1, schema, interceptors);
+            }
+            lock (_producers)
+            {
+                var p = (ProducerBase<object>)Convert.ChangeType(producer, typeof(IProducer<object>));
+                _producers.Add(p);//pend
+            }
 
-			return new ValueTask<IProducer<T>>(producerCreated.Task.Result);
+            if (producerCreated.Task.IsFaulted)
+            {
+                if (producerCreated.Task.Exception != null)
+                    throw producerCreated.Task.Exception;
+				throw new PulsarClientException("Producer creation faulted");
+			}
+            producerCreated.SetResult(producer);
+
+            return producerCreated.Task.Result;
 		}
 
 		public ValueTask<IConsumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
@@ -653,15 +652,14 @@ namespace SharpPulsar.Impl
 			{
 				var ex = lkup.AsTask().Exception;
 				var nextDelay = Math.Min(backoff.Next(), remainingTime.Get());
-				var isLookupThrottling = ex is PulsarClientException.TooManyRequestsException;
-				if (nextDelay <= 0 || isLookupThrottling)
+				if (nextDelay <= 0)
 				{
-					task.SetException(ex);
+					task.SetException(ex ?? throw new InvalidOperationException());
 					return;
 				}
                 _executor.Schedule(() =>
                 {
-                    Log.LogWarning("[topic: {}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {} ms", topicName, nextDelay);
+                    Log.LogWarning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
 					remainingTime.AddAndGet(-nextDelay);
 					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, task);
                 }, TimeSpan.FromSeconds(nextDelay));

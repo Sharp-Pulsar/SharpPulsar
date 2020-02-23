@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(MultiVersionSchemaInfoProvider));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(MultiVersionSchemaInfoProvider));
 
 		private readonly TopicName _topicName;
 		public virtual PulsarClientImpl PulsarClient { get;}

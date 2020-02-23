@@ -152,7 +152,7 @@ namespace SharpPulsar.Impl.Schema
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<AutoConsumeSchema>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<AutoConsumeSchema>();
 	}
 
 }

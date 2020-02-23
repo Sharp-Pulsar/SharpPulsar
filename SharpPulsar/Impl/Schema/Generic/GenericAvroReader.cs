@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Schema.Generic
             return r.Read(default(T), new BinaryDecoder(stream));
         }
 		
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(GenericAvroReader));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroReader));
 	}
 
 }

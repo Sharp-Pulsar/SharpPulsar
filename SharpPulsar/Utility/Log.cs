@@ -5,18 +5,11 @@ namespace SharpPulsar.Utility
 {
     public class Log
     {
-        private static ILogger _logger = new NullLogger<ILogger>();
-        public static ILogger Logger
+        public static ILoggerFactory Logger { get; set; } = LoggerFactory.Create(builder =>
         {
-            get
-            {
-                return _logger;
-            }
-            set
-            {
-                _logger = value;
-            }
-        }
-
+            builder
+                .SetMinimumLevel(LogLevel.Debug)
+                .AddConsole();
+        });
     }
 }

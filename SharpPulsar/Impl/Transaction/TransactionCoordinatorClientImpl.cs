@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl.Transaction
     public class TransactionCoordinatorClientImpl : TransactionCoordinatorClient
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(TransactionCoordinatorClientImpl));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(TransactionCoordinatorClientImpl));
 
 		private readonly PulsarClientImpl _pulsarClient;
 		private TransactionMetaStoreHandler[] _handlers;

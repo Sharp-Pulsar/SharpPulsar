@@ -232,7 +232,7 @@ namespace SharpPulsar.Impl
                 _scheduledTask.Cancel();
             }
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<PersistentAcknowledgmentsGroupingTracker<T>>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<PersistentAcknowledgmentsGroupingTracker<T>>();
         public void Dispose()
         {
            Close();

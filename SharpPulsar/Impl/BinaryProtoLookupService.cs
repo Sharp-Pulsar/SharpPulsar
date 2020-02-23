@@ -75,128 +75,83 @@ namespace SharpPulsar.Impl
 			return GetPartitionedTopicMetadata(_serviceNameResolver.ResolveHost(), topicName);
 		}
 
-		private ValueTask<KeyValuePair<EndPoint, EndPoint>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
+		private async ValueTask<KeyValuePair<EndPoint, EndPoint>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
 		{
-			var addressTask = new TaskCompletionSource<KeyValuePair<EndPoint, EndPoint>>();
-
-			_client.CnxPool.GetConnection(socketAddress).AsTask().ContinueWith(task =>
+            try
             {
-                if (task.IsFaulted)
+                var clientCnx = await _client.CnxPool.GetConnection(socketAddress);
+                var requestId = _client.NewRequestId();
+                var request = Commands.NewLookup(topicName.ToString(), authoritative, requestId);
+				var lookupDataResult = await clientCnx.NewLookup(request, requestId);
+                Uri uri = null;
+                try
                 {
-                    addressTask.SetException(task.Exception ?? throw new InvalidOperationException());
-                    return;
-				}
-                var clientCnx = task.Result;
-				var requestId = _client.NewRequestId();
-				var request = Commands.NewLookup(topicName.ToString(), authoritative, requestId);
-				clientCnx.NewLookup(request, requestId).Task.ContinueWith(tsk =>
-                {
-                    if (tsk.IsFaulted)
+                    if (_useTls)
                     {
-                        if (tsk.Exception != null)
-                            Log.LogWarning("[{}] failed to send lookup request : {}", topicName.ToString(),
-                                tsk.Exception.Message);
-                        if (Log.IsEnabled(LogLevel.Debug))
+                        uri = new Uri(lookupDataResult.BrokerUrlTls);
+                    }
+                    else
+                    {
+                        string serviceUrl = lookupDataResult.BrokerUrl;
+                        uri = new Uri(serviceUrl);
+                    }
+                    var responseBrokerAddress = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
+                    if (lookupDataResult.Redirect)
+                    {
+                        try
                         {
-                            Log.LogWarning("[{}] Lookup response exception: {}", topicName.ToString(), tsk.Exception);
+                            var broker = await FindBroker(responseBrokerAddress, lookupDataResult.Authoritative, topicName);
+                            return broker;
                         }
-                        addressTask.SetException(tsk.Exception ?? throw new InvalidOperationException());
-                        return;
-					}
-                    var lookupDataResult = tsk.Result;
-
-					Uri uri = null;
-				    try
-				    {
-					    if (_useTls)
-					    {
-						    uri = new Uri(lookupDataResult.BrokerUrlTls);
-					    }
-					    else
-					    {
-						    string serviceUrl = lookupDataResult.BrokerUrl;
-						    uri = new Uri(serviceUrl);
-					    }
-					    var responseBrokerAddress = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port); 
-					    if (lookupDataResult.Redirect)
-					    {
-						    FindBroker(responseBrokerAddress, lookupDataResult.Authoritative, topicName).AsTask().ContinueWith(taskAddr =>
-                            {
-                                if (taskAddr.IsFaulted)
-                                {
-                                    if (taskAddr.Exception != null)
-                                    {
-                                        Log.LogWarning("[{}] lookup failed : {}", topicName.ToString(),
-                                            taskAddr.Exception.Message, taskAddr.Exception);
-                                        addressTask.SetException(taskAddr.Exception);
-                                    }
-
-                                    return;
-								}
-                                var addressPair = taskAddr.Result;
-                                addressTask.SetResult(addressPair);
-						    });
-					    }
-					    else
-					    {
-						    if (lookupDataResult.ProxyThroughServiceUrl)
-						    {
-							    addressTask.SetResult(new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, socketAddress));
-						    }
-						    else
-						    {
-								addressTask.SetResult(new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, responseBrokerAddress));
-							}
-					    }
-				    }
-				    catch (System.Exception parseUrlException)
-				    {
-					    Log.LogWarning("[{}] invalid url {} : {}", topicName.ToString(), uri, parseUrlException.Message, parseUrlException);
-					    addressTask.SetException(parseUrlException);
-				    }
-			    });
-			});
-			return new ValueTask<KeyValuePair<EndPoint, EndPoint>>(addressTask.Task);
-		}
-
-		private ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(IPEndPoint socketAddress, TopicName topicName)
-		{
-
-			var partitionTask = new TaskCompletionSource<PartitionedTopicMetadata>();
-
-			_client.CnxPool.GetConnection(socketAddress).AsTask().ContinueWith(task =>
-            {
-                if (task.IsFaulted)
-                {
-                    partitionTask.SetException(task.Exception ?? throw new InvalidOperationException());
-                    return;
-				}
-                var clientCnx = task.Result;
-
-				var requestId = _client.NewRequestId();
-			    var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
-			    clientCnx.NewLookup(request, requestId).Task.ContinueWith(tskNew =>
-                {
-                    if (tskNew.IsFaulted)
+                        catch (Exception e)
+                        {
+                            Log.LogWarning("[{}] lookup failed : {}", topicName.ToString(), e.Message, e);
+                            throw;
+                        }
+                    }
+                    if (lookupDataResult.ProxyThroughServiceUrl)
                     {
-                        Log.LogWarning("[{}] failed to get Partitioned metadata : {}", topicName.ToString(), tskNew.Exception.Message, tskNew.Exception);
-                        partitionTask.SetException(tskNew.Exception ?? throw new InvalidOperationException());
-                        return;
-					}
-                    var lookupDataResult = tskNew.Result;
+                        return new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, socketAddress);
+                    }
 
-					try
-				    {
-					    partitionTask.SetResult(new PartitionedTopicMetadata(lookupDataResult.Partitions));
-				    }
-				    catch (System.Exception e)
-				    {
-					    partitionTask.SetException(new PulsarClientException.LookupException(string.Format("Failed to parse partition-response redirect=%s, topic=%s, partitions with %s", lookupDataResult.Redirect, topicName.ToString(), lookupDataResult.Partitions, e.Message)));
-				    }
-			    });
-			});
+                    return new KeyValuePair<EndPoint, EndPoint>(responseBrokerAddress, responseBrokerAddress);
+                }
+                catch (Exception parseUrlException)
+                {
+                    Log.LogWarning("[{}] invalid url {} : {}", topicName.ToString(), uri, parseUrlException.Message, parseUrlException);
+                    throw;
+                }
+            }
+            catch (Exception e)
+            { 
+                Log.LogWarning("[{}] failed to send lookup request : {}", topicName.ToString(), e.Message);
+                if (Log.IsEnabled(LogLevel.Debug))
+                {
+                    Log.LogWarning("[{}] Lookup response exception: {}", topicName.ToString(), e);
+                }
+                throw;
+            }
+        }
 
-			return new ValueTask<PartitionedTopicMetadata>(partitionTask.Task);
+		private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(IPEndPoint socketAddress, TopicName topicName)
+		{
+			
+            try
+            {
+                var clientCnx = await _client.CnxPool.GetConnection(socketAddress);
+
+                var requestId = _client.NewRequestId();
+                var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
+				var lkup = await clientCnx.NewLookup(request, requestId);
+                return new PartitionedTopicMetadata(lkup.Partitions);
+            }
+            catch (Exception e)
+            {
+				Log.LogWarning("[{}] failed to get Partitioned metadata : {}", topicName.ToString(), e.Message, e);
+
+                throw;
+            }
+            
 		}
 
 		public ValueTask<SchemaInfo> GetSchema(TopicName topicName)
@@ -316,7 +271,7 @@ namespace SharpPulsar.Impl
 			}
 
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BinaryProtoLookupService>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BinaryProtoLookupService>();
         public void Dispose()
         {
             Close();

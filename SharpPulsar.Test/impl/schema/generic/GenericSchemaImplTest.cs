@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Impl.schema.generic
 	/// </summary>
 	public class GenericSchemaImplTest
 {
-    private readonly ILogger Log = new LoggerFactory().CreateLogger<GenericSchemaImplTest>();
+    private readonly ILogger Log = Utility.Log.Logger.CreateLogger<GenericSchemaImplTest>();
 		
 		public void TestGenericJsonSchema()
 		{

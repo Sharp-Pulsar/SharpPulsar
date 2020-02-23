@@ -26,7 +26,7 @@ namespace SharpPulsar.Utility
 
 	public class Codec
 	{
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(Codec));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(Codec));
 
 		public static string Encode(string s)
 		{

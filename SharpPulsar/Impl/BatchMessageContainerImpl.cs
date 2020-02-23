@@ -200,7 +200,7 @@ namespace SharpPulsar.Impl
 			return op;
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<BatchMessageContainerImpl<T>>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BatchMessageContainerImpl<T>>();
 	}
 
 }

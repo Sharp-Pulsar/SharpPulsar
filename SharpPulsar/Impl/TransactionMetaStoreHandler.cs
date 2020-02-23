@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 	public class TransactionMetaStoreHandler : HandlerState, IConnection, IDisposable, ITimerTask
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(TransactionMetaStoreHandler));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(TransactionMetaStoreHandler));
 
 		private readonly long _transactionCoordinatorId;
 		private ConnectionHandler _connectionHandler;

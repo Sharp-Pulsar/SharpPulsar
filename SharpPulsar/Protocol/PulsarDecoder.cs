@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using System.Text.Json;
 using SharpPulsar.Utility.Protobuf;
 
 namespace SharpPulsar.Protocol
@@ -643,106 +644,106 @@ namespace SharpPulsar.Protocol
 
 		public void ChannelRegistered(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelRegistered from: " + context.Name);
 		}
 
 		public void ChannelUnregistered(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelUnregistered from: " + context.Name);
 		}
 
 		public void ChannelActive(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelActive from: " + context.Name);
 		}
 
 		public void ChannelInactive(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelInactive from: " + context.Name);
 		}
 
 		public void ChannelRead(IChannelHandlerContext context, object message)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelRead from: " + context.Name);
 		}
 
 		public void ChannelReadComplete(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelReadComplete from: " + context.Name);
 		}
 
 		public void ChannelWritabilityChanged(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("ChannelWritabilityChanged from: " + context.Name);
 		}
 
 		public void HandlerAdded(IChannelHandlerContext context)
 		{
-			Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("HandlerAdded from: " + context.Name);
 		}
 
 		public void HandlerRemoved(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("HandlerRemoved from: " + context.Name);
 		}
 
 		public Task WriteAsync(IChannelHandlerContext context, object message)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation("WriteAsync: " + JsonSerializer.Serialize(message, new JsonSerializerOptions { WriteIndented = true }));
+			return Task.CompletedTask;
 		}
 
 		public void Flush(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+            Log.LogInformation("Flush from: " + context.Name);
 		}
 
 		public Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation($"BindAsync from {localAddress} by {context.Name}");
+			return Task.CompletedTask;
 		}
 
 		public Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation($"ConnectAsync from {localAddress} by {context.Name}");
+			return Task.CompletedTask;
         }
 
 		public Task DisconnectAsync(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation("DisconnectAsync from: " + context.Name);
+			return Task.CompletedTask;
 		}
 
 		public Task CloseAsync(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation("CloseAsync from: " + context.Name);
+			return Task.CompletedTask;
 		}
 
 		public void ExceptionCaught(IChannelHandlerContext context, Exception exception)
 		{
-            Console.WriteLine(exception.Message);
+            Log.LogInformation($"ExceptionCaught from: {context.Name}:{exception}");
 		}
 
 		public Task DeregisterAsync(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
-            return Task.CompletedTask;
+			Log.LogInformation("DeregisterAsync from: " + context.Name);
+			return Task.CompletedTask;
 		}
 
 		public void Read(IChannelHandlerContext context)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+			Log.LogInformation("Read from: " + context.Name);
 		}
 
 		public void UserEventTriggered(IChannelHandlerContext context, object evt)
 		{
-            Console.WriteLine(context.Channel.RemoteAddress);
+			Log.LogInformation("User Event Triggered: "+JsonSerializer.Serialize(evt, new JsonSerializerOptions{WriteIndented = true}));
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarDecoder));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarDecoder));
 	}
 
 }

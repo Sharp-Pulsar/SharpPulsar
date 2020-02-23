@@ -65,7 +65,7 @@ namespace SharpPulsar.Utility
 			return false;
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<FileModifiedTimeUpdater>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<FileModifiedTimeUpdater>();
 	}
 
 }

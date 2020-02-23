@@ -112,7 +112,7 @@ namespace SharpPulsar.Utils
 			}
 		}
 
-		private readonly ILogger _log = new LoggerFactory().CreateLogger(typeof(DefaultHostNameVerifier));
+		private readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(DefaultHostNameVerifier));
 
 		public DefaultHostNameVerifier()
 		{

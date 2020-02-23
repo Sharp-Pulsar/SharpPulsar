@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// </summary>
 	public class GenericJsonSchema : GenericSchemaImpl
 	{
-		private static readonly ILogger _log = new LoggerFactory().CreateLogger(typeof(GenericJsonSchema));
+		private static readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(GenericJsonSchema));
 
         public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{

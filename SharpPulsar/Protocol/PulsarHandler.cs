@@ -140,7 +140,7 @@ namespace SharpPulsar.Protocol
 		/// <returns> true if the connection is ready to use, meaning the Pulsar handshake was already completed </returns>
 		public abstract bool HandshakeCompleted { get; }
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarHandler));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarHandler));
 	}
 
 }

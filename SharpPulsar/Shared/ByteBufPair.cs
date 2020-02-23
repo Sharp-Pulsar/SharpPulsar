@@ -127,7 +127,7 @@ namespace SharpPulsar.Shared
 
 			public void ChannelRegistered(IChannelHandlerContext context)
 			{
-                Console.WriteLine(context.Channel.RemoteAddress);
+                
 			}
 
 			public void ChannelUnregistered(IChannelHandlerContext context)

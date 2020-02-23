@@ -91,7 +91,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			throw new System.NotImplementedException();
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(GenericJsonReader));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericJsonReader));
 	}
 
 }

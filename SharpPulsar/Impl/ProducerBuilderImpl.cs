@@ -62,35 +62,28 @@ namespace SharpPulsar.Impl
 			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
 
-		public IProducer<T> Create()
-		{
-			try
-			{
-				return CreateAsync().GetAwaiter().GetResult();
-			}
-			catch (System.Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-		public ValueTask<IProducer<T>> CreateAsync()
+        public async ValueTask<IProducer<T>> Create()
 		{
 			if (_conf.TopicName == null)
-			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(new ArgumentException("Topic name must be set on the producer builder")));
-			}
+            {
+                throw new ArgumentException("Topic name must be set on the producer builder");
+            }
 
 			try
 			{
 				SetMessageRoutingMode();
 			}
 			catch (PulsarClientException pce)
-			{
-				return new ValueTask<IProducer<T>>(Task.FromException<IProducer<T>>(pce));
-			}
+            {
+                throw;
+            }
 
-			return _interceptorList == null || _interceptorList.Count == 0 ? _client.CreateProducerAsync(_conf, _schema, null) : _client.CreateProducerAsync(_conf, _schema, new ProducerInterceptors(_interceptorList));
+            if (_interceptorList == null || _interceptorList.Count == 0)
+            {
+                return await _client.CreateProducerAsync(_conf, _schema, null);
+
+            }
+			return await _client.CreateProducerAsync(_conf, _schema, new ProducerInterceptors(_interceptorList));
 		}
 
 		public IProducerBuilder<T> LoadConf(IDictionary<string, object> config)

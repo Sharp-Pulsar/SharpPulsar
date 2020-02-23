@@ -498,20 +498,22 @@ namespace SharpPulsar.Impl
 				{
 					_maxLookupRequestSemaphore.Release();
 					// schedule a new lookup in.
-					_eventLoopGroup.Execute(() =>
+					_eventLoopGroup.Execute(async () =>
 					{
-						var newId = firstOneWaiting.Key;
-						var newTask = firstOneWaiting.Value.Value;
-						AddPendingLookupRequests(newId, newTask);
-						Ctx().WriteAndFlushAsync(firstOneWaiting.Value.Key).ContinueWith(writeTask =>
-						{
-							if (writeTask.IsFaulted)
-							{
-								Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, newId, writeTask.Exception.Message);
-								GetAndRemovePendingLookupRequest(newId);
-								newTask.SetException(writeTask.Exception);
-							}
-						});
+
+                        var newId = firstOneWaiting.Key;
+                        var newTask = firstOneWaiting.Value.Value;
+						try
+                        {
+                            AddPendingLookupRequests(newId, newTask);
+                            await Ctx().WriteAndFlushAsync(firstOneWaiting.Value.Key);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, newId, e.Message);
+                            GetAndRemovePendingLookupRequest(newId);
+                            newTask.SetException(e);
+						}
 					});
 					_waitingLookupRequests.RemoveFirst();
 				}
@@ -602,23 +604,24 @@ namespace SharpPulsar.Impl
 
 		public override bool HandshakeCompleted => _state == State.Ready;
 
-        public virtual TaskCompletionSource<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
+        public virtual async ValueTask<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
 		{
 			var task = new TaskCompletionSource<LookupDataResult>();
-
-			if (_pendingLookupRequestSemaphore.WaitOne())
+            if (_pendingLookupRequestSemaphore.WaitOne())
 			{
-				AddPendingLookupRequests(requestId, task);
-				Ctx().WriteAndFlushAsync(request).ContinueWith(writeTask =>
+                try
 				{
-				if (writeTask.IsFaulted)
-				{
-					Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, writeTask.Exception.Message);
-					GetAndRemovePendingLookupRequest(requestId);
-					task.SetException(writeTask.Exception);
+					AddPendingLookupRequests(requestId, task);
+					await Ctx().WriteAndFlushAsync(request);
+                }
+                catch (Exception e)
+                {
+					Log.LogWarning("{} Failed to send request {} to broker: {}", Ctx().Channel, requestId, e.Message);
+                    GetAndRemovePendingLookupRequest(requestId);
+                    task.SetException(e);
 				}
-				});
-			}
+                _pendingLookupRequestSemaphore.Release();
+            }
 			else
 			{
 				if (Log.IsEnabled(LogLevel.Debug))
@@ -630,7 +633,8 @@ namespace SharpPulsar.Impl
                 {
                     var kv = new KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>(requestId, new KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>(request, task));
                     _waitingLookupRequests.AddLast(kv);
-				}
+                    _maxLookupRequestSemaphore.Release();
+                }
 				else
 				{
 					if (Log.IsEnabled(LogLevel.Debug))
@@ -641,7 +645,7 @@ namespace SharpPulsar.Impl
                         $"Requests number out of config: There are {{{_pendingLookupRequests.Count}}} lookup requests outstanding and {{{_waitingLookupRequests.Count}}} requests pending."));
 				}
 			}
-			return task;
+			return task.Task.Result;
 		}
 
 		public virtual TaskCompletionSource<IList<string>> NewGetTopicsOfNamespace(IByteBuffer request, long requestId)
@@ -1052,6 +1056,7 @@ namespace SharpPulsar.Impl
 					// if there is no request that is timed out then exit the loop
 					break;
 				}
+
 			    _requestTimeoutQueue.TryDequeue(out request);
 				_pendingRequests.Remove(request.RequestId, out var requestTask);
 				if (requestTask != null && !requestTask.Task.IsCompleted)
@@ -1061,8 +1066,8 @@ namespace SharpPulsar.Impl
 				}
             }
 		}
-
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger<ClientCnx>();
+		
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<ClientCnx>();
 
         public void RegisterConsumer<T>(in long consumerId, ConsumerImpl<T> consumer)
         {

@@ -196,7 +196,7 @@ namespace SharpPulsar.Impl
 		}
 
 		public virtual long Epoch => _epoch;
-        private static readonly ILogger Log = new LoggerFactory().CreateLogger<ConnectionHandler>();
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<ConnectionHandler>();
 	}
 
 }

@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl.Schema
 	public abstract class StructSchema<T> : AbstractSchema<T>
 	{
 
-		protected internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(StructSchema<T>));
+		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema<T>));
 
 		protected internal readonly Avro.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;

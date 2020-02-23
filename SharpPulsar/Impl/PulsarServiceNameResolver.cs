@@ -103,7 +103,7 @@ namespace SharpPulsar.Impl
 		{
 			return numAddresses == 1 ? 0 : PlatformDependent.GetThreadLocalRandom().Next(numAddresses);
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PulsarServiceNameResolver));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarServiceNameResolver));
 	}
 
 }

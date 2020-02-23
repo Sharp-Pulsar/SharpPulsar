@@ -193,7 +193,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ITimeout RecheckPatternTimeout => _recheckPatternTimeout;
 
-        private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(PatternMultiTopicsConsumerImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PatternMultiTopicsConsumerImpl<T>));
 	}
 
 }

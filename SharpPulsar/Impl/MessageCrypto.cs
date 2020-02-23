@@ -563,7 +563,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(MessageCrypto));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(MessageCrypto));
 
 	}
 

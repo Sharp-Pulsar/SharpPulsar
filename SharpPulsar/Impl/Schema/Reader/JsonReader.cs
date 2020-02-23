@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 			}
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(JsonReader<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader<T>));
 	}
 
 }

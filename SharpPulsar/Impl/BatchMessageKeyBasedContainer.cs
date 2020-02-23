@@ -262,7 +262,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(BatchMessageKeyBasedContainer<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(BatchMessageKeyBasedContainer<T>));
 
 	}
 

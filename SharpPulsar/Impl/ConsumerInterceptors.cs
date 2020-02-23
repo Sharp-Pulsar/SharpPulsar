@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl
 	public class ConsumerInterceptors<T> : IDisposable
     {
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerInterceptors<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerInterceptors<T>));
 
 		private readonly IList<IConsumerInterceptor<T>> _interceptors;
 

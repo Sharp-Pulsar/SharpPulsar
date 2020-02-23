@@ -32,7 +32,7 @@ namespace SharpPulsar.Test.Api
 	public class ConsumerConfigurationTest
 	{
 
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerConfigurationTest));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerConfigurationTest));
 
 		[Fact]
 		public void TestJsonIgnore()

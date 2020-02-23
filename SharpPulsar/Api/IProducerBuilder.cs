@@ -50,21 +50,7 @@ namespace SharpPulsar.Api
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
 		///             
-		IProducer<T> Create();
-
-		/// <summary>
-		/// Finalize the creation of the <seealso cref="Producer"/> instance in asynchronous mode.
-		/// 
-		/// <para>This method will return a <seealso cref="ValueTask"/> that can be used to access the instance when it's ready.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a future that will yield the created producer instance </returns>
-		/// <exception cref="PulsarClientException.ProducerBusyException">
-		///             if a producer with the same "producer name" is already connected to the topic </exception>
-		/// <exception cref="PulsarClientException">
-		///             if the producer creation fails </exception>
-		ValueTask<IProducer<T>> CreateAsync();
+		ValueTask<IProducer<T>> Create();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.

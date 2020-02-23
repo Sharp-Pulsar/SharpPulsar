@@ -1462,7 +1462,7 @@ namespace SharpPulsar.Impl
 				{
 					try
 					{
-						_deadLetterProducer = Client.NewProducer(Schema).Topic(_deadLetterPolicy.DeadLetterTopic).BlockIfQueueFull(false).Create();
+						_deadLetterProducer = Client.NewProducer(Schema).Topic(_deadLetterPolicy.DeadLetterTopic).BlockIfQueueFull(false).Create().GetAwaiter().GetResult();
 					}
 					catch (Exception e)
 					{
@@ -1853,7 +1853,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		internal static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(ConsumerImpl<T>));
+		internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerImpl<T>));
 
 	}
 

@@ -117,7 +117,7 @@ namespace SharpPulsar.Utility
 			return ctx;
 		}
 
-		private static readonly ILogger log = new LoggerFactory().CreateLogger<SslContextAutoRefreshBuilder<T>>();
+		private static readonly ILogger log = Utility.Log.Logger.CreateLogger<SslContextAutoRefreshBuilder<T>>();
 	}
 
 }

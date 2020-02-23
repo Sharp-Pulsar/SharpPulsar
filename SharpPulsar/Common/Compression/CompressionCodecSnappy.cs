@@ -66,7 +66,7 @@ namespace SharpPulsar.Common.Compression
 			uncompressed.SetWriterIndex(uncompressedLength);
 			return uncompressed;
 		}
-		private static readonly ILogger Log = new LoggerFactory().CreateLogger(typeof(CompressionCodecSnappy));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(CompressionCodecSnappy));
 	}
 	
 }
