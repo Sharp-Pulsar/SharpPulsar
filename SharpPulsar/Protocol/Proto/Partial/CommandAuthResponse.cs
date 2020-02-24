@@ -148,20 +148,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandAuthResponse Build()
             {
                 CommandAuthResponse Result = BuildPartial();
-                if (!Result.Initialized)
-                {
-                    throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-                }
+                
                 return Result;
             }
 
             public CommandAuthResponse BuildParsed()
             {
                 CommandAuthResponse Result = BuildPartial();
-                if (!Result.Initialized)
-                {
-                    throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-                }
+                
                 return Result;
             }
 

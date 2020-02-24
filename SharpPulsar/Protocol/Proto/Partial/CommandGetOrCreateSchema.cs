@@ -169,20 +169,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandGetOrCreateSchema Build()
 			{
 				CommandGetOrCreateSchema Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 						
 			public CommandGetOrCreateSchema BuildParsed()
 			{
 				CommandGetOrCreateSchema Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

@@ -152,20 +152,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandUnsubscribe Build()
 			{
 				CommandUnsubscribe Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandUnsubscribe BuildParsed()
 			{
 				CommandUnsubscribe Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

@@ -171,10 +171,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandPartitionedTopicMetadataResponse Build()
 			{
 				CommandPartitionedTopicMetadataResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -182,10 +179,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandPartitionedTopicMetadataResponse BuildParsed()
 			{
 				CommandPartitionedTopicMetadataResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

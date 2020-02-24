@@ -164,20 +164,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandConnected Build()
 			{
 				CommandConnected Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("CommandConnected not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandConnected BuildParsed()
 			{
 				CommandConnected Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("CommandConnected not initialized");
-				}
+				
 				return Result;
 			}
 

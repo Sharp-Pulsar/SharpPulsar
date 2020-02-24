@@ -168,10 +168,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandEndTxnOnPartition Build()
 			{
 				CommandEndTxnOnPartition Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -179,10 +176,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandEndTxnOnPartition BuildParsed()
 			{
 				CommandEndTxnOnPartition Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

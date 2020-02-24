@@ -180,20 +180,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandSend Build()
 			{
 				CommandSend Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandSend BuildParsed()
 			{
 				CommandSend Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

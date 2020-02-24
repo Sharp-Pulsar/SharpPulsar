@@ -153,10 +153,7 @@ namespace SharpPulsar.Protocol.Proto
             public KeyLongValue Build()
 			{
 				KeyLongValue Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -164,10 +161,7 @@ namespace SharpPulsar.Protocol.Proto
 			public KeyLongValue BuildParsed()
 			{
 				KeyLongValue Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

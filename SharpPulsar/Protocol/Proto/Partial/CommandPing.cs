@@ -125,20 +125,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandPing Build()
 			{
 				CommandPing Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandPing BuildParsed()
 			{
 				CommandPing Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

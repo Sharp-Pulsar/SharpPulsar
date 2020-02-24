@@ -125,20 +125,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandPong Build()
 			{
 				CommandPong Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 						
 			public CommandPong BuildParsed()
 			{
 				CommandPong Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

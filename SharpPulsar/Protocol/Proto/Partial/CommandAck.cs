@@ -152,9 +152,9 @@ namespace SharpPulsar.Protocol.Proto
 		{
 			return NewBuilder();
 		}
-		public static Builder NewBuilder(CommandAck Prototype)
+		public static Builder NewBuilder(CommandAck prototype)
 		{
-			return NewBuilder().MergeFrom(Prototype);
+			return NewBuilder().MergeFrom(prototype);
 		}
 		public Builder ToBuilder()
 		{
@@ -218,10 +218,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandAck Build()
 			{
 				CommandAck Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -229,10 +226,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandAck BuildParsed()
 			{
 				CommandAck Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

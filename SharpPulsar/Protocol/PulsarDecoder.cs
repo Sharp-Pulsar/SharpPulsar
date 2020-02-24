@@ -34,7 +34,7 @@ namespace SharpPulsar.Protocol
     /// <summary>
     /// Basic implementation of the channel handler to process inbound Pulsar data.
     /// </summary>
-    public abstract class PulsarDecoder : IChannelHandler
+    public abstract class PulsarDecoder : ChannelHandlerAdapter
 	{
 		public void Read(IChannelHandlerContext ctx, object msg)
 		{
@@ -91,7 +91,7 @@ namespace SharpPulsar.Protocol
 
 				case BaseCommand.Types.Type.Ack:
 					if(cmd.HasAck)
-					HandleAck(cmd.Ack);
+					    HandleAck(cmd.Ack);
 					for (int i = 0; i < cmd.Ack.MessageId.Count; i++)
 					{
 						cmd.Ack.GetMessageId(i).Recycle();
@@ -150,11 +150,11 @@ namespace SharpPulsar.Protocol
 				case BaseCommand.Types.Type.Send:
 				{
 					if(cmd.HasSend)
-							{
-								// Store a buffer marking the content + headers
-								IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
-								HandleSend(cmd.Send, headersAndPayload);
-							}
+                    {
+                        // Store a buffer marking the content + headers
+                        IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
+                        HandleSend(cmd.Send, headersAndPayload);
+                    }
 					
 					cmd.Send.Recycle();
 					break;
@@ -274,7 +274,7 @@ namespace SharpPulsar.Protocol
 
 				case BaseCommand.Types.Type.GetSchemaResponse:
 					if(cmd.HasGetSchemaResponse)
-					HandleGetSchemaResponse(cmd.GetSchemaResponse);
+                        HandleGetSchemaResponse(cmd.GetSchemaResponse);
 					cmd.GetSchemaResponse.Recycle();
 					break;
 
@@ -377,17 +377,11 @@ namespace SharpPulsar.Protocol
 			}
 			finally
 			{
-				if (cmdBuilder != null)
-				{
-					cmdBuilder.Recycle();
-				}
+                cmdBuilder?.Recycle();
 
-				if (cmd != null)
-				{
-					cmd.Recycle();
-				}
+                cmd?.Recycle();
 
-				buffer.Release();
+                buffer.Release();
 			}
 		}
 
@@ -642,103 +636,103 @@ namespace SharpPulsar.Protocol
 			throw new NotSupportedException();
 		}
 
-		public void ChannelRegistered(IChannelHandlerContext context)
+		public override void ChannelRegistered(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelRegistered from: " + context.Name);
 		}
 
-		public void ChannelUnregistered(IChannelHandlerContext context)
+		public override void ChannelUnregistered(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelUnregistered from: " + context.Name);
 		}
 
-		public void ChannelActive(IChannelHandlerContext context)
+		public override void ChannelActive(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelActive from: " + context.Name);
 		}
 
-		public void ChannelInactive(IChannelHandlerContext context)
+		public override void ChannelInactive(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelInactive from: " + context.Name);
 		}
 
-		public void ChannelRead(IChannelHandlerContext context, object message)
+		public override void ChannelRead(IChannelHandlerContext context, object message)
 		{
             Log.LogInformation("ChannelRead from: " + context.Name);
 		}
 
-		public void ChannelReadComplete(IChannelHandlerContext context)
+		public override void ChannelReadComplete(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelReadComplete from: " + context.Name);
 		}
 
-		public void ChannelWritabilityChanged(IChannelHandlerContext context)
+		public override void ChannelWritabilityChanged(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelWritabilityChanged from: " + context.Name);
 		}
 
-		public void HandlerAdded(IChannelHandlerContext context)
+		public override void HandlerAdded(IChannelHandlerContext context)
 		{
             Log.LogInformation("HandlerAdded from: " + context.Name);
 		}
 
-		public void HandlerRemoved(IChannelHandlerContext context)
+		public override void HandlerRemoved(IChannelHandlerContext context)
 		{
             Log.LogInformation("HandlerRemoved from: " + context.Name);
 		}
 
-		public Task WriteAsync(IChannelHandlerContext context, object message)
+		public override Task WriteAsync(IChannelHandlerContext context, object message)
 		{
-			Log.LogInformation("WriteAsync: " + JsonSerializer.Serialize(message, new JsonSerializerOptions { WriteIndented = true }));
+			Log.LogInformation("WriteAsync: " +context.Channel);
 			return Task.CompletedTask;
 		}
 
-		public void Flush(IChannelHandlerContext context)
+		public override void Flush(IChannelHandlerContext context)
 		{
             Log.LogInformation("Flush from: " + context.Name);
 		}
 
-		public Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
+		public override Task BindAsync(IChannelHandlerContext context, EndPoint localAddress)
 		{
 			Log.LogInformation($"BindAsync from {localAddress} by {context.Name}");
 			return Task.CompletedTask;
 		}
 
-		public Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
+		public override Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
 		{
 			Log.LogInformation($"ConnectAsync from {localAddress} by {context.Name}");
 			return Task.CompletedTask;
         }
 
-		public Task DisconnectAsync(IChannelHandlerContext context)
+		public override Task DisconnectAsync(IChannelHandlerContext context)
 		{
 			Log.LogInformation("DisconnectAsync from: " + context.Name);
 			return Task.CompletedTask;
 		}
 
-		public Task CloseAsync(IChannelHandlerContext context)
+		public override Task CloseAsync(IChannelHandlerContext context)
 		{
 			Log.LogInformation("CloseAsync from: " + context.Name);
 			return Task.CompletedTask;
 		}
 
-		public void ExceptionCaught(IChannelHandlerContext context, Exception exception)
+		public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
 		{
             Log.LogInformation($"ExceptionCaught from: {context.Name}:{exception}");
 		}
 
-		public Task DeregisterAsync(IChannelHandlerContext context)
+		public override Task DeregisterAsync(IChannelHandlerContext context)
 		{
 			Log.LogInformation("DeregisterAsync from: " + context.Name);
 			return Task.CompletedTask;
 		}
 
-		public void Read(IChannelHandlerContext context)
+		public override void Read(IChannelHandlerContext context)
 		{
 			Log.LogInformation("Read from: " + context.Name);
 		}
 
-		public void UserEventTriggered(IChannelHandlerContext context, object evt)
+		public override void UserEventTriggered(IChannelHandlerContext context, object evt)
 		{
 			Log.LogInformation("User Event Triggered: "+JsonSerializer.Serialize(evt, new JsonSerializerOptions{WriteIndented = true}));
 		}

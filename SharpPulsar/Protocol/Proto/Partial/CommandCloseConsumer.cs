@@ -152,10 +152,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandCloseConsumer Build()
 			{
 				CommandCloseConsumer Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -163,10 +160,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandCloseConsumer BuildParsed()
 			{
 				CommandCloseConsumer Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

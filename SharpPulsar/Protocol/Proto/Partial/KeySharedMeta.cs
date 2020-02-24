@@ -169,10 +169,7 @@ namespace SharpPulsar.Protocol.Proto
             public KeySharedMeta Build()
 			{
 				KeySharedMeta Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("KeySharedMeta not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -180,10 +177,7 @@ namespace SharpPulsar.Protocol.Proto
 			public KeySharedMeta BuildParsed()
 			{
 				KeySharedMeta Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("KeySharedMeta not initialized");
-				}
+				
 				return Result;
 			}
 

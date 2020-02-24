@@ -162,20 +162,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandAddPartitionToTxn Build()
 			{
 				CommandAddPartitionToTxn Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandAddPartitionToTxn BuildParsed()
 			{
 				CommandAddPartitionToTxn Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

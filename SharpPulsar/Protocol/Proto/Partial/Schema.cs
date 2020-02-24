@@ -208,10 +208,7 @@ namespace SharpPulsar.Protocol.Proto
             public Schema Build()
             {
                 Schema result = BuildPartial();
-                if (!result.Initialized)
-                {
-                    throw new NullReferenceException("Schema not initialized");
-                }
+                
                 return result;
             }
 

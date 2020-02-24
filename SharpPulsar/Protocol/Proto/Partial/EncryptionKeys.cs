@@ -169,20 +169,14 @@ namespace SharpPulsar.Protocol.Proto
             public EncryptionKeys Build()
 			{
 				EncryptionKeys Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public EncryptionKeys BuildParsed()
 			{
 				EncryptionKeys Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

@@ -141,72 +141,84 @@ namespace SharpPulsar.Impl
 
         }
 
-		private async ValueTask<ClientCnx> CreateConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress, int connectionKey)
+		private ValueTask<ClientCnx> CreateConnection(IPEndPoint logicalAddress, IPEndPoint physicalAddress, int connectionKey)
 		{
 			if(Log.IsEnabled(LogLevel.Debug))
 			{
 				Log.LogDebug("Connection for {} not found in cache", logicalAddress);
 			}
-
-            ClientCnx cnx = null;
+            TaskCompletionSource<ClientCnx> cnxTask = new TaskCompletionSource<ClientCnx>();
 			// Trigger async connect to broker
 			try
             {
-                IChannel channel = null;
-				await CreateConnection(physicalAddress).AsTask().ContinueWith(x =>
+                CreateConnection(physicalAddress).AsTask().ContinueWith(task =>
                 {
-                    channel = x.Result;
-                    Log.LogInformation($"[{channel?.LocalAddress}] Connected to server");
-                    x.Result.CloseCompletion.ContinueWith(c =>
+                    if (task.IsFaulted)
                     {
-                        if (Log.IsEnabled(LogLevel.Debug))
-                        {
-							Log.LogDebug("Removing closed connection from pool: {}", c);
-                        }
-                        CleanupConnection(logicalAddress.ToString(), connectionKey);
+                        Log.LogWarning("Connection handshake failed: {}", task.Exception?.Message);
+                        cnxTask.SetException(task.Exception ?? throw new InvalidOperationException());
+                    }
+                    else
+                    {
+						var channel = task.Result;
+						channel.CloseCompletion.ContinueWith(c =>
+						{
+							if (Log.IsEnabled(LogLevel.Debug))
+							{
+								Log.LogDebug("Removing closed connection from pool: {}", c);
+							}
+							CleanupConnection(logicalAddress.ToString(), connectionKey);
+						});
+						var cnx = (ClientCnx)channel.Pipeline.Get("handler");
 
-					});
-                    cnx = (ClientCnx)channel?.Pipeline.Get("handler");
-                    if (!channel.Active || cnx == null)
-                    {
-                        if (Log.IsEnabled(LogLevel.Debug))
+                        
+						if (!channel.Open || cnx == null)
+						{
+							if (Log.IsEnabled(LogLevel.Debug))
+							{
+								Log.LogDebug("[{}] Connection was already closed by the time we got notified", channel);
+							}
+							cnxTask.SetException(new ChannelException("Connection already closed"));
+						}
+						else
                         {
-                            Log.LogDebug("[{}] Connection was already closed by the time we got notified", channel);
-                        }
-                        throw new ChannelException("Connection already closed");
-                    }
-                    if (!logicalAddress.Equals(physicalAddress))
-                    {
-                        cnx.TargetBroker = logicalAddress;
-                    }
-                    cnx.RemoteHostName = Dns.GetHostEntry(physicalAddress.Address.ToString()).HostName;
-                    try
-                    {
-                        var cnnx = cnx.ConnectionTask().Task.GetAwaiter().GetResult();
-                        if (Log.IsEnabled(LogLevel.Debug))
-                        {
-                            Log.LogDebug("[{}] Connection handshake completed", cnnx.Channel());
-                        }
-                        return cnnx;
-                    }
-                    catch (Exception e)
-                    {
-                        Log.LogWarning("[{}] Connection handshake failed: {}", cnx.Channel(), e.Message);
-                        CleanupConnection(cnx.RemoteHostName, connectionKey);
-                        throw e;
-                    }
+                            cnx.PulsarChannel = channel;
+							Log.LogInformation($"[{channel?.LocalAddress}] Connected to server");
+							if (!logicalAddress.Equals(physicalAddress))
+							{
+								cnx.TargetBroker = logicalAddress;
+							}
+							cnx.RemoteHostName = Dns.GetHostEntry(physicalAddress.Address.ToString()).HostName;
+							try
+                            {
+                                channel.WriteAndFlushAsync(cnx.NewConnectCommand());
+								if (Log.IsEnabled(LogLevel.Debug))
+                                {
+                                    Log.LogDebug("[{}] Connection handshake completed", cnx.RemoteHostName);
+                                }
+                                cnxTask.SetResult(cnx);
+							}
+							catch (Exception e)
+							{
+								Log.LogWarning("[{}] Connection handshake failed: {}", cnx.Channel(), e.Message);
+                                Log.LogWarning(e, e.Message);
+								CleanupConnection(cnx.RemoteHostName, connectionKey);
+								cnxTask.SetException(e);
+							}
 
+						}
+					}
 				});
-
-                return cnx;
+				
+				
             }
             catch (Exception e)
             {
                 Log.LogWarning("Failed to open connection to {} : {}", physicalAddress, e.Message);
                 //CleanupConnection(cxn.RemoteAddress.ToString(), connectionKey);
-                throw new PulsarClientException(e.Message);
+                return new ValueTask<ClientCnx>(Task.FromException<ClientCnx>(new PulsarClientException(e.Message)));
 			}
-
+			return new ValueTask<ClientCnx>(cnxTask.Task);
         }
 
 		/// <summary>
@@ -218,23 +230,19 @@ namespace SharpPulsar.Impl
 			var port = unresolvedAddress.Port;
             IChannel channel = null;
 			// Resolve DNS --> Attempt to connect to all IP addresses until once succeeds
-            await ResolveName(hostname).AsTask().ContinueWith(
-                task =>
-                {
-                    try
-                    {
-                        var result = task.Result;
-                        var c = ConnectToResolvedAddresses(result, port).GetAwaiter().GetResult();
-                        channel = c;
-                        Log.LogInformation($"CreateConnection c Channel Id: {channel.Id}");
-					}
-                    catch (Exception e)
-                    {
-						Log.LogError(e, e.Message);
-                    }
-                });
-            Log.LogInformation($"CreateConnection Channel Id: {channel.Id}");
-            Log.LogInformation($"CreateConnection Channel Is Writable: {channel.IsWritable}");
+            try
+			{
+				var dns = await ResolveName(hostname);
+                //Log.LogInformation($"DNS: {dns}");
+				var c = await ConnectToResolvedAddresses(dns, port);
+                channel = c;
+                Log.LogInformation($"Connection created for Channel Id: {channel.Id}");
+            }
+            catch (Exception e)
+            {
+                Log.LogError(e, e.Message);
+            }
+			
 			return channel;
 		}
 
@@ -244,10 +252,15 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private async ValueTask<IChannel> ConnectToResolvedAddresses(IList<IPAddress> unresolvedAddresses, int port)
 		{
+			foreach (var address in unresolvedAddresses)
+			{
+				Log.LogInformation($"Resolved address:{address}");
+			}
             foreach (var address in unresolvedAddresses)
             {
 				try
 				{
+					Log.LogInformation($"Resolved address:{address}");
                     IChannel channel = null;
                     await ConnectToAddress(address.ToString(), port)
                         .AsTask().ContinueWith(x =>
@@ -255,14 +268,12 @@ namespace SharpPulsar.Impl
                             try
                             {
                                 channel = x.Result;
-                                Log.LogInformation($"ConnectToResolvedAddresses >>> {channel.CloseCompletion.Status}");
                             }
                             catch (Exception e)
                             {
-                                Log.LogError(e, "ConnectToResolvedAddresses");
+                                Log.LogError(e, e.Message);
                             }
                         });
-                    Log.LogInformation($"ConnectToResolvedAddresses Channel Id >>> {channel.Id}");
                     if(channel.Open)
                         return channel;
 				}
@@ -272,7 +283,7 @@ namespace SharpPulsar.Impl
                 }
 			}
 			
-			throw new Exception("Could not connect to server!");
+			return Task.FromException<IChannel>(new Exception("Could not connect to server!")).Result;
 		}
 
 		public  ValueTask<IList<IPAddress>> ResolveName(string hostname)
@@ -287,18 +298,16 @@ namespace SharpPulsar.Impl
 		private async ValueTask<IChannel> ConnectToAddress(string server, int port)
         {
             IChannel channel = null;
-            await _bootstrap.ConnectAsync("pulsar://localhost", 6650).ContinueWith(x =>
+            await _bootstrap.ConnectAsync(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 6650)).ContinueWith(x =>
             {
-                Log.LogInformation($"_bootstrap.ConnectAsync status:{x.Status.ToString()}");
                 try
                 {
                     channel = x.Result;
-					Log.LogInformation($"channel id{channel.Id.AsLongText()}");
-                    Log.LogInformation($"channel is registered: {channel.Registered}");
+                    Log.LogInformation($"channel is registered: {channel.Registered}, with Id: {channel.Id.AsLongText()}");
 				}
                 catch (Exception e)
                 {
-                    Log.LogInformation(e.ToString());
+                    Log.LogInformation(e, e.Message);
 				}
             });
 			
@@ -319,12 +328,17 @@ namespace SharpPulsar.Impl
 
 		}
 
-		private ClientCnx CleanupConnection(string server, int connectionKey)
+		private void CleanupConnection(string server, int connectionKey)
         {
-            ClientCnx clientCnx = null;
-			var map = _pool[server];
-            map?.Remove(connectionKey, out clientCnx);
-            return clientCnx;
+            try
+            {
+                var map = _pool[server];
+                map?.Remove(connectionKey, out var clientCnx);
+            }
+            catch (Exception e)
+            {
+				Log.LogError(e, e.Message);
+			}
 		}
 
 		public static int SignSafeMod(long dividend, int divisor)

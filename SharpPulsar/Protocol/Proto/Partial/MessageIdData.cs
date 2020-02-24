@@ -140,10 +140,7 @@ namespace SharpPulsar.Protocol.Proto
             public MessageIdData Build()
             {
                 var result = BuildPartial();
-                if (!result.Initialized)
-                {
-                    throw new NullReferenceException("MessageIdData not initialized");
-                }
+                
                 return result;
             }
 

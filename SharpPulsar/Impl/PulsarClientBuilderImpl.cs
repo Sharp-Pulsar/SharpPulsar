@@ -2,6 +2,8 @@
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
+using DotNetty.Transport.Channels;
+using SharpPulsar.Protocol;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -57,7 +59,10 @@ namespace SharpPulsar.Impl
 
                 Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
             }
-			IPulsarClient client = new PulsarClientImpl(Conf);
+			var thread = new MultithreadEventLoopGroup(Conf.NumIoThreads);
+			var clientCnx = new ClientCnx(Conf, Commands.CurrentProtocolVersion, thread);
+			var pool = new ConnectionPool(Conf, new MultithreadEventLoopGroup(Conf.NumIoThreads), () => clientCnx);
+			IPulsarClient client = new PulsarClientImpl(Conf, thread, pool);
             Conf.ServiceUrlProvider?.Initialize(client);
             return client;
 		}

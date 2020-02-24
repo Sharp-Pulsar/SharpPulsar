@@ -167,10 +167,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandProducerSuccess Build()
 			{
 				CommandProducerSuccess Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -178,10 +175,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandProducerSuccess BuildParsed()
 			{
 				CommandProducerSuccess Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

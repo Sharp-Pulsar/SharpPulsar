@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using SharpPulsar.Api;
@@ -24,6 +25,10 @@ namespace Sample
             }
 
             client.Dispose();
+            while (true)
+            {
+               Thread.Sleep(100);
+            }
         }
     }
 }

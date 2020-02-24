@@ -151,20 +151,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandFlow Build()
 			{
 				CommandFlow Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandFlow BuildParsed()
 			{
 				CommandFlow Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

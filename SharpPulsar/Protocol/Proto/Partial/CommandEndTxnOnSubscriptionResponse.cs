@@ -170,20 +170,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandEndTxnOnSubscriptionResponse Build()
 			{
 				CommandEndTxnOnSubscriptionResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandEndTxnOnSubscriptionResponse BuildParsed()
 			{
 				CommandEndTxnOnSubscriptionResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

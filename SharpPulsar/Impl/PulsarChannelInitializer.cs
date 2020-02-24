@@ -24,9 +24,9 @@ namespace SharpPulsar.Impl
     using DotNetty.Codecs;
     using DotNetty.Handlers.Tls;
     using DotNetty.Transport.Channels;
-    using SharpPulsar.Impl.Conf;
-    using SharpPulsar.Protocol;
-    using SharpPulsar.Shared;
+    using Conf;
+    using Protocol;
+    using Shared;
 
     public class PulsarChannelInitializer : ChannelInitializer<IChannel>
 	{
@@ -35,42 +35,11 @@ namespace SharpPulsar.Impl
 		private readonly Func<ClientCnx> _clientCnxSupplier;
 		private readonly bool _tlsEnabled;
 
-		private readonly Func<TlsHandler> _sslContextSupplier;
-
-		private static readonly long TlsCertificateCacheMillis = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMillis(1);
-
-		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientCnx> clientCnxSupplier) : base()
+		public PulsarChannelInitializer(ClientConfigurationData conf, Func<ClientCnx> clientCnxSupplier) 
 		{
 			_clientCnxSupplier = clientCnxSupplier;
 			_tlsEnabled = conf.UseTls;
 			Conf = conf;
-			/*if (Conf.UseTls)
-			{
-				sslContextSupplier = new ObjectCache<TlsHandler>(() =>
-				{
-						try
-						{
-						
-							IAuthenticationDataProvider AuthData = Conf.Authentication.AuthData;
-							if (AuthData.HasDataForTls())
-							{
-								return SecurityUtility.CreateNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath, (X509Certificate2[]) AuthData.TlsCertificates, AuthData.TlsPrivateKey);
-							}
-							else
-							{
-								return SecurityUtility.CreateNettySslContextForClient(Conf.TlsAllowInsecureConnection, Conf.TlsTrustCertsFilePath);
-							}
-						}
-						catch (System.Exception E)
-						{
-							throw new System.Exception("Failed to create TLS context", E);
-						}
-				}, TLS_CERTIFICATE_CACHE_MILLIS, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
-			}
-			else
-			{
-				sslContextSupplier = null;
-			}*/
 		}
 
 		protected override void InitChannel(IChannel ch)

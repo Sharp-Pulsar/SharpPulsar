@@ -153,10 +153,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandGetTopicsOfNamespaceResponse Build()
 			{
 				CommandGetTopicsOfNamespaceResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -164,10 +161,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandGetTopicsOfNamespaceResponse BuildParsed()
 			{
 				CommandGetTopicsOfNamespaceResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

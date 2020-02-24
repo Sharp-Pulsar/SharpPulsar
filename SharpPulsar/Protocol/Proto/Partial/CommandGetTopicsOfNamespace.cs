@@ -161,20 +161,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandGetTopicsOfNamespace Build()
 			{
 				CommandGetTopicsOfNamespace Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandGetTopicsOfNamespace BuildParsed()
 			{
 				CommandGetTopicsOfNamespace Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

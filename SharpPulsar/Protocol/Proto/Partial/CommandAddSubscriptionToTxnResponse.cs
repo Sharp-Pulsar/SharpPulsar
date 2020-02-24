@@ -168,20 +168,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandAddSubscriptionToTxnResponse Build()
 			{
 				CommandAddSubscriptionToTxnResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandAddSubscriptionToTxnResponse BuildParsed()
 			{
 				CommandAddSubscriptionToTxnResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

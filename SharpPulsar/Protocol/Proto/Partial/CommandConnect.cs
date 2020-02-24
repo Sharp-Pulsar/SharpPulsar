@@ -75,7 +75,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 		}
 
-		public int SerializedSize => throw new NotImplementedException();
+		public int SerializedSize => CalculateSize();
 
 		internal int MemoizedSerializedSize = -1;
 		
@@ -194,10 +194,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandConnect Build()
 			{
 				var result = BuildPartial();
-				if (!result.Initialized)
-				{
-					throw new NullReferenceException("CommandConnect not initialized");
-				}
+				
 				return result;
 			}
 

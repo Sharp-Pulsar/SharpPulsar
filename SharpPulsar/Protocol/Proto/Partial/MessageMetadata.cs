@@ -309,10 +309,7 @@ namespace SharpPulsar.Protocol.Proto
             public MessageMetadata Build()
 			{
 				var result = BuildPartial();
-				if (!result.Initialized)
-				{
-					throw new NullReferenceException("MessageMetadata not initialized");
-				}
+				
 				return result;
 			}
 

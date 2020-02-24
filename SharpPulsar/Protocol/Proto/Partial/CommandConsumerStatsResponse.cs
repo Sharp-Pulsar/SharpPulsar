@@ -239,10 +239,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandConsumerStatsResponse Build()
 			{
 				CommandConsumerStatsResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -250,10 +247,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandConsumerStatsResponse BuildParsed()
 			{
 				CommandConsumerStatsResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

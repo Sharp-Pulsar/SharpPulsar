@@ -196,10 +196,7 @@ namespace SharpPulsar.Protocol.Proto
             public SingleMessageMetadata Build()
 			{
 				SingleMessageMetadata Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("SingleMessageMetadata not initialized");
-				}
+				
 				return Result;
 			}
 

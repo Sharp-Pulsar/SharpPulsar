@@ -320,11 +320,9 @@ namespace SharpPulsar.Shared
 
 			public async Task WriteAsync(IChannelHandlerContext context, object msg)
 			{
-				if (msg is ByteBufPair)
+				if (msg is ByteBufPair b)
 				{
-					ByteBufPair b = (ByteBufPair)msg;
-
-					// Some handlers in the pipeline will modify the bytebufs passed in to them (i.e. SslHandler).
+                    // Some handlers in the pipeline will modify the bytebufs passed in to them (i.e. SslHandler).
 					// For these handlers, we need to pass a copy of the buffers as the source buffers may be cached
 					// for multiple requests.
 					try

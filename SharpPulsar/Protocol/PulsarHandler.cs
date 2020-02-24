@@ -40,6 +40,7 @@ namespace SharpPulsar.Protocol
 		private bool waitingForPingResponse = false;
 		private IScheduledTask keepAliveTask;
         protected internal IChannelHandlerContext Context;
+        public IChannel PulsarChannel;
 
 		public virtual int RemoteEndpointProtocolVersion
 		{
@@ -57,7 +58,7 @@ namespace SharpPulsar.Protocol
 			waitingForPingResponse = false;
 		}
 
-		public new void ChannelActive(IChannelHandlerContext ctx)
+		public override void ChannelActive(IChannelHandlerContext ctx)
 		{
 			RemoteAddress = ctx.Channel.RemoteAddress;
 			Context = ctx;
@@ -68,11 +69,11 @@ namespace SharpPulsar.Protocol
 			}
 			if (keepAliveIntervalSeconds > 0)
 			{
-				keepAliveTask = ctx.Executor.Schedule(() => { HandleKeepAliveTimeout(); }, TimeSpan.FromSeconds(keepAliveIntervalSeconds));
+				keepAliveTask = ctx.Executor.Schedule(HandleKeepAliveTimeout, TimeSpan.FromSeconds(keepAliveIntervalSeconds));
 			}
 		}
 
-		public new void ChannelInactive(IChannelHandlerContext ctx)
+		public override void ChannelInactive(IChannelHandlerContext ctx)
 		{
 			CancelKeepAliveTask();
 		}
@@ -87,7 +88,7 @@ namespace SharpPulsar.Protocol
 			Context.WriteAndFlushAsync(Commands.NewPong());
 		}
 
-		public override void HandlePong(CommandPong Pong)
+		public override void HandlePong(CommandPong pong)
 		{
 		}
 

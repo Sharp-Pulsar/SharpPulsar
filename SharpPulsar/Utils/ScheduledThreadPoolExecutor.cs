@@ -27,6 +27,10 @@ namespace SharpPulsar.Utils
             }
         }
 
+        public void Cancel()
+        {
+            
+        }
         private void RunLoop()
         {
             while (true)

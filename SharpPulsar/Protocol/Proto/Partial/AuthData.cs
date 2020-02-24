@@ -144,20 +144,14 @@ namespace SharpPulsar.Protocol.Proto
             public AuthData Build()
 			{
 				AuthData Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public AuthData BuildParsed()
 			{
 				AuthData Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

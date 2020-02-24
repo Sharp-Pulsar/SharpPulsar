@@ -156,20 +156,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandGetLastMessageIdResponse Build()
 			{
 				CommandGetLastMessageIdResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandGetLastMessageIdResponse BuildParsed()
 			{
 				CommandGetLastMessageIdResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

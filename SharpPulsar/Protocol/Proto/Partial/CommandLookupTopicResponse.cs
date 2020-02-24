@@ -193,20 +193,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandLookupTopicResponse Build()
 			{
 				CommandLookupTopicResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandLookupTopicResponse BuildParsed()
 			{
 				CommandLookupTopicResponse Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

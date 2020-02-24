@@ -151,10 +151,7 @@ namespace SharpPulsar.Protocol.Proto
             public IntRange Build()
 			{
 				IntRange Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("IntRange not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -163,10 +160,7 @@ namespace SharpPulsar.Protocol.Proto
 			public IntRange BuildParsed()
 			{
 				IntRange Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("IntRange not initialized");
-				}
+				
 				return Result;
 			}
 

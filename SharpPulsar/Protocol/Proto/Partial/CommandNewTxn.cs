@@ -153,20 +153,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandNewTxn Build()
 			{
 				CommandNewTxn Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandNewTxn BuildParsed()
 			{
 				CommandNewTxn Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

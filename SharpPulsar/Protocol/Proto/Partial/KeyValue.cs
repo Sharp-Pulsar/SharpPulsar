@@ -152,20 +152,14 @@ namespace SharpPulsar.Protocol.Proto
             public KeyValue Build()
 			{
 				KeyValue Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("KeyValue not initialized");
-				}
+				
 				return Result;
 			}
 
 			public KeyValue BuildParsed()
 			{
 				KeyValue Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("KeyValue not initialized");
-				}
+				
 				return Result;
 			}
 

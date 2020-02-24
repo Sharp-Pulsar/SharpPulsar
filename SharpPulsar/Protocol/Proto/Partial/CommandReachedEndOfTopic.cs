@@ -140,10 +140,7 @@ namespace SharpPulsar.Protocol.Proto
             public CommandReachedEndOfTopic Build()
 			{
 				CommandReachedEndOfTopic Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 
@@ -151,10 +148,7 @@ namespace SharpPulsar.Protocol.Proto
 			public CommandReachedEndOfTopic BuildParsed()
 			{
 				CommandReachedEndOfTopic Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException($"{Result.GetType().Name} not initialized");
-				}
+				
 				return Result;
 			}
 

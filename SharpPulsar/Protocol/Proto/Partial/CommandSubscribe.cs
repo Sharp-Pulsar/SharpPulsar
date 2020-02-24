@@ -326,20 +326,14 @@ namespace SharpPulsar.Protocol.Proto
             public CommandSubscribe Build()
 			{
 				CommandSubscribe Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("CommandSubscribe not initialized");
-				}
+				
 				return Result;
 			}
 
 			public CommandSubscribe BuildParsed()
 			{
 				CommandSubscribe Result = BuildPartial();
-				if (!Result.Initialized)
-				{
-					throw new NullReferenceException("CommandSubscribe not initialized");
-				}
+				
 				return Result;
 			}
 
