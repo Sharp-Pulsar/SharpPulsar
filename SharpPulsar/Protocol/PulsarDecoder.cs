@@ -39,14 +39,14 @@ namespace SharpPulsar.Protocol
 		public void Read(IChannelHandlerContext ctx, object msg)
 		{
 			// Get a buffer that contains the full frame
-			IByteBuffer buffer = (IByteBuffer) msg;
+			IByteBuffer buffer = (IByteBuffer)msg;
 			BaseCommand cmd = null;
 			BaseCommand.Builder cmdBuilder = null;
 
 			try
 			{
 				// De-serialize the command
-				int cmdSize = (int) buffer.ReadUnsignedInt();
+				int cmdSize = (int)buffer.ReadUnsignedInt();
 				int writerIndex = buffer.WriterIndex;
 				buffer.SetWriterIndex(buffer.ReaderIndex + cmdSize);
 				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.Get(buffer);
@@ -65,326 +65,325 @@ namespace SharpPulsar.Protocol
 
 				switch (cmd.Type)
 				{
-				case BaseCommand.Types.Type.PartitionedMetadata:
-					if(cmd.HasPartitionMetadata)
-						HandlePartitionMetadataRequest(cmd.PartitionMetadata);
-					cmd.PartitionMetadata.Recycle();
-					break;
+					case BaseCommand.Types.Type.PartitionedMetadata:
+						if (cmd.HasPartitionMetadata)
+							HandlePartitionMetadataRequest(cmd.PartitionMetadata);
+						cmd.PartitionMetadata.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.PartitionedMetadataResponse:
-					if(cmd.HasPartitionMetadataResponse)
-						HandlePartitionResponse(cmd.PartitionMetadataResponse);
-					cmd.PartitionMetadataResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.PartitionedMetadataResponse:
+						if (cmd.HasPartitionMetadataResponse)
+							HandlePartitionResponse(cmd.PartitionMetadataResponse);
+						cmd.PartitionMetadataResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Lookup:
-					if(cmd.HasLookupTopic)
-						HandleLookup(cmd.LookupTopic);
-					cmd.LookupTopic.Recycle();
-					break;
+					case BaseCommand.Types.Type.Lookup:
+						if (cmd.HasLookupTopic)
+							HandleLookup(cmd.LookupTopic);
+						cmd.LookupTopic.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.LookupResponse:
-					if(cmd.HasLookupTopicResponse)
-						HandleLookupResponse(cmd.LookupTopicResponse);
-					cmd.LookupTopicResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.LookupResponse:
+						if (cmd.HasLookupTopicResponse)
+							HandleLookupResponse(cmd.LookupTopicResponse);
+						cmd.LookupTopicResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Ack:
-					if(cmd.HasAck)
-					    HandleAck(cmd.Ack);
-					for (int i = 0; i < cmd.Ack.MessageId.Count; i++)
-					{
-						cmd.Ack.GetMessageId(i).Recycle();
-					}
-					cmd.Ack.Recycle();
-					break;
+					case BaseCommand.Types.Type.Ack:
+						if (cmd.HasAck)
+							HandleAck(cmd.Ack);
+						for (int i = 0; i < cmd.Ack.MessageId.Count; i++)
+						{
+							cmd.Ack.GetMessageId(i).Recycle();
+						}
+						cmd.Ack.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.CloseConsumer:
-					if(cmd.HasCloseConsumer)
-						HandleCloseConsumer(cmd.CloseConsumer);
-					cmd.CloseConsumer.Recycle();
-					break;
+					case BaseCommand.Types.Type.CloseConsumer:
+						if (cmd.HasCloseConsumer)
+							HandleCloseConsumer(cmd.CloseConsumer);
+						cmd.CloseConsumer.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.CloseProducer:
-					if(cmd.HasCloseProducer)
-						HandleCloseProducer(cmd.CloseProducer);
-					cmd.CloseProducer.Recycle();
-					break;
+					case BaseCommand.Types.Type.CloseProducer:
+						if (cmd.HasCloseProducer)
+							HandleCloseProducer(cmd.CloseProducer);
+						cmd.CloseProducer.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Connect:
-					if(cmd.HasConnect)
-						HandleConnect(cmd.Connect);
-					cmd.Connect.Recycle();
-					break;
-				case BaseCommand.Types.Type.Connected:
-					if(cmd.HasConnected)
-						HandleConnected(cmd.Connected);
-					cmd.Connected.Recycle();
-					break;
+					case BaseCommand.Types.Type.Connect:
+						if (cmd.HasConnect)
+							HandleConnect(cmd.Connect);
+						cmd.Connect.Recycle();
+						break;
+					case BaseCommand.Types.Type.Connected:
+						if (cmd.HasConnected)
+							HandleConnected(cmd.Connected);
+						cmd.Connected.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Error:
-					if(cmd.HasError)
-						HandleError(cmd.Error);
-					cmd.Error.Recycle();
-					break;
+					case BaseCommand.Types.Type.Error:
+						if (cmd.HasError)
+							HandleError(cmd.Error);
+						cmd.Error.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Flow:
-					if(cmd.HasFlow)
-						HandleFlow(cmd.Flow);
-					cmd.Flow.Recycle();
-					break;
+					case BaseCommand.Types.Type.Flow:
+						if (cmd.HasFlow)
+							HandleFlow(cmd.Flow);
+						cmd.Flow.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Message:
-				{
-					if(cmd.HasMessage)
-						HandleMessage(cmd.Message, buffer);
-					cmd.Message.Recycle();
-					break;
-				}
-				case BaseCommand.Types.Type.Producer:
-					if(cmd.HasProducer)
-						HandleProducer(cmd.Producer);
-					cmd.Producer.Recycle();
-					break;
+					case BaseCommand.Types.Type.Message:
+						{
+							if (cmd.HasMessage)
+								HandleMessage(cmd.Message, buffer);
+							cmd.Message.Recycle();
+							break;
+						}
+					case BaseCommand.Types.Type.Producer:
+						if (cmd.HasProducer)
+							HandleProducer(cmd.Producer);
+						cmd.Producer.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Send:
-				{
-					if(cmd.HasSend)
-                    {
-                        // Store a buffer marking the content + headers
-                        IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
-                        HandleSend(cmd.Send, headersAndPayload);
-                    }
-					
-					cmd.Send.Recycle();
-					break;
-				}
-				case BaseCommand.Types.Type.SendError:
-					if(cmd.HasSendError)
-						HandleSendError(cmd.SendError);
-					cmd.SendError.Recycle();
-					break;
+					case BaseCommand.Types.Type.Send:
+						{
+							if (cmd.HasSend)
+							{
+								// Store a buffer marking the content + headers
+								IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
+								HandleSend(cmd.Send, headersAndPayload);
+							}
 
-				case BaseCommand.Types.Type.SendReceipt:
-					if(cmd.HasSendReceipt)
-						HandleSendReceipt(cmd.SendReceipt);
-					cmd.SendReceipt.Recycle();
-					break;
+							cmd.Send.Recycle();
+							break;
+						}
+					case BaseCommand.Types.Type.SendError:
+						if (cmd.HasSendError)
+							HandleSendError(cmd.SendError);
+						cmd.SendError.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Subscribe:
-					if(cmd.HasSubscribe)
-						HandleSubscribe(cmd.Subscribe);
-					cmd.Subscribe.Recycle();
-					break;
+					case BaseCommand.Types.Type.SendReceipt:
+						if (cmd.HasSendReceipt)
+							HandleSendReceipt(cmd.SendReceipt);
+						cmd.SendReceipt.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Success:
-					if(cmd.HasSuccess)
-						HandleSuccess(cmd.Success);
-					cmd.Success.Recycle();
-					break;
+					case BaseCommand.Types.Type.Subscribe:
+						if (cmd.HasSubscribe)
+							HandleSubscribe(cmd.Subscribe);
+						cmd.Subscribe.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.ProducerSuccess:
-					if(cmd.HasProducerSuccess)
-						HandleProducerSuccess(cmd.ProducerSuccess);
-					cmd.ProducerSuccess.Recycle();
-					break;
+					case BaseCommand.Types.Type.Success:
+						if (cmd.HasSuccess)
+							HandleSuccess(cmd.Success);
+						cmd.Success.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Unsubscribe:
-					if(cmd.HasUnsubscribe)
-						HandleUnsubscribe(cmd.Unsubscribe);
-					cmd.Unsubscribe.Recycle();
-					break;
+					case BaseCommand.Types.Type.ProducerSuccess:
+						if (cmd.HasProducerSuccess)
+							HandleProducerSuccess(cmd.ProducerSuccess);
+						cmd.ProducerSuccess.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Seek:
-					if(cmd.HasSeek)
-						HandleSeek(cmd.Seek);
-					cmd.Seek.Recycle();
-					break;
+					case BaseCommand.Types.Type.Unsubscribe:
+						if (cmd.HasUnsubscribe)
+							HandleUnsubscribe(cmd.Unsubscribe);
+						cmd.Unsubscribe.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Ping:
-					if(cmd.HasPing)
-						HandlePing(cmd.Ping);
-					cmd.Ping.Recycle();
-					break;
+					case BaseCommand.Types.Type.Seek:
+						if (cmd.HasSeek)
+							HandleSeek(cmd.Seek);
+						cmd.Seek.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.Pong:
-					if(cmd.HasPong)
-						HandlePong(cmd.Pong);
-					cmd.Pong.Recycle();
-					break;
+					case BaseCommand.Types.Type.Ping:
+						if (cmd.HasPing)
+							HandlePing(cmd.Ping);
+						cmd.Ping.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
-					if(cmd.HasRedeliverUnacknowledgedMessages)
-						HandleRedeliverUnacknowledged(cmd.RedeliverUnacknowledgedMessages);
-					cmd.RedeliverUnacknowledgedMessages.Recycle();
-					break;
+					case BaseCommand.Types.Type.Pong:
+						if (cmd.HasPong)
+							HandlePong(cmd.Pong);
+						cmd.Pong.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.ConsumerStats:
-					if(cmd.HasConsumerStats)
-						HandleConsumerStats(cmd.ConsumerStats);
-					cmd.ConsumerStats.Recycle();
-					break;
+					case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
+						if (cmd.HasRedeliverUnacknowledgedMessages)
+							HandleRedeliverUnacknowledged(cmd.RedeliverUnacknowledgedMessages);
+						cmd.RedeliverUnacknowledgedMessages.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.ConsumerStatsResponse:
-					if(cmd.HasConsumerStatsResponse)
-						HandleConsumerStatsResponse(cmd.ConsumerStatsResponse);
-					cmd.ConsumerStatsResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.ConsumerStats:
+						if (cmd.HasConsumerStats)
+							HandleConsumerStats(cmd.ConsumerStats);
+						cmd.ConsumerStats.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.ReachedEndOfTopic:
-					if(cmd.HasReachedEndOfTopic)
-						HandleReachedEndOfTopic(cmd.ReachedEndOfTopic);
-					cmd.ReachedEndOfTopic.Recycle();
-					break;
+					case BaseCommand.Types.Type.ConsumerStatsResponse:
+						if (cmd.HasConsumerStatsResponse)
+							HandleConsumerStatsResponse(cmd.ConsumerStatsResponse);
+						cmd.ConsumerStatsResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetLastMessageId:
-					if(cmd.HasGetLastMessageId)
-						HandleGetLastMessageId(cmd.GetLastMessageId);
-					cmd.GetLastMessageId.Recycle();
-					break;
+					case BaseCommand.Types.Type.ReachedEndOfTopic:
+						if (cmd.HasReachedEndOfTopic)
+							HandleReachedEndOfTopic(cmd.ReachedEndOfTopic);
+						cmd.ReachedEndOfTopic.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetLastMessageIdResponse:
-					if(cmd.HasGetLastMessageIdResponse)
-						HandleGetLastMessageIdSuccess(cmd.GetLastMessageIdResponse);
-					cmd.GetLastMessageIdResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetLastMessageId:
+						if (cmd.HasGetLastMessageId)
+							HandleGetLastMessageId(cmd.GetLastMessageId);
+						cmd.GetLastMessageId.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.ActiveConsumerChange:
+					case BaseCommand.Types.Type.GetLastMessageIdResponse:
+						if (cmd.HasGetLastMessageIdResponse)
+							HandleGetLastMessageIdSuccess(cmd.GetLastMessageIdResponse);
+						cmd.GetLastMessageIdResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ActiveConsumerChange:
 						HandleActiveConsumerChange(cmd.ActiveConsumerChange);
-					cmd.ActiveConsumerChange.Recycle();
-					break;
+						cmd.ActiveConsumerChange.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetTopicsOfNamespace:
-					if(cmd.HasGetTopicsOfNamespace)
-						HandleGetTopicsOfNamespace(cmd.GetTopicsOfNamespace);
-					cmd.GetTopicsOfNamespace.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetTopicsOfNamespace:
+						if (cmd.HasGetTopicsOfNamespace)
+							HandleGetTopicsOfNamespace(cmd.GetTopicsOfNamespace);
+						cmd.GetTopicsOfNamespace.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
-					if(cmd.HasGetTopicsOfNamespaceResponse)
-						HandleGetTopicsOfNamespaceSuccess(cmd.GetTopicsOfNamespaceResponse);
-					cmd.GetTopicsOfNamespaceResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
+						if (cmd.HasGetTopicsOfNamespaceResponse)
+							HandleGetTopicsOfNamespaceSuccess(cmd.GetTopicsOfNamespaceResponse);
+						cmd.GetTopicsOfNamespaceResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetSchema:
-					if(cmd.HasGetSchema)
-						HandleGetSchema(cmd.GetSchema);
-					cmd.GetSchema.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetSchema:
+						if (cmd.HasGetSchema)
+							HandleGetSchema(cmd.GetSchema);
+						cmd.GetSchema.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetSchemaResponse:
-					if(cmd.HasGetSchemaResponse)
-                        HandleGetSchemaResponse(cmd.GetSchemaResponse);
-					cmd.GetSchemaResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetSchemaResponse:
+						if (cmd.HasGetSchemaResponse)
+							HandleGetSchemaResponse(cmd.GetSchemaResponse);
+						cmd.GetSchemaResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetOrCreateSchema:
-					if(cmd.HasGetOrCreateSchema)
-						HandleGetOrCreateSchema(cmd.GetOrCreateSchema);
-					cmd.GetOrCreateSchema.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetOrCreateSchema:
+						if (cmd.HasGetOrCreateSchema)
+							HandleGetOrCreateSchema(cmd.GetOrCreateSchema);
+						cmd.GetOrCreateSchema.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
-					if(cmd.HasGetOrCreateSchemaResponse)
-						HandleGetOrCreateSchemaResponse(cmd.GetOrCreateSchemaResponse);
-					cmd.GetOrCreateSchemaResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
+						if (cmd.HasGetOrCreateSchemaResponse)
+							HandleGetOrCreateSchemaResponse(cmd.GetOrCreateSchemaResponse);
+						cmd.GetOrCreateSchemaResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AuthChallenge:
-					if(cmd.HasAuthChallenge)
-						HandleAuthChallenge(cmd.AuthChallenge);
-					cmd.AuthChallenge.Recycle();
-					break;
+					case BaseCommand.Types.Type.AuthChallenge:
+						if (cmd.HasAuthChallenge)
+							HandleAuthChallenge(cmd.AuthChallenge);
+						cmd.AuthChallenge.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AuthResponse:
-					if(cmd.HasAuthResponse)
-						HandleAuthResponse(cmd.AuthResponse);
-					cmd.AuthResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.AuthResponse:
+						if (cmd.HasAuthResponse)
+							HandleAuthResponse(cmd.AuthResponse);
+						cmd.AuthResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.NewTxn:
-					if(cmd.HasNewTxn)
-						HandleNewTxn(cmd.NewTxn);
-					cmd.NewTxn.Recycle();
-					break;
+					case BaseCommand.Types.Type.NewTxn:
+						if (cmd.HasNewTxn)
+							HandleNewTxn(cmd.NewTxn);
+						cmd.NewTxn.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.NewTxnResponse:
-					if(cmd.HasNewTxnResponse)
-						HandleNewTxnResponse(cmd.NewTxnResponse);
-					cmd.NewTxnResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.NewTxnResponse:
+						if (cmd.HasNewTxnResponse)
+							HandleNewTxnResponse(cmd.NewTxnResponse);
+						cmd.NewTxnResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AddPartitionToTxn:
-					if(cmd.HasAddPartitionToTxn)
-						HandleAddPartitionToTxn(cmd.AddPartitionToTxn);
-					cmd.AddPartitionToTxn.Recycle();
-					break;
+					case BaseCommand.Types.Type.AddPartitionToTxn:
+						if (cmd.HasAddPartitionToTxn)
+							HandleAddPartitionToTxn(cmd.AddPartitionToTxn);
+						cmd.AddPartitionToTxn.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AddPartitionToTxnResponse:
-					if(cmd.HasAddPartitionToTxnResponse)
-						HandleAddPartitionToTxnResponse(cmd.AddPartitionToTxnResponse);
-					cmd.AddPartitionToTxnResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.AddPartitionToTxnResponse:
+						if (cmd.HasAddPartitionToTxnResponse)
+							HandleAddPartitionToTxnResponse(cmd.AddPartitionToTxnResponse);
+						cmd.AddPartitionToTxnResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AddSubscriptionToTxn:
-					if(cmd.HasAddSubscriptionToTxn)
-						HandleAddSubscriptionToTxn(cmd.AddSubscriptionToTxn);
-					cmd.AddSubscriptionToTxn.Recycle();
-					break;
+					case BaseCommand.Types.Type.AddSubscriptionToTxn:
+						if (cmd.HasAddSubscriptionToTxn)
+							HandleAddSubscriptionToTxn(cmd.AddSubscriptionToTxn);
+						cmd.AddSubscriptionToTxn.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
-					if(cmd.HasAddSubscriptionToTxnResponse)
-						HandleAddSubscriptionToTxnResponse(cmd.AddSubscriptionToTxnResponse);
-					cmd.AddSubscriptionToTxnResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
+						if (cmd.HasAddSubscriptionToTxnResponse)
+							HandleAddSubscriptionToTxnResponse(cmd.AddSubscriptionToTxnResponse);
+						cmd.AddSubscriptionToTxnResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxn:
-					if(cmd.HasEndTxn)
-						HandleEndTxn(cmd.EndTxn);
-					cmd.EndTxn.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxn:
+						if (cmd.HasEndTxn)
+							HandleEndTxn(cmd.EndTxn);
+						cmd.EndTxn.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxnResponse:
-					if(cmd.HasEndTxnResponse)
-						HandleEndTxnResponse(cmd.EndTxnResponse);
-					cmd.EndTxnResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxnResponse:
+						if (cmd.HasEndTxnResponse)
+							HandleEndTxnResponse(cmd.EndTxnResponse);
+						cmd.EndTxnResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxnOnPartition:
-					if(cmd.HasEndTxnOnPartition)
-						HandleEndTxnOnPartition(cmd.EndTxnOnPartition);
-					cmd.EndTxnOnPartition.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxnOnPartition:
+						if (cmd.HasEndTxnOnPartition)
+							HandleEndTxnOnPartition(cmd.EndTxnOnPartition);
+						cmd.EndTxnOnPartition.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
-					if(cmd.HasEndTxnOnPartitionResponse)
-						HandleEndTxnOnPartitionResponse(cmd.EndTxnOnPartitionResponse);
-					cmd.EndTxnOnPartitionResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
+						if (cmd.HasEndTxnOnPartitionResponse)
+							HandleEndTxnOnPartitionResponse(cmd.EndTxnOnPartitionResponse);
+						cmd.EndTxnOnPartitionResponse.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxnOnSubscription:
-					if(cmd.HasEndTxnOnSubscription)
-						HandleEndTxnOnSubscription(cmd.EndTxnOnSubscription);
-					cmd.EndTxnOnSubscription.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxnOnSubscription:
+						if (cmd.HasEndTxnOnSubscription)
+							HandleEndTxnOnSubscription(cmd.EndTxnOnSubscription);
+						cmd.EndTxnOnSubscription.Recycle();
+						break;
 
-				case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
-					if(cmd.HasEndTxnOnSubscriptionResponse)
-						HandleEndTxnOnSubscriptionResponse(cmd.EndTxnOnSubscriptionResponse);
-					cmd.EndTxnOnSubscriptionResponse.Recycle();
-					break;
+					case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
+						if (cmd.HasEndTxnOnSubscriptionResponse)
+							HandleEndTxnOnSubscriptionResponse(cmd.EndTxnOnSubscriptionResponse);
+						cmd.EndTxnOnSubscriptionResponse.Recycle();
+						break;
 				}
 			}
 			finally
 			{
-                cmdBuilder?.Recycle();
+				cmdBuilder?.Recycle();
 
-                cmd?.Recycle();
+				cmd?.Recycle();
 
-                buffer.Release();
+				buffer.Release();
 			}
 		}
-
 		public abstract void MessageReceived();
 
 		public virtual void HandlePartitionMetadataRequest(CommandPartitionedTopicMetadata response)
@@ -656,7 +655,7 @@ namespace SharpPulsar.Protocol
             Log.LogInformation("ChannelInactive from: " + context.Name);
 		}
 
-		public override void ChannelRead(IChannelHandlerContext context, object message)
+		public void ChannelRead(IChannelHandlerContext context, object message)
 		{
             Log.LogInformation("ChannelRead from: " + context.Name);
 		}

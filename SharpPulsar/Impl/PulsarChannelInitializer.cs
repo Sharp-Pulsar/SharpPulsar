@@ -1,4 +1,8 @@
 ﻿using System;
+using Avro;
+using DotNetty.Codecs.Protobuf;
+using Google.Protobuf;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -47,15 +51,13 @@ namespace SharpPulsar.Impl
 			if (_tlsEnabled)
 			{
 				ch.Pipeline.AddLast("tls", TlsHandler.Client(Conf.ServiceUrl, Conf.Authentication.AuthData.TlsCertificates[0]));
-				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.COPYINGENCODER);
 			}
-			else
-			{
-				ch.Pipeline.AddLast("ByteBufPairEncoder", ByteBufPair.ENCODER);
-			}
+            ch.Pipeline.AddLast(new ProtobufVarint32FrameDecoder());
+            ch.Pipeline.AddLast(new ProtobufDecoder(BaseCommand.Parser));
 
-			ch.Pipeline.AddLast("frameDecoder", new LengthFieldBasedFrameDecoder(Commands.DefaultMaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
-			ch.Pipeline.AddLast("handler", _clientCnxSupplier.Invoke());
+			ch.Pipeline.AddLast(new ProtobufVarint32LengthFieldPrepender());
+            ch.Pipeline.AddLast(new ProtobufEncoder());
+            ch.Pipeline.AddLast("handler", _clientCnxSupplier.Invoke());
 		}
 
 	}

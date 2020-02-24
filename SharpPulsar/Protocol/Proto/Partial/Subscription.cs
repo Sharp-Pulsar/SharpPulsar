@@ -22,11 +22,8 @@ namespace SharpPulsar.Protocol.Proto
 			MemoizedIsInitialized = -1;
 			BitField0_ = 0;
 			MemoizedSerializedSize = -1;
-			if (_handle != null)
-			{
-				_handle.Release(this);
-			}
-		}
+            _handle?.Release(this);
+        }
 
 		public Subscription(bool NoInit)
 		{
@@ -120,11 +117,8 @@ namespace SharpPulsar.Protocol.Proto
 			public void Recycle()
 			{
 				Clear();
-				if (_handle != null)
-				{
-					_handle.Release(this);
-				}
-			}
+                _handle?.Release(this);
+            }
 
 			public void MaybeForceBuilderInitialization()
 			{

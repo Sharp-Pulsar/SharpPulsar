@@ -23,11 +23,8 @@ namespace SharpPulsar.Protocol.Proto
 			this.MemoizedIsInitialized = -1;
 			_hasBits0 = 0;
 			this.MemoizedSerializedSize = -1;
-			if (_handle != null)
-			{
-				_handle.Release(this);
-			}
-		}
+            _handle?.Release(this);
+        }
 
 		public CommandConsumerStats(bool NoInit)
 		{
@@ -120,11 +117,8 @@ namespace SharpPulsar.Protocol.Proto
 			public void Recycle()
 			{
 				Clear();
-				if (_handle != null)
-				{
-					_handle.Release(this);
-				}
-			}
+                _handle?.Release(this);
+            }
 
 			public void MaybeForceBuilderInitialization()
 			{

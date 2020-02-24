@@ -60,8 +60,7 @@ namespace SharpPulsar.Impl
                 Conf.ServiceUrl = Conf.ServiceUrlProvider.ServiceUrl;
             }
 			var thread = new MultithreadEventLoopGroup(Conf.NumIoThreads);
-			var clientCnx = new ClientCnx(Conf, Commands.CurrentProtocolVersion, thread);
-			var pool = new ConnectionPool(Conf, new MultithreadEventLoopGroup(Conf.NumIoThreads), () => clientCnx);
+			var pool = new ConnectionPool(Conf, new MultithreadEventLoopGroup(Conf.NumIoThreads));
 			IPulsarClient client = new PulsarClientImpl(Conf, thread, pool);
             Conf.ServiceUrlProvider?.Initialize(client);
             return client;

@@ -21,11 +21,8 @@ namespace SharpPulsar.Protocol.Proto
 			InitFields();
 			MemoizedIsInitialized = -1;
 			MemoizedSerializedSize = -1;
-			if (_handle != null)
-			{
-				_handle.Release(this);
-			}
-		}
+            _handle?.Release(this);
+        }
 
 		public CommandPing(bool NoInit)
 		{
@@ -96,11 +93,8 @@ namespace SharpPulsar.Protocol.Proto
 			public void Recycle()
 			{
 				Clear();
-				if (_handle != null)
-				{
-					_handle.Release(this);
-				}
-			}
+                _handle?.Release(this);
+            }
 
 			public void MaybeForceBuilderInitialization()
 			{

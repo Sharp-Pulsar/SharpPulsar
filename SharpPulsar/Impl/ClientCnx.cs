@@ -22,6 +22,7 @@ using DotNetty.Handlers.Tls;
 using Google.Protobuf;
 using SharpPulsar.Utils;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
+using SharpPulsar.Utility.Protobuf;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -118,7 +119,7 @@ namespace SharpPulsar.Impl
 		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup) : base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
 		{
 			if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
-				throw new System.Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
+				throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
 			_pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
 			_maxLookupRequestSemaphore = new Semaphore(conf.MaxLookupRequest - conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>>();
@@ -131,12 +132,13 @@ namespace SharpPulsar.Impl
 			_protocolVersion = protocolVersion;
             _eventLoopGroup = eventLoopGroup;
         }
-        public override void ChannelActive(IChannelHandlerContext ctx)
+		
+		public override void ChannelActive(IChannelHandlerContext ctx)
         {
             base.ChannelActive(ctx);
             _timeoutSchedule.ScheduleAtFixedRate(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs), TimeSpan.FromMilliseconds(_operationTimeoutMs));
 
-            if (string.ReferenceEquals(ProxyToTargetBrokerAddress, null))
+            if (ReferenceEquals(ProxyToTargetBrokerAddress, null))
             {
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
@@ -215,7 +217,7 @@ namespace SharpPulsar.Impl
         }
 
 		// Command Handlers
-		public new void ExceptionCaught(IChannelHandlerContext ctx, System.Exception cause)
+		public new void ExceptionCaught(IChannelHandlerContext ctx, Exception cause)
 		{
 			if (_state != State.Failed)
 			{
@@ -236,7 +238,7 @@ namespace SharpPulsar.Impl
 			Channel().CloseAsync();
 		}
 
-		public static bool IsKnownException(System.Exception T)
+		public static bool IsKnownException(Exception T)
 		{
 			return T is IOException;
 		}
@@ -284,7 +286,7 @@ namespace SharpPulsar.Impl
 				var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(authChallenge.Challenge.AuthData_.ToByteArray()));
 
                 if (!authData.Complete)
-                    throw new System.Exception();
+                    throw new Exception();
                 var auth = AuthData.NewBuilder().SetAuthData(ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
 				var request = Commands.NewAuthResponse(Authentication.AuthMethodName, ByteString.CopyFrom((byte[])(object)authData.Bytes), _protocolVersion, string.Empty);
 
@@ -301,7 +303,7 @@ namespace SharpPulsar.Impl
                 });
 				_state = State.Connecting;
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				Log.LogError("{} Error mutual verify: {}", Channel(), e);
 				_connectionTask.SetException(e);
@@ -1112,6 +1114,7 @@ namespace SharpPulsar.Impl
             var c = (ConsumerImpl<object>)Convert.ChangeType(consumer, typeof(ConsumerImpl<object>));
             _consumers.TryAdd(consumerId, c);
         }
+
     }
 
 }

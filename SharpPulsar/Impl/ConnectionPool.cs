@@ -9,8 +9,22 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
+using Bedrock.Framework;
+using DotNetty.Codecs.Protobuf;
+using DotNetty.Handlers.Logging;
+using DotNetty.Handlers.Tls;
+using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
+using Bedrock.Framework.Protocols;
+using Google.Protobuf;
+using Microsoft.AspNetCore.Connections;
+using SharpPulsar.Api;
+using SharpPulsar.Utility;
+using Message = Avro.Message;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,11 +57,7 @@ namespace SharpPulsar.Impl
 		private DefaultNameResolver _dnsResolver;
 		private ClientConfigurationData _conf;
 
-		public ConnectionPool(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, () => new ClientCnx(conf, eventLoopGroup))
-		{
-		}
-
-		public ConnectionPool(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup, Func<ClientCnx> clientCnxSupplier)
+		public ConnectionPool(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup)
 		{
 			this._eventLoopGroup = eventLoopGroup;
 			this._maxConnectionsPerHosts = conf.ConnectionsPerBroker;
@@ -56,22 +66,37 @@ namespace SharpPulsar.Impl
 			_bootstrap = new Bootstrap();
 			_bootstrap.Group(eventLoopGroup);
 			_bootstrap.Channel<TcpSocketChannel>();
-
+            _bootstrap.Handler(new LoggingHandler());
+			//_bootstrap.RemoteAddress("localhost", 6650);
 			_bootstrap.Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(conf.ConnectionTimeoutMs));
 			_bootstrap.Option(ChannelOption.TcpNodelay, conf.UseTcpNoDelay);
+            _bootstrap.Option(ChannelOption.SoKeepalive, true);
 			_bootstrap.Option(ChannelOption.Allocator, PooledByteBufferAllocator.Default);
+            _bootstrap.Handler(new ActionChannelInitializer<ISocketChannel>(channel =>
+            {
+                try
+                {
+                    var pipeline = channel.Pipeline;
+                    if (conf.UseTls)
+                    {
+                        pipeline.AddLast("tls", TlsHandler.Client(conf.ServiceUrl, conf.Authentication.AuthData.TlsCertificates[0]));
+                    }
+                    pipeline.AddLast(new ProtobufVarint32FrameDecoder());
+                    pipeline.AddLast(new ProtobufDecoder(BaseCommand.Parser));
 
-			try
-			{
-				_bootstrap.Handler(new PulsarChannelInitializer(conf, clientCnxSupplier));
-			}
-			catch (System.Exception e)
-			{
-				Log.LogError("Failed to create channel initializer");
-				throw new PulsarClientException(e.Message);
-			}
+                    pipeline.AddLast(new ProtobufVarint32LengthFieldPrepender());
+                    pipeline.AddLast(new ProtobufEncoder());
+                    pipeline.AddLast("handler", new ClientCnx(conf, Commands.CurrentProtocolVersion, eventLoopGroup));
 
-			_dnsResolver = new DefaultNameResolver();
+                }
+				catch (System.Exception e)
+                {
+                    Log.LogError("Failed to create channel initializer");
+                    throw new PulsarClientException(e.Message);
+                }
+            }));
+
+            _dnsResolver = new DefaultNameResolver();
 			//this.DnsResolver = (new DnsNameResolverBuilder(eEventLoopGroup. .next())).traceEnabled(true).channelType(EventLoopUtil.getDatagramChannelClass(EventLoopGroup)).build();
 		}
 
@@ -153,62 +178,16 @@ namespace SharpPulsar.Impl
             {
                 CreateConnection(physicalAddress).AsTask().ContinueWith(task =>
                 {
-                    if (task.IsFaulted)
-                    {
-                        Log.LogWarning("Connection handshake failed: {}", task.Exception?.Message);
-                        cnxTask.SetException(task.Exception ?? throw new InvalidOperationException());
-                    }
-                    else
-                    {
-						var channel = task.Result;
-						channel.CloseCompletion.ContinueWith(c =>
-						{
-							if (Log.IsEnabled(LogLevel.Debug))
-							{
-								Log.LogDebug("Removing closed connection from pool: {}", c);
-							}
-							CleanupConnection(logicalAddress.ToString(), connectionKey);
-						});
-						var cnx = (ClientCnx)channel.Pipeline.Get("handler");
+                    var protocol = new LengthPrefixedProtocol();
+					IAuthenticationDataProvider = IAuthentication.GetAuthData("localhost");
+                    var authData = IAuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(Shared.Auth.AuthData.InitAuthData));
 
-                        
-						if (!channel.Open || cnx == null)
-						{
-							if (Log.IsEnabled(LogLevel.Debug))
-							{
-								Log.LogDebug("[{}] Connection was already closed by the time we got notified", channel);
-							}
-							cnxTask.SetException(new ChannelException("Connection already closed"));
-						}
-						else
-                        {
-                            cnx.PulsarChannel = channel;
-							Log.LogInformation($"[{channel?.LocalAddress}] Connected to server");
-							if (!logicalAddress.Equals(physicalAddress))
-							{
-								cnx.TargetBroker = logicalAddress;
-							}
-							cnx.RemoteHostName = Dns.GetHostEntry(physicalAddress.Address.ToString()).HostName;
-							try
-                            {
-                                channel.WriteAndFlushAsync(cnx.NewConnectCommand());
-								if (Log.IsEnabled(LogLevel.Debug))
-                                {
-                                    Log.LogDebug("[{}] Connection handshake completed", cnx.RemoteHostName);
-                                }
-                                cnxTask.SetResult(cnx);
-							}
-							catch (Exception e)
-							{
-								Log.LogWarning("[{}] Connection handshake failed: {}", cnx.Channel(), e.Message);
-                                Log.LogWarning(e, e.Message);
-								CleanupConnection(cnx.RemoteHostName, connectionKey);
-								cnxTask.SetException(e);
-							}
-
-						}
-					}
-				});
+                    var auth = AuthData.NewBuilder().SetAuthData(ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
+                    var b = Commands.NewConnect(IAuthentication.AuthMethodName, auth, Commands.CurrentProtocolVersion, null);
+					var con = task.Result;
+                    var writer = con.CreateWriter();
+                    writer.WriteAsync(protocol, new Message(b.Array));
+                });
 				
 				
             }
@@ -224,11 +203,11 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Resolve DNS asynchronously and attempt to connect to any IP address returned by DNS server
 		/// </summary>
-		private async ValueTask<IChannel> CreateConnection(IPEndPoint unresolvedAddress)
+		private async ValueTask<ConnectionContext> CreateConnection(IPEndPoint unresolvedAddress)
 		{
 			var hostname = unresolvedAddress.Address.ToString();
 			var port = unresolvedAddress.Port;
-            IChannel channel = null;
+            ConnectionContext channel = null;
 			// Resolve DNS --> Attempt to connect to all IP addresses until once succeeds
             try
 			{
@@ -236,7 +215,7 @@ namespace SharpPulsar.Impl
                 //Log.LogInformation($"DNS: {dns}");
 				var c = await ConnectToResolvedAddresses(dns, port);
                 channel = c;
-                Log.LogInformation($"Connection created for Channel Id: {channel.Id}");
+                Log.LogInformation($"Connection created for Channel Id: {channel.ConnectionId}");
             }
             catch (Exception e)
             {
@@ -250,7 +229,7 @@ namespace SharpPulsar.Impl
 		/// Try to connect to a sequence of IP addresses until a successfull connection can be made, or fail if no address is
 		/// working
 		/// </summary>
-		private async ValueTask<IChannel> ConnectToResolvedAddresses(IList<IPAddress> unresolvedAddresses, int port)
+		private async ValueTask<ConnectionContext> ConnectToResolvedAddresses(IList<IPAddress> unresolvedAddresses, int port)
 		{
 			foreach (var address in unresolvedAddresses)
 			{
@@ -261,7 +240,7 @@ namespace SharpPulsar.Impl
 				try
 				{
 					Log.LogInformation($"Resolved address:{address}");
-                    IChannel channel = null;
+                    ConnectionContext channel = null;
                     await ConnectToAddress(address.ToString(), port)
                         .AsTask().ContinueWith(x =>
                         {
@@ -274,7 +253,6 @@ namespace SharpPulsar.Impl
                                 Log.LogError(e, e.Message);
                             }
                         });
-                    if(channel.Open)
                         return channel;
 				}
                 catch (Exception e)
@@ -283,7 +261,7 @@ namespace SharpPulsar.Impl
                 }
 			}
 			
-			return Task.FromException<IChannel>(new Exception("Could not connect to server!")).Result;
+			return Task.FromException<ConnectionContext>(new Exception("Could not connect to server!")).Result;
 		}
 
 		public  ValueTask<IList<IPAddress>> ResolveName(string hostname)
@@ -295,24 +273,17 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// Attempt to establish a TCP connection to an already resolved single IP address
 		/// </summary>
-		private async ValueTask<IChannel> ConnectToAddress(string server, int port)
+		private async ValueTask<ConnectionContext> ConnectToAddress(string server, int port)
         {
-            IChannel channel = null;
-            await _bootstrap.ConnectAsync(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 6650)).ContinueWith(x =>
-            {
-                try
-                {
-                    channel = x.Result;
-                    Log.LogInformation($"channel is registered: {channel.Registered}, with Id: {channel.Id.AsLongText()}");
-				}
-                catch (Exception e)
-                {
-                    Log.LogInformation(e, e.Message);
-				}
-            });
-			
-			return channel;
-		}
+            var client = new ClientBuilder()
+                .UseSockets()
+                //.UseConnectionLogging("")
+                .Build();
+
+            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 6650));
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            return connection;
+        }
 
 		public void Close()
 		{

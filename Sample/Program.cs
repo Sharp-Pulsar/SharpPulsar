@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading;
+using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 using SharpPulsar.Api;
 
 namespace Sample
@@ -10,8 +12,9 @@ namespace Sample
     {
         static void Main(string[] args)
         {
+            InternalLoggerFactory.DefaultFactory = SharpPulsar.Utility.Log.Logger;//.AddProvider(new ConsoleLoggerProvider(new OptionsMonitor<ConsoleLoggerOptions>(null, null, null)));
+            ILogger logger = InternalLoggerFactory.DefaultFactory.CreateLogger<Program>();
             
-            ILogger logger = SharpPulsar.Utility.Log.Logger.CreateLogger<Program>();
             logger.LogInformation("Example log message");
 
             var client = IPulsarClient.Builder().ServiceUrl("pulsar://localhost:6650").Build();
