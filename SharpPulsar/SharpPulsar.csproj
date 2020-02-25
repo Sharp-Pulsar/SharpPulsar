@@ -25,7 +25,9 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.2" />
+    <PackageReference Include="Pipelines.Sockets.Unofficial" Version="2.1.1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6" />
+    <PackageReference Include="protobuf-net" Version="2.4.4" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
@@ -39,12 +41,6 @@
 
   <ItemGroup>
     <ProjectReference Include="E:\Devs\avro-release-1.9.2\lang\csharp\src\apache\main\Avro.main.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Protocol\Proto\PulsarApi.proto">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

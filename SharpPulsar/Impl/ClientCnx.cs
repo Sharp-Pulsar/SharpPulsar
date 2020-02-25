@@ -21,6 +21,7 @@ using BAMCIS.Util.Concurrent;
 using DotNetty.Common.Concurrency;
 using DotNetty.Handlers.Tls;
 using Google.Protobuf;
+using SharpPulsar.Transport;
 using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
@@ -47,7 +48,7 @@ using SharpPulsar.Utility.Protobuf;
 namespace SharpPulsar.Impl
 {
 
-	public class ClientCnx : ChannelHandlerAdapter
+	public class ClientCnx 
 	{
 
 		protected internal readonly IAuthentication Authentication;
@@ -58,6 +59,7 @@ namespace SharpPulsar.Impl
         private readonly long keepAliveIntervalSeconds;
         private bool waitingForPingResponse = false;
         private IScheduledTask keepAliveTask;
+        public readonly ITransport Transport;
 
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>> _pendingRequests = new ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>>(1, 16);
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>> _pendingLookupRequests = new ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>>(1, 16);
@@ -120,15 +122,16 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ClientCnx(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, Commands.CurrentProtocolVersion, eventLoopGroup)
+		public ClientCnx(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup, ITransport transport) : this(conf, Commands.CurrentProtocolVersion, eventLoopGroup, transport)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup) //: base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup, ITransport transport) //: base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
 		{
 			if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
 				throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
-			_pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
+            Transport = transport;
+            _pendingLookupRequestSemaphore = new Semaphore(conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
 			_maxLookupRequestSemaphore = new Semaphore(conf.MaxLookupRequest - conf.ConcurrentLookupRequest, conf.MaxLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<IByteBuffer, TaskCompletionSource<LookupDataResult>>>>();
 			Authentication = conf.Authentication;
@@ -146,11 +149,9 @@ namespace SharpPulsar.Impl
             set => _remoteEndpointProtocolVersion = value;
             get => _remoteEndpointProtocolVersion;
         }
-		public override void ChannelRead(IChannelHandlerContext context, object message)
+		public void ChannelRead(IByteBuffer buffer)
 		{
             waitingForPingResponse = false;
-			// Get a buffer that contains the full frame
-			IByteBuffer buffer = (IByteBuffer)message;
 			BaseCommand cmd = null;
 			BaseCommand.Builder cmdBuilder = null;
 
@@ -169,7 +170,7 @@ namespace SharpPulsar.Impl
 
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("[{}] Received cmd {}", context.Channel.RemoteAddress, cmd.Type);
+					Log.LogDebug("[{}] Received cmd {}", RemoteAddress, cmd.Type);
 				}
 				
 				switch (cmd.Type)
@@ -635,7 +636,7 @@ namespace SharpPulsar.Impl
             throw new NotImplementedException();
         }
 
-        public override void ChannelActive(IChannelHandlerContext ctx)
+        public void ChannelActive(IChannelHandlerContext ctx)
         {
             RemoteAddress = ctx.Channel.RemoteAddress;
             RemoteHostName = Dns.GetHostEntry(((IPEndPoint)RemoteAddress).Address).HostName;
@@ -693,7 +694,7 @@ namespace SharpPulsar.Impl
             return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 
-		public override void ChannelInactive(IChannelHandlerContext ctx)
+		public void ChannelInactive(IChannelHandlerContext ctx)
 		{
             CancelKeepAliveTask();
 			_eventLoopGroup.Schedule(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs));

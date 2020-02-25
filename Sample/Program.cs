@@ -29,8 +29,8 @@ namespace Sample
         private static IChannel Channel;
         static async Task Main(string[] args)
         {
-            InternalLoggerFactory.DefaultFactory = SharpPulsar.Utility.Log.Logger;//.AddProvider(new ConsoleLoggerProvider(new OptionsMonitor<ConsoleLoggerOptions>(null, null, null)));
-            ILogger logger = InternalLoggerFactory.DefaultFactory.CreateLogger<Program>();
+            //InternalLoggerFactory.DefaultFactory = SharpPulsar.Utility.Log.Logger;//.AddProvider(new ConsoleLoggerProvider(new OptionsMonitor<ConsoleLoggerOptions>(null, null, null)));
+            ILogger logger = Log.Logger.CreateLogger<Program>();
             
             logger.LogInformation("Example log message");
             /*var serviceNameResolver = new PulsarServiceNameResolver();

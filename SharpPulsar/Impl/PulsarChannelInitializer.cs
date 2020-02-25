@@ -57,7 +57,7 @@ namespace SharpPulsar.Impl
 
 			ch.Pipeline.AddLast(new ProtobufVarint32LengthFieldPrepender());
             ch.Pipeline.AddLast(new ProtobufEncoder());
-            ch.Pipeline.AddLast("handler", _clientCnxSupplier.Invoke());
+            //ch.Pipeline.AddLast("handler", _clientCnxSupplier.Invoke());
 		}
 
 	}

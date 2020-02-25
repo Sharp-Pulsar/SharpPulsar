@@ -2,6 +2,7 @@
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Proto;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using Google.Protobuf;
@@ -9,9 +10,11 @@ using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
+using System.Text;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
+using SharpPulsar.Stole;
 using SharpPulsar.Utility.Protobuf;
 
 /// <summary>
@@ -141,11 +144,15 @@ namespace SharpPulsar.Protocol
 			}
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
+            var ba = BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect);
 			
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
-			connect.Recycle();
+            var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect).Build());
+            var resBytes = res.ToArray();
+
+			Console.WriteLine(Encoding.UTF8.GetString(resBytes));
+            connect.Recycle();
 			connectBuilder.Recycle();
-			return res;
+			return Unpooled.WrappedBuffer(resBytes);
 		}
 
 		public static IByteBuffer NewConnected(int clientProtocoVersion)
@@ -1287,7 +1294,6 @@ namespace SharpPulsar.Protocol
 			var cmdSize = cmd.CalculateSize();
 			var totalSize = cmdSize + 4;
 			var frameSize = totalSize + 4;
-
 			var buf = PooledByteBufferAllocator.Default.Buffer(frameSize, frameSize);
 
 			// Prepend 2 lengths to the buffer
@@ -1312,6 +1318,8 @@ namespace SharpPulsar.Protocol
 				outStream.Recycle();
 			}
 
+            var b = Encoding.UTF8.GetString(buf.Array);
+			Console.WriteLine(b);
 			return buf;
 		}
 
