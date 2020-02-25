@@ -92,7 +92,8 @@ namespace SharpPulsar.Impl
 		/// @return </param>
 		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode);
 		void Close();
+        IList<IPEndPoint> AddressList();
 
-	}
+    }
 
 }

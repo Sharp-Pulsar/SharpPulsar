@@ -46,11 +46,13 @@ namespace SharpPulsar.Test.Impl
 		private ConsumerConfigurationData<sbyte[]> _consumerConf;
         private readonly ITestOutputHelper _output;
 
-		public ConsumerImplTest()
+		public ConsumerImplTest(TestOutputHelper helper)
 		{
-			_output= new TestOutputHelper();
+			_output= helper;
+
+            var service = A.Fake<PulsarServiceNameResolver>(c=> c.ConfigureFake(o=> o.UpdateServiceUrl("pulsar://localhost:6650")));
             var clientConf = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
-			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf)).ConfigureFake(c=> c.Timer= new HashedWheelTimer()));
+			var client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConf, service)).ConfigureFake(c=> c.Timer= new HashedWheelTimer()));
 			_consumerConf = new ConsumerConfigurationData<sbyte[]>();
 
 			var clientCnxTask = new ValueTask<ClientCnx>();

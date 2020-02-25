@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,21 +13,24 @@
   <ItemGroup>
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="ConcurrentHashSet" Version="1.1.0" />
-    <PackageReference Include="dotnetty.buffers" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs.Protobuf" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="DotNetty.Handlers" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Transport" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Transport.Libuv" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
-    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="3.1.2" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.2" />
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.2" />
-    <PackageReference Include="Pipelines.Sockets.Unofficial" Version="2.1.1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
+    <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
+    <PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
     <PackageReference Include="System.Text.Json" Version="4.7.1" />
     <PackageReference Include="timeunit" Version="1.0.1" />
     <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
@@ -36,7 +39,6 @@
 
   <ItemGroup>
     <ProjectReference Include="E:\Devs\avro-release-1.9.2\lang\csharp\src\apache\main\Avro.main.csproj" />
-    <ProjectReference Include="E:\Devs\BedrockFramework-master\src\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1462,7 +1462,7 @@ namespace SharpPulsar.Impl
 				{
 					try
 					{
-						_deadLetterProducer = Client.NewProducer(Schema).Topic(_deadLetterPolicy.DeadLetterTopic).BlockIfQueueFull(false).Create().GetAwaiter().GetResult();
+						_deadLetterProducer = Client.NewProducer(Schema).Topic(_deadLetterPolicy.DeadLetterTopic).BlockIfQueueFull(false).Create();
 					}
 					catch (Exception e)
 					{

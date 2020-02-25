@@ -62,6 +62,7 @@ namespace SharpPulsar.Impl
 		private State _state;
 		private readonly HashSet<ProducerBase<object>> _producers;
 		private readonly HashSet<ConsumerBase<object>> _consumers;
+        private PulsarServiceNameResolver _serviceNameResolver;
 
 		private readonly AtomicLong _producerIdGenerator = new AtomicLong();
 		private readonly AtomicLong _consumerIdGenerator = new AtomicLong();
@@ -71,13 +72,13 @@ namespace SharpPulsar.Impl
 		public  DateTime ClientClock {get;}
 		public readonly IEventLoopGroup EventLoopGroup;
 
-		public PulsarClientImpl(ClientConfigurationData conf) : this(conf, GetEventLoopGroup(conf))
+		public PulsarClientImpl(ClientConfigurationData conf, PulsarServiceNameResolver serviceNameResolver) : this(conf, GetEventLoopGroup(conf), serviceNameResolver)
 		{
 		}
-		public PulsarClientImpl(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup))
+		public PulsarClientImpl(ClientConfigurationData conf, MultithreadEventLoopGroup eventLoopGroup, PulsarServiceNameResolver serviceNameResolver) : this(conf, eventLoopGroup, new ConnectionPool(conf, eventLoopGroup, serviceNameResolver), serviceNameResolver)
 		{
 		}
-		public PulsarClientImpl(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup, ConnectionPool cnxPool)
+		public PulsarClientImpl(ClientConfigurationData conf, IEventLoopGroup eventLoopGroup, ConnectionPool cnxPool, PulsarServiceNameResolver serviceNameResolver)
 		{
 			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl) || eventLoopGroup == null)
 			{
@@ -90,8 +91,8 @@ namespace SharpPulsar.Impl
 			ClientClock = conf.Clock;
 			conf.Authentication.Start();
 			CnxPool = cnxPool;
-
-			Lookup = new BinaryProtoLookupService(this, conf.ServiceUrl, conf.UseTls, ExternalExecutorProvider());
+            _serviceNameResolver = serviceNameResolver;
+            Lookup = new BinaryProtoLookupService(this, conf.ServiceUrl, conf.UseTls, ExternalExecutorProvider(), serviceNameResolver);
 			_producers = new HashSet<ProducerBase<object>>();
 			_consumers = new HashSet<ConsumerBase<object>>();
 			_state = State.Open;
@@ -577,12 +578,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual ValueTask<ClientCnx> GetConnection(in string topic)
+		public virtual async ValueTask<ClientCnx> GetConnection(string topic)
 		{
 			var topicName = TopicName.Get(topic);
-			var lkup = Lookup.GetBroker(topicName).Result;
-			return CnxPool.GetConnection((IPEndPoint)lkup.Key, (IPEndPoint)lkup.Value);
-		}
+			var lkup = await Lookup.GetBroker(topicName);
+			var connection = await CnxPool.GetConnection((IPEndPoint)lkup.Key, (IPEndPoint)lkup.Value);
+            return connection;
+        }
 
 		/// <summary>
 		/// visible for pulsar-functions * </summary>
@@ -614,7 +616,7 @@ namespace SharpPulsar.Impl
 
 		public void ReloadLookUp()
 		{
-			Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls, ExternalExecutorProvider());
+			Lookup = new BinaryProtoLookupService(this, Configuration.ServiceUrl, Configuration.UseTls, ExternalExecutorProvider(), _serviceNameResolver);
 		}
 
 		public ValueTask<int> GetNumberOfPartitions(string topic)
@@ -643,29 +645,27 @@ namespace SharpPulsar.Impl
 
 		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, AtomicLong remainingTime, TaskCompletionSource<PartitionedTopicMetadata> task)
 		{
-			var lkup = Lookup.GetPartitionedTopicMetadata(topicName);
-			if(lkup.IsCompletedSuccessfully)
-			{
-				task.SetResult(lkup.Result);
+			
+            try
+            {
+                var lkup = Lookup.GetPartitionedTopicMetadata(topicName).GetAwaiter().GetResult();
+                task.SetResult(lkup);
 			}
-			if(lkup.IsFaulted)
-			{
-				var ex = lkup.AsTask().Exception;
-				var nextDelay = Math.Min(backoff.Next(), remainingTime.Get());
-				if (nextDelay <= 0)
-				{
-					task.SetException(ex ?? throw new InvalidOperationException());
-					return;
-				}
+            catch (Exception e)
+            {
+                var nextDelay = Math.Min(backoff.Next(), remainingTime.Get());
+                if (nextDelay <= 0)
+                {
+                    task.SetException(e);
+                    return;
+                }
                 _executor.Schedule(() =>
                 {
                     Log.LogWarning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
-					remainingTime.AddAndGet(-nextDelay);
-					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, task);
+                    remainingTime.AddAndGet(-nextDelay);
+                    GetPartitionedTopicMetadata(topicName, backoff, remainingTime, task);
                 }, TimeSpan.FromSeconds(nextDelay));
 			}
-			
-			return;
 		}
 
 		public ValueTask<IList<string>> GetPartitionsForTopic(string topic)

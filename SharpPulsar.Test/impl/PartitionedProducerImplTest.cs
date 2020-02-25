@@ -52,10 +52,11 @@ namespace SharpPulsar.Test.Impl
 		public PartitionedProducerImplTest()
 		{
             _schema = A.Fake<ISchema<sbyte[]>>();
+            var service = A.Fake<PulsarServiceNameResolver>(c => c.ConfigureFake(o => o.UpdateServiceUrl("pulsar://localhost:6650")));
 			_producerInterceptors = A.Fake<ProducerInterceptors>(x=> x.WithArgumentsForConstructor(()=> new ProducerInterceptors(new List<IProducerInterceptor>()))); 
 			_producerCreatedTask =A.Fake<TaskCompletionSource<IProducer<sbyte[]>>>();
             var clientConfigurationData = A.Fake<ClientConfigurationData>(x=>x.ConfigureFake(c=> c.ServiceUrl= "pulsar://localhost:6650"));
-            _client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfigurationData)).ConfigureFake(c => c.Configuration = clientConfigurationData).ConfigureFake(c => c.Timer = new HashedWheelTimer())); 
+            _client = A.Fake<PulsarClientImpl>(x=> x.WithArgumentsForConstructor(()=> new PulsarClientImpl(clientConfigurationData, service)).ConfigureFake(c => c.Configuration = clientConfigurationData).ConfigureFake(c => c.Timer = new HashedWheelTimer())); 
 			var timer = A.Fake<ITimer>();
 
 			_producerBuilderImpl = new ProducerBuilderImpl<sbyte[]>(_client, SchemaFields.Bytes);
@@ -130,11 +131,12 @@ namespace SharpPulsar.Test.Impl
 		{
 			var topicName = "test-stats";
             var conf = new ClientConfigurationData {ServiceUrl = "pulsar://localhost:6650", StatsIntervalSeconds = 100};
+            var service = new PulsarServiceNameResolver();
+            service.UpdateServiceUrl(conf.ServiceUrl);
 
+			var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
 
-            var eventLoopGroup = new MultithreadEventLoopGroup(conf.NumIoThreads);
-
-            var clientImpl = new PulsarClientImpl(conf, eventLoopGroup) {Timer = new HashedWheelTimer()};
+            var clientImpl = new PulsarClientImpl(conf, eventLoopGroup, service) {Timer = new HashedWheelTimer()};
 
             var producerConfData = new ProducerConfigurationData
             {

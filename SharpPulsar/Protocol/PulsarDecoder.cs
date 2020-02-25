@@ -34,12 +34,12 @@ namespace SharpPulsar.Protocol
     /// <summary>
     /// Basic implementation of the channel handler to process inbound Pulsar data.
     /// </summary>
-    public abstract class PulsarDecoder : ChannelHandlerAdapter
+    public class PulsarDecoder : ChannelHandlerAdapter
 	{
-		public void Read(IChannelHandlerContext ctx, object msg)
+        public override void ChannelRead(IChannelHandlerContext context, object message)
 		{
 			// Get a buffer that contains the full frame
-			IByteBuffer buffer = (IByteBuffer)msg;
+			IByteBuffer buffer = (IByteBuffer)message;
 			BaseCommand cmd = null;
 			BaseCommand.Builder cmdBuilder = null;
 
@@ -58,7 +58,7 @@ namespace SharpPulsar.Protocol
 
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
-					Log.LogDebug("[{}] Received cmd {}", ctx.Channel.RemoteAddress, cmd.Type);
+					Log.LogDebug("[{}] Received cmd {}", context.Channel.RemoteAddress, cmd.Type);
 				}
 
 				MessageReceived();
@@ -384,7 +384,11 @@ namespace SharpPulsar.Protocol
 				buffer.Release();
 			}
 		}
-		public abstract void MessageReceived();
+
+        public virtual void MessageReceived()
+        {
+
+        }
 
 		public virtual void HandlePartitionMetadataRequest(CommandPartitionedTopicMetadata response)
 		{
@@ -654,12 +658,7 @@ namespace SharpPulsar.Protocol
 		{
             Log.LogInformation("ChannelInactive from: " + context.Name);
 		}
-
-		public void ChannelRead(IChannelHandlerContext context, object message)
-		{
-            Log.LogInformation("ChannelRead from: " + context.Name);
-		}
-
+		
 		public override void ChannelReadComplete(IChannelHandlerContext context)
 		{
             Log.LogInformation("ChannelReadComplete from: " + context.Name);

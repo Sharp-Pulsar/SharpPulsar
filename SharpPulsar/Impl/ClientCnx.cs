@@ -18,8 +18,10 @@ using SharpPulsar.Protocol.Schema;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using BAMCIS.Util.Concurrent;
+using DotNetty.Common.Concurrency;
 using DotNetty.Handlers.Tls;
 using Google.Protobuf;
+using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 using SharpPulsar.Utility.Protobuf;
@@ -45,11 +47,17 @@ using SharpPulsar.Utility.Protobuf;
 namespace SharpPulsar.Impl
 {
 
-	public class ClientCnx:PulsarHandler
+	public class ClientCnx : ChannelHandlerAdapter
 	{
 
 		protected internal readonly IAuthentication Authentication;
 		private State _state;
+        public IChannelHandlerContext Context;
+        protected internal EndPoint RemoteAddress;
+        protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
+        private readonly long keepAliveIntervalSeconds;
+        private bool waitingForPingResponse = false;
+        private IScheduledTask keepAliveTask;
 
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>> _pendingRequests = new ConcurrentDictionary<long, TaskCompletionSource<ProducerResponse>>(1, 16);
 		private readonly ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>> _pendingLookupRequests = new ConcurrentDictionary<long, TaskCompletionSource<LookupDataResult>>(1, 16);
@@ -116,7 +124,7 @@ namespace SharpPulsar.Impl
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup) : base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
+		public ClientCnx(ClientConfigurationData conf, int protocolVersion, MultithreadEventLoopGroup eventLoopGroup) //: base(conf.KeepAliveIntervalSeconds, TimeUnit.SECONDS)
 		{
 			if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
 				throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
@@ -131,12 +139,518 @@ namespace SharpPulsar.Impl
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
             _eventLoopGroup = eventLoopGroup;
-        }
-		
-		public override void ChannelActive(IChannelHandlerContext ctx)
+            this.keepAliveIntervalSeconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToSecs(conf.KeepAliveIntervalSeconds);
+		}
+        public virtual int RemoteEndpointProtocolVersion
         {
-            base.ChannelActive(ctx);
-            _timeoutSchedule.ScheduleAtFixedRate(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs), TimeSpan.FromMilliseconds(_operationTimeoutMs));
+            set => _remoteEndpointProtocolVersion = value;
+            get => _remoteEndpointProtocolVersion;
+        }
+		public override void ChannelRead(IChannelHandlerContext context, object message)
+		{
+            waitingForPingResponse = false;
+			// Get a buffer that contains the full frame
+			IByteBuffer buffer = (IByteBuffer)message;
+			BaseCommand cmd = null;
+			BaseCommand.Builder cmdBuilder = null;
+
+			try
+			{
+				// De-serialize the command
+				int cmdSize = (int)buffer.ReadUnsignedInt();
+				int writerIndex = buffer.WriterIndex;
+				buffer.SetWriterIndex(buffer.ReaderIndex + cmdSize);
+				ByteBufCodedInputStream cmdInputStream = ByteBufCodedInputStream.Get(buffer);
+				cmdBuilder = BaseCommand.NewBuilder();
+				cmd = ((BaseCommand.Builder)cmdBuilder.MergeFrom(cmdInputStream, null)).Build();
+				buffer.SetWriterIndex(writerIndex);
+
+				cmdInputStream.Recycle();
+
+				if (Log.IsEnabled(LogLevel.Debug))
+				{
+					Log.LogDebug("[{}] Received cmd {}", context.Channel.RemoteAddress, cmd.Type);
+				}
+				
+				switch (cmd.Type)
+				{
+					case BaseCommand.Types.Type.PartitionedMetadata:
+						if (cmd.HasPartitionMetadata)
+							HandlePartitionMetadataRequest(cmd.PartitionMetadata);
+						cmd.PartitionMetadata.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.PartitionedMetadataResponse:
+						if (cmd.HasPartitionMetadataResponse)
+							HandlePartitionResponse(cmd.PartitionMetadataResponse);
+						cmd.PartitionMetadataResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Lookup:
+						if (cmd.HasLookupTopic)
+							HandleLookup(cmd.LookupTopic);
+						cmd.LookupTopic.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.LookupResponse:
+						if (cmd.HasLookupTopicResponse)
+							HandleLookupResponse(cmd.LookupTopicResponse);
+						cmd.LookupTopicResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Ack:
+						if (cmd.HasAck)
+							HandleAck(cmd.Ack);
+						for (int i = 0; i < cmd.Ack.MessageId.Count; i++)
+						{
+							cmd.Ack.GetMessageId(i).Recycle();
+						}
+						cmd.Ack.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.CloseConsumer:
+						if (cmd.HasCloseConsumer)
+							HandleCloseConsumer(cmd.CloseConsumer);
+						cmd.CloseConsumer.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.CloseProducer:
+						if (cmd.HasCloseProducer)
+							HandleCloseProducer(cmd.CloseProducer);
+						cmd.CloseProducer.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Connect:
+						if (cmd.HasConnect)
+							HandleConnect(cmd.Connect);
+						cmd.Connect.Recycle();
+						break;
+					case BaseCommand.Types.Type.Connected:
+						if (cmd.HasConnected)
+							HandleConnected(cmd.Connected);
+						cmd.Connected.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Error:
+						if (cmd.HasError)
+							HandleError(cmd.Error);
+						cmd.Error.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Flow:
+						if (cmd.HasFlow)
+							HandleFlow(cmd.Flow);
+						cmd.Flow.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Message:
+						{
+							if (cmd.HasMessage)
+								HandleMessage(cmd.Message, buffer);
+							cmd.Message.Recycle();
+							break;
+						}
+					case BaseCommand.Types.Type.Producer:
+						if (cmd.HasProducer)
+							HandleProducer(cmd.Producer);
+						cmd.Producer.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Send:
+						{
+							if (cmd.HasSend)
+							{
+								// Store a buffer marking the content + headers
+								IByteBuffer headersAndPayload = buffer.MarkReaderIndex();
+								HandleSend(cmd.Send, headersAndPayload);
+							}
+
+							cmd.Send.Recycle();
+							break;
+						}
+					case BaseCommand.Types.Type.SendError:
+						if (cmd.HasSendError)
+							HandleSendError(cmd.SendError);
+						cmd.SendError.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.SendReceipt:
+						if (cmd.HasSendReceipt)
+							HandleSendReceipt(cmd.SendReceipt);
+						cmd.SendReceipt.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Subscribe:
+						if (cmd.HasSubscribe)
+							HandleSubscribe(cmd.Subscribe);
+						cmd.Subscribe.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Success:
+						if (cmd.HasSuccess)
+							HandleSuccess(cmd.Success);
+						cmd.Success.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ProducerSuccess:
+						if (cmd.HasProducerSuccess)
+							HandleProducerSuccess(cmd.ProducerSuccess);
+						cmd.ProducerSuccess.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Unsubscribe:
+						if (cmd.HasUnsubscribe)
+							HandleUnsubscribe(cmd.Unsubscribe);
+						cmd.Unsubscribe.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Seek:
+						if (cmd.HasSeek)
+							HandleSeek(cmd.Seek);
+						cmd.Seek.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Ping:
+						if (cmd.HasPing)
+							HandlePing(cmd.Ping);
+						cmd.Ping.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.Pong:
+						if (cmd.HasPong)
+							HandlePong(cmd.Pong);
+						cmd.Pong.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
+						if (cmd.HasRedeliverUnacknowledgedMessages)
+							HandleRedeliverUnacknowledged(cmd.RedeliverUnacknowledgedMessages);
+						cmd.RedeliverUnacknowledgedMessages.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ConsumerStats:
+						if (cmd.HasConsumerStats)
+							HandleConsumerStats(cmd.ConsumerStats);
+						cmd.ConsumerStats.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ConsumerStatsResponse:
+						if (cmd.HasConsumerStatsResponse)
+							HandleConsumerStatsResponse(cmd.ConsumerStatsResponse);
+						cmd.ConsumerStatsResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ReachedEndOfTopic:
+						if (cmd.HasReachedEndOfTopic)
+							HandleReachedEndOfTopic(cmd.ReachedEndOfTopic);
+						cmd.ReachedEndOfTopic.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetLastMessageId:
+						if (cmd.HasGetLastMessageId)
+							HandleGetLastMessageId(cmd.GetLastMessageId);
+						cmd.GetLastMessageId.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetLastMessageIdResponse:
+						if (cmd.HasGetLastMessageIdResponse)
+							HandleGetLastMessageIdSuccess(cmd.GetLastMessageIdResponse);
+						cmd.GetLastMessageIdResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.ActiveConsumerChange:
+						HandleActiveConsumerChange(cmd.ActiveConsumerChange);
+						cmd.ActiveConsumerChange.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetTopicsOfNamespace:
+						if (cmd.HasGetTopicsOfNamespace)
+							HandleGetTopicsOfNamespace(cmd.GetTopicsOfNamespace);
+						cmd.GetTopicsOfNamespace.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
+						if (cmd.HasGetTopicsOfNamespaceResponse)
+							HandleGetTopicsOfNamespaceSuccess(cmd.GetTopicsOfNamespaceResponse);
+						cmd.GetTopicsOfNamespaceResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetSchema:
+						if (cmd.HasGetSchema)
+							HandleGetSchema(cmd.GetSchema);
+						cmd.GetSchema.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetSchemaResponse:
+						if (cmd.HasGetSchemaResponse)
+							HandleGetSchemaResponse(cmd.GetSchemaResponse);
+						cmd.GetSchemaResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetOrCreateSchema:
+						if (cmd.HasGetOrCreateSchema)
+							HandleGetOrCreateSchema(cmd.GetOrCreateSchema);
+						cmd.GetOrCreateSchema.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
+						if (cmd.HasGetOrCreateSchemaResponse)
+							HandleGetOrCreateSchemaResponse(cmd.GetOrCreateSchemaResponse);
+						cmd.GetOrCreateSchemaResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AuthChallenge:
+						if (cmd.HasAuthChallenge)
+							HandleAuthChallenge(cmd.AuthChallenge);
+						cmd.AuthChallenge.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AuthResponse:
+						if (cmd.HasAuthResponse)
+							HandleAuthResponse(cmd.AuthResponse);
+						cmd.AuthResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.NewTxn:
+						if (cmd.HasNewTxn)
+							HandleNewTxn(cmd.NewTxn);
+						cmd.NewTxn.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.NewTxnResponse:
+						if (cmd.HasNewTxnResponse)
+							HandleNewTxnResponse(cmd.NewTxnResponse);
+						cmd.NewTxnResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AddPartitionToTxn:
+						if (cmd.HasAddPartitionToTxn)
+							HandleAddPartitionToTxn(cmd.AddPartitionToTxn);
+						cmd.AddPartitionToTxn.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AddPartitionToTxnResponse:
+						if (cmd.HasAddPartitionToTxnResponse)
+							HandleAddPartitionToTxnResponse(cmd.AddPartitionToTxnResponse);
+						cmd.AddPartitionToTxnResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AddSubscriptionToTxn:
+						if (cmd.HasAddSubscriptionToTxn)
+							HandleAddSubscriptionToTxn(cmd.AddSubscriptionToTxn);
+						cmd.AddSubscriptionToTxn.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
+						if (cmd.HasAddSubscriptionToTxnResponse)
+							HandleAddSubscriptionToTxnResponse(cmd.AddSubscriptionToTxnResponse);
+						cmd.AddSubscriptionToTxnResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxn:
+						if (cmd.HasEndTxn)
+							HandleEndTxn(cmd.EndTxn);
+						cmd.EndTxn.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxnResponse:
+						if (cmd.HasEndTxnResponse)
+							HandleEndTxnResponse(cmd.EndTxnResponse);
+						cmd.EndTxnResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxnOnPartition:
+						if (cmd.HasEndTxnOnPartition)
+							HandleEndTxnOnPartition(cmd.EndTxnOnPartition);
+						cmd.EndTxnOnPartition.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
+						if (cmd.HasEndTxnOnPartitionResponse)
+							HandleEndTxnOnPartitionResponse(cmd.EndTxnOnPartitionResponse);
+						cmd.EndTxnOnPartitionResponse.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxnOnSubscription:
+						if (cmd.HasEndTxnOnSubscription)
+							HandleEndTxnOnSubscription(cmd.EndTxnOnSubscription);
+						cmd.EndTxnOnSubscription.Recycle();
+						break;
+
+					case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
+						if (cmd.HasEndTxnOnSubscriptionResponse)
+							HandleEndTxnOnSubscriptionResponse(cmd.EndTxnOnSubscriptionResponse);
+						cmd.EndTxnOnSubscriptionResponse.Recycle();
+						break;
+				}
+			}
+			finally
+			{
+				cmdBuilder?.Recycle();
+
+				cmd?.Recycle();
+
+				buffer.Release();
+			}
+		}
+
+        private void HandleAck(CommandAck cmdAck)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleLookup(CommandLookupTopic cmdLookupTopic)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleFlow(CommandFlow cmdFlow)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleConnect(CommandConnect cmdConnect)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleSend(CommandSend cmdSend, IByteBuffer headersAndPayload)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleSubscribe(CommandSubscribe cmdSubscribe)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleSeek(CommandSeek cmdSeek)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleUnsubscribe(CommandUnsubscribe cmdUnsubscribe)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleConsumerStats(CommandConsumerStats cmdConsumerStats)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        private void HandleRedeliverUnacknowledged(CommandRedeliverUnacknowledgedMessages cmdRedeliverUnacknowledgedMessages)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandlePong(CommandPong cmdPong)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleConsumerStatsResponse(CommandConsumerStatsResponse cmdConsumerStatsResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandlePartitionMetadataRequest(CommandPartitionedTopicMetadata cmdPartitionMetadata)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleGetLastMessageId(CommandGetLastMessageId cmdGetLastMessageId)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleGetSchema(CommandGetSchema cmdGetSchema)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleGetTopicsOfNamespace(CommandGetTopicsOfNamespace cmdGetTopicsOfNamespace)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleGetOrCreateSchema(CommandGetOrCreateSchema cmdGetOrCreateSchema)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleNewTxn(CommandNewTxn cmdNewTxn)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleAuthResponse(CommandAuthResponse cmdAuthResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleAddPartitionToTxn(CommandAddPartitionToTxn cmdAddPartitionToTxn)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleAddSubscriptionToTxn(CommandAddSubscriptionToTxn cmdAddSubscriptionToTxn)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse cmdAddSubscriptionToTxnResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleEndTxn(CommandEndTxn cmdEndTxn)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleEndTxnOnPartition(CommandEndTxnOnPartition cmdEndTxnOnPartition)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleEndTxnOnPartitionResponse(CommandEndTxnOnPartitionResponse cmdEndTxnOnPartitionResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleEndTxnOnSubscription(CommandEndTxnOnSubscription cmdEndTxnOnSubscription)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleEndTxnOnSubscriptionResponse(CommandEndTxnOnSubscriptionResponse cmdEndTxnOnSubscriptionResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void HandleProducer(CommandProducer cmdProducer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ChannelActive(IChannelHandlerContext ctx)
+        {
+            RemoteAddress = ctx.Channel.RemoteAddress;
+            RemoteHostName = Dns.GetHostEntry(((IPEndPoint)RemoteAddress).Address).HostName;
+
+			Context = ctx;
+
+            if (Log.IsEnabled(LogLevel.Debug))
+            {
+                Log.LogDebug("[{}] Scheduling keep-alive task every {} s", ctx.Channel, keepAliveIntervalSeconds);
+            }
+            if (keepAliveIntervalSeconds > 0)
+            {
+                keepAliveTask = ctx.Executor.Schedule(HandleKeepAliveTimeout, TimeSpan.FromSeconds(keepAliveIntervalSeconds));
+            }
+			_timeoutSchedule.ScheduleAtFixedRate(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs), TimeSpan.FromMilliseconds(_operationTimeoutMs));
 
             if (ReferenceEquals(ProxyToTargetBrokerAddress, null))
             {
@@ -181,8 +695,8 @@ namespace SharpPulsar.Impl
 
 		public override void ChannelInactive(IChannelHandlerContext ctx)
 		{
-			base.ChannelInactive(ctx);
-            _eventLoopGroup.Schedule(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs));
+            CancelKeepAliveTask();
+			_eventLoopGroup.Schedule(CheckRequestTimeout, TimeSpan.FromMilliseconds(_operationTimeoutMs));
 			Log.LogInformation("{} Disconnected", ctx.Channel);
 			if (_connectionTask.Task.IsFaulted)
 			{
@@ -215,6 +729,61 @@ namespace SharpPulsar.Impl
             _timeoutSchedule = null;
             //_timeoutTask.Cancel();
         }
+		public void HandlePing(CommandPing ping)
+		{
+			// Immediately reply success to ping requests
+			if (Log.IsEnabled(LogLevel.Debug))
+			{
+				Log.LogDebug("[{}] Replying back to ping message", Context.Channel);
+			}
+			Context.WriteAndFlushAsync(Commands.NewPong());
+		}
+
+		private void HandleKeepAliveTimeout()
+		{
+			if (!Context.Channel.Open)
+			{
+				return;
+			}
+
+			if (!HandshakeCompleted)
+			{
+				Log.LogWarning("[{}] Pulsar Handshake was not completed within timeout, closing connection", Context.Channel);
+				Context.CloseAsync();
+			}
+			else if (waitingForPingResponse && Context.Channel.Configuration.AutoRead)
+			{
+				// We were waiting for a response and another keep-alive just completed.
+				// If auto-read was disabled, it means we stopped reading from the connection, so we might receive the Ping
+				// response later and thus not enforce the strict timeout here.
+				Log.LogWarning("[{}] Forcing connection to close after keep-alive timeout", Context.Channel);
+				Context.CloseAsync();
+			}
+			else if (_remoteEndpointProtocolVersion >= (int)ProtocolVersion.V1)
+			{
+				// Send keep alive probe to peer only if it supports the ping/pong commands, added in v1
+				if (Log.IsEnabled(LogLevel.Debug))
+				{
+					Log.LogDebug("[{}] Sending ping message", Context.Channel);
+				}
+				waitingForPingResponse = true;
+				Context.WriteAndFlushAsync(Commands.NewPing());
+			}
+			else
+			{
+				if (Log.IsEnabled(LogLevel.Debug))
+				{
+					Log.LogDebug("[{}] Peer doesn't support keep-alive", Context.Channel);
+				}
+			}
+		}
+
+		public virtual void CancelKeepAliveTask()
+		{
+			if (keepAliveTask == null) return;
+			keepAliveTask.Cancel();
+			keepAliveTask = null;
+		}
 
 		// Command Handlers
 		public new void ExceptionCaught(IChannelHandlerContext ctx, Exception cause)
@@ -243,7 +812,7 @@ namespace SharpPulsar.Impl
 			return T is IOException;
 		}
 
-		public override void HandleConnected(CommandConnected connected)
+		public void HandleConnected(CommandConnected connected)
 		{
 
 			if (_isTlsHostnameVerificationEnable && !string.IsNullOrWhiteSpace(_remoteHostName) && !VerifyTlsHostName(_remoteHostName, Ctx()))
@@ -274,7 +843,7 @@ namespace SharpPulsar.Impl
 			_state = State.Ready;
 		}
 
-		public override void HandleAuthChallenge(CommandAuthChallenge authChallenge)
+		public void HandleAuthChallenge(CommandAuthChallenge authChallenge)
         {
             if (authChallenge.Challenge == null)
                 return;
@@ -310,7 +879,7 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public override void HandleSendReceipt(CommandSendReceipt sendReceipt)
+		public void HandleSendReceipt(CommandSendReceipt sendReceipt)
 		{
 			if (_state != State.Ready)
 				return;
@@ -339,7 +908,7 @@ namespace SharpPulsar.Impl
 			_producers[producerId].AckReceived(this, sequenceId, highestSequenceId, ledgerId, entryId);
 		}
 
-		public override void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
+		public void HandleMessage(CommandMessage cmdMessage, IByteBuffer headersAndPayload)
 		{
 			if(_state != State.Ready)
 				return;
@@ -352,7 +921,7 @@ namespace SharpPulsar.Impl
             consumer?.MessageReceived(cmdMessage.MessageId, (int)cmdMessage.RedeliveryCount, headersAndPayload, this);
         }
 
-		public override void HandleActiveConsumerChange(CommandActiveConsumerChange change)
+		public void HandleActiveConsumerChange(CommandActiveConsumerChange change)
 		{
 			if (_state != State.Ready)
 				return;
@@ -365,7 +934,7 @@ namespace SharpPulsar.Impl
             consumer?.ActiveConsumerChanged(change.IsActive);
         }
 
-		public override void HandleSuccess(CommandSuccess success)
+		public void HandleSuccess(CommandSuccess success)
 		{
 			if (_state != State.Ready)
 				return;
@@ -386,7 +955,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
+		public void HandleGetLastMessageIdSuccess(CommandGetLastMessageIdResponse success)
 		{
 			if (_state != State.Ready)
 				return;
@@ -407,7 +976,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleProducerSuccess(CommandProducerSuccess success)
+		public void HandleProducerSuccess(CommandProducerSuccess success)
 		{
 			if (_state != State.Ready)
 				return;
@@ -428,7 +997,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
+		public void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -465,7 +1034,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
+		public void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -503,7 +1072,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
+		public void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
 		{
 			var consumerId = (long)commandReachedEndOfTopic.ConsumerId;
 
@@ -562,7 +1131,7 @@ namespace SharpPulsar.Impl
 			return requestTask;
 		}
 
-		public override void HandleSendError(CommandSendError sendError)
+		public void HandleSendError(CommandSendError sendError)
 		{
 			Log.LogWarning("{} Received send error from server: {} : {}", Channel(), sendError.Error, sendError.Message);
 
@@ -587,7 +1156,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleError(CommandError error)
+		public void HandleError(CommandError error)
 		{
 			if (_state != State.SentConnectFrame || _state != State.Ready)
 				return;
@@ -609,7 +1178,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleCloseProducer(CommandCloseProducer closeProducer)
+		public void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
 			Log.LogInformation("[{}] Broker notification of Closed producer: {}", Channel().RemoteAddress, closeProducer.ProducerId);
 			var producerId = (long)closeProducer.ProducerId;
@@ -624,7 +1193,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
+		public void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
 			Log.LogInformation("[{}] Broker notification of Closed consumer: {}", Channel().RemoteAddress, closeConsumer.ConsumerId);
 			var consumerId = (long)closeConsumer.ConsumerId;
@@ -639,7 +1208,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool HandshakeCompleted => _state == State.Ready;
+		public bool HandshakeCompleted => _state == State.Ready;
 
         public virtual async ValueTask<LookupDataResult> NewLookup(IByteBuffer request, long requestId)
 		{
@@ -706,7 +1275,7 @@ namespace SharpPulsar.Impl
 			return listTask;
 		}
 
-		public override void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
+		public void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
 		{
 			if (_state != State.Ready)
 				return;
@@ -730,7 +1299,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
+		public void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
 		{
 			if (_state != State.Ready)
 				return;
@@ -746,7 +1315,7 @@ namespace SharpPulsar.Impl
 			requestTask.SetResult(commandGetSchemaResponse);
 		}
 
-		public override void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
+		public void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
 			if (_state != State.Ready)
 				return;
@@ -768,7 +1337,7 @@ namespace SharpPulsar.Impl
 
 		public virtual IChannel Channel()
 		{
-			return PulsarChannel;
+			return Context.Channel;
 		}
 
 		public virtual EndPoint ServerAddress()
@@ -876,19 +1445,19 @@ namespace SharpPulsar.Impl
             }
         }
 
-		public override void HandleNewTxnResponse(CommandNewTxnResponse command)
+		public void HandleNewTxnResponse(CommandNewTxnResponse command)
 		{
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
             handler?.HandleNewTxnResponse(command);
         }
 
-		public override void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
+		public void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
 		{
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
             handler?.HandleAddPublishPartitionToTxnResponse(command);
         }
 
-		public override void HandleEndTxnResponse(CommandEndTxnResponse command)
+		public void HandleEndTxnResponse(CommandEndTxnResponse command)
 		{
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
             handler?.HandleEndTxnResponse(command);

@@ -131,8 +131,9 @@ namespace SharpPulsar.Test.Impl.conf
 			ClientConfigurationData clientConfig = new ClientConfigurationData();
 			clientConfig.ServiceUrl = "pulsar://localhost:6650";
 			clientConfig.StatsIntervalSeconds = 80;
-
-			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig);
+			var service = new PulsarServiceNameResolver();
+			service.UpdateServiceUrl(clientConfig.ServiceUrl);
+			PulsarClientImpl pulsarClient = new PulsarClientImpl(clientConfig, service);
 			Assert.NotNull(pulsarClient);
 
             Assert.Equal("pulsar://localhost:6650", pulsarClient.Configuration.ServiceUrl);

@@ -31,7 +31,7 @@ namespace SharpPulsar.Protocol
     /// <summary>
     /// Implementation of the channel handler to process inbound Pulsar data.
     /// </summary>
-    public abstract class PulsarHandler : PulsarDecoder
+    public class PulsarHandler : PulsarDecoder
 	{
 		//protected internal ChannelHandlerContext Ctx;
 		protected internal EndPoint RemoteAddress;
@@ -139,9 +139,9 @@ namespace SharpPulsar.Protocol
         }
 
 		/// <returns> true if the connection is ready to use, meaning the Pulsar handshake was already completed </returns>
-		public abstract bool HandshakeCompleted { get; }
+		public virtual bool HandshakeCompleted { get; set; }
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarHandler));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarHandler));
 	}
 
 }

@@ -50,7 +50,8 @@ namespace SharpPulsar.Api
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
 		///             
-		ValueTask<IProducer<T>> Create();
+		IProducer<T> Create();
+        ValueTask<IProducer<T>> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.

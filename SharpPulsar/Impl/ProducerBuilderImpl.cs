@@ -61,8 +61,12 @@ namespace SharpPulsar.Impl
 		{
 			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
 		}
-
-        public async ValueTask<IProducer<T>> Create()
+        public IProducer<T> Create()
+        {
+            var p = CreateAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            return p;
+        }
+		public async ValueTask<IProducer<T>> CreateAsync()
 		{
 			if (_conf.TopicName == null)
             {

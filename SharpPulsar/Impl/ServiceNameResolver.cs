@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Collections.Generic;
+
 namespace SharpPulsar.Impl
 {
     using SharpPulsar.Common;
@@ -58,6 +61,8 @@ namespace SharpPulsar.Impl
 		/// <param name="serviceUrl"> service url </param>
 		void UpdateServiceUrl(string ServiceUrl);
 
-	}
+        IList<IPEndPoint> AddressList();
+
+    }
 
 }

@@ -34,6 +34,11 @@ namespace SharpPulsar.Impl
 		private volatile IList<IPEndPoint> _addressList;
         private ServiceUri _serviceUri;
 
+        public IList<IPEndPoint> AddressList()
+        {
+            return _addressList;
+        }
+
 		public  IPEndPoint ResolveHost()
 		{
 			var list = _addressList;

@@ -41,20 +41,23 @@ namespace SharpPulsar.Impl
 		private readonly ServiceNameResolver _serviceNameResolver;
 		private readonly bool _useTls;
 		private readonly ScheduledThreadPoolExecutor _executor;
-		public BinaryProtoLookupService(PulsarClientImpl client, string serviceUrl, bool useTls, ScheduledThreadPoolExecutor executor)
+		public BinaryProtoLookupService(PulsarClientImpl client, string serviceUrl, bool useTls, ScheduledThreadPoolExecutor executor, PulsarServiceNameResolver serviceNameResolver)
 		{
 			_executor = executor;
 			_client = client;
 			_useTls = useTls;
-			_serviceNameResolver = new PulsarServiceNameResolver();
-			UpdateServiceUrl(serviceUrl);
-		}
+            _serviceNameResolver = serviceNameResolver;
+        }
 
 		public void UpdateServiceUrl(string serviceUrl)
 		{
 			_serviceNameResolver.UpdateServiceUrl(serviceUrl);
 		}
 
+        public IList<IPEndPoint> AddressList()
+        {
+            return _serviceNameResolver.AddressList();
+        }
 		/// <summary>
 		/// Calls broker binaryProto-lookup api to find broker-service address which can serve a given topic.
 		/// </summary>
@@ -70,9 +73,9 @@ namespace SharpPulsar.Impl
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		public ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName)
+		public async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(TopicName topicName)
 		{
-			return GetPartitionedTopicMetadata(_serviceNameResolver.ResolveHost(), topicName);
+			return await GetPartitionedTopicMetadata(_serviceNameResolver.ResolveHost(), topicName);
 		}
 
 		private async ValueTask<KeyValuePair<EndPoint, EndPoint>> FindBroker(IPEndPoint socketAddress, bool authoritative, TopicName topicName)
