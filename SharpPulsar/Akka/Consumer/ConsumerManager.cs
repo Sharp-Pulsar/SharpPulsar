@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Akka.Actor;
+using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 
@@ -9,19 +10,14 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class ConsumerManager<T>:ReceiveActor
     {
-        private IConsumerBuilder<T> _consumerBuilder;
-        private IMessageReceivedHandler _handler;
-        private ConsumerConfigurationData<T> _conf;
-        public ConsumerManager(IConsumerBuilder<T> consumerBuilder, ConsumerConfigurationData<T> conf, IMessageReceivedHandler handler)
+        public ConsumerManager()
         {
-            _consumerBuilder = consumerBuilder;
-            _handler = handler;
-            _conf = conf;
+            Receive<Subscribe<T>>(subscribe => { });
         }
 
-        public static Props Prop(IConsumerBuilder<T> consumerBuilder, ConsumerConfigurationData<T> conf, IMessageReceivedHandler handler)
+        public static Props Prop()
         {
-            return Props.Create(()=> new ConsumerManager<T>(consumerBuilder, conf, handler));
+            return Props.Empty;
         }
     }
 }

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Avro;
+using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Api;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Shared;
 
 namespace SharpPulsar.Akka
 {
@@ -19,6 +17,10 @@ namespace SharpPulsar.Akka
         private IPulsarClientBuilder _clientBuilder;
         private ClientConfigurationData _conf;
         private IPulsarClient _client;
+        private bool _producerManagerCreated;
+        private IActorRef _producerManager;
+        private bool _consumerManagerCreated;
+        private IActorRef _consumerManager;
 
         public PulsarSystem(IPulsarClientBuilder clientBuilder, ClientConfigurationData conf)
         {
@@ -26,7 +28,22 @@ namespace SharpPulsar.Akka
             _conf = conf;
             _clientBuilder = clientBuilder;
         }
-
+        public void StartProducerManager<T>(ISchema<T> schema)
+        {
+            if (!_producerManagerCreated)
+            {
+                _producerManager =_actorSystem.ActorOf(ProducerManager<T>.Prop(), "ProducerManager");
+                _producerManagerCreated = true;
+            }
+        }
+        public void StartConsumerManager<T>(ISchema<T> schema)
+        {
+            if (!_consumerManagerCreated)
+            {
+                _consumerManager = _actorSystem.ActorOf(ConsumerManager<T>.Prop(), "ConsumerManager");
+                _consumerManagerCreated = true;
+            }
+        }
         public IProducerBuilder<T> GetProducerBuilder<T>(ISchema<T> schema)
         {
             return _clientBuilder.Build().NewProducer(schema);
@@ -37,32 +54,26 @@ namespace SharpPulsar.Akka
             return _clientBuilder.Build().NewConsumer(schema);
         }
         //constructor producer manager actor
-        public IActorRef StartProducer<T>(IProducerBuilder<T> producer, ProducerConfigurationData conf)
+        public void CreateProducer<T>(Create<T> create)
         {
-            var serviceNameResolver = new PulsarServiceNameResolver();
-            serviceNameResolver.UpdateServiceUrl(_conf.ServiceUrl);
-            var client = _clientBuilder.Build();
-            return _actorSystem.ActorOf(ProducerManager<T>.Prop(producer, conf));
+            if(_producerManagerCreated)
+                _producerManager.Tell(create);
         }
         //constructor consumer manager actor
-        public void StartConsumer<T>(IConsumerBuilder<T> consumer)
+        public void SubscribeConsumer<T>(Subscribe<T> subscribe)
         {
-            consumer.Subscribe();
+            if(_consumerManagerCreated)
+                _consumerManager.Tell(subscribe);
         }
 
-        public void Produce<T>(T message, IActorRef manager)
+        public void Send(Send send)
         {
-            var m = new { message, message.GetType()};
-            manager.Tell(m);
+           _producerManager.Tell(send);
         }
-        //Multiple producer scenario
-        public void Produce<T>(T message, string topic)
+        public void Send(List<object> messages)
         {
-
-        }
-        public void ReadMessages()
-        {
-            //read messages from IMessageReceivedHandler handler
+            var tran = new Transactional(messages.ToImmutableList(), _clientBuilder.Build());
+            _producerManager.Tell(tran);
         }
         public async ValueTask DisposeAsync()
         {

@@ -1,26 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Akka.Actor;
-using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
+﻿using Akka.Actor;
+using SharpPulsar.Akka.InternalCommands;
 
 namespace SharpPulsar.Akka.Producer
 {
     public class ProducerManager<T>:ReceiveActor
     {
-        private IProducerBuilder<T> _producerBuilder;
-        private ProducerConfigurationData _configuration;
-
-        public ProducerManager(IProducerBuilder<T> producerBuilder, ProducerConfigurationData configuration)
+        public ProducerManager()
         {
-            _producerBuilder = producerBuilder;
-            _configuration = configuration;
+            Receive<Create<T>>(create =>
+            {
+
+            });
+            Receive<Send>(send =>
+            {
+                //look for the child actor with name equal topic and send
+            });
+            Receive<Transactional>(send =>
+            {
+                //create transaction object
+                //for each message produce
+                //track messageid to commit transaction
+            });
         }
 
-        public static Props Prop(IProducerBuilder<T> producerBuilder, ProducerConfigurationData configuration)
+        public static Props Prop()
         {
-            return Props.Create(()=> new ProducerManager<T>(producerBuilder, configuration));
+            return Props.Empty;
         }
     }
 }
