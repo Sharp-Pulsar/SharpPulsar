@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using Pulsar.Common.Auth;
+using SharpPulsar.Akka;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
@@ -512,7 +514,7 @@ namespace SharpPulsar.Impl
 			UnAckedMessageTracker.Remove(messageId);
 		}
 
-		public void ConnectionOpened(ClientCnx cnx)
+		public void ConnectionOpened(ClientConnection cnx)
 		{
 			ClientCnx = cnx;
 			cnx.RegisterConsumer(ConsumerId, this);
@@ -670,7 +672,7 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// send the flow command to have the broker start pushing messages
 		/// </summary>
-		public void SendFlowPermitsToBroker(ClientCnx cnx, int numMessages)
+		public void SendFlowPermitsToBroker(ClientConnection cnx, int numMessages)
 		{
 			if (cnx != null)
 			{
@@ -679,7 +681,7 @@ namespace SharpPulsar.Impl
 					Log.LogDebug("[{}] [{}] Adding {} additional permits", Topic, Subscription, numMessages);
 				}
 
-				cnx.Ctx().WriteAndFlushAsync(Commands.NewFlow(ConsumerId, numMessages));
+				cnx.Connection.Tell(Commands.NewFlow(ConsumerId, numMessages), cnx.Connection);
 			}
 		}
 
@@ -811,7 +813,7 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		public void MessageReceived(MessageIdData messageId, int redeliveryCount, IByteBuffer headersAndPayload, ClientCnx cnx)
+		public void MessageReceived(MessageIdData messageId, int redeliveryCount, IByteBuffer headersAndPayload, ClientConnection cnx)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -1024,7 +1026,7 @@ namespace SharpPulsar.Impl
             Task.Run(() => receivedTask.SetResult(interceptMessage));
 		}
 
-		public void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IByteBuffer uncompressedPayload, MessageIdData messageId, ClientCnx cnx)
+		public void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IByteBuffer uncompressedPayload, MessageIdData messageId, ClientConnection cnx)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 
@@ -1189,12 +1191,12 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void IncreaseAvailablePermits(ClientCnx currentCnx)
+		public void IncreaseAvailablePermits(ClientConnection currentCnx)
 		{
 			IncreaseAvailablePermits(currentCnx, 1);
 		}
 
-		private void IncreaseAvailablePermits(ClientCnx currentCnx, int delta)
+		private void IncreaseAvailablePermits(ClientConnection currentCnx, int delta)
         {
             _availablePermits[this] = delta;
 			var available = _availablePermits[this];
@@ -1225,7 +1227,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private IByteBuffer DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx currentCnx)
+		private IByteBuffer DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientConnection currentCnx)
 		{
 
 			if (msgMetadata.EncryptionKeys.Count == 0)
@@ -1281,7 +1283,7 @@ namespace SharpPulsar.Impl
 			return null;
 		}
 
-		private IByteBuffer UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx currentCnx)
+		private IByteBuffer UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientConnection currentCnx)
 		{
 			var compressionType = msgMetadata.Compression;
 			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
@@ -1325,13 +1327,13 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private void DiscardCorruptedMessage(MessageIdData messageId, ClientCnx currentCnx, CommandAck.Types.ValidationError validationError)
+		private void DiscardCorruptedMessage(MessageIdData messageId, ClientConnection currentCnx, CommandAck.Types.ValidationError validationError)
 		{
 			Log.LogError("[{}][{}] Discarding corrupted message at {}:{}", Topic, Subscription, messageId.LedgerId, messageId.EntryId);
 			DiscardMessage(messageId, currentCnx, validationError);
 		}
 
-		private void DiscardMessage(MessageIdData messageId, ClientCnx currentCnx, CommandAck.Types.ValidationError validationError)
+		private void DiscardMessage(MessageIdData messageId, ClientConnection currentCnx, CommandAck.Types.ValidationError validationError)
 		{
 			var cmd = Commands.NewAck(ConsumerId, (long)messageId.LedgerId, (long)messageId.EntryId, CommandAck.Types.AckType.Individual, validationError, new Dictionary<string,long>());
 			currentCnx.Ctx().WriteAndFlushAsync(cmd);
@@ -1820,7 +1822,7 @@ namespace SharpPulsar.Impl
 		}
 
 		// wrapper for connection methods
-		public ClientCnx Cnx()
+		public ClientConnection Cnx()
 		{
 			return Handler.Cnx();
 		}
@@ -1830,12 +1832,12 @@ namespace SharpPulsar.Impl
 			Handler.ResetBackoff();
 		}
 
-		public void ConnectionClosed(ClientCnx cnx)
+		public void ConnectionClosed(ClientConnection cnx)
 		{
 			Handler.ConnectionClosed(cnx);
 		}
 
-		public ClientCnx ClientCnx
+		public ClientConnection ClientCnx
 		{
 			get => Handler.ClientCnx;
             set => Handler.ClientCnx = value;

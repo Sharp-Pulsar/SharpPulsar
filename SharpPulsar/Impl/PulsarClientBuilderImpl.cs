@@ -3,6 +3,7 @@ using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Akka.Actor;
 using DotNetty.Transport.Channels;
 using SharpPulsar.Protocol;
 using SharpPulsar.Utility;
@@ -41,7 +42,7 @@ namespace SharpPulsar.Impl
 			this.Conf = conf;
 		}
 
-		public async ValueTask<IPulsarClient> Build()
+		public IPulsarClient Build()
 		{
 			if (string.IsNullOrWhiteSpace(Conf.ServiceUrl) && Conf.ServiceUrlProvider == null)
 			{

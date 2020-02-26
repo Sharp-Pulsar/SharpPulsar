@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Concurrent;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Akka;
+using SharpPulsar.Akka.Network;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
@@ -32,7 +34,7 @@ namespace SharpPulsar.Impl
 
 	public class ConnectionHandler
 	{
-		private static readonly ConcurrentDictionary<ConnectionHandler, ClientCnx> ClientCnxUpdater = new ConcurrentDictionary<ConnectionHandler, ClientCnx>();
+		private static readonly ConcurrentDictionary<ConnectionHandler, ClientConnection> ClientCnxUpdater = new ConcurrentDictionary<ConnectionHandler, ClientConnection>();
 
 		//private volatile ClientCnx _clientCnx = null;
 
@@ -132,7 +134,7 @@ namespace SharpPulsar.Impl
                 _outerInstance.GrabCnx();
 			}
         }
-		public virtual void ConnectionClosed(ClientCnx cnx)
+		public virtual void ConnectionClosed(ClientConnection cnx)
 		{
 			if (ClientCnxUpdater.TryUpdate(this, cnx, null))
 			{
@@ -153,7 +155,7 @@ namespace SharpPulsar.Impl
 			Backoff.Reset();
 		}
 
-		public virtual ClientCnx Cnx()
+		public virtual ClientConnection Cnx()
 		{
 			return ClientCnxUpdater[this];
 		}
@@ -163,7 +165,7 @@ namespace SharpPulsar.Impl
 			return e is PulsarClientException.LookupException;
 		}
 
-		public virtual ClientCnx ClientCnx
+		public virtual ClientConnection ClientCnx
 		{
 			get => ClientCnxUpdater[this];
             set => ClientCnxUpdater[this] =  value;

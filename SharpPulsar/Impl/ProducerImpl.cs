@@ -21,6 +21,9 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Akka.Actor;
+using SharpPulsar.Akka;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Utility.Atomic;
 using SharpPulsar.Utility.Atomic.Collections.Concurrent;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
@@ -846,7 +849,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void AckReceived(ClientCnx cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+		public void AckReceived(ClientConnection cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
 		{
 			OpSendMsg<T> op = null;
 			var callback = false;
@@ -895,7 +898,7 @@ namespace SharpPulsar.Impl
 					{
 						Log.LogWarning("[{}] [{}] Got ack for batch msg error. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, HandlerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId, _pendingMessages.Count);
 						// Force connection closing so that messages can be re-transmitted in a new connection
-						cnx.Channel().CloseAsync();
+						cnx.Connection.Tell("Close", cnx.Connection);
 					}
 				}
 			}

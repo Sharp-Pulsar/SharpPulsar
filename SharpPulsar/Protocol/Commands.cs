@@ -326,21 +326,11 @@ namespace SharpPulsar.Protocol
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
 				SkipChecksumIfPresent(buffer);
-				var metadataSize = (int) buffer.ReadUnsignedInt();
-
-				var writerIndex = buffer.WriterIndex;
-				buffer.SetWriterIndex(buffer.ReaderIndex + metadataSize);
-				var stream = ByteBufCodedInputStream.Get(buffer);
-				var messageMetadataBuilder = MessageMetadata.NewBuilder();
-				var res = ((MessageMetadata.Builder)messageMetadataBuilder.MergeFrom(stream, null)).Build();
-				buffer.SetWriterIndex(writerIndex);
-				messageMetadataBuilder.Recycle();
-				stream.Recycle();
-				return res;
+                return MessageMetadata.Parser.ParseFrom(buffer.Array);
 			}
 			catch (IOException e)
 			{
-				throw new System.Exception(e.Message, e);
+				throw new Exception(e.Message, e);
 			}
 		}
 

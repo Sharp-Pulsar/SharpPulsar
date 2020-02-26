@@ -195,7 +195,7 @@ namespace SharpPulsar.Impl
 
 		private async ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
 		{
-			var producerCreated = new TaskCompletionSource<IProducer<T>>();
+			var producerCreated = new TaskCompletionSource<IProducer<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var metadata = await GetPartitionedTopicMetadata(topic);
             if (Log.IsEnabled(LogLevel.Debug))

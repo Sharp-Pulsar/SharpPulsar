@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Akka.Actor;
 using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
@@ -38,7 +39,7 @@ namespace SharpPulsar.Api
 		/// Construct the final <seealso cref="IPulsarClient"/> instance.
 		/// </summary>
 		/// <returns> the new <seealso cref="IPulsarClient"/> instance </returns>
-		ValueTask<IPulsarClient> Build();
+		IPulsarClient Build();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
