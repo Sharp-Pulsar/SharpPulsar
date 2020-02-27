@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.Producer;
-using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
@@ -22,28 +19,22 @@ namespace SharpPulsar.Akka
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
         
-        //constructor producer manager actor
-        public void CreateProducer<T>(Create<T> create)
+        
+        public void CreateProducer(NewProducer producer)
         {
-            if(_producerManagerCreated)
-                _producerManager.Tell(create);
+            _pulsarManager.Tell(producer);
         }
-        //constructor consumer manager actor
-        public void SubscribeConsumer<T>(Subscribe<T> subscribe)
+        
+        public void CreateConsumer(NewConsumer consumer)
         {
-            if(_consumerManagerCreated)
-                _consumerManager.Tell(subscribe);
+            _pulsarManager.Tell(consumer);
         }
 
         public void Send(Send send)
         {
-           _producerManager.Tell(send);
+           _pulsarManager.Tell(send);
         }
-        public void Send(List<object> messages)
-        {
-            var tran = new Transactional(messages.ToImmutableList(), _clientBuilder.Build());
-            _producerManager.Tell(tran);
-        }
+        
         public async ValueTask DisposeAsync()
         {
            await _actorSystem.Terminate();

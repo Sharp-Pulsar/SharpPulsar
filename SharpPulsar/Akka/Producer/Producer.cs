@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using Akka.Actor;
 using Org.BouncyCastle.Crypto;
 using SharpPulsar.Akka.InternalCommands;
@@ -10,13 +9,11 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Exceptions;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Utility.Atomic.Collections.Concurrent;
 
 namespace SharpPulsar.Akka.Producer
 {
@@ -46,7 +43,7 @@ namespace SharpPulsar.Akka.Producer
         private ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        private Dictionary<SchemaHash, sbyte[]> _schemaCache = new Dictionary<SchemaHash, sbyte[]>();
+        private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
         public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
         {
             _clientConfiguration = clientConfiguration;
@@ -109,7 +106,7 @@ namespace SharpPulsar.Akka.Producer
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
+                Become(CreateProducer);
             });
             Receive<AddPublicKeyCipher>(a =>
             {
@@ -117,8 +114,10 @@ namespace SharpPulsar.Akka.Producer
             });
             ReceiveAny(_=> Stash.Stash());
         }
-        private void Open()
+
+        public void Ready()
         {
+            Context.Parent.Tell(new RegisteredProducer(_producerId, _producerName, _configuration.TopicName));
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -128,6 +127,33 @@ namespace SharpPulsar.Akka.Producer
                 Become(LookUpBroker);
             });
             Stash.UnstashAll();
+        }
+        public void CreateProducer()
+        {
+            Receive<ProducerCreated>(p =>
+            {
+                _pendingLookupRequests.Remove(p.RequestId);
+                if (string.IsNullOrWhiteSpace(_producerName))
+                    _producerName = p.Name;
+                _sequenceId = p.LastSequenceId;
+                var schemaVersion = p.SchemaVersion;
+                if (schemaVersion != null)
+                {
+                    _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
+                }
+                Become(Ready);
+            });
+            Receive<AddPublicKeyCipher>(a =>
+            {
+                AddKey();
+            });
+            ReceiveAny(x => Stash.Stash());
+            var requestid = _requestId++;
+            var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
+            var request = Commands.NewProducer(_configuration.TopicName, _producerId++, requestid, _producerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
+            var payload = new Payload(request.Array, requestid, "CommandProducer");
+            _pendingLookupRequests.Add(requestid, payload);
+            _network.Tell(payload);
         }
         
         private void LookUpBroker()

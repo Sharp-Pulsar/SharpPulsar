@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
-    class NewConsumer
+    public class NewConsumer
     {
     }
 }

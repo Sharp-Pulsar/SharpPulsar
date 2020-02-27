@@ -61,7 +61,10 @@ namespace SharpPulsar.Akka.Producer
                 conf.Partitions = x.Partition;
                 conf.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
-                Context.ActorOf(Producer.Prop(_config, conf, _producerIdGenerator++, _network));
+                if (x.Partition > 0)
+                    Context.ActorOf(PartitionedProducer.Prop(_config, conf, _producerIdGenerator++, _network));
+                else
+                    Context.ActorOf(Producer.Prop(_config, conf, _producerIdGenerator++, _network));
                 Become(()=> RegisterProducer(conf));
             });
             ReceiveAny(_=> Stash.Stash());

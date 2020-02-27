@@ -132,6 +132,10 @@ namespace SharpPulsar.Akka.Network
 
 				switch (cmd.Type)
 				{
+                    case BaseCommand.Types.Type.ProducerSuccess:
+                        var p = cmd.ProducerSuccess;
+                        _manager.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion.ToByteArray()));
+                        break;
                     case BaseCommand.Types.Type.GetSchemaResponse:
                         var schema = cmd.GetSchemaResponse.Schema;
                         _manager.Tell(new SchemaResponse(schema.SchemaData.ToByteArray(), schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.Type, (long)cmd.GetSchemaResponse.RequestId));
