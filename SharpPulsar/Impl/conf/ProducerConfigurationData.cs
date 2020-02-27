@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl.Conf
         public int Partitions { get; set; } = 0;
         public ISchema Schema;
         public List<IProducerInterceptor> Interceptors;
-
+        public bool UseTls { get; set; } = false;
 		public long SendTimeoutMs { get; set; } = 30000;
 		public bool BlockIfQueueFull { get; set; } = false;
         public MessageRoutingMode? MessageRoutingMode { get; set; }

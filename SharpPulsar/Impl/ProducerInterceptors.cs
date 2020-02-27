@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 	/// A container that holds the list<seealso cref="ProducerInterceptor"/>
 	/// and wraps calls to the chain of custom interceptors.
 	/// </summary>
-	public class ProducerInterceptors : IDisposable
+	public class ProducerInterceptors 
 	{
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<ProducerInterceptors>();
 
@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
+		public IMessage BeforeSend<T>(IProducer<T> producer, IMessage message)
 		{
 			var interceptorMessage = message;
 			foreach (var interceptor in _interceptors)

@@ -32,6 +32,8 @@ namespace SharpPulsar.Akka.Network
         private ILoggingAdapter Log;
         private ClientConfigurationData _conf;
         private IActorRef _manager;
+
+        private int _protocolVersion;
         // Added for mutual authentication.
         protected internal IAuthenticationDataProvider AuthenticationDataProvider;
 
@@ -45,6 +47,7 @@ namespace SharpPulsar.Akka.Network
         }
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
+            _protocolVersion = conf.ProtocolVersion;
             _conf = conf;
             _manager = manager;
             Connection = Self;
@@ -57,7 +60,7 @@ namespace SharpPulsar.Akka.Network
             //this.keepAliveIntervalSeconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToSecs(conf.KeepAliveIntervalSeconds);
             Context.System.Tcp().Tell(new Tcp.Connect(endPoint));
         }
-
+        
         public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
             return Props.Create(() => new ClientConnection(endPoint, conf, manager));
@@ -133,6 +136,10 @@ namespace SharpPulsar.Akka.Network
                         var schema = cmd.GetSchemaResponse.Schema;
                         _manager.Tell(new SchemaResponse(schema.SchemaData.ToByteArray(), schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.Type, (long)cmd.GetSchemaResponse.RequestId));
                         break;
+                    case BaseCommand.Types.Type.LookupResponse:
+                        var m = cmd.LookupTopicResponse;
+                        _manager.Tell(new BrokerLookUp(m.Message, m.Authoritative, m.Response, m.BrokerServiceUrl, m.BrokerServiceUrlTls, (long)m.RequestId));
+                        break;
                     case BaseCommand.Types.Type.PartitionedMetadataResponse:
                         _manager.Tell(new Partitions((int)cmd.PartitionMetadataResponse.Partitions, (long)cmd.PartitionMetadataResponse.RequestId));
                         break;
@@ -196,7 +203,7 @@ namespace SharpPulsar.Akka.Network
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(Shared.Auth.AuthData.InitAuthData));
 
 			var auth = AuthData.NewBuilder().SetAuthData(Google.Protobuf.ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
-			return Commands.NewConnect(Authentication.AuthMethodName, auth, _conf.ConnectionsPerBroker, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 
 		public void HandlePing(CommandPing ping)

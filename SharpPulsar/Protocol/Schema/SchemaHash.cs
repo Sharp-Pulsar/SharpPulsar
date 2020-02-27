@@ -39,7 +39,7 @@ namespace SharpPulsar.Protocol.Schema
 			this._hash = hash;
 		}
 
-		public static SchemaHash Of<T>(ISchema<T> schema)
+		public static SchemaHash Of(ISchema schema)
 		{
 			var schem = schema != null? schema.SchemaInfo.Schema: Array.Empty<sbyte>();
 			return Of(schem);

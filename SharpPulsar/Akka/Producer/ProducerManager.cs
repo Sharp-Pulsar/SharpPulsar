@@ -15,7 +15,6 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using SharpPulsar.Utility.Atomic;
 
 namespace SharpPulsar.Akka.Producer
 {
@@ -23,9 +22,9 @@ namespace SharpPulsar.Akka.Producer
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
-        private readonly AtomicLong _producerIdGenerator = new AtomicLong();
+        private long _producerIdGenerator = 0;
 
-        private readonly AtomicLong _requestIdGenerator = new AtomicLong();
+        private long _requestIdGenerator = 0;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         private readonly Dictionary<string, IActorRef> _producers = new Dictionary<string, IActorRef>();
         public ProducerManager(ClientConfigurationData configuration)
@@ -60,11 +59,13 @@ namespace SharpPulsar.Akka.Producer
             Receive<Partitions>(x =>
             {
                 conf.Partitions = x.Partition;
+                conf.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
+                Context.ActorOf(Producer.Prop(_config, conf, _producerIdGenerator++, _network));
                 Become(()=> RegisterProducer(conf));
             });
             ReceiveAny(_=> Stash.Stash());
-            var requestId = _requestIdGenerator.Increment();
+            var requestId = _requestIdGenerator++;
             var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
             var pay = new Payload(request.Array, requestId, "CommandPartitionedTopicMetadata");
             _pendingLookupRequests.Add(requestId, pay);
@@ -158,7 +159,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 else
                 {
-                    var requestId = _requestIdGenerator.Increment();
+                    var requestId = _requestIdGenerator++;
                     var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(null));
                     var payload = new Payload(request.Array, requestId, "CommandGetSchema");
                     _network.Tell(payload);
