@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Api.Schema;
+﻿using System;
+using SharpPulsar.Api.Schema;
 using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
@@ -25,12 +26,12 @@ namespace SharpPulsar.Impl.Schema
 {
     using SharpPulsar.Common.Schema;
 
-    public abstract class AbstractSchema<T> : ISchema<T>
+    public abstract class AbstractSchema : ISchema
 	{
-		public abstract ISchema<IGenericRecord> Auto();
+		public abstract ISchema Auto();
 
-		public abstract ISchema<T> Json(ISchemaDefinition<T> schemaDefinition);
-		public abstract ISchema<T> Json(T pojo);
+		public abstract ISchema Json(ISchemaDefinition schemaDefinition);
+		public abstract ISchema Json(object pojo);
 
 		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();
@@ -39,7 +40,7 @@ namespace SharpPulsar.Impl.Schema
 		public abstract ISchemaInfoProvider SchemaInfoProvider {set;}
 
 		public abstract bool SupportSchemaVersioning();
-		public abstract sbyte[] Encode(T message);
+		public abstract sbyte[] Encode(object message);
 		public abstract void Validate(sbyte[] message);
 
 		/// <summary>
@@ -66,7 +67,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode(IByteBuffer byteBuf);
+		public abstract object Decode(IByteBuffer byteBuf, Type returnType);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -75,13 +76,13 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
+		public virtual object Decode(IByteBuffer byteBuf, sbyte[] schemaVersion, Type returnType)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return Decode(byteBuf);
+			return Decode(byteBuf, returnType);
 		}
         
-        public abstract T Decode(sbyte[] bytes);
+        public abstract object Decode(sbyte[] bytes, Type returnType);
 	}
 
 }

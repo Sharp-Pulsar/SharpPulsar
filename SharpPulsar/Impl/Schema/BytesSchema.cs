@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using System;
 using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
@@ -28,22 +29,22 @@ namespace SharpPulsar.Impl.Schema
     /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
-	public class BytesSchema : AbstractSchema<sbyte[]>
+	public class BytesSchema : AbstractSchema
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
         
-        public override ISchema<IGenericRecord> Auto()
+        public override ISchema Auto()
         {
             throw new System.NotImplementedException();
         }
 
-        public override ISchema<sbyte[]> Json(ISchemaDefinition<sbyte[]> schemaDefinition)
+        public override ISchema Json(ISchemaDefinition schemaDefinition)
         {
             throw new System.NotImplementedException();
         }
 
-        public override ISchema<sbyte[]> Json(sbyte[] pojo)
+        public override ISchema Json(object pojo)
         {
             throw new System.NotImplementedException();
         }
@@ -80,9 +81,11 @@ namespace SharpPulsar.Impl.Schema
 			return Instance;
 		}
 
-		public override sbyte[] Encode(sbyte[] message)
+		public override sbyte[] Encode(object message)
 		{
-			return message;
+            if(!(message is sbyte[]))
+                throw new ArgumentException($"{message.GetType()} is not sbyte[]");
+			return (sbyte[])message;
 		}
 
         public override void Validate(sbyte[] message)
@@ -90,12 +93,12 @@ namespace SharpPulsar.Impl.Schema
             throw new System.NotImplementedException();
         }
 
-        public override sbyte[] Decode(sbyte[] bytes)
+        public override object Decode(sbyte[] bytes)
 		{
 			return bytes;
 		}
 
-		public override sbyte[] Decode(IByteBuffer byteBuf)
+		public override object Decode(IByteBuffer byteBuf)
 		{
 			if (byteBuf == null)
 			{

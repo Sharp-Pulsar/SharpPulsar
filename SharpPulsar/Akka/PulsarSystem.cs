@@ -14,29 +14,22 @@ namespace SharpPulsar.Akka
     public class PulsarSystem: IAsyncDisposable
     {
         private ActorSystem _actorSystem;
-        private IPulsarClientBuilder _clientBuilder;
-        private ClientConfigurationData _conf;
-        private IPulsarClient _client;
-        private bool _producerManagerCreated;
-        private IActorRef _producerManager;
-        private bool _consumerManagerCreated;
-        private IActorRef _consumerManager;
+        private IActorRef _pulsarManager;
 
-        public PulsarSystem(IPulsarClientBuilder clientBuilder, ClientConfigurationData conf)
+        public PulsarSystem(ClientConfigurationData conf)
         {
             _actorSystem = ActorSystem.Create("Pulsar");
-            _conf = conf;
-            _clientBuilder = clientBuilder;
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
-        public void StartProducerManager<T>(ISchema<T> schema)
+        public void StartProducerManager(ISchema schema)
         {
             if (!_producerManagerCreated)
             {
-                _producerManager =_actorSystem.ActorOf(ProducerManager<T>.Prop(), "ProducerManager");
+                _producerManager =_actorSystem.ActorOf(ProducerManager.Prop(), "ProducerManager");
                 _producerManagerCreated = true;
             }
         }
-        public void StartConsumerManager<T>(ISchema<T> schema)
+        public void StartConsumerManager<T>(ISchema schema)
         {
             if (!_consumerManagerCreated)
             {

@@ -113,47 +113,47 @@ namespace SharpPulsar.Impl
 
 
 
-		public virtual IProducerBuilder<sbyte[]> NewProducer()
+		public virtual IProducerBuilder NewProducer()
 		{
-			return new ProducerBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
+			return new ProducerBuilderImpl(this, SchemaFields.Bytes);
 		}
 
-		public IProducerBuilder<T> NewProducer<T>(ISchema<T> schema)
+		public IProducerBuilder NewProducer(ISchema schema)
 		{
-			return new ProducerBuilderImpl<T>(this, schema);
+			return new ProducerBuilderImpl(this, schema);
 		}
 
-		public IConsumerBuilder<sbyte[]> NewConsumer()
+		public IConsumerBuilder NewConsumer()
 		{
-			return new ConsumerBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
+			return new ConsumerBuilderImpl(this, SchemaFields.Bytes);
 		}
 
-		public IConsumerBuilder<T> NewConsumer<T>(ISchema<T> schema)
+		public IConsumerBuilder NewConsumer(ISchema schema)
 		{
-			return new ConsumerBuilderImpl<T>(this, schema);
+			return new ConsumerBuilderImpl(this, schema);
 		}
 
-		public IReaderBuilder<sbyte[]> NewReader()
+		public IReaderBuilder NewReader()
 		{
-			return new ReaderBuilderImpl<sbyte[]>(this, SchemaFields.Bytes);
+			return new ReaderConfigBuilder(this, SchemaFields.Bytes);
 		}
 
-		public IReaderBuilder<T> NewReader<T>(ISchema<T> schema)
+		public IReaderBuilder NewReader(ISchema schema)
 		{
-			return new ReaderBuilderImpl<T>(this, schema);
+			return new ReaderConfigBuilder(this, schema);
 		}
 
-		public ValueTask<IProducer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData conf)
+		public ValueTask<IProducer> CreateProducerAsync(ProducerConfigurationData conf)
 		{
 			return CreateProducerAsync(conf, SchemaFields.Bytes, null);
 		}
 
-		public ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema)
+		public ValueTask<IProducer> CreateProducerAsync(ProducerConfigurationData conf, ISchema schema)
 		{
 			return CreateProducerAsync(conf, schema, null);
 		}
 
-		public virtual async ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
+		public virtual async ValueTask<IProducer> CreateProducerAsync(ProducerConfigurationData conf, ISchema schema, ProducerInterceptors interceptors)
 		{
 			if (conf == null)
 			{
@@ -177,7 +177,7 @@ namespace SharpPulsar.Impl
 				throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
 			}
 
-			if (schema is AutoProduceBytesSchema<T> autoProduceBytesSchema)
+			if (schema is AutoProduceBytesSchema autoProduceBytesSchema)
 			{
                 if (autoProduceBytesSchema.SchemaInitialized())
 				{
@@ -185,7 +185,7 @@ namespace SharpPulsar.Impl
 				}
 				var lkup = Lookup.GetSchema(TopicName.Get(conf.TopicName));
 				var schemaInfoOptional = lkup.Result;
-				autoProduceBytesSchema.Schema = schemaInfoOptional != null ? ISchema<T>.GetSchema(schemaInfoOptional) : autoProduceBytesSchema.Schema;
+				autoProduceBytesSchema.Schema = schemaInfoOptional != null ? ISchema.GetSchema(schemaInfoOptional) : autoProduceBytesSchema.Schema;
 				return await CreateProducerAsync(topic, conf, schema, interceptors);
 			}
 
@@ -193,23 +193,23 @@ namespace SharpPulsar.Impl
 
         }
 
-		private async ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors interceptors)
+		private async ValueTask<IProducer> CreateProducerAsync(string topic, ProducerConfigurationData conf, ISchema schema, ProducerInterceptors interceptors)
 		{
-			var producerCreated = new TaskCompletionSource<IProducer<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var producerCreated = new TaskCompletionSource<IProducer>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var metadata = await GetPartitionedTopicMetadata(topic);
             if (Log.IsEnabled(LogLevel.Debug))
             {
                 Log.LogDebug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}" );
             }
-            ProducerBase<T> producer;
+            ProducerBase producer;
             if (metadata.Partitions > 0)
             {
-                producer = new PartitionedProducerImpl<T>(this, topic, conf, metadata.Partitions, producerCreated, schema, interceptors);
+                producer = new PartitionedProducerImpl(this, topic, conf, metadata.Partitions, producerCreated, schema, interceptors);
             }
             else
             {
-                producer = new ProducerImpl<T>(this, topic, conf, producerCreated, -1, schema, interceptors);
+                producer = new ProducerImpl(this, topic, conf, producerCreated, -1, schema, interceptors);
             }
             lock (_producers)
             {
@@ -228,41 +228,41 @@ namespace SharpPulsar.Impl
             return producerCreated.Task.Result;
 		}
 
-		public ValueTask<IConsumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
+		public ValueTask<IConsumer> SubscribeAsync(ConsumerConfigurationData conf)
 		{
 			return SubscribeAsync(conf, SchemaFields.Bytes, null);
 		}
 
-		public ValueTask<IConsumer<T>> SubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		public ValueTask<IConsumer> SubscribeAsync(ConsumerConfigurationData conf, ISchema schema, ConsumerInterceptors interceptors)
 		{
 			if (_state != State.Open)
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.AlreadyClosedException("Client already closed")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.AlreadyClosedException("Client already closed")));
 			}
 
 			if (conf == null)
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
 			}
 
 			if (conf.TopicNames.All(TopicName.IsValid))
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
 			}
 
 			if (string.IsNullOrWhiteSpace(conf.SubscriptionName))
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Empty subscription name")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Empty subscription name")));
 			}
 
 			if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.Persistent) || (conf.SubscriptionType != SubscriptionType.Exclusive && conf.SubscriptionType != SubscriptionType.Failover)))
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive of failover persistent subscriptions")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive of failover persistent subscriptions")));
 			}
 
 			if (conf.ConsumerEventListener != null && conf.SubscriptionType != SubscriptionType.Failover)
 			{
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new PulsarClientException.InvalidConfigurationException("Active consumer listener is only supported for failover subscription")));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Active consumer listener is only supported for failover subscription")));
 			}
 
 			if (conf.TopicsPattern != null)
@@ -270,7 +270,7 @@ namespace SharpPulsar.Impl
 				// If use topicsPattern, we should not use topic(), and topics() method.
 				if (!conf.TopicNames.Any())
 				{
-					return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(new ArgumentException("Topic names list must be null when use topicsPattern")));
+					return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new ArgumentException("Topic names list must be null when use topicsPattern")));
 				}
 				return PatternTopicSubscribeAsync(conf, schema, interceptors);
 			}
@@ -282,15 +282,15 @@ namespace SharpPulsar.Impl
             return MultiTopicSubscribeAsync(conf, schema, interceptors);
         }
 
-		private ValueTask<IConsumer<T>> SingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer> SingleTopicSubscribeAsync(ConsumerConfigurationData conf, ISchema schema, ConsumerInterceptors interceptors)
 		{
 			 PreProcessSchemaBeforeSubscribe(this, schema, conf.SingleTopic);
 			return DoSingleTopicSubscribeAsync(conf, schema, interceptors);
 		}
 
-		private ValueTask<IConsumer<T>> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer> DoSingleTopicSubscribeAsync(ConsumerConfigurationData conf, ISchema schema, ConsumerInterceptors interceptors)
 		{
-			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer>();
 
 			var topic = conf.SingleTopic;
 
@@ -307,17 +307,17 @@ namespace SharpPulsar.Impl
 				{
 					Log.LogDebug("[{}] Received topic metadata. partitions: {}", topic, metadata.Partitions);
 				}
-				ConsumerBase<T> consumer;
+				ConsumerBase consumer;
 				var listenerThread = _executor;
 				if (metadata.Partitions > 0)
 				{
-					consumer = MultiTopicsConsumerImpl<T>.CreatePartitionedConsumer(this, conf, consumerSubscribedTask, metadata.Partitions, schema, interceptors);
+					consumer = MultiTopicsConsumerImpl.CreatePartitionedConsumer(this, conf, consumerSubscribedTask, metadata.Partitions, schema, interceptors);
 				}
 				else
 				{
-					var durable = (ConsumerImpl<T>.SubscriptionMode)Convert.ChangeType(SubscriptionMode.Durable, typeof(ConsumerImpl<T>.SubscriptionMode));
+					var durable = (ConsumerImpl.SubscriptionMode)Convert.ChangeType(SubscriptionMode.Durable, typeof(ConsumerImpl.SubscriptionMode));
 					var partitionIndex = TopicName.GetPartitionIndex(topic);
-					consumer = ConsumerImpl<T>.NewConsumerImpl(this, topic, conf, listenerThread, partitionIndex, false, consumerSubscribedTask, durable, null, schema, interceptors, true);
+					consumer = ConsumerImpl.NewConsumerImpl(this, topic, conf, listenerThread, partitionIndex, false, consumerSubscribedTask, durable, null, schema, interceptors, true);
 				}
 				lock (_consumers)
 				{
@@ -327,14 +327,14 @@ namespace SharpPulsar.Impl
 				consumerSubscribedTask.SetResult(consumer);
 			});
 
-			return new ValueTask<IConsumer<T>>(consumerSubscribedTask.Task.Result);
+			return new ValueTask<IConsumer>(consumerSubscribedTask.Task.Result);
 		}
 
-		private ValueTask<IConsumer<T>> MultiTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer> MultiTopicSubscribeAsync(ConsumerConfigurationData conf, ISchema schema, ConsumerInterceptors interceptors)
 		{
-			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer>();
 
-			var consumer = new MultiTopicsConsumerImpl<T>(this, conf, consumerSubscribedTask, schema, interceptors, true, ExternalExecutorProvider());
+			var consumer = new MultiTopicsConsumerImpl(this, conf, consumerSubscribedTask, schema, interceptors, true, ExternalExecutorProvider());
 
 			lock (_consumers)
 			{
@@ -342,27 +342,27 @@ namespace SharpPulsar.Impl
 				_consumers.Add(c);
 			}
 
-			return new ValueTask<IConsumer<T>>(consumerSubscribedTask.Task.Result);
+			return new ValueTask<IConsumer>(consumerSubscribedTask.Task.Result);
 		}
 
-		public ValueTask<IConsumer<sbyte[]>> PatternTopicSubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
+		public ValueTask<IConsumer> PatternTopicSubscribeAsync(ConsumerConfigurationData conf)
 		{
 			return PatternTopicSubscribeAsync(conf, SchemaFields.Bytes, null);
 		}
 
-		private ValueTask<IConsumer<T>> PatternTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		private ValueTask<IConsumer> PatternTopicSubscribeAsync(ConsumerConfigurationData conf, ISchema schema, ConsumerInterceptors interceptors)
 		{
 			var regex = conf.TopicsPattern.ToString();
 			var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
 			var destination = TopicName.Get(regex);
 			var namespaceName = destination.NamespaceObject;
 
-			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer>();
 			var lkup = Lookup.GetTopicsUnderNamespace(namespaceName, subscriptionMode);
 			if(lkup.IsFaulted)
 			{
 				Log.LogWarning("[{}] Failed to get topics under namespace", namespaceName);
-				return new ValueTask<IConsumer<T>>(Task.FromException<IConsumer<T>>(lkup.AsTask().Exception));
+				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(lkup.AsTask().Exception));
 			}
 			var topics = lkup.Result.ToList();
 			if(Log.IsEnabled(LogLevel.Debug))
@@ -372,14 +372,14 @@ namespace SharpPulsar.Impl
 			}
 			var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern).ToList();
 			topicsList.ForEach(x => conf.TopicNames.Add(x));
-			var consumer = new PatternMultiTopicsConsumerImpl<T>(conf.TopicsPattern, this, conf, consumerSubscribedTask, schema, subscriptionMode, interceptors, ExternalExecutorProvider());
+			var consumer = new PatternMultiTopicsConsumerImpl(conf.TopicsPattern, this, conf, consumerSubscribedTask, schema, subscriptionMode, interceptors, ExternalExecutorProvider());
 			lock (_consumers)
 			{
 				var c = (ConsumerBase<object>)Convert.ChangeType(consumer, typeof(IConsumer<object>));
 				_consumers.Add(c);
 			}
 			
-			return new ValueTask<IConsumer<T>>(consumer);
+			return new ValueTask<IConsumer>(consumer);
 		}
 
 		// get topics that match 'topicsPattern' from original topics list
@@ -392,42 +392,42 @@ namespace SharpPulsar.Impl
 			return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(topic.Split(@"\:\/\/")[1]).Success).ToList();
 		}
 
-		public ValueTask<IReader<sbyte[]>> CreateReaderAsync(ReaderConfigurationData<sbyte[]> conf)
+		public ValueTask<IReader> CreateReaderAsync(ReaderConfigurationData conf)
 		{
 			return CreateReaderAsync(conf, SchemaFields.Bytes);
 		}
 
-		public ValueTask<IReader<T>> CreateReaderAsync<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+		public ValueTask<IReader> CreateReaderAsync(ReaderConfigurationData conf, ISchema schema)
 		{
 			PreProcessSchemaBeforeSubscribe(this, schema, conf.TopicName);
 			return DoCreateReaderAsync(conf, schema);
 		}
 
-		public ValueTask<IReader<T>> DoCreateReaderAsync<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+		public ValueTask<IReader> DoCreateReaderAsync(ReaderConfigurationData conf, ISchema schema)
 		{
 			if (_state != State.Open)
 			{
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.AlreadyClosedException("Client already closed")));
+				return new ValueTask<IReader>(Task.FromException<IReader>(new PulsarClientException.AlreadyClosedException("Client already closed")));
 			}
 
 			if (conf == null)
 			{
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
+				return new ValueTask<IReader>(Task.FromException<IReader>(new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined")));
 			}
 
 			var topic = conf.TopicName;
 
 			if (!TopicName.IsValid(topic))
 			{
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
+				return new ValueTask<IReader>(Task.FromException<IReader>(new PulsarClientException.InvalidTopicNameException("Invalid topic name")));
 			}
 
 			if (conf.StartMessageId == null)
 			{
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new PulsarClientException.InvalidConfigurationException("Invalid startMessageId")));
+				return new ValueTask<IReader>(Task.FromException<IReader>(new PulsarClientException.InvalidConfigurationException("Invalid startMessageId")));
 			}
 
-			var readerTask = new TaskCompletionSource<IReader<T>>();
+			var readerTask = new TaskCompletionSource<IReader>();
 
 			var topicRe = GetPartitionedTopicMetadata(topic);
 			var astask = topicRe.AsTask();
@@ -435,7 +435,7 @@ namespace SharpPulsar.Impl
 			{
 				Log.LogWarning("[{}] Failed to get partitioned topic metadata", topic, astask.Exception);
 				readerTask.SetException(astask.Exception ?? throw new InvalidOperationException());
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(astask.Exception));
+				return new ValueTask<IReader>(Task.FromException<IReader>(astask.Exception));
 			}
 			var metadata = topicRe.Result;
 			if (Log.IsEnabled(LogLevel.Debug))
@@ -445,11 +445,11 @@ namespace SharpPulsar.Impl
 			if (metadata.Partitions > 0)
 			{
 				readerTask.SetException(new PulsarClientException("Topic reader cannot be created on a partitioned topic"));
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(readerTask.Task.Exception ?? throw new InvalidOperationException()));
+				return new ValueTask<IReader>(Task.FromException<IReader>(readerTask.Task.Exception ?? throw new InvalidOperationException()));
 			}
-			var consumerSubscribedTask = new TaskCompletionSource<IConsumer<T>>();
+			var consumerSubscribedTask = new TaskCompletionSource<IConsumer>();
 
-			var reader = new ReaderImpl<T>(this, conf, consumerSubscribedTask, schema, ExternalExecutorProvider());
+			var reader = new ReaderImpl(this, conf, consumerSubscribedTask, schema, ExternalExecutorProvider());
 			lock (_consumers)
 			{
 				var c = (ConsumerBase<object>)Convert.ChangeType(reader.Consumer, typeof(IConsumer<object>));
@@ -458,7 +458,7 @@ namespace SharpPulsar.Impl
 			consumerSubscribedTask.Task.ContinueWith(task=> {
 				readerTask.SetResult(reader);
 			});
-			return new ValueTask<IReader<T>>(reader);
+			return new ValueTask<IReader>(reader);
 		}
 
 		/// <summary>
@@ -747,7 +747,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public ValueTask PreProcessSchemaBeforeSubscribe<T>(PulsarClientImpl pulsarClientImpl, ISchema<T> schema, string topicName)
+		public ValueTask PreProcessSchemaBeforeSubscribe(PulsarClientImpl pulsarClientImpl, ISchema schema, string topicName)
 		{
 			if (schema != null && schema.SupportSchemaVersioning())
 			{

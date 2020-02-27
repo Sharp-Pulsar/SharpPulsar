@@ -27,7 +27,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// Message schema definition.
 	/// </summary>
-	public interface ISchema<T>
+	public interface ISchema
 	{
 
 		/// <summary>
@@ -55,7 +55,7 @@ namespace SharpPulsar.Api
 		/// <returns> a byte array with the serialized content </returns>
 		/// <exception cref="Exceptions.SchemaSerializationException">
 		///             if the serialization fails </exception>
-		sbyte[] Encode(T message);
+		sbyte[] Encode(object message);
 
 		/// <summary>
 		/// Returns whether this schema supports versioning.
@@ -90,18 +90,11 @@ namespace SharpPulsar.Api
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] bytes)
+		virtual object Decode(sbyte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null);
 		}
-        /// <summary>
-        /// Key Value Schema whose underneath key and value schemas are JSONSchema.
-        /// </summary>
-        /*static ISchema<KeyValue<TK, TV>> KeyValue<TK, TV>(TK key, TV value)
-        {
-            return DefaultImplementation.NewKeyValueSchema(key, value, SchemaType.Json);
-        }*/
         
 		/// <summary>
 		/// Decode a byte array into an object using a given version.
@@ -111,7 +104,7 @@ namespace SharpPulsar.Api
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(bytes);
@@ -201,9 +194,9 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json(Type pojo)
+		static ISchema Json(Type pojo)
 		{
-            return DefaultImplementation.NewJsonSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+            return DefaultImplementation.NewJsonSchema(ISchemaDefinition.Builder().WithPojo(pojo).Build());
         }
 
         /// <summary>
@@ -211,7 +204,7 @@ namespace SharpPulsar.Api
         /// </summary>
         /// <param name="schemaDefinition"> the definition of the schema </param>
         /// <returns> a Schema instance </returns>
-        static ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
+        static ISchema Json(ISchemaDefinition schemaDefinition)
         {
             return DefaultImplementation.NewJsonSchema(schemaDefinition);
         }
@@ -228,7 +221,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-        static ISchema<IGenericRecord> AutoConsume()
+        static ISchema AutoConsume()
         {
             return DefaultImplementation.NewAutoConsumeSchema();
         }
@@ -246,7 +239,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-        static ISchema<sbyte[]> AutoProduceBytes()
+        static ISchema AutoProduceBytes()
         {
             return DefaultImplementation.NewAutoProduceSchema();
         }
@@ -258,14 +251,14 @@ namespace SharpPulsar.Api
 		/// <returns> the auto schema instance
 		/// @since 2.5.0 </returns>
 		/// <seealso cref= #AUTO_PRODUCE_BYTES() </seealso>
-        static ISchema<sbyte[]> AutoProduceBytes<T1>(ISchema<T1> schema)
+        static ISchema AutoProduceBytes(ISchema schema)
         {
             return DefaultImplementation.NewAutoProduceSchema(schema);
         }
 
-        static ISchema<T> GetSchema(ISchemaInfo schemaInfo)
+        static ISchema GetSchema(ISchemaInfo schemaInfo)
         {
-            return DefaultImplementation.GetSchema<T>(schemaInfo);
+            return DefaultImplementation.GetSchema(schemaInfo);
         }
 
 
@@ -278,7 +271,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-        static IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo)
+        static IGenericSchema Generic(ISchemaInfo schemaInfo)
         {
             return DefaultImplementation.GetGenericSchema(schemaInfo);
         }

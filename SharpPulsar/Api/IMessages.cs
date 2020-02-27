@@ -24,7 +24,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>
 	/// @param <T> </param>
-	public interface IMessages<out T> : IEnumerable<IMessage<T>>
+	public interface IMessages : IEnumerable<IMessage>
 	{
 
 		/// <summary>

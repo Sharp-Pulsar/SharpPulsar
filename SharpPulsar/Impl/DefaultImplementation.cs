@@ -38,9 +38,9 @@ namespace SharpPulsar.Impl
 
 		//private static readonly Type CLIENT_BUILDER_IMPL = new ClientBuilderImpl();
 
-		public static ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>()
+		public static ISchemaDefinitionBuilder NewSchemaDefinitionBuilder()
 		{
-			return new SchemaDefinitionBuilderImpl<T>();
+			return new SchemaDefinitionBuilderImpl();
 		}
 
 		public static IPulsarClientBuilder NewClientBuilder()
@@ -107,48 +107,38 @@ namespace SharpPulsar.Impl
 			return AuthenticationUtil.Create(authPluginClassName, authParams);
 		}
 
-		public static ISchema<sbyte[]> NewBytesSchema()
+		public static ISchema NewBytesSchema()
 		{
 			return new BytesSchema();
 		}
-
-		public static ISchema<string> NewStringSchema()
-		{
-			return new StringSchema();
-		}
-
-		public static ISchema<string> NewStringSchema(string charset)
-		{
-			return new StringSchema(charset);
-		}
 		
-		public static ISchema<T> NewJsonSchema<T>(ISchemaDefinition<T> schemaDefinition)
+		public static ISchema NewJsonSchema(ISchemaDefinition schemaDefinition)
 		{
-			return JsonSchema<T>.Of(schemaDefinition);
+			return JsonSchema.Of(schemaDefinition);
 		}
 
-		public static ISchema<IGenericRecord> NewAutoConsumeSchema()
+		public static ISchema NewAutoConsumeSchema()
 		{
 			return new AutoConsumeSchema();
 		}
 
-		public static ISchema<sbyte[]> NewAutoProduceSchema()
+		public static ISchema NewAutoProduceSchema()
 		{
-			return new AutoProduceBytesSchema<sbyte[]>();
+			return new AutoProduceBytesSchema();
 		}
 
-		public static ISchema<sbyte[]> NewAutoProduceSchema<T1>(ISchema<T1> schema)
+		public static ISchema NewAutoProduceSchema(ISchema schema)
 		{
-			return new AutoProduceBytesSchema<T1>(schema);
+			return new AutoProduceBytesSchema(schema);
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
-		public static ISchema<T> GetSchema<T>(ISchemaInfo schemaInfo)
+		public static ISchema GetSchema(ISchemaInfo schemaInfo)
 		{
-			return AutoConsumeSchema.GetSchema<T>((SchemaInfo)schemaInfo);
+			return AutoConsumeSchema.GetSchema((SchemaInfo)schemaInfo);
 		}
 
-		public static IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo)
+		public static IGenericSchema GetGenericSchema(ISchemaInfo schemaInfo)
 		{
 			return GenericSchemaImpl.Of((SchemaInfo)schemaInfo);
 		}

@@ -26,7 +26,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// A Reader can be used to scan through all the messages currently available in a topic.
 	/// </summary>
-	public interface IReader<T> : System.IDisposable
+	public interface IReader
 	{
 
 		/// <returns> the topic from which this reader is reading from </returns>
@@ -41,9 +41,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> the next message </returns>
 		/// <exception cref="Exceptions.PulsarClientException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> readNext() throws PulsarClientException;
-		IMessage<T> ReadNext();
+		IMessage ReadNext();
 
 		/// <summary>
 		/// Read the next message in the topic waiting for a maximum time.
@@ -54,16 +52,14 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <returns> the next message(Could be null if none received in time) </returns>
 		/// <exception cref="Exceptions.PulsarClientException"> </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws PulsarClientException;
-		IMessage<T> ReadNext(int timeout, TimeUnit unit);
+		IMessage ReadNext(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Read asynchronously the next message in the topic.
 		/// </summary>
 		/// <returns> a future that will yield a message (when it's available) or <seealso cref="Exceptions.PulsarClientException"/> if the reader
 		///         is already closed. </returns>
-		ValueTask<IMessage<T>> ReadNextAsync();
+		ValueTask<IMessage> ReadNextAsync();
 
 		/// <summary>
 		/// Asynchronously close the reader and stop the broker to push more messages.

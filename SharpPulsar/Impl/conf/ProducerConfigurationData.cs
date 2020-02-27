@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -24,46 +25,25 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-	[Serializable]
-	public class ProducerConfigurationData : ICloneable
+    public class ProducerConfigurationData 
 	{
-
-		private const long SerialVersionUid = 1L;
 
 		public const int DefaultBatchingMaxMessages  = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
+        public string TopicName { get; set; }
+        public ISchema Schema;
+        public List<IProducerInterceptor> Interceptors;
 
-		[NonSerialized]
-		private string _topicName;
-
-        public string TopicName
-        {
-            get => _topicName;
-            set => _topicName = value;
-        }
-		[NonSerialized]
-		private string _producerName;
 		public long SendTimeoutMs { get; set; } = 30000;
 		public bool BlockIfQueueFull { get; set; } = false;
-		private int _maxPendingMessages = DefaultMaxPendingMessages;
-		private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
-        [NonSerialized]
-		private MessageRoutingMode? _messageRoutingMode;
-
-        public MessageRoutingMode? MessageRoutingMode
-        {
-            get => _messageRoutingMode;
-            set => _messageRoutingMode = value;
-        }
+        public MessageRoutingMode? MessageRoutingMode { get; set; }
 		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
 
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
 
 		public long BatchingMaxPublishDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
-		private int _batchingPartitionSwitchFrequencyByPublishDelay = 10;
-		private int _batchingMaxMessages = DefaultBatchingMaxMessages;
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
 		public bool BatchingEnabled { get; set; } = true; // enabled by default
 
@@ -77,27 +57,14 @@ namespace SharpPulsar.Impl.Conf
 
 		public ICompressionType CompressionType { get; set; } = ICompressionType.None;
 
-		[NonSerialized]
-		private long? _initialSequenceId;
-
-        public long? InitialSequenceId
-        {
-            get => _initialSequenceId;
-            set => _initialSequenceId = value;
-        }
+		public long? InitialSequenceId { get; set; }
 
 		public bool AutoUpdatePartitions { get; set; } = true;
 
 		public bool MultiSchema { get; set; } = true;
 
-		[NonSerialized]
-		private SortedDictionary<string, string> _properties = new SortedDictionary<string, string>();
-
-        public SortedDictionary<string, string> Properties
-        {
-            get => _properties;
-            set => _properties = value;
-        }
+        public SortedDictionary<string, string> Properties { get; set; }
+        
 		/// 
 		/// <summary>
 		/// Returns true if encryption keys are added
@@ -106,73 +73,46 @@ namespace SharpPulsar.Impl.Conf
 		/// 
 		public virtual bool EncryptionEnabled => (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 
-        public virtual ProducerConfigurationData Clone()
-		{
-			try
-			{
-				var c = (ProducerConfigurationData) base.MemberwiseClone();
-				c.EncryptionKeys = new SortedSet<string>(EncryptionKeys);
-				c.Properties = new SortedDictionary<string, string>(Properties);
-				return c;
-			}
-			catch (System.Exception e)
-			{
-				throw new System.Exception("Failed to clone ProducerConfigurationData", e);
-			}
-		}
+       
 
-		public virtual string ProducerName
-		{
-			get => _producerName;
-            set
-			{
-				if (string.IsNullOrWhiteSpace(value))
-					throw new ArgumentException("producerName cannot be blank or null");
-				_producerName = value;
-			}
-		}
+		public  string ProducerName { get; set; }
 
-		public virtual int MaxPendingMessages
+		public int MaxPendingMessages
 		{
-			get => _maxPendingMessages;
+			get => DefaultMaxPendingMessages;
             set
 			{
 				if(value < 1)
 					throw new ArgumentException("maxPendingMessages needs to be > 0");
-				_maxPendingMessages = value;
 			}
 		}
 
-		public virtual int MaxPendingMessagesAcrossPartitions
+		public int MaxPendingMessagesAcrossPartitions
 		{
-			get => _maxPendingMessagesAcrossPartitions;
+			get => DefaultMaxPendingMessagesAcrossPartitions;
             set
 			{
-				if(value >= _maxPendingMessages)
-				 _maxPendingMessagesAcrossPartitions = value;
+				if(value >= MaxPendingMessages)
+				 MaxPendingMessagesAcrossPartitions = value;
 			}
 		}
 
-		public virtual int BatchingMaxMessages
-		{
-			get => _batchingMaxMessages;
-            set => _batchingMaxMessages = value;
-        }
+		public  int BatchingMaxMessages { get; set; }
 
-		public virtual int BatchingMaxBytes
+		public int BatchingMaxBytes
 		{
 			get => _batchingMaxBytes;
             set => _batchingMaxBytes = value;
         }
 
-		public virtual void SetSendTimeoutMs(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void SetSendTimeoutMs(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if (sendTimeout < 1)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = timeUnit.ToMillis(sendTimeout);
 		}
 
-		public virtual void SetBatchingMaxPublishDelayMicros(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void SetBatchingMaxPublishDelayMicros(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			var delayInMs = timeUnit.ToMillis(batchDelay);
 			if (delayInMs < 1)
@@ -180,25 +120,13 @@ namespace SharpPulsar.Impl.Conf
 			BatchingMaxPublishDelayMicros = delayInMs;
 		}
 
-		public virtual int BatchingPartitionSwitchFrequencyByPublishDelay
+		public int BatchingPartitionSwitchFrequencyByPublishDelay { get; set; }
+
+        public virtual long BatchingPartitionSwitchFrequencyIntervalMicros()
 		{
-			set
-			{
-				if (value < 1)
-					throw new System.Exception("configured value for partition switch frequency must be >= 1");
-				_batchingPartitionSwitchFrequencyByPublishDelay = value;
-			}
+			return BatchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
 		}
 
-		public virtual long BatchingPartitionSwitchFrequencyIntervalMicros()
-		{
-			return _batchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
-		}
-
-		object ICloneable.Clone()
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 }

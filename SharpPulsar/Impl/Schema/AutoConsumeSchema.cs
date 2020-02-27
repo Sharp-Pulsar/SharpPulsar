@@ -31,10 +31,10 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoConsumeSchema : ISchema<IGenericRecord>
+	public class AutoConsumeSchema : ISchema
 	{
 
-		private ISchema<IGenericRecord> _schema;
+		private ISchema _schema;
 
 		private string _topicName;
 
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private ISchemaInfoProvider _schemaInfoProvider;
 
-		public virtual ISchema<IGenericRecord> Schema
+		public virtual ISchema Schema
 		{
 			set => this._schema = value;
         }
@@ -65,8 +65,10 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public sbyte[] Encode(IGenericRecord message)
+		public sbyte[] Encode(object message)
 		{
+			if(!(message is IGenericRecord))
+				throw  new ArgumentException($"{message.GetType()} is not IGenericRecord");
 			EnsureSchemaInitialized();
 
 			return _schema.Encode(message);
@@ -92,7 +94,7 @@ namespace SharpPulsar.Impl.Schema
 				Log.LogInformation("Configure {} schema for topic {} : {}", _componentName, _topicName, schemaInfo.SchemaDefinition);
 			}
 			EnsureSchemaInitialized();
-			return _schema.Decode(bytes, schemaVersion);
+			return (IGenericRecord)_schema.Decode(bytes, schemaVersion);
 		}
 
 		public virtual ISchemaInfoProvider SchemaInfoProvider
@@ -127,7 +129,7 @@ namespace SharpPulsar.Impl.Schema
             Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
         }
 
-		private IGenericSchema<IGenericRecord> GenerateSchema(SchemaInfo schemaInfo)
+		private IGenericSchema GenerateSchema(SchemaInfo schemaInfo)
 		{
 			if (schemaInfo.Type != SchemaType.Avro && schemaInfo.Type != SchemaType.Json)
 			{
@@ -138,16 +140,14 @@ namespace SharpPulsar.Impl.Schema
 			return GenericSchemaImpl.Of(schemaInfo, false);
 		}
 
-		public static ISchema<T> GetSchema<T>(SchemaInfo schemaInfo)
+		public static ISchema GetSchema(SchemaInfo schemaInfo)
 		{
 			switch (schemaInfo.Type.Value)
 			{ 
-                case 1:
-					return (ISchema<T>)Convert.ChangeType(StringSchema.Utf8(), typeof(ISchema<T>));
 				case -1:
-					return (ISchema<T>)Convert.ChangeType(BytesSchema.Of(), typeof(ISchema<T>));
+					return BytesSchema.Of();
 				case 2:
-					return (ISchema<T>)Convert.ChangeType(GenericSchemaImpl.Of(schemaInfo), typeof(ISchema<T>));
+					return GenericSchemaImpl.Of(schemaInfo);
 				default:
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}

@@ -25,7 +25,7 @@ namespace SharpPulsar.Api.Schema
 	/// <summary>
 	/// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
 	/// </summary>
-	public interface IGenericSchema<T> : ISchema<T> where T : IGenericRecord
+	public interface IGenericSchema : ISchema 
 	{
 
 		/// <summary>

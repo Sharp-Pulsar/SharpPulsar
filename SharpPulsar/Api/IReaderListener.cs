@@ -22,7 +22,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// A listener that will be called in order for every message received.
 	/// </summary>
-	public interface IReaderListener<T>
+	public interface IReaderListener
 	{
 		/// <summary>
 		/// This method is called whenever a new message is received.
@@ -41,14 +41,14 @@ namespace SharpPulsar.Api
 		///            the Reader object from where the message was received </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(IReader<T> reader, IMessage<T> msg);
+		void Received(IReader reader, IMessage msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.
 		/// </summary>
 		/// <param name="reader">
 		///            the Reader object associated with the terminated topic </param>
-		virtual void ReachedEndOfTopic(IReader<T> reader)
+		virtual void ReachedEndOfTopic(IReader reader)
 		{
 			// By default ignore the notification
 		}

@@ -1,13 +1,11 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using SharpPulsar.Api;
 using SharpPulsar.Extension;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,76 +25,24 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Akka.Configuration
 {
-	public class ConsumerBuilderImpl : IConsumerBuilder
+	public sealed class ConsumerConfigBuilder
 	{
+		private ConsumerConfigurationData _conf = new ConsumerConfigurationData();
 
-		private readonly PulsarClientImpl _client;
-		private ConsumerConfigurationData _conf;
-		private readonly ISchema _schema;
-		private IList<IConsumerInterceptor> _interceptorList;
+		private  long _minAckTimeoutMillis = 1000;
+		private  long _minTickTimeMillis = 100;
+		private  long _defaultAckTimeoutMillisForDeadLetter = 30000L;
 
-		private static long _minAckTimeoutMillis = 1000;
-		private static long _minTickTimeMillis = 100;
-		private static long _defaultAckTimeoutMillisForDeadLetter = 30000L;
-
-
-		public ConsumerBuilderImpl(PulsarClientImpl client, ISchema schema) : this(client, new ConsumerConfigurationData(), schema)
+        public ConsumerConfigurationData ConsumerConfigurationData => _conf;
+		public void LoadConf(IDictionary<string, object> config)
 		{
+			_conf = ConfigurationDataUtils.LoadData(config, _conf);
+			
 		}
-
-		public ConsumerBuilderImpl(PulsarClientImpl client, ConsumerConfigurationData conf, ISchema schema)
-		{
-			this._client = client;
-			this._conf = conf;
-			this._schema = schema;
-		}
-
-		public IConsumerBuilder LoadConf(IDictionary<string, object> config)
-		{
-			this._conf = ConfigurationDataUtils.LoadData(config, _conf);
-			return this;
-		}
-
-		public IConsumerBuilder Clone()
-		{
-			return new ConsumerBuilderImpl(_client, _conf.Clone(), _schema);
-		}
-
-		public IConsumer Subscribe()
-		{
-			try
-			{
-				return SubscribeAsync().Result;
-			}
-			catch (System.Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-		public virtual ValueTask<IConsumer> SubscribeAsync()
-		{
-			if (_conf.TopicNames.Count < 1 && _conf.TopicsPattern == null)
-			{
-				return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Topic name must be set on the consumer builder")));
-			}
-
-			if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
-			{
-                return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("Subscription name must be set on the consumer builder")));
-			}
-
-			if (_conf.KeySharedPolicy != null && _conf.SubscriptionType != Api.SubscriptionType.KeyShared)
-			{
-                return new ValueTask<IConsumer>(Task.FromException<IConsumer>(new PulsarClientException.InvalidConfigurationException("KeySharedPolicy must set with KeyShared subscription")));
-			}
-
-			return _interceptorList == null || _interceptorList.Count == 0 ? _client.SubscribeAsync(_conf, _schema, null) : _client.SubscribeAsync(_conf, _schema, new ConsumerInterceptors(_interceptorList));
-		}
-
-		public IConsumerBuilder Topic(params string[] topicNames)
+		
+		public void Topic(params string[] topicNames)
 		{
 			if(topicNames == null || topicNames.Length < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -108,10 +54,10 @@ namespace SharpPulsar.Impl
 
             });
 			
-			return this;
+			
 		}
 
-		public IConsumerBuilder Topics(IList<string> topicNames)
+		public void Topics(IList<string> topicNames)
 		{
             if (topicNames == null || topicNames.Count < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -123,128 +69,127 @@ namespace SharpPulsar.Impl
 
             });
 
-			return this;
+			
 		}
 
-		public IConsumerBuilder TopicsPattern(Regex topicsPattern)
+		public void TopicsPattern(Regex topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
 			_conf.TopicsPattern = topicsPattern;
-			return this;
+			
 		}
 
-		public IConsumerBuilder TopicsPattern(string topicsPattern)
+		public void TopicsPattern(string topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
 			_conf.TopicsPattern = new Regex(topicsPattern);
-			return this;
+			
 		}
 
-		public IConsumerBuilder SubscriptionName(string subscriptionName)
+		public void SubscriptionName(string subscriptionName)
 		{
 			if(string.IsNullOrWhiteSpace(subscriptionName))
                 throw new NullReferenceException("subscriptionName cannot be blank");
 			_conf.SubscriptionName = subscriptionName;
-			return this;
+			
 		}
 
-		public IConsumerBuilder AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(ackTimeout != 0 || timeUnit.ToMillis(ackTimeout) < _minAckTimeoutMillis)
                 throw new ArgumentException( "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
 			_conf.AckTimeoutMillis = timeUnit.ToMillis(ackTimeout);
-			return this;
+			
 		}
 
-		public IConsumerBuilder AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(timeUnit.ToMillis(tickTime) < _minTickTimeMillis)
                 throw new ArgumentException("Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
 			_conf.TickDurationMillis = timeUnit.ToMillis(tickTime);
-			return this;
+			
 		}
 
-		public IConsumerBuilder NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(redeliveryDelay < 0)
                 throw new ArgumentException("redeliveryDelay needs to be >= 0");
 			_conf.NegativeAckRedeliveryDelayMicros = timeUnit.ToMicros(redeliveryDelay);
-			return this;
+			
 		}
 
-		public IConsumerBuilder SubscriptionType(SubscriptionType subscriptionType)
+		public void SubscriptionType(SubscriptionType subscriptionType)
 		{
 			_conf.SubscriptionType = subscriptionType;
-			return this;
+			
 		}
 
-		public IConsumerBuilder MessageListener(IMessageListener messageListener)
+		public void MessageListener(IMessageListener messageListener)
 		{
 			_conf.MessageListener = messageListener;
-			return this;
+			
 		}
 
-		public IConsumerBuilder ConsumerEventListener(IConsumerEventListener consumerEventListener)
+		public void ConsumerEventListener(IConsumerEventListener consumerEventListener)
 		{
 			_conf.ConsumerEventListener = consumerEventListener;
-			return this;
+			
 		}
 
-		public IConsumerBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public void CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
-			return this;
+			
 		}
 
-		public IConsumerBuilder CryptoFailureAction(ConsumerCryptoFailureAction? action)
+		public void CryptoFailureAction(ConsumerCryptoFailureAction? action)
         {
             if (action != null) _conf.CryptoFailureAction = (ConsumerCryptoFailureAction) action;
-            return this;
+            
         }
 
-		public IConsumerBuilder ReceiverQueueSize(int receiverQueueSize)
+		public void ReceiverQueueSize(int receiverQueueSize)
 		{
 			if(receiverQueueSize < 0)
                 throw new ArgumentException("receiverQueueSize needs to be >= 0");
 			_conf.ReceiverQueueSize = receiverQueueSize;
-			return this;
+			
 		}
 
-		public IConsumerBuilder AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public void AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			if(delay < 0)
                 throw new ArgumentException("acknowledgmentGroupTime needs to be >= 0");
 			_conf.AcknowledgementsGroupTimeMicros = unit.ToMicros(delay);
-			return this;
+			
 		}
 
-		public IConsumerBuilder ConsumerName(string consumerName)
+		public void ConsumerName(string consumerName)
 		{
 			if(string.IsNullOrWhiteSpace(consumerName))
                 throw new ArgumentException("consumerName cannot be blank");
 			_conf.ConsumerName = consumerName;
-			return this;
+			
 		}
 
-		public IConsumerBuilder PriorityLevel(int priorityLevel)
+		public void PriorityLevel(int priorityLevel)
 		{
 			if(priorityLevel < 0)
                 throw new ArgumentException("priorityLevel needs to be >= 0");
 			_conf.PriorityLevel = priorityLevel;
-			return this;
+			
 		}
 
-		public IConsumerBuilder Property(string key, string value)
-		{
-			if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
+		public void Property(string key, string value)
+        {
+            if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("property key/value cannot be blank");
-			_conf.Properties.Add(key, value);
-			return this;
-		}
+            if (key != null) _conf.Properties.Add(key, value);
+        }
 
-		public IConsumerBuilder Properties(IDictionary<string, string> properties)
+		public void Properties(IDictionary<string, string> properties)
 		{
 			if(properties.Count == 0)
                 throw new ArgumentException("properties cannot be empty");
@@ -257,61 +202,61 @@ namespace SharpPulsar.Impl
 				_conf.Properties.Add(entry.Key, entry.Value);
 
 			});
-            return this;
+            
 		}
 
-		public IConsumerBuilder MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
+		public void MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
 		{
 			if(maxTotalReceiverQueueSizeAcrossPartitions < 0)
                 throw new ArgumentException("maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0");
 			_conf.MaxTotalReceiverQueueSizeAcrossPartitions = maxTotalReceiverQueueSizeAcrossPartitions;
-			return this;
+			
 		}
 
-		public IConsumerBuilder ReadCompacted(bool readCompacted)
+		public void ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
-			return this;
+			
 		}
 
-		public IConsumerBuilder PatternAutoDiscoveryPeriod(int periodInMinutes)
+		public void PatternAutoDiscoveryPeriod(int periodInMinutes)
 		{
 			if(periodInMinutes < 0)
                 throw new ArgumentException("periodInMinutes needs to be >= 0");
 			_conf.PatternAutoDiscoveryPeriod = periodInMinutes;
-			return this;
+			
 		}
 
-		public IConsumerBuilder SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
+		public void SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
 		{
 			_conf.SubscriptionInitialPosition = subscriptionInitialPosition;
-			return this;
+			
 		}
 
-		public IConsumerBuilder SubscriptionTopicsMode(RegexSubscriptionMode mode)
+		public void SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{
 			_conf.RegexSubscriptionMode = mode;
-			return this;
+			
 		}
 
-		public IConsumerBuilder ReplicateSubscriptionState(bool replicateSubscriptionState)
+		public void ReplicateSubscriptionState(bool replicateSubscriptionState)
 		{
 			_conf.ReplicateSubscriptionState = replicateSubscriptionState;
-			return this;
+			
 		}
 
-		public IConsumerBuilder Intercept(params IConsumerInterceptor[] interceptors)
+		public void Intercept(params IConsumerInterceptor[] interceptors)
 		{
-			if (_interceptorList == null)
+			if (_conf.Interceptors == null)
 			{
-				_interceptorList = new List<IConsumerInterceptor>();
+                _conf.Interceptors = new List<IConsumerInterceptor>();
 			}
 
-            ((List<IConsumerInterceptor>) _interceptorList).AddRange(new List<IConsumerInterceptor>(interceptors));
-			return this;
+            _conf.Interceptors.AddRange(new List<IConsumerInterceptor>(interceptors));
+			
 		}
 
-		public IConsumerBuilder DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
+		public void DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
 		{
 			if (deadLetterPolicy != null)
 			{
@@ -321,45 +266,47 @@ namespace SharpPulsar.Impl
 				}
 				_conf.DeadLetterPolicy = deadLetterPolicy;
 			}
-			return this;
+			
 		}
 
-		public IConsumerBuilder AutoUpdatePartitions(bool autoUpdate)
+		public void AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
-			return this;
+			
 		}
 
-		public IConsumerBuilder StartMessageIdInclusive()
+		public void StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
-			return this;
+			
 		}
 
-		public virtual IConsumerBuilder BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
+		public void BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
 		{
 			if(batchReceivePolicy == null)
                 throw new ArgumentException("batchReceivePolicy must not be null.");
 			batchReceivePolicy.Verify();
 			_conf.BatchReceivePolicy = batchReceivePolicy;
-			return this;
+			
 		}
 
+        public void Schema(ISchema schema)
+        {
+            if (schema == null)
+                throw new ArgumentException("Schama is null");
+            _conf.Schema = schema;
+        }
 		public override string ToString()
 		{
 			return _conf?.ToString();
 		}
 
-        object ICloneable.Clone()
-        {
-            return Clone();
-        }
 
-        public IConsumerBuilder KeySharedPolicy(KeySharedPolicy keySharedPolicy)
+        public void KeySharedPolicy(KeySharedPolicy keySharedPolicy)
 		{
 			keySharedPolicy.Validate();
 			_conf.KeySharedPolicy = keySharedPolicy;
-			return this;
+			
 		}
 	}
 

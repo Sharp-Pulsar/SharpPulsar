@@ -24,23 +24,14 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-
-	[Serializable]
-	public class ConsumerConfigurationData<T> : ICloneable
+	public sealed class ConsumerConfigurationData
 	{
-		private const long SerialVersionUid = 1L;
-
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
-
-		[NonSerialized]
-		private Regex _topicsPattern;
-
-		[NonSerialized]
-		private string _subscriptionName;
-
+		public List<IConsumerInterceptor> Interceptors { get; set; }
 		public SubscriptionType SubscriptionType { get; set; } = SubscriptionType.Exclusive;
-		public IMessageListener<T> MessageListener { get; set; }
+		public IMessageListener MessageListener { get; set; }
 		public IConsumerEventListener ConsumerEventListener { get; set; }
+		public ISchema Schema { get; set; }
 
 		public int ReceiverQueueSize { get; set; } = 1000;
 
@@ -49,9 +40,6 @@ namespace SharpPulsar.Impl.Conf
 		public long NegativeAckRedeliveryDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MINUTES.ToMicros(1);
 
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
-
-		[NonSerialized]
-		private string _consumerName;
 
 		public long AckTimeoutMillis { get; set; } = 0;
 
@@ -63,29 +51,12 @@ namespace SharpPulsar.Impl.Conf
 
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
-		[NonSerialized]
-		private SortedDictionary<string, string> _properties  = new SortedDictionary<string, string>();
-
-		[NonSerialized]
-		private bool _readCompacted = false;
-
-		[NonSerialized]
-		private SubscriptionInitialPosition _subscriptionInitialPosition = SubscriptionInitialPosition.Latest;
-
 		public int PatternAutoDiscoveryPeriod { get; set; } = 1;
 
 		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
-		[NonSerialized]
-		private DeadLetterPolicy _deadLetterPolicy;
-		[NonSerialized]
-		private BatchReceivePolicy _batchReceivePolicy;
-
-        public BatchReceivePolicy BatchReceivePolicy
-        {
-            get => _batchReceivePolicy;
-            set => _batchReceivePolicy = value;
-        }
+		
+        public BatchReceivePolicy BatchReceivePolicy { get; set; }
 
 		public bool AutoUpdatePartitions { get; set; } = true;
 
@@ -93,57 +64,22 @@ namespace SharpPulsar.Impl.Conf
 
 		public bool ResetIncludeHead { get; set; } = false;
 
-		[NonSerialized]
-		private KeySharedPolicy _keySharedPolicy;
-
-        public KeySharedPolicy KeySharedPolicy
-        {
-            get => _keySharedPolicy;
-            set => _keySharedPolicy = value;
-        }
+        public KeySharedPolicy KeySharedPolicy { get; set; }
 
 
-		public bool ReadCompacted
-        {
-            get => _readCompacted;
-            set => _readCompacted = value;
-        }
+		public bool ReadCompacted { get; set; }
 
-        public DeadLetterPolicy DeadLetterPolicy
-        {
-            get => _deadLetterPolicy;
-            set => _deadLetterPolicy = value;
-        }
+		public DeadLetterPolicy DeadLetterPolicy { get; set; }
 
-		public SubscriptionInitialPosition SubscriptionInitialPosition
-        {
-            get => _subscriptionInitialPosition;
-            set => _subscriptionInitialPosition = value;
-        }
-		public Regex TopicsPattern
-        {
-            get => _topicsPattern;
-            set => _topicsPattern = value;
-        }
+		public SubscriptionInitialPosition SubscriptionInitialPosition { get; set; }
+		public Regex TopicsPattern { get; set; }
 
-        public SortedDictionary<string, string> Properties
-        {
-            get => _properties;
-            set => _properties = value;
-        }
+		public SortedDictionary<string, string> Properties { get; set; }
 
-		public string ConsumerName
-        {
-            get => _consumerName;
-            set => _consumerName = value;
-        }
+		public string ConsumerName { get; set; }
 
-		public string SubscriptionName
-        {
-            get => _subscriptionName;
-            set => _subscriptionName = value;
-        }
-		public virtual string SingleTopic
+		public string SubscriptionName { get; set; }
+		public string SingleTopic
 		{
 			get
 			{
@@ -156,25 +92,6 @@ namespace SharpPulsar.Impl.Conf
 			}
 		}
 
-		public virtual ConsumerConfigurationData<T> Clone()
-		{
-			try
-			{
-				var c = (ConsumerConfigurationData<T>) base.MemberwiseClone();
-				c.TopicNames = new SortedSet<string>(TopicNames);
-				c.Properties = new SortedDictionary<string, string>(Properties);
-				return c;
-			}
-			catch (System.Exception)
-			{
-				throw new System.Exception("Failed to clone ConsumerConfigurationData");
-			}
-		}
-
-		object ICloneable.Clone()
-		{
-			return this;
-		}
-	}
+    }
 
 }

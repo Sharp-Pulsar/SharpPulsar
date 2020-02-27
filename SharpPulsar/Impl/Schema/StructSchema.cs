@@ -50,10 +50,10 @@ namespace SharpPulsar.Impl.Schema
 	/// and <seealso cref="SchemaType.Protobuf"/>.
 	/// </para>
 	/// </summary>
-	public abstract class StructSchema<T> : AbstractSchema<T>
+	public abstract class StructSchema : AbstractSchema
 	{
 
-		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema<T>));
+		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema));
 
 		protected internal readonly Avro.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public virtual Avro.Schema AvroSchema => Schema;
 
-        public override sbyte[] Encode(T message)
+        public override sbyte[] Encode(object message)
 		{
 			if(_writer == null)
 				_writer = new GenericAvroWriter(Schema);
@@ -78,18 +78,18 @@ namespace SharpPulsar.Impl.Schema
             return (sbyte[]) (object) w.ToArray();
         }
 
-		public override T Decode(sbyte[] bytes)
+		public override object Decode(sbyte[] bytes, Type returnType)
 		{
 			if(_reader == null)
 				_reader = new GenericAvroReader(Schema, new SByte[]{0});
-			return _reader.Read<T>((byte[])(object)bytes);
+			return _reader.Read((byte[])(object)bytes, returnType);
 		}
 
-		public T Decode(byte[] bytes, sbyte[] schemaVersion)
+		public object Decode(byte[] bytes, sbyte[] schemaVersion, Type returnType)
 		{
 			try
 			{
-				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read<T>(bytes);
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(bytes, returnType);
 			}
 			catch (System.Exception e)
 			{
@@ -103,18 +103,18 @@ namespace SharpPulsar.Impl.Schema
 
         }
 
-		public override T Decode(IByteBuffer byteBuf)
+		public override object Decode(IByteBuffer byteBuf, Type returnType)
         {
             var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
-			return _reader.Read<T>(msg);
+			return _reader.Read(msg, returnType);
 		}
 
-		public override T Decode(IByteBuffer byteBuf, sbyte[] schemaVersion)
+		public override object Decode(IByteBuffer byteBuf, sbyte[] schemaVersion, Type returnType)
 		{
 			try
 			{
                 var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
-				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read<T>(msg);
+				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(msg, returnType);
             }
 			catch (System.Exception e)
 			{
@@ -125,7 +125,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        protected internal static Avro.Schema CreateAvroSchema(ISchemaDefinition<T> schemaDefinition)
+        protected internal static Avro.Schema CreateAvroSchema(ISchemaDefinition schemaDefinition)
 		{
 			var pojo = schemaDefinition.Pojo;
 
@@ -144,7 +144,7 @@ namespace SharpPulsar.Impl.Schema
             return Avro.Schema.Parse(schemaJson);
 		}
 
-		protected internal static SchemaInfo ParseSchemaInfo(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
+		protected internal static SchemaInfo ParseSchemaInfo(ISchemaDefinition schemaDefinition, SchemaType schemaType)
 		{
 			return new SchemaInfoBuilder().SetSchema(CreateAvroSchema(schemaDefinition).ToString().GetBytes()).SetProperties(schemaDefinition.Properties).SetName("").SetType(schemaType).Build();
 		}

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Avro.IO;
 using Avro.Reflect;
 using Microsoft.Extensions.Logging;
@@ -35,11 +36,11 @@ namespace SharpPulsar.Impl.Schema.Generic
             _schemaVersion = schemaVersion;
         }
 
-		public T Read<T>(byte[] message)
+		public object Read(byte[] message, Type returnType)
         {
-            var r = new ReflectReader<T>(_schema, _schema);
+            var r = new ReflectDefaultReader(returnType, _schema, _schema, new ClassCache());
             using var stream = new MemoryStream(message);
-            return r.Read(default(T), new BinaryDecoder(stream));
+            return r.Read(default(object), new BinaryDecoder(stream));
         }
 		
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroReader));

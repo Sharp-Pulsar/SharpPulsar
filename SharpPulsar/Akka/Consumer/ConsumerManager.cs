@@ -8,16 +8,16 @@ using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Consumer
 {
-    public class ConsumerManager<T>:ReceiveActor
+    public class ConsumerManager:ReceiveActor
     {
         public ConsumerManager()
         {
-            Receive<Subscribe<T>>(subscribe => { });
+            //Receive<Subscribe<T>>(subscribe => { });
         }
 
         public static Props Prop()
         {
-            return Props.Empty;
+            return Props.Create(() => new ConsumerManager());
         }
     }
 }

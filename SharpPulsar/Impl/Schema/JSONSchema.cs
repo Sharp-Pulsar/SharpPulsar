@@ -39,11 +39,8 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>
-	public class JsonSchema<T> : StructSchema<T>
+	public class JsonSchema : StructSchema
 	{
-		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
-		// return shaded version of object mapper
-		private readonly ObjectMapper _mapper = new ObjectMapper();
 
         private JsonSchema(SchemaInfo schemaInfo) : base(schemaInfo)
         {
@@ -58,19 +55,19 @@ namespace SharpPulsar.Impl.Schema
 
 		public override ISchemaInfo SchemaInfo { get; }
 
-        public static JsonSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
+        public static JsonSchema Of(ISchemaDefinition schemaDefinition)
 		{
-			return new JsonSchema<T>(ParseSchemaInfo(schemaDefinition, SchemaType.Json));
+			return new JsonSchema(ParseSchemaInfo(schemaDefinition, SchemaType.Json));
 		}
 
-		public static JsonSchema<T> Of(Type pojo)
+		public static JsonSchema Of(Type pojo)
 		{
-			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+			return Of(ISchemaDefinition.Builder().WithPojo(pojo).Build());
 		}
 
-		public static JsonSchema<T> Of(Type pojo, IDictionary<string, string> properties)
+		public static JsonSchema Of(Type pojo, IDictionary<string, string> properties)
 		{
-			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
+			return Of(ISchemaDefinition.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
         private static TS Deserialize<TS>(Stream ms, Avro.Schema ws, Avro.Schema rs) where TS : class
         {
@@ -100,22 +97,23 @@ namespace SharpPulsar.Impl.Schema
             //AssertReflectRecordEqual(rs, expected, ws, output, reader.Reader.ClassCache);
         }
 
-		public override ISchema<IGenericRecord> Auto()
+		public override ISchema Auto()
 		{
 			throw new NotImplementedException();
 		}
 
-		public override ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
+		public override ISchema Json(ISchemaDefinition schemaDefinition)
 		{
 			throw new NotImplementedException();
 		}
 
-		public override ISchema<T> Json(T pojo)
-		{
-			throw new NotImplementedException();
-		}
+        public override ISchema Json(object pojo)
+        {
+            throw new NotImplementedException();
+        }
 
-		public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+
+        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
 		{
 			throw new NotImplementedException();
 		}
@@ -135,11 +133,11 @@ namespace SharpPulsar.Impl.Schema
 			throw new NotImplementedException();
 		}
         
-		public new T Decode(IByteBuffer byteBuf)
+		public override object Decode(IByteBuffer byteBuf, Type returnType)
 		{
             if (Reader == null)
                 Reader = new GenericAvroReader(Schema, new sbyte[] { 0 });
-            return Reader.Read<T>(byteBuf.Array);
+            return Reader.Read(byteBuf.Array, returnType);
 		}
 
 	}

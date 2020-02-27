@@ -34,12 +34,12 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// A generic schema representation.
 	/// </summary>
-	public abstract class GenericSchemaImpl : StructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
+	public abstract class GenericSchemaImpl : StructSchema, IGenericSchema
 	{
 		public abstract IGenericRecordBuilder NewRecordBuilder();
-		public abstract override ISchema<IGenericRecord> Auto();
+		public abstract override ISchema Auto();
 		
-        public abstract ISchema<T> Json<T>(T pojo);
+        public abstract ISchema Json(Type pojo);
         public abstract override bool RequireFetchingSchemaInfo();
 		public abstract override bool SupportSchemaVersioning();
 		public abstract override void Validate(sbyte[] message);
@@ -84,7 +84,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		IGenericRecordBuilder IGenericSchema<IGenericRecord>.NewRecordBuilder()
+		IGenericRecordBuilder IGenericSchema.NewRecordBuilder()
 		{
 			throw new NotImplementedException();
 		}

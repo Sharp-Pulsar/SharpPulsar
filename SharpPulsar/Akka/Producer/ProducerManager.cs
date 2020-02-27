@@ -3,11 +3,11 @@ using SharpPulsar.Akka.InternalCommands;
 
 namespace SharpPulsar.Akka.Producer
 {
-    public class ProducerManager<T>:ReceiveActor
+    public class ProducerManager:ReceiveActor
     {
         public ProducerManager()
         {
-            Receive<Create<T>>(create =>
+            Receive<object>(create =>
             {
 
             });
@@ -25,7 +25,7 @@ namespace SharpPulsar.Akka.Producer
 
         public static Props Prop()
         {
-            return Props.Empty;
+            return Props.Create(()=> new ProducerManager());
         }
     }
 }

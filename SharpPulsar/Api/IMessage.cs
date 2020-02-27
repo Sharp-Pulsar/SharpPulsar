@@ -24,7 +24,7 @@ namespace SharpPulsar.Api
 	/// <summary>
 	/// The message abstraction used in Pulsar.
 	/// </summary>
-	public interface IMessage<out T>
+	public interface IMessage
 	{
 
 		/// <summary>
@@ -66,7 +66,7 @@ namespace SharpPulsar.Api
 		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.
 		/// </summary>
 		/// <returns> the deserialized value of the message </returns>
-		T Value {get;}
+		object Value {get;}
 
 		/// <summary>
 		/// Get the unique message ID associated with this message.

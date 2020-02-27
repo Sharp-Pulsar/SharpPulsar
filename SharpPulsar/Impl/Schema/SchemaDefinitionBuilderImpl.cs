@@ -28,7 +28,7 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Builder to build <seealso cref="GenericRecord"/>.
 	/// </summary>
-	public class SchemaDefinitionBuilderImpl<T> : ISchemaDefinitionBuilder<T>
+	public class SchemaDefinitionBuilderImpl : ISchemaDefinitionBuilder
 	{
 
 		public const string AlwaysAllowNull = "__alwaysAllowNull";
@@ -62,46 +62,46 @@ namespace SharpPulsar.Impl.Schema
 		/// </summary>
 		private bool _supportSchemaVersioning = false;
 
-		public ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull)
+		public ISchemaDefinitionBuilder WithAlwaysAllowNull(bool alwaysAllowNull)
 		{
 			_alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder<T> AddProperty(string key, string value)
+		public ISchemaDefinitionBuilder AddProperty(string key, string value)
 		{
 			_properties[key] = value;
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder<T> WithPojo(Type clazz)
+		public ISchemaDefinitionBuilder WithPojo(Type clazz)
 		{
 			_clazz = clazz;
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDef)
+		public ISchemaDefinitionBuilder WithJsonDef(string jsonDef)
 		{
 			_jsonDef = jsonDef;
 			return this;
 		}
 
-		public  ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning)
+		public  ISchemaDefinitionBuilder WithSupportSchemaVersioning(bool supportSchemaVersioning)
 		{
 			_supportSchemaVersioning = supportSchemaVersioning;
 			return this;
 		}
 
-		public  ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties)
+		public  ISchemaDefinitionBuilder WithProperties(IDictionary<string, string> properties)
 		{
 			_properties = properties;
 			return this;
 		}
 
-		public  ISchemaDefinition<T> Build()
+		public  ISchemaDefinition Build()
 		{
 			_properties[AlwaysAllowNull] = _alwaysAllowNull ? "true" : "false";
-			return new SchemaDefinitionImpl<T>(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning);
+			return new SchemaDefinitionImpl(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning);
 
 		}
 	}

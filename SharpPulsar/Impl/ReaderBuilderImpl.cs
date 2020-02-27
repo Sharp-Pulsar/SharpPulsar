@@ -26,7 +26,7 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public class ReaderBuilderImpl<T> : IReaderBuilder<T>
+    public class ReaderConfigBuilder<T> : IReaderBuilder<T>
 	{
 
 		private readonly PulsarClientImpl _client;
@@ -35,11 +35,11 @@ namespace SharpPulsar.Impl
 
 		private readonly ISchema<T> _schema;
 
-		public ReaderBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ReaderConfigurationData<T>(), schema)
+		public ReaderConfigBuilder(PulsarClientImpl client, ISchema<T> schema) : this(client, new ReaderConfigurationData<T>(), schema)
 		{
 		}
 
-		private ReaderBuilderImpl(PulsarClientImpl client, ReaderConfigurationData<T> conf, ISchema<T> schema)
+		private ReaderConfigBuilder(PulsarClientImpl client, ReaderConfigurationData<T> conf, ISchema<T> schema)
 		{
 			this._client = client;
 			this._conf = conf;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl
 
 		public IReaderBuilder<T> Clone()
 		{
-			return new ReaderBuilderImpl<T>(_client, _conf.Clone(), _schema);
+			return new ReaderConfigBuilder<T>(_client, _conf.Clone(), _schema);
 		}
 
 		public IReader<T> Create()

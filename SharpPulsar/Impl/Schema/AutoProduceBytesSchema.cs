@@ -27,24 +27,24 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoProduceBytesSchema<T> : ISchema<sbyte[]>
+	public class AutoProduceBytesSchema : ISchema
 	{
 
 		private bool _requireSchemaValidation = true;
-		private ISchema<T> _schema;
+		private ISchema _schema;
 
 		public AutoProduceBytesSchema()
 		{
 		}
 
-		public AutoProduceBytesSchema(ISchema<T> schema)
+		public AutoProduceBytesSchema(ISchema schema)
 		{
 			_schema = schema;
 			var schemaInfo = schema.SchemaInfo;
 			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.Bytes && schemaInfo.Type != SchemaType.None;
 		}
 
-		public virtual ISchema<T> Schema
+		public virtual ISchema Schema
 		{
             get => _schema;
             set
@@ -72,17 +72,19 @@ namespace SharpPulsar.Impl.Schema
 			_schema.Validate(message);
 		}
 
-		public sbyte[] Encode(sbyte[] message)
+		public sbyte[] Encode(object message)
 		{
+			if(!(message is sbyte[]))
+				throw new ArgumentException($"{message.GetType()} is not sbyte[]");
 			EnsureSchemaInitialized();
 
 			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				_schema.Validate(message);
+				_schema.Validate((sbyte[])message);
 			}
 
-			return message;
+			return (sbyte[])message;
 		}
 
 		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)

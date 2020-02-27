@@ -21,60 +21,27 @@ using System;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-	[Serializable]
-	public class ReaderConfigurationData<T> : ICloneable
+    public sealed class ReaderConfigurationData
 	{
-		[NonSerialized]
-		private string _topicName;
 		public IMessageId StartMessageId { get; set; }
 		public long StartMessageFromRollbackDurationInSec { get; set; }
-
+        public ISchema Schema { get; set; }
 		public int ReceiverQueueSize { get; set; } = 1000;
 
-		public IReaderListener<T> ReaderListener { get; set; }
-		[NonSerialized]
-		private string _readerName;
-		[NonSerialized]
-		private string _subscriptionRolePrefix;
+		public IReaderListener ReaderListener { get; set; }
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
 		public bool ReadCompacted { get; set; } = false;
 		public bool ResetIncludeHead { get; set; } = false;
-		public virtual ReaderConfigurationData<T> Clone()
-		{
-			try
-			{
-				return (ReaderConfigurationData<T>) base.MemberwiseClone();
-			}
-			catch (Exception e)
-			{
-				throw new Exception("Failed to clone ReaderConfigurationData", e);
-			}
-		}
+		
+        public string SubscriptionRolePrefix { get; set; }
 
-        public string SubscriptionRolePrefix
-        {
-            get => _subscriptionRolePrefix;
-            set => _subscriptionRolePrefix = value;
-        }
+		public string TopicName { get; set; }
 
-		public string TopicName
-        {
-            get => _topicName;
-            set => _topicName = value;
-        }
-
-        public string ReaderName
-        {
-            get => _readerName;
-            set => _readerName = value;
-        }
-		object ICloneable.Clone()
-		{
-			return this;
-		}
+        public string ReaderName { get; set; }
+		
 	}
 
 }
