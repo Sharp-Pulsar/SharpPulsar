@@ -22,7 +22,7 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public interface BatchMessageContainerBase<T> : IBatchMessageContainer
+	public interface BatchMessageContainerBase : IBatchMessageContainer
 	{
 
 		/// <summary>
@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(MessageImpl<T> msg, SendCallback callback);
+		bool Add(MessageImpl msg);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container have enough space for the specific message,
 		///         otherwise return false. </returns>
-		bool HaveEnoughSpace(MessageImpl<T> msg);
+		bool HaveEnoughSpace(MessageImpl msg);
 
 		/// <summary>
 		/// Check the batch message container has same schema with the message want to add.
@@ -48,14 +48,14 @@ namespace SharpPulsar.Impl
 		/// <returns> return true if the container has same schema with the specific message,
 		///         otherwise return false. </returns>
 		///         
-		bool HasSameSchema(MessageImpl<T> msg);
+		bool HasSameSchema(MessageImpl msg);
 
 		/// <summary>
 		/// Set producer of the message batch container.
 		/// </summary>
 		/// <param name="producer"> producer </param>
 		/// 
-		ProducerImpl<T> Producer {set;}
+		ProducerImpl Producer {set;}
 
 		/// <summary>
 		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.

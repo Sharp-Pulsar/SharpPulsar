@@ -1392,6 +1392,7 @@ namespace SharpPulsar.Impl
         {
             var result = await SendGetRawSchema(request, requestId);
             {
+
                 var rc = result.ErrorCode;
                 if(rc == ServerError.TopicNotFound)
                 {
@@ -1400,6 +1401,7 @@ namespace SharpPulsar.Impl
 
                 throw GetPulsarClientException(rc, result.ErrorMessage);
             }
+			
         }
 
 		public virtual async ValueTask<CommandGetSchemaResponse> SendGetRawSchema(IByteBuffer request, long requestId)

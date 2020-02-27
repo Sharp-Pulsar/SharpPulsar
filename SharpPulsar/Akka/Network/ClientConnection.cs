@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Net;
 using Akka.Actor;
 using Akka.Event;
@@ -25,14 +26,12 @@ namespace SharpPulsar.Akka.Network
 
         public  int MaxMessageSize = Commands.DefaultMaxMessageSize;
 
-        private readonly int _protocolVersion;
-
         protected internal string ProxyToTargetBrokerAddress;
         private string _remoteHostName;
 
         private ILoggingAdapter Log;
-
-        private IActorRef _outerActor;
+        private ClientConfigurationData _conf;
+        private IActorRef _manager;
         // Added for mutual authentication.
         protected internal IAuthenticationDataProvider AuthenticationDataProvider;
 
@@ -44,21 +43,10 @@ namespace SharpPulsar.Akka.Network
             Failed,
             Connecting
         }
-
-        public class RequestTime
+        public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
-            internal long CreationTimeMs;
-            internal long RequestId;
-
-            public RequestTime(long creationTime, long requestId)
-            {
-                CreationTimeMs = creationTime;
-                RequestId = requestId;
-            }
-        }
-        public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, int protocolVersion, IActorRef outerActor)
-        {
-            _outerActor = outerActor;
+            _conf = conf;
+            _manager = manager;
             Connection = Self;
             RemoteAddress = endPoint;
             Log = Context.System.Log;
@@ -66,19 +54,21 @@ namespace SharpPulsar.Akka.Network
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
             Authentication = conf.Authentication;
             _state = State.None;
-            _protocolVersion = protocolVersion;
             //this.keepAliveIntervalSeconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToSecs(conf.KeepAliveIntervalSeconds);
             Context.System.Tcp().Tell(new Tcp.Connect(endPoint));
         }
 
-        public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, int protocolVersion, IActorRef outerActor)
+        public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
-            return Props.Create(() => new ClientConnection(endPoint, conf, protocolVersion, outerActor));
+            return Props.Create(() => new ClientConnection(endPoint, conf, manager));
         }
         protected override void OnReceive(object message)
         {
             switch (message)
             {
+                case TcpReconnect _:
+                    Context.System.Tcp().Tell(new Tcp.Connect(RemoteAddress));
+                    break;
                 case Tcp.Connected connected:
                     Log.Info("Connected to {0}", connected.RemoteAddress);
                     // Register self as connection handler
@@ -115,6 +105,7 @@ namespace SharpPulsar.Akka.Network
                 else if (message is Tcp.PeerClosed)
                 {
                     Log.Info("Connection closed");
+                    _manager.Tell(new TcpClosed());
                 }
                 else Unhandled(message);
             };
@@ -138,20 +129,26 @@ namespace SharpPulsar.Akka.Network
 
 				switch (cmd.Type)
 				{
-
-					case BaseCommand.Types.Type.Ping:
+                    case BaseCommand.Types.Type.GetSchemaResponse:
+                        var schema = cmd.GetSchemaResponse.Schema;
+                        _manager.Tell(new SchemaResponse(schema.SchemaData.ToByteArray(), schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.Type, (long)cmd.GetSchemaResponse.RequestId));
+                        break;
+                    case BaseCommand.Types.Type.PartitionedMetadataResponse:
+                        _manager.Tell(new Partitions((int)cmd.PartitionMetadataResponse.Partitions, (long)cmd.PartitionMetadataResponse.RequestId));
+                        break;
+                    case BaseCommand.Types.Type.Ping:
 						if (cmd.HasPing)
 							HandlePing(cmd.Ping);
-						cmd.Ping.Recycle();
 						break;
-
+                    case BaseCommand.Types.Type.Connect:
+                        _manager.Tell(new TcpSuccess(RemoteHostName));
+                        break;
 					case BaseCommand.Types.Type.Pong:
 						if (cmd.HasPong)
 							HandlePong(cmd.Pong);
-						cmd.Pong.Recycle();
 						break;
 					default:
-						_outerActor.Tell(new TcpReceived(buffer));
+						_manager.Tell(new TcpReceived(buffer));
                         break;
                 }
 			}
@@ -199,7 +196,7 @@ namespace SharpPulsar.Akka.Network
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthData(Shared.Auth.AuthData.InitAuthData));
 
 			var auth = AuthData.NewBuilder().SetAuthData(Google.Protobuf.ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
-			return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(Authentication.AuthMethodName, auth, _conf.ConnectionsPerBroker, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 
 		public void HandlePing(CommandPing ping)

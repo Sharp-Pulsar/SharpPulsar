@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.IO;
+using SharpPulsar.Akka;
+using SharpPulsar.Impl.Conf;
 
 namespace Sample
 {
@@ -17,7 +19,7 @@ namespace Sample
         static async Task Main(string[] args)
         {
             //InternalLoggerFactory.DefaultFactory = SharpPulsar.Utility.Log.Logger;//.AddProvider(new ConsoleLoggerProvider(new OptionsMonitor<ConsoleLoggerOptions>(null, null, null)));
-
+            var pulsarSystem = new PulsarSystem(new ClientConfigurationData());
             var system = ActorSystem.Create("Yyy");
             system.ActorOf(Act.Prop());
             while (true)

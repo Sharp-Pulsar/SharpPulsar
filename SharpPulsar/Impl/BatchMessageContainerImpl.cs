@@ -38,19 +38,19 @@ namespace SharpPulsar.Impl
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainerImpl<T> : AbstractBatchMessageContainer<T>
+	public class BatchMessageContainerImpl : AbstractBatchMessageContainer<T>
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
         private readonly MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private IByteBuffer _batchedMessageMetadataAndPayload;
-		private IList<MessageImpl<T>> _messages = new List<MessageImpl<T>>();
+		private IList<MessageImpl> _messages = new List<MessageImpl>();
 		protected internal SendCallback PreviousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		protected internal SendCallback FirstCallback;
 
-        public override bool HasSameSchema(MessageImpl<T> msg)
+        public override bool HasSameSchema(MessageImpl msg)
         {
 			if (NumMessagesInBatch == 0)
             {
@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
             return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-        public override bool Add(MessageImpl<T> msg, SendCallback callback)
+        public override bool Add(MessageImpl msg, SendCallback callback)
 		{
 
 			if (Log.IsEnabled(LogLevel.Debug))

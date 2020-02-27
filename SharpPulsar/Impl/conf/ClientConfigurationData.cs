@@ -86,6 +86,7 @@ namespace SharpPulsar.Impl.Conf
             set => _serviceUrl = value;
         }
 
+        public int ProtocolVersion { get; set; } = 6;
 		public string TlsTrustCertsFilePath { get; set; }
 
 		public DateTime Clock { get; set; } = DateTime.Now;

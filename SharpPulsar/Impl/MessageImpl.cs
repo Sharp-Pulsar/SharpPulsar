@@ -31,19 +31,19 @@ namespace SharpPulsar.Impl
     using System.Linq;
     using SharpPulsar.Protocol;
 
-    public class MessageImpl<T> : IMessage<T>
+    public class MessageImpl : IMessage
 	{
 		public MessageMetadata.Builder MessageBuilder;
 		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
-		private ISchema<T> _schema;
+		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 
 		public string TopicName {get;} // only set for incoming messages
 
 		// Constructor for out-going message
-		public static MessageImpl<T> Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
+		public static MessageImpl Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
 		{
             var msg = _pool.Take();
 			msg.MessageBuilder = msgMetadataBuilder;
@@ -159,9 +159,9 @@ namespace SharpPulsar.Impl
 			RedeliveryCount = 0;
 		}
 
-		public static MessageImpl<T> Deserialize(IByteBuffer headersAndPayload)
+		public static MessageImpl Deserialize(IByteBuffer headersAndPayload)
 		{
-			var msg = _pool.Take();
+			var msg =  new MessageImpl();
 			var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
 
 			msg.MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
@@ -215,7 +215,7 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public ISchema<T> Schema => _schema;
+		public ISchema Schema => _schema;
 
         public int RedeliveryCount { get; }
 
@@ -232,7 +232,7 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public T Value
+		public object Value
 		{
 			get
             {
@@ -250,74 +250,8 @@ namespace SharpPulsar.Impl
                 }
 
                 return _schema.Decode(Data);
-                /*if (_schema.SchemaInfo != null && SchemaType.KEY_VALUE == _schema.SchemaInfo.Type)
-				{
-					if (_schema.SupportSchemaVersioning())
-					{
-						return KeyValueBySchemaVersion;
-					}
-					else
-					{
-						return KeyValue;
-					}
-				}
-				else
-				{
-					// check if the schema passed in from client supports schema versioning or not
-					// this is an optimization to only get schema version when necessary
-					if (_schema.SupportSchemaVersioning())
-					{
-						var schemaversion = SchemaVersion;
-						if (null == schemaversion)
-						{
-							return _schema.Decode(Data);
-						}
-						else
-						{
-							return _schema.Decode(Data, schemaversion);
-						}
-					}
-					else
-					{
-						return _schema.Decode(Data);
-					}
-				}*/
             }
 		}
-
-		/*private T KeyValueBySchemaVersion
-		{
-			get
-			{
-				KeyValueSchema<T> kvSchema = (KeyValueSchema<T>) _schema;
-				sbyte[] schemaVersion = SchemaVersion;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
-				{
-					return (T)kvSchema.Decode(KeyBytes, Data, schemaVersion);
-				}
-				else
-				{
-					return _schema.Decode(Data, schemaVersion);
-				}
-			}
-		}
-
-		private T KeyValue
-		{
-			get
-			{
-				KeyValueSchema<T> kvSchema = (KeyValueSchema<T>) _schema;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
-				{
-					return (T) kvSchema.Decode(KeyBytes, Data, null);
-				}
-				else
-				{
-					return _schema.Decode(Data);
-				}
-			}
-		}
-		*/
 		public long SequenceId
 		{
 			get
@@ -446,26 +380,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-
-		public void Recycle()
-		{
-			MessageBuilder = null;
-			MessageId = null;
-			//TopicName = null;
-			DataBuffer = null;
-			Properties = null;
-			_schema = null;
-			_schemaState = SchemaState.None;
-
-            _handle?.Release(this);
-        }
-		private static ThreadLocalPool<MessageImpl<T>> _pool = 	new ThreadLocalPool<MessageImpl<T>>(handle => new MessageImpl<T>(handle), 1, true);
-		private ThreadLocalPool.Handle _handle;
-		private MessageImpl(ThreadLocalPool.Handle handle)
-		{
-			_handle = handle;
-			RedeliveryCount = 0;
-		}
 		
 		public bool HasReplicateTo()
 		{
@@ -509,14 +423,7 @@ namespace SharpPulsar.Impl
 			Ready,
 			Broken
 		}
-		public static implicit operator MessageImpl<T>(MessageImpl<object> v)
-		{
-			return (MessageImpl<T>)Convert.ChangeType(v, typeof(MessageImpl<T>));
-		}
-		public static implicit operator MessageImpl<object>(MessageImpl<T> v)
-		{
-			return (MessageImpl<object>)Convert.ChangeType(v, typeof(MessageImpl<object>));
-		}
+		
 	}
 
 }

@@ -22,13 +22,8 @@ namespace SharpPulsar.Impl
 {
 	using IBatchMessageContainer = Api.IBatchMessageContainer;
 	using IBatcherBuilder = Api.IBatcherBuilder;
-
-	[Serializable]
 	public class DefaultBatcherBuilder : IBatcherBuilder
 	{
-
-		private const long SerialVersionUID = 1L;
-
 		public IBatchMessageContainer Build<T>()
 		{
 			return new BatchMessageContainerImpl<T>();

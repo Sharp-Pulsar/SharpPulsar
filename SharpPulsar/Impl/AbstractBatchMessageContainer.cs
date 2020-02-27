@@ -27,14 +27,14 @@ namespace SharpPulsar.Impl
 	/// <summary>
 	/// Batch message container framework.
 	/// </summary>
-	public abstract class AbstractBatchMessageContainer<T> : BatchMessageContainerBase<T>
+	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase<T>
 	{
 		public abstract bool MultiBatches {get;}
 		public abstract void Discard(System.Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool HasSameSchema(MessageImpl<T> msg);
-		public abstract bool Add(MessageImpl<T> msg, SendCallback callback);
+		public abstract bool HasSameSchema(MessageImpl msg);
+		public abstract bool Add(MessageImpl msg, SendCallback callback);
 
 		protected internal ICompressionType CompressionType;
 		protected internal CompressionCodec Compressor;

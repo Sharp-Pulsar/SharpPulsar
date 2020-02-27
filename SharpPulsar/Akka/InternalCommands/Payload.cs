@@ -7,10 +7,14 @@ namespace SharpPulsar.Akka.InternalCommands
     public class Payload
     {
         public byte[] Bytes { get; }
+        public string CommandType { get; }
+        public long RequestId { get; }
 
-        public Payload(byte[] bytes)
+        public Payload(byte[] bytes, long requestId, string commandType)
         {
-            Bytes = bytes;  
+            Bytes = bytes;
+            RequestId = requestId;
+            CommandType = commandType;
         }
     }
 }

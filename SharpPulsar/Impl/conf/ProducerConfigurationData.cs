@@ -32,6 +32,7 @@ namespace SharpPulsar.Impl.Conf
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
         public string TopicName { get; set; }
+        public int Partitions { get; set; } = 0;
         public ISchema Schema;
         public List<IProducerInterceptor> Interceptors;
 

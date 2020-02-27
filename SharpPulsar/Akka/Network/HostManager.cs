@@ -10,19 +10,15 @@ namespace SharpPulsar.Akka.Network
 {
     public class HostManager:ReceiveActor
     {
-        private readonly int _connections;
         private ClientConfigurationData _configuration;
         private EndPoint _endPoint;
         private Dictionary<string, IActorRef> connections = new Dictionary<string, IActorRef>();
         private readonly Random _randomNumber;
-        private int _protocolVersion;
-        private IActorRef _outerActorRef;
-        public HostManager(EndPoint endPoint, int numberofconnection, ClientConfigurationData con, int version, IActorRef outerActorRef)
+        private IActorRef _manager;
+        public HostManager(EndPoint endPoint, ClientConfigurationData con, IActorRef manager)
         {
-            _outerActorRef = outerActorRef;
-            _protocolVersion = version;
+            _manager= manager;
             _configuration = con;
-            _connections = numberofconnection;
             _endPoint = endPoint;
             _randomNumber = new Random();
             Receive<TcpFailed>(f =>
@@ -37,7 +33,7 @@ namespace SharpPulsar.Akka.Network
             });
             Receive<Payload>(pay =>
             {
-                var n = _randomNumber.Next(0, _connections - 1);
+                var n = _randomNumber.Next(0, _configuration.ConnectionsPerBroker - 1);
                 var actor = connections.Values.ToList()[n];
                 actor.Tell(pay);
             });
@@ -45,15 +41,15 @@ namespace SharpPulsar.Akka.Network
 
         protected override void PreStart()
         {
-            for (var i = 0; i < _connections; i++)
+            for (var i = 0; i < _configuration.ConnectionsPerBroker; i++)
             {
-                Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration, _protocolVersion, _outerActorRef), $"{Context.Parent.Path.Name}-tcp-connection-{i}");
+                Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration,_manager), $"{Context.Parent.Path.Name}-tcp-connection-{i}");
             }
         }
 
-        public static Props Prop(IPEndPoint endPoint, int numberofconnection, ClientConfigurationData con, int version, IActorRef outerActorRef)
+        public static Props Prop(IPEndPoint endPoint, ClientConfigurationData con, IActorRef manager)
         {
-            return Props.Create(()=> new HostManager(endPoint, numberofconnection, con, version, outerActorRef));
+            return Props.Create(()=> new HostManager(endPoint, con, manager));
         }
     }
 }

@@ -1,41 +1,81 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using Akka.Actor;
 using DotNetty.Transport.Bootstrapping;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class NetworkManager: ReceiveActor
+    public class NetworkManager: ReceiveActor, IWithUnboundedStash
     {
-        private List<IPEndPoint> _endPoints;
-        private IActorRef _outActorRef;
-        private ClientConfigurationData _configuration;
-        private int _protocolVersion;
-		public NetworkManager(List<IPEndPoint> endPoints, IActorRef outActorRef, ClientConfigurationData configuration, int protocolVersion)
+        private IActorRef _manager;
+        private ClientConfigurationData _configuration; 
+        private PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
+		public NetworkManager(IActorRef manager, ClientConfigurationData configuration)
         {
-            _endPoints = endPoints;
-            _outActorRef = outActorRef;
+            _serviceNameResolver.UpdateServiceUrl(configuration.ServiceUrl);
+            _manager = manager;
             _configuration = configuration;
-            _protocolVersion = protocolVersion;
+            Become(Start);
         }
 
-        protected override void PreStart()
+        private void Start()
+        {
+            ReceiveAny(m =>
+            {
+                Stash.Stash();
+            });
+            CreateConnections();
+        }
+        private void Stop()
+        {
+            ReceiveAny(m =>
+            {
+                Stash.Stash();
+            });
+           StopAndRestartConnections();
+        }
+        public void Ready()
+        {
+           Stash.UnstashAll();
+           Context.Parent.Tell(new ServiceReady());
+           Receive<UpdateService>(u =>
+           {
+               _serviceNameResolver.UpdateServiceUrl(u.Service);
+               Become(Stop);
+           });
+        }
+        
+        private void CreateConnections()
         {
             var dnsResolver = new DefaultNameResolver();
-            foreach (var s in _endPoints)
+            foreach (var s in _serviceNameResolver.AddressList())
             {
                 var service = s;
                 if (!dnsResolver.IsResolved(s))
-                    service = (IPEndPoint) dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
+                    service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
                 var host = Dns.GetHostEntry(service.Address).HostName;
-                Context.ActorOf(HostManager.Prop(service, _configuration.ConnectionsPerBroker, _configuration, _protocolVersion, _outActorRef), host);
+                Context.ActorOf(HostManager.Prop(service, _configuration, _manager), host);
             }
+            Become(Ready);
         }
 
-        public static Props Prop(List<IPEndPoint> endPoints, IActorRef outActorRef, ClientConfigurationData configuration, int protocolVersion)
+        private void StopAndRestartConnections()
         {
-            return Props.Create(()=> new NetworkManager(endPoints, outActorRef, configuration, protocolVersion));
+            foreach (var c in Context.GetChildren())
+            {
+                c.GracefulStop(TimeSpan.FromMilliseconds(1000));
+            }
+            CreateConnections();
         }
+        public static Props Prop(IActorRef manager, ClientConfigurationData configuration)
+        {
+            return Props.Create(()=> new NetworkManager(manager, configuration));
+        }
+
+        public IStash Stash { get; set; }
     }
 }

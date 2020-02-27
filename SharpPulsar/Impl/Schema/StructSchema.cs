@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl.Schema
 
 		protected StructSchema(SchemaInfo schemaInfo)
 		{
-			this.Schema = ParseAvroSchema(new string(Encoding.UTF8.GetString((byte[])(object)schemaInfo.Schema)));
+			Schema = ParseAvroSchema(new string(Encoding.UTF8.GetString((byte[])(object)schemaInfo.Schema)));
 			_schemaInfo = schemaInfo;
 		}
 
@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl.Schema
 		public override object Decode(sbyte[] bytes, Type returnType)
 		{
 			if(_reader == null)
-				_reader = new GenericAvroReader(Schema, new SByte[]{0});
+				_reader = new GenericAvroReader(Schema, new sbyte[]{0});
 			return _reader.Read((byte[])(object)bytes, returnType);
 		}
 

@@ -21,31 +21,7 @@ namespace SharpPulsar.Akka
             _actorSystem = ActorSystem.Create("Pulsar");
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
-        public void StartProducerManager(ISchema schema)
-        {
-            if (!_producerManagerCreated)
-            {
-                _producerManager =_actorSystem.ActorOf(ProducerManager.Prop(), "ProducerManager");
-                _producerManagerCreated = true;
-            }
-        }
-        public void StartConsumerManager<T>(ISchema schema)
-        {
-            if (!_consumerManagerCreated)
-            {
-                _consumerManager = _actorSystem.ActorOf(ConsumerManager<T>.Prop(), "ConsumerManager");
-                _consumerManagerCreated = true;
-            }
-        }
-        public IProducerBuilder<T> GetProducerBuilder<T>(ISchema<T> schema)
-        {
-            return _clientBuilder.Build().NewProducer(schema);
-        }
-
-        public IConsumerBuilder<T> GetConsumerBuilder<T>(ISchema<T> schema)
-        {
-            return _clientBuilder.Build().NewConsumer(schema);
-        }
+        
         //constructor producer manager actor
         public void CreateProducer<T>(Create<T> create)
         {

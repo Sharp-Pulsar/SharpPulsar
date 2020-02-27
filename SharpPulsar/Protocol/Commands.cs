@@ -106,8 +106,7 @@ namespace SharpPulsar.Protocol
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
-			connect.Recycle();
-			connectBuilder.Recycle();
+			
 			return res;
 		}
 
@@ -150,8 +149,6 @@ namespace SharpPulsar.Protocol
             var resBytes = res.ToArray();
 
 			Console.WriteLine(Encoding.UTF8.GetString(resBytes));
-            connect.Recycle();
-			connectBuilder.Recycle();
 			return Unpooled.WrappedBuffer(resBytes);
 		}
 

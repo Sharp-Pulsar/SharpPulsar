@@ -76,6 +76,11 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
+        public PulsarClientConfigBuilder ProtocolVersion(int version)
+        {
+            _conf.ProtocolVersion = version;
+            return this;
+        }
 		public PulsarClientConfigBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			_conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParams);
