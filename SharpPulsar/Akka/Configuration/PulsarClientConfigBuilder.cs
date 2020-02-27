@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using DotNetty.Transport.Channels;
 using SharpPulsar.Api;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
 
@@ -35,13 +33,14 @@ namespace SharpPulsar.Akka.Configuration
         {
             return _conf;
         }
-		public void LoadConf(IDictionary<string, object> config)
+		public PulsarClientConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
-			
-		}
+            return this;
 
-		public void ServiceUrl(string serviceUrl)
+        }
+
+		public PulsarClientConfigBuilder ServiceUrl(string serviceUrl)
 		{
 			if (string.IsNullOrWhiteSpace(serviceUrl))
 			{
@@ -52,145 +51,145 @@ namespace SharpPulsar.Akka.Configuration
 			{
 				EnableTls(serviceUrl.StartsWith("pulsar+ssl", StringComparison.Ordinal) || serviceUrl.StartsWith("https", StringComparison.Ordinal));
 			}
-			
+            return this;
 		}
 
-		public void ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider)
+		public PulsarClientConfigBuilder ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider)
 		{
 			if (serviceUrlProvider == null)
 			{
 				throw new ArgumentException("Param serviceUrlProvider must not be null.");
 			}
 			_conf.ServiceUrlProvider = serviceUrlProvider;
-			
+            return this;
 		}
 
-		public void Authentication(IAuthentication authentication)
+		public PulsarClientConfigBuilder Authentication(IAuthentication authentication)
 		{
 			_conf.Authentication = authentication;
-			
+            return this;
 		}
 
-		public void Authentication(string authPluginClassName, string authParamsString)
+		public PulsarClientConfigBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
 			_conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParamsString);
-			
+            return this;
 		}
 
-		public void Authentication(string authPluginClassName, IDictionary<string, string> authParams)
+		public PulsarClientConfigBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams)
 		{
 			_conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParams);
-			
+            return this;
 		}
 
-		public void OperationTimeout(int operationTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder OperationTimeout(int operationTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.OperationTimeoutMs = unit.ToMillis(operationTimeout);
-			
+            return this;
 		}
 
-		public void IoThreads(int numIoThreads)
+		public PulsarClientConfigBuilder IoThreads(int numIoThreads)
 		{
 			_conf.NumIoThreads = numIoThreads;
-			
+            return this;
 		}
 
-		public void ListenerThreads(int numListenerThreads)
+		public PulsarClientConfigBuilder ListenerThreads(int numListenerThreads)
 		{
 			_conf.NumListenerThreads = numListenerThreads;
-			
+            return this;
 		}
 
-		public void ConnectionsPerBroker(int connectionsPerBroker)
+		public PulsarClientConfigBuilder ConnectionsPerBroker(int connectionsPerBroker)
 		{
 			_conf.ConnectionsPerBroker = connectionsPerBroker;
-			
+            return this;
 		}
 
-		public void EnableTcpNoDelay(bool useTcpNoDelay)
+		public PulsarClientConfigBuilder EnableTcpNoDelay(bool useTcpNoDelay)
 		{
 			_conf.UseTcpNoDelay = useTcpNoDelay;
-			
+            return this;
 		}
 
-		public void EnableTls(bool useTls)
+		public PulsarClientConfigBuilder EnableTls(bool useTls)
 		{
 			_conf.UseTls = useTls;
-			
+            return this;
 		}
 
-		public void EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
+		public PulsarClientConfigBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
 		{
 			_conf.TlsHostnameVerificationEnable = enableTlsHostnameVerification;
-			
+            return this;
 		}
 
-		public void TlsTrustCertsFilePath(string tlsTrustCertsFilePath)
+		public PulsarClientConfigBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath)
 		{
 			_conf.TlsTrustCertsFilePath = tlsTrustCertsFilePath;
-			
+            return this;
 		}
 
-		public void AllowTlsInsecureConnection(bool tlsAllowInsecureConnection)
+		public PulsarClientConfigBuilder AllowTlsInsecureConnection(bool tlsAllowInsecureConnection)
 		{
 			_conf.TlsAllowInsecureConnection = tlsAllowInsecureConnection;
-			
+            return this;
 		}
 
-		public void StatsInterval(long statsInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder StatsInterval(long statsInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.StatsIntervalSeconds = unit.ToSeconds(statsInterval);
-			
+            return this;
 		}
 
-		public void MaxConcurrentLookupRequests(int concurrentLookupRequests)
+		public PulsarClientConfigBuilder MaxConcurrentLookupRequests(int concurrentLookupRequests)
 		{
 			_conf.ConcurrentLookupRequest = concurrentLookupRequests;
-			
+            return this;
 		}
 
-		public void MaxLookupRequests(int maxLookupRequests)
+		public PulsarClientConfigBuilder MaxLookupRequests(int maxLookupRequests)
 		{
 			_conf.MaxLookupRequest = maxLookupRequests;
-			
+            return this;
 		}
 
-		public void MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
+		public PulsarClientConfigBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
 		{
 			_conf.MaxNumberOfRejectedRequestPerConnection = maxNumberOfRejectedRequestPerConnection;
-			
+            return this;
 		}
 
-		public void KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.KeepAliveIntervalSeconds = (int)unit.ToSeconds(keepAliveInterval);
-			
+            return this;
 		}
 
-		public void ConnectionTimeout(int duration, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder ConnectionTimeout(int duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.ConnectionTimeoutMs = (int)unit.ToMillis(duration);
-			
+            return this;
 		}
 
-		public void StartingBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder StartingBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.InitialBackoffIntervalNanos = unit.ToNanos(duration);
-			
+            return this;
 		}
 
-		public void MaxBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder MaxBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.MaxBackoffIntervalNanos = unit.ToNanos(duration);
-			
+            return this;
 		}
 
 		public ClientConfigurationData ClientConfigurationData => _conf;
 
-        public void Clock(DateTime clock)
+        public PulsarClientConfigBuilder Clock(DateTime clock)
 		{
 			_conf.Clock = clock;
-			
+            return this;
 		}
 
     }

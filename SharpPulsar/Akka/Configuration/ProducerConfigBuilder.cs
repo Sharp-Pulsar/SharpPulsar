@@ -33,148 +33,148 @@ namespace SharpPulsar.Akka.Configuration
 		private ProducerConfigurationData _conf = new ProducerConfigurationData();
 
         public ProducerConfigurationData ProducerConfigurationData => _conf;
-		public void LoadConf(IDictionary<string, object> config)
+		public ProducerConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
-			
-		}
+            return this;
+        }
 
-		public void Topic(string topicName)
+		public ProducerConfigBuilder Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))
 				throw new ArgumentException("topicName cannot be blank or null");
 			_conf.TopicName = topicName.Trim();
-			
+            return this;
 		}
 
-		public void ProducerName(string producerName)
+		public ProducerConfigBuilder ProducerName(string producerName)
 		{
 			_conf.ProducerName = producerName;
-			
+            return this;
 		}
 
-		public void SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public ProducerConfigBuilder SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.SetSendTimeoutMs(sendTimeout, unit);
-			
+            return this;
 		}
 
-		public void MaxPendingMessages(int maxPendingMessages)
+		public ProducerConfigBuilder MaxPendingMessages(int maxPendingMessages)
 		{
 			_conf.MaxPendingMessages = maxPendingMessages;
-			
+            return this;
 		}
 
-		public void MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
+		public ProducerConfigBuilder MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
 		{
 			_conf.MaxPendingMessagesAcrossPartitions = maxPendingMessagesAcrossPartitions;
-			
+            return this;
 		}
 
-		public void BlockIfQueueFull(bool blockIfQueueFull)
+		public ProducerConfigBuilder BlockIfQueueFull(bool blockIfQueueFull)
 		{
-			//conf.q.BlockIfQueueFull = BlockIfQueueFull;
-			
+			_conf.BlockIfQueueFull = blockIfQueueFull;
+            return this;
 		}
 
-		public void MessageRoutingMode(MessageRoutingMode messageRouteMode)
+		public ProducerConfigBuilder MessageRoutingMode(MessageRoutingMode messageRouteMode)
 		{
 			_conf.MessageRoutingMode = messageRouteMode;
-			
+            return this;
 		}
 
-		public void CompressionType(ICompressionType compressionType)
+		public ProducerConfigBuilder CompressionType(ICompressionType compressionType)
 		{
 			_conf.CompressionType = compressionType;
-			
+            return this;
 		}
 
-		public void HashingScheme(HashingScheme hashingScheme)
+		public ProducerConfigBuilder HashingScheme(HashingScheme hashingScheme)
 		{
 			_conf.HashingScheme = hashingScheme;
-			
+            return this;
 		}
 
-		public void MessageRouter(IMessageRouter messageRouter)
+		public ProducerConfigBuilder MessageRouter(IMessageRouter messageRouter)
 		{
 			_conf.CustomMessageRouter = messageRouter;
-			
+            return this;
 		}
 
-		public void EnableBatching(bool batchMessagesEnabled)
+		public ProducerConfigBuilder EnableBatching(bool batchMessagesEnabled)
 		{
 			_conf.BatchingEnabled = batchMessagesEnabled;
-			
+            return this;
 		}
 
-		public void CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public ProducerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
-			
+            return this;
 		}
 
-		public void AddEncryptionKey(string key)
+		public ProducerConfigBuilder AddEncryptionKey(string key)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("Encryption key cannot be blank or null");
 			_conf.EncryptionKeys.Add(key);
-			
+            return this;
 		}
 
-		public void CryptoFailureAction(ProducerCryptoFailureAction action)
+		public ProducerConfigBuilder CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
-			
+            return this;
 		}
 
-		public void BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			_conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
-			
+            return this;
 		}
 
-		public void RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
+		public ProducerConfigBuilder RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
 		{
 			_conf.BatchingPartitionSwitchFrequencyByPublishDelay = frequency;
-			
+            return this;
 		}
 
-		public void BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
+		public ProducerConfigBuilder BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
 		{
 			_conf.BatchingMaxMessages = batchMessagesMaxMessagesPerBatch;
-			
+            return this;
 		}
 
-		public void BatchingMaxBytes(int batchingMaxBytes)
+		public ProducerConfigBuilder BatchingMaxBytes(int batchingMaxBytes)
 		{
 			_conf.BatchingMaxBytes = batchingMaxBytes;
-			
+            return this;
 		}
 
-		public void BatcherBuilder(IBatcherBuilder batcherBuilder)
+		public ProducerConfigBuilder BatcherBuilder(IBatcherBuilder batcherBuilder)
 		{
 			_conf.BatcherBuilder = batcherBuilder;
-			
+            return this;
 		}
 
 
-		public void InitialSequenceId(long initialSequenceId)
+		public ProducerConfigBuilder InitialSequenceId(long initialSequenceId)
 		{
 			_conf.InitialSequenceId = initialSequenceId;
-			
+            return this;
 		}
 
-		public void Property(string key, string value)
+		public ProducerConfigBuilder Property(string key, string value)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("property key cannot be blank or null");
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("property value cannot be blank or null");
 			_conf.Properties.Add(key, value);
-			
+            return this;
 		}
 
-		public void Properties(IDictionary<string, string> properties)
+		public ProducerConfigBuilder Properties(IDictionary<string, string> properties)
         {
             if (properties == null)
                 throw new ArgumentException("properties cannot be null");
@@ -190,40 +190,42 @@ namespace SharpPulsar.Akka.Configuration
 
                 _conf.Properties.Add(key, value);
             });
-			
+            return this;
 		}
 
-        public void Schema(ISchema schema)
+        public ProducerConfigBuilder Schema(ISchema schema)
         {
 			if(schema == null)
 				throw new ArgumentException("Schema is null");
-        }
-		public void Intercept(params IProducerInterceptor[] interceptors)
+            _conf.Schema = schema;
+            return this;
+		}
+		public ProducerConfigBuilder Intercept(params IProducerInterceptor[] interceptors)
 		{
 			if (_conf.Interceptors == null)
 			{
                 _conf.Interceptors = new List<IProducerInterceptor>();
 			}
             _conf.Interceptors.AddRange(interceptors.ToArray());
-			
+            return this;
+
 		}
 
-		public void AutoUpdatePartitions(bool autoUpdate)
+		public ProducerConfigBuilder AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
-			
+            return this;
 		}
 
-		public void EnableMultiSchema(bool multiSchema)
+		public ProducerConfigBuilder EnableMultiSchema(bool multiSchema)
 		{
 			_conf.MultiSchema = multiSchema;
-			
+            return this;
 		}
 
-		private void SetMessageRoutingMode()
+		private ProducerConfigBuilder SetMessageRoutingMode()
 		{
-
-			if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter == null)
+            if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter == null)
 			{
 				MessageRoutingMode(Api.MessageRoutingMode.RoundRobinPartition);
 			}
@@ -236,6 +238,7 @@ namespace SharpPulsar.Akka.Configuration
 			{
 				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + Api.MessageRoutingMode.CustomPartition);
 			}
+            return this;
 		}
 
 		public override string ToString()

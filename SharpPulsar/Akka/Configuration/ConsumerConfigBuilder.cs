@@ -36,13 +36,13 @@ namespace SharpPulsar.Akka.Configuration
 		private  long _defaultAckTimeoutMillisForDeadLetter = 30000L;
 
         public ConsumerConfigurationData ConsumerConfigurationData => _conf;
-		public void LoadConf(IDictionary<string, object> config)
+		public ConsumerConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
-			
-		}
+            return this;
+        }
 		
-		public void Topic(params string[] topicNames)
+		public ConsumerConfigBuilder Topic(params string[] topicNames)
 		{
 			if(topicNames == null || topicNames.Length < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -53,11 +53,11 @@ namespace SharpPulsar.Akka.Configuration
                 _conf.TopicNames.Add(topicName.Trim());
 
             });
-			
-			
+
+			return this;
 		}
 
-		public void Topics(IList<string> topicNames)
+		public ConsumerConfigBuilder Topics(IList<string> topicNames)
 		{
             if (topicNames == null || topicNames.Count < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -69,127 +69,128 @@ namespace SharpPulsar.Akka.Configuration
 
             });
 
-			
+            return this;
 		}
 
-		public void TopicsPattern(Regex topicsPattern)
+		public ConsumerConfigBuilder TopicsPattern(Regex topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
 			_conf.TopicsPattern = topicsPattern;
-			
+            return this;
 		}
 
-		public void TopicsPattern(string topicsPattern)
+		public ConsumerConfigBuilder TopicsPattern(string topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
 			_conf.TopicsPattern = new Regex(topicsPattern);
-			
+            return this;
 		}
 
-		public void SubscriptionName(string subscriptionName)
+		public ConsumerConfigBuilder SubscriptionName(string subscriptionName)
 		{
 			if(string.IsNullOrWhiteSpace(subscriptionName))
                 throw new NullReferenceException("subscriptionName cannot be blank");
 			_conf.SubscriptionName = subscriptionName;
-			
+            return this;
 		}
 
-		public void AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ConsumerConfigBuilder AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(ackTimeout != 0 || timeUnit.ToMillis(ackTimeout) < _minAckTimeoutMillis)
                 throw new ArgumentException( "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
 			_conf.AckTimeoutMillis = timeUnit.ToMillis(ackTimeout);
-			
+            return this;
 		}
 
-		public void AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ConsumerConfigBuilder AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(timeUnit.ToMillis(tickTime) < _minTickTimeMillis)
                 throw new ArgumentException("Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
 			_conf.TickDurationMillis = timeUnit.ToMillis(tickTime);
-			
+            return this;
 		}
 
-		public void NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ConsumerConfigBuilder NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			if(redeliveryDelay < 0)
                 throw new ArgumentException("redeliveryDelay needs to be >= 0");
 			_conf.NegativeAckRedeliveryDelayMicros = timeUnit.ToMicros(redeliveryDelay);
-			
+            return this;
 		}
 
-		public void SubscriptionType(SubscriptionType subscriptionType)
+		public ConsumerConfigBuilder SubscriptionType(SubscriptionType subscriptionType)
 		{
 			_conf.SubscriptionType = subscriptionType;
-			
+            return this;
 		}
 
-		public void MessageListener(IMessageListener messageListener)
+		public ConsumerConfigBuilder MessageListener(IMessageListener messageListener)
 		{
 			_conf.MessageListener = messageListener;
-			
+            return this;
 		}
 
-		public void ConsumerEventListener(IConsumerEventListener consumerEventListener)
+		public ConsumerConfigBuilder ConsumerEventListener(IConsumerEventListener consumerEventListener)
 		{
 			_conf.ConsumerEventListener = consumerEventListener;
-			
+            return this;
 		}
 
-		public void CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public ConsumerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
-			
+            return this;
 		}
 
-		public void CryptoFailureAction(ConsumerCryptoFailureAction? action)
+		public ConsumerConfigBuilder CryptoFailureAction(ConsumerCryptoFailureAction? action)
         {
             if (action != null) _conf.CryptoFailureAction = (ConsumerCryptoFailureAction) action;
-            
-        }
+			return this;
+		}
 
-		public void ReceiverQueueSize(int receiverQueueSize)
+		public ConsumerConfigBuilder ReceiverQueueSize(int receiverQueueSize)
 		{
 			if(receiverQueueSize < 0)
                 throw new ArgumentException("receiverQueueSize needs to be >= 0");
 			_conf.ReceiverQueueSize = receiverQueueSize;
-			
+            return this;
 		}
 
-		public void AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public ConsumerConfigBuilder AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			if(delay < 0)
                 throw new ArgumentException("acknowledgmentGroupTime needs to be >= 0");
 			_conf.AcknowledgementsGroupTimeMicros = unit.ToMicros(delay);
-			
+            return this;
 		}
 
-		public void ConsumerName(string consumerName)
+		public ConsumerConfigBuilder ConsumerName(string consumerName)
 		{
 			if(string.IsNullOrWhiteSpace(consumerName))
                 throw new ArgumentException("consumerName cannot be blank");
 			_conf.ConsumerName = consumerName;
-			
+            return this;
 		}
 
-		public void PriorityLevel(int priorityLevel)
+		public ConsumerConfigBuilder PriorityLevel(int priorityLevel)
 		{
 			if(priorityLevel < 0)
                 throw new ArgumentException("priorityLevel needs to be >= 0");
 			_conf.PriorityLevel = priorityLevel;
-			
+            return this;
 		}
 
-		public void Property(string key, string value)
+		public ConsumerConfigBuilder Property(string key, string value)
         {
             if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("property key/value cannot be blank");
             if (key != null) _conf.Properties.Add(key, value);
-        }
+            return this;
+		}
 
-		public void Properties(IDictionary<string, string> properties)
+		public ConsumerConfigBuilder Properties(IDictionary<string, string> properties)
 		{
 			if(properties.Count == 0)
                 throw new ArgumentException("properties cannot be empty");
@@ -202,50 +203,50 @@ namespace SharpPulsar.Akka.Configuration
 				_conf.Properties.Add(entry.Key, entry.Value);
 
 			});
-            
+			return this;
 		}
 
-		public void MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
+		public ConsumerConfigBuilder MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
 		{
 			if(maxTotalReceiverQueueSizeAcrossPartitions < 0)
                 throw new ArgumentException("maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0");
 			_conf.MaxTotalReceiverQueueSizeAcrossPartitions = maxTotalReceiverQueueSizeAcrossPartitions;
-			
+            return this;
 		}
 
-		public void ReadCompacted(bool readCompacted)
+		public ConsumerConfigBuilder ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
-			
+            return this;
 		}
 
-		public void PatternAutoDiscoveryPeriod(int periodInMinutes)
+		public ConsumerConfigBuilder PatternAutoDiscoveryPeriod(int periodInMinutes)
 		{
 			if(periodInMinutes < 0)
                 throw new ArgumentException("periodInMinutes needs to be >= 0");
 			_conf.PatternAutoDiscoveryPeriod = periodInMinutes;
-			
+            return this;
 		}
 
-		public void SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
+		public ConsumerConfigBuilder SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
 		{
 			_conf.SubscriptionInitialPosition = subscriptionInitialPosition;
-			
+            return this;
 		}
 
-		public void SubscriptionTopicsMode(RegexSubscriptionMode mode)
+		public ConsumerConfigBuilder SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{
 			_conf.RegexSubscriptionMode = mode;
-			
+            return this;
 		}
 
-		public void ReplicateSubscriptionState(bool replicateSubscriptionState)
+		public ConsumerConfigBuilder ReplicateSubscriptionState(bool replicateSubscriptionState)
 		{
 			_conf.ReplicateSubscriptionState = replicateSubscriptionState;
-			
+            return this;
 		}
 
-		public void Intercept(params IConsumerInterceptor[] interceptors)
+		public ConsumerConfigBuilder Intercept(params IConsumerInterceptor[] interceptors)
 		{
 			if (_conf.Interceptors == null)
 			{
@@ -253,10 +254,10 @@ namespace SharpPulsar.Akka.Configuration
 			}
 
             _conf.Interceptors.AddRange(new List<IConsumerInterceptor>(interceptors));
-			
+            return this;
 		}
 
-		public void DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
+		public ConsumerConfigBuilder DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
 		{
 			if (deadLetterPolicy != null)
 			{
@@ -266,47 +267,48 @@ namespace SharpPulsar.Akka.Configuration
 				}
 				_conf.DeadLetterPolicy = deadLetterPolicy;
 			}
-			
+            return this;
 		}
 
-		public void AutoUpdatePartitions(bool autoUpdate)
+		public ConsumerConfigBuilder AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
-			
+            return this;
 		}
 
-		public void StartMessageIdInclusive()
+		public ConsumerConfigBuilder StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
-			
+            return this;
 		}
 
-		public void BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
+		public ConsumerConfigBuilder BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
 		{
 			if(batchReceivePolicy == null)
                 throw new ArgumentException("batchReceivePolicy must not be null.");
 			batchReceivePolicy.Verify();
 			_conf.BatchReceivePolicy = batchReceivePolicy;
-			
+            return this;
 		}
 
-        public void Schema(ISchema schema)
+        public ConsumerConfigBuilder Schema(ISchema schema)
         {
             if (schema == null)
                 throw new ArgumentException("Schama is null");
             _conf.Schema = schema;
-        }
+            return this;
+		}
 		public override string ToString()
 		{
 			return _conf?.ToString();
 		}
 
 
-        public void KeySharedPolicy(KeySharedPolicy keySharedPolicy)
+        public ConsumerConfigBuilder KeySharedPolicy(KeySharedPolicy keySharedPolicy)
 		{
 			keySharedPolicy.Validate();
 			_conf.KeySharedPolicy = keySharedPolicy;
-			
+            return this;
 		}
 	}
 

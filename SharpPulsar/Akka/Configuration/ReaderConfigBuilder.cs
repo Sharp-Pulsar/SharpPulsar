@@ -29,85 +29,86 @@ namespace SharpPulsar.Akka.Configuration
         private ReaderConfigurationData _conf = new ReaderConfigurationData();
 
         public ReaderConfigurationData ReaderConfigurationData => _conf;
-		public void LoadConf(IDictionary<string, object> config)
+		public ReaderConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			var startMessageId = _conf.StartMessageId;
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
 			_conf.StartMessageId = startMessageId;
-			
-		}
+            return this;
+        }
 
-		public void Topic(string topicName)
+		public ReaderConfigBuilder Topic(string topicName)
 		{
 			_conf.TopicName = topicName.Trim();
-			
+            return this;
 		}
 
-		public void StartMessageId(IMessageId startMessageId)
+		public ReaderConfigBuilder StartMessageId(IMessageId startMessageId)
 		{
 			_conf.StartMessageId = startMessageId;
-			
+            return this;
 		}
 
-		public void StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ReaderConfigBuilder StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			_conf.StartMessageFromRollbackDurationInSec = timeUnit.ToSecs(rollbackDuration);
-			
+            return this;
 		}
 
-		public void StartMessageIdInclusive()
+		public ReaderConfigBuilder StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
-			
+            return this;
 		}
 
-		public  void ReaderListener(IReaderListener readerListener)
+		public  ReaderConfigBuilder ReaderListener(IReaderListener readerListener)
 		{
 			_conf.ReaderListener = readerListener;
-			
+            return this;
 		}
 
-		public void CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public ReaderConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
-			
+            return this;
 		}
 
-		public void CryptoFailureAction(ConsumerCryptoFailureAction action)
+		public ReaderConfigBuilder CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
-			
+            return this;
 		}
 
-		public void ReceiverQueueSize(int receiverQueueSize)
+		public ReaderConfigBuilder ReceiverQueueSize(int receiverQueueSize)
 		{
 			_conf.ReceiverQueueSize = receiverQueueSize;
-			
+            return this;
 		}
 
-		public void ReaderName(string readerName)
+		public ReaderConfigBuilder ReaderName(string readerName)
 		{
 			_conf.ReaderName = readerName;
-			
+            return this;
 		}
 
-		public  void SubscriptionRolePrefix(string subscriptionRolePrefix)
+		public  ReaderConfigBuilder SubscriptionRolePrefix(string subscriptionRolePrefix)
 		{
 			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
-			
+            return this;
 		}
 
-		public void ReadCompacted(bool readCompacted)
+		public ReaderConfigBuilder ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
-			
+            return this;
 		}
-		public void Schema(ISchema schema)
+		public ReaderConfigBuilder Schema(ISchema schema)
 		{
 			if(schema == null)
 				throw new ArgumentException("Schema is null");
             _conf.Schema = schema;
-        }
+            return this;
+		}
     }
 
 }

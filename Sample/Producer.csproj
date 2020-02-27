@@ -10,4 +10,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+  </ItemGroup>
+
 </Project>
