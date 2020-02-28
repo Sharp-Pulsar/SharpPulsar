@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
@@ -13,8 +14,14 @@ namespace SharpPulsar.Akka.Producer
         private int _partitions;
         public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
         {
+            var routees = new List<string>();
+            var path = Context.Self.Path;
+            for (var i = 0; i < configuration.Partitions; i++)
+            {
+                routees.Add($"{path}/Partition/{i}");
+            }
             //Surely this is pulsar's custom routing policy ;)
-            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, producerid, network).WithRouter(new ConsistentHashingPool(configuration.Partitions)), "PartitionedProducer");
+            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, producerid, network, true).WithRouter(new ConsistentHashingGroup(routees)), "Partition");
             Receive<RegisteredProducer>(p =>
             {
                 if (_partitions++ == configuration.Partitions)

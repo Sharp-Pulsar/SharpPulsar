@@ -68,6 +68,11 @@ namespace SharpPulsar.Akka.Producer
                 Become(()=> RegisterProducer(conf));
             });
             ReceiveAny(_=> Stash.Stash());
+            SendPartitionMetadataRequestCommand(conf);
+        }
+
+        private void SendPartitionMetadataRequestCommand(ProducerConfigurationData conf)
+        {
             var requestId = _requestIdGenerator++;
             var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
             var pay = new Payload(request.Array, requestId, "CommandPartitionedTopicMetadata");

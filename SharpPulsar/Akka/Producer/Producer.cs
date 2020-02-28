@@ -9,6 +9,7 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -28,7 +29,6 @@ namespace SharpPulsar.Akka.Producer
 
         private string _connectionId;
         private string _connectedSince;
-        private readonly int _partitionIndex;
 
         private readonly CompressionCodec _compressor;
 
@@ -44,8 +44,11 @@ namespace SharpPulsar.Akka.Producer
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
-        public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
+        private bool _isPartitioned;
+        private int _partitionIndex;
+        public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
         {
+            _isPartitioned = isPartitioned;
             _clientConfiguration = clientConfiguration;
             _producerInterceptor = configuration.Interceptors;
             _schema = configuration.Schema;
@@ -58,7 +61,7 @@ namespace SharpPulsar.Akka.Producer
              {
                  _multiSchemaMode = MultiSchemaMode.Disabled;
              }
-            if (!string.IsNullOrWhiteSpace(_producerName))
+            if (!string.IsNullOrWhiteSpace(_producerName) || isPartitioned)
 			{
 				_userProvidedProducerName = true;
 			}
@@ -96,9 +99,9 @@ namespace SharpPulsar.Akka.Producer
             Become(LookUpBroker);
 		}
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
         {
-            return Props.Create(()=> new Producer(clientConfiguration, configuration, producerid, network));
+            return Props.Create(()=> new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
         }
 
         private void Init()
@@ -148,14 +151,23 @@ namespace SharpPulsar.Akka.Producer
                 AddKey();
             });
             ReceiveAny(x => Stash.Stash());
+            if (_isPartitioned)
+            {
+                var index = int.Parse(Self.Path.Name);
+                _producerId = index;
+               _producerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
+            }
+            SendNewProducerCommand();
+        }
+        private void SendNewProducerCommand()
+        {
             var requestid = _requestId++;
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
-            var request = Commands.NewProducer(_configuration.TopicName, _producerId++, requestid, _producerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
+            var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, _producerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request.Array, requestid, "CommandProducer");
             _pendingLookupRequests.Add(requestid, payload);
             _network.Tell(payload);
         }
-        
         private void LookUpBroker()
         {
             Receive<BrokerLookUp>(l =>
@@ -172,6 +184,11 @@ namespace SharpPulsar.Akka.Producer
                 AddKey();
             });
             ReceiveAny(_ => Stash.Stash());
+            SendBrokerLookUpCommand();
+        }
+
+        private void SendBrokerLookUpCommand()
+        {
             var requestid = _requestId++;
             var request = Commands.NewLookup(_configuration.TopicName, false, requestid);
             var load = new Payload(request.Array, requestid, "BrokerLookUp");
