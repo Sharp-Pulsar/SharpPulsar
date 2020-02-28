@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,7 +9,11 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.IO;
 using SharpPulsar.Akka;
+using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
 
 namespace Sample
 {
@@ -18,10 +23,19 @@ namespace Sample
 
         static async Task Main(string[] args)
         {
-            //InternalLoggerFactory.DefaultFactory = SharpPulsar.Utility.Log.Logger;//.AddProvider(new ConsoleLoggerProvider(new OptionsMonitor<ConsoleLoggerOptions>(null, null, null)));
+            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            
+            var jsonSchem = JsonSchema.Of(typeof(Foo));
+            
             var pulsarSystem = new PulsarSystem(new ClientConfigurationData());
-            var system = ActorSystem.Create("Yyy");
-            system.ActorOf(Act.Prop());
+            
+            var producerConfig = new ProducerConfigBuilder()
+                .ProducerName("Test").AddEncryptionKey("sessions").ProducerConfigurationData;
+            
+            pulsarSystem.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+
+            pulsarSystem.Send(new Send(new Foo(), "Test"));
+            pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             while (true)
             {
                 
@@ -30,6 +44,10 @@ namespace Sample
         }
     }
 
+    public class Foo
+    {
+        public string Name { get; set; }
+    }
     public class Act:UntypedActor
     {
         public Act()

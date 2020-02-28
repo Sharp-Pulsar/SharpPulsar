@@ -39,20 +39,15 @@ namespace SharpPulsar.Api.Interceptor
 	/// <seealso cref="IProducerBuilder.intercept(IProducerInterceptor...)"/>.
 	/// </para>
 	/// </summary>
-	public interface IProducerInterceptor : IDisposable
+	public interface IProducerInterceptor
 	{
-
-		/// <summary>
-		/// Close the interceptor.
-		/// </summary>
-		void Close();
 
 		/// <summary>
 		/// Check whether the interceptor is eligible for this message.
 		/// </summary>
 		/// <param name="message"> message to send </param>
 		/// <returns> whether the interceptor can be applied to this particular message. </returns>
-		bool Eligible<T>(IMessage<T> message);
+		bool Eligible<T>(IMessage message);
 
 		/// <summary>
 		/// This is called from <seealso cref="IProducer.send(object)"/> and {@link
@@ -79,7 +74,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message);
+		IMessage BeforeSend(string producer, IMessage message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been
@@ -100,7 +95,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception);
+		void OnSendAcknowledgement(string producer, IMessage message, IMessageId msgId, Exception exception);
 	}
 
 }

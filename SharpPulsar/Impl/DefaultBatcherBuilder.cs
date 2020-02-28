@@ -24,9 +24,9 @@ namespace SharpPulsar.Impl
 	using IBatcherBuilder = Api.IBatcherBuilder;
 	public class DefaultBatcherBuilder : IBatcherBuilder
 	{
-		public IBatchMessageContainer Build<T>()
+		public IBatchMessageContainer Build()
 		{
-			return new BatchMessageContainerImpl<T>();
+			return new BatchMessageContainerImpl();
 		}
 
 	}

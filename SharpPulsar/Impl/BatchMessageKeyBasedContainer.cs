@@ -42,12 +42,12 @@ namespace SharpPulsar.Impl
 	/// batched into multiple batch messages:
 	/// [(k1, v1), (k1, v2), (k1, v3)], [(k2, v1), (k2, v2), (k2, v3)], [(k3, v1), (k3, v2), (k3, v3)]
 	/// </summary>
-	public class BatchMessageKeyBasedContainer<T> : AbstractBatchMessageContainer<T>
+	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
 	{
 
-		private IDictionary<string, KeyedBatch<T>> _batches = new Dictionary<string, KeyedBatch<T>>();
+		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
 
-		public override bool Add(MessageImpl<T> msg, SendCallback callback)
+		public override (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -59,8 +59,8 @@ namespace SharpPulsar.Impl
 			var part = _batches[key];
 			if (part == null)
 			{
-				part = new KeyedBatch<T>();
-				part.AddMsg(msg, callback);
+				part = new KeyedBatch();
+				part.AddMsg(msg);
 				part.CompressionType = CompressionType.GetCompressionTypeValue<CompressionType>();
 				part.Compressor = Compressor;
 				part.MaxBatchSize = MaxBatchSize;
@@ -70,26 +70,27 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				part.AddMsg(msg, callback);
+				part.AddMsg(msg);
 			}
-			return BatchFull;
+			return (msg.SequenceId, BatchFull);
 		}
 
 		public override void Clear()
 		{
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
-			_batches = new Dictionary<string, KeyedBatch<T>>();
+			_batches = new Dictionary<string, KeyedBatch>();
 		}
 
+        public IDictionary<string, KeyedBatch> Batches => _batches;
 		public override bool Empty => _batches.Count == 0;
 
-        public override void Discard(System.Exception ex)
+        public override void Discard(Exception ex)
 		{
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				_batches.ToList().ForEach(x => x.Value.FirstCallback.SendComplete(ex));
+				_batches.ToList().ForEach(x => x.Value);
 			}
 			catch (System.Exception T)
 			{
@@ -101,48 +102,7 @@ namespace SharpPulsar.Impl
 
 		public override bool MultiBatches => true;
 
-        private OpSendMsg<T> CreateOpSendMsg(KeyedBatch<T> keyedBatch)
-		{
-			var encryptedPayload = Producer.EncryptMessage(keyedBatch.messageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-			if (encryptedPayload.ReadableBytes > ClientCnx.MaxMessageSize)
-			{
-				keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
-				return null;
-			}
-
-			var numMessagesInBatch = keyedBatch.Messages.Count;
-			long currentBatchSizeBytes = 0;
-			foreach (var message in keyedBatch.Messages)
-			{
-				currentBatchSizeBytes += message.DataBuffer.ReadableBytes;
-			}
-			keyedBatch.messageMetadata.SetNumMessagesInBatch(numMessagesInBatch);
-			ByteBufPair cmd = Producer.SendMessage(Producer.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.messageMetadata.Build(), encryptedPayload);
-
-			var op = OpSendMsg<T>.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId, keyedBatch.FirstCallback);
-
-			op.NumMessagesInBatch = numMessagesInBatch;
-			op.BatchSizeByte = currentBatchSizeBytes;
-			return op;
-		}
-
-		public override IList<OpSendMsg<T>> CreateOpSendMsgs()
-		{
-			var result = new List<OpSendMsg<T>>();
-			var list = new List<KeyedBatch<T>>(_batches.Values);
-			list.Sort();
-			foreach (var keyedBatch in list)
-			{
-				var op = CreateOpSendMsg(keyedBatch);
-				if (op != null)
-				{
-					result.Add(op);
-				}
-			}
-			return result;
-		}
-
-		public override bool HasSameSchema(MessageImpl<T> msg)
+		public override bool HasSameSchema(MessageImpl msg)
 		{
 			var key = GetKey(msg);
 			var part = _batches[key];
@@ -150,14 +110,14 @@ namespace SharpPulsar.Impl
 			{
 				return true;
 			}
-			if (!part.messageMetadata.HasSchemaVersion())
+			if (!part.MessageMetadata.HasSchemaVersion())
 			{
 				return msg.SchemaVersion == null;
 			}
-			return Equals(msg.SchemaVersion, part.messageMetadata.GetSchemaVersion().ToByteArray());
+			return Equals(msg.SchemaVersion, part.MessageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-		private string GetKey(MessageImpl<T> msg)
+		private string GetKey(MessageImpl msg)
 		{
 			if (msg.HasOrderingKey())
 			{
@@ -166,14 +126,14 @@ namespace SharpPulsar.Impl
 			return msg.Key;
 		}
 
-		public class KeyedBatch<T>
+		public class KeyedBatch
 		{
-			internal MessageMetadata.Builder messageMetadata = MessageMetadata.NewBuilder();
+			internal MessageMetadata.Builder MessageMetadata = Protocol.Proto.MessageMetadata.NewBuilder();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
 			internal IByteBuffer BatchedMessageMetadataAndPayload;
 
-			internal IList<MessageImpl<T>> Messages = new List<MessageImpl<T>>();
+			internal IList<MessageImpl> Messages = new List<MessageImpl>();
 			internal SendCallback PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
@@ -182,26 +142,25 @@ namespace SharpPulsar.Impl
 			internal string ProducerName;
 
 			// keep track of callbacks for individual messages being published in a batch
-			internal SendCallback FirstCallback;
-
-			public virtual IByteBuffer CompressedBatchMetadataAndPayload
+			
+			public IByteBuffer CompressedBatchMetadataAndPayload
 			{
 				get
 				{
 
-					foreach (var Msg in Messages)
+					foreach (var msg in Messages)
 					{
-						MessageMetadata.Builder msgBuilder = Msg.MessageBuilder;
-						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, Msg.DataBuffer, BatchedMessageMetadataAndPayload);
-						msgBuilder.Recycle();
+						MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
+						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, BatchedMessageMetadataAndPayload);
+						
 					}
 					int uncompressedSize = BatchedMessageMetadataAndPayload.ReadableBytes;
 					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload);
 					BatchedMessageMetadataAndPayload.Release();
 					if (CompressionType != CompressionType.None)
 					{
-						messageMetadata.SetCompression(CompressionType);
-						messageMetadata.SetUncompressedSize(uncompressedSize);
+						MessageMetadata.SetCompression(CompressionType);
+						MessageMetadata.SetUncompressedSize(uncompressedSize);
 					}
     
 					// Update the current max batch size using the uncompressed size, which is what we need in any case to
@@ -211,58 +170,46 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			public virtual void AddMsg(MessageImpl<T> msg, SendCallback callback)
+			public virtual void AddMsg(MessageImpl msg)
 			{
 				if (Messages.Count == 0)
 				{
 					SequenceId = Commands.InitBatchMessageMetadata(msg.MessageBuilder);
 					if (msg.HasKey())
 					{
-						messageMetadata.SetPartitionKey(msg.Key);
+						MessageMetadata.SetPartitionKey(msg.Key);
 						if (msg.HasBase64EncodedKey())
 						{
-							messageMetadata.SetPartitionKeyB64Encoded(true);
+							MessageMetadata.SetPartitionKeyB64Encoded(true);
 						}
 					}
 					if (msg.HasOrderingKey())
 					{
-						messageMetadata.SetOrderingKey(ByteString.CopyFrom((byte[])(object)msg.OrderingKey));
+						MessageMetadata.SetOrderingKey(ByteString.CopyFrom((byte[])(object)msg.OrderingKey));
 					}
 					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize)));
-					FirstCallback = callback;
+					
 				}
 
-                PreviousCallback?.AddCallback(msg, callback);
-                PreviousCallback = callback;
 				Messages.Add(msg);
 			}
 
-			public virtual void Discard(System.Exception ex)
+			public virtual void Discard(Exception ex)
 			{
-				try
-                {
-                    // Need to protect ourselves from any exception being thrown in the future handler from the application
-                    FirstCallback?.SendComplete(ex);
-                }
-				catch (System.Exception T)
-				{
-					Log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", TopicName, ProducerName, SequenceId, T);
-				}
 				Clear();
 			}
 
 			public virtual void Clear()
 			{
-				Messages = new List<MessageImpl<T>>();
-				FirstCallback = null;
+				Messages = new List<MessageImpl>();
 				PreviousCallback = null;
-				messageMetadata.Clear();
+				MessageMetadata = Protocol.Proto.MessageMetadata.Builder.Create();
 				SequenceId = -1;
 				BatchedMessageMetadataAndPayload = null;
 			}
 		}
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(BatchMessageKeyBasedContainer<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(BatchMessageKeyBasedContainer));
 
 	}
 

@@ -78,26 +78,26 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual TaskCompletionSource<IMessageId> SendAsync(IMessage<T> message)
+		public virtual TaskCompletionSource<IMessageId> SendAsync(IMessage message)
 		{
 			return InternalSendAsync(message);
 		}
 
-		public  ITypedMessageBuilder<T> NewMessage()
+		public  ITypedMessageBuilder NewMessage()
 		{
-			return new TypedMessageBuilderImpl<T>(this, Schema);
+			return new TypedMessageBuilderImpl("", Schema);
 		}
 
-		public virtual ITypedMessageBuilder<T> NewMessage(ISchema<T> schema)
+		public virtual ITypedMessageBuilder NewMessage(ISchema schema)
 		{
 			if (schema == null)
 				throw new  NullReferenceException("Schema is null");
-			return new TypedMessageBuilderImpl<T>(this, schema);
+			return new TypedMessageBuilderImpl("", schema);
 		}
 
 		// TODO: add this method to the Producer interface
 		// @Override
-		public virtual ITypedMessageBuilder<T> NewMessage(ITransaction txn)
+		public virtual ITypedMessageBuilder NewMessage(ITransaction txn)
 		{
             if (!(txn is TransactionImpl impl)) throw new ArgumentException("Only transactional messages supported");
             // check the producer has proper settings to send transactional messages
@@ -106,12 +106,12 @@ namespace SharpPulsar.Impl
                 throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
             }
 
-            return new TypedMessageBuilderImpl<T>(this, Schema, impl);
+            return new TypedMessageBuilderImpl("", Schema, impl);
 
         }
 
-		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(IMessage<T> message);
-		public virtual IMessageId Send(IMessage<T> message)
+		public abstract TaskCompletionSource<IMessageId> InternalSendAsync(IMessage message);
+		public virtual IMessageId Send(IMessage message)
 		{
 			try
 			{
@@ -169,7 +169,7 @@ namespace SharpPulsar.Impl
 			return ProducerCreatedTask;
 		}
 
-		public virtual IMessage<T> BeforeSend(IMessage<T> message)
+		public virtual IMessage BeforeSend(IMessage message)
         {
             if (Interceptors != null)
 			{
@@ -179,7 +179,7 @@ namespace SharpPulsar.Impl
             return message;
         }
 
-		public virtual void OnSendAcknowledgement(IMessage<T> message, IMessageId msgId, System.Exception exception)
+		public virtual void OnSendAcknowledgement(IMessage message, IMessageId msgId, System.Exception exception)
         {
             Interceptors?.OnSendAcknowledgement(this, message, msgId,exception);
         }
@@ -195,21 +195,6 @@ namespace SharpPulsar.Impl
         }
 
 		
-
-        public static explicit operator ProducerBase<object>(ProducerBase<T> v)
-        {
-            throw new NotImplementedException();
-        }
-
-        /*public static explicit operator ProducerBase<object>(ProducerBase<T> v)
-        {
-            throw new NotImplementedException();
-        }
-
-        public static explicit operator ProducerBase<T>(ProducerBase<T> v)
-        {
-            throw new NotImplementedException();
-        }*/
     }
 	public enum MultiSchemaMode
 	{

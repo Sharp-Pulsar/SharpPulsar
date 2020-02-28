@@ -29,6 +29,7 @@ namespace SharpPulsar.Akka.Producer
                     Context.Parent.Tell(new RegisteredProducer(producerid, configuration.ProducerName, configuration.TopicName));
                 }
             });
+            //listen to partition change messsage
         }
         public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
         {

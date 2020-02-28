@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System.Collections.Generic;
 using System.IO;
+using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +32,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(MessageImpl msg);
+        (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -55,23 +56,9 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="producer"> producer </param>
 		/// 
-		ProducerImpl Producer {set;}
+		string Producer {set;}
 
-		/// <summary>
-		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
-		/// </summary>
-		/// <returns> list of OpSendMsg </returns>
-		/// <exception cref="IOException"> </exception>
-		/// 
-		IList<OpSendMsg<T>> CreateOpSendMsgs();
-
-		/// <summary>
-		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
-		/// </summary>
-		/// <returns> OpSendMsg </returns>
-		/// <exception cref="IOException"> </exception>
-		/// 
-		OpSendMsg<T> CreateOpSendMsg();
+		
 	}
 
 }

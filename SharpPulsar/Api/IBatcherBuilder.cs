@@ -51,7 +51,7 @@ namespace SharpPulsar.Api
 		/// <summary>
 		/// Build a new batch message container. </summary>
 		/// <returns> new batch message container </returns>
-		IBatchMessageContainer Build<T>();
+		IBatchMessageContainer Build();
 
 	}
 

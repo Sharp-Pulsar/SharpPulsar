@@ -108,14 +108,14 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
-		ITypedMessageBuilder<T> NewMessage();
+		ITypedMessageBuilder NewMessage();
 
 		/// <summary>
 		/// Create a new message builder with schema, not required same parameterized type with the producer.
 		/// </summary>
 		/// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
 		/// <seealso cref= #newMessage() </seealso>
-		ITypedMessageBuilder<T> NewMessage(ISchema<T> schema);
+		ITypedMessageBuilder NewMessage(ISchema schema);
 
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.

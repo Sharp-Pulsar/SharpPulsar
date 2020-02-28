@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
+using SharpPulsar.Impl.Conf;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
@@ -38,17 +39,14 @@ namespace SharpPulsar.Impl
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainerImpl : AbstractBatchMessageContainer<T>
+	public class BatchMessageContainerImpl : AbstractBatchMessageContainer
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
-        private readonly MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
+        private  MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private IByteBuffer _batchedMessageMetadataAndPayload;
 		private IList<MessageImpl> _messages = new List<MessageImpl>();
-		protected internal SendCallback PreviousCallback = null;
-		// keep track of callbacks for individual messages being published in a batch
-		protected internal SendCallback FirstCallback;
 
         public override bool HasSameSchema(MessageImpl msg)
         {
@@ -63,7 +61,7 @@ namespace SharpPulsar.Impl
             return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-        public override bool Add(MessageImpl msg, SendCallback callback)
+        public override (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg)
 		{
 
 			if (Log.IsEnabled(LogLevel.Debug))
@@ -76,12 +74,9 @@ namespace SharpPulsar.Impl
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(MessageMetadata.NewBuilder());
-				FirstCallback = callback;
-				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize));
+				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize));
 			}
 
-            PreviousCallback?.AddCallback(msg, callback);
-            PreviousCallback = callback;
 			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
 			_messages.Add(msg);
 
@@ -91,12 +86,11 @@ namespace SharpPulsar.Impl
 				_messageMetadata.SetSequenceId(_lowestSequenceId);
 			}
 			_highestSequenceId = msg.SequenceId;
-			Producer.LastSequenceIdPushed = msg.SequenceId;
 
-			return BatchFull;
+			return (msg.SequenceId, BatchFull);
 		}
 
-		private IByteBuffer CompressedBatchMetadataAndPayload
+		public IByteBuffer CompressedBatchMetadataAndPayload
 		{
 			get
 			{
@@ -126,11 +120,7 @@ namespace SharpPulsar.Impl
 						throw new System.Exception(th.Message);
 					}
 				}
-				// Recycle messages only once they serialized successfully in batch
-				foreach (var msg in _messages)
-				{
-					msg.MessageBuilder.Recycle();
-				}
+				
 				var uncompressedSize = _batchedMessageMetadataAndPayload.ReadableBytes;
 				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
 				_batchedMessageMetadataAndPayload.Release();
@@ -149,12 +139,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
+        public List<MessageImpl> Messages => _messages.ToList();
+        public MessageMetadata.Builder Metadata => _messageMetadata;
+        public int GetNumMessagesInBatch => NumMessagesInBatch;
+        public long HighestSequenceId => _highestSequenceId;
 		public override void Clear()
 		{
-			_messages = new List<MessageImpl<T>>();
-			FirstCallback = null;
-			PreviousCallback = null;
-			_messageMetadata.Clear();
+			_messages = new List<MessageImpl>();
+			_messageMetadata = MessageMetadata.NewBuilder();
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
 			_lowestSequenceId = -1L;
@@ -166,41 +158,17 @@ namespace SharpPulsar.Impl
 
         public override void Discard(System.Exception ex)
 		{
-			try
-            {
-                // Need to protect ourselves from any exception being thrown in the future handler from the application
-                FirstCallback?.SendComplete(ex);
-            }
-			catch (System.Exception T)
-			{
-				Log.LogWarning("[{}] [{}] Got exception while completing the callback for msg {}:", TopicName, ProducerName, _lowestSequenceId, T);
-			}
 			Clear();
 		}
 
-		public override bool MultiBatches => false;
+        public long LowestSequenceId {
+            get => _lowestSequenceId;
+            set => _lowestSequenceId = value;
+        }
+        public override bool MultiBatches => false;
 
-        public new OpSendMsg<T> CreateOpSendMsg()
-		{
-			var encryptedPayload = Producer.EncryptMessage(_messageMetadata, CompressedBatchMetadataAndPayload);
-			if (encryptedPayload.ReadableBytes > ClientCnx.MaxMessageSize)
-			{
-				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
-				return null;
-			}
-			_messageMetadata.SetNumMessagesInBatch(NumMessagesInBatch);
-			_messageMetadata.SetHighestSequenceId(_highestSequenceId);
-            var cmd = Producer.SendMessage(Producer.ProducerId, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata.Build(), encryptedPayload);
-
-			var op = OpSendMsg<T>.Create(_messages, cmd, _messageMetadata.SequenceId(), _messageMetadata.HighestSequenceId, FirstCallback);
-
-			op.NumMessagesInBatch = NumMessagesInBatch;
-			op.BatchSizeByte = CurrentBatchSizeBytes;
-			_lowestSequenceId = -1L;
-			return op;
-		}
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BatchMessageContainerImpl<T>>();
+        
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BatchMessageContainerImpl>();
 	}
 
 }

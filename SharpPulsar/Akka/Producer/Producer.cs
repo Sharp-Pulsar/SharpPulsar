@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Akka.Actor;
+using DotNetty.Buffers;
+using DotNetty.Common;
+using Google.Protobuf;
 using Org.BouncyCastle.Crypto;
+using SharpPulsar.Akka.Handlers;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
@@ -11,10 +15,16 @@ using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Shared;
+using SharpPulsar.Utility;
+using IMessage = SharpPulsar.Api.IMessage;
 
 namespace SharpPulsar.Akka.Producer
 {
@@ -24,14 +34,15 @@ namespace SharpPulsar.Akka.Producer
         private IActorRef _network;
         private ProducerConfigurationData _configuration;
         private long _producerId;
-        public string _producerName;
+        public string ProducerName;
         private readonly bool _userProvidedProducerName = false;
 
         private string _connectionId;
         private string _connectedSince;
-
+        private long _lastSequenceIdPushed;
+        private long _lastSequenceId;
         private readonly CompressionCodec _compressor;
-
+        private readonly IHandler _handler;
         private readonly MessageCrypto _msgCrypto = null;
 
         private readonly IDictionary<string, string> _metadata;
@@ -39,6 +50,7 @@ namespace SharpPulsar.Akka.Producer
         private long _sequenceId;
         private long _requestId;
         private MultiSchemaMode _multiSchemaMode;
+        private BatchMessageKeyBasedContainer _batchMessageContainer;
         private ISchema _schema;
         private ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
@@ -55,13 +67,14 @@ namespace SharpPulsar.Akka.Producer
             _configuration = configuration;
             _producerId = producerid;
             _network = network;
-			_producerId = producerid;
-			 _producerName= configuration.ProducerName;
+            _handler = configuration.Handler;
+            _producerId = producerid;
+			 ProducerName= configuration.ProducerName;
              if (!configuration.MultiSchema)
              {
                  _multiSchemaMode = MultiSchemaMode.Disabled;
              }
-            if (!string.IsNullOrWhiteSpace(_producerName) || isPartitioned)
+            if (!string.IsNullOrWhiteSpace(ProducerName) || isPartitioned)
 			{
 				_userProvidedProducerName = true;
 			}
@@ -80,15 +93,23 @@ namespace SharpPulsar.Akka.Producer
 
 			if (configuration.EncryptionEnabled)
 			{
-				var logCtx = "[" + configuration.TopicName + "] [" + _producerName + "] [" + _producerId + "]";
+				var logCtx = "[" + configuration.TopicName + "] [" + ProducerName + "] [" + _producerId + "]";
 				_msgCrypto = new MessageCrypto(logCtx, true);
 
 				// Regenerate data key cipher at fixed interval
 				Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
 
             }
-			//batching comes later
-			if (!configuration.Properties.Any())
+            if (configuration.BatchingEnabled)
+            {
+                //var containerBuilder = configuration.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
+                _batchMessageContainer = new BatchMessageKeyBasedContainer();
+            }
+            else
+            {
+                _batchMessageContainer = null;
+            }
+            if (!configuration.Properties.Any())
 			{
 				_metadata = new Dictionary<string, string>();
 			}
@@ -108,7 +129,7 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<TcpSuccess>(s =>
             {
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
+                _handler.Capture($"Pulsar handshake completed with {s.Name}");
                 Become(CreateProducer);
             });
             Receive<AddPublicKeyCipher>(a =>
@@ -120,7 +141,7 @@ namespace SharpPulsar.Akka.Producer
 
         public void Ready()
         {
-            Context.Parent.Tell(new RegisteredProducer(_producerId, _producerName, _configuration.TopicName));
+            Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -136,8 +157,8 @@ namespace SharpPulsar.Akka.Producer
             Receive<ProducerCreated>(p =>
             {
                 _pendingLookupRequests.Remove(p.RequestId);
-                if (string.IsNullOrWhiteSpace(_producerName))
-                    _producerName = p.Name;
+                if (string.IsNullOrWhiteSpace(ProducerName))
+                    ProducerName = p.Name;
                 _sequenceId = p.LastSequenceId;
                 var schemaVersion = p.SchemaVersion;
                 if (schemaVersion != null)
@@ -155,7 +176,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 var index = int.Parse(Self.Path.Name);
                 _producerId = index;
-               _producerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
+               ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
             }
             SendNewProducerCommand();
         }
@@ -163,7 +184,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestid = _requestId++;
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
-            var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, _producerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
+            var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request.Array, requestid, "CommandProducer");
             _pendingLookupRequests.Add(requestid, payload);
             _network.Tell(payload);
@@ -210,7 +231,411 @@ namespace SharpPulsar.Akka.Producer
 		{
             
         }
+        private bool IsMultiSchemaEnabled(bool autoEnable)
+        {
+            if (_multiSchemaMode != MultiSchemaMode.Auto)
+            {
+                return _multiSchemaMode == MultiSchemaMode.Enabled;
+            }
 
+            if (!autoEnable) return false;
+            _multiSchemaMode = MultiSchemaMode.Enabled;
+            return true;
+        }
+        private IMessage BeforeSend(IMessage message)
+        {
+            if (_producerInterceptor != null && _producerInterceptor.Count > 0)
+            {
+                var interceptedMessage = message;
+                foreach (var p in _producerInterceptor)
+                {
+                    interceptedMessage = p.BeforeSend(ToString(), interceptedMessage);
+                }
+                return interceptedMessage;
+            }
+            return message;
+        }
+        public void OnSendAcknowledgement(IMessage message, IMessageId msgId, Exception exception)
+        {
+            if (_producerInterceptor != null)
+            {
+                foreach (var p in _producerInterceptor)
+                {
+                    p.OnSendAcknowledgement(ToString(), message, msgId, exception);
+                }
+            }
+        }
+
+        private void TryRegisterSchema(MessageImpl msg)
+        {
+            var m = msg;
+            Receive<GetOrCreateSchemaServerResponse>(r =>
+            {
+                var schemaHash = SchemaHash.Of(msg.Schema);
+                if (!_schemaCache.ContainsKey(schemaHash))
+                {
+                    _schemaCache[schemaHash] = r.SchemaVersion;
+                }
+                m.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(r.SchemaVersion));
+                m.SetSchemaState(MessageImpl.SchemaState.Ready);
+            });
+            ReceiveAny(_=> Stash.Stash());
+            SchemaInfo schemaInfo = null;
+            if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
+            {
+                schemaInfo = (SchemaInfo)msg.Schema.SchemaInfo;
+            }
+            else
+            {
+                schemaInfo = (SchemaInfo)SchemaFields.Bytes.SchemaInfo;
+
+            }
+
+            SendGetOrCreateSchemaCommand(schemaInfo);
+        }
+        private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo)
+        {
+            var requestId = _requestId++;
+            var request = Commands.NewGetOrCreateSchema(requestId, _configuration.TopicName, schemaInfo);
+            Context.System.Log.Info("[{}] [{}] GetOrCreateSchema request", _configuration.TopicName, ProducerName);
+           var payload = new Payload(request.Array, requestId, "GetOrCreateSchema");
+           _broker.Tell(payload);
+           _pendingLookupRequests.Add(requestId, payload);
+        }
+
+        private void SendMessage(MessageImpl msg)
+        {
+            var msgMetadataBuilder = msg.MessageBuilder;
+            var payload = msg.DataBuffer;
+            // If compression is enabled, we are compressing, otherwise it will simply use the same buffer
+            var uncompressedSize = payload.ReadableBytes;
+            var compressedPayload = payload;
+            // Batch will be compressed when closed
+            // If a message has a delayed delivery time, we'll always send it individuallyif (!BatchMessagingEnabled || msgMetadataBuilder.HasDeliverAtTime())
+            if (!_configuration.BatchingEnabled || msgMetadataBuilder.HasDeliverAtTime())
+            {
+                compressedPayload = _compressor.Encode(payload);
+                payload.Release();
+
+                // validate msg-size (For batching this will be check at the batch completion size)
+                var compressedSize = compressedPayload.ReadableBytes;
+                if (compressedSize > Commands.DefaultMaxMessageSize)
+                {
+                    compressedPayload.Release();
+                    var compressedStr = (!_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None) ? "Compressed" : "";
+                    var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
+                    Sender.Tell(new ErrorMessage(invalidMessageException));
+                    return;
+                }
+            }
+            if (!msg.Replicated && msgMetadataBuilder.HasProducerName())
+            {
+                var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
+                Sender.Tell(new ErrorMessage(invalidMessageException));
+                compressedPayload.Release();
+                return;
+            }
+
+            if (!PopulateMessageSchema(msg))
+            {
+                compressedPayload.Release();
+                return;
+            }
+
+            try
+            {
+                long sequenceId;
+                if (!msgMetadataBuilder.HasSequenceId())
+                {
+                    sequenceId = _sequenceId++;
+                    msgMetadataBuilder.SetSequenceId(sequenceId);
+                }
+                else
+                {
+                    sequenceId = (long)msgMetadataBuilder.GetSequenceId();
+                }
+                if (!msgMetadataBuilder.HasPublishTime())
+                {
+                    msgMetadataBuilder.SetPublishTime(DateTime.Now.Millisecond);
+
+                    if (msgMetadataBuilder.HasProducerName())
+                        msgMetadataBuilder.SetProducerName(ProducerName);
+
+                    if (_configuration.CompressionType != ICompressionType.None)
+                    {
+                        msgMetadataBuilder.SetCompression(CompressionCodecProvider.ConvertToWireProtocol(_configuration.CompressionType));
+                    }
+                    msgMetadataBuilder.SetUncompressedSize(uncompressedSize);
+                }
+                if (CanAddToBatch(msg))
+                {
+                    if (CanAddToCurrentBatch(msg))
+                    {
+                        // should trigger complete the batch message, new message will add to a new batch and new batch
+                        // sequence id use the new message, so that broker can handle the message duplication
+                        if (sequenceId <= _lastSequenceIdPushed)
+                        {
+                            if (sequenceId <= _lastSequenceId)
+                            {
+                                Context.System.Log.Warning("Message with sequence id {} is definitely a duplicate", sequenceId);
+                            }
+                            else
+                            {
+                                Context.System.Log.Info("Message with sequence id {} might be a duplicate but cannot be determined at this time.", sequenceId);
+                            }
+                            DoBatchSendAndAdd(msg, payload);
+                        }
+                        else
+                        {
+                            // handle boundary cases where message being added would exceed
+                            // batch size and/or max message size
+                            var (seqid, isBatchFull) = _batchMessageContainer.Add(msg);
+                            _lastSequenceIdPushed = seqid;
+                            payload.Release();
+                            if (isBatchFull)
+                            {
+                                BatchMessageAndSend();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        DoBatchSendAndAdd(msg, payload);
+                    }
+                }
+                else
+                {
+                    var encryptedPayload = EncryptMessage(msgMetadataBuilder, compressedPayload);
+                    // When publishing during replication, we need to set the correct number of message in batch
+                    // This is only used in tracking the publish rate stats
+                    var numMessages = msg.MessageBuilder.HasNumMessagesInBatch() ? msg.MessageBuilder.NumMessagesInBatch : 1;
+                    OpSendMsg op = null;
+                    var schemaState = msg.GetSchemaState();
+                    if (schemaState == MessageImpl.SchemaState.Ready)
+                    {
+                        var msgMetadata = msgMetadataBuilder.Build();
+                        var cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+                        op = OpSendMsg.Create(msg, cmd, sequenceId);
+                    }
+                    else
+                    {
+                        op = OpSendMsg.Create(msg, null, sequenceId);
+                        op.RePopulate = () =>
+                        {
+                            var msgMetadata = msgMetadataBuilder.Build();
+                            op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+                            
+                        };
+                    }
+                    op.NumMessagesInBatch = numMessages;
+                    op.BatchSizeByte = encryptedPayload.ReadableBytes;
+                    ProcessOpSendMsg(op);
+                }
+            }
+            catch (Exception e)
+            {
+               Sender.Tell(new ErrorMessage(e));
+            }
+        }
+        private void DoBatchSendAndAdd(MessageImpl msg, IReferenceCounted payload)
+        {
+            var log = Context.System.Log;
+            if (log.IsDebugEnabled)
+            {
+                log.Debug("[{}] [{}] Closing out batch to accommodate large message with size {}", _configuration.TopicName, ProducerName, msg.DataBuffer.ReadableBytes);
+            }
+            try
+            {
+                BatchMessageAndSend();
+                _batchMessageContainer.Add(msg);
+            }
+            finally
+            {
+                payload.Release();
+            }
+        }
+        private long GetHighestSequenceId(OpSendMsg op)
+        {
+            return Math.Max(op.HighestSequenceId, op.SequenceId);
+        }
+        private void BatchMessageAndSend()
+        {
+            var log = Context.System.Log;
+            if (log.IsDebugEnabled)
+            {
+                log.Debug("[{}] [{}] Batching the messages from the batch container with {} messages", _configuration.TopicName, ProducerName, _batchMessageContainer.NumMessagesInBatch);
+            }
+            if (!_batchMessageContainer.Empty)
+            {
+                try
+                {
+                    IList<OpSendMsg> opSendMsgs;
+                    opSendMsgs = CreateOpSendMsgs();
+                    _batchMessageContainer.Clear();
+                    foreach (var opSendMsg in opSendMsgs)
+                    {
+                        ProcessOpSendMsg(opSendMsg);
+                    }
+                }
+                catch (Exception T)
+                {
+                    log.Error("[{}] [{}] error while create opSendMsg by batch message container", _configuration.TopicName, ProducerName, T);
+                }
+            }
+        }
+        public ByteBufPair SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        {
+            return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+        }
+
+        public ByteBufPair SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        {
+            return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+        }
+        private void ProcessOpSendMsg(OpSendMsg op)
+        {
+            if (op == null)
+            {
+                return;
+            }
+            try
+            {
+                if (op.Msg != null && _configuration.BatchingEnabled)
+                {
+                    BatchMessageAndSend();
+                }
+                if (op.Msg != null)
+                {
+                    _lastSequenceIdPushed = Math.Max(_lastSequenceIdPushed, GetHighestSequenceId(op));
+                }
+                if (op.Msg != null && op.Msg.GetSchemaState() == 0)
+                {
+                    TryRegisterSchema(op.Msg);
+                    return;
+                }
+                // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
+                // connection is established
+                op.Cmd.Retain();
+            }
+            
+            catch (System.Exception T)
+            {
+                Context.System.Log.Error("[{}] [{}] error while closing out batch -- {}", _configuration.TopicName, ProducerName, T);
+                Sender.Tell(new ErrorMessage(new PulsarClientException(T.Message)));
+            }
+        }
+
+        private bool PopulateMessageSchema(MessageImpl msg)
+        {
+            var msgMetadataBuilder = msg.MessageBuilder;
+            var schemaHash = SchemaHash.Of(msg.Schema);
+            var schemaVersion = _schemaCache[schemaHash];
+            if (msg.Schema == _schema)
+            {
+                if (schemaVersion != null)
+                    msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+                msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+                return true;
+            }
+            if (!IsMultiSchemaEnabled(true))
+            {
+                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' is disabled the `MultiSchema`")));
+                return false;
+            }
+
+            if (schemaVersion == null) return true;
+            msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+            msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+            return true;
+        }
+        private bool RePopulateMessageSchema(MessageImpl msg)
+        {
+            var schemaHash = SchemaHash.Of(msg.Schema);
+            var schemaVersion = _schemaCache[schemaHash];
+            if (schemaVersion == null)
+            {
+                return false;
+            }
+            msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+            msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+            return true;
+        }
+        private IByteBuffer EncryptMessage(MessageMetadata.Builder msgMetadata, IByteBuffer compressedPayload)
+        {
+
+            var encryptedPayload = compressedPayload;
+            if (!_configuration.EncryptionEnabled || _msgCrypto == null)
+            {
+                return encryptedPayload;
+            }
+            try
+            {
+                encryptedPayload = _msgCrypto.Encrypt(_configuration.EncryptionKeys, _configuration.CryptoKeyReader, msgMetadata, compressedPayload);
+            }
+            catch (PulsarClientException e)
+            {
+                // Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
+                if (_configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send) throw e;
+                Context.System.Log.Warning("[{}] [{}] Failed to encrypt message {}. Proceeding with publishing unencrypted message", _configuration.TopicName, ProducerName, e.Message);
+                return compressedPayload;
+            }
+            return encryptedPayload;
+        }
+        private bool CanAddToBatch(MessageImpl msg)
+        {
+            return msg.GetSchemaState() == MessageImpl.SchemaState.Ready && _configuration.BatchingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
+        }
+        
+        private bool CanAddToCurrentBatch(MessageImpl msg)
+        {
+            return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
+        }
+        
+        private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
+
+        public override string ToString()
+        {
+            return "Producer{" + "topic='" + _configuration.TopicName + '\'' + '}';
+        }
         public IStash Stash { get; set; }
+        private IList<OpSendMsg> CreateOpSendMsgs()
+        {
+            var result = new List<OpSendMsg>();
+            var list = new List<BatchMessageKeyBasedContainer.KeyedBatch>(_batchMessageContainer.Batches.Values);
+            list.Sort();
+            foreach (var keyedBatch in list)
+            {
+                var op = CreateOpSendMsg(keyedBatch);
+                if (op != null)
+                {
+                    result.Add(op);
+                }
+            }
+            return result;
+        }
+        private OpSendMsg CreateOpSendMsg(BatchMessageKeyBasedContainer.KeyedBatch keyedBatch)
+        {
+            var encryptedPayload = EncryptMessage(keyedBatch.MessageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
+            if (encryptedPayload.ReadableBytes > Commands.DefaultMaxMessageSize)
+            {
+                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
+                return null;
+            }
+
+            var numMessagesInBatch = keyedBatch.Messages.Count;
+            long currentBatchSizeBytes = 0;
+            foreach (var message in keyedBatch.Messages)
+            {
+                currentBatchSizeBytes += message.DataBuffer.ReadableBytes;
+            }
+            keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
+            var cmd = SendMessage(_producerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata.Build(), encryptedPayload);
+
+            var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId);
+
+            op.NumMessagesInBatch = numMessagesInBatch;
+            op.BatchSizeByte = currentBatchSizeBytes;
+            return op;
+        }
     }
 }

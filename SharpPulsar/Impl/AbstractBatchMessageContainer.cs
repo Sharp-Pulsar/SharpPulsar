@@ -2,6 +2,7 @@
 using SharpPulsar.Common.Compression;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,23 +28,21 @@ namespace SharpPulsar.Impl
 	/// <summary>
 	/// Batch message container framework.
 	/// </summary>
-	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase<T>
+	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase
 	{
 		public abstract bool MultiBatches {get;}
 		public abstract void Discard(System.Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
 		public abstract bool HasSameSchema(MessageImpl msg);
-		public abstract bool Add(MessageImpl msg, SendCallback callback);
+		public abstract (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg);
 
 		protected internal ICompressionType CompressionType;
 		protected internal CompressionCodec Compressor;
 		protected internal string TopicName;
 		protected internal string ProducerName;
 
-		private ProducerImpl<T> _producer;
-
-		protected internal int MaxNumMessagesInBatch;
+        protected internal int MaxNumMessagesInBatch;
 		protected internal int MaxBytesInBatch;
 
 		private int _numMessagesInBatch = 0;
@@ -54,8 +53,8 @@ namespace SharpPulsar.Impl
 		// This will be the largest size for a batch sent from this particular producer. This is used as a baseline to
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		protected internal int MaxBatchSize = InitialBatchBufferSize;
-
-		public bool HaveEnoughSpace(MessageImpl<T> msg)
+        
+		public bool HaveEnoughSpace(MessageImpl msg)
 		{
 			var messageSize = msg.DataBuffer.ReadableBytes;
 			return ((MaxBytesInBatch <= 0 && (messageSize + CurrentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (MaxBytesInBatch > 0 && (messageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || _numMessagesInBatch < MaxNumMessagesInBatch);
@@ -71,31 +70,8 @@ namespace SharpPulsar.Impl
 
         public virtual long CurrentBatchSize => CurrentBatchSizeBytes;
 
-        public OpSendMsg<T> CreateOpSendMsg()
-		{
-			throw new NotSupportedException();
-		}
 
-		public ProducerImpl<T> Producer
-		{
-			get => _producer;
-            set
-			{
-				_producer = value;
-				TopicName = value.Topic;
-				ProducerName = value.ProducerName;
-				CompressionType = (ICompressionType)CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
-				Compressor = CompressionCodecProvider.GetCompressionCodec(CompressionType);
-				MaxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
-				MaxBytesInBatch = value.Configuration.BatchingMaxBytes;
-			}
-		}
-
-        public virtual IList<OpSendMsg<T>> CreateOpSendMsgs()
-        {
-            throw new NotImplementedException();
-        }
-
+		public string Producer { get; set; }
     }
 
 }

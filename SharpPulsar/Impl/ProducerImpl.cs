@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl
 		private  ITimeout _sendTimeout;
 		private ITimeout _batchMessageAndSendTimeout = null;
 		private readonly long _createProducerTimeout;
-		private readonly BatchMessageContainerBase<T> _batchMessageContainer;
+		private readonly BatchMessageContainerBase _batchMessageContainer;
 		private TaskCompletionSource<IMessageId> _lastSendTask = new TaskCompletionSource<IMessageId>();
 		private readonly bool _userProvidedProducerName = false;
 
@@ -191,11 +191,11 @@ namespace SharpPulsar.Impl
         }
 
 
-		public override TaskCompletionSource<IMessageId> InternalSendAsync(Api.IMessage<T> message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync(Api.IMessage message)
 		{
 
 			var task = new TaskCompletionSource<IMessageId>();
-			var interceptorMessage = (MessageImpl<T>) BeforeSend(message);
+			var interceptorMessage = (MessageImpl) BeforeSend(message);
 			//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
 			interceptorMessage.DataBuffer.Retain();
 			if (Interceptors != null)
@@ -300,9 +300,9 @@ namespace SharpPulsar.Impl
 		{
 			return (ProducerImpl<object>)Convert.ChangeType(v, typeof(ProducerImpl<object>));
 		}
-		public void SendAsync(Api.IMessage<T> message, SendCallback callback)
+		public void SendAsync(Api.IMessage message, SendCallback callback)
 		{
-			if (message is MessageImpl<T>)
+			if (message is MessageImpl)
 				return;
 
 			if (!IsValidProducerState(callback))
@@ -315,7 +315,7 @@ namespace SharpPulsar.Impl
 				return;
 			}
 
-			var msg = (MessageImpl<T>) message;
+			var msg = (MessageImpl) message;
 			var msgMetadataBuilder = msg.MessageBuilder;
 			var payload = msg.DataBuffer;
 
@@ -431,7 +431,7 @@ namespace SharpPulsar.Impl
 						{
 							var msgMetadata = msgMetadataBuilder.Build();
 							var cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
-							op = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
+							op = OpSendMsg.Create(msg, cmd, sequenceId, callback);
 							msgMetadataBuilder.Recycle();
 							msgMetadata.Recycle();
 						}
@@ -465,7 +465,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private bool PopulateMessageSchema(MessageImpl<object> msg, SendCallback callback)
+		private bool PopulateMessageSchema(MessageImpl msg, SendCallback callback)
 		{
 			var msgMetadataBuilder = msg.MessageBuilder;
             var schemaHash = SchemaHash.Of(msg.Schema);
@@ -474,7 +474,7 @@ namespace SharpPulsar.Impl
 			{
 				if(schemaVersion != null)
                     msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
-				msg.SetSchemaState(MessageImpl<object>.SchemaState.Ready);
+				msg.SetSchemaState(MessageImpl.SchemaState.Ready);
 				return true;
 			}
 			if (!IsMultiSchemaEnabled(true))
@@ -485,11 +485,11 @@ namespace SharpPulsar.Impl
 
             if (schemaVersion == null) return true;
             msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
-            msg.SetSchemaState(MessageImpl<object>.SchemaState.Ready);
+            msg.SetSchemaState(MessageImpl.SchemaState.Ready);
             return true;
 		}
 
-		private bool RePopulateMessageSchema(MessageImpl<T> msg)
+		private bool RePopulateMessageSchema(MessageImpl msg)
 		{
 			var schemaHash = SchemaHash.Of(msg.Schema);
 			var schemaVersion = SchemaCache[schemaHash];
@@ -498,11 +498,11 @@ namespace SharpPulsar.Impl
 				return false;
 			}
 			msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)schemaVersion));
-			msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
+			msg.SetSchemaState(MessageImpl.SchemaState.Ready);
 			return true;
 		}
 
-		private void TryRegisterSchema(ClientCnx cnx, MessageImpl<T> msg, SendCallback callback)
+		private void TryRegisterSchema(ClientCnx cnx, MessageImpl msg, SendCallback callback)
 		{
 			if (!ChangeToRegisteringSchemaState())
 			{
@@ -536,7 +536,7 @@ namespace SharpPulsar.Impl
 
                     }
 					msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)task.Result));
-					msg.SetSchemaState(MessageImpl<T>.SchemaState.Ready);
+					msg.SetSchemaState(MessageImpl.SchemaState.Ready);
 				}
 			});
 			cnx.Ctx().Channel.EventLoop.Execute(() =>
@@ -605,17 +605,17 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		private bool CanAddToBatch(MessageImpl<T> msg)
+		private bool CanAddToBatch(MessageImpl msg)
 		{
-			return msg.GetSchemaState() == MessageImpl<T>.SchemaState.Ready && BatchMessagingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
+			return msg.GetSchemaState() == MessageImpl.SchemaState.Ready && BatchMessagingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
 		}
 
-		private bool CanAddToCurrentBatch(MessageImpl<T> msg)
+		private bool CanAddToCurrentBatch(MessageImpl msg)
 		{
 			return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
 		}
 
-		private void DoBatchSendAndAdd(MessageImpl<T> msg, SendCallback callback, IReferenceCounted payload)
+		private void DoBatchSendAndAdd(MessageImpl msg, SendCallback callback, IReferenceCounted payload)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{

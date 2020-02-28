@@ -5,48 +5,44 @@ using SharpPulsar.Shared;
 
 namespace SharpPulsar.Impl
 {
-    public sealed class OpSendMsg<T>
+    public sealed class OpSendMsg
     {
-        internal MessageImpl<T> Msg;
-        internal IList<MessageImpl<T>> Msgs;
+        internal MessageImpl Msg;
+        internal IList<MessageImpl> Msgs;
         internal ByteBufPair Cmd;
-        internal SendCallback Callback;
         internal ThreadStart RePopulate;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
 
-        internal static OpSendMsg<T> Create(MessageImpl<T> msg, ByteBufPair cmd, long sequenceId, SendCallback callback)
+        internal static OpSendMsg Create(MessageImpl msg, ByteBufPair cmd, long sequenceId)
         {
-            var op = Pool.Take();
-            op.Msg = msg;
-            op.Cmd = cmd;
-            op.Callback = callback;
-            op.SequenceId = sequenceId;
-            op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
+            var op = new OpSendMsg
+            {
+                Msg = msg, Cmd = cmd, SequenceId = sequenceId, CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
+            };
             return op;
         }
 
-        internal static OpSendMsg<T> Create(IList<MessageImpl<T>> msgs, ByteBufPair cmd, long sequenceId, SendCallback callback)
+        internal static OpSendMsg Create(IList<MessageImpl> msgs, ByteBufPair cmd, long sequenceId)
         {
-            var op = Pool.Take();
-            op.Msgs =  msgs;
-            op.Cmd = cmd;
-            op.Callback = callback;
-            op.SequenceId = sequenceId;
-            op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
+            var op = new OpSendMsg
+            {
+                Msgs = msgs, Cmd = cmd, SequenceId = sequenceId, CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
+            };
             return op;
         }
 
-        internal static OpSendMsg<T> Create(IList<MessageImpl<T>> msgs, ByteBufPair cmd, long lowestSequenceId, long highestSequenceId, SendCallback callback)
+        internal static OpSendMsg Create(IList<MessageImpl> msgs, ByteBufPair cmd, long lowestSequenceId, long highestSequenceId)
         {
-            var op = Pool.Take();
-            op.Msgs = msgs;
-            op.Cmd = cmd;
-            op.Callback = callback;
-            op.SequenceId = lowestSequenceId;
-            op.HighestSequenceId = highestSequenceId;
-            op.CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
+            var op = new OpSendMsg
+            {
+                Msgs = msgs,
+                Cmd = cmd,
+                SequenceId = lowestSequenceId,
+                HighestSequenceId = highestSequenceId,
+                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
+            };
             return op;
         }
 
@@ -55,12 +51,9 @@ namespace SharpPulsar.Impl
             Msg = null;
             Msgs = null;
             Cmd = null;
-            Callback = null;
-            RePopulate = null;
             SequenceId = -1L;
             CreatedAt = -1L;
             HighestSequenceId = -1L;
-            Handle.Release(this);
         }
 
         public int NumMessagesInBatch { get; set; } = 1;
@@ -82,12 +75,5 @@ namespace SharpPulsar.Impl
             }
         }
 
-        internal static ThreadLocalPool<OpSendMsg<T>> Pool = new ThreadLocalPool<OpSendMsg<T>>(handle => new OpSendMsg<T>(handle), 1, true);
-
-        internal ThreadLocalPool.Handle Handle;
-        private OpSendMsg(ThreadLocalPool.Handle handle)
-        {
-            Handle = handle;
-        }
     }
 }

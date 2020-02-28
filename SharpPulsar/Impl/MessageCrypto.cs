@@ -63,6 +63,7 @@ namespace SharpPulsar.Impl
 		internal MD5 Digest;
 		private string _logCtx;
 
+        private long _lastKeyAccess;
 		// Data key which is used to encrypt message
 		private AesManaged _dataKey;//https://stackoverflow.com/questions/39093489/c-sharp-equivalent-of-the-java-secretkeyspec-for-aes
 		private ConcurrentDictionary<IByteBuffer, AesManaged> _dataKeyCache;

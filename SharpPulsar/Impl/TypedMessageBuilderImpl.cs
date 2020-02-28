@@ -33,28 +33,21 @@ namespace SharpPulsar.Impl
     using System.Threading.Tasks;
     using Api;
     using Transaction;
-
-    [Serializable]
-	public class TypedMessageBuilderImpl<T> : ITypedMessageBuilder<T>
+	public class TypedMessageBuilderImpl : ITypedMessageBuilder
 	{
-
-		private const long SerialVersionUid = 0L;
-
-		private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
-		[NonSerialized]
-		private readonly ProducerBase<T> _producer;
-		[NonSerialized]
+        private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
+		
+		private readonly string _producer;//topic
 		public MessageMetadata.Builder Builder  = MessageMetadata.NewBuilder();
-		private readonly ISchema<T> _schema;
-		[NonSerialized]
+		private readonly ISchema _schema;
 		public  IByteBuffer Content;
 		private readonly TransactionImpl _txn;
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema) : this(producer, schema, null)
+		public TypedMessageBuilderImpl(string producer, ISchema schema) : this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilderImpl(ProducerBase<T> producer, ISchema<T> schema, TransactionImpl txn)
+		public TypedMessageBuilderImpl(string producer, ISchema schema, TransactionImpl txn)
 		{
 			_producer = producer;
 			_schema = schema;
@@ -103,7 +96,7 @@ namespace SharpPulsar.Impl
             return new ValueTask<IMessageId>(sendTask.Task);
 		}
 
-		public ITypedMessageBuilder<T> Key(string key)
+		public ITypedMessageBuilder Key(string key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -116,7 +109,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
+		public ITypedMessageBuilder KeyBytes(sbyte[] key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -129,13 +122,13 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey)
+		public ITypedMessageBuilder OrderingKey(sbyte[] orderingKey)
 		{
 			Builder.SetOrderingKey(ByteString.CopyFrom((byte[])(object)orderingKey));
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> Value(T value)
+		public ITypedMessageBuilder Value(object value)
 		{
 
 			if(value == null)
@@ -143,17 +136,7 @@ namespace SharpPulsar.Impl
 			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
                 throw new PulsarClientException.NotSupportedException("KeyValue not supported");
-				/*KeyValueSchema kvSchema = (KeyValueSchema) _schema;
-				KeyValue kv = (KeyValue) value;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
-				{
-					// set key as the message key
-					MetadataBuilder.setPartitionKey(Base64.Encoder.encodeToString(kvSchema.KeySchema.encode(kv.Key)));
-					MetadataBuilder.PartitionKeyB64Encoded = true;
-					// set value as the payload
-					this.Content = ByteBuffer.wrap(kvSchema.ValueSchema.encode(kv.Value));
-					return this;
-				}*/
+				
 			}
 
             var data = (byte[])(object)_schema.Encode(value);
@@ -161,7 +144,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public  ITypedMessageBuilder<T> Property(string name, string value)
+		public  ITypedMessageBuilder Property(string name, string value)
 		{
 			if(ReferenceEquals(name, null))
                 throw new NullReferenceException("Need Non-Null name");
@@ -171,7 +154,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
+		public ITypedMessageBuilder Properties(IDictionary<string, string> properties)
 		{
 			foreach (var entry in properties.SetOfKeyValuePairs())
 			{
@@ -185,7 +168,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> EventTime(long timestamp)
+		public ITypedMessageBuilder EventTime(long timestamp)
 		{
 			if(timestamp <= 0)
                 throw new ArgumentException("Invalid timestamp : "+ timestamp);
@@ -193,7 +176,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> SequenceId(long sequenceId)
+		public ITypedMessageBuilder SequenceId(long sequenceId)
 		{
 			if(sequenceId < 0)
 				throw new ArgumentException();
@@ -201,7 +184,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
+		public ITypedMessageBuilder ReplicationClusters(IList<string> clusters)
 		{
 			if(clusters == null)
 				throw new NullReferenceException();
@@ -210,25 +193,25 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> DisableReplication()
+		public ITypedMessageBuilder DisableReplication()
 		{
 			Builder.ClearReplicateTo();
 			Builder.AddReplicateTo("__local__");
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public ITypedMessageBuilder DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMillis(delay));
 		}
 
-		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
+		public ITypedMessageBuilder DeliverAt(long timestamp)
 		{
 			Builder.SetDeliverAtTime(timestamp);
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> config)
+		public ITypedMessageBuilder LoadConf(IDictionary<string, object> config)
 		{
 			config.ToList().ForEach(d =>
 			{
@@ -277,12 +260,12 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public virtual IMessage<T> Message
+		public virtual IMessage Message
 		{
 			get
 			{
 				BeforeSend();
-				return MessageImpl<T>.Create(Builder, Content, _schema);
+				return MessageImpl.Create(Builder, Content, _schema);
 			}
 		}
 

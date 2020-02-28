@@ -44,4 +44,8 @@
     <ProjectReference Include="E:\Devs\avro-release-1.9.2\lang\csharp\src\apache\main\Avro.main.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Akka\MessageImpl\" />
+  </ItemGroup>
+
 </Project>

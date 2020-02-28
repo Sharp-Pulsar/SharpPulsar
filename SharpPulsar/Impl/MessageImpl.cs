@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using SharpPulsar.Api;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -24,17 +25,14 @@ using SharpPulsar.Utility;
 namespace SharpPulsar.Impl
 {
     using DotNetty.Buffers;
-    using DotNetty.Common;
-    using SharpPulsar.Api;
     using Pulsar.Common.Auth;
-    using SharpPulsar.Protocol.Proto;
+    using Protocol.Proto;
     using System.Linq;
-    using SharpPulsar.Protocol;
+    using Protocol;
 
     public class MessageImpl : IMessage
 	{
 		public MessageMetadata.Builder MessageBuilder;
-		public ClientCnx Cnx;
 		public IByteBuffer DataBuffer;
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
@@ -42,33 +40,33 @@ namespace SharpPulsar.Impl
 
 		public string TopicName {get;} // only set for incoming messages
 
+        public MessageImpl(IByteBuffer data)
+        {
+            DataBuffer = data;
+        }
 		// Constructor for out-going message
-		public static MessageImpl Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema<T> schema)
+		public static MessageImpl Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema schema)
 		{
-            var msg = _pool.Take();
-			msg.MessageBuilder = msgMetadataBuilder;
-			msg.DataBuffer = Unpooled.WrappedBuffer(payload);
-			msg._schema = schema;
-			return msg;
+            var msg = new MessageImpl(payload) {MessageBuilder = msgMetadataBuilder, _schema = schema};
+            return msg;
 		}
 
 		// Constructor for incoming message
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, ISchema schema) : this(topic, messageId, msgMetadata, payload, null, schema)
 		{
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ISchema schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, schema, 0)
 		{
 			_properties = new Dictionary<string, string>();
 		}
 
-		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
+		public MessageImpl(string topic, MessageIdImpl messageId, MessageMetadata msgMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
             _properties = new Dictionary<string, string>();
 			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			MessageId = messageId;
 			TopicName = topic;
-			Cnx = cnx;
 			RedeliveryCount = redeliveryCount;
 
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
@@ -88,16 +86,15 @@ namespace SharpPulsar.Impl
 			schema = Schema;
 		}
 
-		public MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0)
+		public MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, schema, 0)
 		{
 		}
 
-		public MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema<T> schema, int redeliveryCount)
+		public MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
 			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			MessageId = batchMessageIdImpl;
 			TopicName = topic;
-			Cnx = cnx;
 			RedeliveryCount = redeliveryCount;
 
 			DataBuffer = Unpooled.CopiedBuffer(payload);
@@ -134,11 +131,11 @@ namespace SharpPulsar.Impl
 			_schema = schema;
 		}
 
-		public MessageImpl(string topic, string msgId, IDictionary<string, string> properties, sbyte[] payload, ISchema<T> schema) : this(topic, msgId, properties, Unpooled.WrappedBuffer((byte[])(object)payload), schema)
+		public MessageImpl(string topic, string msgId, IDictionary<string, string> properties, sbyte[] payload, ISchema schema) : this(topic, msgId, properties, Unpooled.WrappedBuffer((byte[])(object)payload), schema)
 		{
 		}
 
-		public MessageImpl(string topic, string msgId, IDictionary<string, string> properties, IByteBuffer payload, ISchema<T> schema)
+		public MessageImpl(string topic, string msgId, IDictionary<string, string> properties, IByteBuffer payload, ISchema schema)
 		{
 			var data = msgId.Split(":", true);
 			var ledgerId = long.Parse(data[0]);
@@ -152,7 +149,6 @@ namespace SharpPulsar.Impl
 				MessageId = new MessageIdImpl(ledgerId, entryId, -1);
 			}
 			TopicName = topic;
-			Cnx = null;
 			DataBuffer = payload;
 			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
 			_schema = schema;
@@ -161,14 +157,11 @@ namespace SharpPulsar.Impl
 
 		public static MessageImpl Deserialize(IByteBuffer headersAndPayload)
 		{
-			var msg =  new MessageImpl();
+			var msg =  new MessageImpl(headersAndPayload);
 			var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
 
 			msg.MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
-			msgMetadata.Recycle();
-			msg.DataBuffer = headersAndPayload;
 			msg.MessageId = null;
-			msg.Cnx = null;
 			msg.Properties.Clear();
 			return msg;
 		}
@@ -260,7 +253,7 @@ namespace SharpPulsar.Impl
                     throw new NullReferenceException();
 				if (MessageBuilder.HasSequenceId())
 				{
-					return MessageBuilder.GetSequenceId();
+					return (long)MessageBuilder.GetSequenceId();
 				}
 				return -1;
 			}
@@ -297,9 +290,9 @@ namespace SharpPulsar.Impl
 				{
 					if (_properties == null)
 					{
-						if (MessageBuilder.PropertiesCount > 0)
+						if (MessageBuilder.Properties.Count > 0)
 						{
-							_properties = new Dictionary<string,string>(MessageBuilder.PropertiesList.ToDictionary(x => x.Key, x => x.Value));
+							_properties = new Dictionary<string,string>(MessageBuilder.Properties);
 						}
 						else
 						{
@@ -385,7 +378,7 @@ namespace SharpPulsar.Impl
 		{
             if (MessageBuilder == null)
                 throw new NullReferenceException();
-			return MessageBuilder.ReplicateToCount > 0;
+			return MessageBuilder.ReplicateToList.Count > 0;
 		}
 
 		public IList<string> ReplicateTo

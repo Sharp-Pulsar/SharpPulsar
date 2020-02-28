@@ -12,17 +12,20 @@ namespace SharpPulsar.Akka
     {
         private ActorSystem _actorSystem;
         private IActorRef _pulsarManager;
+        private ClientConfigurationData _conf;
 
         public PulsarSystem(ClientConfigurationData conf)
         {
+            _conf = conf;
             _actorSystem = ActorSystem.Create("Pulsar");
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
         
         
-        public void CreateProducer(NewProducer producer)
+        public void CreateProducer(CreateProducer producer)
         {
-            _pulsarManager.Tell(producer);
+            var p = new NewProducer(producer.Schema, _conf, producer.ProducerConfiguration);
+            _pulsarManager.Tell(p);
         }
         
         public void CreateConsumer(NewConsumer consumer)
@@ -34,7 +37,10 @@ namespace SharpPulsar.Akka
         {
            _pulsarManager.Tell(send);
         }
-        
+        public void BatchSend(BatchSend send)
+        {
+            _pulsarManager.Tell(send);
+        }
         public async ValueTask DisposeAsync()
         {
            await _actorSystem.Terminate();

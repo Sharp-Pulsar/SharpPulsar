@@ -446,10 +446,10 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			
 			
-			public Builder AddAllProperties(IEnumerable<KeyValue> Values)
+			public Builder AddAllProperties(IEnumerable<KeyValue> values)
 			{
 				EnsurePropertiesIsMutable();
-				Values.ToList().ForEach(_properties.Add);
+				values.ToList().ForEach(_properties.Add);
 
 				return this;
 			}
