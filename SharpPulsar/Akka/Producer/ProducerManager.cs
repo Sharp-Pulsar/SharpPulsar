@@ -37,6 +37,14 @@ namespace SharpPulsar.Akka.Producer
         {
             Stash.UnstashAll();
             Receive<NewProducer>(NewProducer);
+            Receive<Send>(s =>
+            {
+                _producers[s.Topic].Tell(s);
+            });
+            Receive<BatchSend>(s =>
+            {
+                _producers[s.Topic].Tell(s);
+            });
             Receive<TcpClosed>(_ =>
             {
                 Become(()=>Connecting(_config));

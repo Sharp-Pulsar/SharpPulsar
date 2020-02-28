@@ -36,6 +36,7 @@ namespace Sample
 
             pulsarSystem.Send(new Send(new Foo(), "Test"));
             pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
+            
             while (true)
             {
                 

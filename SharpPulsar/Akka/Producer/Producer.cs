@@ -51,7 +51,7 @@ namespace SharpPulsar.Akka.Producer
         private long _requestId;
         private MultiSchemaMode _multiSchemaMode;
         private BatchMessageKeyBasedContainer _batchMessageContainer;
-        private ISchema _schema;
+        private Dictionary<string, ISchema> _schemas;
         private ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
@@ -60,10 +60,11 @@ namespace SharpPulsar.Akka.Producer
         private int _partitionIndex;
         public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
         {
+            _schemas = new Dictionary<string, ISchema>();
             _isPartitioned = isPartitioned;
             _clientConfiguration = clientConfiguration;
             _producerInterceptor = configuration.Interceptors;
-            _schema = configuration.Schema;
+            _schemas.Add(configuration.TopicName, configuration.Schema);
             _configuration = configuration;
             _producerId = producerid;
             _network = network;
@@ -149,6 +150,42 @@ namespace SharpPulsar.Akka.Producer
             Receive<TcpClosed>(_ =>
             {
                 Become(LookUpBroker);
+            });
+            Receive<Send>(s =>
+            {
+                try
+                {
+                    var builder = new TypedMessageBuilderImpl(ProducerName, _schemas[s.Topic]);
+                    builder.Value(s.Message);
+                    builder.LoadConf(s.Config);
+                    foreach (var c in s.Config)
+                    {
+                        switch (c.Key.ToLower())
+                        {
+                            case "keybytes":
+                                builder.KeyBytes((sbyte[])c.Value);
+                                break;
+                            case "orderingkey":
+                                builder.OrderingKey((sbyte[])c.Value);
+                                break;
+                            case "property":
+                                var p = ((IDictionary<string, string>) c.Value).First();
+                                builder.Property(p.Key, p.Value);
+                                break;
+                        }
+                    }
+
+                    var message = builder.Message;
+                    Become(()=>InternalSend((MessageImpl)message));
+                }
+                catch (Exception e)
+                {
+                    _handler.Capture(e);
+                }
+
+            });
+            Receive<BatchSend>(s =>
+            {
             });
             Stash.UnstashAll();
         }
@@ -278,6 +315,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 m.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(r.SchemaVersion));
                 m.SetSchemaState(MessageImpl.SchemaState.Ready);
+                Become(()=> SendMessage(m));
             });
             ReceiveAny(_=> Stash.Stash());
             SchemaInfo schemaInfo = null;
@@ -303,6 +341,18 @@ namespace SharpPulsar.Akka.Producer
            _pendingLookupRequests.Add(requestId, payload);
         }
 
+        public void InternalSend(MessageImpl message)
+        {
+            ReceiveAny(x=> Stash.Stash());
+            var interceptorMessage = (MessageImpl)BeforeSend(message);
+            interceptorMessage.DataBuffer.Retain();
+            if (_producerInterceptor != null)
+            {
+                _handler.Capture(interceptorMessage.Properties);
+            }
+
+            SendMessage(interceptorMessage);
+        }
         private void SendMessage(MessageImpl msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
@@ -325,6 +375,7 @@ namespace SharpPulsar.Akka.Producer
                     var compressedStr = (!_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None) ? "Compressed" : "";
                     var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
                     Sender.Tell(new ErrorMessage(invalidMessageException));
+                    Become(Ready);
                     return;
                 }
             }
@@ -333,12 +384,14 @@ namespace SharpPulsar.Akka.Producer
                 var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
                 Sender.Tell(new ErrorMessage(invalidMessageException));
                 compressedPayload.Release();
+                Become(Ready);
                 return;
             }
 
             if (!PopulateMessageSchema(msg))
             {
                 compressedPayload.Release();
+                Become(Ready);
                 return;
             }
 
@@ -358,7 +411,7 @@ namespace SharpPulsar.Akka.Producer
                 {
                     msgMetadataBuilder.SetPublishTime(DateTime.Now.Millisecond);
 
-                    if (msgMetadataBuilder.HasProducerName())
+                    if (!msgMetadataBuilder.HasProducerName())
                         msgMetadataBuilder.SetProducerName(ProducerName);
 
                     if (_configuration.CompressionType != ICompressionType.None)
@@ -402,6 +455,8 @@ namespace SharpPulsar.Akka.Producer
                     {
                         DoBatchSendAndAdd(msg, payload);
                     }
+                    //so we can receive more messages in a batching situation
+                    Become(Ready);
                 }
                 else
                 {
@@ -482,6 +537,10 @@ namespace SharpPulsar.Akka.Producer
                     log.Error("[{}] [{}] error while create opSendMsg by batch message container", _configuration.TopicName, ProducerName, T);
                 }
             }
+            else
+            {
+                Become(Ready);
+            }
         }
         public ByteBufPair SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
         {
@@ -496,6 +555,7 @@ namespace SharpPulsar.Akka.Producer
         {
             if (op == null)
             {
+                Become(Ready);
                 return;
             }
             try
@@ -510,27 +570,37 @@ namespace SharpPulsar.Akka.Producer
                 }
                 if (op.Msg != null && op.Msg.GetSchemaState() == 0)
                 {
-                    TryRegisterSchema(op.Msg);
-                    return;
+                    Become(()=>TryRegisterSchema(op.Msg));
                 }
-                // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
-                // connection is established
-                op.Cmd.Retain();
+                else
+                {
+                    // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
+                    // connection is established
+                    op.Cmd.Retain();
+                    Become(()=> SendCommand(op));
+                }
+                
             }
             
-            catch (System.Exception T)
+            catch (Exception T)
             {
                 Context.System.Log.Error("[{}] [{}] error while closing out batch -- {}", _configuration.TopicName, ProducerName, T);
                 Sender.Tell(new ErrorMessage(new PulsarClientException(T.Message)));
             }
         }
 
+        private void SendCommand(OpSendMsg op)
+        {
+            var requestId = _requestId++;
+            var pay = new Payload(op.Cmd.);
+            _broker.Tell(pay);
+        }
         private bool PopulateMessageSchema(MessageImpl msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
             var schemaHash = SchemaHash.Of(msg.Schema);
             var schemaVersion = _schemaCache[schemaHash];
-            if (msg.Schema == _schema)
+            if (msg.Schema == _schemas[msg.TopicName])
             {
                 if (schemaVersion != null)
                     msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));

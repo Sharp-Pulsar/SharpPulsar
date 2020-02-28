@@ -188,14 +188,12 @@ namespace SharpPulsar.Impl
 		{
 			if(clusters == null)
 				throw new NullReferenceException();
-			Builder.ClearReplicateTo();
 			Builder.AddAllReplicateTo(clusters);
 			return this;
 		}
 
 		public ITypedMessageBuilder DisableReplication()
 		{
-			Builder.ClearReplicateTo();
 			Builder.AddReplicateTo("__local__");
 			return this;
 		}
@@ -215,27 +213,27 @@ namespace SharpPulsar.Impl
 		{
 			config.ToList().ForEach(d =>
 			{
-			if (d.Key.Equals(TypedMessageBuilderFields.ConfKey))
+			if (d.Key.Equals(TypedMessageBuilderFields.ConfKey, StringComparison.OrdinalIgnoreCase))
 			{
 				Key(d.Value.ToString());
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfProperties))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfProperties, StringComparison.OrdinalIgnoreCase))
 			{
 				Properties((IDictionary<string, string>)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfEventTime))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfEventTime, StringComparison.OrdinalIgnoreCase))
 			{
 				EventTime((long)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfSequenceId))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfSequenceId, StringComparison.OrdinalIgnoreCase))
 			{
 				SequenceId((long)d.Value);
             }
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfReplicationClusters))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfReplicationClusters, StringComparison.OrdinalIgnoreCase))
 			{
 				ReplicationClusters((IList<string>)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDisableReplication))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDisableReplication, StringComparison.OrdinalIgnoreCase))
 			{
 				var disableReplication = (bool)d.Value;
 				if (disableReplication)
@@ -243,11 +241,11 @@ namespace SharpPulsar.Impl
 					DisableReplication();
 				}
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds, StringComparison.OrdinalIgnoreCase))
 			{
 				DeliverAfter((long)d.Value, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAt))
+			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAt, StringComparison.OrdinalIgnoreCase))
 			{
 				DeliverAt((long)d.Value);
 			}
@@ -260,7 +258,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public virtual IMessage Message
+		public IMessage Message
 		{
 			get
 			{

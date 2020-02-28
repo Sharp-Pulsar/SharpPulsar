@@ -200,7 +200,7 @@ namespace SharpPulsar.Impl
 			interceptorMessage.DataBuffer.Retain();
 			if (Interceptors != null)
 			{
-				//InterceptorMessage.Properties;
+				_h interceptorMessage.Properties;
 			}
 			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, interceptorMessage));
 			return task;
@@ -368,13 +368,13 @@ namespace SharpPulsar.Impl
 					}
 					else
 					{
-						sequenceId = msgMetadataBuilder.GetSequenceId();
+						sequenceId = (long)msgMetadataBuilder.GetSequenceId();
 					}
 					if (!msgMetadataBuilder.HasPublishTime())
 					{
 						msgMetadataBuilder.SetPublishTime(Client.ClientClock.Millisecond);
 
-						if(msgMetadataBuilder.HasProducerName())
+						if(!msgMetadataBuilder.HasProducerName())
 							msgMetadataBuilder.SetProducerName(HandlerName);
 
 						if (Conf.CompressionType != ICompressionType.None)
@@ -1611,7 +1611,7 @@ namespace SharpPulsar.Impl
 			}
 			if (pendingRegisteringOp != null)
 			{
-				TryRegisterSchema(cnx, pendingRegisteringOp.Msg, pendingRegisteringOp.Callback);
+				TryRegisterSchema(pendingRegisteringOp.Msg);
 			}
 		}
 
