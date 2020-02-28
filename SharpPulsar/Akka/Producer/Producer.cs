@@ -140,9 +140,8 @@ namespace SharpPulsar.Akka.Producer
             ReceiveAny(_=> Stash.Stash());
         }
 
-        public void Ready()
+        public void Receive()
         {
-            Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -169,14 +168,14 @@ namespace SharpPulsar.Akka.Producer
                                 builder.OrderingKey((sbyte[])c.Value);
                                 break;
                             case "property":
-                                var p = ((IDictionary<string, string>) c.Value).First();
+                                var p = ((IDictionary<string, string>)c.Value).First();
                                 builder.Property(p.Key, p.Value);
                                 break;
                         }
                     }
 
                     var message = builder.Message;
-                    Become(()=>InternalSend((MessageImpl)message));
+                    Become(() => InternalSend((MessageImpl)message));
                 }
                 catch (Exception e)
                 {
@@ -189,7 +188,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Stash.UnstashAll();
         }
-        public void CreateProducer()
+       public void CreateProducer()
         {
             Receive<ProducerCreated>(p =>
             {
@@ -202,7 +201,8 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
                 }
-                Become(Ready);
+                Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
+                Become(Receive);
             });
             Receive<AddPublicKeyCipher>(a =>
             {
@@ -375,7 +375,7 @@ namespace SharpPulsar.Akka.Producer
                     var compressedStr = (!_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None) ? "Compressed" : "";
                     var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
                     Sender.Tell(new ErrorMessage(invalidMessageException));
-                    Become(Ready);
+                    Become(Receive);
                     return;
                 }
             }
@@ -384,14 +384,14 @@ namespace SharpPulsar.Akka.Producer
                 var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
                 Sender.Tell(new ErrorMessage(invalidMessageException));
                 compressedPayload.Release();
-                Become(Ready);
+                Become(Receive);
                 return;
             }
 
             if (!PopulateMessageSchema(msg))
             {
                 compressedPayload.Release();
-                Become(Ready);
+                Become(Receive);
                 return;
             }
 
@@ -456,7 +456,7 @@ namespace SharpPulsar.Akka.Producer
                         DoBatchSendAndAdd(msg, payload);
                     }
                     //so we can receive more messages in a batching situation
-                    Become(Ready);
+                    Become(Receive);
                 }
                 else
                 {
@@ -539,23 +539,23 @@ namespace SharpPulsar.Akka.Producer
             }
             else
             {
-                Become(Ready);
+                Become(Receive);
             }
         }
-        public ByteBufPair SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        public IByteBuffer SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
         {
-            return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+            return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
         }
 
-        public ByteBufPair SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        public IByteBuffer SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
         {
-            return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+            return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
         }
         private void ProcessOpSendMsg(OpSendMsg op)
         {
             if (op == null)
             {
-                Become(Ready);
+                Become(Receive);
                 return;
             }
             try
@@ -591,8 +591,14 @@ namespace SharpPulsar.Akka.Producer
 
         private void SendCommand(OpSendMsg op)
         {
+            Receive<SentReceipt>(s =>
+            {
+                _handler.MessageId(s);
+                Become(Receive);
+            });
+            ReceiveAny(_ => Stash.Stash());
             var requestId = _requestId++;
-            var pay = new Payload(op.Cmd.);
+            var pay = new Payload(op.Cmd.Array, requestId, "CommandMessage");
             _broker.Tell(pay);
         }
         private bool PopulateMessageSchema(MessageImpl msg)

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using DotNetty.Common;
-using SharpPulsar.Shared;
+using DotNetty.Buffers;
 
 namespace SharpPulsar.Impl
 {
@@ -9,13 +8,13 @@ namespace SharpPulsar.Impl
     {
         internal MessageImpl Msg;
         internal IList<MessageImpl> Msgs;
-        internal ByteBufPair Cmd;
+        internal IByteBuffer Cmd;
         internal ThreadStart RePopulate;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
 
-        internal static OpSendMsg Create(MessageImpl msg, ByteBufPair cmd, long sequenceId)
+        internal static OpSendMsg Create(MessageImpl msg, IByteBuffer cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -24,7 +23,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<MessageImpl> msgs, ByteBufPair cmd, long sequenceId)
+        internal static OpSendMsg Create(IList<MessageImpl> msgs, IByteBuffer cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -33,7 +32,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<MessageImpl> msgs, ByteBufPair cmd, long lowestSequenceId, long highestSequenceId)
+        internal static OpSendMsg Create(IList<MessageImpl> msgs, IByteBuffer cmd, long lowestSequenceId, long highestSequenceId)
         {
             var op = new OpSendMsg
             {

@@ -346,17 +346,17 @@ namespace SharpPulsar.Protocol
 			return res;
 		}
 
-		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, IByteBuffer payload)
+		public static IByteBuffer NewSend(long producerId, long sequenceId, int numMessaegs, MessageMetadata messageMetadata, IByteBuffer payload)
 		{
-			return NewSend(producerId, sequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
+			return NewSend(producerId, sequenceId, numMessaegs, 0, 0, messageMetadata, payload);
 		}
 
-		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, IByteBuffer payload)
+		public static IByteBuffer NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, MessageMetadata messageMetadata, IByteBuffer payload)
 		{
-			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, 0, 0, checksumType, messageMetadata, payload);
+			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, 0, 0, messageMetadata, payload);
 		}
 
-		public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, MessageMetadata messageData, IByteBuffer payload)
+		public static IByteBuffer NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, IByteBuffer payload)
 		{
 			var sendBuilder = CommandSend.NewBuilder();
 			sendBuilder.SetProducerId(producerId);
@@ -375,13 +375,11 @@ namespace SharpPulsar.Protocol
 			}
 			var send = sendBuilder.Build();
 
-			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send), checksumType, messageData, payload);
-			send.Recycle();
-			sendBuilder.Recycle();
-			return res;
+			var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send).Build(), messageData, new ReadOnlySequence<byte>(payload.Array));
+			return Unpooled.WrappedBuffer(res.ToArray());
 		}
 
-		public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, MessageMetadata messageData, IByteBuffer payload)
+		public static IByteBuffer NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, IByteBuffer payload)
 		{
 			var sendBuilder = CommandSend.NewBuilder();
 			sendBuilder.SetProducerId(producerId);
@@ -401,10 +399,8 @@ namespace SharpPulsar.Protocol
 			}
 			var send = sendBuilder.Build();
 
-			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send), checksumType, messageData, payload);
-			send.Recycle();
-			sendBuilder.Recycle();
-			return res;
+			var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send).Build(), messageData, new ReadOnlySequence<byte>(payload.Array));
+			return Unpooled.WrappedBuffer(res.ToArray());
 		}
 
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)

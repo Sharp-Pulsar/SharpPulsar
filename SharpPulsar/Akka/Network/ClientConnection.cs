@@ -132,6 +132,10 @@ namespace SharpPulsar.Akka.Network
 
 				switch (cmd.Type)
 				{
+                    case BaseCommand.Types.Type.SendReceipt:
+                        var send = cmd.SendReceipt;
+                        _manager.Tell(new SentReceipt((long)send.ProducerId, (long)send.SequenceId, (long)send.MessageId.EntryId, (long)send.MessageId.LedgerId, send.MessageId.BatchIndex, send.MessageId.Partition));
+                        break;
                     case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
                         var res = cmd.GetOrCreateSchemaResponse;
                         _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion.ToByteArray()));
