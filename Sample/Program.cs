@@ -34,8 +34,8 @@ namespace Sample
             
             pulsarSystem.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
 
-            pulsarSystem.Send(new Send(new Foo(), "Test"));
-            pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
+           // pulsarSystem.Send(new Send(new Foo(), "Test"));
+            //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)
             {

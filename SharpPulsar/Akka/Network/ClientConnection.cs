@@ -15,7 +15,7 @@ using Dns = System.Net.Dns;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class ClientConnection: UntypedActor
+    public class ClientConnection: UntypedActor, IWithUnboundedStash
     {
         protected internal readonly IAuthentication Authentication;
         private State _state;
@@ -79,9 +79,13 @@ namespace SharpPulsar.Akka.Network
                     HandleTcpConnected();
                     Become(Connected(Sender));
                     break;
+                case Tcp.Closed closed:
+                case Tcp.Aborted a:
+                case Tcp.ConnectionClosed cl:
                 case Tcp.CommandFailed c:
-                    Console.WriteLine("Connection failed");//reschule
+                    Console.WriteLine("Connection lost");
 					Context.Parent.Tell(new TcpFailed(Self.Path.Name));
+                    Become(Connecting());
                     break;
                 default:
                     Unhandled(message);
@@ -89,6 +93,29 @@ namespace SharpPulsar.Akka.Network
             }
         }
 
+        private UntypedReceive Connecting()
+        {
+            return message =>
+            {
+                if (message is TcpReconnect)
+                {
+                    Context.System.Tcp().Tell(new Tcp.Connect(RemoteAddress));
+                }
+                else if (message is Tcp.Connected connected)
+                {
+                    Log.Info("Connected to {0}", connected.RemoteAddress);
+                    // Register self as connection handler
+                    Sender.Tell(new Tcp.Register(Self));
+                    HandleTcpConnected();
+                    Become(Connected(Sender));
+                    Stash.UnstashAll();
+                }
+                else
+                {
+                    Stash.Stash();
+                }
+            };
+        }
         private UntypedReceive Connected(IActorRef connection)
         {
             return message =>
@@ -239,5 +266,7 @@ namespace SharpPulsar.Akka.Network
 			get => _remoteHostName;
 			set => _remoteHostName = value;
 		}
+
+        public IStash Stash { get; set; }
     }
 }

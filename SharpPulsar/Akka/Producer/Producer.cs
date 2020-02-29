@@ -64,7 +64,7 @@ namespace SharpPulsar.Akka.Producer
             _isPartitioned = isPartitioned;
             _clientConfiguration = clientConfiguration;
             _producerInterceptor = configuration.Interceptors;
-            _schemas.Add(configuration.TopicName, configuration.Schema);
+            _schemas.Add("default", configuration.Schema);
             _configuration = configuration;
             _producerId = producerid;
             _network = network;
@@ -150,45 +150,66 @@ namespace SharpPulsar.Akka.Producer
             {
                 Become(LookUpBroker);
             });
-            Receive<Send>(s =>
+            Receive<Send>(ProcessSend);
+            Receive<BulkSend>(s =>
             {
-                try
+                foreach (var m in s.Messages)
                 {
-                    var builder = new TypedMessageBuilderImpl(ProducerName, _schemas[s.Topic]);
-                    builder.Value(s.Message);
-                    builder.LoadConf(s.Config);
-                    foreach (var c in s.Config)
-                    {
-                        switch (c.Key.ToLower())
-                        {
-                            case "keybytes":
-                                builder.KeyBytes((sbyte[])c.Value);
-                                break;
-                            case "orderingkey":
-                                builder.OrderingKey((sbyte[])c.Value);
-                                break;
-                            case "property":
-                                var p = ((IDictionary<string, string>)c.Value).First();
-                                builder.Property(p.Key, p.Value);
-                                break;
-                        }
-                    }
-
-                    var message = builder.Message;
-                    Become(() => InternalSend((MessageImpl)message));
+                    ProcessSend(m);
                 }
-                catch (Exception e)
-                {
-                    _handler.Capture(e);
-                }
-
-            });
-            Receive<BatchSend>(s =>
-            {
             });
             Stash.UnstashAll();
         }
-       public void CreateProducer()
+
+        private void ProcessSend(Send s)
+        {
+            try
+            {
+                var schemaName = s.Schema?.Name ?? "default";
+                ISchema schema = null;
+                if (_schemas.ContainsKey(schemaName))
+                    schema = _schemas[schemaName];
+                else
+                {
+                    schema = s.Schema?.Schema;
+                    if (schema != null)
+                    {
+                        _schemas.Add(schemaName, s.Schema?.Schema);
+                    }
+                    else
+                    {
+                        schema = _schemas["default"];
+                    }
+                }
+                var builder = new TypedMessageBuilderImpl(ProducerName, schema);
+                builder.Value(s.Message);
+                builder.LoadConf(s.Config);
+                foreach (var c in s.Config)
+                {
+                    switch (c.Key.ToLower())
+                    {
+                        case "keybytes":
+                            builder.KeyBytes((sbyte[])c.Value);
+                            break;
+                        case "orderingkey":
+                            builder.OrderingKey((sbyte[])c.Value);
+                            break;
+                        case "property":
+                            var p = ((IDictionary<string, string>)c.Value).First();
+                            builder.Property(p.Key, p.Value);
+                            break;
+                    }
+                }
+
+                var message = builder.Message;
+                Become(() => InternalSend((MessageImpl)message));
+            }
+            catch (Exception e)
+            {
+                _handler.Capture(e);
+            }
+        }
+       private void CreateProducer()
         {
             Receive<ProducerCreated>(p =>
             {

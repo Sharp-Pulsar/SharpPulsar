@@ -37,7 +37,7 @@ namespace SharpPulsar.Akka
         {
            _pulsarManager.Tell(send);
         }
-        public void BatchSend(BatchSend send)
+        public void BatchSend(BulkSend send)
         {
             _pulsarManager.Tell(send);
         }

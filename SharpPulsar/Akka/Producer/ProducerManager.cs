@@ -39,11 +39,11 @@ namespace SharpPulsar.Akka.Producer
             Receive<NewProducer>(NewProducer);
             Receive<Send>(s =>
             {
-                _producers[s.Topic].Tell(s);
+                _producers[s.Topic]?.Tell(s);
             });
-            Receive<BatchSend>(s =>
+            Receive<BulkSend>(s =>
             {
-                _producers[s.Topic].Tell(s);
+                _producers[s.Topic]?.Tell(s);
             });
             Receive<TcpClosed>(_ =>
             {
