@@ -2,7 +2,7 @@
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 
-namespace SharpPulsar.Akka.InternalCommands
+namespace SharpPulsar.Akka.InternalCommands.Producer
 {
     public sealed class CreateProducer
     {
@@ -11,7 +11,6 @@ namespace SharpPulsar.Akka.InternalCommands
             Schema = schema;
             ProducerConfiguration = producerConfiguration;
         }
-        public IHandler Handler { get; }
         public ISchema Schema { get; }
         public ProducerConfigurationData ProducerConfiguration { get; }
     }
@@ -23,7 +22,7 @@ namespace SharpPulsar.Akka.InternalCommands
             Configuration = configuration;
             ProducerConfiguration = producerConfiguration;
         }
-        public IHandler Handler { get; }
+        
         public ISchema Schema { get; }
         public ClientConfigurationData Configuration { get; }
         public ProducerConfigurationData ProducerConfiguration { get; }

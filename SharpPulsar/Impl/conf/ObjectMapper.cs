@@ -37,16 +37,16 @@ namespace SharpPulsar.Impl.Conf
 			};
 			return jsonObject;
 		}
-		public string WriteValueAsString<T>(T @object)
+		public string WriteValueAsString(T @object)
 		{
 			return JsonSerializer.Serialize(@object, Options());
 		}
 
-        public byte[] WriteValueAsBytes<T>(T @object)
+        public byte[] WriteValueAsBytes(T @object)
         {
             return JsonSerializer.SerializeToUtf8Bytes(@object, Options());
         }
-		public ObjectMapper WithOutAttribute<T>(T @object)
+		public ObjectMapper WithOutAttribute(T @object)
 		{
 			return this;
 		}

@@ -30,7 +30,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Impl
 {
 
-	public abstract class ProducerBase<T> : HandlerState, IProducer<T>
+	public abstract class ProducerBase : HandlerState, IProducer
 	{
 		public abstract bool Connected { get; set; }
 		public  IProducerStatsRecorder Stats { get; set;}
@@ -39,17 +39,17 @@ namespace SharpPulsar.Impl
 		public abstract string ProducerName { get; set; }
 		public MultiSchemaMode MultiSchemaMode;
 
-		protected internal readonly TaskCompletionSource<IProducer<T>> ProducerCreatedTask;
+		protected internal readonly TaskCompletionSource<IProducer> ProducerCreatedTask;
 		protected internal readonly ProducerConfigurationData Conf;
-		protected internal readonly ISchema<T> Schema;
+		protected internal readonly ISchema Schema;
 		protected internal readonly ProducerInterceptors Interceptors;
 		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> SchemaCache;
 		public MultiSchemaMode ProducerMultiSchemaMode;
 
 
-        protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic)
+        protected ProducerBase(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer> producerCreatedTask, ISchema schema, ProducerInterceptors interceptors) : base(client, topic)
         {
-			Stats = new ProducerStatsRecorderImpl<T>(client, conf, this);
+			Stats = new ProducerStatsRecorderImpl(client, conf, this);
 			ProducerCreatedTask = producerCreatedTask;
 			Conf = conf;
 			Schema = schema;
@@ -164,7 +164,7 @@ namespace SharpPulsar.Impl
         public virtual ProducerConfigurationData Configuration => Conf;
 
 
-        public virtual TaskCompletionSource<IProducer<T>> ProducerCreated()
+        public virtual TaskCompletionSource<IProducer> ProducerCreated()
 		{
 			return ProducerCreatedTask;
 		}

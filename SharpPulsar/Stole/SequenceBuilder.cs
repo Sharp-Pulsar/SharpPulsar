@@ -6,21 +6,21 @@ using System.Text;
 
 namespace SharpPulsar.Stole
 {
-    public sealed class SequenceBuilder<T> where T : notnull
+    public sealed class SequenceBuilder where T : notnull
     {
-        private readonly LinkedList<ReadOnlyMemory<T>> _elements;
+        private readonly LinkedList<ReadOnlyMemory> _elements;
 
-        public SequenceBuilder() => _elements = new LinkedList<ReadOnlyMemory<T>>();
+        public SequenceBuilder() => _elements = new LinkedList<ReadOnlyMemory>();
 
-        public SequenceBuilder<T> Prepend(ReadOnlyMemory<T> memory)
+        public SequenceBuilder Prepend(ReadOnlyMemory memory)
         {
             _elements.AddFirst(memory);
             return this;
         }
 
-        public SequenceBuilder<T> Prepend(ReadOnlySequence<T> sequence)
+        public SequenceBuilder Prepend(ReadOnlySequence sequence)
         {
-            LinkedListNode<ReadOnlyMemory<T>>? index = null;
+            LinkedListNode<ReadOnlyMemory>? index = null;
 
             foreach (var memory in sequence)
             {
@@ -33,13 +33,13 @@ namespace SharpPulsar.Stole
             return this;
         }
 
-        public SequenceBuilder<T> Append(ReadOnlyMemory<T> memory)
+        public SequenceBuilder Append(ReadOnlyMemory memory)
         {
             _elements.AddLast(memory);
             return this;
         }
 
-        public SequenceBuilder<T> Append(ReadOnlySequence<T> sequence)
+        public SequenceBuilder Append(ReadOnlySequence sequence)
         {
             foreach (var memory in sequence)
                 _elements.AddLast(memory);
@@ -49,10 +49,10 @@ namespace SharpPulsar.Stole
 
         public long Length => _elements.Sum(e => e.Length);
 
-        public ReadOnlySequence<T> Build()
+        public ReadOnlySequence Build()
         {
             if (_elements.Count == 0)
-                return new ReadOnlySequence<T>();
+                return new ReadOnlySequence();
 
             Segment? start = null;
             Segment? current = null;
@@ -68,18 +68,18 @@ namespace SharpPulsar.Stole
                     current = current.CreateNext(element);
             }
 
-            return new ReadOnlySequence<T>(start, 0, current, current!.Memory.Length);
+            return new ReadOnlySequence(start, 0, current, current!.Memory.Length);
         }
 
-        private sealed class Segment : ReadOnlySequenceSegment<T>
+        private sealed class Segment : ReadOnlySequenceSegment
         {
-            public Segment(ReadOnlyMemory<T> memory, long runningIndex = 0)
+            public Segment(ReadOnlyMemory memory, long runningIndex = 0)
             {
                 Memory = memory;
                 RunningIndex = runningIndex;
             }
 
-            public Segment CreateNext(ReadOnlyMemory<T> memory)
+            public Segment CreateNext(ReadOnlyMemory memory)
             {
                 var segment = new Segment(memory, RunningIndex + Memory.Length);
                 Next = segment;

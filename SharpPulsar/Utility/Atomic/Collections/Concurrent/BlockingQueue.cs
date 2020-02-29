@@ -34,10 +34,10 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
     /// </summary>
     /// <typeparam name="T">The type used in this queue.</typeparam>
     /// \author Matt Bolt
-    public class BlockingQueue<T> : IEnumerable<T>, IEnumerable {
+    public class BlockingQueue : IEnumerable, IEnumerable {
         private readonly ILock _lock;
         private readonly ICondition _notEmpty;
-        private readonly Queue<T> _queue;
+        private readonly Queue _queue;
 
         public BlockingQueue() 
             : this(1) {
@@ -45,13 +45,13 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
         }
 
         public BlockingQueue(int capacity) {
-            _queue = new Queue<T>(capacity);
+            _queue = new Queue(capacity);
             _lock = new ReentrantLock();
             _notEmpty = _lock.NewCondition();
         }
 
-        public BlockingQueue(IEnumerable<T> collection) {
-            _queue = new Queue<T>(collection);
+        public BlockingQueue(IEnumerable collection) {
+            _queue = new Queue(collection);
             _lock = new ReentrantLock();
             _notEmpty = _lock.NewCondition();
         }
@@ -207,8 +207,8 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
             }
         }
 
-        public IEnumerator<T> GetEnumerator() {
-            return new LockingEnumerator<T>(_queue.GetEnumerator(), _lock);
+        public IEnumerator GetEnumerator() {
+            return new LockingEnumerator(_queue.GetEnumerator(), _lock);
         }
 
         IEnumerator IEnumerable.GetEnumerator() {

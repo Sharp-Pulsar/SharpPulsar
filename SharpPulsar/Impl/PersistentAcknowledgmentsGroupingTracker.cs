@@ -34,14 +34,14 @@ namespace SharpPulsar.Impl
 	/// <summary>
 	/// Group the acknowledgements for a certain time and then sends them out in a single protobuf command.
 	/// </summary>
-	public class PersistentAcknowledgmentsGroupingTracker<T>: IAcknowledgmentsGroupingTracker
+	public class PersistentAcknowledgmentsGroupingTracker: IAcknowledgmentsGroupingTracker
 	{
 
 		/// <summary>
 		/// When reaching the max group size, an ack command is sent out immediately
 		/// </summary>
 		private const int MaxAckGroupSize = 1000;
-		private readonly ConsumerImpl<T> _consumer;
+		private readonly ConsumerImpl _consumer;
 
 		private readonly long _acknowledgementGroupTimeMicros;
 
@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl
 		private volatile MessageIdImpl _lastCumulativeAck = (MessageIdImpl) MessageIdFields.Earliest;
 		private volatile bool _cumulativeAckFlushRequired = false;
 
-		private static readonly ConcurrentDictionary<PersistentAcknowledgmentsGroupingTracker<T>, MessageIdImpl> LastCumulativeAckUpdater = new ConcurrentDictionary<PersistentAcknowledgmentsGroupingTracker<T>, MessageIdImpl>();
+		private static readonly ConcurrentDictionary<PersistentAcknowledgmentsGroupingTracker, MessageIdImpl> LastCumulativeAckUpdater = new ConcurrentDictionary<PersistentAcknowledgmentsGroupingTracker, MessageIdImpl>();
 
 		/// <summary>
 		/// This is a set of all the individual acks that the application has issued and that were not already sent to
@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
 
 		private readonly IScheduledTask _scheduledTask;
 
-		public PersistentAcknowledgmentsGroupingTracker(ConsumerImpl<T> consumer, ConsumerConfigurationData<T> conf, IEventLoopGroup eventLoopGroup)
+		public PersistentAcknowledgmentsGroupingTracker(ConsumerImpl consumer, ConsumerConfigurationData conf, IEventLoopGroup eventLoopGroup)
 		{
 			this._consumer = consumer;
 			this._pendingIndividualAcks = new ConcurrentBag<MessageIdImpl>();
@@ -232,7 +232,7 @@ namespace SharpPulsar.Impl
                 _scheduledTask.Cancel();
             }
 		}
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<PersistentAcknowledgmentsGroupingTracker<T>>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<PersistentAcknowledgmentsGroupingTracker>();
         public void Dispose()
         {
            Close();

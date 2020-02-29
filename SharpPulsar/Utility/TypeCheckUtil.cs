@@ -22,7 +22,7 @@ namespace SharpPulsar.Utility
 {
 	public class TypeCheckUtil
 	{
-		public static T CheckType<T>(object o, Type clazz)
+		public static T CheckType(object o, Type clazz)
 		{
 			if (!clazz.IsInstanceOfType(o))
 			{

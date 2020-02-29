@@ -30,12 +30,12 @@ using SharpPulsar.Utility;
 namespace SharpPulsar.Impl
 {
     [Serializable]
-    public sealed class ProducerStatsRecorderImpl<T> : IProducerStatsRecorder
+    public sealed class ProducerStatsRecorderImpl : IProducerStatsRecorder
     {
 
         private const long SerialVersionUid = 1L;
         internal ITimeout StatTimeout { get; set; }
-        [NonSerialized] private IProducer<T> _producer;
+        [NonSerialized] private IProducer _producer;
         [NonSerialized] private PulsarClientImpl _pulsarClient;
         private long _oldTime;
         private long _statsIntervalSeconds;
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl
         }
 
         public ProducerStatsRecorderImpl(PulsarClientImpl pulsarClient, ProducerConfigurationData conf,
-            IProducer<T> producer)
+            IProducer producer)
         {
             Dec.NumberDecimalSeparator = "0.000";
             ThroughputFormat.NumberDecimalSeparator = "0.00";
@@ -206,9 +206,9 @@ namespace SharpPulsar.Impl
 
         public class StatsTimerTask : ITimerTask
         {
-            private readonly ProducerStatsRecorderImpl<T> _outerInstance;
+            private readonly ProducerStatsRecorderImpl _outerInstance;
 
-            public StatsTimerTask(ProducerStatsRecorderImpl<T> outerInstance)
+            public StatsTimerTask(ProducerStatsRecorderImpl outerInstance)
             {
                 _outerInstance = outerInstance;
             }
@@ -288,7 +288,7 @@ namespace SharpPulsar.Impl
             }
         }
 
-        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerStatsRecorderImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerStatsRecorderImpl));
         
         //https://stackoverflow.com/questions/8137391/percentile-calculation
         public double[] GetQuantiles(double[] ranks)

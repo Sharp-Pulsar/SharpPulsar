@@ -25,7 +25,7 @@ namespace SharpPulsar.Api.Interceptor
 	/// <summary>
 	/// A wrapper for old style producer interceptor.
 	/// </summary>
-	public class ProducerInterceptorWrapper<T> : IProducerInterceptor
+	public class ProducerInterceptorWrapper : IProducerInterceptor
 	{
 		private readonly IProducerInterceptor _innerInterceptor;
 
@@ -43,17 +43,17 @@ namespace SharpPulsar.Api.Interceptor
 			_innerInterceptor.Close();
 		}
 
-		public bool Eligible<T>(IMessage<T> message)
+		public bool Eligible(IMessage message)
 		{
 			return true;
 		}
 
-		public IMessage<T> BeforeSend<T>(IProducer<T> producer, IMessage<T> message)
+		public IMessage BeforeSend(IProducer producer, IMessage message)
 		{
 			return _innerInterceptor.BeforeSend(producer, message);
 		}
 
-		public void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
+		public void OnSendAcknowledgement(IProducer producer, IMessage message, IMessageId msgId, System.Exception exception)
 		{
 			_innerInterceptor.OnSendAcknowledgement(producer, message, msgId, exception);
 		}

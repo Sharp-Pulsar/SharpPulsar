@@ -28,12 +28,12 @@ using SharpPulsar.Utils;
 namespace SharpPulsar.Impl
 {
 
-    public class ReaderImpl<T> : IReader<T>
+    public class ReaderImpl : IReader
 	{
 
-		private readonly ConsumerImpl<T> _consumer;
+		private readonly ConsumerImpl _consumer;
 
-		public ReaderImpl(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, TaskCompletionSource<IConsumer<T>> consumerTask, ISchema<T> schema, ScheduledThreadPoolExecutor executor)
+		public ReaderImpl(PulsarClientImpl client, ReaderConfigurationData readerConfiguration, TaskCompletionSource<IConsumer> consumerTask, ISchema schema, ScheduledThreadPoolExecutor executor)
 		{
 
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
-			var consumerConfiguration = new ConsumerConfigurationData<T>();
+			var consumerConfiguration = new ConsumerConfigurationData();
 			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
 			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
@@ -72,16 +72,16 @@ namespace SharpPulsar.Impl
 			}
 
 			var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, executor, partitionIdx, false, consumerTask, ConsumerImpl<T>.SubscriptionMode.NonDurable, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
+			_consumer = new ConsumerImpl(client, readerConfiguration.TopicName, consumerConfiguration, executor, partitionIdx, false, consumerTask, SubscriptionMode.SubscriptionMode.NonDurable, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
 		}
 
-		public class MessageListenerAnonymousInnerClass : IMessageListener<T>
+		public class MessageListenerAnonymousInnerClass : IMessageListener
 		{
-			private readonly ReaderImpl<T> _outerInstance;
+			private readonly ReaderImpl _outerInstance;
 
-			private IReaderListener<T> _readerListener;
+			private IReaderListener _readerListener;
 
-			public MessageListenerAnonymousInnerClass(ReaderImpl<T> outerInstance, IReaderListener<T> readerListener)
+			public MessageListenerAnonymousInnerClass(ReaderImpl outerInstance, IReaderListener readerListener)
 			{
 				this._outerInstance = outerInstance;
 				this._readerListener = readerListener;
@@ -90,13 +90,13 @@ namespace SharpPulsar.Impl
 
 			private static long SerialVersionUid;
 
-			public void Received(IConsumer<T> consumer, IMessage<T> msg)
+			public void Received(IConsumer consumer, IMessage msg)
 			{
 				_readerListener.Received(_outerInstance, msg);
 				consumer.AcknowledgeCumulativeAsync(msg);
 			}
 
-			public void ReachedEndOfTopic(IConsumer<T> consumer)
+			public void ReachedEndOfTopic(IConsumer consumer)
 			{
 				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
@@ -104,14 +104,14 @@ namespace SharpPulsar.Impl
 
 		public virtual string Topic => _consumer.Topic;
 
-        public virtual ConsumerImpl<T> Consumer => _consumer;
+        public virtual ConsumerImpl Consumer => _consumer;
 
         public bool HasReachedEndOfTopic()
 		{
 			return _consumer.HasReachedEndOfTopic();
 		}
 
-		public IMessage<T> ReadNext()
+		public IMessage ReadNext()
 		{
 			var msg = _consumer.Receive();
 
@@ -121,7 +121,7 @@ namespace SharpPulsar.Impl
 			return msg;
 		}
 
-		public IMessage<T> ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public IMessage ReadNext(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			var msg = _consumer.Receive(timeout, unit);
 
@@ -132,7 +132,7 @@ namespace SharpPulsar.Impl
 			return msg;
 		}
 
-		public ValueTask<IMessage<T>> ReadNextAsync()
+		public ValueTask<IMessage> ReadNextAsync()
 		{
 			var r = _consumer.ReceiveAsync().AsTask().ContinueWith(task =>
             {
@@ -140,7 +140,7 @@ namespace SharpPulsar.Impl
 			    _consumer.AcknowledgeCumulativeAsync(msg);
 			    return msg;
 			});
-			return new ValueTask<IMessage<T>>(r.Result);
+			return new ValueTask<IMessage>(r.Result);
 		}
 
 		public void Close()

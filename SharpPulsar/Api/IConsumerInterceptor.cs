@@ -37,12 +37,6 @@ namespace SharpPulsar.Api
 	/// </summary>
 	public interface IConsumerInterceptor
 	{
-
-		/// <summary>
-		/// Close the interceptor.
-		/// </summary>
-		void Close();
-
 		/// <summary>
 		/// This is called just before the message is returned by
 		/// <seealso cref="IConsumer.receive()"/>, {@link MessageListener#received(Consumer,
@@ -94,7 +88,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledge(IConsumer consumer, IMessageId messageId, System.Exception exception);
+		void OnAcknowledge(string consumer, IMessageId messageId, Exception exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -106,7 +100,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(IConsumer consumer, IMessageId messageId, System.Exception exception);
+		void OnAcknowledgeCumulative(string consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.
@@ -117,7 +111,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnNegativeAcksSend(IConsumer consumer, ISet<IMessageId> messageIds);
+		void OnNegativeAcksSend(string consumer, ISet<IMessageId> messageIds);
 
 		/// <summary>
 		/// This method will be called when a redelivery from an acknowledge timeout occurs.
@@ -128,7 +122,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnAckTimeoutSend(IConsumer consumer, ISet<IMessageId> messageIds);
+		void OnAckTimeoutSend(string consumer, ISet<IMessageId> messageIds);
 	}
 
 }

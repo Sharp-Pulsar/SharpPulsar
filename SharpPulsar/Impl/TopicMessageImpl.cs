@@ -24,17 +24,17 @@ namespace SharpPulsar.Impl
     using Pulsar.Common.Auth;
     using Api;
 
-	public class TopicMessageImpl<T> : IMessage<T>
+	public class TopicMessageImpl : IMessage
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		public string TopicPartitionName;
 
-		private readonly IMessage<T> _msg;
+		private readonly IMessage _msg;
 		private  TopicMessageIdImpl _messageId;
 
-		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage<T> msg)
+		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage msg)
 		{
 			TopicPartitionName = topicPartitionName;
 
@@ -98,7 +98,7 @@ namespace SharpPulsar.Impl
 
 		public virtual sbyte[] OrderingKey => _msg.OrderingKey;
 
-        public virtual T Value => _msg.Value;
+        public virtual object Value => _msg.Value;
 
         public virtual EncryptionContext EncryptionCtx => _msg.EncryptionCtx;
 
@@ -110,7 +110,7 @@ namespace SharpPulsar.Impl
 
         public virtual string ReplicatedFrom => _msg.ReplicatedFrom;
 
-        public virtual IMessage<T> Message => _msg;
+        public virtual IMessage Message => _msg;
     }
 
 }

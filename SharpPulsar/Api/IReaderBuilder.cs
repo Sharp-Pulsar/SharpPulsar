@@ -31,7 +31,7 @@ namespace SharpPulsar.Api
 	/// <seealso cref= IPulsarClient#newReader()
 	/// 
 	/// @since 2.0.0 </seealso>
-	public interface IReaderBuilder<T> : ICloneable
+	public interface IReaderBuilder : ICloneable
 	{
 
 		/// <summary>
@@ -44,7 +44,7 @@ namespace SharpPulsar.Api
 		/// <returns> the reader instance </returns>
 		/// <exception cref="Exceptions.PulsarClientException">
 		///             if the reader creation fails </exception>
-		IReader<T> Create();
+		IReader Create();
 
 		/// <summary>
 		/// Finalize the creation of the <seealso cref="Reader"/> instance in asynchronous mode.
@@ -56,7 +56,7 @@ namespace SharpPulsar.Api
 		/// <returns> the reader instance </returns>
 		/// <exception cref="Exceptions.PulsarClientException">
 		///             if the reader creation fails </exception>
-		ValueTask<IReader<T>> CreateAsync();
+		ValueTask<IReader> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -79,7 +79,7 @@ namespace SharpPulsar.Api
 		/// <param name="config">
 		///            configuration to load </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> LoadConf(IDictionary<string, object> config);
+		IReaderBuilder LoadConf(IDictionary<string, object> config);
 
 		/// <summary>
 		/// Create a copy of the current <seealso cref="ReaderBuilder"/>.
@@ -99,7 +99,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the reader builder instance </returns>
-		IReaderBuilder<T> Clone();
+		IReaderBuilder Clone();
 
 		/// <summary>
 		/// Specify the topic this reader will read from.
@@ -111,7 +111,7 @@ namespace SharpPulsar.Api
 		/// <param name="topicName">
 		///            the name of the topic </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> Topic(string topicName);
+		IReaderBuilder Topic(string topicName);
 
 		/// <summary>
 		/// The initial reader positioning is done by specifying a message id. The options are:
@@ -130,7 +130,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="startMessageId"> the message id where the reader will be initially positioned on </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> StartMessageId(IMessageId startMessageId);
+		IReaderBuilder StartMessageId(IMessageId startMessageId);
 
 		/// <summary>
 		/// The initial reader positioning can be set at specific timestamp by providing total rollback duration. so, broker
@@ -141,7 +141,7 @@ namespace SharpPulsar.Api
 		/// <param name="rollbackDuration">
 		///            duration which position should be rolled back.
 		/// @return </param>
-		IReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, TimeUnit timeunit);
+		IReaderBuilder StartMessageFromRollbackDuration(long rollbackDuration, TimeUnit timeunit);
 
 		/// <summary>
 		/// Set the reader to include the given position of <seealso cref="IReaderBuilder.startMessageId(IMessageId)"/>
@@ -151,7 +151,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> StartMessageIdInclusive();
+		IReaderBuilder StartMessageIdInclusive();
 
 		/// <summary>
 		/// Sets a <seealso cref="ReaderListener"/> for the reader.
@@ -164,7 +164,7 @@ namespace SharpPulsar.Api
 		/// <param name="readerListener">
 		///            the listener object </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> ReaderListener(IReaderListener<T> readerListener);
+		IReaderBuilder ReaderListener(IReaderListener readerListener);
 
 		/// <summary>
 		/// Sets a <seealso cref="CryptoKeyReader"/> to decrypt the message payloads.
@@ -172,7 +172,7 @@ namespace SharpPulsar.Api
 		/// <param name="cryptoKeyReader">
 		///            CryptoKeyReader object </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
+		IReaderBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
 
 		/// <summary>
 		/// Sets the <seealso cref="ConsumerCryptoFailureAction"/> to specify.
@@ -180,7 +180,7 @@ namespace SharpPulsar.Api
 		/// <param name="action">
 		///            The action to take when the decoding fails </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
+		IReaderBuilder CryptoFailureAction(ConsumerCryptoFailureAction action);
 
 		/// <summary>
 		/// Sets the size of the consumer receive queue.
@@ -197,7 +197,7 @@ namespace SharpPulsar.Api
 		/// <param name="receiverQueueSize">
 		///            the new receiver queue size value </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize);
+		IReaderBuilder ReceiverQueueSize(int receiverQueueSize);
 
 		/// <summary>
 		/// Specify a reader name.
@@ -210,14 +210,14 @@ namespace SharpPulsar.Api
 		/// <param name="readerName">
 		///            the name to use for the reader </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> ReaderName(string readerName);
+		IReaderBuilder ReaderName(string readerName);
 
 		/// <summary>
 		/// Set the subscription role prefix. The default prefix is "reader".
 		/// </summary>
 		/// <param name="subscriptionRolePrefix"> </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix);
+		IReaderBuilder SubscriptionRolePrefix(string subscriptionRolePrefix);
 
 		/// <summary>
 		/// If enabled, the reader will read messages from the compacted topic rather than reading the full message backlog
@@ -233,7 +233,7 @@ namespace SharpPulsar.Api
 		/// <param name="readCompacted">
 		///            whether to read from the compacted topic </param>
 		/// <returns> the reader builder instance </returns>
-		IReaderBuilder<T> ReadCompacted(bool readCompacted);
+		IReaderBuilder ReadCompacted(bool readCompacted);
 	}
 
 }

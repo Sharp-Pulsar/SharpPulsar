@@ -32,14 +32,14 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar.Impl
 {
 
-    public class PartitionedProducerImpl<T> : ProducerBase<T>
+    public class PartitionedProducerImpl : ProducerBase
 	{
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PartitionedProducerImpl<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PartitionedProducerImpl));
 
-		private readonly IList<ProducerImpl<T>> _producers;
+		private readonly IList<ProducerImpl> _producers;
 		private readonly IMessageRouter _routerPolicy;
-		private readonly ProducerStatsRecorderImpl<T> _stats;
+		private readonly ProducerStatsRecorderImpl _stats;
 		private ITopicMetadata _topicMetadata;
         private string _topic;
 
@@ -48,13 +48,13 @@ namespace SharpPulsar.Impl
 		internal TopicsPartitionChangedListener TopicPartitionChangedListener;
 		internal TaskCompletionSource<Task> PartitionsAutoUpdateTask = null;
 
-		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer<T>> producerCreated, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreated, schema, interceptors)
+		public PartitionedProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, TaskCompletionSource<IProducer> producerCreated, ISchema schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreated, schema, interceptors)
         {
             _topic = topic;
-			_producers = new List<ProducerImpl<T>>(numPartitions);
+			_producers = new List<ProducerImpl>(numPartitions);
 			_topicMetadata = new TopicMetadataImpl(numPartitions);
 			_routerPolicy = MessageRouter;
-			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>() : null;
+			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl() : null;
 
 			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
@@ -136,7 +136,7 @@ namespace SharpPulsar.Impl
                 try
                 {
                     var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-                    var producer = new ProducerImpl<T>(Client, partitionName, Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, Schema, Interceptors);
+                    var producer = new ProducerImpl(Client, partitionName, Conf, new TaskCompletionSource<IProducer>(), partitionIndex, Schema, Interceptors);
 					if (completed.Increment() == _topicMetadata.NumPartitions())
                     {
                         if (createFail.Value == null)
@@ -162,7 +162,7 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public override TaskCompletionSource<IMessageId> InternalSendAsync(IMessage<T> message)
+		public override TaskCompletionSource<IMessageId> InternalSendAsync(IMessage message)
 		{
 			var t = new TaskCompletionSource<IMessageId>();
 			switch (GetState())
@@ -266,7 +266,7 @@ namespace SharpPulsar.Impl
 			return new ValueTask(closeTask.Task);
 		}
 
-		public new ProducerStatsRecorderImpl<T> Stats
+		public new ProducerStatsRecorderImpl Stats
 		{
 			get
 			{
@@ -286,16 +286,16 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual IList<ProducerImpl<T>> Producers => _producers.ToList();
+		public virtual IList<ProducerImpl> Producers => _producers.ToList();
 
         public new string HandlerName => "partition-producer";
 
         // This listener is triggered when topics partitions are updated.
 		public class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
-			private readonly PartitionedProducerImpl<T> _outerInstance;
+			private readonly PartitionedProducerImpl _outerInstance;
 
-			public TopicsPartitionChangedListener(PartitionedProducerImpl<T> outerInstance)
+			public TopicsPartitionChangedListener(PartitionedProducerImpl outerInstance)
 			{
 				_outerInstance = outerInstance;
 			}
@@ -326,10 +326,10 @@ namespace SharpPulsar.Impl
 				    }
 				    else if (oldPartitionNumber < currentPartitionNumber)
 				    {
-					    IList<TaskCompletionSource<IProducer<T>>> taskList = list.Skip(oldPartitionNumber).Take(oldPartitionNumber-currentPartitionNumber).Select(partitionName =>
+					    IList<TaskCompletionSource<IProducer>> taskList = list.Skip(oldPartitionNumber).Take(oldPartitionNumber-currentPartitionNumber).Select(partitionName =>
 					    {
 						    var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-						    var producer = new ProducerImpl<T>(_outerInstance.Client, partitionName, _outerInstance.Conf, new TaskCompletionSource<IProducer<T>>(), partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors);
+						    var producer = new ProducerImpl(_outerInstance.Client, partitionName, _outerInstance.Conf, new TaskCompletionSource<IProducer>(), partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors);
 						    _outerInstance._producers.Add(producer);
 						    return producer.ProducerCreatedTask;
 					    }).ToList();
@@ -366,9 +366,9 @@ namespace SharpPulsar.Impl
 		
 		public class TimerTaskAnonymousInnerClass : ITimerTask
         {
-            private readonly PartitionedProducerImpl<T> _outerInstance;
+            private readonly PartitionedProducerImpl _outerInstance;
 
-            public TimerTaskAnonymousInnerClass(PartitionedProducerImpl<T> outerInstance)
+            public TimerTaskAnonymousInnerClass(PartitionedProducerImpl outerInstance)
             {
                 _outerInstance = outerInstance;
             }

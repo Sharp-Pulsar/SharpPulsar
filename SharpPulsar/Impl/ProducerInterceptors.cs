@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public IMessage BeforeSend<T>(IProducer<T> producer, IMessage message)
+		public IMessage BeforeSend(IProducer producer, IMessage message)
 		{
 			var interceptorMessage = message;
 			foreach (var interceptor in _interceptors)
@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, IMessage)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public void OnSendAcknowledgement<T>(IProducer<T> producer, IMessage<T> message, IMessageId msgId, System.Exception exception)
+		public void OnSendAcknowledgement(IProducer producer, IMessage message, IMessageId msgId, System.Exception exception)
 		{
 			foreach (var interceptor in _interceptors)
 			{

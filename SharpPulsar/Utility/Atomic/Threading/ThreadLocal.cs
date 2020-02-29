@@ -35,7 +35,7 @@ namespace SharpPulsar.Utility.Atomic.Threading
     /// </summary>
     /// <typeparam name="T">The type local to each thread.</typeparam>
     /// \author Matt Bolt
-    public class ThreadLocal<T> {
+    public class ThreadLocal {
 
         // Generate a unique ThreadLocal identifier for each instance
         private static readonly AtomicInt ThreadLocalIds;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Utility.Atomic.Threading
         }
 
         private int _id;
-        private Func<T> _factory;
+        private Func _factory;
 
         /// <summary>
         /// Creates a new <c>ThreadLocal</c> instance using a <c>Func</c> capable
@@ -57,7 +57,7 @@ namespace SharpPulsar.Utility.Atomic.Threading
         /// <param name="factory">
         /// The <c>Func</c> instance used to create <c>T</c> instances.
         /// </param>
-        public ThreadLocal(Func<T> factory) {
+        public ThreadLocal(Func factory) {
             _id = ThreadLocalIds.Increment();
             _factory = factory;
         }

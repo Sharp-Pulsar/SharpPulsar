@@ -21,21 +21,21 @@
 namespace SharpPulsar.Utility
 {
 
-	public class ObjectCache<T>
+	public class ObjectCache
 	{
 
-		private readonly Func<T> supplier;
+		private readonly Func supplier;
 		private T cachedInstance;
 
 		private readonly long cacheDurationMillis;
 		private long lastRefreshTimestamp;
 		private readonly DateTimeOffset clock;
 
-		public ObjectCache(Func<T> supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit) : this(supplier, cacheDuration, unit, DateTime.UtcNow)
+		public ObjectCache(Func supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit) : this(supplier, cacheDuration, unit, DateTime.UtcNow)
 		{
 		}
 
-		internal ObjectCache(Func<T> supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit, DateTime clock)
+		internal ObjectCache(Func supplier, long cacheDuration, BAMCIS.Util.Concurrent.TimeUnit unit, DateTime clock)
 		{
 			this.supplier = supplier;
 			this.cachedInstance = default(T);

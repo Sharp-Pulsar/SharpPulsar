@@ -9,10 +9,10 @@ namespace SharpPulsar.Stole
 {
     public static class Serializer
     {
-        public static T Deserialize<T>(ReadOnlySequence<byte> sequence)
+        public static T Deserialize(ReadOnlySequence<byte> sequence)
         {
             using var ms = new MemoryStream(sequence.ToArray()); //TODO Fix this when protobuf-net start supporting sequences or .NET supports creating a stream from a sequence
-            return ProtoBuf.Serializer.Deserialize<T>(ms);
+            return ProtoBuf.Serializer.Deserialize(ms);
         }
 
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)
@@ -56,7 +56,7 @@ namespace SharpPulsar.Stole
                 return new[] { union.B0, union.B1, union.B2, union.B3 };
         }
 
-        private static byte[] Serialize<T>(T item)
+        private static byte[] Serialize(T item)
         {
             using var ms = new MemoryStream();
             ProtoBuf.Serializer.Serialize(ms, item);

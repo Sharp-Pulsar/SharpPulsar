@@ -5,7 +5,7 @@ using Akka.Actor;
 
 namespace SharpPulsar.Akka.Consumer
 {
-    public class PartitionManager:ReceiveActor
+    public class PatternMultiTopicsManager:ReceiveActor
     {
     }
 }

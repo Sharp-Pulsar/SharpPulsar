@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl
 
 		internal static readonly ConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
 
-		public void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
+		public void UpdateNumMsgsReceived(IMessage message)
 		{
 			// Do nothing
 		}

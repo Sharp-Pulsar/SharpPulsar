@@ -7,7 +7,7 @@ namespace SharpPulsar.Akka.Consumer
 {/// <summary>
     /// Agregates consumers
     /// </summary>
-    public class MultiManager:ReceiveActor
+    public class MultiTopicsManager:ReceiveActor
     {
     }
 }

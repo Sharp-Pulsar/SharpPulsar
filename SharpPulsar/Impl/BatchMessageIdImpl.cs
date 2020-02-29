@@ -20,8 +20,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	[Serializable]
 	public class BatchMessageIdImpl : MessageIdImpl
 	{
 		private const int NoBatch = -1;
@@ -41,10 +39,9 @@ namespace SharpPulsar.Impl
 
 		public BatchMessageIdImpl(MessageIdImpl other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
-			if (other is BatchMessageIdImpl)
+			if (other is BatchMessageIdImpl otherId)
 			{
-				var otherId = (BatchMessageIdImpl) other;
-				BatchIndex = otherId.BatchIndex;
+                BatchIndex = otherId.BatchIndex;
 				Acker = otherId.Acker;
 			}
 			else

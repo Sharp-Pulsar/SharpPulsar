@@ -29,18 +29,18 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar.Impl
 {
 
-	public class ProducerBuilderImpl<T> : IProducerBuilder<T>
+	public class ProducerBuilderImpl : IProducerBuilder
 	{
 
 		private readonly PulsarClientImpl _client;
 		private ProducerConfigurationData _conf;
-		private ISchema<T> _schema;
+		private ISchema _schema;
 		private IList<IProducerInterceptor> _interceptorList;
-		public ProducerBuilderImpl(PulsarClientImpl client, ISchema<T> schema) : this(client, new ProducerConfigurationData(), schema)
+		public ProducerBuilderImpl(PulsarClientImpl client, ISchema schema) : this(client, new ProducerConfigurationData(), schema)
 		{
 		}
 
-		private ProducerBuilderImpl(PulsarClientImpl client, ProducerConfigurationData conf, ISchema<T> schema)
+		private ProducerBuilderImpl(PulsarClientImpl client, ProducerConfigurationData conf, ISchema schema)
 		{
 			_client = client;
 			_conf = conf;
@@ -51,22 +51,22 @@ namespace SharpPulsar.Impl
 		/// Allow to schema in builder implementation
 		/// @return
 		/// </summary>
-		public virtual IProducerBuilder<T> Schema(ISchema<T> schema)
+		public virtual IProducerBuilder Schema(ISchema schema)
 		{
 			_schema = schema;
 			return this;
 		}
 
-		public IProducerBuilder<T> Clone()
+		public IProducerBuilder Clone()
 		{
-			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
+			return new ProducerBuilderImpl(_client, _conf.Clone(), _schema);
 		}
-        public IProducer<T> Create()
+        public IProducer Create()
         {
             var p = CreateAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             return p;
         }
-		public async ValueTask<IProducer<T>> CreateAsync()
+		public async ValueTask<IProducer> CreateAsync()
 		{
 			if (_conf.TopicName == null)
             {
@@ -90,13 +90,13 @@ namespace SharpPulsar.Impl
 			return await _client.CreateProducerAsync(_conf, _schema, new ProducerInterceptors(_interceptorList));
 		}
 
-		public IProducerBuilder<T> LoadConf(IDictionary<string, object> config)
+		public IProducerBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
 			return this;
 		}
 
-		public IProducerBuilder<T> Topic(string topicName)
+		public IProducerBuilder Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))
 				throw new ArgumentException("topicName cannot be blank or null");
@@ -104,73 +104,73 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> ProducerName(string producerName)
+		public IProducerBuilder ProducerName(string producerName)
 		{
 			_conf.ProducerName = producerName;
 			return this;
 		}
 
-		public IProducerBuilder<T> SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public IProducerBuilder SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_conf.SetSendTimeoutMs(sendTimeout, unit);
 			return this;
 		}
 
-		public IProducerBuilder<T> MaxPendingMessages(int maxPendingMessages)
+		public IProducerBuilder MaxPendingMessages(int maxPendingMessages)
 		{
 			_conf.MaxPendingMessages = maxPendingMessages;
 			return this;
 		}
 
-		public IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
+		public IProducerBuilder MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
 		{
 			_conf.MaxPendingMessagesAcrossPartitions = maxPendingMessagesAcrossPartitions;
 			return this;
 		}
 
-		public IProducerBuilder<T> BlockIfQueueFull(bool blockIfQueueFull)
+		public IProducerBuilder BlockIfQueueFull(bool blockIfQueueFull)
 		{
 			//conf.q.BlockIfQueueFull = BlockIfQueueFull;
 			return this;
 		}
 
-		public IProducerBuilder<T> MessageRoutingMode(MessageRoutingMode messageRouteMode)
+		public IProducerBuilder MessageRoutingMode(MessageRoutingMode messageRouteMode)
 		{
 			_conf.MessageRoutingMode = messageRouteMode;
 			return this;
 		}
 
-		public IProducerBuilder<T> CompressionType(ICompressionType compressionType)
+		public IProducerBuilder CompressionType(ICompressionType compressionType)
 		{
 			_conf.CompressionType = compressionType;
 			return this;
 		}
 
-		public IProducerBuilder<T> HashingScheme(HashingScheme hashingScheme)
+		public IProducerBuilder HashingScheme(HashingScheme hashingScheme)
 		{
 			_conf.HashingScheme = hashingScheme;
 			return this;
 		}
 
-		public IProducerBuilder<T> MessageRouter(IMessageRouter messageRouter)
+		public IProducerBuilder MessageRouter(IMessageRouter messageRouter)
 		{
 			_conf.CustomMessageRouter = messageRouter;
 			return this;
 		}
 
-		public IProducerBuilder<T> EnableBatching(bool batchMessagesEnabled)
+		public IProducerBuilder EnableBatching(bool batchMessagesEnabled)
 		{
 			_conf.BatchingEnabled = batchMessagesEnabled;
 			return this;
 		}
 
-		public IProducerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public IProducerBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public IProducerBuilder<T> AddEncryptionKey(string key)
+		public IProducerBuilder AddEncryptionKey(string key)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("Encryption key cannot be blank or null");
@@ -178,50 +178,50 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action)
+		public IProducerBuilder CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public IProducerBuilder BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			_conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
 			return this;
 		}
 
-		public IProducerBuilder<T> RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
+		public IProducerBuilder RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
 		{
 			_conf.BatchingPartitionSwitchFrequencyByPublishDelay = frequency;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
+		public IProducerBuilder BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
 		{
 			_conf.BatchingMaxMessages = batchMessagesMaxMessagesPerBatch;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatchingMaxBytes(int batchingMaxBytes)
+		public IProducerBuilder BatchingMaxBytes(int batchingMaxBytes)
 		{
 			_conf.BatchingMaxBytes = batchingMaxBytes;
 			return this;
 		}
 
-		public IProducerBuilder<T> BatcherBuilder(IBatcherBuilder batcherBuilder)
+		public IProducerBuilder BatcherBuilder(IBatcherBuilder batcherBuilder)
 		{
 			_conf.BatcherBuilder = batcherBuilder;
 			return this;
 		}
 
 
-		public IProducerBuilder<T> InitialSequenceId(long initialSequenceId)
+		public IProducerBuilder InitialSequenceId(long initialSequenceId)
 		{
 			_conf.InitialSequenceId = initialSequenceId;
 			return this;
 		}
 
-		public IProducerBuilder<T> Property(string key, string value)
+		public IProducerBuilder Property(string key, string value)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("property key cannot be blank or null");
@@ -231,7 +231,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> Properties(IDictionary<string, string> properties)
+		public IProducerBuilder Properties(IDictionary<string, string> properties)
         {
             if (properties == null)
                 throw new ArgumentException("properties cannot be null");
@@ -250,7 +250,7 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> Intercept(params IProducerInterceptor[] interceptors)
+		public IProducerBuilder Intercept(params IProducerInterceptor[] interceptors)
 		{
 			if (_interceptorList == null)
 			{
@@ -260,13 +260,13 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IProducerBuilder<T> AutoUpdatePartitions(bool autoUpdate)
+		public IProducerBuilder AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
 			return this;
 		}
 
-		public IProducerBuilder<T> EnableMultiSchema(bool multiSchema)
+		public IProducerBuilder EnableMultiSchema(bool multiSchema)
 		{
 			_conf.MultiSchema = multiSchema;
 			return this;
@@ -297,7 +297,7 @@ namespace SharpPulsar.Impl
 
 		object ICloneable.Clone()
 		{
-			return new ProducerBuilderImpl<T>(_client, _conf.Clone(), _schema);
+			return new ProducerBuilderImpl(_client, _conf.Clone(), _schema);
 		}
 	}
 

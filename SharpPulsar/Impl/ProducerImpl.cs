@@ -49,17 +49,17 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar.Impl
 {
 
-	public sealed class ProducerImpl<T> : ProducerBase<T>, ITimerTask, IConnection
+	public sealed class ProducerImpl : ProducerBase, ITimerTask, IConnection
 	{
 
 		// Producer id, used to identify a producer within a single connection
         internal readonly long ProducerId;
 
 		// Variable is used through the atomic updater
-		public static ConcurrentDictionary<ProducerImpl<T>, long> MsgIdGenerator = new ConcurrentDictionary<ProducerImpl<T>, long>();
+		public static ConcurrentDictionary<ProducerImpl, long> MsgIdGenerator = new ConcurrentDictionary<ProducerImpl, long>();
 
-		private readonly BlockingQueue<OpSendMsg<T>> _pendingMessages;
-		private readonly BlockingQueue<OpSendMsg<T>> _pendingCallbacks;
+		private readonly BlockingQueue<OpSendMsg> _pendingMessages;
+		private readonly BlockingQueue<OpSendMsg> _pendingCallbacks;
 		private readonly Semaphore _semaphore;
 		private  ITimeout _sendTimeout;
 		private ITimeout _batchMessageAndSendTimeout = null;
@@ -88,7 +88,7 @@ namespace SharpPulsar.Impl
 
 		//private static readonly AtomicLongFieldUpdater<ProducerImpl> msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerImpl), "msgIdGenerator");
 
-		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer<T>> producerCreatedTask, int partitionindex, ISchema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
+		public ProducerImpl(PulsarClientImpl client, string topic, ProducerConfigurationData conf, TaskCompletionSource<IProducer> producerCreatedTask, int partitionindex, ISchema schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedTask, schema, interceptors)
 		{
 			ProducerId = Client.NewProducerId();
 			HandlerName = conf.ProducerName;
@@ -97,8 +97,8 @@ namespace SharpPulsar.Impl
 				_userProvidedProducerName = true;
 			}
 			_partitionIndex = partitionindex;
-			_pendingMessages = new BlockingQueue<OpSendMsg<T>>(conf.MaxPendingMessages);
-			_pendingCallbacks = new BlockingQueue<OpSendMsg<T>>(conf.MaxPendingMessages);
+			_pendingMessages = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
+			_pendingCallbacks = new BlockingQueue<OpSendMsg>(conf.MaxPendingMessages);
 			_semaphore = new Semaphore(0, conf.MaxPendingMessages);
 
 			_compressor = CompressionCodecProvider.GetCompressionCodec(Conf.CompressionType);
@@ -151,14 +151,14 @@ namespace SharpPulsar.Impl
 			if (Conf.BatchingEnabled)
 			{
 				var containerBuilder = Conf.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
-                _batchMessageContainer = (BatchMessageContainerBase<T>)containerBuilder.Build<T>();
+                _batchMessageContainer = (BatchMessageContainerBase)containerBuilder.Build();
 				_batchMessageContainer.Producer = this;
 			}
 			else
 			{
 				_batchMessageContainer = null;
 			}
-			Stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl<T>(Client, Conf, this) : ProducerStatsDisabled<T>.Instance;
+			Stats = Client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl(Client, Conf, this) : ProducerStatsDisabled.Instance;
 
 			if (!Conf.Properties.Any())
 			{
@@ -200,9 +200,9 @@ namespace SharpPulsar.Impl
 			interceptorMessage.DataBuffer.Retain();
 			if (Interceptors != null)
 			{
-				_h interceptorMessage.Properties;
+				//interceptorMessage.Properties;
 			}
-			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass<T>(this, task, interceptorMessage));
+			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass(this, task, interceptorMessage));
 			return task;
 		}
 
@@ -285,18 +285,18 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			public void AddCallback<T1>(MessageImpl<T1> msg, SendCallback scb)
+			public void AddCallback(MessageImpl msg, SendCallback scb)
 			{
 				NextMsg = (MessageImpl<object>)msg;
 				NextCallback = scb;
 			}
 		}
 
-		public static implicit operator ProducerImpl<T>(ProducerImpl<object> v)
+		public static implicit operator ProducerImpl(ProducerImpl<object> v)
 		{
-			return (ProducerImpl<T>)Convert.ChangeType(v, typeof(ProducerImpl<T>));
+			return (ProducerImpl)Convert.ChangeType(v, typeof(ProducerImpl));
 		}
-		public static implicit operator ProducerImpl<object>(ProducerImpl<T> v)
+		public static implicit operator ProducerImpl<object>(ProducerImpl v)
 		{
 			return (ProducerImpl<object>)Convert.ChangeType(v, typeof(ProducerImpl<object>));
 		}
@@ -425,7 +425,7 @@ namespace SharpPulsar.Impl
 						// When publishing during replication, we need to set the correct number of message in batch
 						// This is only used in tracking the publish rate stats
 						var numMessages = msg.MessageBuilder.HasNumMessagesInBatch() ? msg.MessageBuilder.NumMessagesInBatch : 1;
-						OpSendMsg<T> op;
+						OpSendMsg op;
 						var schemaState = (int)msg.GetSchemaState();
 						if (schemaState  == 1)
 						{
@@ -437,7 +437,7 @@ namespace SharpPulsar.Impl
 						}
 						else
 						{
-							op = OpSendMsg<T>.Create(msg, null, sequenceId, callback);
+							op = OpSendMsg.Create(msg, null, sequenceId, callback);
 							op.RePopulate = () =>
 							{
 								var msgMetadata = msgMetadataBuilder.Build();
@@ -694,7 +694,7 @@ namespace SharpPulsar.Impl
 			internal long SequenceId;
 			internal ClientCnx Cnx;
 
-			internal static WriteInEventLoopCallback Create<T1>(ProducerImpl<T1> producer, ClientCnx cnx, OpSendMsg<T> op)
+			internal static WriteInEventLoopCallback Create(ProducerImpl producer, ClientCnx cnx, OpSendMsg op)
 			{
 				var c = Pool.Take();
 				c.Producer = producer;
@@ -851,7 +851,7 @@ namespace SharpPulsar.Impl
 
 		public void AckReceived(ClientConnection cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
 		{
-			OpSendMsg<T> op = null;
+			OpSendMsg op = null;
 			var callback = false;
 			lock (this)
 			{
@@ -923,12 +923,12 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		private long GetHighestSequenceId(OpSendMsg<T> op)
+		private long GetHighestSequenceId(OpSendMsg op)
 		{
 			return Math.Max(op.HighestSequenceId, op.SequenceId);
 		}
 
-		private void ReleaseSemaphoreForSendOp(OpSendMsg<T> op)
+		private void ReleaseSemaphoreForSendOp(OpSendMsg op)
 		{
 			_semaphore.Release(BatchMessagingEnabled ? op.NumMessagesInBatch : 1);
 		}
@@ -1007,7 +1007,7 @@ namespace SharpPulsar.Impl
 		/// <param name="op"> </param>
 		/// <returns> returns true only if message is not modified and computed-checksum is same as previous checksum else
 		///         return false that means that message is corrupted. Returns true if checksum is not present. </returns>
-		public bool VerifyLocalBufferIsNotCorrupted(OpSendMsg<T> op)
+		public bool VerifyLocalBufferIsNotCorrupted(OpSendMsg op)
 		{
 			var msg = op.Cmd;
 
@@ -1223,7 +1223,7 @@ namespace SharpPulsar.Impl
 		/// Strips checksum from <seealso cref="OpSendMsg"/> command if present else ignore it.
 		/// </summary>
 		/// <param name="op"> </param>
-		private void StripChecksum(OpSendMsg<T> op)
+		private void StripChecksum(OpSendMsg op)
 		{
 			var totalMsgBufSize = op.Cmd.ReadableBytes();
 			var msg = op.Cmd;
@@ -1397,9 +1397,9 @@ namespace SharpPulsar.Impl
 
 		public class TimerTaskAnonymousInnerClass: ITimerTask
         {
-            private readonly ProducerImpl<T> _outerInstance;
+            private readonly ProducerImpl _outerInstance;
 
-            public TimerTaskAnonymousInnerClass(ProducerImpl<T> outerInstance)
+            public TimerTaskAnonymousInnerClass(ProducerImpl outerInstance)
             {
                 _outerInstance = outerInstance;
             }
@@ -1466,8 +1466,8 @@ namespace SharpPulsar.Impl
 			{
 				try
 				{
-					IList<OpSendMsg<T>> opSendMsgs;
-					opSendMsgs = _batchMessageContainer.MultiBatches ? _batchMessageContainer.CreateOpSendMsgs() : new List<OpSendMsg<T>>{ _batchMessageContainer.CreateOpSendMsg()};
+					IList<OpSendMsg> opSendMsgs;
+					opSendMsgs = _batchMessageContainer.MultiBatches ? _batchMessageContainer.CreateOpSendMsgs() : new List<OpSendMsg>{ _batchMessageContainer.CreateOpSendMsg()};
 					_batchMessageContainer.Clear();
 					foreach (var opSendMsg in opSendMsgs)
 					{
@@ -1487,7 +1487,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void ProcessOpSendMsg(OpSendMsg<T> op)
+		private void ProcessOpSendMsg(OpSendMsg op)
 		{
 			if (op == null)
 			{
@@ -1544,12 +1544,12 @@ namespace SharpPulsar.Impl
 		{
 			var stripChecksum = cnx.RemoteEndpointProtocolVersion < BrokerChecksumSupportedVersion();
             var msgIterator = _pendingMessages.ToList();
-			OpSendMsg<T> pendingRegisteringOp = null;
+			OpSendMsg pendingRegisteringOp = null;
 			foreach (var op in msgIterator)
 			{
 				if (@from != null)
 				{
-					if (op != null && op.Msg == (MessageImpl<T>) @from)
+					if (op != null && op.Msg == (MessageImpl) @from)
 					{
 						@from = null;
 					}
@@ -1676,7 +1676,7 @@ namespace SharpPulsar.Impl
 
 		public Semaphore Semaphore => _semaphore;
 
-        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerImpl));
 	}
 
 }

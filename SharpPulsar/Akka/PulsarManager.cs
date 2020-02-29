@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Akka.Reader;
 using SharpPulsar.Akka.Transaction;

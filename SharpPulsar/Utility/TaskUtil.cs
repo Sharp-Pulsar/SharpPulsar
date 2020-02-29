@@ -35,14 +35,14 @@ namespace SharpPulsar.Utility
 		/// </summary>
 		/// <param name="futures">
 		/// @return </param>
-		public static Task WaitForAll<T>(IList<Task<T>> tasks)
+		public static Task WaitForAll(IList<Task> tasks)
 		{
 			return Task.WhenAll(tasks.ToArray());
 		}
 
-		public static ValueTask<T> FailedTask<T>(Exception t)
+		public static ValueTask FailedTask(Exception t)
 		{
-			return new ValueTask<T>(Task.FromException<T>(t));
+			return new ValueTask(Task.FromException(t));
 		}
 
 		public static Exception UnwrapCompletionException(Exception t)

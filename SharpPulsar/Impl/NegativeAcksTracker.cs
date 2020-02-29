@@ -26,13 +26,13 @@ namespace SharpPulsar.Impl
 {
 
     using IMessageId = Api.IMessageId;
-	using SharpPulsar.Impl.Conf;
+	using Conf;
 
-	public class NegativeAcksTracker<T>
+	public class NegativeAcksTracker
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages = null;
-		private readonly ConsumerBase<T> _consumer;
+		private readonly ConsumerBase _consumer;
 		private readonly HashedWheelTimer _timer;
 		private readonly long _nackDelayNanos;
 		private readonly long _timerIntervalNanos;
@@ -42,18 +42,18 @@ namespace SharpPulsar.Impl
 		// Set a min delay to allow for grouping nacks within a single batch
 		private static readonly long MinNackDelayNanos = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
 
-		public NegativeAcksTracker(ConsumerBase<T> consumer, ConsumerConfigurationData<T> conf)
+		public NegativeAcksTracker(ConsumerBase consumer, ConsumerConfigurationData conf)
 		{
-			this._consumer = consumer;
-			this._timer = consumer.Client.Timer;
-			this._nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToNanos(conf.NegativeAckRedeliveryDelayMicros), MinNackDelayNanos);
-			this._timerIntervalNanos = _nackDelayNanos / 3;
+			_consumer = consumer;
+			_timer = consumer.Client.Timer;
+			_nackDelayNanos = Math.Max(BAMCIS.Util.Concurrent.TimeUnit.MICROSECONDS.ToNanos(conf.NegativeAckRedeliveryDelayMicros), MinNackDelayNanos);
+			_timerIntervalNanos = _nackDelayNanos / 3;
 		}
 
 		public class TriggerRedelivery : ITimerTask
 		{
-            private readonly NegativeAcksTracker<T> _outerInstance;
-			public TriggerRedelivery(NegativeAcksTracker<T> outerInstance)
+            private readonly NegativeAcksTracker _outerInstance;
+			public TriggerRedelivery(NegativeAcksTracker outerInstance)
             {
                 _outerInstance = outerInstance;
             }
@@ -91,27 +91,23 @@ namespace SharpPulsar.Impl
 
 		public virtual void Add(IMessageId messageId)
 		{
-			lock (this)
-			{
-				if (messageId is BatchMessageIdImpl)
-				{
-					var batchMessageId = (BatchMessageIdImpl) messageId;
-					messageId = new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
-				}
-        
-				if (_nackedMessages == null)
-				{
-					_nackedMessages = new Dictionary<IMessageId, long>();
-				}
-				_nackedMessages[messageId] = DateTime.Now.Millisecond + _nackDelayNanos;
-        
-				if (this._timeout == null)
-				{
-					// Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
-					// nack immediately following the current one will be batched into the same redeliver request.
-					this._timeout = _timer.NewTimeout(new TriggerRedelivery(this), TimeSpan.FromMilliseconds(_timerIntervalNanos));
-				}
-			}
+            if (messageId is BatchMessageIdImpl batchMessageId)
+            {
+                messageId = new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
+            }
+
+            if (_nackedMessages == null)
+            {
+                _nackedMessages = new Dictionary<IMessageId, long>();
+            }
+            _nackedMessages[messageId] = DateTime.Now.Millisecond + _nackDelayNanos;
+
+            if (_timeout == null)
+            {
+                // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
+                // nack immediately following the current one will be batched into the same redeliver request.
+                _timeout = _timer.NewTimeout(new TriggerRedelivery(this), TimeSpan.FromMilliseconds(_timerIntervalNanos));
+            }
 		}
 	}
 

@@ -67,7 +67,7 @@ namespace SharpPulsar.Impl
 			_clock = clock;
 		}
 
-		public override int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata topicMetadata)
+		public override int ChoosePartition(IMessage msg, ITopicMetadata topicMetadata)
 		{
 			// If the message has a key, it supersedes the round robin routing policy
 			if (msg.HasKey())
@@ -85,7 +85,7 @@ namespace SharpPulsar.Impl
             return MathUtils.SignSafeMod(PartitionIndexUpdater[this], topicMetadata.NumPartitions());
         }
 
-		public override int ChoosePartition<T1>(IMessage<T1> msg)
+		public override int ChoosePartition(IMessage msg)
 		{
 			throw new NotImplementedException();
 		}

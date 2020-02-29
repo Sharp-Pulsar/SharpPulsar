@@ -30,7 +30,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Impl.Schema.Writer
 {
 
-	public class JsonWriter<T> : ISchemaWriter<T>
+	public class JsonWriter : ISchemaWriter
 	{
 
 		private readonly ObjectMapper _objectMapper;

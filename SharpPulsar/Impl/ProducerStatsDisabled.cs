@@ -22,11 +22,11 @@ using SharpPulsar.Api;
 namespace SharpPulsar.Impl
 {
 	[Serializable]
-	public class ProducerStatsDisabled<T> : IProducerStatsRecorder
+	public class ProducerStatsDisabled : IProducerStatsRecorder
 	{
 		private const long SerialVersionUid = 1L;
 
-		internal static readonly IProducerStatsRecorder Instance = new ProducerStatsDisabled<T>();
+		internal static readonly IProducerStatsRecorder Instance = new ProducerStatsDisabled();
 
 		public void IncrementSendFailed()
 		{

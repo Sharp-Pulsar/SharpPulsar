@@ -36,7 +36,7 @@ namespace SharpPulsar.Utility.Atomic
     /// we are able to provide atomic operation without the use of locks. </para>
     /// </summary>
     /// \author Matt Bolt
-    public class Atomic<T> where T : class {
+    public class Atomic where T : class {
 
         private T _value;
 
@@ -107,7 +107,7 @@ namespace SharpPulsar.Utility.Atomic
         /// <summary>
         /// This operator allows an implicit cast from <c>Atomic&lt;T&gt;</c> to <c>T</c>.
         /// </summary>
-        public static implicit operator T(Atomic<T> value) {
+        public static implicit operator T(Atomic value) {
             return value.Get();
         }
 

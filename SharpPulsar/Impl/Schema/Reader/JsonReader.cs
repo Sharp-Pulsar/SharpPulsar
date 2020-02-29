@@ -27,7 +27,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Impl.Schema.Reader
 {
 
-	public class JsonReader<T> : ISchemaReader<T>
+	public class JsonReader : ISchemaReader
 	{
 		private readonly ObjectMapper _objectMapper;
 
@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 			}
 		}
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader));
 	}
 
 }

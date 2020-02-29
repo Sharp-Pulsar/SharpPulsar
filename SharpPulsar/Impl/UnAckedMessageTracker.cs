@@ -30,9 +30,9 @@ using Microsoft.Extensions.Logging;
 namespace SharpPulsar.Impl
 {
 
-	public class UnAckedMessageTracker<T> : IDisposable
+	public class UnAckedMessageTracker : IDisposable
     {
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(UnAckedMessageTracker<T>));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(UnAckedMessageTracker));
 
 		protected internal readonly ConcurrentDictionary<IMessageId, ConcurrentHashSet<IMessageId>> MessageIdPartitionMap;
 		protected internal readonly LinkedList<ConcurrentHashSet<IMessageId>> TimePartitions;
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl
 		private readonly long _ackTimeoutMillis;
 		private readonly long _tickDurationInMs;
 
-		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker<T>
+		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
 		{
 			public override void Clear()
 			{
@@ -85,7 +85,7 @@ namespace SharpPulsar.Impl
 			this._tickDurationInMs = 0;
 		}
 
-		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : this(client, consumerBase, ackTimeoutMillis, ackTimeoutMillis)
+		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase consumerBase, long ackTimeoutMillis) : this(client, consumerBase, ackTimeoutMillis, ackTimeoutMillis)
 		{
 				
 		}
@@ -100,7 +100,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationInMs)
+		public UnAckedMessageTracker(PulsarClientImpl client, ConsumerBase consumerBase, long ackTimeoutMillis, long tickDurationInMs)
 		{
 			if(tickDurationInMs == 0 && ackTimeoutMillis < tickDurationInMs) 
 				throw new ArgumentException();
@@ -122,13 +122,13 @@ namespace SharpPulsar.Impl
 
 		public class TimerTaskAnonymousInnerClass : ITimerTask
 		{
-			private readonly UnAckedMessageTracker<T> _outerInstance;
+			private readonly UnAckedMessageTracker _outerInstance;
 
 			private PulsarClientImpl _client;
-			private ConsumerBase<T> _consumerBase;
+			private ConsumerBase _consumerBase;
 			private long _tickDurationInMs;
 
-			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker<T> outerInstance, PulsarClientImpl client, ConsumerBase<T> consumerBase, long tickDurationInMs)
+			public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, PulsarClientImpl client, ConsumerBase consumerBase, long tickDurationInMs)
 			{
 				this._outerInstance = outerInstance;
 				this._client = client;

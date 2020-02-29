@@ -29,13 +29,13 @@ namespace SharpPulsar.Impl
 {
 
 	[Serializable]
-	public class ConsumerStatsRecorderImpl<T> : ConsumerStatsRecorder
+	public class ConsumerStatsRecorderImpl : ConsumerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;
 		private ITimerTask _stat;
 		private ITimeout _statTimeout;
-		private ConsumerImpl<T> _consumer;
+		private ConsumerImpl _consumer;
 		private PulsarClientImpl _pulsarClient;
 		private long _oldTime;
 		private long _statsIntervalSeconds;
@@ -75,7 +75,7 @@ namespace SharpPulsar.Impl
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorderImpl(PulsarClientImpl pulsarClient, ConsumerConfigurationData<T> conf, ConsumerImpl<T> consumer)
+		public ConsumerStatsRecorderImpl(PulsarClientImpl pulsarClient, ConsumerConfigurationData conf, ConsumerImpl consumer)
 		{
             ThroughputFormat.NumberDecimalSeparator = "0.00";
 			this._pulsarClient = pulsarClient;
@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 			Init(conf);
 		}
 
-		private void Init(ConsumerConfigurationData<T> conf)
+		private void Init(ConsumerConfigurationData conf)
 		{
 			/*var m = new ObjectMapper();
 			m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -118,9 +118,9 @@ namespace SharpPulsar.Impl
 
 		public class StatsTimerTask : ITimerTask
 		{
-            private readonly ConsumerStatsRecorderImpl<T> _outerInstance;
+            private readonly ConsumerStatsRecorderImpl _outerInstance;
 
-            public StatsTimerTask(ConsumerStatsRecorderImpl<T> outerInstance)
+            public StatsTimerTask(ConsumerStatsRecorderImpl outerInstance)
             {
                 _outerInstance = outerInstance;
             }
@@ -168,7 +168,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 		}
-		public void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
+		public void UpdateNumMsgsReceived(IMessage message)
 		{
 			if (message != null)
 			{
@@ -260,7 +260,7 @@ namespace SharpPulsar.Impl
         public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
 
 
-        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerStatsRecorderImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerStatsRecorderImpl));
 	}
 
 }

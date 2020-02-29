@@ -28,8 +28,8 @@ namespace SharpPulsar.Impl
 	[Serializable]
 	public abstract class MessageRouterBase : IMessageRouter
 	{
-		public abstract int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata);
-		public abstract int ChoosePartition<T1>(IMessage<T1> msg);
+		public abstract int ChoosePartition(IMessage msg, ITopicMetadata metadata);
+		public abstract int ChoosePartition(IMessage msg);
 		private const long SerialVersionUid = 1L;
 
 		protected internal readonly IHash Hash;

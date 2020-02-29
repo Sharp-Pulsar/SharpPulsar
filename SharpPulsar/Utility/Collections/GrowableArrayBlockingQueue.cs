@@ -11,7 +11,7 @@ using SharpPulsar.Utility.Atomic.Locking;
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
 /// regarding copyright ownership.  The ASF licenses this file
-/// to you under the Apache License, Version 2.0 (the
+/// to you under the Apache License, Version 2.0 (objecthe
 /// "License"); you may not use this file except in compliance
 /// with the License.  You may obtain a copy of the License at
 /// 
@@ -33,7 +33,7 @@ namespace SharpPulsar.Utility.Collections
 	/// <para>When the capacity is reached, data will be moved to a bigger array.
 	/// </para>
 	/// </summary>
-	public class GrowableArrayBlockingQueue<T> : BlockingQueue<T>
+	public class GrowableArrayBlockingQueue : BlockingQueue
 	{
 		private bool _instanceFieldsInitialized = false;
 
@@ -49,8 +49,8 @@ namespace SharpPulsar.Utility.Collections
 		private readonly ReentrantLock _tailLock = new ReentrantLock();
 		private ICondition _isNotEmpty;
 
-		private List<T> _data;
-		static readonly ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int> SizeUpdater = new ConcurrentDictionary<GrowableArrayBlockingQueue<T>, int>();
+		private List _data;
+		static readonly ConcurrentDictionary<GrowableArrayBlockingQueue, int> SizeUpdater = new ConcurrentDictionary<GrowableArrayBlockingQueue, int>();
 		
 		public GrowableArrayBlockingQueue() : this(64)
 		{
@@ -72,7 +72,7 @@ namespace SharpPulsar.Utility.Collections
 			_tailIndex.Value = 0;
 
 			var capacity = MathUtil.FindNextPositivePowerOfTwo(initialCapacity);
-			_data = new List<T>(capacity);
+			_data = new List(capacity);
 		}
 
 		public T remove()
@@ -94,14 +94,14 @@ namespace SharpPulsar.Utility.Collections
 				if (SizeUpdater[this] > 0)
 				{
 					var item = _data[_headIndex.Value];
-					_data[_headIndex.Value] = default(T);
+					_data[_headIndex.Value] = default(object);
 					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 					SizeUpdater[this] = SizeUpdater[this]--;
 					return item;
 				}
 				else
 				{
-					return default(T);
+					return default(object);
 				}
 			}
 			finally
@@ -132,7 +132,7 @@ namespace SharpPulsar.Utility.Collections
 				}
 				else
 				{
-					return default(T);
+					return default(object);
 				}
 			}
 			finally
@@ -141,14 +141,14 @@ namespace SharpPulsar.Utility.Collections
 			}
 		}
 
-		public bool Offer(T e)
+		public bool Offer(object e)
 		{
 			// Queue is unbounded and it will never reject new items
 			Put(e);
 			return true;
 		}
 
-		public void Put(T e)
+		public void Put(object e)
 		{
 			_tailLock.Lock();
 
@@ -187,20 +187,20 @@ namespace SharpPulsar.Utility.Collections
 			}
 		}
 
-		public bool Add(T e)
+		public bool Add(object e)
 		{
 			Put(e);
 			return true;
 		}
 
-		public bool Offer(T e, long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public bool Offer(object e, long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			// Queue is unbounded and it will never reject new items
 			Put(e);
 			return true;
 		}
 
-		public T Take()
+		public object Take()
 		{
 			_headLock.Lock();
 
@@ -212,7 +212,7 @@ namespace SharpPulsar.Utility.Collections
 				}
 
 				var item = _data[_headIndex.Value];
-				_data[_headIndex.Value] = default(T);
+				_data[_headIndex.Value] = default(object);
 				_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				if (SizeUpdater[this]-- > 0)
 				{
@@ -227,18 +227,18 @@ namespace SharpPulsar.Utility.Collections
 			}
 		}
 
-		public T Poll(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public object Poll(long timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			_headLock.TryLock(3000);
 
 			try
 			{
-				var timeoutNanos = unit.ToNanos(timeout);
+				var timeoutNanos = unit.ToNanos(objectimeout);
 				while (SizeUpdater[this] == 0)
 				{
-					if (timeoutNanos <= 0)
+					if (objectimeoutNanos <= 0)
 					{
-						return default(T);
+						return default(object);
 					}
 
                     _isNotEmpty.Await();
@@ -246,7 +246,7 @@ namespace SharpPulsar.Utility.Collections
 				}
 
 				var item = _data[_headIndex.Value];
-				_data[_headIndex.Value] = default(T);
+				_data[_headIndex.Value] = default(object);
 				_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				if (SizeUpdater[this]-- > 0)
 				{
@@ -266,12 +266,12 @@ namespace SharpPulsar.Utility.Collections
 			return int.MaxValue;
 		}
 
-		public int DrainTo(ICollection<T> c)
+		public int DrainTo(ICollection c)
 		{
 			return DrainTo(c, int.MaxValue);
 		}
 
-		public int DrainTo(ICollection<T> c, int maxElements)
+		public int DrainTo(ICollection c, int maxElements)
 		{
 			_headLock.Lock();
 
@@ -283,7 +283,7 @@ namespace SharpPulsar.Utility.Collections
 				while (size > 0 && drainedItems < maxElements)
 				{
 					var item = _data[_headIndex.Value];
-					_data[_headIndex.Value] = default(T);
+					_data[_headIndex.Value] = default(object);
 					c.Add(item);
 
 					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
@@ -316,7 +316,7 @@ namespace SharpPulsar.Utility.Collections
 
 				for (var i = 0; i < size; i++)
 				{
-					_data[_headIndex.Value] = default(T);
+					_data[_headIndex.Value] = default(object);
 					_headIndex.Value = (_headIndex.Value + 1) & (_data.Count - 1);
 				}
 
@@ -378,7 +378,7 @@ namespace SharpPulsar.Utility.Collections
 			{
 				Array.Copy(_data.ToArray(), index + 1, _data.ToArray(), index, _data.Count - index - 1);
 				_data[_data.Count - 1] = _data[0];
-				if (tailIndex > 0)
+				if (objectailIndex > 0)
 				{
 					Array.Copy(_data.ToArray(), 1, _data.ToArray(), 0, tailIndex);
 					this._tailIndex.Value--;
@@ -389,13 +389,13 @@ namespace SharpPulsar.Utility.Collections
 				}
 			}
 
-			if (tailIndex > 0)
+			if (objectailIndex > 0)
 			{
-				_data[tailIndex - 1] = default(T);
+				_data[tailIndex - 1] = default(object);
 			}
 			else
 			{
-				_data[_data.Count - 1] = default(T);
+				_data[_data.Count - 1] = default(object);
 			}
 
 			SizeUpdater[this] = SizeUpdater[this]--;
@@ -406,19 +406,19 @@ namespace SharpPulsar.Utility.Collections
 			return SizeUpdater[this];
 		}
 
-		public IEnumerator<T> iterator()
+		public IEnumerator iterator()
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual IList<T> ToList()
+		public virtual IList ToList()
 		{
-			IList<T> list = new List<T>(size());
+			IList list = new List(size());
 			ForEach(list.Add);
 			return list;
 		}
 
-		public void ForEach(Action<T> action)
+		public void ForEach(Action action)
 		{
 			_tailLock.Lock();
 			_headLock.Lock();
@@ -491,7 +491,7 @@ namespace SharpPulsar.Utility.Collections
 			{
 				var size = SizeUpdater[this];
 				var newCapacity = _data.Count * 2;
-				var newData = new List<T>(newCapacity);
+				var newData = new List(newCapacity);
 
 				var oldHeadIndex = _headIndex.Value;
 				var newTailIndex = 0;

@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl
 			this._partitionIndex = partitionIndex;
 		}
 
-		public override int ChoosePartition<T1>(IMessage<T1> msg, ITopicMetadata metadata)
+		public override int ChoosePartition(IMessage msg, ITopicMetadata metadata)
 		{
 			// If the message has a key, it supersedes the single partition routing policy
 			if (msg.HasKey())
@@ -49,7 +49,7 @@ namespace SharpPulsar.Impl
 			return _partitionIndex;
 		}
 
-        public override int ChoosePartition<T1>(IMessage<T1> msg)
+        public override int ChoosePartition(IMessage msg)
         {
             throw new NotImplementedException();
         }

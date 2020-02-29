@@ -315,7 +315,7 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					var durable = (ConsumerImpl.SubscriptionMode)Convert.ChangeType(SubscriptionMode.Durable, typeof(ConsumerImpl.SubscriptionMode));
+					var durable = (ConsumerImpl.SubscriptionMode)Convert.ChangeType(ConsumerImpl.SubscriptionMode.Durable, typeof(ConsumerImpl.SubscriptionMode));
 					var partitionIndex = TopicName.GetPartitionIndex(topic);
 					consumer = ConsumerImpl.NewConsumerImpl(this, topic, conf, listenerThread, partitionIndex, false, consumerSubscribedTask, durable, null, schema, interceptors, true);
 				}
@@ -693,7 +693,7 @@ namespace SharpPulsar.Impl
 		}
 
 		
-		public void CleanupProducer<T1>(ProducerBase<T1> producer)
+		public void CleanupProducer(ProducerBase producer)
 		{
 			lock (_producers)
 			{
@@ -702,7 +702,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void CleanupConsumer<T1>(ConsumerBase<T1> consumer)
+		public void CleanupConsumer(ConsumerBase consumer)
 		{
 			lock (_consumers)
 			{

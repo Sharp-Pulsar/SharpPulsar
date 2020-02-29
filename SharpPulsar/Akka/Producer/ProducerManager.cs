@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
@@ -47,8 +48,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<TcpClosed>(_ =>
             {
-                Become(()=>Connecting(_config));
-                _network.Tell(new TcpReconnect());
+                Become(Connecting);
             });
         }
 
@@ -123,8 +123,9 @@ namespace SharpPulsar.Akka.Producer
             });
             ReceiveAny(_=>Stash.Stash());
         }
-        private void Connecting(ClientConfigurationData configuration)
+        private void Connecting()
         {
+            _network.Tell(new TcpReconnect());
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");

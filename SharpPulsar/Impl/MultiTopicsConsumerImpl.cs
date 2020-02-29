@@ -38,7 +38,7 @@ namespace SharpPulsar.Impl
     using System.Linq;
     using System.Threading.Tasks;
 
-    public class MultiTopicsConsumerImpl<T> : ConsumerBase<T>
+    public class MultiTopicsConsumerImpl : ConsumerBase
 	{
 
 		public const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl
         public NamespaceName Namespacename;
 
 		// Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
-		private readonly ConcurrentDictionary<string, ConsumerImpl<T>> _consumers;
+		private readonly ConcurrentDictionary<string, ConsumerImpl> _consumers;
 
 		// Map <topic, numPartitions>, store partition number for each topic
 		private readonly ConcurrentDictionary<string, int> _topics;
@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
-		private readonly ConcurrentQueue<ConsumerImpl<T>> _pausedConsumers;
+		private readonly ConcurrentQueue<ConsumerImpl> _pausedConsumers;
 
 		// Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
 		// resume receiving from the paused consumer partitions
@@ -71,23 +71,23 @@ namespace SharpPulsar.Impl
 
 		private readonly ReaderWriterLockSlim @lock = new ReaderWriterLockSlim();
 		private readonly ConsumerStatsRecorder _stats;
-		public  UnAckedMessageTracker<T> UnAckedTopicMessageTracker;
-		private readonly ConsumerConfigurationData<T> _internalConfig;
+		public  UnAckedMessageTracker UnAckedTopicMessageTracker;
+		private readonly ConsumerConfigurationData _internalConfig;
 		private State _state = State.Closed;
 
-		public MultiTopicsConsumerImpl(PulsarClientImpl client, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, subscribeTask, schema, interceptors, createTopicIfDoesNotExist, executor)
+		public MultiTopicsConsumerImpl(PulsarClientImpl client, ConsumerConfigurationData conf, TaskCompletionSource<IConsumer> subscribeTask, ISchema schema, ConsumerInterceptors interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, subscribeTask, schema, interceptors, createTopicIfDoesNotExist, executor)
 		{
 		}
 
-		public MultiTopicsConsumerImpl(PulsarClientImpl client, string singleTopic, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), executor, subscribeTask, schema, interceptors)
+		public MultiTopicsConsumerImpl(PulsarClientImpl client, string singleTopic, ConsumerConfigurationData conf, TaskCompletionSource<IConsumer> subscribeTask, ISchema schema, ConsumerInterceptors interceptors, bool createTopicIfDoesNotExist, ScheduledThreadPoolExecutor executor) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), executor, subscribeTask, schema, interceptors)
 		{
 
 			if(conf.ReceiverQueueSize < 1)
 				throw new ArgumentException("Receiver queue size needs to be greater than 0 for Topics Consumer");
             _poolExecutor = ListenerExecutor;
 			_topics = new ConcurrentDictionary<string, int>();
-			_consumers = new ConcurrentDictionary<string, ConsumerImpl<T>>();
-			_pausedConsumers = new ConcurrentQueue<ConsumerImpl<T>>();
+			_consumers = new ConcurrentDictionary<string, ConsumerImpl>();
+			_pausedConsumers = new ConcurrentQueue<ConsumerImpl>();
 			_sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
 			AllTopicPartitionsNumber = new AtomicInt(0);
 
@@ -95,20 +95,20 @@ namespace SharpPulsar.Impl
 			{
 				if (conf.TickDurationMillis > 0)
 				{
-					UnAckedTopicMessageTracker = new UnAckedTopicMessageTracker<T>(client, this, conf.AckTimeoutMillis, conf.TickDurationMillis);
+					UnAckedTopicMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis, conf.TickDurationMillis);
 				}
 				else
 				{
-					UnAckedTopicMessageTracker = new UnAckedTopicMessageTracker<T>(client, this, conf.AckTimeoutMillis);
+					UnAckedTopicMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis);
 				}
 			}
 			else
 			{
-				UnAckedTopicMessageTracker = UnAckedMessageTracker<T>.UnackedMessageTrackerDisabled;
+				UnAckedTopicMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
 			}
 
 			_internalConfig = InternalConsumerConfig;
-			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorderImpl<T>() : null;
+			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorderImpl() : null;
 
 			// start track and auto subscribe partition increasement
 			if (conf.AutoUpdatePartitions)
@@ -189,7 +189,7 @@ namespace SharpPulsar.Impl
             return false;
         }
 
-		private void StartReceivingMessages(IList<ConsumerImpl<T>> newConsumers)
+		private void StartReceivingMessages(IList<ConsumerImpl> newConsumers)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -205,7 +205,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void ReceiveMessageFromConsumer(ConsumerImpl<T> consumer)
+		private void ReceiveMessageFromConsumer(ConsumerImpl consumer)
 		{
 			consumer.ReceiveAsync().AsTask().ContinueWith(message =>
 			{
@@ -237,14 +237,14 @@ namespace SharpPulsar.Impl
 			});
 		}
 
-		private void MessageReceived(ConsumerImpl<T> consumer, IMessage<T> message)
+		private void MessageReceived(ConsumerImpl consumer, IMessage message)
 		{
-			if (!(message is MessageImpl<T>))
-				throw new ArgumentException("Message<T> is not of type MessageImpl<T>");
+			if (!(message is MessageImpl))
+				throw new ArgumentException("Message is not of type MessageImpl");
 			@lock.EnterWriteLock();
 			try
 			{
-				var topicMessage = new TopicMessageImpl<T>(consumer.Topic, consumer.TopicNameWithoutPartition, message);
+				var topicMessage = new TopicMessageImpl(consumer.Topic, consumer.TopicNameWithoutPartition, message);
 
 				if (Log.IsEnabled(LogLevel.Debug))
 				{
@@ -280,7 +280,7 @@ namespace SharpPulsar.Impl
 				// thread while the message processing happens
                 Client.EventLoopGroup.Execute(() =>
                 {
-					IMessage<T> msg;
+					IMessage msg;
                     try
                     {
                         msg = InternalReceive();
@@ -306,7 +306,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void MessageProcessed(IMessage<T> msg)
+		public override void MessageProcessed(IMessage msg)
 		{
 			lock (this)
 			{
@@ -343,13 +343,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override IMessage<T> InternalReceive()
+		public override IMessage InternalReceive()
 		{
             try
 			{
-				var message = IncomingMessages.Take();
-				IncomingMessagesSize[this] = -message.Data.Length;
-                if (message is TopicMessageImpl<T>)
+				var message = (IMessage)IncomingMessages.Take();
+				IncomingMessagesSize[this] = -(message).Data.Length;
+                if (message is TopicMessageImpl)
                 {
                     UnAckedTopicMessageTracker.Add(message.MessageId);
                     ResumeReceivingFromPausedConsumersIfNeeded();
@@ -361,15 +361,15 @@ namespace SharpPulsar.Impl
 				throw PulsarClientException.Unwrap(e);
 			}
 		}
-        public override IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+        public override IMessage InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
             try
 			{
-				var message = IncomingMessages.Poll(timeout, unit);
+				var message = (IMessage)IncomingMessages.Poll(timeout, unit);
 				if (message != null)
 				{
 					IncomingMessagesSize[this] = -message.Data.Length;
-					if(message is TopicMessageImpl<T>)
+					if(!(message is TopicMessageImpl))
 						throw new ArgumentException();
 					UnAckedTopicMessageTracker.Add(message.MessageId);
 				}
@@ -382,7 +382,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override IMessages<T> InternalBatchReceive()
+		public override IMessages InternalBatchReceive()
 		{
 			try
 			{
@@ -401,15 +401,15 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public override ValueTask<IMessages<T>> InternalBatchReceiveAsync()
+		public override ValueTask<IMessages> InternalBatchReceiveAsync()
 		{
-			var result = new TaskCompletionSource<IMessages<T>>();
+			var result = new TaskCompletionSource<IMessages>();
 			try
 			{
 				@lock.EnterWriteLock();
 				if (PendingBatchReceives == null)
 				{
-					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive<T>>();
+					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive>();
 				}
 				if (HasEnoughMessagesForBatchReceive())
 				{
@@ -430,19 +430,19 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					PendingBatchReceives.Enqueue(OpBatchReceive<T>.Of<T>(result));
+					PendingBatchReceives.Enqueue(OpBatchReceive.Of(result));
 				}
 			}
 			finally
 			{
 				@lock.ExitWriteLock();
 			}
-			return new ValueTask<IMessages<T>>(result.Task); 
+			return new ValueTask<IMessages>(result.Task); 
 		}
 
-		public override ValueTask<IMessage<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage> InternalReceiveAsync()
 		{
-            var result = new TaskCompletionSource<IMessage<T>>();
+            var result = new TaskCompletionSource<IMessage>();
             try
 			{
 				@lock.EnterWriteLock();
@@ -454,7 +454,7 @@ namespace SharpPulsar.Impl
 				else
 				{
 					IncomingMessagesSize[this] = -message.Data.Length;
-                    if (message is TopicMessageImpl<T>)
+                    if (message is TopicMessageImpl)
                     {
                         UnAckedTopicMessageTracker.Add(message.MessageId);
                         ResumeReceivingFromPausedConsumersIfNeeded();
@@ -473,7 +473,7 @@ namespace SharpPulsar.Impl
 				@lock.ExitWriteLock();
 			}
 
-			return new ValueTask<IMessage<T>>(result.Task);
+			return new ValueTask<IMessage>(result.Task);
 		}
 
 		public override TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txnImpl)
@@ -639,7 +639,7 @@ namespace SharpPulsar.Impl
 
 		public new string HandlerName => Subscription;
 
-        private ConsumerConfigurationData<T> InternalConsumerConfig
+        private ConsumerConfigurationData InternalConsumerConfig
 		{
 			get
 			{
@@ -689,7 +689,7 @@ namespace SharpPulsar.Impl
 			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		public override void CompleteOpBatchReceive(OpBatchReceive<T> op)
+		public override void CompleteOpBatchReceive(OpBatchReceive op)
 		{
 			NotifyPendingBatchReceivedCallBack(op);
 		}
@@ -781,7 +781,7 @@ namespace SharpPulsar.Impl
 
 				// try not to remove elements that are added while we remove
 				var message = IncomingMessages.Poll();
-				if(!(message is TopicMessageImpl<T>))
+				if(!(message is TopicMessageImpl))
 					throw new ArgumentException();
 				while (message != null)
 				{
@@ -849,7 +849,7 @@ namespace SharpPulsar.Impl
 
 		// create consumer for a single topic with already known partitions.
 		// first create a consumer with no topic, then do subscription for already know partitionedTopic.
-		public static MultiTopicsConsumerImpl<T> CreatePartitionedConsumer(PulsarClientImpl client, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, int numPartitions, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		public static MultiTopicsConsumerImpl CreatePartitionedConsumer(PulsarClientImpl client, ConsumerConfigurationData conf, TaskCompletionSource<IConsumer> subscribeTask, int numPartitions, ISchema schema, ConsumerInterceptors interceptors)
 		{
 			if(conf.TopicNames.Count != 1)
                 throw new ArgumentException("Should have only 1 topic for partitioned consumer");
@@ -859,12 +859,12 @@ namespace SharpPulsar.Impl
 			var topicName = cloneConf.SingleTopic;
 			cloneConf.TopicNames.Remove(topicName);
 
-			var task = new TaskCompletionSource<IConsumer<T>>();
-			var consumer = new MultiTopicsConsumerImpl<T>(client, topicName, cloneConf, task, schema, interceptors, true, _poolExecutor);
+			var task = new TaskCompletionSource<IConsumer>();
+			var consumer = new MultiTopicsConsumerImpl(client, topicName, cloneConf, task, schema, interceptors, true, _poolExecutor);
 
 			task.Task.ContinueWith(c =>
             {
-                ((MultiTopicsConsumerImpl<T>) c.Result).SubscribeAsync(topicName, numPartitions)
+                ((MultiTopicsConsumerImpl) c.Result).SubscribeAsync(topicName, numPartitions)
                     .AsTask().ContinueWith(x =>
                     {
                         if (x.IsFaulted)
@@ -922,7 +922,7 @@ namespace SharpPulsar.Impl
 				Log.LogDebug("Subscribe to topic {} metadata.partitions: {}", topicName, numPartitions);
 			}
 
-			IList<TaskCompletionSource<IConsumer<T>>> taskList;
+			IList<TaskCompletionSource<IConsumer>> taskList;
 			if (numPartitions > 0)
 			{
 				_topics.GetOrAdd(topicName, numPartitions);
@@ -935,8 +935,8 @@ namespace SharpPulsar.Impl
 				taskList = Enumerable.Range(0, numPartitions).Select(partitionIndex =>
 				{
 				    var partitionName = TopicName.Get(topicName).GetPartition(partitionIndex).ToString();
-				    var subTask = new TaskCompletionSource<IConsumer<T>>();
-				    var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
+				    var subTask = new TaskCompletionSource<IConsumer>();
+				    var newConsumer = ConsumerImpl.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, SubscriptionMode.SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
 				    _consumers.GetOrAdd(newConsumer.Topic, newConsumer);
 				    return subTask;
 				}).ToList();
@@ -946,11 +946,11 @@ namespace SharpPulsar.Impl
 				_topics.GetOrAdd(topicName, 1);
 				AllTopicPartitionsNumber.Increment();
 
-                var subTask = new TaskCompletionSource<IConsumer<T>>();
-				var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, topicName, _internalConfig, Client.ExternalExecutorProvider(), -1, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
+                var subTask = new TaskCompletionSource<IConsumer>();
+				var newConsumer = ConsumerImpl.NewConsumerImpl(Client, topicName, _internalConfig, Client.ExternalExecutorProvider(), -1, true, subTask, SubscriptionMode.SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
 				_consumers.GetOrAdd(newConsumer.Topic, newConsumer);
 
-				taskList = new List<TaskCompletionSource<IConsumer<T>>> {subTask};
+				taskList = new List<TaskCompletionSource<IConsumer>> {subTask};
 			}
 
 			Task.WhenAll(taskList.Select(x=> x.Task)).ContinueWith(finalTask =>
@@ -1040,7 +1040,7 @@ namespace SharpPulsar.Impl
 			var unsubscribeTask = new TaskCompletionSource<Task>();
 			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
 
-			IList<ConsumerImpl<T>> consumersToUnsub = _consumers.Values.Where(consumer =>
+			IList<ConsumerImpl> consumersToUnsub = _consumers.Values.Where(consumer =>
 			{
 			    var consumerTopicName = consumer.Topic;
 			    if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
@@ -1064,7 +1064,7 @@ namespace SharpPulsar.Impl
 					    AllTopicPartitionsNumber.Decrement();
 				    });
 				    _topics.Remove(topicName, out var v);
-				    ((UnAckedTopicMessageTracker<T>) UnAckedTopicMessageTracker).RemoveTopicMessages(topicName);
+				    ((UnAckedTopicMessageTracker) UnAckedTopicMessageTracker).RemoveTopicMessages(topicName);
 				    unsubscribeTask.SetResult(null);
 				    Log.LogInformation("[{}] [{}] [{}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {}", topicName, Subscription, ConsumerName, AllTopicPartitionsNumber);
 			    }
@@ -1094,7 +1094,7 @@ namespace SharpPulsar.Impl
 			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
 
 
-			IList<ConsumerImpl<T>> consumersToClose = _consumers.Values.Where(consumer =>
+			IList<ConsumerImpl> consumersToClose = _consumers.Values.Where(consumer =>
 			{
 			    var consumerTopicName = consumer.Topic;
 			    if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
@@ -1118,7 +1118,7 @@ namespace SharpPulsar.Impl
 					    AllTopicPartitionsNumber.Decrement();
 				    });
 				    _topics.Remove(topicName, out var t);
-				    ((UnAckedTopicMessageTracker<T>) UnAckedTopicMessageTracker).RemoveTopicMessages(topicName);
+				    ((UnAckedTopicMessageTracker) UnAckedTopicMessageTracker).RemoveTopicMessages(topicName);
 				    unsubscribeTask.SetResult(null);
 				    Log.LogInformation("[{}] [{}] [{}] Removed Topics Consumer, allTopicPartitionsNumber: {}", topicName, Subscription, ConsumerName, AllTopicPartitionsNumber);
 			    }
@@ -1141,7 +1141,7 @@ namespace SharpPulsar.Impl
 		public IList<string> PartitionedTopics => _consumers.Keys.ToList();
 
         // get partitioned consumers
-		public IList<ConsumerImpl<T>> Consumers => _consumers.Values.ToList();
+		public IList<ConsumerImpl> Consumers => _consumers.Values.ToList();
 
         public override void Pause()
 		{
@@ -1156,9 +1156,9 @@ namespace SharpPulsar.Impl
 		// This listener is triggered when topics partitions are updated.
 		public class TopicsPartitionChangedListener : PartitionsChangedListener
 		{
-			private readonly MultiTopicsConsumerImpl<T> _outerInstance;
+			private readonly MultiTopicsConsumerImpl _outerInstance;
 
-			public TopicsPartitionChangedListener(MultiTopicsConsumerImpl<T> outerInstance)
+			public TopicsPartitionChangedListener(MultiTopicsConsumerImpl outerInstance)
 			{
 				this._outerInstance = outerInstance;
 			}
@@ -1222,9 +1222,9 @@ namespace SharpPulsar.Impl
                     var taskList = newPartitions.Select(partitionName =>
                     {
                         var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-                        var subTask = new TaskCompletionSource<IConsumer<T>>();
+                        var subTask = new TaskCompletionSource<IConsumer>();
                         var configurationData = InternalConsumerConfig;
-                        var newConsumer = ConsumerImpl<T>.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, ConsumerImpl<T>.SubscriptionMode.Durable, null, Schema, Interceptors, true);
+                        var newConsumer = ConsumerImpl.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, SubscriptionMode.SubscriptionMode.Durable, null, Schema, Interceptors, true);
                         _consumers.GetOrAdd(newConsumer.Topic, newConsumer);
                         if (Log.IsEnabled(LogLevel.Debug))
                         {
@@ -1240,7 +1240,7 @@ namespace SharpPulsar.Impl
                             task.SetException(finalTask.Exception ?? throw new InvalidOperationException());
                             return;
                         }
-                        IList<ConsumerImpl<T>> newConsumerList = newPartitions.Select(partitionTopic => _consumers[partitionTopic]).ToList();
+                        IList<ConsumerImpl> newConsumerList = newPartitions.Select(partitionTopic => _consumers[partitionTopic]).ToList();
                         StartReceivingMessages(newConsumerList);
                         task.SetResult(null);
                     });
@@ -1257,9 +1257,9 @@ namespace SharpPulsar.Impl
 		
 		public class TimerTaskAnonymousInnerClass: ITimerTask
         {
-            private readonly MultiTopicsConsumerImpl<T> _outerInstance;
+            private readonly MultiTopicsConsumerImpl _outerInstance;
 
-            public TimerTaskAnonymousInnerClass(MultiTopicsConsumerImpl<T> outerInstance)
+            public TimerTaskAnonymousInnerClass(MultiTopicsConsumerImpl outerInstance)
             {
                 _outerInstance = outerInstance;
             }
@@ -1320,7 +1320,7 @@ namespace SharpPulsar.Impl
 				return new ValueTask<IMessageId>(returnTask.Task);
 			}
 		}
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<MultiTopicsConsumerImpl<T>>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<MultiTopicsConsumerImpl>();
 	}
 
 }

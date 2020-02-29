@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Impl
 
 			_consumerConf.SubscriptionName = "test-sub";
 			//_consumer = A.Fake<ConsumerImpl<sbyte[]>>(x=> x.ConfigureFake( c=> ConsumerImpl<sbyte[]>.NewConsumerImpl(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, null, null, true)));
-            _consumer = A.Fake<ConsumerImpl<sbyte[]>>(x => x.WithArgumentsForConstructor(() => new ConsumerImpl<sbyte[]>(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, ConsumerImpl<sbyte[]>.SubscriptionMode.Durable, null, 0, null, null, true)));
+            _consumer = A.Fake<ConsumerImpl<sbyte[]>>(x => x.WithArgumentsForConstructor(() => new ConsumerImpl<sbyte[]>(client, topic, _consumerConf, _executorService, -1, false, subscribeFuture, SubscriptionMode.SubscriptionMode.Durable, null, 0, null, null, true)));
 		}
 
 		[Fact]

@@ -5,9 +5,9 @@ namespace SharpPulsar.Extension
 {
     public static class EnumValue
     {
-        public static T GetCompressionTypeValue<T>(this Api.ICompressionType compression)
+        public static T GetCompressionTypeValue(this Api.ICompressionType compression)
         {
-            return Enum.GetValues(typeof(T)).Cast<T>().ToList()[(int) compression];
+            return Enum.GetValues(typeof(T)).Cast().ToList()[(int) compression];
         }
     }
 }

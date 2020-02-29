@@ -34,11 +34,11 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent {
     /// It locks as soon as the instance is created and will release the lock once disposed.
     /// </summary>
     /// <typeparam name="T">The type of the enumerator.</typeparam>
-    public class LockingEnumerator<T> : IEnumerator<T>, IEnumerator, IDisposable {
-        private readonly IEnumerator<T> _enumerator;
+    public class LockingEnumerator : IEnumerator, IEnumerator, IDisposable {
+        private readonly IEnumerator _enumerator;
         private readonly ILock _lock;
 
-        public LockingEnumerator(IEnumerator<T> enumerator, ILock @lock) {
+        public LockingEnumerator(IEnumerator enumerator, ILock @lock) {
             _enumerator = enumerator;
             _lock = @lock;
 

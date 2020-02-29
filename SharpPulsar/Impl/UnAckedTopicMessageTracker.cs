@@ -24,15 +24,15 @@ using System.Threading;
 namespace SharpPulsar.Impl
 {
 
-	public class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker<T>
+	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
     {
         private ReaderWriterLockSlim _readerWriterLock;
-		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase consumerBase, long ackTimeoutMillis) : base(client, consumerBase, ackTimeoutMillis)
 		{
 			_readerWriterLock = new ReaderWriterLockSlim();
 		}
 
-		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase<T> consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
+		public UnAckedTopicMessageTracker(PulsarClientImpl client, ConsumerBase consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(client, consumerBase, ackTimeoutMillis, tickDurationMillis)
 		{
             _readerWriterLock = new ReaderWriterLockSlim();
 		}

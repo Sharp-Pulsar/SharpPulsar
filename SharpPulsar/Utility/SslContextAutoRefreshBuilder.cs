@@ -29,9 +29,9 @@ namespace SharpPulsar.Utility
 	/// <summary>
 	/// Auto refresher and builder of SSLContext.
 	/// </summary>
-	/// @param <T>
+	/// @param 
 	///            type of SSLContext </param>
-	public abstract class SslContextAutoRefreshBuilder<T>
+	public abstract class SslContextAutoRefreshBuilder
 	{
 		protected internal readonly bool tlsAllowInsecureConnection;
 		protected internal readonly FileModifiedTimeUpdater tlsTrustCertsFilePath, tlsCertificateFilePath, tlsKeyFilePath;
@@ -117,7 +117,7 @@ namespace SharpPulsar.Utility
 			return ctx;
 		}
 
-		private static readonly ILogger log = Utility.Log.Logger.CreateLogger<SslContextAutoRefreshBuilder<T>>();
+		private static readonly ILogger log = Utility.Log.Logger.CreateLogger<SslContextAutoRefreshBuilder>();
 	}
 
 }

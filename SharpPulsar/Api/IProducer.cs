@@ -29,7 +29,7 @@ namespace SharpPulsar.Api
 	/// <para>A single producer instance can be used across multiple threads.
 	/// </para>
 	/// </summary>
-	public interface IProducer<T> : IAsyncDisposable
+	public interface IProducer : IAsyncDisposable
 	{
 
 		/// <returns> the topic which producer is publishing to </returns>

@@ -47,9 +47,9 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent
     /// </para>
     /// </remarks>
     /// \author Matt Bolt
-    public class BlockingBuffer<T> : IEnumerable<T>, IEnumerable {
+    public class BlockingBuffer : IEnumerable, IEnumerable {
 
-        private readonly Queue<T> _buffer;
+        private readonly Queue _buffer;
         private readonly ReentrantLock _lock;
         private readonly ICondition _notFull;
         private readonly ICondition _notEmpty;
@@ -58,7 +58,7 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent
         public BlockingBuffer(int capacity) {
             _capacity = capacity;
 
-            _buffer = new Queue<T>(_capacity);
+            _buffer = new Queue(_capacity);
             _lock = new ReentrantLock();
             _notFull = _lock.NewCondition();
             _notEmpty = _lock.NewCondition();
@@ -224,8 +224,8 @@ namespace SharpPulsar.Utility.Atomic.Collections.Concurrent
         }
 
         /// <inheritdoc/>
-        public IEnumerator<T> GetEnumerator() {
-            return new LockingEnumerator<T>(_buffer.GetEnumerator(), _lock);
+        public IEnumerator GetEnumerator() {
+            return new LockingEnumerator(_buffer.GetEnumerator(), _lock);
         }
         
         IEnumerator IEnumerable.GetEnumerator() {

@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl
 
 	public interface ConsumerStatsRecorder : IConsumerStats
 	{
-		void UpdateNumMsgsReceived<T1>(IMessage<T1> message);
+		void UpdateNumMsgsReceived(IMessage message);
 
 		void IncrementNumAcksSent(long numAcks);
 

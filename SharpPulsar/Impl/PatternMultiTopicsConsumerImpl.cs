@@ -32,14 +32,14 @@ namespace SharpPulsar.Impl
     using System.Threading.Tasks;
     using static Protocol.Proto.CommandGetTopicsOfNamespace.Types;
 
-    public class PatternMultiTopicsConsumerImpl<T> : MultiTopicsConsumerImpl<T>, ITimerTask
+    public class PatternMultiTopicsConsumerImpl : MultiTopicsConsumerImpl, ITimerTask
 	{
 		private readonly Regex _topicsPattern;
 		private readonly TopicsChangedListener _topicsChangeListener;
 		private readonly Mode _subscriptionMode;
 		private volatile ITimeout _recheckPatternTimeout;
 
-		public PatternMultiTopicsConsumerImpl(Regex topicsPattern, PulsarClientImpl client, ConsumerConfigurationData<T> conf, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ScheduledThreadPoolExecutor executor) : base(client, conf, subscribeTask, schema, interceptors, false, executor)
+		public PatternMultiTopicsConsumerImpl(Regex topicsPattern, PulsarClientImpl client, ConsumerConfigurationData conf, TaskCompletionSource<IConsumer> subscribeTask, ISchema schema, Mode subscriptionMode, ConsumerInterceptors interceptors, ScheduledThreadPoolExecutor executor) : base(client, conf, subscribeTask, schema, interceptors, false, executor)
 		{
 			this._topicsPattern = topicsPattern;
 			this._subscriptionMode = subscriptionMode;
@@ -111,9 +111,9 @@ namespace SharpPulsar.Impl
 
 		public class PatternTopicsChangedListener : TopicsChangedListener
 		{
-			private readonly PatternMultiTopicsConsumerImpl<T> _outerInstance;
+			private readonly PatternMultiTopicsConsumerImpl _outerInstance;
 
-			public PatternTopicsChangedListener(PatternMultiTopicsConsumerImpl<T> outerInstance)
+			public PatternTopicsChangedListener(PatternMultiTopicsConsumerImpl outerInstance)
 			{
 				this._outerInstance = outerInstance;
 			}
@@ -193,7 +193,7 @@ namespace SharpPulsar.Impl
 
 		public virtual ITimeout RecheckPatternTimeout => _recheckPatternTimeout;
 
-        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PatternMultiTopicsConsumerImpl<T>));
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PatternMultiTopicsConsumerImpl));
 	}
 
 }

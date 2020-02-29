@@ -79,10 +79,10 @@ namespace SharpPulsar.Impl.Schema
             CheckAlternateDeserializers(output, ms, initialPos, ws, rs);
             return output;
         }
-        private static void CheckAlternateSerializers<T>(T value, Avro.Schema ws)
+        private static void CheckAlternateSerializers(T value, Avro.Schema ws)
         {
             var ms = new MemoryStream();
-            var writer = new ReflectWriter<T>(ws);
+            var writer = new ReflectWriter(ws);
             var e = new BinaryEncoder(ms);
             writer.Write(value, e);
             //var output = ms.ToArray();

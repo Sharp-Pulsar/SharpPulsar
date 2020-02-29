@@ -47,7 +47,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// </summary>
 		/// <param name="message"> message to send </param>
 		/// <returns> whether the interceptor can be applied to this particular message. </returns>
-		bool Eligible<T>(IMessage message);
+		bool Eligible(IMessage message);
 
 		/// <summary>
 		/// This is called from <seealso cref="IProducer.send(object)"/> and {@link

@@ -17,7 +17,7 @@ namespace SharpPulsar.Utility.Atomic
     /// this ordering, but the addition of the Volatile guarantees it.
     /// </summary>
     /// <typeparam name="T">TBD</typeparam>
-    public class AtomicReference<T> where T : class
+    public class AtomicReference where T : class
     {
         /// <summary>
         /// Sets the initial value of this <see cref="AtomicReference{T}"/> to <paramref name="originalValue"/>.
@@ -81,7 +81,7 @@ namespace SharpPulsar.Utility.Atomic
         /// </summary>
         /// <param name="atomicReference">The reference to convert</param>
         /// <returns>The result of the conversion.</returns>
-        public static implicit operator T(AtomicReference<T> atomicReference)
+        public static implicit operator T(AtomicReference atomicReference)
         {
             return atomicReference.Value;
         }
@@ -91,9 +91,9 @@ namespace SharpPulsar.Utility.Atomic
         /// </summary>
         /// <param name="value">The reference to convert</param>
         /// <returns>The result of the conversion.</returns>
-        public static implicit operator AtomicReference<T>(T value)
+        public static implicit operator AtomicReference(T value)
         {
-            return new AtomicReference<T>(value);
+            return new AtomicReference(value);
         }
 
         #endregion

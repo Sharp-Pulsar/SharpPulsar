@@ -30,18 +30,18 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public class ZeroQueueConsumerImpl<T> : ConsumerImpl<T>
+	public class ZeroQueueConsumerImpl : ConsumerImpl
 	{
 
 		private readonly ILock _zeroQueueLock = new ReentrantLock();
 
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 
-		public ZeroQueueConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer<T>> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist)
+		public ZeroQueueConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, ISchema schema, ConsumerInterceptors interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist)
 		{
 		}
 
-        public override IMessage<T> InternalReceive()
+        public override IMessage InternalReceive()
 		{
 			_zeroQueueLock.Lock();
 			try
@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<IMessage<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage> InternalReceiveAsync()
 		{
 			var task = base.InternalReceiveAsync();
 			if (!task.IsCompleted)
@@ -66,7 +66,7 @@ namespace SharpPulsar.Impl
 			return task;
 		}
 
-		private IMessage<T> FetchSingleMessageFromBroker()
+		private IMessage FetchSingleMessageFromBroker()
 		{
 			// Just being cautious
 			if (IncomingMessages.size() > 0)
@@ -87,12 +87,12 @@ namespace SharpPulsar.Impl
 					}
 				}
 
-                IMessage<T> message;
+                IMessage message;
                 do
 				{
 					message = IncomingMessages.Take();
 					LastDequeuedMessage = message.MessageId;
-					var msgCnx = ((MessageImpl<T>) message).Cnx;
+					var msgCnx = ((MessageImpl) message).Cnx;
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					lock (this)
 					{
@@ -135,7 +135,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override bool CanEnqueueMessage(IMessage<T> message)
+		public override bool CanEnqueueMessage(IMessage message)
         {
             if (Listener != null)
 			{
@@ -146,7 +146,7 @@ namespace SharpPulsar.Impl
             return true;
         }
 
-		private void TriggerZeroQueueSizeListener(IMessage<T> message)
+		private void TriggerZeroQueueSizeListener(IMessage message)
 		{
 			if(Listener == null)
                 throw new NullReferenceException("listener can't be null");

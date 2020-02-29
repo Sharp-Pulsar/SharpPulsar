@@ -95,7 +95,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IProducerBuilder<T> NewProducer<T>(ISchema<T> schema);
+		IProducerBuilder NewProducer(ISchema schema);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -145,7 +145,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IConsumerBuilder<T> NewConsumer<T>(ISchema<T> schema);
+		IConsumerBuilder NewConsumer(ISchema schema);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -227,7 +227,7 @@ namespace SharpPulsar.Api
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IReaderBuilder<T> NewReader<T>(ISchema<T> schema);
+		IReaderBuilder NewReader(ISchema schema);
 
 		/// <summary>
 		/// Update the service URL this client is using.

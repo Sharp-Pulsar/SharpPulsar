@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
     using System.Threading.Tasks;
     using System.Collections.Concurrent;
 
-    public abstract class ConsumerBase<T> : HandlerState, ITimerTask, IConsumer<T>
+    public abstract class ConsumerBase : HandlerState, ITimerTask, IConsumer
 	{
 		public abstract void NegativeAcknowledge(IMessageId messageId);
 		public abstract void Resume();
@@ -54,25 +54,25 @@ namespace SharpPulsar.Impl
 			NonPartitioned
 		}
 		private readonly string _subscription;
-		public readonly ConsumerConfigurationData<T> Conf;
+		public readonly ConsumerConfigurationData Conf;
 		private readonly string _consumerName;
 
-		public TaskCompletionSource<IConsumer<T>> SubscribeTask { get; set; } 
-		protected internal readonly IMessageListener<T> Listener;
+		public TaskCompletionSource<IConsumer> SubscribeTask { get; set; } 
+		protected internal readonly IMessageListener Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly ScheduledThreadPoolExecutor ListenerExecutor;
-		internal readonly GrowableArrayBlockingQueue<IMessage<T>> IncomingMessages;
-		public readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
+		internal readonly GrowableArrayBlockingQueue IncomingMessages;
+		public readonly ConcurrentQueue<TaskCompletionSource<IMessage>> PendingReceives;
         private int _maxReceiverQueueSize;
-		protected internal readonly ISchema<T> Schema;
-		protected internal readonly ConsumerInterceptors<T> Interceptors;
+		protected internal readonly ISchema Schema;
+		protected internal readonly ConsumerInterceptors Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
-		protected internal ConcurrentQueue<OpBatchReceive<T>> PendingBatchReceives;
+		protected internal ConcurrentQueue<OpBatchReceive> PendingBatchReceives;
 		//protected internal static readonly AtomicLongFieldUpdater<ConsumerBase> IncomingMessagesSizeUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ConsumerBase), "incomingMessagesSize");
-		protected internal ConcurrentDictionary<ConsumerBase<T>, long> IncomingMessagesSize = new ConcurrentDictionary<ConsumerBase<T>, long>();
+		protected internal ConcurrentDictionary<ConsumerBase, long> IncomingMessagesSize = new ConcurrentDictionary<ConsumerBase, long>();
 		protected internal volatile ITimeout BatchReceiveTimeout = null;
 
-        protected ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ScheduledThreadPoolExecutor listenerExecutor, TaskCompletionSource<IConsumer<T>> subscribeTask, ISchema<T> schema, ConsumerInterceptors<T> interceptors) : base(client, topic)
+        protected ConsumerBase(PulsarClientImpl client, string topic, ConsumerConfigurationData conf, int receiverQueueSize, ScheduledThreadPoolExecutor listenerExecutor, TaskCompletionSource<IConsumer> subscribeTask, ISchema schema, ConsumerInterceptors interceptors) : base(client, topic)
         {
             Topic = topic;
 			ChangeToState(State.Uninitialized);
@@ -84,10 +84,10 @@ namespace SharpPulsar.Impl
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 			// Always use growable queue since items can exceed the advertised size
-			IncomingMessages = new GrowableArrayBlockingQueue<IMessage<T>>();
+			IncomingMessages = new GrowableArrayBlockingQueue();
 
 			ListenerExecutor = listenerExecutor;
-			PendingReceives = new ConcurrentQueue<TaskCompletionSource<IMessage<T>>>();
+			PendingReceives = new ConcurrentQueue<TaskCompletionSource<IMessage>>();
 			Schema = schema;
 			Interceptors = interceptors;
 			BatchReceivePolicy = conf.BatchReceivePolicy ?? BatchReceivePolicy.DefaultPolicy;
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public IMessage<T> Receive()
+		public IMessage Receive()
 		{
 			if (Listener != null)
 			{
@@ -107,11 +107,11 @@ namespace SharpPulsar.Impl
 			return InternalReceive();
 		}
 
-		public ValueTask<IMessage<T>> ReceiveAsync()
+		public ValueTask<IMessage> ReceiveAsync()
 		{
 			if (Listener != null)
 			{
-				return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set")));
+				return new ValueTask<IMessage>(Task.FromException<IMessage>(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set")));
 			}
 			try
 			{
@@ -119,16 +119,16 @@ namespace SharpPulsar.Impl
 			}
 			catch (PulsarClientException e)
 			{
-                return new ValueTask<IMessage<T>>(Task.FromException<IMessage<T>>(e));
+                return new ValueTask<IMessage>(Task.FromException<IMessage>(e));
 			}
 			return InternalReceiveAsync();
 		}
 
-		public abstract IMessage<T> InternalReceive();
+		public abstract IMessage InternalReceive();
 
-		public abstract ValueTask<IMessage<T>> InternalReceiveAsync();
+		public abstract ValueTask<IMessage> InternalReceiveAsync();
 
-		public IMessage<T> Receive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public IMessage Receive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{
@@ -143,16 +143,16 @@ namespace SharpPulsar.Impl
 			return InternalReceive(timeout, unit);
 		}
 
-		public abstract IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit);
+		public abstract IMessage InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit);
 
-		public IMessages<T> BatchReceive()
+		public IMessages BatchReceive()
 		{
 			VerifyBatchReceive();
 			VerifyConsumerState();
 			return InternalBatchReceive();
 		}
 
-		public ValueTask<IMessages<T>> BatchReceiveAsync()
+		public ValueTask<IMessages> BatchReceiveAsync()
 		{
 			try
 			{
@@ -162,15 +162,15 @@ namespace SharpPulsar.Impl
 			}
 			catch (PulsarClientException e)
 			{
-                return new ValueTask<IMessages<T>>(Task.FromException<IMessages<T>>(e));
+                return new ValueTask<IMessages>(Task.FromException<IMessages>(e));
 			}
 		}
 
-		public abstract IMessages<T> InternalBatchReceive();
+		public abstract IMessages InternalBatchReceive();
 
-		public abstract ValueTask<IMessages<T>> InternalBatchReceiveAsync();
+		public abstract ValueTask<IMessages> InternalBatchReceiveAsync();
 
-		public void Acknowledge<T1>(IMessage<T1> message)
+		public void Acknowledge(IMessage message)
 		{
 			try
 			{
@@ -194,7 +194,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void Acknowledge<T1>(IMessages<T1> messages)
+		public void Acknowledge(IMessages messages)
 		{
 			try
 			{
@@ -206,7 +206,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void AcknowledgeCumulative<T1>(IMessage<T1> message)
+		public void AcknowledgeCumulative(IMessage message)
 		{
 			try
 			{
@@ -230,7 +230,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeAsync<T1>(IMessage<T1> message)
+		public ValueTask AcknowledgeAsync(IMessage message)
 		{
 			try
 			{
@@ -242,7 +242,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeAsync<T1>(IMessages<T1> messages)
+		public ValueTask AcknowledgeAsync(IMessages messages)
 		{
 			try
             {
@@ -259,7 +259,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
+		public ValueTask AcknowledgeCumulativeAsync(IMessage message)
 		{
 			try
 			{
@@ -315,7 +315,7 @@ namespace SharpPulsar.Impl
             return DoAcknowledgeWithTxn(messageId, CommandAck.Types.AckType.Cumulative, new Dictionary<string, long>(), txnImpl);
         }
 
-		public void NegativeAcknowledge<T1>(IMessage<T1> message)
+		public void NegativeAcknowledge(IMessage message)
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
@@ -337,7 +337,7 @@ namespace SharpPulsar.Impl
         }
 
 		public abstract TaskCompletionSource<Task> DoAcknowledge(IMessageId messageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
-		public void NegativeAcknowledge<T1>(IMessages<T1> messages)
+		public void NegativeAcknowledge(IMessages messages)
         {
             using var msgs = messages.GetEnumerator();
             while (msgs.MoveNext())
@@ -456,7 +456,7 @@ namespace SharpPulsar.Impl
             set => _maxReceiverQueueSize = value;
         }
 
-		public virtual IMessage<T> BeforeConsume(IMessage<T> message)
+		public virtual IMessage BeforeConsume(IMessage message)
         {
             return Interceptors != null ? Interceptors.BeforeConsume(this, message) : message;
         }
@@ -481,13 +481,13 @@ namespace SharpPulsar.Impl
             Interceptors?.OnAckTimeoutSend(this, messageIds);
         }
 
-		public virtual bool CanEnqueueMessage(IMessage<T> message)
+		public virtual bool CanEnqueueMessage(IMessage message)
 		{
 			// Default behavior, can be overridden in subclasses
 			return true;
 		}
 
-		public virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
+		public virtual bool EnqueueMessageAndCheckBatchReceive(IMessage message)
 		{
             if (!CanEnqueueMessage(message)) return HasEnoughMessagesForBatchReceive();
             IncomingMessages.Add(message);
@@ -536,21 +536,21 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public sealed class OpBatchReceive<T1>
+		public sealed class OpBatchReceive
 		{
 
-			internal readonly TaskCompletionSource<IMessages<T>> Task;
+			internal readonly TaskCompletionSource<IMessages> Task;
 			internal readonly long CreatedAt;
 
-			public OpBatchReceive(TaskCompletionSource<IMessages<T>> task)
+			public OpBatchReceive(TaskCompletionSource<IMessages> task)
 			{
 				Task = task;
 				CreatedAt = DateTimeHelper.CurrentUnixTimeMillis();
 			}
 
-			internal static OpBatchReceive<T1> Of<T1>(TaskCompletionSource<IMessages<T>> task)
+			internal static OpBatchReceive Of(TaskCompletionSource<IMessages> task)
 			{
-				return new OpBatchReceive<T1>(task);
+				return new OpBatchReceive(task);
 			}
 		}
 
@@ -563,13 +563,13 @@ namespace SharpPulsar.Impl
 			NotifyPendingBatchReceivedCallBack(opBatchReceive);
 		}
 
-		public virtual void NotifyPendingBatchReceivedCallBack(OpBatchReceive<T> opBatchReceive)
+		public virtual void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
 		{
 			var messages = NewMessagesImpl;
 			var msgPeeked = IncomingMessages.Peek();
 			while (msgPeeked != null && messages.CanAdd(msgPeeked))
 			{
-				IMessage<T> msg = null;
+				IMessage msg = null;
 				try
 				{
 					msg = IncomingMessages.Poll(0L, BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS);
@@ -589,7 +589,7 @@ namespace SharpPulsar.Impl
 			opBatchReceive.Task.SetResult(messages);
 		}
 
-		public abstract void MessageProcessed(IMessage<T> msg);
+		public abstract void MessageProcessed(IMessage msg);
 
 		public void Run(ITimeout timeout)
 		{
@@ -609,7 +609,7 @@ namespace SharpPulsar.Impl
 				}
 				if (PendingBatchReceives == null)
 				{
-					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive<T>>();
+					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive>();
 				}
 
                 timeToWaitMs = BatchReceivePolicy.TimeoutMs;
@@ -624,7 +624,7 @@ namespace SharpPulsar.Impl
 					{
 						// The diff is less than or equal to zero, meaning that the batch receive has been timed out.
 						// complete the OpBatchReceive and continue to check the next OpBatchReceive in pendingBatchReceives.
-						//OpBatchReceive<T> op = PendingBatchReceives.Poll();
+						//OpBatchReceive op = PendingBatchReceives.Poll();
                         PendingBatchReceives.TryPeek(out var op);
 						CompleteOpBatchReceive(op);
                         PendingBatchReceives.TryPeek(out firstOpBatchReceive);
@@ -640,14 +640,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual MessagesImpl<T> NewMessagesImpl => new MessagesImpl<T>((int)BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
+		public virtual MessagesImpl NewMessagesImpl => new MessagesImpl((int)BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
 
         public virtual bool HasPendingBatchReceive()
 		{
 			return PendingBatchReceives != null && !PendingBatchReceives.IsEmpty;
 		}
 
-		public abstract void CompleteOpBatchReceive(OpBatchReceive<T> Op);
+		public abstract void CompleteOpBatchReceive(OpBatchReceive Op);
 	}
 
 }

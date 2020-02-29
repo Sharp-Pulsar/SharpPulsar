@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl.Schema.Generic
             throw new System.NotImplementedException();
         }
 
-        public override ISchema<T> Json<T>(T pojo)
+        public override ISchema Json(T pojo)
         {
             throw new System.NotImplementedException();
         }

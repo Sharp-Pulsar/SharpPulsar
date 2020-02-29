@@ -11,6 +11,7 @@ using Akka.IO;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;

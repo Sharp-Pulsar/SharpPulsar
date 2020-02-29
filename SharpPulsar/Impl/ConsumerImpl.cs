@@ -44,13 +44,26 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public class ConsumerImpl<T> : ConsumerBase<T>, IConnection
+    public class SubscriptionMode
+    {
+        public enum SubscriptionMode
+        {
+            // Make the subscription to be backed by a durable cursor that will retain messages and persist the current
+            // position
+            Durable,
+
+            // Lightweight subscription mode that doesn't have a durable cursor associated
+            NonDurable
+        }
+    }
+
+    public class ConsumerImpl : ConsumerBase, IConnection
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
 		internal readonly long ConsumerId;
 
-		private static readonly ConcurrentDictionary<ConsumerImpl<T>, int> _availablePermits = new ConcurrentDictionary<ConsumerImpl<T>, int>();
+		private static readonly ConcurrentDictionary<ConsumerImpl, int> _availablePermits = new ConcurrentDictionary<ConsumerImpl, int>();
 
         internal volatile IMessageId LastDequeuedMessage;
 		private volatile IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
@@ -63,9 +76,9 @@ namespace SharpPulsar.Impl
 
 		private readonly ReaderWriterLock _lock = new ReaderWriterLock();
 
-		public UnAckedMessageTracker<T> UnAckedMessageTracker;
+		public UnAckedMessageTracker UnAckedMessageTracker;
 		private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
-		private readonly NegativeAcksTracker<T> _negativeAcksTracker;
+		private readonly NegativeAcksTracker _negativeAcksTracker;
 
         internal readonly ConsumerStatsRecorder ConsumerStats;
 		private readonly int _priorityLevel;
@@ -90,37 +103,27 @@ namespace SharpPulsar.Impl
 		private readonly TopicName _topicName;
 		public string TopicNameWithoutPartition;
 
-		private readonly IDictionary<MessageIdImpl, IList<MessageImpl<T>>> _possibleSendToDeadLetterTopicMessages;
+		private readonly IDictionary<MessageIdImpl, IList<MessageImpl>> _possibleSendToDeadLetterTopicMessages;
 
 		private readonly DeadLetterPolicy _deadLetterPolicy;
 
-		private IProducer<T> _deadLetterProducer;
+		private IProducer _deadLetterProducer;
 
         internal volatile bool Paused;
 
 		private readonly bool _createTopicIfDoesNotExist;
 
-		public enum SubscriptionMode
-		{
-			// Make the subscription to be backed by a durable cursor that will retain messages and persist the current
-			// position
-			Durable,
-
-			// Lightweight subscription mode that doesn't have a durable cursor associated
-			NonDurable
-		}
-
-		public static ConsumerImpl<T> NewConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer<T>> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist)
+        public static ConsumerImpl NewConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, ISchema schema, ConsumerInterceptors interceptors, bool createTopicIfDoesNotExist)
         {
             if (conf.ReceiverQueueSize == 0)
 			{
-				return new ZeroQueueConsumerImpl<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, schema, interceptors, createTopicIfDoesNotExist);
+				return new ZeroQueueConsumerImpl(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, schema, interceptors, createTopicIfDoesNotExist);
 			}
 
-            return new ConsumerImpl<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist);
+            return new ConsumerImpl(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, subscribeTask, subscriptionMode, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist);
         }
 
-		public ConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData<T> conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer<T>> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, subscribeTask, schema, interceptors)
+		public ConsumerImpl(PulsarClientImpl client, string topic, ConsumerConfigurationData conf, ScheduledThreadPoolExecutor listenerExecutor, int partitionIndex, bool hasParentConsumer, TaskCompletionSource<IConsumer> subscribeTask, SubscriptionMode subscriptionMode, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema schema, ConsumerInterceptors interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, subscribeTask, schema, interceptors)
 		{
 			SetState(State.Uninitialized);
 			ConsumerId = client.NewConsumerId();
@@ -137,13 +140,13 @@ namespace SharpPulsar.Impl
 			_priorityLevel = conf.PriorityLevel;
 			_readCompacted = conf.ReadCompacted;
 			_subscriptionInitialPosition = conf.SubscriptionInitialPosition;
-			_negativeAcksTracker = new NegativeAcksTracker<T>(this, conf);
+			_negativeAcksTracker = new NegativeAcksTracker(this, conf);
 			_resetIncludeHead = conf.ResetIncludeHead;
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 
 			if (client.Configuration.StatsIntervalSeconds > 0)
 			{
-				ConsumerStats = new ConsumerStatsRecorderImpl<T>(client, conf, this);
+				ConsumerStats = new ConsumerStatsRecorderImpl(client, conf, this);
 			}
 			else
 			{
@@ -154,16 +157,16 @@ namespace SharpPulsar.Impl
 			{
 				if (conf.TickDurationMillis > 0)
 				{
-					UnAckedMessageTracker = new UnAckedMessageTracker<T>(client, this, conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis));
+					UnAckedMessageTracker = new UnAckedMessageTracker(client, this, conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis));
 				}
 				else
 				{
-					UnAckedMessageTracker = new UnAckedMessageTracker<T>(client, this, conf.AckTimeoutMillis);
+					UnAckedMessageTracker = new UnAckedMessageTracker(client, this, conf.AckTimeoutMillis);
 				}
 			}
 			else
 			{
-				UnAckedMessageTracker = UnAckedMessageTracker<T>.UnackedMessageTrackerDisabled;
+				UnAckedMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
 			}
 
 			// Create msgCrypto if not created already
@@ -177,7 +180,7 @@ namespace SharpPulsar.Impl
 			_topicName = TopicName.Get(topic);
 			if (_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker<T>(this, conf, client.EventLoopGroup);
+				_acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(this, conf, client.EventLoopGroup);
 			}
 			else
 			{
@@ -186,7 +189,7 @@ namespace SharpPulsar.Impl
 
 			if (conf.DeadLetterPolicy != null)
 			{
-				_possibleSendToDeadLetterTopicMessages = new ConcurrentDictionary<MessageIdImpl, IList<MessageImpl<T>>>();
+				_possibleSendToDeadLetterTopicMessages = new ConcurrentDictionary<MessageIdImpl, IList<MessageImpl>>();
 				if (string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
 				{
 					_deadLetterPolicy = new DeadLetterPolicy
@@ -261,7 +264,7 @@ namespace SharpPulsar.Impl
 			return new ValueTask(unsubscribeTask.Task);
 		}
 
-		public override IMessage<T> InternalReceive()
+		public override IMessage InternalReceive()
 		{
             try
 			{
@@ -276,11 +279,11 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override ValueTask<IMessage<T>> InternalReceiveAsync()
+		public override ValueTask<IMessage> InternalReceiveAsync()
 		{
 
-			var result = new TaskCompletionSource<IMessage<T>>();
-			IMessage<T> message = null;
+			var result = new TaskCompletionSource<IMessage>();
+			IMessage message = null;
 			try
 			{
 				_lock.AcquireWriterLock(3000);
@@ -306,10 +309,10 @@ namespace SharpPulsar.Impl
 				result.SetResult(BeforeConsume(message));
 			}
 
-			return new ValueTask<IMessage<T>>(result.Task.Result);
+			return new ValueTask<IMessage>(result.Task.Result);
 		}
 
-		public override IMessage<T> InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public override IMessage InternalReceive(int timeout, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
             try
 			{
@@ -334,7 +337,7 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public override IMessages<T> InternalBatchReceive()
+		public override IMessages InternalBatchReceive()
 		{
 			try
 			{
@@ -353,15 +356,15 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public override ValueTask<IMessages<T>> InternalBatchReceiveAsync()
+		public override ValueTask<IMessages> InternalBatchReceiveAsync()
 		{
-			var result = new TaskCompletionSource<IMessages<T>>();
+			var result = new TaskCompletionSource<IMessages>();
 			try
 			{
 				_lock.AcquireWriterLock(300);
 				if (PendingBatchReceives == null)
 				{
-					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive<T>>();
+					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive>();
 				}
 				if (HasEnoughMessagesForBatchReceive())
 				{
@@ -382,14 +385,14 @@ namespace SharpPulsar.Impl
 				}
 				else
 				{
-					PendingBatchReceives.Enqueue(new OpBatchReceive<T>(result));
+					PendingBatchReceives.Enqueue(new OpBatchReceive(result));
 				}
 			}
 			finally
 			{
 				_lock.ReleaseWriterLock();
 			}
-			return new ValueTask<IMessages<T>>(result.Task.Result);
+			return new ValueTask<IMessages>(result.Task.Result);
 		}
 
 		public bool MarkAckForBatchMessage(BatchMessageIdImpl batchMessageId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties)
@@ -514,7 +517,7 @@ namespace SharpPulsar.Impl
 			UnAckedMessageTracker.Remove(messageId);
 		}
 
-		public void ConnectionOpened(ClientConnection cnx)
+		public void ConnectionOpened(ClientCnx cnx)
 		{
 			ClientCnx = cnx;
 			cnx.RegisterConsumer(ConsumerId, this);
@@ -531,7 +534,7 @@ namespace SharpPulsar.Impl
                 _possibleSendToDeadLetterTopicMessages?.Clear();
             }
 
-			var isDurable = _subscriptionMode == SubscriptionMode.Durable;
+			var isDurable = _subscriptionMode == Impl.SubscriptionMode.SubscriptionMode.Durable;
 			MessageIdData startMessageIdData;
 			if (isDurable)
 			{
@@ -544,13 +547,12 @@ namespace SharpPulsar.Impl
 				var builder = MessageIdData.NewBuilder();
 				builder.SetLedgerId(_startMessageId.LedgerId);
 				builder.SetEntryId(_startMessageId.EntryId);
-				if (_startMessageId is BatchMessageIdImpl)
+				if (_startMessageId is BatchMessageIdImpl impl)
 				{
-					builder.SetBatchIndex(((BatchMessageIdImpl) _startMessageId).BatchIndex);
+					builder.SetBatchIndex(impl.BatchIndex);
 				}
 
 				startMessageIdData = builder.Build();
-				builder.Recycle();
 			}
 
 			var si = (SchemaInfo)Schema.SchemaInfo;
@@ -562,8 +564,7 @@ namespace SharpPulsar.Impl
 			// startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
 			var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
 			var request = Commands.NewSubscribe(Topic, Subscription, ConsumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, CommandSubscribe.ValueOf(_subscriptionInitialPosition.Value), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
-            startMessageIdData?.Recycle();
-
+           
             cnx.SendRequestWithId(request, requestId).AsTask().ContinueWith(task =>
             {
                 if (task.IsFaulted)
@@ -638,7 +639,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		private BatchMessageIdImpl ClearReceiverQueue()
 		{
-			IList<IMessage<T>> currentMessageQueue = new List<IMessage<T>>(IncomingMessages.size());
+			IList<IMessage> currentMessageQueue = new List<IMessage>(IncomingMessages.size());
 			IncomingMessages.DrainTo(currentMessageQueue);
 			IncomingMessagesSize[this] =  0;
 			if (currentMessageQueue.Count > 0)
@@ -888,7 +889,7 @@ namespace SharpPulsar.Impl
 					return;
 				}
 
-				var message = new MessageImpl<T>(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+				var message = new MessageImpl(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 				uncompressedPayload.Release();
 				msgMetadata.Recycle();
 
@@ -900,7 +901,7 @@ namespace SharpPulsar.Impl
 					// if asyncReceive is waiting then notify callback without adding to incomingMessages queue
 					if (_deadLetterPolicy != null && _possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
 					{
-						_possibleSendToDeadLetterTopicMessages[(MessageIdImpl)message.GetMessageId()] = new List<MessageImpl<T>>{message};
+						_possibleSendToDeadLetterTopicMessages[(MessageIdImpl)message.GetMessageId()] = new List<MessageImpl>{message};
 					}
 					if (!PendingReceives.IsEmpty)
 					{
@@ -979,7 +980,7 @@ namespace SharpPulsar.Impl
 		/// Notify waiting asyncReceive request with the received message
 		/// </summary>
 		/// <param name="message"> </param>
-		public void NotifyPendingReceivedCallback(in IMessage<T> message, Exception exception)
+		public void NotifyPendingReceivedCallback(in IMessage message, Exception exception)
 		{
 			if (PendingReceives.IsEmpty)
 			{
@@ -1018,7 +1019,7 @@ namespace SharpPulsar.Impl
 			InterceptAndComplete(message, receivedTask);
 		}
 
-		private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedTask)
+		private void InterceptAndComplete(IMessage message, TaskCompletionSource<IMessage> receivedTask)
         {
 			// call proper interceptor
 			var interceptMessage = BeforeConsume(message);
@@ -1033,10 +1034,10 @@ namespace SharpPulsar.Impl
 			// create ack tracker for entry aka batch
 			var batchMessage = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex);
 			var acker = BatchMessageAcker.NewAcker(batchSize);
-			IList<MessageImpl<T>> possibleToDeadLetter = null;
+			IList<MessageImpl> possibleToDeadLetter = null;
 			if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
 			{
-				possibleToDeadLetter = new List<MessageImpl<T>>();
+				possibleToDeadLetter = new List<MessageImpl>();
 			}
 			var skippedMessages = 0;
 			try
@@ -1077,7 +1078,7 @@ namespace SharpPulsar.Impl
 
 					var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, PartitionIndex, i, acker);
 
-                    var message = new MessageImpl<T>(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+                    var message = new MessageImpl(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
                     possibleToDeadLetter?.Add(message);
                     _lock.AcquireReaderLock(300);
 					try
@@ -1144,12 +1145,12 @@ namespace SharpPulsar.Impl
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		public override void MessageProcessed(IMessage<T> msg)
+		public override void MessageProcessed(IMessage msg)
 		{
 			lock (this)
 			{
 				var currentCnx = Cnx();
-				var msgCnx = ((MessageImpl<T>) msg).Cnx;
+				var msgCnx = ((MessageImpl) msg).Cnx;
 				LastDequeuedMessage = msg.MessageId;
         
 				if (msgCnx != currentCnx)
@@ -1166,7 +1167,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void TrackMessage<T1>(IMessage<T1> msg)
+		public void TrackMessage(IMessage msg)
 		{
 			if (msg != null)
 			{
@@ -1446,14 +1447,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public override void CompleteOpBatchReceive(OpBatchReceive<T> op)
+		public override void CompleteOpBatchReceive(OpBatchReceive op)
 		{
 			NotifyPendingBatchReceivedCallBack(op);
 		}
 
 		private bool ProcessPossibleToDlq(MessageIdImpl messageId)
 		{
-			IList<MessageImpl<T>> deadLetterMessages = null;
+			IList<MessageImpl> deadLetterMessages = null;
 			if (_possibleSendToDeadLetterTopicMessages != null)
             {
                 deadLetterMessages = messageId is BatchMessageIdImpl ? _possibleSendToDeadLetterTopicMessages[new MessageIdImpl(messageId.LedgerId, messageId.EntryId, PartitionIndex)] : _possibleSendToDeadLetterTopicMessages[messageId];
@@ -1727,7 +1728,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private MessageIdImpl GetMessageIdImpl<T1>(IMessage<T1> msg)
+		private MessageIdImpl GetMessageIdImpl(IMessage msg)
 		{
 			var messageId = (MessageIdImpl) msg.MessageId;
 			if (messageId is BatchMessageIdImpl)
@@ -1855,7 +1856,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerImpl<T>));
+		internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerImpl));
 
 	}
 

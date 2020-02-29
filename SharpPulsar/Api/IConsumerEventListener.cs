@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System;
+
 namespace SharpPulsar.Api
 {
 
@@ -32,7 +35,7 @@ namespace SharpPulsar.Api
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became active </param>
-		void BecameActive<T1>(IConsumer<T1> consumer, int partitionId);
+		void BecameActive(string consumer, int partitionId);
 
 		/// <summary>
 		/// Notified when the consumer group is changed, and the consumer is still inactive or becomes inactive.
@@ -41,8 +44,11 @@ namespace SharpPulsar.Api
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became inactive </param>
-		void BecameInactive<T1>(IConsumer<T1> consumer, int partitionId);
+		void BecameInactive(string consumer, int partitionId);
 
-	}
+        void Error(Exception ex);
+        void Log(string log);
+
+    }
 
 }

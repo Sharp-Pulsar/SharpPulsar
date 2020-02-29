@@ -3,14 +3,14 @@
 //---------------------------------------------------------------------------------------------------------
 internal static class Arrays
 {
-	public static T[] CopyOf<T>(T[] original, int newLength)
+	public static T[] CopyOf(T[] original, int newLength)
 	{
 		T[] dest = new T[newLength];
 		System.Array.Copy(original, dest, newLength);
 		return dest;
 	}
 
-	public static T[] CopyOfRange<T>(T[] original, int fromIndex, int toIndex)
+	public static T[] CopyOfRange(T[] original, int fromIndex, int toIndex)
 	{
 		int length = toIndex - fromIndex;
 		T[] dest = new T[length];
@@ -18,7 +18,7 @@ internal static class Arrays
 		return dest;
 	}
 
-	public static void Fill<T>(T[] array, T value)
+	public static void Fill(T[] array, T value)
 	{
 		for (int i = 0; i < array.Length; i++)
 		{
@@ -26,7 +26,7 @@ internal static class Arrays
 		}
 	}
 
-	public static void Fill<T>(T[] array, int fromIndex, int toIndex, T value)
+	public static void Fill(T[] array, int fromIndex, int toIndex, T value)
 	{
 		for (int i = fromIndex; i < toIndex; i++)
 		{

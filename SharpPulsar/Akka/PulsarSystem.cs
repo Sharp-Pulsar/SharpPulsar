@@ -4,6 +4,8 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka

@@ -45,6 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Akka\InternalCommands\Reader\" />
     <Folder Include="Akka\MessageImpl\" />
   </ItemGroup>
 

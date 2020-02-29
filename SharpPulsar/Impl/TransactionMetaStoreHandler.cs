@@ -252,10 +252,10 @@ namespace SharpPulsar.Impl
 			OnResponse(op);
 		}
 
-		public abstract class OpBase<T>
+		public abstract class OpBase
 		{
 			protected internal IByteBuffer Cmd;
-			protected internal TaskCompletionSource<T> Callback;
+			protected internal TaskCompletionSource Callback;
 
 			public abstract void Recycle();
 		}
@@ -286,16 +286,16 @@ namespace SharpPulsar.Impl
 
 		}
 
-		public class OpForVoidCallBack<T> : OpBase<T>
+		public class OpForVoidCallBack : OpBase
 		{
-            internal static ThreadLocalPool<OpForVoidCallBack<T>> _pool = new ThreadLocalPool<OpForVoidCallBack<T>>(handle => new OpForVoidCallBack<T>(handle), 1, true);
+            internal static ThreadLocalPool<OpForVoidCallBack> _pool = new ThreadLocalPool<OpForVoidCallBack>(handle => new OpForVoidCallBack(handle), 1, true);
 
             internal ThreadLocalPool.Handle _handle;
             private OpForVoidCallBack(ThreadLocalPool.Handle handle)
             {
                 _handle = handle;
             }
-			internal static OpForVoidCallBack<T> Create(IByteBuffer cmd, TaskCompletionSource<T> callback)
+			internal static OpForVoidCallBack Create(IByteBuffer cmd, TaskCompletionSource callback)
 			{
 				var op = _pool.Take();
 				op.Callback = callback;
@@ -323,14 +323,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		private void OnResponse<T1>(OpBase<T1> op)
+		private void OnResponse(OpBase op)
 		{
 			op.Cmd.SafeRelease();
 			op.Recycle();
 			_semaphore.Release();
 		}
 
-		private bool CanSendRequest<T>(TaskCompletionSource<T> callback)
+		private bool CanSendRequest(TaskCompletionSource callback)
 		{
 			if (!IsValidHandlerState(callback))
 			{
@@ -360,7 +360,7 @@ namespace SharpPulsar.Impl
 			return true;
 		}
 
-		private bool IsValidHandlerState<T>(TaskCompletionSource<T> callback)
+		private bool IsValidHandlerState(TaskCompletionSource callback)
 		{
 			switch (TranState)
 			{

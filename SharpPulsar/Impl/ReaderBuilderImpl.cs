@@ -26,32 +26,32 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public class ReaderConfigBuilder<T> : IReaderBuilder<T>
+    public class ReaderConfigBuilder : IReaderBuilder
 	{
 
 		private readonly PulsarClientImpl _client;
 
-		private ReaderConfigurationData<T> _conf;
+		private ReaderConfigurationData _conf;
 
-		private readonly ISchema<T> _schema;
+		private readonly ISchema _schema;
 
-		public ReaderConfigBuilder(PulsarClientImpl client, ISchema<T> schema) : this(client, new ReaderConfigurationData<T>(), schema)
+		public ReaderConfigBuilder(PulsarClientImpl client, ISchema schema) : this(client, new ReaderConfigurationData(), schema)
 		{
 		}
 
-		private ReaderConfigBuilder(PulsarClientImpl client, ReaderConfigurationData<T> conf, ISchema<T> schema)
+		private ReaderConfigBuilder(PulsarClientImpl client, ReaderConfigurationData conf, ISchema schema)
 		{
 			this._client = client;
 			this._conf = conf;
 			this._schema = schema;
 		}
 
-		public IReaderBuilder<T> Clone()
+		public IReaderBuilder Clone()
 		{
-			return new ReaderConfigBuilder<T>(_client, _conf.Clone(), _schema);
+			return new ReaderConfigBuilder(_client, _conf.Clone(), _schema);
 		}
 
-		public IReader<T> Create()
+		public IReader Create()
 		{
 			try
 			{
@@ -63,22 +63,22 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public ValueTask<IReader<T>> CreateAsync()
+		public ValueTask<IReader> CreateAsync()
 		{
 			if (_conf.TopicName == null)
 			{
-				return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new ArgumentException("Topic name must be set on the reader builder")));
+				return new ValueTask<IReader>(Task.FromException<IReader>(new ArgumentException("Topic name must be set on the reader builder")));
 			}
 
 			if (_conf.StartMessageId == null)
 			{
-                return new ValueTask<IReader<T>>(Task.FromException<IReader<T>>(new ArgumentException("Start message id must be set on the reader builder")));
+                return new ValueTask<IReader>(Task.FromException<IReader>(new ArgumentException("Start message id must be set on the reader builder")));
 			}
 
 			return _client.CreateReaderAsync(_conf, _schema);
 		}
 
-		public IReaderBuilder<T> LoadConf(IDictionary<string, object> config)
+		public IReaderBuilder LoadConf(IDictionary<string, object> config)
 		{
 			var startMessageId = _conf.StartMessageId;
 			_conf = ConfigurationDataUtils.LoadData(config, _conf);
@@ -86,67 +86,67 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public IReaderBuilder<T> Topic(string topicName)
+		public IReaderBuilder Topic(string topicName)
 		{
 			_conf.TopicName = topicName.Trim();
 			return this;
 		}
 
-		public IReaderBuilder<T> StartMessageId(IMessageId startMessageId)
+		public IReaderBuilder StartMessageId(IMessageId startMessageId)
 		{
 			_conf.StartMessageId = startMessageId;
 			return this;
 		}
 
-		public IReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public IReaderBuilder StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{
 			_conf.StartMessageFromRollbackDurationInSec = timeUnit.ToSecs(rollbackDuration);
 			return this;
 		}
 
-		public IReaderBuilder<T> StartMessageIdInclusive()
+		public IReaderBuilder StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
 			return this;
 		}
 
-		public  IReaderBuilder<T> ReaderListener(IReaderListener<T> readerListener)
+		public  IReaderBuilder ReaderListener(IReaderListener readerListener)
 		{
 			_conf.ReaderListener = readerListener;
 			return this;
 		}
 
-		public IReaderBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public IReaderBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
 			return this;
 		}
 
-		public IReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+		public IReaderBuilder CryptoFailureAction(ConsumerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
 			return this;
 		}
 
-		public IReaderBuilder<T> ReceiverQueueSize(int receiverQueueSize)
+		public IReaderBuilder ReceiverQueueSize(int receiverQueueSize)
 		{
 			_conf.ReceiverQueueSize = receiverQueueSize;
 			return this;
 		}
 
-		public IReaderBuilder<T> ReaderName(string readerName)
+		public IReaderBuilder ReaderName(string readerName)
 		{
 			_conf.ReaderName = readerName;
 			return this;
 		}
 
-		public  IReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
+		public  IReaderBuilder SubscriptionRolePrefix(string subscriptionRolePrefix)
 		{
 			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
 			return this;
 		}
 
-		public IReaderBuilder<T> ReadCompacted(bool readCompacted)
+		public IReaderBuilder ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
 			return this;
