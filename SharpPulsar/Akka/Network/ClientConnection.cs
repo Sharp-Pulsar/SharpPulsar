@@ -5,7 +5,10 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.IO;
 using DotNetty.Buffers;
+using Google.Protobuf;
+using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
@@ -159,6 +162,14 @@ namespace SharpPulsar.Akka.Network
 
 				switch (cmd.Type)
 				{
+                    case BaseCommand.Types.Type.Message:
+                        var msg = cmd.Message;
+                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.LedgerId, (long)msg.MessageId.EntryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer, (int)msg.RedeliveryCount));
+                        break;
+                    case BaseCommand.Types.Type.Success:
+                        var s = cmd.Success;
+                        _manager.Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.HasSchema));
+                        break;
                     case BaseCommand.Types.Type.SendReceipt:
                         var send = cmd.SendReceipt;
                         _manager.Tell(new SentReceipt((long)send.ProducerId, (long)send.SequenceId, (long)send.MessageId.EntryId, (long)send.MessageId.LedgerId, send.MessageId.BatchIndex, send.MessageId.Partition));

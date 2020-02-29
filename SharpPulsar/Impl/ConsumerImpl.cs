@@ -44,19 +44,7 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    public class SubscriptionMode
-    {
-        public enum SubscriptionMode
-        {
-            // Make the subscription to be backed by a durable cursor that will retain messages and persist the current
-            // position
-            Durable,
-
-            // Lightweight subscription mode that doesn't have a durable cursor associated
-            NonDurable
-        }
-    }
-
+	
     public class ConsumerImpl : ConsumerBase, IConnection
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
@@ -321,8 +309,8 @@ namespace SharpPulsar.Impl
 				{
 					return null;
 				}
-				MessageProcessed(message);
-				return BeforeConsume(message);
+				MessageProcessed((IMessage)message);
+				return BeforeConsume((IMessage)message);
 			}
 			catch (ThreadInterruptedException e)
 			{
@@ -534,7 +522,7 @@ namespace SharpPulsar.Impl
                 _possibleSendToDeadLetterTopicMessages?.Clear();
             }
 
-			var isDurable = _subscriptionMode == Impl.SubscriptionMode.SubscriptionMode.Durable;
+			var isDurable = _subscriptionMode == SubscriptionMode.SubscriptionMode.Durable;
 			MessageIdData startMessageIdData;
 			if (isDurable)
 			{
@@ -1149,18 +1137,9 @@ namespace SharpPulsar.Impl
 		{
 			lock (this)
 			{
-				var currentCnx = Cnx();
-				var msgCnx = ((MessageImpl) msg).Cnx;
 				LastDequeuedMessage = msg.MessageId;
-        
-				if (msgCnx != currentCnx)
-				{
-					// The processed message did belong to the old queue that was cleared after reconnection.
-					return;
-				}
-        
-				IncreaseAvailablePermits(currentCnx);
-				ConsumerStats.UpdateNumMsgsReceived(msg);
+
+                IncreaseAvailablePermits(currentCnx);
         
 				TrackMessage(msg);
 				IncomingMessagesSize[this] = -msg.Data.Length;

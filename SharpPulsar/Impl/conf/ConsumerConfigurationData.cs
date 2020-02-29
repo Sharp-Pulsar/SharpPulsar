@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -28,12 +29,12 @@ namespace SharpPulsar.Impl.Conf
 	{
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor> Interceptors { get; set; }
-		public SubscriptionType SubscriptionType { get; set; } = SubscriptionType.Exclusive;
+		public CommandSubscribe.Types.SubType SubscriptionType { get; set; } = CommandSubscribe.Types.SubType.Exclusive;
 		public IMessageListener MessageListener { get; set; }
 		public IConsumerEventListener ConsumerEventListener { get; set; }
 		public ISchema Schema { get; set; }
-
-		public int ReceiverQueueSize { get; set; } = 1000;
+        public bool UseTls { get; set; } = false;
+		public int ReceiverQueueSize { get; set; } = 1_000;
 
 		public long AcknowledgementsGroupTimeMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(100);
 
