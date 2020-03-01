@@ -3,6 +3,7 @@ using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.Network;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Conf;
 
@@ -52,7 +53,8 @@ namespace SharpPulsar.Akka.Consumer
                     Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false), "MultiTopicsManager");
                     break;
                 case ConsumerType.Single:
-                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, _consumerid++, _network, false), "SingleTopic");
+                    var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);
+                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, _consumerid++, _network, false, partitionIndex), "SingleTopic");
                     break;
                 default:
                     Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Are you high? How am I suppose to know the consumer type you want to create? ;)!")));

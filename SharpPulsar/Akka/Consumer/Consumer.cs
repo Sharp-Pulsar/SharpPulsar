@@ -25,6 +25,7 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class Consumer:ReceiveActor, IWithUnboundedStash
     {
+        private int _partitionIndex;
         private const int MaxRedeliverUnacknowledged = 1000;
         private ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
@@ -59,8 +60,9 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
 
-        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer)
+        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex)
         {
+            _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
             _requestedFlowPermits = configuration.ReceiverQueueSize;
             _conf = configuration;
@@ -118,9 +120,9 @@ namespace SharpPulsar.Akka.Consumer
            return false;
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex)
         {
-            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer));
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex));
         }
         private void NegativeAcknowledge(IMessageId messageId)
         {
@@ -198,7 +200,7 @@ namespace SharpPulsar.Akka.Consumer
                 return;
             }
             var numMessages = msgMetadata.NumMessagesInBatch;
-            var msgId = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition);
+            var msgId = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
             
             var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, headersAndPayload);
 
@@ -257,7 +259,7 @@ namespace SharpPulsar.Akka.Consumer
             var batchSize = msgMetadata.NumMessagesInBatch;
 
             // create ack tracker for entry aka batch
-            var batchMessage = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition);
+            var batchMessage = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
             var acker = BatchMessageAcker.NewAcker(batchSize);
             IList<MessageImpl> possibleToDeadLetter = null;
             if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
@@ -299,7 +301,7 @@ namespace SharpPulsar.Akka.Consumer
                         continue;
                     }
 
-                    var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition, i, acker);
+                    var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex, i, acker);
 
                     var message = new MessageImpl(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                     if(_hasParentConsumer) 
@@ -390,7 +392,7 @@ namespace SharpPulsar.Akka.Consumer
                         DiscardMessage(messageId, CommandAck.Types.ValidationError.DecryptionError);
                         return null;
                     case ConsumerCryptoFailureAction.Fail:
-                        IMessageId m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition);
+                        IMessageId m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
                         Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", _topicName.ToString(), _subscriptionName, _consumerName, m);
                         UnAckedMessageTracker.Add(m);
                         return null;
@@ -415,7 +417,7 @@ namespace SharpPulsar.Akka.Consumer
                     DiscardMessage(messageId, CommandAck.Types.ValidationError.DecryptionError);
                     return null;
                 case ConsumerCryptoFailureAction.Fail:
-                    var m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition);
+                    var m = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
                     Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", _topicName.ToString(), _subscriptionName, _consumerName, m);
                     UnAckedMessageTracker.Add(m);
                     return null;

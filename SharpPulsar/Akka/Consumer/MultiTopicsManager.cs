@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Consumer
@@ -20,7 +21,8 @@ namespace SharpPulsar.Akka.Consumer
             _event = configuration.ConsumerEventListener;
             foreach (var topic in configuration.TopicNames)
             {
-                Context.ActorOf(Consumer.Prop(clientConfiguration, topic, configuration, _consumerid++, network, true));
+                var partitionIndex = TopicName.GetPartitionIndex(topic);
+                Context.ActorOf(Consumer.Prop(clientConfiguration, topic, configuration, _consumerid++, network, true, partitionIndex));
             }
 
             Receive<ConsumedMessage>(m =>

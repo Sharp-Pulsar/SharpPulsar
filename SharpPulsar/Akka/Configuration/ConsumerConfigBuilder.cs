@@ -40,8 +40,8 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
-				if(_conf.ConsumerEventListener == null)
-					throw new ArgumentException("ConsumerEventListener cannot be null");
+				if(_conf.ConsumerEventListener == null || _conf.MessageListener == null)
+					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
             }
         }

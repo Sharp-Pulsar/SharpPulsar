@@ -936,7 +936,7 @@ namespace SharpPulsar.Impl
 				{
 				    var partitionName = TopicName.Get(topicName).GetPartition(partitionIndex).ToString();
 				    var subTask = new TaskCompletionSource<IConsumer>();
-				    var newConsumer = ConsumerImpl.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, SubscriptionMode.SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
+				    var newConsumer = ConsumerImpl.NewConsumerImpl(Client, partitionName, configurationData, Client.ExternalExecutorProvider(), partitionIndex, true, subTask, SubscriptionMode.Durable, null, Schema, Interceptors, createIfDoesNotExist);
 				    _consumers.GetOrAdd(newConsumer.Topic, newConsumer);
 				    return subTask;
 				}).ToList();

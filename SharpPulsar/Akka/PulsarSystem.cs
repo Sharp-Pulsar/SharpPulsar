@@ -45,6 +45,9 @@ namespace SharpPulsar.Akka
                     throw new ArgumentException("Topics should have same namespace.");
                 }
             }
+
+            if (consumer.ConsumerType == ConsumerType.Single && string.IsNullOrWhiteSpace(consumer.ConsumerConfiguration.SingleTopic))
+                throw new ArgumentException("SingleTopic cannot be empty");
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType);
             _pulsarManager.Tell(c);
         }
