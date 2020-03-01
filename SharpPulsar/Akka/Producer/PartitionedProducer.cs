@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Producer
@@ -12,8 +13,10 @@ namespace SharpPulsar.Akka.Producer
         private IActorRef _router;
         private long _producerId;
         private int _partitions;
+        private ProducerConfigurationData _configuration;
         public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
         {
+            _configuration = configuration;
             var routees = new List<string>();
             var path = Context.Self.Path;
             for (var i = 0; i < configuration.Partitions; i++)
@@ -26,7 +29,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 if (_partitions++ == configuration.Partitions)
                 {
-                    Context.Parent.Tell(new RegisteredProducer(producerid, configuration.ProducerName, configuration.TopicName));
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
                 }
             });
             Receive<Send>(s =>

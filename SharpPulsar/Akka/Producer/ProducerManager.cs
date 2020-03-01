@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.Producer
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
-        private long _producerIdGenerator = 0;
+        private long _producerId;
 
         private long _requestIdGenerator = 0;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
@@ -70,9 +70,9 @@ namespace SharpPulsar.Akka.Producer
                 conf.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, conf, _producerIdGenerator++, _network));
+                    Context.ActorOf(PartitionedProducer.Prop(_config, conf, _producerId++, _network));
                 else
-                    Context.ActorOf(Producer.Prop(_config, conf, _producerIdGenerator++, _network));
+                    Context.ActorOf(Producer.Prop(_config, conf, _producerId++, _network));
                 Become(()=> RegisterProducer(conf));
             });
             ReceiveAny(_=> Stash.Stash());

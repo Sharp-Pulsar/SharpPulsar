@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using Akka.Actor;
+﻿using Akka.Actor;
 using DotNetty.Buffers;
 using DotNetty.Common;
 using Google.Protobuf;
@@ -23,17 +19,21 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Shared;
-using SharpPulsar.Utility;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
 
 namespace SharpPulsar.Akka.Producer
 {
-    public class Producer: ReceiveActor, IWithUnboundedStash
+    public class Producer : ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _broker;
         private IActorRef _network;
         private ProducerConfigurationData _configuration;
+        private IProducerEventListener _listener;
         private long _producerId;
         public string ProducerName;
         private readonly bool _userProvidedProducerName = false;
@@ -43,7 +43,6 @@ namespace SharpPulsar.Akka.Producer
         private long _lastSequenceIdPushed;
         private long _lastSequenceId;
         private readonly CompressionCodec _compressor;
-        private readonly IHandler _handler;
         private readonly MessageCrypto _msgCrypto = null;
 
         private readonly IDictionary<string, string> _metadata;
@@ -61,6 +60,7 @@ namespace SharpPulsar.Akka.Producer
         private int _partitionIndex;
         public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
         {
+            _listener = configuration.ProducerEventListener;
             _schemas = new Dictionary<string, ISchema>();
             _isPartitioned = isPartitioned;
             _clientConfiguration = clientConfiguration;
@@ -69,37 +69,36 @@ namespace SharpPulsar.Akka.Producer
             _configuration = configuration;
             _producerId = producerid;
             _network = network;
-            _handler = configuration.Handler;
             _producerId = producerid;
-			 ProducerName= configuration.ProducerName;
-             if (!configuration.MultiSchema)
-             {
-                 _multiSchemaMode = MultiSchemaMode.Disabled;
-             }
+            ProducerName = configuration.ProducerName;
+            if (!configuration.MultiSchema)
+            {
+                _multiSchemaMode = MultiSchemaMode.Disabled;
+            }
             if (!string.IsNullOrWhiteSpace(ProducerName) || isPartitioned)
-			{
-				_userProvidedProducerName = true;
-			}
-			_partitionIndex = configuration.Partitions;
+            {
+                _userProvidedProducerName = true;
+            }
+            _partitionIndex = configuration.Partitions;
 
-			_compressor = CompressionCodecProvider.GetCompressionCodec(configuration.CompressionType);
-			if (configuration.InitialSequenceId != null)
-			{
-				var initialSequenceId = (long)configuration.InitialSequenceId;
-				_sequenceId = initialSequenceId;
-			}
-			else
-			{
-				_sequenceId = -1L;
-			}
+            _compressor = CompressionCodecProvider.GetCompressionCodec(configuration.CompressionType);
+            if (configuration.InitialSequenceId != null)
+            {
+                var initialSequenceId = (long)configuration.InitialSequenceId;
+                _sequenceId = initialSequenceId;
+            }
+            else
+            {
+                _sequenceId = -1L;
+            }
 
-			if (configuration.EncryptionEnabled)
-			{
-				var logCtx = "[" + configuration.TopicName + "] [" + ProducerName + "] [" + _producerId + "]";
-				_msgCrypto = new MessageCrypto(logCtx, true);
+            if (configuration.EncryptionEnabled)
+            {
+                var logCtx = "[" + configuration.TopicName + "] [" + ProducerName + "] [" + _producerId + "]";
+                _msgCrypto = new MessageCrypto(logCtx, true);
 
-				// Regenerate data key cipher at fixed interval
-				Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
+                // Regenerate data key cipher at fixed interval
+                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
 
             }
             if (configuration.BatchingEnabled)
@@ -112,33 +111,33 @@ namespace SharpPulsar.Akka.Producer
                 _batchMessageContainer = null;
             }
             if (!configuration.Properties.Any())
-			{
-				_metadata = new Dictionary<string, string>();
-			}
-			else
-			{
-				_metadata = new SortedDictionary<string, string>(configuration.Properties);
-			}
+            {
+                _metadata = new Dictionary<string, string>();
+            }
+            else
+            {
+                _metadata = new SortedDictionary<string, string>(configuration.Properties);
+            }
             Become(LookUpBroker);
-		}
+        }
 
         public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
         {
-            return Props.Create(()=> new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
+            return Props.Create(() => new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
         }
 
         private void Init()
         {
             Receive<TcpSuccess>(s =>
             {
-                _handler.Capture($"Pulsar handshake completed with {s.Name}");
+                _listener.Log($"Pulsar handshake completed with {s.Name}");
                 Become(CreateProducer);
             });
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
             });
-            ReceiveAny(_=> Stash.Stash());
+            ReceiveAny(_ => Stash.Stash());
         }
 
         public void Receive()
@@ -207,10 +206,10 @@ namespace SharpPulsar.Akka.Producer
             }
             catch (Exception e)
             {
-                _handler.Capture(e);
+                _listener.Log(e);
             }
         }
-       private void CreateProducer()
+        private void CreateProducer()
         {
             Receive<ProducerCreated>(p =>
             {
@@ -223,9 +222,16 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
                 }
-                Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
+
                 Become(Receive);
-                _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
+                if (_isPartitioned)
+                {
+                    Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
+                }
+                else
+                {
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
+                }
             });
             Receive<AddPublicKeyCipher>(a =>
             {
@@ -236,7 +242,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 var index = int.Parse(Self.Path.Name);
                 _producerId = index;
-               ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
+                ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
             }
             SendNewProducerCommand();
         }
@@ -286,10 +292,10 @@ namespace SharpPulsar.Akka.Producer
             {
                 Context.System.Log.Error(e.ToString());
             }
-		}
-		public class AddPublicKeyCipher
-		{
-            
+        }
+        public class AddPublicKeyCipher
+        {
+
         }
         private bool IsMultiSchemaEnabled(bool autoEnable)
         {
@@ -338,9 +344,9 @@ namespace SharpPulsar.Akka.Producer
                 }
                 m.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(r.SchemaVersion));
                 m.SetSchemaState(MessageImpl.SchemaState.Ready);
-                Become(()=> SendMessage(m));
+                Become(() => SendMessage(m));
             });
-            ReceiveAny(_=> Stash.Stash());
+            ReceiveAny(_ => Stash.Stash());
             SchemaInfo schemaInfo = null;
             if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
             {
@@ -359,19 +365,19 @@ namespace SharpPulsar.Akka.Producer
             var requestId = _requestId++;
             var request = Commands.NewGetOrCreateSchema(requestId, _configuration.TopicName, schemaInfo);
             Context.System.Log.Info("[{}] [{}] GetOrCreateSchema request", _configuration.TopicName, ProducerName);
-           var payload = new Payload(request.Array, requestId, "GetOrCreateSchema");
-           _broker.Tell(payload);
-           _pendingLookupRequests.Add(requestId, payload);
+            var payload = new Payload(request.Array, requestId, "GetOrCreateSchema");
+            _broker.Tell(payload);
+            _pendingLookupRequests.Add(requestId, payload);
         }
 
         public void InternalSend(MessageImpl message)
         {
-            ReceiveAny(x=> Stash.Stash());
+            ReceiveAny(x => Stash.Stash());
             var interceptorMessage = (MessageImpl)BeforeSend(message);
             interceptorMessage.DataBuffer.Retain();
             if (_producerInterceptor != null)
             {
-                _handler.Capture(interceptorMessage.Properties);
+                _listener.Log(interceptorMessage.Properties);
             }
 
             SendMessage(interceptorMessage);
@@ -502,7 +508,7 @@ namespace SharpPulsar.Akka.Producer
                         {
                             var msgMetadata = msgMetadataBuilder.Build();
                             op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
-                            
+
                         };
                     }
                     op.NumMessagesInBatch = numMessages;
@@ -512,7 +518,7 @@ namespace SharpPulsar.Akka.Producer
             }
             catch (Exception e)
             {
-               Sender.Tell(new ErrorMessage(e));
+                Sender.Tell(new ErrorMessage(e));
             }
         }
         private void DoBatchSendAndAdd(MessageImpl msg, IReferenceCounted payload)
@@ -593,18 +599,18 @@ namespace SharpPulsar.Akka.Producer
                 }
                 if (op.Msg != null && op.Msg.GetSchemaState() == 0)
                 {
-                    Become(()=>TryRegisterSchema(op.Msg));
+                    Become(() => TryRegisterSchema(op.Msg));
                 }
                 else
                 {
                     // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
                     // connection is established
                     op.Cmd.Retain();
-                    Become(()=> SendCommand(op));
+                    Become(() => SendCommand(op));
                 }
-                
+
             }
-            
+
             catch (Exception T)
             {
                 Context.System.Log.Error("[{}] [{}] error while closing out batch -- {}", _configuration.TopicName, ProducerName, T);
@@ -616,7 +622,7 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<SentReceipt>(s =>
             {
-                _handler.MessageId(s);
+                _listener.MessageSent(s);
                 Become(Receive);
             });
             ReceiveAny(_ => Stash.Stash());
@@ -684,12 +690,12 @@ namespace SharpPulsar.Akka.Producer
         {
             return msg.GetSchemaState() == MessageImpl.SchemaState.Ready && _configuration.BatchingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
         }
-        
+
         private bool CanAddToCurrentBatch(MessageImpl msg)
         {
             return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
         }
-        
+
         private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
 
         public override string ToString()

@@ -11,6 +11,7 @@ namespace SharpPulsar.Akka.Consumer
     public class ConsumerManager:ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _network;
+        private long _consumerid;
         private ClientConfigurationData _config;
         public ConsumerManager(ClientConfigurationData configuration)
         {
@@ -48,8 +49,10 @@ namespace SharpPulsar.Akka.Consumer
                 case ConsumerType.Multi:
                     break;
                 case ConsumerType.Partitioned:
+                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false), "MultiTopicsManager");
                     break;
                 case ConsumerType.Single:
+                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, _consumerid++, _network, false), "SingleTopic");
                     break;
                 default:
                     Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Are you high? How am I suppose to know the consumer type you want to create? ;)!")));

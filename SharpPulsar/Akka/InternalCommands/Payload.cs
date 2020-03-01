@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Shared;
+﻿using SharpPulsar.Shared;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
@@ -18,11 +15,6 @@ namespace SharpPulsar.Akka.InternalCommands
             RequestId = requestId;
             CommandType = commandType;
         }
-        public Payload(ByteBufPair pair, long requestId, string commandType)
-        {
-            Message = pair;
-            RequestId = requestId;
-            CommandType = commandType;
-        }
+        
     }
 }

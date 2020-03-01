@@ -28,7 +28,6 @@ namespace SharpPulsar.Impl
 	/// This is useful when MessageId is need for partition/multi-topics/pattern consumer.
 	/// e.g. seek(), ackCumulative(), getLastMessageId().
 	/// </summary>
-	[Serializable]
 	public class MultiMessageIdImpl : IMessageId
 	{
 		private readonly IDictionary<string, IMessageId> _map;

@@ -45,7 +45,6 @@ namespace SharpPulsar.Impl.Conf
 
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
-		public IHandler Handler { get; set; } = new ProducerHandler();
 		public long BatchingMaxPublishDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
 		public bool BatchingEnabled { get; set; } = true; // enabled by default

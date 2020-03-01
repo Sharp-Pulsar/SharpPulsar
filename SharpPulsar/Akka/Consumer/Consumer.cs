@@ -14,6 +14,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
@@ -24,6 +25,7 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class Consumer:ReceiveActor, IWithUnboundedStash
     {
+        private const int MaxRedeliverUnacknowledged = 1000;
         private ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
         private ConsumerConfigurationData _conf;
@@ -71,6 +73,55 @@ namespace SharpPulsar.Akka.Consumer
             _msgCrypto = configuration.CryptoKeyReader == null ? new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false) : null;
             Become(LookUpBroker);
         }
+
+        protected override void PostStop()
+        {
+            var requestid = _requestId++;
+            //var unsubscribe = Commands.NewUnsubscribe(_consumerid, requestid);
+            var cmd = Commands.NewCloseConsumer(_consumerid, requestid);
+            var payload = new Payload(cmd.Array, requestid, "CloseConsumer");
+            _broker.Tell(payload);
+        }
+
+        private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+        {
+            var requestid = _requestId++;
+            if (_conf.SubscriptionType != CommandSubscribe.Types.SubType.Shared && _conf.SubscriptionType != CommandSubscribe.Types.SubType.KeyShared)
+            {
+                // We cannot redeliver single messages if subscription type is not Shared
+                var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid);
+                var payload = new Payload(cmd.Array, requestid, "RedeliverUnacknowledgedMessages");
+                _broker.Tell(payload);
+            }
+            else
+            {
+                var i = 0;
+                var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
+                var builder = MessageIdData.NewBuilder();
+                batches.ForEach(ids =>
+                {
+                    var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId)).Select(messageId =>
+                    {
+                        builder.SetPartition(messageId.PartitionIndex);
+                        builder.SetLedgerId(messageId.LedgerId);
+                        builder.SetEntryId(messageId.EntryId);
+                        return builder.Build();
+                    }).ToList();
+                    var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid, messageIdDatas);
+                    var payload = new Payload(cmd.Array, requestid, "RedeliverUnacknowledgedMessages");
+                    _broker.Tell(payload);
+                });
+            }
+        }
+        private bool ProcessPossibleToDlq(MessageIdImpl messageId)
+        {
+           return false;
+        }
+
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer)
+        {
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer));
+        }
         private void NegativeAcknowledge(IMessageId messageId)
         {
 
@@ -80,10 +131,7 @@ namespace SharpPulsar.Akka.Consumer
         {
             return false;
         }
-        private void RedeliverUnacknowledgedMessages()
-        {
-
-        }
+        
         private void Seek(IMessageId messageId)
         {
 

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using SharpPulsar.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -35,10 +36,18 @@ namespace SharpPulsar.Akka.Configuration
 		private  long _minTickTimeMillis = 100;
 		private  long _defaultAckTimeoutMillisForDeadLetter = 30000L;
 
-        public ConsumerConfigurationData ConsumerConfigurationData => _conf;
+        public ConsumerConfigurationData ConsumerConfigurationData 
+        {
+            get
+            {
+				if(_conf.ConsumerEventListener == null)
+					throw new ArgumentException("ConsumerEventListener cannot be null");
+                return _conf;
+            }
+        }
 		public ConsumerConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
-			_conf = ConfigurationDataUtils.LoadData(config, _conf);
+			_conf = (ConsumerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
 		
@@ -120,7 +129,7 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionType(SubscriptionType subscriptionType)
+		public ConsumerConfigBuilder SubscriptionType(CommandSubscribe.Types.SubType subscriptionType)
 		{
 			_conf.SubscriptionType = subscriptionType;
             return this;

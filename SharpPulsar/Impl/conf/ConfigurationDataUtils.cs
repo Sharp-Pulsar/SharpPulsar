@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 		}
 
-		public static object LoadData(IDictionary<string, object> config, ProducerConfigurationData existingData)
+		public static object LoadData(IDictionary<string, object> config, object existingData)
 		{
 			var mapper = ThreadLocal;
 			try
@@ -64,20 +64,20 @@ namespace SharpPulsar.Impl.Conf
 				existingConfig.ToList().ForEach(x=> newConfig[x.Key] = x.Value);
 				config.ToList().ForEach(x => newConfig[x.Key] = x.Value);
 				var configJson = mapper.WriteValueAsString(newConfig);
-                var fullName = typeof(T).ToString();
+                var fullName = existingData.GetType().Name;
                 if (fullName != null)
                 {
                     if (fullName.Contains("ProducerConfigurationData"))
                     {
-                        return (T)mapper.ReadValue(configJson, typeof(T));
+                        return (ProducerConfigurationData)mapper.ReadValue(configJson, typeof(ProducerConfigurationData));
                     }
 					else if (fullName.Contains("ClientConfigurationData"))
                     {
-                        return (T)mapper.ReadValue(configJson, typeof(T), ClientConfigurationDataOptions(mapper.WriteValueAsString(newConfig["Authentication"]), mapper));
+                        return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(mapper.WriteValueAsString(newConfig["Authentication"]), mapper));
 					}
                     else
                     {
-						return (T)mapper.ReadValue(configJson, typeof(T));
+						return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData));
 					}
                 }
                 throw new NullReferenceException("ConfigurationData is null");
