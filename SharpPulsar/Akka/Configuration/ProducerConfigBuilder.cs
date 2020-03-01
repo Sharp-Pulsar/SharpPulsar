@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Extension;
@@ -31,14 +32,20 @@ namespace SharpPulsar.Akka.Configuration
 	public sealed class ProducerConfigBuilder
 	{
 		private ProducerConfigurationData _conf = new ProducerConfigurationData();
-
+        
         public ProducerConfigurationData ProducerConfigurationData => _conf;
 		public ProducerConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
-			_conf = ConfigurationDataUtils.LoadData(config, _conf);
+			_conf = (ProducerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
-
+        public ProducerConfigBuilder EventListener(IProducerEventListener listener)
+        {
+            if (listener == null)
+                throw new ArgumentException("listener is null");
+            _conf.ProducerEventListener = listener;
+            return this;
+        }
 		public ProducerConfigBuilder Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))
@@ -248,4 +255,8 @@ namespace SharpPulsar.Akka.Configuration
 
 	}
 
+    public interface IProducerEventListener
+    {
+        public void ProducerCreated(CreatedProducer producer);
+    }
 }

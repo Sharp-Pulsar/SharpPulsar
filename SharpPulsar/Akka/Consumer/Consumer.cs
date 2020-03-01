@@ -59,6 +59,7 @@ namespace SharpPulsar.Akka.Consumer
 
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer)
         {
+            _hasParentConsumer = hasParentConsumer;
             _requestedFlowPermits = configuration.ReceiverQueueSize;
             _conf = configuration;
             _clientConfiguration = clientConfiguration;
@@ -116,6 +117,9 @@ namespace SharpPulsar.Akka.Consumer
                 var buffer = Unpooled.WrappedBuffer(m.Data);
                 HandleMessage(msgId, m.RedeliveryCount, buffer);
             });
+            Receive<AckMessage>(AckMessage);
+            Receive<AckMessages>(AckMessages);
+            Receive<AckMultiMessage>(AckMultiMessage);
             ReceiveAny(x=> _consumerEventListener.Log($"{x.GetType().Name} was unhandled!"));
             Stash.UnstashAll();
         }
@@ -147,17 +151,7 @@ namespace SharpPulsar.Akka.Consumer
             }
             var numMessages = msgMetadata.NumMessagesInBatch;
             var msgId = new MessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition);
-            if (_acknowledgmentsGroupingTracker.IsDuplicate(msgId))
-            {
-                if (Context.System.Log.IsDebugEnabled)
-                {
-                    Context.System.Log.Debug("[{}] [{}] Ignoring message as it was already being acked earlier by same consumer {}/{}", _topicName.ToString(), _subscriptionName, _consumerName, msgId);
-                }
-
-                SendFlow(numMessages);
-                return;
-            }
-
+            
             var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, headersAndPayload);
 
             var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
@@ -196,7 +190,10 @@ namespace SharpPulsar.Akka.Consumer
 
                 var message = new MessageImpl(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                 uncompressedPayload.Release();
-                _listener.Received(_consumerName, message);//This seems the best way to receive message given the async nature of the Akka.Net
+                if (_hasParentConsumer)
+                    Context.Parent.Tell(new ConsumedMessage(Self, message));
+                else
+                    _listener.Received(Self, message);
             }
             else
             {
@@ -240,17 +237,15 @@ namespace SharpPulsar.Akka.Consumer
                             Context.System.Log.Debug("[{}] [{}] Ignoring message from before the startMessageId: {}", _subscriptionName, _consumerName, _startMessageId);
                         }
                         singleMessagePayload.Release();
-                        singleMessageMetadataBuilder.Recycle();
 
                         ++skippedMessages;
                         continue;
                     }
 
-                    if (singleMessageMetadataBuilder.CompactedOut)
+                    if (singleMessageMetadataBuilder.HasCompactedOut())
                     {
                         // message has been compacted out, so don't send to the user
                         singleMessagePayload.Release();
-                        singleMessageMetadataBuilder.Recycle();
 
                         ++skippedMessages;
                         continue;
@@ -259,10 +254,12 @@ namespace SharpPulsar.Akka.Consumer
                     var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, messageId.Partition, i, acker);
 
                     var message = new MessageImpl(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
-                    _listener.Received(_consumerName, message);
+                    if(_hasParentConsumer) 
+                        Context.Parent.Tell(new ConsumedMessage(Self, message));
+                    else
+                        _listener.Received(Self, message);
                     possibleToDeadLetter?.Add(message);
                     singleMessagePayload.Release();
-                    singleMessageMetadataBuilder.Recycle();
                 }
             }
             catch (IOException)
@@ -378,6 +375,34 @@ namespace SharpPulsar.Akka.Consumer
             return null;
         }
 
+        private void AckMessage(AckMessage message)
+        {
+            var requestid = _requestId++;
+            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.Types.AckType.Individual, null, new Dictionary<string, long>());
+            var payload = new Payload(cmd.Array, requestid, "AckMessages");
+            _broker.Tell(payload);
+        }
+        private void AckMultiMessage(AckMultiMessage multiMessage)
+        {
+            var requestid = _requestId++;
+            IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.MessageIds.Count);
+            foreach (var m in multiMessage.MessageIds)
+            {
+                entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
+            }
+
+            var cmd = Commands.NewMultiMessageAck(_consumerid, entriesToAck);
+            var payload = new Payload(cmd.Array, requestid, "AckMultiMessages");
+            _broker.Tell(payload);
+        }
+
+        private void AckMessages(AckMessages message)
+        {
+            var requestid = _requestId++;
+            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.Types.AckType.Cumulative, null, new Dictionary<string, long>());
+            var payload = new Payload(cmd.Array, requestid, "AckMessages");
+            _broker.Tell(payload);
+        }
         private IByteBuffer UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, IByteBuffer payload)
         {
             var compressionType = msgMetadata.Compression;
@@ -450,6 +475,7 @@ namespace SharpPulsar.Akka.Consumer
                 }
                 SendFlow(_requestedFlowPermits);
                 Become(ReceiveMessages);
+                _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
             });
             ReceiveAny(x=> Stash.Stash());
             var requestid = _requestId++;

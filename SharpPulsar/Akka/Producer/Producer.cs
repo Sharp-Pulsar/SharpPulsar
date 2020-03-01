@@ -9,6 +9,7 @@ using Google.Protobuf;
 using Org.BouncyCastle.Crypto;
 using SharpPulsar.Akka.Handlers;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
@@ -224,6 +225,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
                 Become(Receive);
+                _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
             });
             Receive<AddPublicKeyCipher>(a =>
             {

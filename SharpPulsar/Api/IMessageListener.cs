@@ -16,6 +16,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using Akka.Actor;
+
 namespace SharpPulsar.Api
 {
 
@@ -44,14 +47,14 @@ namespace SharpPulsar.Api
 		///            the consumer that received the message </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(string consumer, IMessage msg);
+		void Received(IActorRef consumer, IMessage msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.
 		/// </summary>
 		/// <param name="consumer">
 		///            the Consumer object associated with the terminated topic </param>
-		virtual void ReachedEndOfTopic(string consumer)
+		virtual void ReachedEndOfTopic(IActorRef consumer)
 		{
 			// By default ignore the notification
 		}

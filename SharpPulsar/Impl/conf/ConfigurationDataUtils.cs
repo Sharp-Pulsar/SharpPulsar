@@ -53,7 +53,7 @@ namespace SharpPulsar.Impl.Conf
 		{
 		}
 
-		public static object LoadData(IDictionary<string, object> config, object existingData)
+		public static object LoadData(IDictionary<string, object> config, ProducerConfigurationData existingData)
 		{
 			var mapper = ThreadLocal;
 			try

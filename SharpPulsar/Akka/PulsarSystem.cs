@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
@@ -30,18 +28,19 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(p);
         }
         
-        public void CreateConsumer(NewConsumer consumer)
+        public void CreateConsumer(CreateConsumer consumer)
         {
-            _pulsarManager.Tell(consumer);
+            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType);
+            _pulsarManager.Tell(c);
         }
 
-        public void Send(Send send)
+        public void Send(Send send, IActorRef producer)
         {
-           _pulsarManager.Tell(send);
+           producer.Tell(send);
         }
-        public void BatchSend(BulkSend send)
+        public void BatchSend(BulkSend send, IActorRef producer)
         {
-            _pulsarManager.Tell(send);
+            producer.Tell(send);
         }
         public async ValueTask DisposeAsync()
         {

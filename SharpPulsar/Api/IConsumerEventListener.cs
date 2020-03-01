@@ -18,6 +18,7 @@
 /// </summary>
 
 using System;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 
 namespace SharpPulsar.Api
 {
@@ -48,6 +49,7 @@ namespace SharpPulsar.Api
 
         void Error(Exception ex);
         void Log(string log);
+        public void ConsumerCreated(CreatedConsumer consumer);
 
     }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Utility;
 
@@ -32,22 +33,29 @@ namespace SharpPulsar.Impl
 
     public class MessageImpl : IMessage
 	{
-		public MessageMetadata.Builder MessageBuilder;
-		public IByteBuffer DataBuffer;
+		public MessageMetadata.Builder MessageBuilder { get; }
+		public IByteBuffer DataBuffer { get; }
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 
 		public string TopicName {get;} // only set for incoming messages
 
-        public MessageImpl(IByteBuffer data)
+        public MessageImpl(IByteBuffer data, MessageMetadata.Builder builder, ISchema schema)
         {
             DataBuffer = data;
+            MessageBuilder = builder;
+            _schema = schema;
+        }
+        public MessageImpl(IByteBuffer data, MessageMetadata.Builder builder)
+        {
+            DataBuffer = data;
+            MessageBuilder = builder;
         }
 		// Constructor for out-going message
 		public static MessageImpl Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema schema)
 		{
-            var msg = new MessageImpl(payload) {MessageBuilder = msgMetadataBuilder, _schema = schema};
+            var msg = new MessageImpl(payload, msgMetadataBuilder, schema);
             return msg;
 		}
 
@@ -73,7 +81,7 @@ namespace SharpPulsar.Impl
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
 			DataBuffer = Unpooled.CopiedBuffer(payload);
-			encryptionCtx = EncryptionCtx;
+            EncryptionCtx = encryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
 			{
@@ -83,7 +91,7 @@ namespace SharpPulsar.Impl
 			{
 				Properties.Clear();
 			}
-			schema = Schema;
+			_schema = schema;
 		}
 
 		public MessageImpl(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ClientCnx cnx, ISchema schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, schema, 0)
@@ -140,14 +148,7 @@ namespace SharpPulsar.Impl
 			var data = msgId.Split(":", true);
 			var ledgerId = long.Parse(data[0]);
 			var entryId = long.Parse(data[1]);
-			if (data.Length == 3)
-			{
-				MessageId = new BatchMessageIdImpl(ledgerId, entryId, -1, int.Parse(data[2]));
-			}
-			else
-			{
-				MessageId = new MessageIdImpl(ledgerId, entryId, -1);
-			}
+			MessageId = data.Length == 3 ? new BatchMessageIdImpl(ledgerId, entryId, -1, int.Parse(data[2])) : new MessageIdImpl(ledgerId, entryId, -1);
 			TopicName = topic;
 			DataBuffer = payload;
 			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
@@ -157,12 +158,9 @@ namespace SharpPulsar.Impl
 
 		public static MessageImpl Deserialize(IByteBuffer headersAndPayload)
 		{
-			var msg =  new MessageImpl(headersAndPayload);
-			var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
-
-			msg.MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
-			msg.MessageId = null;
-			msg.Properties.Clear();
+            var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
+            var msg = new MessageImpl(headersAndPayload, MessageMetadata.NewBuilder(msgMetadata)) {MessageId = null};
+            msg.Properties.Clear();
 			return msg;
 		}
 
@@ -192,6 +190,16 @@ namespace SharpPulsar.Impl
 			return messageTtlInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToMillis(messageTtlInSeconds));
 		}
 
+        public MessageIdReceived ReceivedId
+        {
+            get
+            {
+				if(MessageId is BatchMessageIdImpl id)
+				    return new MessageIdReceived(id.LedgerId, id.EntryId, id.BatchIndex, id.PartitionIndex);
+                var m = (MessageIdImpl) MessageId;
+                return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex);
+            }
+        } 
 		public sbyte[] Data
 		{
 			get
