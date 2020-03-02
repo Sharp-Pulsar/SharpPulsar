@@ -27,16 +27,8 @@ namespace SharpPulsar.Precondition
                 throw new ArgumentException(message);
             }
         }
-        public static T RequireNonNull(T value, string parameterName, string message = "") where T : class
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(parameterName, message);
-            }
-
-            return value;
-        }
-        public static void CheckNoTNull(T value) where T:class
+        
+        public static void CheckNoTNull(object value)
         {
             if (value == null)
             {

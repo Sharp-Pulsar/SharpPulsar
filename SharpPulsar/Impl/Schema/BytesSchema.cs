@@ -93,12 +93,12 @@ namespace SharpPulsar.Impl.Schema
             throw new System.NotImplementedException();
         }
 
-        public override object Decode(sbyte[] bytes)
+        public override object Decode(sbyte[] bytes, Type returnType)
 		{
 			return bytes;
 		}
 
-		public override object Decode(IByteBuffer byteBuf)
+		public override object Decode(IByteBuffer byteBuf, Type returnType)
 		{
 			if (byteBuf == null)
 			{
@@ -108,7 +108,7 @@ namespace SharpPulsar.Impl.Schema
 			var bytes = new sbyte[size];
 
 			byteBuf.ReadBytes((byte[])(object)bytes, 0, size);
-			return bytes;
+			return Convert.ChangeType(bytes, returnType);
 		}
 
 	}

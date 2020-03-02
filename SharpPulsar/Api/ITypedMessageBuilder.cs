@@ -56,7 +56,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> the <seealso cref="IMessageId"/> assigned by the broker to the published message. </returns>
-		IMessageId Send();
+		//IMessageId Send();
 
 		/// <summary>
 		/// Send a message asynchronously
@@ -89,7 +89,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		ValueTask<IMessageId> SendAsync();
+		//ValueTask<IMessageId> SendAsync();
 
 		/// <summary>
 		/// Sets the key of the message for routing policy.

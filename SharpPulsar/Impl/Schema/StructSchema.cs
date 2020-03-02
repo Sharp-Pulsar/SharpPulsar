@@ -168,7 +168,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			try
 			{
-				return (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(schemaVersion).Result;
+				return (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(schemaVersion);
 			}
 			catch (ThreadInterruptedException e)
 			{

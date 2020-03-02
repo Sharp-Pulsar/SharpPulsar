@@ -39,12 +39,7 @@ namespace SharpPulsar.Impl
 			RegisteringSchema // Handler is registering schema
 		}
 
-        protected HandlerState(PulsarClientImpl client, string topic)
-		{
-			Client = client;
-			Topic = topic;
-			StateUpdater[this] =  State.Uninitialized;
-		}
+        
 
 		// moves the state to ready if it wasn't closed
 		public virtual bool ChangeToReadyState()
@@ -81,7 +76,7 @@ namespace SharpPulsar.Impl
 			return State.Uninitialized;
 		}
 
-		public PulsarClientImpl Client { get; set; }
+		
     }
 
 }

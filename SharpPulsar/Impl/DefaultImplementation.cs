@@ -43,10 +43,6 @@ namespace SharpPulsar.Impl
 			return new SchemaDefinitionBuilderImpl();
 		}
 
-		public static IPulsarClientBuilder NewClientBuilder()
-		{
-			return null;
-		}
 
 		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch)
 		{

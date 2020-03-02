@@ -21,16 +21,13 @@
 namespace SharpPulsar.Impl
 {
 	using IMessageId = Api.IMessageId;
-
-	[Serializable]
 	public class TopicMessageIdImpl : IMessageId
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
-		[NonSerialized]
+		
 		private readonly string _topicPartitionName;
-        [NonSerialized]
 		private string _topicName;
 		public readonly IMessageId InnerMessageId;
 

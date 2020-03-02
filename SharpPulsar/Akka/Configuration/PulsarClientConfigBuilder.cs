@@ -35,7 +35,7 @@ namespace SharpPulsar.Akka.Configuration
         }
 		public PulsarClientConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
-			_conf = ConfigurationDataUtils.LoadData(config, _conf);
+			_conf = (ClientConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
 
         }

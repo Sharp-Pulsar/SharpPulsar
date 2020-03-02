@@ -27,7 +27,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using IGenericRecord = Api.Schema.IGenericRecord;
 	using SharpPulsar.Api.Schema;
 
-	public class GenericJsonWriter : ISchemaWriter<IGenericRecord>
+	public class GenericJsonWriter : ISchemaWriter
 	{
 
 		private readonly ObjectMapper _objectMapper;
@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_objectMapper = new ObjectMapper();
 		}
 
-		public sbyte[] Write(IGenericRecord message)
+		public sbyte[] Write(object message)
 		{
 			try
 			{

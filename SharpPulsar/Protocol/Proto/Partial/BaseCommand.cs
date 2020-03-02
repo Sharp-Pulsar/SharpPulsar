@@ -48,6 +48,26 @@ namespace SharpPulsar.Protocol.Proto
                 _base.Connect = value ?? throw new NullReferenceException();
 				return this;
 			}
+            public Builder SetCloseProducer(CommandCloseProducer value)
+            {
+                _base.CloseProducer = value ?? throw new NullReferenceException();
+                return this;
+            }
+            public Builder SetCloseProducer(CommandCloseProducer.Builder builderForValue)
+            {
+                _base.CloseProducer = builderForValue.Build();
+                return this;
+            }
+            public Builder SetPong(CommandPong value)
+            {
+                _base.Pong = value ?? throw new NullReferenceException();
+                return this;
+            }
+            public Builder SetPong(CommandPong.Builder builderForValue)
+            {
+                _base.Pong = builderForValue.Build();
+                return this;
+            }
 			public Builder SetConnect(CommandConnect.Builder builder)
 			{
 				_base.Connect = builder.Build();

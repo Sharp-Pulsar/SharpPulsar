@@ -54,8 +54,6 @@ namespace SharpPulsar.Akka.Consumer
 
         private readonly DeadLetterPolicy _deadLetterPolicy;
         private readonly bool _createTopicIfDoesNotExist;
-
-        public UnAckedMessageTracker UnAckedMessageTracker;
         private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
@@ -405,7 +403,7 @@ namespace SharpPulsar.Akka.Consumer
                     case ConsumerCryptoFailureAction.Fail:
                         IMessageId m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
                         Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", _topicName.ToString(), _subscriptionName, _consumerName, m);
-                        UnAckedMessageTracker.Add(m);
+                        //UnAckedMessageTracker.Add(m);
                         return null;
                 }
             }
@@ -430,7 +428,7 @@ namespace SharpPulsar.Akka.Consumer
                 case ConsumerCryptoFailureAction.Fail:
                     var m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
                     Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", _topicName.ToString(), _subscriptionName, _consumerName, m);
-                    UnAckedMessageTracker.Add(m);
+                    //UnAckedMessageTracker.Add(m);
                     return null;
             }
             return null;

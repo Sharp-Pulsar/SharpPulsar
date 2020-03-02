@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 		/// Return next message in chain
 		/// </summary>
 		/// <returns> next message in chain </returns>
-		Message<object> NextMessage {get;}
+		Message NextMessage {get;}
 
 		/// 
 		/// <returns> future associated with callback </returns>

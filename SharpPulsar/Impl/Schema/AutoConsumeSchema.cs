@@ -73,30 +73,7 @@ namespace SharpPulsar.Impl.Schema
 
 			return _schema.Encode(message);
 		}
-
-		public IGenericRecord Decode(sbyte[] bytes, sbyte[] schemaVersion)
-		{
-			if (_schema == null)
-			{
-				SchemaInfo schemaInfo = null;
-				try
-				{
-					schemaInfo = (SchemaInfo)_schemaInfoProvider.LatestSchema.Result;
-				}
-				catch (System.Exception e) when (e is ThreadInterruptedException)
-				{
-                    Thread.CurrentThread.Interrupt();
-                    Log.LogError("Con't get last schema for topic {} use AutoConsumeSchema", _topicName);
-					throw new SchemaSerializationException(e);
-				}
-				_schema = GenerateSchema(schemaInfo);
-				_schema.SchemaInfoProvider = _schemaInfoProvider;
-				Log.LogInformation("Configure {} schema for topic {} : {}", _componentName, _topicName, schemaInfo.SchemaDefinition);
-			}
-			EnsureSchemaInitialized();
-			return (IGenericRecord)_schema.Decode(bytes, schemaVersion);
-		}
-
+		
 		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set

@@ -36,11 +36,11 @@ namespace SharpPulsar.Impl.Schema.Reader
 			this._objectMapper = objectMapper;
 		}
 
-		public  T Read(sbyte[] bytes, int offset, int length)
+		public  object Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				return (T)_objectMapper.ReadValue((byte[])(Array)bytes, offset, length);
+				return _objectMapper.ReadValue((byte[])(Array)bytes, offset, length);
 			}
 			catch (IOException e)
 			{
@@ -48,13 +48,13 @@ namespace SharpPulsar.Impl.Schema.Reader
 			}
 		}
 
-		public T Read(Stream inputStream)
+		public object Read(Stream inputStream)
 		{
 			try
             {
                 var t = _objectMapper.ReadValue(inputStream).Children<JObject>();
 				
-				return (T)Convert.ChangeType(t, typeof(T));
+				return t;
 			}
 			catch (IOException e)
 			{

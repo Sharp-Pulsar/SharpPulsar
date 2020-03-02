@@ -22,14 +22,14 @@ namespace SharpPulsar.Utils
 {
 	public static class TypeCheckUtil
 	{
-		public static T CheckType(object o, Type clazz)
+		public static object CheckType(object o, Type clazz)
 		{
 			if (!clazz.IsInstanceOfType(o))
 			{
 				throw new System.Exception(
                     $"Invalid object type '{o.GetType().FullName}' when exepcting '{clazz.FullName}'");
 			}
-			return (T) o;
+			return o;
 		}
 	}
 

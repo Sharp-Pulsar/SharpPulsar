@@ -5,13 +5,11 @@ namespace SharpPulsar.Akka.InternalCommands
 {
     public sealed class Transactional
     {
-        public Transactional(ImmutableList<object> messages, IPulsarClient client)
+        public Transactional(ImmutableList<object> messages)
         {
             Messages = messages;
-            Client = client;
         }
 
-        public IPulsarClient Client { get; }
         public ImmutableList<object> Messages { get; }
     }
 }

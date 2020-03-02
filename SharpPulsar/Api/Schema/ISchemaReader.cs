@@ -25,7 +25,7 @@ namespace SharpPulsar.Api.Schema
 	/// Deserialize messages from bytes.
 	/// </summary>
 
-	public interface ISchemaReader<out T>
+	public interface ISchemaReader
 	{
 
 		/// <summary>
@@ -33,7 +33,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read(sbyte[] bytes)
+		virtual object Read(sbyte[] bytes)
 		{
 			return Read(bytes, 0, bytes.Length);
 		}
@@ -45,14 +45,14 @@ namespace SharpPulsar.Api.Schema
 		/// <param name="offset"> the byte[] initial position </param>
 		/// <param name="length"> the byte[] read length </param>
 		/// <returns> the serialized object </returns>
-		T Read(sbyte[] bytes, int offset, int length);
+		object Read(sbyte[] bytes, int offset, int length);
 
 		/// <summary>
 		/// serialize bytes convert pojo.
 		/// </summary>
 		/// <param name="inputStream"> the stream of message </param>
 		/// <returns> the serialized object </returns>
-		T Read(Stream inputStream);
+		object Read(Stream inputStream);
 	}
 
 }

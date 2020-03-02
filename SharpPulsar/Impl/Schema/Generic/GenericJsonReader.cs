@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	using SharpPulsar.Api.Schema;
 
 
-	public class GenericJsonReader : ISchemaReader<IGenericRecord>
+	public class GenericJsonReader : ISchemaReader
 	{
 
 		private readonly ObjectMapper _objectMapper;
@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public IGenericRecord Read(Stream inputStream)
+		public object Read(Stream inputStream)
 		{
 			try
 			{
@@ -86,7 +86,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		IGenericRecord ISchemaReader<IGenericRecord>.Read(sbyte[] Bytes, int Offset, int Length)
+		object ISchemaReader.Read(sbyte[] Bytes, int Offset, int Length)
 		{
 			throw new System.NotImplementedException();
 		}

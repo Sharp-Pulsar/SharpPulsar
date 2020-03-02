@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpPulsar.Utility.Atomic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +29,6 @@ namespace SharpPulsar.Utils
 	{
 		private readonly int _numThreads;
 		private readonly IList<Task> _executors;
-		private readonly AtomicInt _currentThread = new AtomicInt(0);
 		private readonly CancellationTokenSource _cancellationToken;
 
 		public ExecutorProvider(int numThreads, Action taskFactory)
@@ -48,7 +46,7 @@ namespace SharpPulsar.Utils
 			}
 		}
 
-		public virtual Task Executor => _executors[(_currentThread.Increment() & int.MaxValue) % _numThreads];
+		//public virtual Task Executor => _executors[(_currentThread.Increment() & int.MaxValue) % _numThreads];
 
         public virtual void ShutdownNow()
 		{

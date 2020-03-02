@@ -437,13 +437,9 @@ namespace SharpPulsar.Protocol
 
 			var subscribe = subscribeBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Subscribe).SetSubscribe(subscribe));
-			subscribeBuilder.Recycle();
-			subscribe.Recycle();
-			if (null != schema)
-			{
-				schema.Recycle();
-			}
-			return res;
+
+            schema?.Recycle();
+            return res;
 		}
 
 		public static IByteBuffer NewUnsubscribe(long consumerId, long requestId)
@@ -484,8 +480,6 @@ namespace SharpPulsar.Protocol
 			var seek = seekBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
 			
-			seekBuilder.Recycle();
-			seek.Recycle();
 			return res;
 		}
 
@@ -500,8 +494,6 @@ namespace SharpPulsar.Protocol
 			var seek = seekBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
 
-			seekBuilder.Recycle();
-			seek.Recycle();
 			return res;
 		}
 
@@ -670,8 +662,6 @@ namespace SharpPulsar.Protocol
 
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
 
-			ack.Recycle();
-			ackBuilder.Recycle();
 			return res;
 		}
 
@@ -709,8 +699,7 @@ namespace SharpPulsar.Protocol
 			var ack = ackBuilder.Build();
 
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
-			ack.Recycle();
-			ackBuilder.Recycle();
+			
 			return res;
 		}
 
@@ -732,8 +721,7 @@ namespace SharpPulsar.Protocol
 			redeliverBuilder.SetConsumerId(consumerId);
 			var redeliver = redeliverBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
-			redeliver.Recycle();
-			redeliverBuilder.Recycle();
+			
 			return res;
 		}
 
@@ -744,9 +732,7 @@ namespace SharpPulsar.Protocol
 			redeliverBuilder.AddAllMessageIds(messageIds);
 			var redeliver = redeliverBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
-			redeliver.Recycle();
-			redeliverBuilder.Recycle();
-			return res;
+		    return res;
 		}
 
 		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Types.Mode mode)
@@ -994,10 +980,8 @@ namespace SharpPulsar.Protocol
 			try
 			{
 				batchBuffer.WriteInt(singleMsgMetadataSize);
-				var outStream = ByteBufCodedOutputStream.Get(batchBuffer);
+				var outStream = new CodedOutputStream(batchBuffer.Array);
 				singleMessageMetadata.WriteTo(outStream);
-				singleMessageMetadata.Recycle();
-				outStream.Recycle();
 			}
 			catch (IOException e)
 			{
@@ -1040,21 +1024,20 @@ namespace SharpPulsar.Protocol
 			}
 			finally
 			{
-				singleMessageMetadataBuilder.Recycle();
+				//singleMessageMetadataBuilder.Recycle();
 			}
 		}
 
 		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer uncompressedPayload, SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize)
-		{
+        {
+            var single = singleMessageMetadataBuilder.Build();
 			var singleMetaSize = (int) uncompressedPayload.ReadUnsignedInt();
 			var writerIndex = uncompressedPayload.WriterIndex;
 			var beginIndex = uncompressedPayload.ReaderIndex + singleMetaSize;
 			uncompressedPayload.SetWriterIndex(beginIndex);
-			var stream = ByteBufCodedInputStream.Get(uncompressedPayload);
-			singleMessageMetadataBuilder.MergeFrom(stream, null);
-			stream.Recycle();
-
-			var singleMessagePayloadSize = singleMessageMetadataBuilder.PayloadSize;
+			var stream = new CodedInputStream(uncompressedPayload.Array);
+			single.MergeFrom(stream);
+            var singleMessagePayloadSize = single.CalculateSize();
 
 			var readerIndex = uncompressedPayload.ReaderIndex;
 			var singleMessagePayload = uncompressedPayload.RetainedSlice(readerIndex, singleMessagePayloadSize);

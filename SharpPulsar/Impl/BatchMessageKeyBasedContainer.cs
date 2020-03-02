@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
 			{
 				part = new KeyedBatch();
 				part.AddMsg(msg);
-				part.CompressionType = CompressionType.GetCompressionTypeValue<CompressionType>();
+				part.CompressionType = Protocol.Proto.CompressionType.None;
 				part.Compressor = Compressor;
 				part.MaxBatchSize = MaxBatchSize;
 				part.TopicName = TopicName;
@@ -90,7 +90,7 @@ namespace SharpPulsar.Impl
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				_batches.ToList().ForEach(x => x.Value);
+				_batches.ToList().ForEach(x => x.Value.Discard(ex));
 			}
 			catch (System.Exception T)
 			{
@@ -187,7 +187,7 @@ namespace SharpPulsar.Impl
 					{
 						MessageMetadata.SetOrderingKey(ByteString.CopyFrom((byte[])(object)msg.OrderingKey));
 					}
-					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, ClientCnx.MaxMessageSize)));
+					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)));
 					
 				}
 

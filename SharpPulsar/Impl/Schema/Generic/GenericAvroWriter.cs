@@ -32,9 +32,9 @@ namespace SharpPulsar.Impl.Schema.Generic
             _schema = schema;
         }
 
-		public byte[] Write(T message)
+		public byte[] Write(object message)
 		{
-            var writer = new ReflectWriter(_schema);
+            var writer = new ReflectDefaultWriter(message.GetType(), _schema, new ClassCache());
             using var stream = new MemoryStream(256);
             writer.Write(message, new BinaryEncoder(stream));
             return stream.ToArray();

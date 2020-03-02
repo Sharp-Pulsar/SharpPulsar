@@ -30,10 +30,8 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    using System.Threading.Tasks;
     using Api;
-    using Transaction;
-	public class TypedMessageBuilderImpl : ITypedMessageBuilder
+	public class TypedMessageBuilder : ITypedMessageBuilder
 	{
         private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
 		
@@ -41,23 +39,18 @@ namespace SharpPulsar.Impl
 		public MessageMetadata.Builder Builder  = MessageMetadata.NewBuilder();
 		private readonly ISchema _schema;
 		public  IByteBuffer Content;
-		private readonly TransactionImpl _txn;
 
-		public TypedMessageBuilderImpl(string producer, ISchema schema) : this(producer, schema, null)
-		{
-		}
-
-		public TypedMessageBuilderImpl(string producer, ISchema schema, TransactionImpl txn)
+        public TypedMessageBuilder(string producer, ISchema schema)
 		{
 			_producer = producer;
 			_schema = schema;
 			Content = EmptyContent;
-			_txn = txn;
 		}
 
 		private long BeforeSend()
 		{
-			if (_txn == null)
+			/*
+			 if (_txn == null)
 			{
 				return -1L;
 			}
@@ -66,34 +59,8 @@ namespace SharpPulsar.Impl
 			var sequenceId = _txn.NextSequenceId();
 			Builder.SetSequenceId(sequenceId);
 			return sequenceId;
-		}
-
-		public IMessageId Send()
-		{
-			if (null != _txn)
-			{
-				// NOTE: it makes no sense to send a transactional message in a blocking way.
-				//       because #send only completes when a transaction is committed or aborted.
-				throw new InvalidOperationException("Use sendAsync to send a transactional message");
-			}
-			return _producer.Send(Message);
-		}
-
-		public ValueTask<IMessageId> SendAsync()
-		{
-			var sequenceId = BeforeSend();
-			var sendTask = _producer.InternalSendAsync(Message);
-			if (_txn != null)
-			{
-				// it is okay that we register produced topic after sending the messages. because
-				// the transactional messages will not be visible for consumers until the transaction
-				// is committed.
-				_txn.RegisterProducedTopic(_producer.Topic);
-				// register the sendFuture as part of the transaction
-				var t = _txn.RegisterSendOp(sequenceId, sendTask);
-				return new ValueTask<IMessageId>(t.Task);
-			}
-            return new ValueTask<IMessageId>(sendTask.Task);
+			 */
+			return -1L;
 		}
 
 		public ITypedMessageBuilder Key(string key)

@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl.Schema.Writer
 			this._objectMapper = objectMapper;
 		}
 
-		public sbyte[] Write(T message)
+		public sbyte[] Write(object message)
 		{
 			try
 			{

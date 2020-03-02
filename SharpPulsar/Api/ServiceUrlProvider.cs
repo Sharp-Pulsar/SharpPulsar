@@ -41,7 +41,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="client">
 		///            created pulsar client. </param>
-		void Initialize(IPulsarClient client);
+		//void Initialize(IPulsarClient client);
 
 		/// <summary>
 		/// Get the current service URL the Pulsar client should connect to.

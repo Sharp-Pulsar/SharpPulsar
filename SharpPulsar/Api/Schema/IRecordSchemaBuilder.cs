@@ -40,7 +40,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="fieldName"> name of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		IFieldSchemaBuilder Field(string fieldName);
+		//IFieldSchemaBuilder Field(string fieldName);
 
 		/// <summary>
 		/// Add a field with the given name and genericSchema to the record.

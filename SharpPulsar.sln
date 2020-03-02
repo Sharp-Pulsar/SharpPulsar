@@ -18,7 +18,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Avro.main", "Avro\Avro.main.csproj", "{A9C668BD-8548-4D36-99D3-8C5BB080B6E4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Producer", "Sample\Producer.csproj", "{C1B0149A-1501-45D0-AD16-9B5F80CF1F48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samples", "Sample\Samples.csproj", "{C1B0149A-1501-45D0-AD16-9B5F80CF1F48}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{EC656F51-19D1-4949-AD76-EA97483AC6C3}"
 EndProject

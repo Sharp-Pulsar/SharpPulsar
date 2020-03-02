@@ -171,7 +171,6 @@ namespace SharpPulsar.Protocol.Schema
 			int Compare(in sbyte[] buffer1, int offset1, int length1, in sbyte[] buffer2, int offset2, int length2);
 		}
 
-		[Serializable]
 		public class LexicographicByteArrayComparator : ByteArrayComparator
 		{
 

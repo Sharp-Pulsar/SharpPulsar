@@ -1,41 +1,72 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.IO;
+using Samples.Consumer;
+using Samples.Producer;
+using Samples.Reader;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 
-namespace Sample
+namespace Producer
 {
     class Program
     {
-        private static AutoResetEvent ChannelInitilizedEvent = new AutoResetEvent(false);
-
-        static async Task Main(string[] args)
+        static Task Main(string[] args)
         {
-            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
-            
-            var jsonSchem = JsonSchema.Of(typeof(Foo));
-            
-            var pulsarSystem = new PulsarSystem(new ClientConfigurationData());
+            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+            var producer = new ProducerListener();
+            //var jsonSchem = JsonSchema.Of(typeof(Students));
+            var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl("localhost:6650")
+                .ConnectionsPerBroker(1)
+                .IoThreads(1)
+                .ClientConfigurationData;
+            var pulsarSystem = new PulsarSystem(clientConfig);
             
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("Test").AddEncryptionKey("sessions").ProducerConfigurationData;
-            
-            pulsarSystem.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+                .ProducerName("Students")
+                .Topic("students")
+                .Schema(jsonSchema)
+                .EventListener(producer)
+                .AddEncryptionKey("sessions").ProducerConfigurationData;
 
-           // pulsarSystem.Send(new Send(new Foo(), "Test"));
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName("Student")
+                .Topic("students")
+                .Schema(jsonSchema)
+                .MessageListener(new ConsumerMessageListener())
+                .ConsumerEventListener(new ConsumerEventListener())
+                .ConsumerConfigurationData;
+
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("Students")
+                .Schema(jsonSchema)
+                .ReaderListener(new ReaderMessageListener())
+                .Topic("students")
+                .ReaderConfigurationData;
+            
+            pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+            var students = new Students
+            {
+                Name = "Ebere",
+                Age = 2020,
+                School = "Akka-Pulsar university"
+            };
+            pulsarSystem.Send(new Send(students,"Students", ImmutableDictionary<string, object>.Empty), producer.GetProducer("Students"));
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)
@@ -46,9 +77,11 @@ namespace Sample
         }
     }
 
-    public class Foo
+    public class Students
     {
         public string Name { get; set; }
+        public int Age { get; set; }
+        public string School { get; set; }
     }
     public class Act:UntypedActor
     {

@@ -24,7 +24,7 @@ namespace SharpPulsar.Transaction
 	/// <summary>
 	/// An identifier for representing a transaction.
 	/// </summary>
-	[Serializable]
+	
 	public class TxnID
 	{
 

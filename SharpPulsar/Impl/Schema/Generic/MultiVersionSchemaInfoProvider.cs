@@ -66,16 +66,17 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			get
 			{
-				var lkup = PulsarClient.Lookup.GetSchema(_topicName);
-                return new ValueTask<ISchemaInfo>(lkup.Result);
+				//var lkup = PulsarClient.Lookup.GetSchema(_topicName);
+                //return new ValueTask<ISchemaInfo>(lkup.Result);
+                return null;
             }
 		}
 
 		public virtual string TopicName => _topicName.LocalName;
 
-        private ValueTask<SchemaInfo> LoadSchema(sbyte[] schemaVersion)
+        private SchemaInfo LoadSchema(sbyte[] schemaVersion)
 		{
-			 return PulsarClient.Lookup.GetSchema(_topicName, schemaVersion);
+			 return null;
 		}
 
 	}

@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using System;
 using System.Linq;
 using Avro;
 using Microsoft.Extensions.Logging;
@@ -57,12 +58,12 @@ namespace SharpPulsar.Impl.Schema.Generic
 			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
 		}
 
-        public override ISchema<IGenericRecord> Auto()
+        public override ISchema Auto()
         {
             throw new System.NotImplementedException();
         }
 
-        public override ISchema Json(T pojo)
+        public override ISchema Json(Type pojo)
         {
             throw new System.NotImplementedException();
         }
@@ -83,12 +84,12 @@ namespace SharpPulsar.Impl.Schema.Generic
         }
 
         
-        public override ISchema<IGenericRecord> Json(ISchemaDefinition<IGenericRecord> schemaDefinition)
+        public override ISchema Json(ISchemaDefinition schemaDefinition)
         {
             throw new System.NotImplementedException();
         }
 
-        public override ISchema<IGenericRecord> Json(IGenericRecord pojo)
+        public override ISchema Json(object pojo)
         {
             throw new System.NotImplementedException();
         }

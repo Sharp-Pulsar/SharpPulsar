@@ -182,7 +182,7 @@ namespace SharpPulsar.Akka.Producer
                         schema = _schemas["default"];
                     }
                 }
-                var builder = new TypedMessageBuilderImpl(ProducerName, schema);
+                var builder = new TypedMessageBuilder(ProducerName, schema);
                 builder.Value(s.Message);
                 builder.LoadConf(s.Config);
                 foreach (var c in s.Config)
