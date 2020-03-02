@@ -194,7 +194,7 @@ namespace SharpPulsar.Akka.Consumer
             if (!VerifyChecksum(headersAndPayload, messageId))
             {
                 // discard message with checksum error
-                DiscardCorruptedMessage(messageId, CommandAck.Types.ValidationError.ChecksumMismatch);
+                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
                 return;
             }
 
@@ -205,7 +205,7 @@ namespace SharpPulsar.Akka.Consumer
             }
             catch (Exception)
             {
-                DiscardCorruptedMessage(messageId, CommandAck.Types.ValidationError.ChecksumMismatch);
+                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
                 return;
             }
             var numMessages = msgMetadata.NumMessagesInBatch;
@@ -324,7 +324,7 @@ namespace SharpPulsar.Akka.Consumer
             catch (IOException)
             {
                 Context.System.Log.Warning("[{}] [{}] unable to obtain message in batch", _subscriptionName, _consumerName);
-                DiscardCorruptedMessage(messageId, CommandAck.Types.ValidationError.BatchDeSerializeError);
+                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.BatchDeSerializeError);
             }
 
             if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
@@ -398,7 +398,7 @@ namespace SharpPulsar.Akka.Consumer
                         return payload;
                     case ConsumerCryptoFailureAction.Discard:
                         Context.System.Log.Warning("[{}][{}][{}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard", _topicName.ToString(), _subscriptionName, _consumerName);
-                        DiscardMessage(messageId, CommandAck.Types.ValidationError.DecryptionError);
+                        DiscardMessage(messageId, CommandAck.ValidationError.DecryptionError);
                         return null;
                     case ConsumerCryptoFailureAction.Fail:
                         IMessageId m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
@@ -423,7 +423,7 @@ namespace SharpPulsar.Akka.Consumer
                     return payload;
                 case ConsumerCryptoFailureAction.Discard:
                     Context.System.Log.Warning("[{}][{}][{}][{}] Discarding message since decryption failed and config is set to discard", _topicName.ToString(), _subscriptionName, _consumerName, messageId);
-                    DiscardMessage(messageId, CommandAck.Types.ValidationError.DecryptionError);
+                    DiscardMessage(messageId, CommandAck.ValidationError.DecryptionError);
                     return null;
                 case ConsumerCryptoFailureAction.Fail:
                     var m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
@@ -436,7 +436,7 @@ namespace SharpPulsar.Akka.Consumer
         private void AckMessage(AckMessage message)
         {
             var requestid = _requestId++;
-            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.Types.AckType.Individual, null, new Dictionary<string, long>());
+            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.AckType.Individual, null, new Dictionary<string, long>());
             var payload = new Payload(cmd.Array, requestid, "AckMessages");
             _broker.Tell(payload);
         }
@@ -456,7 +456,7 @@ namespace SharpPulsar.Akka.Consumer
         private void AckMessages(AckMessages message)
         {
             var requestid = _requestId++;
-            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.Types.AckType.Cumulative, null, new Dictionary<string, long>());
+            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, CommandAck.AckType.Cumulative, null, new Dictionary<string, long>());
             var payload = new Payload(cmd.Array, requestid, "AckMessages");
             _broker.Tell(payload);
         }
@@ -470,7 +470,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 // payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
                 Context.System.Log.Error("[{}][{}] Got corrupted payload message size {} at {}", _topicName.ToString(), _subscriptionName, payloadSize, messageId);
-                DiscardCorruptedMessage(messageId, CommandAck.Types.ValidationError.UncompressedSizeCorruption);
+                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.UncompressedSizeCorruption);
                 return null;
             }
 
@@ -482,19 +482,19 @@ namespace SharpPulsar.Akka.Consumer
             catch (IOException e)
             {
                 Context.System.Log.Error("[{}][{}] Failed to decompress message with {} at {}: {}", _topicName.ToString(), _subscriptionName, compressionType, messageId, e.Message, e);
-                DiscardCorruptedMessage(messageId, CommandAck.Types.ValidationError.DecompressionError);
+                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.DecompressionError);
                 return null;
             }
         }
-        private void DiscardCorruptedMessage(MessageIdData messageId, CommandAck.Types.ValidationError validationError)
+        private void DiscardCorruptedMessage(MessageIdData messageId, CommandAck.ValidationError validationError)
         {
             Context.System.Log.Error("[{}][{}] Discarding corrupted message at {}:{}", _topicName.ToString(), _subscriptionName, messageId.LedgerId, messageId.EntryId);
             DiscardMessage(messageId, validationError);
         }
 
-        private void DiscardMessage(MessageIdData messageId, CommandAck.Types.ValidationError validationError)
+        private void DiscardMessage(MessageIdData messageId, CommandAck.ValidationError validationError)
         {
-            var cmd = Commands.NewAck(_consumerid, (long)messageId.LedgerId, (long)messageId.EntryId, CommandAck.Types.AckType.Individual, validationError, new Dictionary<string, long>());
+            var cmd = Commands.NewAck(_consumerid, (long)messageId.LedgerId, (long)messageId.EntryId, CommandAck.AckType.Individual, validationError, new Dictionary<string, long>());
             var payload = new Payload(cmd.Array, _requestId++, "NewAck");
             _broker.Tell(payload);
         }

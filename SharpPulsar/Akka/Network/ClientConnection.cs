@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using Akka.IO;
@@ -158,7 +159,9 @@ namespace SharpPulsar.Akka.Network
 		{
             try
 			{
-				// De-serialize the command
+                // De-serialize the command
+                var readOnlySpan = new ReadOnlySpan<byte>(buffer);
+                var c = JsonSerializer.Deserialize<BaseCommand>(readOnlySpan);
                 var cmd = buffer.ToObject<BaseCommand>();
                 if (Log.IsEnabled(LogLevel.DebugLevel))
 				{

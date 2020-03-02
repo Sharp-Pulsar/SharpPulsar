@@ -34,7 +34,7 @@ namespace SharpPulsar.Protocol.Proto
 			
 			public Builder SetAuthData(ByteString value)
             {
-                connect.AuthData = value;
+                connect.AuthData = value.ToByteArray();
 				return this;
 			}
 			

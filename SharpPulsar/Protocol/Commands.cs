@@ -11,6 +11,7 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
@@ -144,6 +145,7 @@ namespace SharpPulsar.Protocol
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
             var ba = BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect);
+            var s = JsonSerializer.Serialize(ba.Build());
 			
             var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
             return res;

@@ -127,7 +127,7 @@ namespace SharpPulsar.Protocol.Proto
 			
 			public bool HasPriorityLevel()
 			{
-				return _subscribe.HasPriorityLevel;
+				return _subscribe.PriorityLevel;
 			}
 			
             public Builder SetPriorityLevel(int value)
