@@ -7,16 +7,16 @@ namespace SharpPulsar.Protocol.Proto
 	public partial class CommandSubscribe
 	{
 
-        public static Types.InitialPosition ValueOf(int value)
+        public static InitialPosition ValueOf(int value)
         {
             switch (value)
             {
                 case 0:
-                    return Types.InitialPosition.Latest;
+                    return InitialPosition.Latest;
                 case 1:
-                    return Types.InitialPosition.Earliest;
+                    return InitialPosition.Earliest;
                 default:
-                    return Types.InitialPosition.Latest;
+                    return InitialPosition.Latest;
             }
         }
 		public static Builder NewBuilder()
@@ -44,10 +44,6 @@ namespace SharpPulsar.Protocol.Proto
                 return _subscribe;
             }
 
-			public bool HasTopic()
-			{
-				return _subscribe.HasTopic;
-			}
 			public string GetTopic()
             {
                 return _subscribe.Topic;
@@ -62,14 +58,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSubscription()
-			{
-				return _subscribe.HasSubscription;
-			}
-			public string GetSubscription()
-            {
-                return _subscribe.Subscription;
-            }
 			public Builder SetSubscription(string value)
 			{
 				if (string.ReferenceEquals(value, null))
@@ -81,20 +69,11 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSubType()
+            public Builder SetSubType(SubType value)
 			{
-				return _subscribe.HasSubType;
-			}
-			
-            public Builder SetSubType(Types.SubType value)
-			{
-                _subscribe.SubType = value;
+                _subscribe.Type = value;
 
 				return this;
-			}
-			public bool HasConsumerId()
-			{
-				return _subscribe.HasConsumerId;
 			}
 			
             public Builder SetConsumerId(long value)
@@ -103,31 +82,17 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasRequestId()
-			{
-				return _subscribe.HasRequestId;
-			}
-			
             public Builder SetRequestId(long value)
             {
                 _subscribe.RequestId = (ulong) value;
 				return this;
 			}
 			
-			public bool HasConsumerName()
-			{
-				return _subscribe.HasConsumerName;
-			}
 			public Builder SetConsumerName(string value)
 			{
 				_subscribe.ConsumerName = value ?? throw new NullReferenceException();
 
 				return this;
-			}
-			
-			public bool HasPriorityLevel()
-			{
-				return _subscribe.PriorityLevel;
 			}
 			
             public Builder SetPriorityLevel(int value)
@@ -136,10 +101,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasDurable()
-			{
-				return _subscribe.HasDurable;
-			}
 			
             public Builder SetDurable(bool value)
             {
@@ -147,10 +108,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasStartMessageId()
-			{
-				return _subscribe.HasStartMessageId;
-			}
 			public MessageIdData GetStartMessageId()
 			{
 				return _subscribe.StartMessageId;
@@ -170,26 +127,26 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public static Types.SubType ValueOf(int value)
+			public static SubType ValueOf(int value)
 			{
 				switch (value)
 				{
 					case 0:
-						return Types.SubType.Exclusive;
+						return SubType.Exclusive;
 					case 1:
-						return Types.SubType.Shared;
+						return SubType.Shared;
 					case 2:
-						return Types.SubType.Failover;
+						return SubType.Failover;
 					case 3:
-						return Types.SubType.KeyShared;
+						return SubType.KeyShared;
 					default:
-						return Types.SubType.Exclusive;
+						return SubType.Exclusive;
 				}
 			}
 			
             public KeyValue GetMetadata(int index)
 			{
-				return _subscribe.Metadata[index];
+				return _subscribe.Metadatas[index];
 			}
 			public Builder SetMetadata(int index, KeyValue value)
 			{
@@ -197,13 +154,13 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _subscribe.Metadata[index] = value;
+                _subscribe.Metadatas[index] = value;
 
 				return this;
 			}
 			public Builder SetMetadata(int index, KeyValue.Builder builderForValue)
 			{
-                _subscribe.Metadata[index] = builderForValue.Build();
+                _subscribe.Metadatas[index] = builderForValue.Build();
                 return this;
 			}
 			public Builder AddMetadata(KeyValue value)
@@ -212,7 +169,7 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _subscribe.Metadata.Add(value);
+                _subscribe.Metadatas.Add(value);
 
 				return this;
 			}
@@ -222,31 +179,27 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _subscribe.Metadata.Insert(index, value);
+                _subscribe.Metadatas.Insert(index, value);
 
 				return this;
 			}
 			public Builder AddMetadata(KeyValue.Builder builderForValue)
 			{
-                _subscribe.Metadata.Add(builderForValue.Build());
+                _subscribe.Metadatas.Add(builderForValue.Build());
 
 				return this;
 			}
 			public Builder AddMetadata(int index, KeyValue.Builder builderForValue)
 			{
-                _subscribe.Metadata.Insert(index, builderForValue.Build());
+                _subscribe.Metadatas.Insert(index, builderForValue.Build());
 
 				return this;
 			}
 			public Builder AddAllMetadata(IEnumerable<KeyValue> values)
 			{
-				values.ToList().ForEach(_subscribe.Metadata.Add);
+				values.ToList().ForEach(_subscribe.Metadatas.Add);
 
 				return this;
-			}
-			public bool HasReadCompacted()
-			{
-				return _subscribe.HasReadCompacted;
 			}
 			
             public Builder SetReadCompacted(bool value)
@@ -255,10 +208,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSchema()
-			{
-				return _subscribe.HasSchema;
-			}
 			public Schema GetSchema()
 			{
 				return _subscribe.Schema;
@@ -278,21 +227,13 @@ namespace SharpPulsar.Protocol.Proto
 				_subscribe.Schema = builderForValue.Build();
 				return this;
 			}
-			public bool HasInitialPosition()
-			{
-				return _subscribe.HasInitialPosition;
-			}
 			
-            public Builder SetInitialPosition(Types.InitialPosition value)
+            public Builder SetInitialPosition(InitialPosition value)
 			{
-                _subscribe.InitialPosition = value;
+                _subscribe.initialPosition = value;
 				return this;
 			}
 			
-			public bool HasReplicateSubscriptionState()
-			{
-				return _subscribe.HasReplicateSubscriptionState;
-			}
 			
             public Builder SetReplicateSubscriptionState(bool value)
             {
@@ -300,53 +241,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasForceTopicCreation()
-			{
-				return _subscribe.HasForceTopicCreation;
-			}
-			
-            public Builder SetForceTopicCreation(bool value)
-            {
-                _subscribe.ForceTopicCreation = value;
-				return this;
-			}
-			
-			public bool HasStartMessageRollbackDurationSec()
-			{
-				return _subscribe.HasStartMessageRollbackDurationSec;
-			}
-			
-            public Builder SetStartMessageRollbackDurationSec(long value)
-            {
-                _subscribe.StartMessageRollbackDurationSec = (ulong)value;
-				return this;
-			}
-			
-			public bool HasKeySharedMeta()
-			{
-				return _subscribe.HasKeySharedMeta;
-			}
-			public KeySharedMeta GetKeySharedMeta()
-			{
-				return _subscribe.KeySharedMeta;
-			}
-			public Builder SetKeySharedMeta(KeySharedMeta value)
-			{
-				if (value == null)
-				{
-					throw new NullReferenceException();
-				}
-
-                _subscribe.KeySharedMeta = value;
-				return this;
-			}
-			public Builder SetKeySharedMeta(KeySharedMeta.Builder builderForValue)
-			{
-                _subscribe.KeySharedMeta = builderForValue.Build();
-				return this;
-			}
-			
-
 		}
 
 	}

@@ -87,7 +87,7 @@ namespace SharpPulsar.Protocol
 
 			if (!ReferenceEquals(authData, null))
 			{
-				connectBuilder.SetAuthData(ByteString.CopyFromUtf8(authData));
+				connectBuilder.SetAuthData(ByteString.CopyFromUtf8(authData).ToByteArray());
 			}
 
 			if (!ReferenceEquals(originalPrincipal, null))
@@ -106,7 +106,7 @@ namespace SharpPulsar.Protocol
 			}
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect));
 			
 			return res;
 		}
@@ -125,7 +125,7 @@ namespace SharpPulsar.Protocol
 
 			if (authData != null)
 			{
-				connectBuilder.SetAuthData(authData.AuthData_);
+				connectBuilder.SetAuthData(authData.auth_data);
 			}
 
 			if (!ReferenceEquals(originalPrincipal, null))
@@ -135,7 +135,7 @@ namespace SharpPulsar.Protocol
 
 			if (originalAuthData != null)
 			{
-				connectBuilder.SetOriginalAuthData(originalAuthData.AuthData_.ToStringUtf8());
+				connectBuilder.SetOriginalAuthData(Encoding.UTF8.GetString(originalAuthData.auth_data));
 			}
 
 			if (!ReferenceEquals(originalAuthMethod, null))
@@ -144,10 +144,10 @@ namespace SharpPulsar.Protocol
 			}
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
-            var ba = BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect);
+            var ba = BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect);
             var s = JsonSerializer.Serialize(ba.Build());
 			
-            var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connect).SetConnect(connect));
+            var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect));
             return res;
         }
 
@@ -171,7 +171,7 @@ namespace SharpPulsar.Protocol
 			var versionToAdvertise = Math.Min(CurrentProtocolVersion, clientProtocolVersion);
 
 			var connected = connectedBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Connected).SetConnected(connectedBuilder));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connected).SetConnected(connectedBuilder));
 			connected.Recycle();
 			connectedBuilder.Recycle();
 			return res;
@@ -188,9 +188,9 @@ namespace SharpPulsar.Protocol
 
 			challengeBuilder.SetProtocolVersion(versionToAdvertise);
 
-			var challenge = challengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(brokerData.AuthData_).SetAuthMethodName(authMethod).Build()).Build();
+			var challenge = challengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(brokerData.auth_data).SetAuthMethodName(authMethod).Build()).Build();
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AuthChallenge).SetAuthChallenge(challenge));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AuthChallenge).SetAuthChallenge(challenge));
 			challenge.Recycle();
 			challengeBuilder.Recycle();
 			return res;
@@ -204,7 +204,7 @@ namespace SharpPulsar.Protocol
 			sendErrorBuilder.SetError(error);
 			sendErrorBuilder.SetMessage(errorMsg);
 			var sendError = sendErrorBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.SendError).SetSendError(sendError));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.SendError).SetSendError(sendError));
 			sendErrorBuilder.Recycle();
 			sendError.Recycle();
 			return res;
@@ -347,7 +347,7 @@ namespace SharpPulsar.Protocol
 			}
 			var send = sendBuilder.Build();
 
-			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send), ChecksumType.Crc32C, messageData, payload);
+			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Send).SetSend(send), ChecksumType.Crc32C, messageData, payload);
 			return res;
 		}
 
@@ -371,16 +371,16 @@ namespace SharpPulsar.Protocol
 			}
 			var send = sendBuilder.Build();
 
-			var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Send).SetSend(send).Build(), messageData, new ReadOnlySequence<byte>(payload.Array));
+			var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Send).SetSend(send).Build(), messageData, new ReadOnlySequence<byte>(payload.Array));
 			return Unpooled.WrappedBuffer(res.ToArray());
 		}
 
-		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
 		{
-			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
+			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.initialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
 		}
 
-		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
 					return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
@@ -438,7 +438,7 @@ namespace SharpPulsar.Protocol
 			}
 
 			var subscribe = subscribeBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Subscribe).SetSubscribe(subscribe));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Subscribe).SetSubscribe(subscribe));
 
             schema?.Recycle();
             return res;
@@ -450,7 +450,7 @@ namespace SharpPulsar.Protocol
 			unsubscribeBuilder.SetConsumerId(consumerId);
 			unsubscribeBuilder.SetRequestId(requestId);
 			var unsubscribe = unsubscribeBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Unsubscribe).SetUnsubscribe(unsubscribe));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Unsubscribe).SetUnsubscribe(unsubscribe));
 			unsubscribeBuilder.Recycle();
 			unsubscribe.Recycle();
 			return res;
@@ -461,7 +461,7 @@ namespace SharpPulsar.Protocol
 			var changeBuilder = CommandActiveConsumerChange.NewBuilder().SetConsumerId(consumerId).SetIsActive(isActive);
 
 			var change = changeBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ActiveConsumerChange).SetActiveConsumerChange(change));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.ActiveConsumerChange).SetActiveConsumerChange(change));
 			changeBuilder.Recycle();
 			change.Recycle();
 			return res;
@@ -480,7 +480,7 @@ namespace SharpPulsar.Protocol
 			seekBuilder.SetMessageId(messageId);
 
 			var seek = seekBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Seek).SetSeek(seek));
 			
 			return res;
 		}
@@ -494,7 +494,7 @@ namespace SharpPulsar.Protocol
 			seekBuilder.SetMessagePublishTime(timestamp);
 
 			var seek = seekBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Seek).SetSeek(seek));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Seek).SetSeek(seek));
 
 			return res;
 		}
@@ -505,7 +505,7 @@ namespace SharpPulsar.Protocol
 			closeConsumerBuilder.SetConsumerId(consumerId);
 			closeConsumerBuilder.SetRequestId(requestId);
 			var closeConsumer = closeConsumerBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseConsumer).SetCloseConsumer(closeConsumer));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.CloseConsumer).SetCloseConsumer(closeConsumer));
 			closeConsumerBuilder.Recycle();
 			closeConsumer.Recycle();
 			return res;
@@ -516,7 +516,7 @@ namespace SharpPulsar.Protocol
 			var reachedEndOfTopicBuilder = CommandReachedEndOfTopic.NewBuilder();
 			reachedEndOfTopicBuilder.SetConsumerId(consumerId);
 			var reachedEndOfTopic = reachedEndOfTopicBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.ReachedEndOfTopic).SetReachedEndOfTopic(reachedEndOfTopic));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.ReachedEndOfTopic).SetReachedEndOfTopic(reachedEndOfTopic));
 			reachedEndOfTopicBuilder.Recycle();
 			reachedEndOfTopic.Recycle();
 			return res;
@@ -528,7 +528,7 @@ namespace SharpPulsar.Protocol
 			closeProducerBuilder.SetProducerId(producerId);
 			closeProducerBuilder.SetRequestId(requestId);
 			var closeProducer = closeProducerBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.CloseProducer).SetCloseProducer(closeProducerBuilder));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.CloseProducer).SetCloseProducer(closeProducerBuilder));
 			closeProducerBuilder.Recycle();
 			closeProducer.Recycle();
 			return res;
@@ -610,7 +610,7 @@ namespace SharpPulsar.Protocol
 			}
 
 			var producer = producerBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Producer).SetProducer(producer));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Producer).SetProducer(producer));
 			producerBuilder.Recycle();
 			producer.Recycle();
 			return res;
@@ -622,7 +622,7 @@ namespace SharpPulsar.Protocol
 			partitionMetadataBuilder.SetTopic(topic);
 			partitionMetadataBuilder.SetRequestId(requestId);
 			var partitionMetadata = partitionMetadataBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.PartitionedMetadata).SetPartitionMetadata(partitionMetadata));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.PartitionedMetadata).SetPartitionMetadata(partitionMetadata));
 			partitionMetadataBuilder.Recycle();
 			partitionMetadata.Recycle();
 			return res;
@@ -635,7 +635,7 @@ namespace SharpPulsar.Protocol
 			lookupTopicBuilder.SetRequestId(requestId);
 			lookupTopicBuilder.SetAuthoritative(authoritative);
 			var lookupBroker = lookupTopicBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Lookup).SetLookupTopic(lookupBroker));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Lookup).SetLookupTopic(lookupBroker));
 			lookupTopicBuilder.Recycle();
 			lookupBroker.Recycle();
 			return res;
@@ -662,7 +662,7 @@ namespace SharpPulsar.Protocol
 
 			var ack = ackBuilder.Build();
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Ack).SetAck(ack));
 
 			return res;
 		}
@@ -700,7 +700,7 @@ namespace SharpPulsar.Protocol
 			}
 			var ack = ackBuilder.Build();
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ack).SetAck(ack));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Ack).SetAck(ack));
 			
 			return res;
 		}
@@ -712,7 +712,7 @@ namespace SharpPulsar.Protocol
 			flowBuilder.SetMessagePermits(messagePermits);
 			var flow = flowBuilder.Build();
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Flow).SetFlow(flowBuilder));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Flow).SetFlow(flowBuilder));
 			
 			return res;
 		}
@@ -722,7 +722,7 @@ namespace SharpPulsar.Protocol
 			var redeliverBuilder = CommandRedeliverUnacknowledgedMessages.NewBuilder();
 			redeliverBuilder.SetConsumerId(consumerId);
 			var redeliver = redeliverBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
 			
 			return res;
 		}
@@ -733,7 +733,7 @@ namespace SharpPulsar.Protocol
 			redeliverBuilder.SetConsumerId(consumerId);
 			redeliverBuilder.AddAllMessageIds(messageIds);
 			var redeliver = redeliverBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.RedeliverUnacknowledgedMessages).SetRedeliverUnacknowledgedMessages(redeliverBuilder));
 		    return res;
 		}
 
@@ -743,7 +743,7 @@ namespace SharpPulsar.Protocol
 			topicsBuilder.SetNamespace(@namespace).SetRequestId(requestId).SetMode(mode);
 
 			var topicsCommand = topicsBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(topicsCommand));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(topicsCommand));
 			topicsBuilder.Recycle();
 			topicsCommand.Recycle();
 			return res;
@@ -752,10 +752,10 @@ namespace SharpPulsar.Protocol
 
 		static Commands()
 		{
-			var serializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Ping).SetPing(CommandPing.DefaultInstance));
+			var serializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Ping).SetPing(CommandPing.DefaultInstance));
 			CmdPing = Unpooled.CopiedBuffer(serializedCmdPing);
 			serializedCmdPing.Release();
-			var serializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.Pong).SetPong(CommandPong.DefaultInstance));
+			var serializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Pong).SetPong(CommandPong.DefaultInstance));
 			CmdPong = Unpooled.CopiedBuffer(serializedCmdPong);
 			serializedCmdPong.Release();
 		}
@@ -778,7 +778,7 @@ namespace SharpPulsar.Protocol
 			var cmdBuilder = CommandGetLastMessageId.NewBuilder();
 			cmdBuilder.SetConsumerId(consumerId).SetRequestId(requestId);
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetLastMessageId).SetGetLastMessageId(cmdBuilder.Build()));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetLastMessageId).SetGetLastMessageId(cmdBuilder.Build()));
 			cmdBuilder.Recycle();
 			return res;
 		}
@@ -794,7 +794,7 @@ namespace SharpPulsar.Protocol
 
 			var getSchema = schema.Build();
 
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetSchema).SetGetSchema(getSchema));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetSchema).SetGetSchema(getSchema));
 			schema.Recycle();
 			return res;
 		}
@@ -802,7 +802,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
 		{
 			var getOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(requestId).SetTopic(topic).SetSchema(GetSchema(schemaInfo).ToBuilder()).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.GetOrCreateSchema).SetGetOrCreateSchema(getOrCreateSchema));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetOrCreateSchema).SetGetOrCreateSchema(getOrCreateSchema));
 			getOrCreateSchema.Recycle();
 			return res;
 		}
@@ -812,7 +812,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewTxn(long tcId, long requestId, long ttlSeconds)
 		{
 			var commandNewTxn = CommandNewTxn.NewBuilder().SetTcId(tcId).SetRequestId(requestId).SetTxnTtlSeconds(ttlSeconds).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.NewTxn).SetNewTxn(commandNewTxn));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.NewTxn).SetNewTxn(commandNewTxn));
 			commandNewTxn.Recycle();
 			return res;
 		}
@@ -820,7 +820,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits)
 		{
 			var commandAddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddPartitionToTxn).SetAddPartitionToTxn(commandAddPartitionToTxn));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AddPartitionToTxn).SetAddPartitionToTxn(commandAddPartitionToTxn));
 			commandAddPartitionToTxn.Recycle();
 			return res;
 		}
@@ -828,7 +828,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewAddSubscriptionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, IList<Subscription> subscription)
 		{
 			var commandAddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).AddAllSubscription(subscription).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(commandAddSubscriptionToTxn));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(commandAddSubscriptionToTxn));
 			commandAddSubscriptionToTxn.Recycle();
 			return res;
 		}
@@ -836,7 +836,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
 		{
 			var commandEndTxn = CommandEndTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTxnAction(txnAction).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxn).SetEndTxn(commandEndTxn));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxn).SetEndTxn(commandEndTxn));
 			commandEndTxn.Recycle();
 			return res;
 		}
@@ -844,7 +844,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction)
 		{
 			var txnEndOnPartition = CommandEndTxnOnPartition.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTopic(topic).SetTxnAction(txnAction);
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnPartition).SetEndTxnOnPartition(txnEndOnPartition));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxnOnPartition).SetEndTxnOnPartition(txnEndOnPartition));
 			txnEndOnPartition.Recycle();
 			return res;
 		}
@@ -853,7 +853,7 @@ namespace SharpPulsar.Protocol
 		public static IByteBuffer NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction)
 		{
 			var commandEndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetSubscription(subscription).SetTxnAction(txnAction).Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Types.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(commandEndTxnOnSubscription));
+			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(commandEndTxnOnSubscription));
 			commandEndTxnOnSubscription.Recycle();
 			return res;
 		}

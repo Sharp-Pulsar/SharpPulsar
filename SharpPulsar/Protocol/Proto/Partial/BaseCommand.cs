@@ -29,7 +29,7 @@ namespace SharpPulsar.Protocol.Proto
                 return _base;
             }
 			
-			public Builder SetType(Types.Type value)
+			public Builder SetType(Type value)
             {
                 _base.Type = value;
                 return this;
