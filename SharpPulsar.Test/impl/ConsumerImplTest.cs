@@ -127,7 +127,7 @@ namespace SharpPulsar.Test.Impl
 		public void TestNotifyPendingReceivedCallbackInterceptorsWorksWithPrefetchDisabled()
 		{
             var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
-			var message = A.Fake<MessageImpl<sbyte[]>>(); 
+			var message = A.Fake<Message<sbyte[]>>(); 
 
 			_consumer.PendingReceives.Enqueue(receiveTask);
 
@@ -146,7 +146,7 @@ namespace SharpPulsar.Test.Impl
 		public  void TestNotifyPendingReceivedCallbackWorkNormally()
 		{
             var receiveTask = new TaskCompletionSource<IMessage<sbyte[]>>();
-            var message = A.Fake<MessageImpl<sbyte[]>>();
+            var message = A.Fake<Message<sbyte[]>>();
 
             _consumer.PendingReceives.Enqueue(receiveTask);
 			A.CallTo(()=> _consumer.BeforeConsume(A<IMessage<sbyte[]>>._)).Returns(message);

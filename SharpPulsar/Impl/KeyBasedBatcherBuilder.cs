@@ -23,7 +23,6 @@ namespace SharpPulsar.Impl
 	using IBatchMessageContainer = Api.IBatchMessageContainer;
 	using IBatcherBuilder = Api.IBatcherBuilder;
 
-	[Serializable]
 	public class KeyBasedBatcherBuilder : IBatcherBuilder
 	{
 

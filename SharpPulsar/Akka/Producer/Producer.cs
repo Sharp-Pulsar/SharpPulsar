@@ -202,7 +202,7 @@ namespace SharpPulsar.Akka.Producer
                 }
 
                 var message = builder.Message;
-                Become(() => InternalSend((MessageImpl)message));
+                Become(() => InternalSend((Message)message));
             }
             catch (Exception e)
             {
@@ -332,7 +332,7 @@ namespace SharpPulsar.Akka.Producer
             }
         }
 
-        private void TryRegisterSchema(MessageImpl msg)
+        private void TryRegisterSchema(Message msg)
         {
             var m = msg;
             Receive<GetOrCreateSchemaServerResponse>(r =>
@@ -343,7 +343,7 @@ namespace SharpPulsar.Akka.Producer
                     _schemaCache[schemaHash] = r.SchemaVersion;
                 }
                 m.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(r.SchemaVersion));
-                m.SetSchemaState(MessageImpl.SchemaState.Ready);
+                m.SetSchemaState(Message.SchemaState.Ready);
                 Become(() => SendMessage(m));
             });
             ReceiveAny(_ => Stash.Stash());
@@ -370,10 +370,10 @@ namespace SharpPulsar.Akka.Producer
             _pendingLookupRequests.Add(requestId, payload);
         }
 
-        public void InternalSend(MessageImpl message)
+        public void InternalSend(Message message)
         {
             ReceiveAny(x => Stash.Stash());
-            var interceptorMessage = (MessageImpl)BeforeSend(message);
+            var interceptorMessage = (Message)BeforeSend(message);
             interceptorMessage.DataBuffer.Retain();
             if (_producerInterceptor != null)
             {
@@ -382,7 +382,7 @@ namespace SharpPulsar.Akka.Producer
 
             SendMessage(interceptorMessage);
         }
-        private void SendMessage(MessageImpl msg)
+        private void SendMessage(Message msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
             var payload = msg.DataBuffer;
@@ -495,7 +495,7 @@ namespace SharpPulsar.Akka.Producer
                     var numMessages = msg.MessageBuilder.HasNumMessagesInBatch() ? msg.MessageBuilder.NumMessagesInBatch : 1;
                     OpSendMsg op = null;
                     var schemaState = msg.GetSchemaState();
-                    if (schemaState == MessageImpl.SchemaState.Ready)
+                    if (schemaState == Message.SchemaState.Ready)
                     {
                         var msgMetadata = msgMetadataBuilder.Build();
                         var cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
@@ -521,7 +521,7 @@ namespace SharpPulsar.Akka.Producer
                 Sender.Tell(new ErrorMessage(e));
             }
         }
-        private void DoBatchSendAndAdd(MessageImpl msg, IReferenceCounted payload)
+        private void DoBatchSendAndAdd(Message msg, IReferenceCounted payload)
         {
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
@@ -630,7 +630,7 @@ namespace SharpPulsar.Akka.Producer
             var pay = new Payload(op.Cmd.Array, requestId, "CommandMessage");
             _broker.Tell(pay);
         }
-        private bool PopulateMessageSchema(MessageImpl msg)
+        private bool PopulateMessageSchema(Message msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
             var schemaHash = SchemaHash.Of(msg.Schema);
@@ -639,7 +639,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 if (schemaVersion != null)
                     msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
-                msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+                msg.SetSchemaState(Message.SchemaState.Ready);
                 return true;
             }
             if (!IsMultiSchemaEnabled(true))
@@ -650,10 +650,10 @@ namespace SharpPulsar.Akka.Producer
 
             if (schemaVersion == null) return true;
             msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
-            msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+            msg.SetSchemaState(Message.SchemaState.Ready);
             return true;
         }
-        private bool RePopulateMessageSchema(MessageImpl msg)
+        private bool RePopulateMessageSchema(Message msg)
         {
             var schemaHash = SchemaHash.Of(msg.Schema);
             var schemaVersion = _schemaCache[schemaHash];
@@ -662,7 +662,7 @@ namespace SharpPulsar.Akka.Producer
                 return false;
             }
             msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
-            msg.SetSchemaState(MessageImpl.SchemaState.Ready);
+            msg.SetSchemaState(Message.SchemaState.Ready);
             return true;
         }
         private IByteBuffer EncryptMessage(MessageMetadata.Builder msgMetadata, IByteBuffer compressedPayload)
@@ -686,12 +686,12 @@ namespace SharpPulsar.Akka.Producer
             }
             return encryptedPayload;
         }
-        private bool CanAddToBatch(MessageImpl msg)
+        private bool CanAddToBatch(Message msg)
         {
-            return msg.GetSchemaState() == MessageImpl.SchemaState.Ready && _configuration.BatchingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
+            return msg.GetSchemaState() == Message.SchemaState.Ready && _configuration.BatchingEnabled && !msg.MessageBuilder.HasDeliverAtTime();
         }
 
-        private bool CanAddToCurrentBatch(MessageImpl msg)
+        private bool CanAddToCurrentBatch(Message msg)
         {
             return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
         }

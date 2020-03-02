@@ -6,15 +6,15 @@ namespace SharpPulsar.Impl
 {
     public sealed class OpSendMsg
     {
-        internal MessageImpl Msg;
-        internal IList<MessageImpl> Msgs;
+        internal Message Msg;
+        internal IList<Message> Msgs;
         internal IByteBuffer Cmd;
         internal ThreadStart RePopulate;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
 
-        internal static OpSendMsg Create(MessageImpl msg, IByteBuffer cmd, long sequenceId)
+        internal static OpSendMsg Create(Message msg, IByteBuffer cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -23,7 +23,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<MessageImpl> msgs, IByteBuffer cmd, long sequenceId)
+        internal static OpSendMsg Create(IList<Message> msgs, IByteBuffer cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<MessageImpl> msgs, IByteBuffer cmd, long lowestSequenceId, long highestSequenceId)
+        internal static OpSendMsg Create(IList<Message> msgs, IByteBuffer cmd, long lowestSequenceId, long highestSequenceId)
         {
             var op = new OpSendMsg
             {
@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
         {
             if (Msg != null)
             {
-                Msg.SetMessageId(new MessageIdImpl(ledgerId, entryId, partitionIndex));
+                Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex));
             }
             else
             {

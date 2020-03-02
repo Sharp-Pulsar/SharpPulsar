@@ -263,7 +263,7 @@ namespace SharpPulsar.Impl
 			get
 			{
 				BeforeSend();
-				return MessageImpl.Create(Builder, Content, _schema);
+				return Impl.Message.Create(Builder, Content, _schema);
 			}
 		}
 

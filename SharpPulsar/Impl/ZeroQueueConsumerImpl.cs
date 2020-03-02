@@ -92,7 +92,7 @@ namespace SharpPulsar.Impl
 				{
 					message = IncomingMessages.Take();
 					LastDequeuedMessage = message.MessageId;
-					var msgCnx = ((MessageImpl) message).Cnx;
+					var msgCnx = ((Message) message).Cnx;
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					lock (this)
 					{

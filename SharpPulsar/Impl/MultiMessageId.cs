@@ -28,11 +28,11 @@ namespace SharpPulsar.Impl
 	/// This is useful when MessageId is need for partition/multi-topics/pattern consumer.
 	/// e.g. seek(), ackCumulative(), getLastMessageId().
 	/// </summary>
-	public class MultiMessageIdImpl : IMessageId
+	public class MultiMessageId : IMessageId
 	{
 		private readonly IDictionary<string, IMessageId> _map;
 
-		public MultiMessageIdImpl(IDictionary<string, IMessageId> map)
+		public MultiMessageId(IDictionary<string, IMessageId> map)
 		{
 			this._map = map;
 		}
@@ -52,12 +52,12 @@ namespace SharpPulsar.Impl
 		// If all messageId in map are same size, and all bigger/smaller than the other, return valid value.
 		public int CompareTo(IMessageId o)
 		{
-			if (!(o is MultiMessageIdImpl))
+			if (!(o is MultiMessageId))
 			{
 				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + o.GetType().FullName);
 			}
 
-			var other = (MultiMessageIdImpl) o;
+			var other = (MultiMessageId) o;
 			var otherMap = other._map;
 
 			if ((_map == null || _map.Count == 0) && (otherMap == null || otherMap.Count == 0))
@@ -103,12 +103,12 @@ namespace SharpPulsar.Impl
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is MultiMessageIdImpl))
+			if (!(obj is MultiMessageId))
 			{
 				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + obj.GetType().FullName);
 			}
 
-			var other = (MultiMessageIdImpl) obj;
+			var other = (MultiMessageId) obj;
 
 			try
 			{

@@ -46,9 +46,9 @@ namespace SharpPulsar.Impl
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private IByteBuffer _batchedMessageMetadataAndPayload;
-		private IList<MessageImpl> _messages = new List<MessageImpl>();
+		private IList<Message> _messages = new List<Message>();
 
-        public override bool HasSameSchema(MessageImpl msg)
+        public override bool HasSameSchema(Message msg)
         {
 			if (NumMessagesInBatch == 0)
             {
@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
             return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-        public override (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg)
+        public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)
 		{
 
 			if (Log.IsEnabled(LogLevel.Debug))
@@ -139,13 +139,13 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-        public List<MessageImpl> Messages => _messages.ToList();
+        public List<Message> Messages => _messages.ToList();
         public MessageMetadata.Builder Metadata => _messageMetadata;
         public int GetNumMessagesInBatch => NumMessagesInBatch;
         public long HighestSequenceId => _highestSequenceId;
 		public override void Clear()
 		{
-			_messages = new List<MessageImpl>();
+			_messages = new List<Message>();
 			_messageMetadata = MessageMetadata.NewBuilder();
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;

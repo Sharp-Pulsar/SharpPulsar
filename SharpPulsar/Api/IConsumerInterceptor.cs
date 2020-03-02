@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Akka.Actor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -76,7 +77,7 @@ namespace SharpPulsar.Api
 		/// <param name="message"> the message to be consumed by the client. </param>
 		/// <returns> message that is either modified by the interceptor or same message
 		///         passed into the method. </returns>
-		IMessage BeforeConsume(IConsumer consumer, IMessage message);
+		IMessage BeforeConsume(IActorRef consumer, IMessage message);
 
 		/// <summary>
 		/// This is called consumer sends the acknowledgment to the broker.
@@ -88,7 +89,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledge(string consumer, IMessageId messageId, Exception exception);
+		void OnAcknowledge(IActorRef consumer, IMessageId messageId, Exception exception);
 
 		/// <summary>
 		/// This is called consumer send the cumulative acknowledgment to the broker.
@@ -100,7 +101,7 @@ namespace SharpPulsar.Api
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(string consumer, IMessageId messageId, System.Exception exception);
+		void OnAcknowledgeCumulative(IActorRef consumer, IMessageId messageId, System.Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.
@@ -111,7 +112,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnNegativeAcksSend(string consumer, ISet<IMessageId> messageIds);
+		void OnNegativeAcksSend(IActorRef consumer, ISet<IMessageId> messageIds);
 
 		/// <summary>
 		/// This method will be called when a redelivery from an acknowledge timeout occurs.
@@ -122,7 +123,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
-		void OnAckTimeoutSend(string consumer, ISet<IMessageId> messageIds);
+		void OnAckTimeoutSend(IActorRef consumer, ISet<IMessageId> messageIds);
 	}
 
 }

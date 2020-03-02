@@ -34,8 +34,8 @@ namespace SharpPulsar.Impl
 		public abstract void Discard(System.Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool HasSameSchema(MessageImpl msg);
-		public abstract (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg);
+		public abstract bool HasSameSchema(Message msg);
+		public abstract (long LastSequenceIdPushed, bool BatchFul) Add(Message msg);
 
 		protected internal ICompressionType CompressionType;
 		protected internal CompressionCodec Compressor;
@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		protected internal int MaxBatchSize = InitialBatchBufferSize;
         
-		public bool HaveEnoughSpace(MessageImpl msg)
+		public bool HaveEnoughSpace(Message msg)
 		{
 			var messageSize = msg.DataBuffer.ReadableBytes;
 			return ((MaxBytesInBatch <= 0 && (messageSize + CurrentBatchSizeBytes) <= ClientCnx.MaxMessageSize) || (MaxBytesInBatch > 0 && (messageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || _numMessagesInBatch < MaxNumMessagesInBatch);

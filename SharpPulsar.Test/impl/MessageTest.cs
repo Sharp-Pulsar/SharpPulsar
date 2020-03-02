@@ -37,7 +37,7 @@ namespace SharpPulsar.Test.Impl
 			var @from = "ClusterNameOfReplicatedFrom";
 			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
 			var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.True(msg.Replicated);
 			Assert.Equal(@from, msg.ReplicatedFrom);
@@ -47,7 +47,7 @@ namespace SharpPulsar.Test.Impl
 		{
 			var builder = MessageMetadata.NewBuilder();
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.False(msg.Replicated);
 			Assert.True(msg.ReplicatedFrom.Length == 0);
@@ -59,8 +59,8 @@ namespace SharpPulsar.Test.Impl
 			var topicName = "myTopic";
 			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
-			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
+			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
 
 			Assert.True(topicMessage.Replicated);
@@ -72,8 +72,8 @@ namespace SharpPulsar.Test.Impl
 			var topicName = "myTopic";
 			var builder = MessageMetadata.NewBuilder();
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
-			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
+			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
 
 			Assert.False(topicMessage.Replicated);

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Net;
 using Akka.Actor;
 using Akka.Event;
@@ -26,6 +28,7 @@ namespace SharpPulsar.Akka.Network
         protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
         private readonly long _keepAliveIntervalSeconds;
         public IActorRef Connection;
+        private Dictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new Dictionary<long, KeyValuePair<IActorRef, Payload>>();
 
         public  int MaxMessageSize = Commands.DefaultMaxMessageSize;
 
@@ -129,6 +132,7 @@ namespace SharpPulsar.Akka.Network
                 }
                 else if (message is Payload p)   // data received from producer/consumer
                 {
+                    _requests.Add(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                     connection.Tell(Tcp.Write.Create(ByteString.FromBytes(p.Bytes)));
                 }
                 else if (message is IByteBuffer b)   // data received from self
@@ -162,6 +166,12 @@ namespace SharpPulsar.Akka.Network
 
 				switch (cmd.Type)
 				{
+                    case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
+                        var ns = cmd.GetTopicsOfNamespaceResponse;
+                        var requestid = (long) ns.RequestId;
+                        _requests[requestid].Key.Tell(new NamespaceTopics(requestid, ns.Topics.ToList()));
+                        _requests.Remove(requestid);
+                        break;
                     case BaseCommand.Types.Type.Message:
                         var msg = cmd.Message;
                         _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.LedgerId, (long)msg.MessageId.EntryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer, (int)msg.RedeliveryCount));
@@ -169,6 +179,7 @@ namespace SharpPulsar.Akka.Network
                     case BaseCommand.Types.Type.Success:
                         var s = cmd.Success;
                         _manager.Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.HasSchema));
+                        _requests.Remove((long)s.RequestId);
                         break;
                     case BaseCommand.Types.Type.SendReceipt:
                         var send = cmd.SendReceipt;
@@ -177,21 +188,28 @@ namespace SharpPulsar.Akka.Network
                     case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
                         var res = cmd.GetOrCreateSchemaResponse;
                         _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion.ToByteArray()));
+                        _requests.Remove((long)res.RequestId);
                         break;
                     case BaseCommand.Types.Type.ProducerSuccess:
                         var p = cmd.ProducerSuccess;
                         _manager.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion.ToByteArray()));
+                        _requests.Remove((long)p.RequestId);
                         break;
                     case BaseCommand.Types.Type.GetSchemaResponse:
                         var schema = cmd.GetSchemaResponse.Schema;
                         _manager.Tell(new SchemaResponse(schema.SchemaData.ToByteArray(), schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.Type, (long)cmd.GetSchemaResponse.RequestId));
+                        _requests.Remove((long)cmd.GetSchemaResponse.RequestId);
                         break;
                     case BaseCommand.Types.Type.LookupResponse:
                         var m = cmd.LookupTopicResponse;
                         _manager.Tell(new BrokerLookUp(m.Message, m.Authoritative, m.Response, m.BrokerServiceUrl, m.BrokerServiceUrlTls, (long)m.RequestId));
+                        _requests.Remove((long)m.RequestId);
                         break;
                     case BaseCommand.Types.Type.PartitionedMetadataResponse:
-                        _manager.Tell(new Partitions((int)cmd.PartitionMetadataResponse.Partitions, (long)cmd.PartitionMetadataResponse.RequestId));
+                        var part = cmd.PartitionMetadataResponse;
+                        var rPay = _requests[(long)part.RequestId];
+                        rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
+                        _requests.Remove((long)part.RequestId);
                         break;
                     case BaseCommand.Types.Type.Ping:
 						if (cmd.HasPing)

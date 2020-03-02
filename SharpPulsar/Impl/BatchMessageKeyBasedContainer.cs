@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl
 
 		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
 
-		public override (long LastSequenceIdPushed, bool BatchFul) Add(MessageImpl msg)
+		public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl
 
 		public override bool MultiBatches => true;
 
-		public override bool HasSameSchema(MessageImpl msg)
+		public override bool HasSameSchema(Message msg)
 		{
 			var key = GetKey(msg);
 			var part = _batches[key];
@@ -117,7 +117,7 @@ namespace SharpPulsar.Impl
 			return Equals(msg.SchemaVersion, part.MessageMetadata.GetSchemaVersion().ToByteArray());
 		}
 
-		private string GetKey(MessageImpl msg)
+		private string GetKey(Message msg)
 		{
 			if (msg.HasOrderingKey())
 			{
@@ -133,7 +133,7 @@ namespace SharpPulsar.Impl
 			internal long SequenceId = -1;
 			internal IByteBuffer BatchedMessageMetadataAndPayload;
 
-			internal IList<MessageImpl> Messages = new List<MessageImpl>();
+			internal IList<Message> Messages = new List<Message>();
 			internal SendCallback PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
@@ -170,7 +170,7 @@ namespace SharpPulsar.Impl
 				}
 			}
 
-			public virtual void AddMsg(MessageImpl msg)
+			public virtual void AddMsg(Message msg)
 			{
 				if (Messages.Count == 0)
 				{
@@ -201,7 +201,7 @@ namespace SharpPulsar.Impl
 
 			public virtual void Clear()
 			{
-				Messages = new List<MessageImpl>();
+				Messages = new List<Message>();
 				PreviousCallback = null;
 				MessageMetadata = Protocol.Proto.MessageMetadata.Builder.Create();
 				SequenceId = -1;

@@ -22,11 +22,8 @@ using SharpPulsar.Api;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-
-	[Serializable]
 	public class ConsumerStatsDisabled : ConsumerStatsRecorder
 	{
-		private const long SerialVersionUid = 1L;
 
 		internal static readonly ConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
 

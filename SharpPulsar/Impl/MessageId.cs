@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using DotNetty.Buffers;
+using Google.Protobuf;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Proto;
@@ -26,19 +27,18 @@ using SharpPulsar.Utility.Protobuf;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	[Serializable]
-	public class MessageIdImpl : IMessageId
+	public class MessageId : IMessageId
 	{
 		private  readonly long _ledgerId;
 		private readonly long _entryId;
 		private readonly int _partitionIndex;
 
 		// Private constructor used only for json deserialization
-		private MessageIdImpl() : this(-1, -1, -1)
+		private MessageId() : this(-1, -1, -1)
 		{
 		}
 
-		public MessageIdImpl(long ledgerId, long entryId, int partitionIndex)
+		public MessageId(long ledgerId, long entryId, int partitionIndex)
 		{
 			_ledgerId = ledgerId;
 			_entryId = entryId;
@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
                 return other1.Equals(this);
 			}
 
-            if (obj is MessageIdImpl other)
+            if (obj is MessageId other)
             {
                 return _ledgerId == other._ledgerId && _entryId == other._entryId && _partitionIndex == other._partitionIndex;
             }
@@ -81,32 +81,29 @@ namespace SharpPulsar.Impl
 		{
 			if(data == null)
 				throw new ArgumentException();
-			var inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
+			var inputStream = new CodedInputStream((byte[])(object)data);
 			var builder = MessageIdData.NewBuilder();
 
-			MessageIdData idData;
+            MessageIdData idData = builder.Build();
 			try
 			{
-				idData = ((MessageIdData.Builder)builder.MergeFrom(inputStream, null)).Build();
+                idData.MergeFrom(inputStream);
 			}
 			catch (System.Exception e)
 			{
 				throw e;
 			}
 
-			MessageIdImpl messageId;
+			MessageId messageId;
 			if (idData.HasBatchIndex)
 			{
 				messageId = new BatchMessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
+				messageId = new MessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
 			}
 
-			inputStream.Recycle();
-			builder.Recycle();
-			idData.Recycle();
 			return messageId;
 		}
 
@@ -119,13 +116,13 @@ namespace SharpPulsar.Impl
 		{
             if (data == null)
                 throw new ArgumentException();
-			var inputStream = ByteBufCodedInputStream.Get(Unpooled.WrappedBuffer((byte[])(object)data, 0, data.Length));
-			var builder = MessageIdData.NewBuilder();
+            var inputStream = new CodedInputStream((byte[])(object)data);
+            var builder = MessageIdData.NewBuilder();
 
-			MessageIdData idData;
+            MessageIdData idData = builder.Build();
 			try
 			{
-				idData = ((MessageIdData.Builder)builder.MergeFrom(inputStream, null)).Build();
+				idData.MergeFrom(inputStream);
 			}
             catch (System.Exception e)
             {
@@ -139,7 +136,7 @@ namespace SharpPulsar.Impl
 			}
 			else
 			{
-				messageId = new MessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
+				messageId = new MessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
 			}
 			if (idData.Partition > -1 && topicName != null)
 			{
@@ -147,9 +144,6 @@ namespace SharpPulsar.Impl
 				messageId = new TopicMessageIdImpl(t.GetPartition(idData.Partition).ToString(), topicName.ToString(), messageId);
 			}
 
-			inputStream.Recycle();
-			builder.Recycle();
-			idData.Recycle();
 			return messageId;
 		}
 
@@ -170,12 +164,12 @@ namespace SharpPulsar.Impl
 			}
 
 			var msgId = builder.Build();
-			var size = msgId.SerializedSize;
+			var size = msgId.CalculateSize();
 			var serialized = Unpooled.Buffer(size, size);
-			var stream = ByteBufCodedOutputStream.Get(serialized);
+			var stream = new CodedOutputStream(serialized.Array);
 			try
 			{
-				msgId.WriteTo(stream);
+				msgId.WriteTo((CodedOutputStream) stream);
 			}
 			catch (IOException e)
 			{
@@ -183,9 +177,6 @@ namespace SharpPulsar.Impl
 				throw new System.Exception(e.Message);
 			}
 
-			msgId.Recycle();
-			builder.Recycle();
-			stream.Recycle();
 			return (sbyte[])(object)serialized.Array;
 		}
 
@@ -198,7 +189,7 @@ namespace SharpPulsar.Impl
 		public int CompareTo(IMessageId o)
 		{
 			//Needs more 
-			if (o is MessageIdImpl other)
+			if (o is MessageId other)
             {
                 if ((_entryId > other.EntryId) && (_ledgerId > other.LedgerId) && (_partitionIndex > other.PartitionIndex))
                 {

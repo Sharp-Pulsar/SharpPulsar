@@ -28,7 +28,7 @@ namespace SharpPulsar.Test.Api
 		[Fact]
 		public void MessageIdTestConflict()
 		{
-			IMessageId mId = new MessageIdImpl(1, 2, 3);
+			IMessageId mId = new MessageId(1, 2, 3);
 			Assert.Equal("1:2:3", mId.ToString());
 
 			mId = new BatchMessageIdImpl(0, 2, 3, 4);
@@ -37,7 +37,7 @@ namespace SharpPulsar.Test.Api
 			mId = new BatchMessageIdImpl(-1, 2, -3, 4);
             Assert.Equal("-1:2:-3:4", mId.ToString());
 
-			mId = new MessageIdImpl(0, -23, 3);
+			mId = new MessageId(0, -23, 3);
             Assert.Equal("0:-23:3", mId.ToString());
 		}
 	}

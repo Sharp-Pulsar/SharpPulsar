@@ -23,7 +23,7 @@ using SharpPulsar.Api;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public class MessagesImpl : IMessages
+	public class Messages : IMessages
 	{
 
 		private IList<IMessage> _messageList;
@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
 		private int _currentNumberOfMessages;
 		private long _currentSizeOfMessages;
 
-		public MessagesImpl(int maxNumberOfMessages, long maxSizeOfMessages)
+		public Messages(int maxNumberOfMessages, long maxSizeOfMessages)
 		{
 			this._maxNumberOfMessages = maxNumberOfMessages;
 			this._maxSizeOfMessages = maxSizeOfMessages;

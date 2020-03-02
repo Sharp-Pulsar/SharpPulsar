@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Akka.Actor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,7 +57,7 @@ namespace SharpPulsar.Impl
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> the message from client </param>
 		/// <returns> the message to send to topic/partition </returns>
-		public IMessage BeforeSend(IProducer producer, IMessage message)
+		public IMessage BeforeSend(IActorRef producer, IMessage message)
 		{
 			var interceptorMessage = message;
 			foreach (var interceptor in _interceptors)
@@ -71,14 +72,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					if (producer != null)
-					{
-						Log.LogWarning("Error executing interceptor beforeSend callback for topicName:{} ", producer.Topic, e);
-					}
-					else
-					{
-						Log.LogWarning("Error Error executing interceptor beforeSend callback ", e);
-					}
+                    Log.LogWarning("Error Error executing interceptor beforeSend callback ", e);
 				}
 			}
 			return interceptorMessage;
@@ -96,7 +90,7 @@ namespace SharpPulsar.Impl
 		/// <param name="message"> The message returned from the last interceptor is returned from <seealso cref="ProducerInterceptor.beforeSend(Producer, IMessage)"/> </param>
 		/// <param name="msgId"> The message id that broker returned. Null if has error occurred. </param>
 		/// <param name="exception"> The exception thrown during processing of this message. Null if no error occurred. </param>
-		public void OnSendAcknowledgement(IProducer producer, IMessage message, IMessageId msgId, System.Exception exception)
+		public void OnSendAcknowledgement(IActorRef producer, IMessage message, IMessageId msgId, System.Exception exception)
 		{
 			foreach (var interceptor in _interceptors)
 			{
@@ -115,25 +109,7 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void Close()
-		{
-			foreach (var interceptor in _interceptors)
-			{
-				try
-				{
-					interceptor.Close();
-				}
-				catch (System.Exception e)
-				{
-					Log.LogError("Fail to close producer interceptor ", e);
-				}
-			}
-		}
-
-		public void Dispose()
-		{
-			throw new NotImplementedException();
-		}
+		
 	}
 
 }

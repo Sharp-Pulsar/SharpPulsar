@@ -34,6 +34,6 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     {
         Single,
         Multi,
-        Partitioned
+        Pattern
     }
 }

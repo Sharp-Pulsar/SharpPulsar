@@ -21,7 +21,6 @@ using SharpPulsar.Api;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	[Serializable]
 	public class ProducerStatsDisabled : IProducerStatsRecorder
 	{
 		private const long SerialVersionUid = 1L;

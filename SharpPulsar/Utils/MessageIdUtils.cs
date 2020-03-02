@@ -21,13 +21,13 @@ using SharpPulsar.Api;
 
 namespace SharpPulsar.Utils
 {
-    using MessageIdImpl = Impl.MessageIdImpl;
+    using MessageId = Impl.MessageId;
 
 	public class MessageIdUtils
 	{
 		public static long GetOffset(IMessageId messageId)
 		{
-			var msgId = (MessageIdImpl) messageId;
+			var msgId = (MessageId) messageId;
 			var ledgerId = msgId.LedgerId;
 			var entryId = msgId.EntryId;
 
@@ -44,7 +44,7 @@ namespace SharpPulsar.Utils
 			var ledgerId = (long)((ulong)offset >> 28);
 			var entryId = offset & 0x0F_FF_FF_FFL;
 
-			return new MessageIdImpl(ledgerId, entryId, -1);
+			return new MessageId(ledgerId, entryId, -1);
 		}
 	}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using Akka.Actor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -74,7 +75,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// <param name="producer"> the producer which contains the interceptor. </param>
 		/// <param name="message"> message to send </param>
 		/// <returns> the intercepted message </returns>
-		IMessage BeforeSend(string producer, IMessage message);
+		IMessage BeforeSend(IActorRef producer, IMessage message);
 
 		/// <summary>
 		/// This method is called when the message sent to the broker has been
@@ -95,7 +96,7 @@ namespace SharpPulsar.Api.Interceptor
 		/// <param name="message"> the message that application sends </param>
 		/// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
 		/// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
-		void OnSendAcknowledgement(string producer, IMessage message, IMessageId msgId, Exception exception);
+		void OnSendAcknowledgement(IActorRef producer, IMessage message, IMessageId msgId, Exception exception);
 	}
 
 }

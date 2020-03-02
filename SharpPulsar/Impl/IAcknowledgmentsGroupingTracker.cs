@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
 
 		bool IsDuplicate(IMessageId messageId);
 
-		void AddAcknowledgment(MessageIdImpl msgId, Types.AckType ackType, IDictionary<string, long> properties);
+		void AddAcknowledgment(MessageId msgId, Types.AckType ackType, IDictionary<string, long> properties);
 
 		void Flush();
 

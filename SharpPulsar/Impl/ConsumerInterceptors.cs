@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Akka.Actor;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 
@@ -27,7 +28,7 @@ namespace SharpPulsar.Impl
 	/// A container that hold the list <seealso cref="IConsumerInterceptor{T}"/> and wraps calls to the chain
 	/// of custom interceptors.
 	/// </summary>
-	public class ConsumerInterceptors : IDisposable
+	public class ConsumerInterceptors
     {
 
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerInterceptors));
@@ -57,7 +58,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="message"> message to be consume by the client. </param>
 		/// <returns> messages that are either modified by interceptors or same as messages passed to this method. </returns>
-		public virtual IMessage BeforeConsume(IConsumer consumer, IMessage message)
+		public virtual IMessage BeforeConsume(IActorRef consumer, IMessage message)
 		{
 			var interceptorMessage = message;
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
@@ -68,14 +69,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					if (consumer != null)
-					{
-						Log.LogWarning("Error executing interceptor beforeConsume callback topic: {} consumerName: {}", consumer.Topic, consumer.ConsumerName, e);
-					}
-					else
-					{
-                        Log.LogWarning("Error executing interceptor beforeConsume callback", e);
-					}
+                    Log.LogWarning("Error executing interceptor beforeConsume callback", e);
 				}
 			}
 			return interceptorMessage;
@@ -94,7 +88,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> message to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledge(IConsumer consumer, IMessageId messageId, System.Exception exception)
+		public virtual void OnAcknowledge(IActorRef consumer, IMessageId messageId, System.Exception exception)
 		{
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
@@ -122,7 +116,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="messageId"> messages to acknowledge. </param>
 		/// <param name="exception"> exception returned by broker. </param>
-		public virtual void OnAcknowledgeCumulative(IConsumer consumer, IMessageId messageId, System.Exception exception)
+		public virtual void OnAcknowledgeCumulative(IActorRef consumer, IMessageId messageId, System.Exception exception)
 		{
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
@@ -150,7 +144,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due a negative acknowledge. </param>
-		public virtual void OnNegativeAcksSend(IConsumer consumer, ISet<IMessageId> messageIds)
+		public virtual void OnNegativeAcksSend(IActorRef consumer, ISet<IMessageId> messageIds)
 		{
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
@@ -178,7 +172,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="consumer"> the consumer which contains the interceptors. </param>
 		/// <param name="messageIds"> set of message IDs being redelivery due an acknowledge timeout. </param>
-		public virtual void OnAckTimeoutSend(IConsumer consumer, ISet<IMessageId> messageIds)
+		public virtual void OnAckTimeoutSend(IActorRef consumer, ISet<IMessageId> messageIds)
 		{
 			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
 			{
@@ -193,25 +187,6 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public void Close()
-		{
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
-			{
-				try
-				{
-					_interceptors[i].Close();
-				}
-				catch (System.Exception e)
-				{
-					Log.LogError("Fail to close consumer interceptor ", e);
-				}
-			}
-		}
-
-        public void Dispose()
-        {
-           Close();
-        }
     }
 
 }

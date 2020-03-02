@@ -40,7 +40,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message sent </param>
 		/// <param name="scb"> callback associated with the message </param>
 		/// 
-		void AddCallback(MessageImpl Msg, SendCallback Scb);
+		void AddCallback(Message Msg, SendCallback Scb);
 
 		/// 
 		/// <returns> next callback in chain </returns>
@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 		/// Return next message in chain
 		/// </summary>
 		/// <returns> next message in chain </returns>
-		MessageImpl<object> NextMessage {get;}
+		Message<object> NextMessage {get;}
 
 		/// 
 		/// <returns> future associated with callback </returns>

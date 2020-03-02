@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Impl
 		{
 			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.Equal(msg.SequenceId, -1);
 		}
@@ -46,7 +46,7 @@ namespace SharpPulsar.Test.Impl
 			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().SetSequenceId(1234);
 
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.Equal(1234, msg.SequenceId);
 		}
@@ -56,7 +56,7 @@ namespace SharpPulsar.Test.Impl
 			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
 
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.Null(msg.ProducerName);
 		}
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Impl
 			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().SetProducerName("test-producer");
 
             var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = MessageImpl<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
 
 			Assert.Equal("test-producer", msg.ProducerName);
 		}

@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public class BatchMessageIdImpl : MessageIdImpl
+	public class BatchMessageIdImpl : MessageId
 	{
 		private const int NoBatch = -1;
 		public int BatchIndex {get;}
@@ -37,7 +37,7 @@ namespace SharpPulsar.Impl
 			Acker = acker;
 		}
 
-		public BatchMessageIdImpl(MessageIdImpl other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
+		public BatchMessageIdImpl(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
 			if (other is BatchMessageIdImpl otherId)
 			{
@@ -63,7 +63,7 @@ namespace SharpPulsar.Impl
                 return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
 			}
 
-            if (obj is MessageIdImpl other)
+            if (obj is MessageId other)
             {
                 return LedgerId == other.LedgerId && EntryId == other.EntryId && PartitionIndex == other.PartitionIndex && BatchIndex == NoBatch;
             }
@@ -95,9 +95,9 @@ namespace SharpPulsar.Impl
 
         public virtual int BatchSize => Acker.BatchSize;
 
-        public virtual MessageIdImpl PrevBatchMessageId()
+        public virtual MessageId PrevBatchMessageId()
 		{
-			return new MessageIdImpl(LedgerId, EntryId - 1, PartitionIndex);
+			return new MessageId(LedgerId, EntryId - 1, PartitionIndex);
 		}
 
 

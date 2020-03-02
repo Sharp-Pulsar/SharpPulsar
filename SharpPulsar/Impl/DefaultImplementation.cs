@@ -50,7 +50,7 @@ namespace SharpPulsar.Impl
 
 		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex)
 		{
-			return new MessageIdImpl(ledgerId, entryId, partitionIndex);
+			return new MessageId(ledgerId, entryId, partitionIndex);
 		}
         /*public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
         {
@@ -74,12 +74,12 @@ namespace SharpPulsar.Impl
         }*/
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
-			return MessageIdImpl.FromByteArray(data);
+			return MessageId.FromByteArray(data);
 		}
 
 		public static IMessageId NewMessageIdFromByteArrayWithTopic(sbyte[] data, string topicName)
 		{
-			return MessageIdImpl.FromByteArrayWithTopic(data, topicName);
+			return MessageId.FromByteArrayWithTopic(data, topicName);
 		}
 
 		public static IAuthentication NewAuthenticationToken(string token)

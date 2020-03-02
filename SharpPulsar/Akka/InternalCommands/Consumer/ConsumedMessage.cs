@@ -8,13 +8,13 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public class ConsumedMessage
     {
-        public ConsumedMessage(IActorRef consumer, MessageImpl message)
+        public ConsumedMessage(IActorRef consumer, Message message)
         {
             Consumer = consumer;
             Message = message;
         }
 
         public IActorRef Consumer { get; }
-        public MessageImpl Message { get; }
+        public Message Message { get; }
     }
 }
