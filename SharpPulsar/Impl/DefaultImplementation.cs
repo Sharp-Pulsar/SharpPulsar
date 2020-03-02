@@ -45,12 +45,12 @@ namespace SharpPulsar.Impl
 
 		public static IPulsarClientBuilder NewClientBuilder()
 		{
-			return new PulsarClientBuilderImpl();
+			return null;
 		}
 
-		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex)
+		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch)
 		{
-			return new MessageId(ledgerId, entryId, partitionIndex);
+			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch);
 		}
         /*public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
         {

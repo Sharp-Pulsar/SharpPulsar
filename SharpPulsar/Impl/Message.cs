@@ -95,7 +95,7 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public Message(string topic, BatchMessageIdImpl batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
+		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, IByteBuffer payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
 			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
 			MessageId = batchMessageIdImpl;
@@ -145,7 +145,7 @@ namespace SharpPulsar.Impl
 			var data = msgId.Split(":", true);
 			var ledgerId = long.Parse(data[0]);
 			var entryId = long.Parse(data[1]);
-			MessageId = data.Length == 3 ? new BatchMessageIdImpl(ledgerId, entryId, -1, int.Parse(data[2])) : new MessageId(ledgerId, entryId, -1);
+			MessageId = data.Length == 3 ? new BatchMessageId(ledgerId, entryId, -1, int.Parse(data[2])) : new MessageId(ledgerId, entryId, -1);
 			TopicName = topic;
 			DataBuffer = payload;
 			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
@@ -191,7 +191,7 @@ namespace SharpPulsar.Impl
         {
             get
             {
-				if(MessageId is BatchMessageIdImpl id)
+				if(MessageId is BatchMessageId id)
 				    return new MessageIdReceived(id.LedgerId, id.EntryId, id.BatchIndex, id.PartitionIndex);
                 var m = (MessageId) MessageId;
                 return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex);

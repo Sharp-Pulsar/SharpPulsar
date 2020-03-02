@@ -20,26 +20,26 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	public class BatchMessageIdImpl : MessageId
+	public class BatchMessageId : MessageId
 	{
 		private const int NoBatch = -1;
 		public int BatchIndex {get;}
 
 		public BatchMessageAcker Acker {get;}
 
-		public BatchMessageIdImpl(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, BatchMessageAckerDisabled.Instance)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, BatchMessageAckerDisabled.Instance)
 		{
 		}
 
-		public BatchMessageIdImpl(long ledgerId, long entryId, int partitionIndex, int batchIndex, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
 		{
 			BatchIndex = batchIndex;
 			Acker = acker;
 		}
 
-		public BatchMessageIdImpl(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
+		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
-			if (other is BatchMessageIdImpl otherId)
+			if (other is BatchMessageId otherId)
 			{
                 BatchIndex = otherId.BatchIndex;
 				Acker = otherId.Acker;
@@ -58,7 +58,7 @@ namespace SharpPulsar.Impl
 
 		public override bool Equals(object obj)
 		{
-			if (obj is BatchMessageIdImpl other1)
+			if (obj is BatchMessageId other1)
 			{
                 return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
 			}

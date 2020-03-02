@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl
 	{
 		public IBatchMessageContainer Build()
 		{
-			return new BatchMessageContainerImpl();
+			return new BatchMessageContainer();
 		}
 
 	}

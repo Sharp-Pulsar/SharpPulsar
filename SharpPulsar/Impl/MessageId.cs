@@ -58,7 +58,7 @@ namespace SharpPulsar.Impl
 
 		public override bool Equals(object obj)
 		{
-			if (obj is BatchMessageIdImpl other1)
+			if (obj is BatchMessageId other1)
 			{
                 return other1.Equals(this);
 			}
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 			MessageId messageId;
 			if (idData.HasBatchIndex)
 			{
-				messageId = new BatchMessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
@@ -132,7 +132,7 @@ namespace SharpPulsar.Impl
 			IMessageId messageId;
 			if (idData.HasBatchIndex)
 			{
-				messageId = new BatchMessageIdImpl((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{

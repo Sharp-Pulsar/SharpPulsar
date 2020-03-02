@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl
             {
                 for (var batchIndex = 0; batchIndex < Msgs.Count; batchIndex++)
                 {
-                    Msgs[batchIndex].SetMessageId(new BatchMessageIdImpl(ledgerId, entryId, partitionIndex, batchIndex));
+                    Msgs[batchIndex].SetMessageId(new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex));
                 }
             }
         }

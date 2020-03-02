@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using SharpPulsar.Api;
 using SharpPulsar.Extension;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
@@ -40,7 +41,11 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
-				if(_conf.ConsumerEventListener == null || _conf.MessageListener == null)
+				if(_conf.Schema == null)
+					throw new ArgumentException("Hey, we need the schema!");
+                if (_conf.StartMessageId == null)
+                    _conf.StartMessageId = (BatchMessageId)MessageIdFields.Latest;
+				if (_conf.ConsumerEventListener == null || _conf.MessageListener == null)
 					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
             }
@@ -65,7 +70,16 @@ namespace SharpPulsar.Akka.Configuration
 
 			return this;
 		}
-
+        public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
+        {
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
+            return this;
+        }
+		public ConsumerConfigBuilder StartMessageId(IMessageId startMessageId)
+        {
+            _conf.StartMessageId = (BatchMessageId)startMessageId;
+            return this;
+        }
 		public ConsumerConfigBuilder Topics(IList<string> topicNames)
 		{
             if (topicNames == null || topicNames.Count < 1)

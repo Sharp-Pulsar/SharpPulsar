@@ -31,10 +31,10 @@ namespace SharpPulsar.Test.Api
 			IMessageId mId = new MessageId(1, 2, 3);
 			Assert.Equal("1:2:3", mId.ToString());
 
-			mId = new BatchMessageIdImpl(0, 2, 3, 4);
+			mId = new BatchMessageId(0, 2, 3, 4);
             Assert.Equal("0:2:3:4", mId.ToString());
 
-			mId = new BatchMessageIdImpl(-1, 2, -3, 4);
+			mId = new BatchMessageId(-1, 2, -3, 4);
             Assert.Equal("-1:2:-3:4", mId.ToString());
 
 			mId = new MessageId(0, -23, 3);

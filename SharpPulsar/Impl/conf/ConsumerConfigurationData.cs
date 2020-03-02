@@ -27,6 +27,7 @@ namespace SharpPulsar.Impl.Conf
 {
 	public sealed class ConsumerConfigurationData
 	{
+        public BatchMessageId StartMessageId { get; set; } 
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor> Interceptors { get; set; }
 		public CommandSubscribe.Types.SubType SubscriptionType { get; set; } = CommandSubscribe.Types.SubType.Exclusive;

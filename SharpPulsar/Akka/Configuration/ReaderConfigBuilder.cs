@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Api;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
 
@@ -28,11 +29,23 @@ namespace SharpPulsar.Akka.Configuration
 	{
         private ReaderConfigurationData _conf = new ReaderConfigurationData();
 
-        public ReaderConfigurationData ReaderConfigurationData => _conf;
+        public ReaderConfigurationData ReaderConfigurationData
+        {
+            get
+            {
+                if (_conf.Schema == null)
+                    throw new ArgumentException("Hey, we need the schema!");
+				if (_conf.StartMessageId == null)
+                    _conf.StartMessageId = MessageIdFields.Latest;
+				if(_conf.ReaderListener == null)
+					throw new ArgumentException("Reader Listener Cannot be null");
+                return _conf;
+            }
+        }
 		public ReaderConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			var startMessageId = _conf.StartMessageId;
-			_conf = ConfigurationDataUtils.LoadData(config, _conf);
+			_conf = (ReaderConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
 			_conf.StartMessageId = startMessageId;
             return this;
         }
@@ -43,11 +56,17 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ReaderConfigBuilder StartMessageId(IMessageId startMessageId)
+		public ReaderConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
 		{
-			_conf.StartMessageId = startMessageId;
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
 		}
+        public ReaderConfigBuilder StartMessageId(IMessageId id)
+        {
+            _conf.StartMessageId = id;
+
+            return this;
+        }
 
 		public ReaderConfigBuilder StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
 		{

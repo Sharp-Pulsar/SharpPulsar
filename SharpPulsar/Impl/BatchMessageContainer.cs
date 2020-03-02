@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -39,7 +37,7 @@ namespace SharpPulsar.Impl
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainerImpl : AbstractBatchMessageContainer
+	public class BatchMessageContainer : AbstractBatchMessageContainer
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
         private  MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
@@ -168,7 +166,7 @@ namespace SharpPulsar.Impl
         public override bool MultiBatches => false;
 
         
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BatchMessageContainerImpl>();
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<BatchMessageContainer>();
 	}
 
 }

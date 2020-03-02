@@ -49,12 +49,13 @@ namespace SharpPulsar.Akka.Producer
         private sbyte[] _schemaVersion;
         private long _sequenceId;
         private long _requestId;
-        private MultiSchemaMode _multiSchemaMode;
+        private bool _multiSchemaMode;
         private BatchMessageKeyBasedContainer _batchMessageContainer;
         private Dictionary<string, ISchema> _schemas;
         private ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
+        private readonly object MultiSchemaMode;
         private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
         private bool _isPartitioned;
         private int _partitionIndex;
@@ -73,7 +74,7 @@ namespace SharpPulsar.Akka.Producer
             ProducerName = configuration.ProducerName;
             if (!configuration.MultiSchema)
             {
-                _multiSchemaMode = MultiSchemaMode.Disabled;
+                _multiSchemaMode = false;
             }
             if (!string.IsNullOrWhiteSpace(ProducerName) || isPartitioned)
             {
@@ -299,13 +300,7 @@ namespace SharpPulsar.Akka.Producer
         }
         private bool IsMultiSchemaEnabled(bool autoEnable)
         {
-            if (_multiSchemaMode != MultiSchemaMode.Auto)
-            {
-                return _multiSchemaMode == MultiSchemaMode.Enabled;
-            }
-
-            if (!autoEnable) return false;
-            _multiSchemaMode = MultiSchemaMode.Enabled;
+            
             return true;
         }
         private IMessage BeforeSend(IMessage message)
@@ -315,7 +310,7 @@ namespace SharpPulsar.Akka.Producer
                 var interceptedMessage = message;
                 foreach (var p in _producerInterceptor)
                 {
-                    interceptedMessage = p.BeforeSend(ToString(), interceptedMessage);
+                    interceptedMessage = p.BeforeSend(Self, interceptedMessage);
                 }
                 return interceptedMessage;
             }
@@ -327,7 +322,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 foreach (var p in _producerInterceptor)
                 {
-                    p.OnSendAcknowledgement(ToString(), message, msgId, exception);
+                    p.OnSendAcknowledgement(Self, message, msgId, exception);
                 }
             }
         }
@@ -723,7 +718,7 @@ namespace SharpPulsar.Akka.Producer
             var encryptedPayload = EncryptMessage(keyedBatch.MessageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
             if (encryptedPayload.ReadableBytes > Commands.DefaultMaxMessageSize)
             {
-                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
+                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Commands.DefaultMaxMessageSize + " bytes"));
                 return null;
             }
 

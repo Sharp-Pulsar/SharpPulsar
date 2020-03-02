@@ -30,7 +30,12 @@ namespace SharpPulsar.Akka
             var p = new NewProducer(producer.Schema, _conf, producer.ProducerConfiguration);
             _pulsarManager.Tell(p);
         }
-        
+        public void CreateReader(CreateReader reader)
+        {
+            var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration);
+            _pulsarManager.Tell(p);
+        }
+
         public void CreateConsumer(CreateConsumer consumer)
         {
             if (consumer.ConsumerType == ConsumerType.Multi)

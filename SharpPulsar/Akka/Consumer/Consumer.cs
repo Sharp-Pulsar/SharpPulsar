@@ -3,23 +3,32 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Akka.Actor;
 using DotNetty.Buffers;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Pulsar.Common.Auth;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
+using SharpPulsar.Utility;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -49,18 +58,20 @@ namespace SharpPulsar.Akka.Consumer
         public UnAckedMessageTracker UnAckedMessageTracker;
         private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
         private readonly SubscriptionMode _subscriptionMode;
-        private volatile BatchMessageIdImpl _startMessageId;
-        private readonly BatchMessageIdImpl _initialStartMessageId;
+        private volatile BatchMessageId _startMessageId;
+        private readonly BatchMessageId _initialStartMessageId;
         private readonly long _startMessageRollbackDurationInSec;
         private volatile bool _hasReachedEndOfTopic;
         private readonly MessageCrypto _msgCrypto;
         private bool _hasParentConsumer;
         private long _requestId;
         private readonly long _consumerid;
+        private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
 
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode)
         {
+            _startMessageId = configuration.StartMessageId;
             _subscriptionMode = mode;
             _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
@@ -147,7 +158,7 @@ namespace SharpPulsar.Akka.Consumer
             Receive<TcpSuccess>(s =>
             {
                 _consumerEventListener.Log($"Pulsar handshake completed with {s.Name}");
-                Become(SubscribeConsumer);
+                Become(BeforeSubscribe);
             });
             
             ReceiveAny(_ => Stash.Stash());
@@ -301,7 +312,7 @@ namespace SharpPulsar.Akka.Consumer
                         continue;
                     }
 
-                    var batchMessageIdImpl = new BatchMessageIdImpl((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex, i, acker);
+                    var batchMessageIdImpl = new BatchMessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex, i, acker);
 
                     var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                     if(_hasParentConsumer) 
@@ -424,7 +435,6 @@ namespace SharpPulsar.Akka.Consumer
             }
             return null;
         }
-
         private void AckMessage(AckMessage message)
         {
             var requestid = _requestId++;
@@ -445,7 +455,6 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(cmd.Array, requestid, "AckMultiMessages");
             _broker.Tell(payload);
         }
-
         private void AckMessages(AckMessages message)
         {
             var requestid = _requestId++;
@@ -479,7 +488,6 @@ namespace SharpPulsar.Akka.Consumer
                 return null;
             }
         }
-
         private void DiscardCorruptedMessage(MessageIdData messageId, CommandAck.Types.ValidationError validationError)
         {
             Context.System.Log.Error("[{}][{}] Discarding corrupted message at {}:{}", _topicName.ToString(), _subscriptionName, messageId.LedgerId, messageId.EntryId);
@@ -507,6 +515,47 @@ namespace SharpPulsar.Akka.Consumer
             }
 
             return true;
+        }
+
+        private void SendGetSchemaCommand(sbyte[] version)
+        {
+            var requestId = _requestId++;
+            var request = Commands.NewGetSchema(requestId, _topicName.ToString(), BytesSchemaVersion.Of(version));
+           var payload = new Payload(request.Array, requestId, "GetSchema");
+            _broker.Tell(payload);
+            _pendingLookupRequests.Add(requestId, payload);
+        }
+
+        private void BeforeSubscribe()
+        {
+            Receive<SchemaResponse>(s =>
+            {
+                var schema = new SchemaDataBuilder()
+                    .SetData((sbyte[])(object)s.Schema)
+                    .SetProperties(s.Properties)
+                    .SetType(SchemaType.ValueOf((int)s.Type))
+                    .Build();
+                _schema = ISchema.GetSchema(schema.ToSchemaInfo());
+                Become(SubscribeConsumer);
+            });
+            ReceiveAny(x=> Stash.Stash());
+            if (_schema != null && _schema.SupportSchemaVersioning())
+            {
+                
+                if (_schema.RequireFetchingSchemaInfo())
+                {
+                    SendGetSchemaCommand(null);
+                }
+                else
+                {
+                    Become(SubscribeConsumer);
+                }
+                
+            }
+            else
+            {
+                Become(SubscribeConsumer);
+            }
         }
         private void SubscribeConsumer()
         {
@@ -542,10 +591,7 @@ namespace SharpPulsar.Akka.Consumer
                 var builder = MessageIdData.NewBuilder();
                 builder.SetLedgerId(_startMessageId.LedgerId);
                 builder.SetEntryId(_startMessageId.EntryId);
-                if (_startMessageId is BatchMessageIdImpl impl)
-                {
-                    builder.SetBatchIndex(impl.BatchIndex);
-                }
+                builder.SetBatchIndex(_startMessageId.BatchIndex);
 
                 startMessageIdData = builder.Build();
             }

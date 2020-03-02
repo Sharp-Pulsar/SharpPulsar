@@ -42,6 +42,7 @@ namespace SharpPulsar.Impl.Conf
 
         public string ReaderName { get; set; }
 		
+		
 	}
 
 }

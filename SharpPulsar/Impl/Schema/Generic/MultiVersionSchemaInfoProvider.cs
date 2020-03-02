@@ -37,31 +37,32 @@ namespace SharpPulsar.Impl.Schema.Generic
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(MultiVersionSchemaInfoProvider));
 
 		private readonly TopicName _topicName;
-		public virtual PulsarClientImpl PulsarClient { get;}
 
-		private readonly ConcurrentDictionary<BytesSchemaVersion, Task<ISchemaInfo>> _cache = new ConcurrentDictionary<BytesSchemaVersion, Task<ISchemaInfo>>();
+		private readonly ConcurrentDictionary<BytesSchemaVersion, ISchemaInfo> _cache = new ConcurrentDictionary<BytesSchemaVersion, ISchemaInfo>();
 
 		
-		public MultiVersionSchemaInfoProvider(TopicName topicName, PulsarClientImpl pulsarClient)
+		public MultiVersionSchemaInfoProvider(TopicName topicName)
 		{
 			_topicName = topicName;
-			PulsarClient = pulsarClient;
 		}
 
-		public ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
+		public ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion)
 		{
 			try
             {
-                return null == schemaVersion ? new ValueTask<ISchemaInfo>(Task.FromResult<ISchemaInfo>(null)) : new ValueTask<ISchemaInfo>(_cache[BytesSchemaVersion.Of(schemaVersion)]);
+                if (schemaVersion != null)
+                    return _cache[BytesSchemaVersion.Of(schemaVersion)];
+                return null;
+
             }
 			catch (System.Exception e)
 			{
 				Log.LogError("Can't get schema for topic {} schema version {}", _topicName.ToString(), StringHelper.NewString(schemaVersion), e);
-				return new ValueTask<ISchemaInfo>(Task.FromException<ISchemaInfo>(e)); 
+				return null; 
 			}
 		}
 
-		public virtual ValueTask<ISchemaInfo> LatestSchema
+		public virtual ISchemaInfo LatestSchema
 		{
 			get
 			{

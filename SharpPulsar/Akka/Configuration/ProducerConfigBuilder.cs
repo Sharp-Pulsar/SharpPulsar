@@ -38,7 +38,9 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
-                if (_conf.ProducerEventListener == null)
+                if (_conf.Schema == null)
+                    throw new ArgumentException("Hey, we need the schema!");
+				if (_conf.ProducerEventListener == null)
                     throw new ArgumentException("ProducerEventListener cannot be null");
                 return _conf;
             }
