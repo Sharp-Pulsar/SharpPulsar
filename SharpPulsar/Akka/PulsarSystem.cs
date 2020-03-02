@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
@@ -20,7 +21,25 @@ namespace SharpPulsar.Akka
         public PulsarSystem(ClientConfigurationData conf)
         {
             _conf = conf;
-            _actorSystem = ActorSystem.Create("Pulsar");
+            var config = ConfigurationFactory.ParseString(@"
+            akka
+            {
+                loglevel = DEBUG
+			    log-config-on-start = on 
+			    actor 
+                {              
+				      debug 
+				      {
+					      receive = on
+					      autoreceive = on
+					      lifecycle = on
+					      event-stream = on
+					      unhandled = on
+				      }  
+			      }
+            }"
+            );
+            _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
         
@@ -51,8 +70,8 @@ namespace SharpPulsar.Akka
                 }
             }
 
-            if (consumer.ConsumerType == ConsumerType.Single && string.IsNullOrWhiteSpace(consumer.ConsumerConfiguration.SingleTopic))
-                throw new ArgumentException("SingleTopic cannot be empty");
+            if (!consumer.ConsumerConfiguration.TopicNames.Any() && consumer.ConsumerConfiguration.TopicsPattern == null)
+                throw new ArgumentException("Please set topic(s) or topic pattern");
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType);
             _pulsarManager.Tell(c);
         }

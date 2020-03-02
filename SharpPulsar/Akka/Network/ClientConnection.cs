@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Net;
 using Akka.Actor;
@@ -53,6 +54,7 @@ namespace SharpPulsar.Akka.Network
         }
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
+            _keepAliveIntervalSeconds = conf.KeepAliveIntervalSeconds;
             _protocolVersion = conf.ProtocolVersion;
             _conf = conf;
             _manager = manager;
@@ -135,9 +137,9 @@ namespace SharpPulsar.Akka.Network
                     _requests.Add(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                     connection.Tell(Tcp.Write.Create(ByteString.FromBytes(p.Bytes)));
                 }
-                else if (message is IByteBuffer b)   // data received from self
+                else if (message is ConnectionCommand b)   // data received from self
                 {
-                    connection.Tell(Tcp.Write.Create(ByteString.FromBytes(b.Array)));
+                    connection.Tell(Tcp.Write.Create(ByteString.FromBytes(b.Command)));
                 }
                 else if (message is Tcp.PeerClosed)
                 {
@@ -157,9 +159,8 @@ namespace SharpPulsar.Akka.Network
             try
 			{
 				// De-serialize the command
-                var cmd = BaseCommand.Parser.ParseFrom(buffer);
-
-				if (Log.IsEnabled(LogLevel.DebugLevel))
+                var cmd = buffer.ToObject<BaseCommand>();
+                if (Log.IsEnabled(LogLevel.DebugLevel))
 				{
 					Log.Debug("[{}] Received cmd {}", RemoteAddress, cmd.Type);
 				}
@@ -257,7 +258,7 @@ namespace SharpPulsar.Akka.Network
 				Log.Info("{} Connected through proxy to target broker at {}", RemoteAddress, ProxyToTargetBrokerAddress);
 			}
 			// Send CONNECT command
-            Self.Tell(NewConnectCommand());
+            Self.Tell(new ConnectionCommand(NewConnectCommand().Array));
             _state = State.SentConnectFrame;
 			Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(_keepAliveIntervalSeconds), Self, Commands.NewPing(), ActorRefs.NoSender);
 
@@ -273,7 +274,15 @@ namespace SharpPulsar.Akka.Network
 			var auth = AuthData.NewBuilder().SetAuthData(Google.Protobuf.ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
 			return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
+        private sealed class ConnectionCommand
+        {
+            public ConnectionCommand(byte[] command)
+            {
+                Command = command;
+            }
 
+            public byte[] Command { get; }
+        }
 		public void HandlePing(CommandPing ping)
 		{
 			// Immediately reply success to ping requests
@@ -281,11 +290,10 @@ namespace SharpPulsar.Akka.Network
 			{
 				Log.Debug("[{}] Replying back to ping message", RemoteAddress);
 			}
-			Self.Tell(Commands.NewPong());
+			Self.Tell(new ConnectionCommand(Commands.NewPong().Array));
 		}
-
-		
-		public virtual IPEndPoint TargetBroker
+        
+        public virtual IPEndPoint TargetBroker
 		{
 			set => ProxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
 		}

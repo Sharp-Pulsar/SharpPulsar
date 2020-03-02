@@ -861,35 +861,26 @@ namespace SharpPulsar.Protocol
 			// / Wire format
 			// [TOTAL_SIZE] [CMD_SIZE][CMD]
 			var cmd = cmdBuilder.Build();
+            var cmdBytes = cmd.ToByteArray();
+			var cmdSize = ToBigEndianBytes((uint)cmdBytes.Length);
+			var totalSize = ToBigEndianBytes((uint)cmdBytes.Length + 4);
 
-			var cmdSize = cmd.CalculateSize();
-			var totalSize = cmdSize + 4;
-			var frameSize = totalSize + 4;
-			var buf = PooledByteBufferAllocator.Default.Buffer(frameSize, frameSize);
-
-			// Prepend 2 lengths to the buffer
-			buf.WriteInt(totalSize);
-			buf.WriteInt(cmdSize);
-
-			CodedOutputStream destination = new CodedOutputStream(buf.Array);
-			try
-			{
-				cmd.WriteTo(destination);
-			}
-			catch (IOException e)
-			{
-				// This is in-memory serialization, should not fail
-				throw new System.Exception(e.Message, e);
-			}
-			finally
-			{
-				
-			}
-
-			return buf;
-		}
-
-        public static int ComputeChecksum(IByteBuffer byteBuffer)
+            var p = new SequenceBuilder<byte>()
+                .Append(totalSize)
+                .Append(cmdSize)
+                .Append(cmdBytes)
+                .Build();
+            return Unpooled.WrappedBuffer(p.ToArray());
+        }
+        public static byte[] ToBigEndianBytes(uint integer)
+        {
+            var union = new UIntUnion(integer);
+            if (BitConverter.IsLittleEndian)
+                return new[] { union.B3, union.B2, union.B1, union.B0 };
+            else
+                return new[] { union.B0, union.B1, union.B2, union.B3 };
+        }
+		public static int ComputeChecksum(IByteBuffer byteBuffer)
         {
             return Crc32CIntChecksum.ComputeChecksum(byteBuffer);
         }

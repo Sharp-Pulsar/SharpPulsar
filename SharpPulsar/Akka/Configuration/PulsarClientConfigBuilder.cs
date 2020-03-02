@@ -167,6 +167,8 @@ namespace SharpPulsar.Akka.Configuration
 
 		public PulsarClientConfigBuilder KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
 		{
+			if(keepAliveInterval < 1)
+				throw new ArgumentException("Keep Alive Interval should be greater than 0");
 			_conf.KeepAliveIntervalSeconds = (int)unit.ToSeconds(keepAliveInterval);
             return this;
 		}

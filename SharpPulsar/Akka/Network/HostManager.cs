@@ -43,7 +43,7 @@ namespace SharpPulsar.Akka.Network
         {
             for (var i = 0; i < _configuration.ConnectionsPerBroker; i++)
             {
-                Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration,_manager), $"{Context.Parent.Path.Name}-tcp-connection-{i}");
+                Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration,_manager), $"{i}");
             }
         }
 

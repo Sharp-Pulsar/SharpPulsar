@@ -35,7 +35,9 @@ namespace Samples.Producer
 
         public IActorRef GetProducer(string topic)
         {
-            return _actorRefs[topic];
+            if(_actorRefs.ContainsKey(topic))
+                return _actorRefs[topic];
+            return null;
         }
     }
 }

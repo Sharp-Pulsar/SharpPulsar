@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.IO;
+using BAMCIS.Util.Concurrent;
 using Samples.Consumer;
 using Samples.Producer;
 using Samples.Reader;
@@ -29,12 +30,13 @@ namespace Producer
             var producer = new ProducerListener();
             //var jsonSchem = JsonSchema.Of(typeof(Students));
             var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl("localhost:6650")
+                .ServiceUrl("http://127.0.0.1:6650")
                 .ConnectionsPerBroker(1)
+                .KeepAliveInterval(30, TimeUnit.SECONDS)
                 .IoThreads(1)
                 .ClientConfigurationData;
             var pulsarSystem = new PulsarSystem(clientConfig);
-            
+            Task.Delay(5000);
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName("Students")
                 .Topic("students")
@@ -58,15 +60,15 @@ namespace Producer
                 .ReaderConfigurationData;
             
             pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
-            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
-            pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
             var students = new Students
             {
                 Name = "Ebere",
                 Age = 2020,
                 School = "Akka-Pulsar university"
             };
-            pulsarSystem.Send(new Send(students,"Students", ImmutableDictionary<string, object>.Empty), producer.GetProducer("Students"));
+            //pulsarSystem.Send(new Send(students,"Students", ImmutableDictionary<string, object>.Empty), producer.GetProducer("Students"));
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)

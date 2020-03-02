@@ -19,7 +19,7 @@ namespace SharpPulsar.Akka.Network
             _serviceNameResolver.UpdateServiceUrl(configuration.ServiceUrl);
             _manager = manager;
             _configuration = configuration;
-            Become(Start);
+            Become(CreateConnections);
         }
 
         private void Start()
@@ -40,13 +40,21 @@ namespace SharpPulsar.Akka.Network
         }
         public void Ready()
         {
-           Stash.UnstashAll();
-           Context.Parent.Tell(new ServiceReady());
-           Receive<UpdateService>(u =>
-           {
-               _serviceNameResolver.UpdateServiceUrl(u.Service);
-               Become(Stop);
-           });
+            try
+            {
+                Stash.UnstashAll();
+                Context.Parent.Tell(new ServiceReady());
+                Receive<UpdateService>(u =>
+                {
+                    _serviceNameResolver.UpdateServiceUrl(u.Service);
+                    Become(Stop);
+                });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
         
         private void CreateConnections()
@@ -58,9 +66,9 @@ namespace SharpPulsar.Akka.Network
                 if (!dnsResolver.IsResolved(s))
                     service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
                 var host = Dns.GetHostEntry(service.Address).HostName;
-                Context.ActorOf(HostManager.Prop(service, _configuration, _manager), host);
+                Context.ActorOf(HostManager.Prop(service, _configuration, _manager));
             }
-            Become(Ready);
+            //Become(Ready);
         }
 
         private void StopAndRestartConnections()
