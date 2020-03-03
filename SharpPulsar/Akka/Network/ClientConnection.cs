@@ -286,7 +286,7 @@ namespace SharpPulsar.Akka.Network
             var auth = AuthData.NewBuilder().SetAuthData((byte[])(object)authData.Bytes).Build();
             var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-            return Commands.NewConnect(Authentication.AuthMethodName, auth, 14, clientVersion, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+            return Commands.NewConnect(Authentication.AuthMethodName, auth, 15, clientVersion, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
         private sealed class ConnectionCommand
         {
