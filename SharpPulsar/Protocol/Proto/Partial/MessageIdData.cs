@@ -26,44 +26,24 @@ namespace SharpPulsar.Protocol.Proto
                 return _messageId;
             }
 
-            public bool HasLedgerId()
-            {
-                return _messageId.HasLedgerId;
-            }
-
             public Builder SetLedgerId(long value)
             {
-                _messageId.LedgerId = (ulong)value;
+                _messageId.ledgerId = (ulong)value;
                 return this;
             }
             
-            public bool HasEntryId()
-            {
-                return _messageId.HasEntryId;
-            }
-
             public Builder SetEntryId(long value)
             {
-                _messageId.EntryId = (ulong)value;
+                _messageId.entryId = (ulong)value;
                 return this;
             }
             
-            public bool HasPartition()
-            {
-                return _messageId.HasPartition;
-            }
-
             public Builder SetPartition(int value)
             {
                 _messageId.Partition = value;
                 return this;
             }
             
-            public bool HasBatchIndex()
-            {
-                return _messageId.HasBatchIndex;
-            }
-
             public Builder SetBatchIndex(int value)
             {
                 _messageId.BatchIndex = value;

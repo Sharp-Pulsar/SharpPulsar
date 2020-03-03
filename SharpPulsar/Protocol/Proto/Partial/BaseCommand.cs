@@ -12,7 +12,6 @@ namespace SharpPulsar.Protocol.Proto
 
 		public  class Builder
 		{
-			// Construct using org.apache.pulsar.common.api.proto.BaseCommand.newBuilder()
             private BaseCommand _base;
 
             public Builder()
@@ -31,14 +30,11 @@ namespace SharpPulsar.Protocol.Proto
 			
 			public Builder SetType(Type value)
             {
-                _base.Type = value;
+                _base.type = value;
                 return this;
 			}
 			
-			public bool HasConnect()
-			{
-				return _base.HasConnect;
-			}
+
 			public CommandConnect GetConnect()
 			{
 				return _base.Connect;
@@ -74,10 +70,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasConnected()
-			{
-				return _base.HasConnected;
-			}
 			public CommandConnected GetConnected()
 			{
 				return _base.Connected;
@@ -93,10 +85,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSubscribe()
-			{
-				return _base.HasSubscribe;
-			}
 			public CommandSubscribe GetSubscribe()
 			{
 				return _base.Subscribe;
@@ -112,10 +100,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasProducer()
-			{
-				return _base.HasProducer;
-			}
 			public CommandProducer GetProducer()
 			{
 				return _base.Producer;
@@ -131,10 +115,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSend()
-			{
-				return _base.HasSend;
-			}
 			public CommandSend GetSend()
 			{
 				return _base.Send;
@@ -150,10 +130,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSendReceipt()
-			{
-				return _base.HasSendReceipt;
-			}
 			public CommandSendReceipt GetSendReceipt()
 			{
 				return _base.SendReceipt;
@@ -164,10 +140,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSendError()
-			{
-				return _base.HasSendError;
-			}
 			public CommandSendError GetSendError()
 			{
 				return _base.SendError;
@@ -182,10 +154,7 @@ namespace SharpPulsar.Protocol.Proto
                 _base.SendError = builderForValue.Build();
 				return this;
 			}
-			public bool HasMessage()
-			{
-				return _base.HasMessage;
-			}
+			
 			public CommandMessage GetMessage()
 			{
 				return _base.Message;
@@ -196,11 +165,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			
-			public bool HasAck()
-			{
-				return _base.HasAck;
-			}
 			public CommandAck GetAck()
 			{
 				return _base.Ack;
@@ -215,10 +179,7 @@ namespace SharpPulsar.Protocol.Proto
                 _base.Ack = builderForValue.Build();
 				return this;
 			}
-			public bool HasFlow()
-			{
-				return _base.HasFlow;
-			}
+			
             public Builder SetCloseConsumer(CommandCloseConsumer value)
             {
                 _base.CloseConsumer = value ?? throw new NullReferenceException();
@@ -246,10 +207,6 @@ namespace SharpPulsar.Protocol.Proto
                 return this;
 			}
 			
-			public bool HasUnsubscribe()
-			{
-				return _base.HasUnsubscribe;
-			}
 			public CommandUnsubscribe GetUnsubscribe()
 			{
 				return _base.Unsubscribe;
@@ -282,101 +239,82 @@ namespace SharpPulsar.Protocol.Proto
                 _base.Ping = builderForValue.Build();
 				return this;
 			}
-			public bool HasRedeliverUnacknowledgedMessages()
-			{
-				return _base.HasRedeliverUnacknowledgedMessages;
-			}
+			
 			public CommandRedeliverUnacknowledgedMessages GetRedeliverUnacknowledgedMessages()
 			{
-				return _base.RedeliverUnacknowledgedMessages;
+				return _base.redeliverUnacknowledgedMessages;
 			}
 			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages value)
 			{
-                _base.RedeliverUnacknowledgedMessages = value ?? throw new NullReferenceException();
+                _base.redeliverUnacknowledgedMessages = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetRedeliverUnacknowledgedMessages(CommandRedeliverUnacknowledgedMessages.Builder builderForValue)
 			{
-                _base.RedeliverUnacknowledgedMessages = builderForValue.Build();
+                _base.redeliverUnacknowledgedMessages = builderForValue.Build();
 				return this;
 			}
-			public bool HasPartitionMetadata()
-			{
-				return _base.HasPartitionMetadata;
-			}
+			
 			public CommandPartitionedTopicMetadata GetPartitionMetadata()
 			{
-				return _base.PartitionMetadata;
+				return _base.partitionMetadata;
 			}
 			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata value)
 			{
-                _base.PartitionMetadata = value ?? throw new NullReferenceException();
+                _base.partitionMetadata = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetPartitionMetadata(CommandPartitionedTopicMetadata.Builder builderForValue)
 			{
-                _base.PartitionMetadata = builderForValue.Build();
+                _base.partitionMetadata = builderForValue.Build();
 				return this;
 			}
-			public bool HasLookupTopic()
-			{
-				return _base.HasLookupTopic;
-			}
+			
 			public CommandLookupTopic GetLookupTopic()
 			{
-				return _base.LookupTopic;
+				return _base.lookupTopic;
 			}
 			public Builder SetLookupTopic(CommandLookupTopic value)
 			{
-                _base.LookupTopic = value ?? throw new NullReferenceException();
+                _base.lookupTopic = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetLookupTopic(CommandLookupTopic.Builder builderForValue)
 			{
-                _base.LookupTopic = builderForValue.Build();
+                _base.lookupTopic = builderForValue.Build();
 				return this;
 			}
 			
-			public bool HasConsumerStats()
-			{
-				return _base.HasConsumerStats;
-			}
 			public CommandConsumerStats GetConsumerStats()
 			{
-				return _base.ConsumerStats;
+				return _base.consumerStats;
 			}
 			public Builder SetConsumerStats(CommandConsumerStats value)
 			{
-                _base.ConsumerStats = value ?? throw new NullReferenceException();
+                _base.consumerStats = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetConsumerStats(CommandConsumerStats.Builder builderForValue)
 			{
-                _base.ConsumerStats = builderForValue.Build();
+                _base.consumerStats = builderForValue.Build();
 				return this;
 			}
-			public bool HasReachedEndOfTopic()
-			{
-				return _base.HasReachedEndOfTopic;
-			}
+			
 			public CommandReachedEndOfTopic GetReachedEndOfTopic()
 			{
-				return _base.ReachedEndOfTopic;
+				return _base.reachedEndOfTopic;
 			}
 			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic value)
 			{
-                _base.ReachedEndOfTopic = value ?? throw new NullReferenceException();
+                _base.reachedEndOfTopic = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetReachedEndOfTopic(CommandReachedEndOfTopic.Builder builderForValue)
 			{
-                _base.ReachedEndOfTopic = builderForValue.Build();
+                _base.reachedEndOfTopic = builderForValue.Build();
 				return this;
 			}
-			public bool HasSeek()
-			{
-				return _base.HasSeek;
-			}
+			
 			public CommandSeek GetSeek()
 			{
 				return _base.Seek;
@@ -391,28 +329,21 @@ namespace SharpPulsar.Protocol.Proto
                 _base.Seek = builderForValue.Build();
 				return this;
 			}
-			public bool HasGetLastMessageId()
-			{
-				return _base.HasGetLastMessageId;
-			}
 			public CommandGetLastMessageId GetGetLastMessageId()
 			{
-				return _base.GetLastMessageId;
+				return _base.getLastMessageId;
 			}
 			public Builder SetGetLastMessageId(CommandGetLastMessageId value)
 			{
-                _base.GetLastMessageId = value ?? throw new NullReferenceException();
+                _base.getLastMessageId = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetGetLastMessageId(CommandGetLastMessageId.Builder builderForValue)
 			{
-                _base.GetLastMessageId = builderForValue.Build();
+                _base.getLastMessageId = builderForValue.Build();
 				return this;
 			}
-			public bool HasActiveConsumerChange()
-			{
-				return _base.HasActiveConsumerChange;
-			}
+			
 			public CommandActiveConsumerChange GetActiveConsumerChange()
 			{
 				return _base.ActiveConsumerChange;
@@ -427,193 +358,161 @@ namespace SharpPulsar.Protocol.Proto
                 _base.ActiveConsumerChange = builderForValue.Build();
 				return this;
 			}
-			public bool HasGetTopicsOfNamespace()
-			{
-				return _base.HasGetTopicsOfNamespace;
-			}
+			
 			public CommandGetTopicsOfNamespace GetGetTopicsOfNamespace()
 			{
-				return _base.GetTopicsOfNamespace;
+				return _base.getTopicsOfNamespace;
 			}
 			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace value)
 			{
-                _base.GetTopicsOfNamespace = value ?? throw new NullReferenceException();
+                _base.getTopicsOfNamespace = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetGetTopicsOfNamespace(CommandGetTopicsOfNamespace.Builder builderForValue)
 			{
-                _base.GetTopicsOfNamespace = builderForValue.Build();
+                _base.getTopicsOfNamespace = builderForValue.Build();
 				return this;
 			}
-			public bool HasGetSchema()
-			{
-				return _base.HasGetSchema;
-			}
+			
 			public CommandGetSchema GetGetSchema()
 			{
-				return _base.GetSchema;
+				return _base.getSchema;
 			}
 			public Builder SetGetSchema(CommandGetSchema value)
 			{
-                _base.GetSchema = value ?? throw new NullReferenceException();
+                _base.getSchema = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetGetSchema(CommandGetSchema.Builder builderForValue)
 			{
-                _base.GetSchema = builderForValue.Build();
+                _base.getSchema = builderForValue.Build();
 				return this;
 			}
-			public bool HasAuthChallenge()
-			{
-				return _base.HasAuthChallenge;
-			}
+			
 			public CommandAuthChallenge GetAuthChallenge()
 			{
-				return _base.AuthChallenge;
+				return _base.authChallenge;
 			}
 			public Builder SetAuthChallenge(CommandAuthChallenge value)
 			{
-                _base.AuthChallenge = value ?? throw new NullReferenceException();
+                _base.authChallenge = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetAuthChallenge(CommandAuthChallenge.Builder builderForValue)
 			{
-                _base.AuthChallenge = builderForValue.Build();
+                _base.authChallenge = builderForValue.Build();
 				return this;
 			}
 			
-			public bool HasGetOrCreateSchema()
-			{
-				return _base.HasGetOrCreateSchema;
-			}
 			public CommandGetOrCreateSchema GetGetOrCreateSchema()
 			{
-				return _base.GetOrCreateSchema;
+				return _base.getOrCreateSchema;
 			}
 			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema value)
 			{
-                _base.GetOrCreateSchema = value ?? throw new NullReferenceException();
+                _base.getOrCreateSchema = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetGetOrCreateSchema(CommandGetOrCreateSchema.Builder builderForValue)
 			{
-                _base.GetOrCreateSchema = builderForValue.Build();
+                _base.getOrCreateSchema = builderForValue.Build();
 				return this;
 			}
-			public bool HasNewTxn()
-			{
-				return _base.HasNewTxn;
-			}
+			
 			public CommandNewTxn GetNewTxn()
 			{
-				return _base.NewTxn;
+				return _base.newTxn;
 			}
 			public Builder SetNewTxn(CommandNewTxn value)
 			{
-                _base.NewTxn = value ?? throw new NullReferenceException();
+                _base.newTxn = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetNewTxn(CommandNewTxn.Builder builderForValue)
 			{
-                _base.NewTxn = builderForValue.Build();
+                _base.newTxn = builderForValue.Build();
 				return this;
 			}
-			public bool HasAddPartitionToTxn()
-			{
-				return _base.HasAddPartitionToTxn;
-			}
+			
 			public CommandAddPartitionToTxn GetAddPartitionToTxn()
 			{
-				return _base.AddPartitionToTxn;
+				return _base.addPartitionToTxn;
 			}
 			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn value)
 			{
-                _base.AddPartitionToTxn = value ?? throw new NullReferenceException();
+                _base.addPartitionToTxn = value ?? throw new NullReferenceException();
 
 				
 				return this;
 			}
 			public Builder SetAddPartitionToTxn(CommandAddPartitionToTxn.Builder builderForValue)
 			{
-                _base.AddPartitionToTxn = builderForValue.Build();
+                _base.addPartitionToTxn = builderForValue.Build();
 
 				
 				return this;
 			}
-			public bool HasAddSubscriptionToTxn()
-			{
-				return _base.HasAddSubscriptionToTxn;
-			}
+			
 			public CommandAddSubscriptionToTxn GetAddSubscriptionToTxn()
 			{
-				return _base.AddSubscriptionToTxn;
+				return _base.addSubscriptionToTxn;
 			}
 			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn value)
 			{
-                _base.AddSubscriptionToTxn = value ?? throw new NullReferenceException();
+                _base.addSubscriptionToTxn = value ?? throw new NullReferenceException();
 
                 return this;
 			}
 			public Builder SetAddSubscriptionToTxn(CommandAddSubscriptionToTxn.Builder builderForValue)
 			{
-                _base.AddSubscriptionToTxn = builderForValue.Build();
+                _base.addSubscriptionToTxn = builderForValue.Build();
 
                 return this;
 			}
 			
-			public bool HasEndTxn()
-			{
-				return _base.HasEndTxn;
-			}
 			public CommandEndTxn GetEndTxn()
 			{
-				return _base.EndTxn;
+				return _base.endTxn;
 			}
 			public Builder SetEndTxn(CommandEndTxn value)
 			{
-                _base.EndTxn = value ?? throw new NullReferenceException();
+                _base.endTxn = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetEndTxn(CommandEndTxn.Builder builderForValue)
 			{
-                _base.EndTxn = builderForValue.Build();
+                _base.endTxn = builderForValue.Build();
 				return this;
 			}
-			public bool HasEndTxnOnPartition()
-			{
-				return _base.HasEndTxnOnPartition;
-			}
+			
 			public CommandEndTxnOnPartition GetEndTxnOnPartition()
 			{
-				return _base.EndTxnOnPartition;
+				return _base.endTxnOnPartition;
 			}
 			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition value)
 			{
-                _base.EndTxnOnPartition = value ?? throw new NullReferenceException();
+                _base.endTxnOnPartition = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetEndTxnOnPartition(CommandEndTxnOnPartition.Builder builderForValue)
 			{
-                _base.EndTxnOnPartition = builderForValue.Build();
+                _base.endTxnOnPartition = builderForValue.Build();
 				return this;
 			}
 			
-			public bool HasEndTxnOnSubscription()
-			{
-				return _base.HasEndTxnOnSubscription;
-			}
+			
 			public CommandEndTxnOnSubscription GetEndTxnOnSubscription()
 			{
-				return _base.EndTxnOnSubscription;
+				return _base.endTxnOnSubscription;
 			}
 			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription value)
 			{
-                _base.EndTxnOnSubscription = value ?? throw new NullReferenceException();
+                _base.endTxnOnSubscription = value ?? throw new NullReferenceException();
 				return this;
 			}
 			public Builder SetEndTxnOnSubscription(CommandEndTxnOnSubscription.Builder builderForValue)
 			{
-                _base.EndTxnOnSubscription = builderForValue.Build();
+                _base.endTxnOnSubscription = builderForValue.Build();
 				return this;
 			}
 			

@@ -1,5 +1,4 @@
-﻿using Google.Protobuf;
-
+﻿
 namespace SharpPulsar.Protocol.Proto
 {
 	public partial class CommandConnect

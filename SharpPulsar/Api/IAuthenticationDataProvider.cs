@@ -97,10 +97,10 @@ namespace SharpPulsar.Api
 		/// <para>Mainly used for mutual authentication like sasl.
 		/// </para>
 		/// </summary>
-		virtual AuthData Authenticate(AuthData auth)
+		virtual AuthDataShared Authenticate(AuthDataShared auth)
 		{
             var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
-			return new AuthData(bytes);
+			return new AuthDataShared(bytes);
         }
 	}
 

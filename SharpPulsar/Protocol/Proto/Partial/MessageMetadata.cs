@@ -44,7 +44,7 @@ namespace SharpPulsar.Protocol.Proto
             }
             public bool HasNumMessagesInBatch()
             {
-                return _metadata.HasNumMessagesInBatch;
+                return _metadata.NumMessagesInBatch > 0;
             }
 			public Builder SetProducerName(string value)
 			{
@@ -55,7 +55,7 @@ namespace SharpPulsar.Protocol.Proto
 
             public bool HasPublishTime()
             {
-                return _metadata.HasPublishTime;
+                return _metadata.PublishTime > 0;
             }
 
 			public ulong GetSequenceId()
@@ -65,14 +65,14 @@ namespace SharpPulsar.Protocol.Proto
 
 			public bool HasSequenceId()
             {
-                return _metadata.HasSequenceId;
+                return _metadata.SequenceId > 0;
             }
 
             public IDictionary<string, string> Properties =>
                 _metadata.Properties.ToDictionary(x => x.Key, x => x.Value);
             public bool HasOrderingKey()
             {
-                return _metadata.HasOrderingKey;
+                return _metadata.OrderingKey?.Length > 0;
             }
 
             public string GetReplicatedFrom()
@@ -82,7 +82,7 @@ namespace SharpPulsar.Protocol.Proto
 
 			public bool HasReplicatedFrom()
             {
-                return _metadata.HasReplicatedFrom;
+                return !string.IsNullOrWhiteSpace(_metadata.ReplicatedFrom);
             }
 
 			public long GetPublishTime()
@@ -94,15 +94,15 @@ namespace SharpPulsar.Protocol.Proto
 
 			public bool HasEventTime()
             {
-                return _metadata.HasEventTime;
+                return _metadata.EventTime > 0;
             }
 
 			public bool HasSchemaVersion()
             {
-                return _metadata.HasSchemaVersion;
+                return _metadata.SchemaVersion?.Length > 0;
             }
 
-			public ByteString GetSchemaVersion()
+			public byte[] GetSchemaVersion()
             {
                 return _metadata.SchemaVersion;
             }
@@ -114,7 +114,7 @@ namespace SharpPulsar.Protocol.Proto
 
 			public bool HasPartitionKey()
             {
-                return _metadata.HasPartitionKey;
+                return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
             }
 
 			public string GetPartitionKey()
@@ -123,20 +123,19 @@ namespace SharpPulsar.Protocol.Proto
             }
 
 			public bool PartitionKeyB64Encoded => _metadata.PartitionKeyB64Encoded;
-			public ByteString GetOrderingKey()
+			public byte[] GetOrderingKey()
             {
                 return _metadata.OrderingKey;
             }
 
-			public List<string> ReplicateToList => _metadata.ReplicateTo.ToList();
 			public bool HasDeliverAtTime()
             {
-                return _metadata.HasDeliverAtTime;
+                return _metadata.DeliverAtTime > 0;
             }
 
 			public bool HasProducerName()
             {
-                return _metadata.HasProducerName;
+                return !string.IsNullOrWhiteSpace(_metadata.ProducerName);
             }
 			public Builder SetSequenceId(long value)
 			{
@@ -209,7 +208,7 @@ namespace SharpPulsar.Protocol.Proto
 			
             public string GetReplicateTo(int index)
 			{
-				return _metadata.ReplicateTo[index];
+				return _metadata.ReplicateToes[index];
 			}
 			public Builder SetReplicateTo(int index, string value)
 			{
@@ -217,7 +216,7 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _metadata.ReplicateTo.Insert(index, value);
+                _metadata.ReplicateToes.Insert(index, value);
 
 				return this;
 			}
@@ -227,13 +226,13 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-				_metadata.ReplicateTo.Add(value);
+				_metadata.ReplicateToes.Add(value);
 
 				return this;
 			}
 			public Builder AddAllReplicateTo(IEnumerable<string> values)
 			{
-				_metadata.ReplicateTo.AddRange(values);
+				_metadata.ReplicateToes.AddRange(values);
 				return this;
 			}
 			
@@ -343,7 +342,7 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public Builder SetEncryptionParam(ByteString value)
+			public Builder SetEncryptionParam(byte[] value)
 			{
 				if (value == null)
 				{
@@ -355,7 +354,7 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public Builder SetSchemaVersion(ByteString value)
+			public Builder SetSchemaVersion(byte[] value)
 			{
 				if (value == null)
 				{
@@ -373,7 +372,7 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public Builder SetOrderingKey(ByteString value)
+			public Builder SetOrderingKey(byte[] value)
 			{
 				if (value == null)
 				{

@@ -23,7 +23,7 @@ namespace SharpPulsar.Shared.Auth
 	/// <summary>
 	/// Authentication data.
 	/// </summary>
-	public class AuthData
+	public class AuthDataShared
 	{
 		
 		public static sbyte[] InitAuthData = (sbyte[])(object)Encoding.UTF8.GetBytes("PulsarAuthInit");
@@ -32,11 +32,11 @@ namespace SharpPulsar.Shared.Auth
 
 		public bool Complete => Bytes == null;
 
-        public AuthData(byte[] authData)
+        public AuthDataShared(byte[] authData)
         {
             Bytes = (sbyte[]) (object) authData;
         }
-        public AuthData(sbyte[] authData)
+        public AuthDataShared(sbyte[] authData)
         {
             Bytes = authData;
         }

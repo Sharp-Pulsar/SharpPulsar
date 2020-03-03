@@ -26,11 +26,6 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			
 			
-			public bool HasProducerId()
-			{
-				return _send.HasProducerId;
-			}
-			
 
             public Builder SetProducerId(long value)
             {
@@ -38,10 +33,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasSequenceId()
-			{
-				return _send.HasSequenceId;
-			}
 			
             public Builder SetSequenceId(long value)
             {
@@ -49,19 +40,10 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasNumMessages()
-			{
-				return _send.HasNumMessages;
-			}
-			
             public Builder SetNumMessages(int value)
             {
                 _send.NumMessages = value;
 				return this;
-			}
-			public bool HasTxnidLeastBits()
-			{
-				return _send.HasTxnidLeastBits;
 			}
 			
             public Builder SetTxnidLeastBits(long value)
@@ -70,19 +52,10 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasTxnidMostBits()
-			{
-				return _send.HasTxnidMostBits;
-			}
-			
             public Builder SetTxnidMostBits(long value)
             {
                 _send.TxnidMostBits = (ulong)value;
                 return this;
-			}
-			public bool HasHighestSequenceId()
-			{
-				return _send.HasHighestSequenceId;
 			}
 			
             public Builder SetHighestSequenceId(long value)

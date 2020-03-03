@@ -29,21 +29,12 @@ namespace SharpPulsar.Protocol.Proto
             }
 
 			
-			public bool HasConsumerId()
-			{
-				return _seek.HasConsumerId;
-			}
-			
             public Builder SetConsumerId(long value)
             {
                 _seek.ConsumerId = (ulong) value;
 				return this;
 			}
 			
-			public bool HasRequestId()
-			{
-				return _seek.HasRequestId;
-			}
 			
             public Builder SetRequestId(long value)
             {
@@ -51,10 +42,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasMessageId()
-			{
-				return _seek.HasMessageId;
-			}
 			public MessageIdData GetMessageId()
 			{
 				return _seek.MessageId;
@@ -73,11 +60,6 @@ namespace SharpPulsar.Protocol.Proto
 			{
                 _seek.MessageId = builderForValue.Build();
 				return this;
-			}
-			
-			public bool HasMessagePublishTime()
-			{
-				return _seek.HasMessagePublishTime;
 			}
 			
             public Builder SetMessagePublishTime(long value)

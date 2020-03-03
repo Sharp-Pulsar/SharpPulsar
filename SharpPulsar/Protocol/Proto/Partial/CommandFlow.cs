@@ -32,14 +32,9 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasMessagePermits()
-			{
-				return _flow.HasMessagePermits;
-			}
-			
             public Builder SetMessagePermits(int value)
             {
-                _flow.MessagePermits = (uint) value;
+                _flow.messagePermits = (uint) value;
 				return this;
 			}
 			

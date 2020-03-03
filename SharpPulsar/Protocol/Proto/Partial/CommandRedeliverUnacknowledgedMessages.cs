@@ -31,11 +31,6 @@ namespace SharpPulsar.Protocol.Proto
                 return _messages;
             }
 			
-			public bool HasConsumerId()
-			{
-				return _messages.HasConsumerId;
-			}
-			
             public Builder SetConsumerId(long value)
             {
                 _messages.ConsumerId = (ulong) value;

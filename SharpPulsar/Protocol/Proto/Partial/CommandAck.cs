@@ -1,10 +1,7 @@
-﻿using DotNetty.Common;
-using Google.Protobuf;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SharpPulsar.Utility.Protobuf;
-using static SharpPulsar.Utility.Protobuf.ByteBufCodedInputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
@@ -35,30 +32,22 @@ namespace SharpPulsar.Protocol.Proto
                 return _ack;
             }
 
-			public bool HasConsumerId()
-			{
-				return _ack.HasConsumerId;
-			}
 			
             public Builder SetConsumerId(long value)
             {
                 _ack.ConsumerId = (ulong) value;
 				return this;
 			}
-			public bool HasAckType()
-			{
-				return _ack.HasAckType;
-			}
 			
-            public Builder SetAckType(Types.AckType value)
+            public Builder SetAckType(AckType value)
 			{
-                _ack.AckType = value;
+                _ack.ack_type = value;
 				return this;
 			}
 			
             public MessageIdData GetMessageId(int index)
 			{
-				return _ack.MessageId[index];
+				return _ack.MessageIds[index];
 			}
 			public Builder SetMessageId(int index, MessageIdData value)
 			{
@@ -66,14 +55,14 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _ack.MessageId[index] = value;
+                _ack.MessageIds[index] = value;
 
 				return this;
 			}
 			public Builder SetMessageId(int index, MessageIdData.Builder builderForValue)
 			{
 
-                _ack.MessageId[index] = builderForValue.Build();
+                _ack.MessageIds[index] = builderForValue.Build();
 
 				return this;
 			}
@@ -83,7 +72,7 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _ack.MessageId.Add(value);
+                _ack.MessageIds.Add(value);
 
 				return this;
 			}
@@ -93,41 +82,37 @@ namespace SharpPulsar.Protocol.Proto
 				{
 					throw new NullReferenceException();
 				}
-                _ack.MessageId.Insert(index, value);
+                _ack.MessageIds.Insert(index, value);
 
 				return this;
 			}
 			public Builder AddMessageId(MessageIdData.Builder builderForValue)
 			{
-                _ack.MessageId.Add(builderForValue.Build());
+                _ack.MessageIds.Add(builderForValue.Build());
 
 				return this;
 			}
 			public Builder AddMessageId(int index, MessageIdData.Builder builderForValue)
 			{
-                _ack.MessageId.Insert(index, builderForValue.Build());
+                _ack.MessageIds.Insert(index, builderForValue.Build());
 
 				return this;
 			}
 			public Builder AddAllMessageId(IEnumerable<MessageIdData> values)
 			{
-				values.ToList().ForEach(_ack.MessageId.Add);
+				values.ToList().ForEach(_ack.MessageIds.Add);
 
 				return this;
 			}
-			public bool HasValidationError()
-			{
-				return _ack.HasValidationError;
-			}
 			
-            public Builder SetValidationError(Types.ValidationError? value)
+            public Builder SetValidationError(ValidationError? value)
 			{
 				if (value == null)
 				{
 					throw new NullReferenceException();
 				}
 
-                _ack.ValidationError = (Types.ValidationError) value;
+                _ack.validation_error = (ValidationError) value;
                 return this;
             }
 			
@@ -190,21 +175,12 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasTxnidLeastBits()
-			{
-				return _ack.HasTxnidLeastBits;
-			}
-			
             public Builder SetTxnidLeastBits(long value)
             {
                 _ack.TxnidLeastBits = (ulong) value;
 				return this;
 			}
 			
-			public bool HasTxnidMostBits()
-			{
-				return _ack.HasTxnidMostBits;
-			}
 			
             public Builder SetTxnidMostBits(long value)
             {

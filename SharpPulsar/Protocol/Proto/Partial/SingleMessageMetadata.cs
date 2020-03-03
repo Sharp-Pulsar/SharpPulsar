@@ -74,10 +74,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasPartitionKey()
-			{
-				return _single.HasPartitionKey;
-			}
 			public string GetPartitionKey()
 			{
 				return _single.PartitionKey;
@@ -94,11 +90,6 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasPayloadSize()
-			{
-				return _single.HasPayloadSize;
-			}
-			
             public Builder SetPayloadSize(int value)
             {
                 _single.PayloadSize = value;
@@ -107,7 +98,7 @@ namespace SharpPulsar.Protocol.Proto
 			
 			public bool HasCompactedOut()
 			{
-				return _single.HasCompactedOut;
+				return _single.CompactedOut;
 			}
 			
             public Builder SetCompactedOut(bool value)
@@ -116,20 +107,10 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasEventTime()
-			{
-				return _single.HasEventTime;
-			}
-			
             public Builder SetEventTime(long value)
             {
                 _single.EventTime = (ulong) value;
 				return this;
-			}
-			
-			public bool HasPartitionKeyB64Encoded()
-			{
-				return _single.HasPartitionKeyB64Encoded;
 			}
 			
             public Builder SetPartitionKeyB64Encoded(bool value)
@@ -138,24 +119,15 @@ namespace SharpPulsar.Protocol.Proto
 				return this;
 			}
 			
-			public bool HasOrderingKey()
-			{
-				return _single.HasOrderingKey;
-			}
-			
 			public Builder SetOrderingKey(byte[] value)
 			{
 				if (value == null)
 				{
 					throw new NullReferenceException();
 				}
-				_single.OrderingKey = ByteString.CopyFrom(value);
+				_single.OrderingKey = value;
 
 				return this;
-			}
-			public bool HasSequenceId()
-			{
-				return _single.HasSequenceId;
 			}
 			
             public Builder SetSequenceId(long value)

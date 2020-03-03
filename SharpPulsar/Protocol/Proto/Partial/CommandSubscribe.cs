@@ -71,7 +71,7 @@ namespace SharpPulsar.Protocol.Proto
 			
             public Builder SetSubType(SubType value)
 			{
-                _subscribe.Type = value;
+                _subscribe.subType = value;
 
 				return this;
 			}
