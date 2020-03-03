@@ -10,7 +10,9 @@ namespace SharpPulsar.Stole
     {
         public static T Deserialize<T>(byte[] sequence)
         {
-            using var ms = new MemoryStream(sequence,0, sequence.Length); 
+            byte[] buffer = new byte[sequence.Length];
+            using var ms = new MemoryStream(sequence); 
+            ProtoBuf.ProtoReader.DirectReadBytes(ms, buffer, 0, sequence.Length);
             return ProtoBuf.Serializer.Deserialize<T>(ms);
         }
 
