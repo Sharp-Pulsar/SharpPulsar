@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using Akka.Actor;
 using DotNetty.Buffers;
-using Google.Protobuf;
-using Microsoft.Extensions.Logging;
 using Pulsar.Common.Auth;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -17,18 +14,15 @@ using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Impl.Schema;
-using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Builder;
+using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using SharpPulsar.Utility;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -97,7 +91,7 @@ namespace SharpPulsar.Akka.Consumer
         private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
         {
             var requestid = _requestId++;
-            if (_conf.SubscriptionType != CommandSubscribe.Types.SubType.Shared && _conf.SubscriptionType != CommandSubscribe.Types.SubType.KeyShared)
+            if (_conf.SubscriptionType != CommandSubscribe.SubType.Shared && _conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
             {
                 // We cannot redeliver single messages if subscription type is not Shared
                 var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid);
@@ -168,8 +162,8 @@ namespace SharpPulsar.Akka.Consumer
             {
                 var msgId = new MessageIdData
                 {
-                    EntryId = (ulong) m.MessageId.EntryId,
-                    LedgerId = (ulong) m.MessageId.LedgerId,
+                    entryId = (ulong) m.MessageId.EntryId,
+                    ledgerId = (ulong) m.MessageId.LedgerId,
                     Partition = m.MessageId.Partition,
                     BatchIndex = m.MessageId.BatchIndex
                 };
@@ -187,16 +181,16 @@ namespace SharpPulsar.Akka.Consumer
         {
             if (Context.System.Log.IsDebugEnabled)
             {
-                Context.System.Log.Debug("[{}][{}] Received message: {}/{}", _topicName.ToString(), _subscriptionName, messageId.LedgerId, messageId.EntryId);
-                _consumerEventListener.Log($"[{_topicName}][{_subscriptionName}] Received message: {messageId.LedgerId}/{messageId.EntryId}");
+                Context.System.Log.Debug("[{}][{}] Received message: {}/{}", _topicName.ToString(), _subscriptionName, messageId.ledgerId, messageId.entryId);
+                _consumerEventListener.Log($"[{_topicName}][{_subscriptionName}] Received message: {messageId.ledgerId}/{messageId.entryId}");
             }
 
-            if (!VerifyChecksum(headersAndPayload, messageId))
+            /*if (!VerifyChecksum(headersAndPayload, messageId))
             {
                 // discard message with checksum error
                 DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
                 return;
-            }
+            }*/
 
             MessageMetadata msgMetadata;
             try
@@ -209,7 +203,7 @@ namespace SharpPulsar.Akka.Consumer
                 return;
             }
             var numMessages = msgMetadata.NumMessagesInBatch;
-            var msgId = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
+            var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
             
             var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, headersAndPayload);
 
@@ -232,10 +226,10 @@ namespace SharpPulsar.Akka.Consumer
 
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
             // and return undecrypted payload
-            if (isMessageUndecryptable || (numMessages == 1 && !msgMetadata.HasNumMessagesInBatch))
+            if (isMessageUndecryptable || (numMessages == 1 && msgMetadata.NumMessagesInBatch > 0))
             {
 
-                if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorEntryIndex((long)messageId.EntryId))
+                if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorEntryIndex((long)messageId.entryId))
                 {
                     // We need to discard entries that were prior to startMessageId
                     if (Context.System.Log.IsDebugEnabled)
@@ -268,7 +262,7 @@ namespace SharpPulsar.Akka.Consumer
             var batchSize = msgMetadata.NumMessagesInBatch;
 
             // create ack tracker for entry aka batch
-            var batchMessage = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
+            var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
             var acker = BatchMessageAcker.NewAcker(batchSize);
             IList<Message> possibleToDeadLetter = null;
             if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
@@ -310,7 +304,7 @@ namespace SharpPulsar.Akka.Consumer
                         continue;
                     }
 
-                    var batchMessageIdImpl = new BatchMessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex, i, acker);
+                    var batchMessageIdImpl = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, i, acker);
 
                     var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                     if(_hasParentConsumer) 
@@ -353,10 +347,10 @@ namespace SharpPulsar.Akka.Consumer
             if (msgMetadata.EncryptionKeys.Count > 0)
             {
                 encryptionCtx = new EncryptionContext();
-                IDictionary<string, EncryptionContext.EncryptionKey> keys = msgMetadata.EncryptionKeys.ToDictionary(e => e.Key, e => new EncryptionContext.EncryptionKey { KeyValue = (sbyte[])(object)e.Value.ToByteArray(), Metadata = e.Metadata?.ToDictionary(k => k.Key, k => k.Value) });
+                IDictionary<string, EncryptionContext.EncryptionKey> keys = msgMetadata.EncryptionKeys.ToDictionary(e => e.Key, e => new EncryptionContext.EncryptionKey { KeyValue = (sbyte[])(object)e.Value, Metadata = e.Metadatas?.ToDictionary(k => k.Key, k => k.Value) });
                 var encParam = new sbyte[MessageCrypto.IvLen];
                 msgMetadata.EncryptionParam.CopyTo((byte[])(object)encParam, 0);
-                int? batchSize = msgMetadata.HasNumMessagesInBatch ? msgMetadata.NumMessagesInBatch : 0;
+                int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
                 encryptionCtx.Keys = keys;
                 encryptionCtx.Param = encParam;
                 encryptionCtx.Algorithm = msgMetadata.EncryptionAlgo;
@@ -372,7 +366,7 @@ namespace SharpPulsar.Akka.Consumer
         }
         private bool IsResetIncludedAndSameEntryLedger(MessageIdData messageId)
         {
-            return !_conf.ResetIncludeHead && _startMessageId != null && (long)messageId.LedgerId == _startMessageId.LedgerId && (long)messageId.EntryId == _startMessageId.EntryId;
+            return !_conf.ResetIncludeHead && _startMessageId != null && (long)messageId.ledgerId == _startMessageId.LedgerId && (long)messageId.entryId == _startMessageId.EntryId;
         }
         private bool IsMessageUndecryptable(MessageMetadata msgMetadata)
         {
@@ -401,7 +395,7 @@ namespace SharpPulsar.Akka.Consumer
                         DiscardMessage(messageId, CommandAck.ValidationError.DecryptionError);
                         return null;
                     case ConsumerCryptoFailureAction.Fail:
-                        IMessageId m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
+                        IMessageId m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
                         Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message", _topicName.ToString(), _subscriptionName, _consumerName, m);
                         //UnAckedMessageTracker.Add(m);
                         return null;
@@ -426,7 +420,7 @@ namespace SharpPulsar.Akka.Consumer
                     DiscardMessage(messageId, CommandAck.ValidationError.DecryptionError);
                     return null;
                 case ConsumerCryptoFailureAction.Fail:
-                    var m = new MessageId((long)messageId.LedgerId, (long)messageId.EntryId, _partitionIndex);
+                    var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
                     Context.System.Log.Error("[{}][{}][{}][{}] Message delivery failed since unable to decrypt incoming message", _topicName.ToString(), _subscriptionName, _consumerName, m);
                     //UnAckedMessageTracker.Add(m);
                     return null;
@@ -488,13 +482,13 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void DiscardCorruptedMessage(MessageIdData messageId, CommandAck.ValidationError validationError)
         {
-            Context.System.Log.Error("[{}][{}] Discarding corrupted message at {}:{}", _topicName.ToString(), _subscriptionName, messageId.LedgerId, messageId.EntryId);
+            Context.System.Log.Error("[{}][{}] Discarding corrupted message at {}:{}", _topicName.ToString(), _subscriptionName, messageId.ledgerId, messageId.entryId);
             DiscardMessage(messageId, validationError);
         }
 
         private void DiscardMessage(MessageIdData messageId, CommandAck.ValidationError validationError)
         {
-            var cmd = Commands.NewAck(_consumerid, (long)messageId.LedgerId, (long)messageId.EntryId, CommandAck.AckType.Individual, validationError, new Dictionary<string, long>());
+            var cmd = Commands.NewAck(_consumerid, (long)messageId.ledgerId, (long)messageId.entryId, CommandAck.AckType.Individual, validationError, new Dictionary<string, long>());
             var payload = new Payload(cmd.Array, _requestId++, "NewAck");
             _broker.Tell(payload);
         }
@@ -507,7 +501,7 @@ namespace SharpPulsar.Akka.Consumer
                 int computedChecksum = Commands.ComputeChecksum(headersAndPayload);
                 if (checksum != computedChecksum)
                 {
-                    Context.System.Log.Error("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", _topicName.ToString(), _subscriptionName, messageId.LedgerId, messageId.EntryId, checksum.ToString("x"), computedChecksum.ToString("x"));
+                    Context.System.Log.Error("[{}][{}] Checksum mismatch for message at {}:{}. Received checksum: 0x{}, Computed checksum: 0x{}", _topicName.ToString(), _subscriptionName, messageId.ledgerId, messageId.entryId, checksum.ToString("x"), computedChecksum.ToString("x"));
                     return false;
                 }
             }
@@ -565,8 +559,8 @@ namespace SharpPulsar.Akka.Consumer
                     {
                         Name = s.Schema.Name,
                         Properties = s.Schema.Properties.ToDictionary(x => x.Key, x => x.Value),
-                        Type = s.Schema.Type == Schema.Types.Type.Json ? SchemaType.Json : SchemaType.None,
-                        Schema = (sbyte[]) (object) s.Schema.SchemaData.ToByteArray()
+                        Type = s.Schema.type == Schema.Type.Json ? SchemaType.Json : SchemaType.None,
+                        Schema = (sbyte[]) (object) s.Schema.SchemaData
                     };
                     _schema = ISchema.GetSchema(schemaInfo);
                 }

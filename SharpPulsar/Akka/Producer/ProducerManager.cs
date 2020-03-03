@@ -79,6 +79,11 @@ namespace SharpPulsar.Akka.Producer
             SendPartitionMetadataRequestCommand(conf);
         }
 
+        protected override void Unhandled(object message)
+        {
+            Console.WriteLine($"unhandled '{message.GetType()}'");
+        }
+
         private void SendPartitionMetadataRequestCommand(ProducerConfigurationData conf)
         {
             var requestId = _requestIdGenerator++;
@@ -95,11 +100,11 @@ namespace SharpPulsar.Akka.Producer
                 {
                     Name = s.Name, Schema = (sbyte[]) (object) s.Schema, Properties = s.Properties
                 };
-                if (s.Type == Schema.Types.Type.None)
+                if (s.Type == Schema.Type.None)
                 {
                     info.Type = SchemaType.Bytes;
                 }
-                else if (s.Type == Schema.Types.Type.Json)
+                else if (s.Type == Schema.Type.Json)
                 {
                     info.Type = SchemaType.Json;
                 }
@@ -115,7 +120,7 @@ namespace SharpPulsar.Akka.Producer
         }
         private void Init(ClientConfigurationData configuration)
         {
-            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration));
+            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");

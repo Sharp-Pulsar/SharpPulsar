@@ -26,7 +26,7 @@ namespace SharpPulsar.Akka.Reader
             var consumerConfiguration = new ConsumerConfigurationData();
             consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
             consumerConfiguration.SubscriptionName = subscription;
-            consumerConfiguration.SubscriptionType = CommandSubscribe.Types.SubType.Exclusive;
+            consumerConfiguration.SubscriptionType = CommandSubscribe.SubType.Exclusive;
             consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
             consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
             consumerConfiguration.Schema = readerConfiguration.Schema;

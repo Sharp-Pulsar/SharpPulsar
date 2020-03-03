@@ -114,7 +114,7 @@ namespace SharpPulsar.Impl
 			{
 				return msg.SchemaVersion == null;
 			}
-			return Equals(msg.SchemaVersion, part.MessageMetadata.GetSchemaVersion().ToByteArray());
+			return Equals(msg.SchemaVersion, part.MessageMetadata.GetSchemaVersion());
 		}
 
 		private string GetKey(Message msg)
@@ -185,7 +185,7 @@ namespace SharpPulsar.Impl
 					}
 					if (msg.HasOrderingKey())
 					{
-						MessageMetadata.SetOrderingKey(ByteString.CopyFrom((byte[])(object)msg.OrderingKey));
+						MessageMetadata.SetOrderingKey((byte[])(object)msg.OrderingKey);
 					}
 					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)));
 					

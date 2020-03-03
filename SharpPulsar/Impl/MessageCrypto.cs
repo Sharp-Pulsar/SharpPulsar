@@ -313,11 +313,11 @@ namespace SharpPulsar.Impl
 							{
 								kvList.Add(KeyValue.NewBuilder().SetKey(m.Key).SetValue(m.Value).Build());
 							});
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue(ByteString.CopyFrom((byte[])(object)keyInfo.Key)).AddAllMetadata(kvList).Build());
+							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue((byte[])(object)keyInfo.Key).AddAllMetadata(kvList).Build());
 						}
 						else
 						{
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue(ByteString.CopyFrom((byte[])(object)keyInfo.Key)).Build());
+							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue((byte[])(object)keyInfo.Key).Build());
 						}
 					}
 					else
@@ -334,7 +334,7 @@ namespace SharpPulsar.Impl
 				var keyParameter = new AeadParameters(new KeyParameter(_dataKey.Key), TagLen, _iv);
 				
 				// Update message metadata with encryption param
-				msgMetadata.SetEncryptionParam(ByteString.CopyFrom(_iv));
+				msgMetadata.SetEncryptionParam(_iv);
 
 				IByteBuffer targetBuf = null;
 				try
@@ -494,7 +494,7 @@ namespace SharpPulsar.Impl
 			for (var i = 0; i < encKeys.Count; i++)
 			{
 
-				var msgDataKey = encKeys[i].Value.ToByteArray();
+				var msgDataKey = encKeys[i].Value;
 				var keyDigest = Digest.ComputeHash(msgDataKey);
 				if (_dataKeyCache.TryGetValue(Unpooled.WrappedBuffer(keyDigest), out var storedSecretKey))
 				{
@@ -549,8 +549,8 @@ namespace SharpPulsar.Impl
 			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
 			var encKeyInfo = encKeys.Where(kbv =>
 			{
-				var encDataKey = kbv.Value.ToByteArray();
-				IList<KeyValue> encKeyMeta = kbv.Metadata;
+				var encDataKey = kbv.Value;
+				IList<KeyValue> encKeyMeta = kbv.Metadatas;
 				return DecryptDataKey(kbv.Key, encDataKey, encKeyMeta, keyReader);
 			}).DefaultIfEmpty(null).First();
 

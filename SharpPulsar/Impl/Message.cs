@@ -117,18 +117,18 @@ namespace SharpPulsar.Impl
 				Properties.Clear();
 			}
 
-			if (singleMessageMetadata.HasPartitionKey)
+			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
 			{
 				MessageBuilder.SetPartitionKeyB64Encoded(singleMessageMetadata.PartitionKeyB64Encoded);
 				MessageBuilder.SetPartitionKey(singleMessageMetadata.PartitionKey);
 			}
 
-			if (singleMessageMetadata.HasEventTime)
+			if (singleMessageMetadata.EventTime > 0)
 			{
 				MessageBuilder.SetEventTime((long)singleMessageMetadata.EventTime);
 			}
 
-			if (singleMessageMetadata.HasSequenceId)
+			if (singleMessageMetadata.SequenceId > 0)
 			{
 				MessageBuilder.SetSequenceId((long)singleMessageMetadata.SequenceId);
 			}
@@ -223,7 +223,7 @@ namespace SharpPulsar.Impl
             {
                 if (MessageBuilder != null && MessageBuilder.HasSchemaVersion())
 				{
-					return (sbyte[])(object)MessageBuilder.GetSchemaVersion().ToByteArray();
+					return (sbyte[])(object)MessageBuilder.GetSchemaVersion();
 				}
 
                 return null;
@@ -374,7 +374,7 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder == null)
                     throw new NullReferenceException();
-				return (sbyte[])(object)MessageBuilder.GetOrderingKey().ToByteArray();
+				return (sbyte[])(object)MessageBuilder.GetOrderingKey();
 			}
 		}
 
@@ -383,7 +383,7 @@ namespace SharpPulsar.Impl
 		{
             if (MessageBuilder == null)
                 throw new NullReferenceException();
-			return MessageBuilder.ReplicateToList.Count > 0;
+			return MessageBuilder.ReplicateToList().Count > 0;
 		}
 
 		public IList<string> ReplicateTo
@@ -392,7 +392,7 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder == null)
                     throw new NullReferenceException();
-				return MessageBuilder.ReplicateToList;
+				return MessageBuilder.ReplicateToList();
 			}
 		}
 

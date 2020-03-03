@@ -37,7 +37,12 @@ namespace SharpPulsar.Protocol.Proto
                 return this;
             }
 
-            public int NumMessagesInBatch {
+            public List<string> ReplicateToList()
+            {
+                return _metadata.ReplicateToes;
+            }
+
+			public int NumMessagesInBatch {
                 get => _metadata.NumMessagesInBatch;
                 set => _metadata.NumMessagesInBatch = value;
 
@@ -230,7 +235,7 @@ namespace SharpPulsar.Protocol.Proto
 
 				return this;
 			}
-			public Builder AddAllReplicateTo(IEnumerable<string> values)
+			public Builder AddAllReplicateTo(List<string> values)
 			{
 				_metadata.ReplicateToes.AddRange(values);
 				return this;

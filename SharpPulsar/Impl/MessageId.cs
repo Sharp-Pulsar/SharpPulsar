@@ -4,6 +4,7 @@ using DotNetty.Buffers;
 using Google.Protobuf;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility.Protobuf;
 
@@ -87,7 +88,7 @@ namespace SharpPulsar.Impl
             MessageIdData idData = builder.Build();
 			try
 			{
-                idData.MergeFrom(inputStream);
+                //idData.MergeFrom(inputStream);
 			}
 			catch (System.Exception e)
 			{
@@ -95,13 +96,13 @@ namespace SharpPulsar.Impl
 			}
 
 			MessageId messageId;
-			if (idData.HasBatchIndex)
+			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
 			}
 
 			return messageId;
@@ -122,7 +123,7 @@ namespace SharpPulsar.Impl
             MessageIdData idData = builder.Build();
 			try
 			{
-				idData.MergeFrom(inputStream);
+				//idData.MergeFrom(inputStream);
 			}
             catch (System.Exception e)
             {
@@ -130,13 +131,13 @@ namespace SharpPulsar.Impl
             }
 
 			IMessageId messageId;
-			if (idData.HasBatchIndex)
+			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.LedgerId, (long)idData.EntryId, idData.Partition);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
 			}
 			if (idData.Partition > -1 && topicName != null)
 			{
@@ -164,12 +165,12 @@ namespace SharpPulsar.Impl
 			}
 
 			var msgId = builder.Build();
-			var size = msgId.CalculateSize();
+			var size = msgId.ByteLength();
 			var serialized = Unpooled.Buffer(size, size);
 			var stream = new CodedOutputStream(serialized.Array);
 			try
 			{
-				msgId.WriteTo((CodedOutputStream) stream);
+				//msgId.WriteTo((CodedOutputStream) stream);
 			}
 			catch (IOException e)
 			{

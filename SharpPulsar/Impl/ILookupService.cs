@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Types;
+using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -90,7 +90,7 @@ namespace SharpPulsar.Impl
 		/// </summary>
 		/// <param name="namespace"> : namespace-name
 		/// @return </param>
-		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode);
+		ValueTask<IList<string>> GetTopicsUnderNamespace(NamespaceName @namespace, CommandGetTopicsOfNamespace.Mode mode);
 		void Close();
         IList<IPEndPoint> AddressList();
 

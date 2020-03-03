@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
@@ -16,6 +18,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 using ByteString = Akka.IO.ByteString;
 using Dns = System.Net.Dns;
@@ -131,15 +134,21 @@ namespace SharpPulsar.Akka.Network
             {
                 if (message is Tcp.Received received)  // data received from pulsar server
                 {
-					HandleTcpReceived(received.Data.ToArray());
+                    var b = received.Data.ToArray();
+                    Console.WriteLine(Encoding.ASCII.GetString(b));
+
+                    HandleTcpReceived(received.Data.ToArray());
                 }
                 else if (message is Payload p)   // data received from producer/consumer
                 {
+                    var b = p.Bytes;
+                    Console.WriteLine(Encoding.ASCII.GetString(b));
                     _requests.Add(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                     connection.Tell(Tcp.Write.Create(ByteString.FromBytes(p.Bytes)));
                 }
                 else if (message is ConnectionCommand b)   // data received from self
                 {
+                    Console.WriteLine("Data received from self");
                     connection.Tell(Tcp.Write.Create(ByteString.FromBytes(b.Command)));
                 }
                 else if (message is Tcp.PeerClosed)
@@ -150,6 +159,12 @@ namespace SharpPulsar.Akka.Network
                 else Unhandled(message);
             };
         }
+
+        protected override void Unhandled(object message)
+        {
+            Console.WriteLine($"Unhandled {message.GetType()} in {Self.Path}");
+        }
+
         public int RemoteEndpointProtocolVersion
         {
             set => _remoteEndpointProtocolVersion = value;
@@ -160,70 +175,70 @@ namespace SharpPulsar.Akka.Network
             try
 			{
                 // De-serialize the command
-                var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-                var c = JsonSerializer.Deserialize<BaseCommand>(readOnlySpan);
-                var cmd = buffer.ToObject<BaseCommand>();
+                var cmd = Stole.Serializer.Deserialize<BaseCommand>(buffer);
                 if (Log.IsEnabled(LogLevel.DebugLevel))
 				{
-					Log.Debug("[{}] Received cmd {}", RemoteAddress, cmd.Type);
+					Log.Debug("[{}] Received cmd {}", RemoteAddress, cmd.type);
 				}
 
-				switch (cmd.Type)
+				switch (cmd.type)
 				{
-                    case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
-                        var ns = cmd.GetTopicsOfNamespaceResponse;
+                    case BaseCommand.Type.Connected:
+                        var c = cmd.Connected;
+                        Console.WriteLine($"Now connected: ServerVersion = {c.ServerVersion}, ProtocolVersion = {c.ProtocolVersion}");
+                        break;
+                    case BaseCommand.Type.GetTopicsOfNamespaceResponse:
+                        var ns = cmd.getTopicsOfNamespaceResponse;
                         var requestid = (long) ns.RequestId;
                         _requests[requestid].Key.Tell(new NamespaceTopics(requestid, ns.Topics.ToList()));
                         _requests.Remove(requestid);
                         break;
-                    case BaseCommand.Types.Type.Message:
+                    case BaseCommand.Type.Message:
                         var msg = cmd.Message;
-                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.LedgerId, (long)msg.MessageId.EntryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer, (int)msg.RedeliveryCount));
+                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer, (int)msg.RedeliveryCount));
                         break;
-                    case BaseCommand.Types.Type.Success:
+                    case BaseCommand.Type.Success:
                         var s = cmd.Success;
-                        _manager.Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.HasSchema));
+                        _manager.Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.Schema != null));
                         _requests.Remove((long)s.RequestId);
                         break;
-                    case BaseCommand.Types.Type.SendReceipt:
+                    case BaseCommand.Type.SendReceipt:
                         var send = cmd.SendReceipt;
-                        _manager.Tell(new SentReceipt((long)send.ProducerId, (long)send.SequenceId, (long)send.MessageId.EntryId, (long)send.MessageId.LedgerId, send.MessageId.BatchIndex, send.MessageId.Partition));
+                        _manager.Tell(new SentReceipt((long)send.ProducerId, (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId, send.MessageId.BatchIndex, send.MessageId.Partition));
                         break;
-                    case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
-                        var res = cmd.GetOrCreateSchemaResponse;
-                        _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion.ToByteArray()));
+                    case BaseCommand.Type.GetOrCreateSchemaResponse:
+                        var res = cmd.getOrCreateSchemaResponse;
+                        _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion));
                         _requests.Remove((long)res.RequestId);
                         break;
-                    case BaseCommand.Types.Type.ProducerSuccess:
+                    case BaseCommand.Type.ProducerSuccess:
                         var p = cmd.ProducerSuccess;
-                        _manager.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion.ToByteArray()));
+                        _manager.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
                         _requests.Remove((long)p.RequestId);
                         break;
-                    case BaseCommand.Types.Type.GetSchemaResponse:
-                        var schema = cmd.GetSchemaResponse.Schema;
-                        _manager.Tell(new SchemaResponse(schema.SchemaData.ToByteArray(), schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.Type, (long)cmd.GetSchemaResponse.RequestId));
-                        _requests.Remove((long)cmd.GetSchemaResponse.RequestId);
+                    case BaseCommand.Type.GetSchemaResponse:
+                        var schema = cmd.getSchemaResponse.Schema;
+                        _manager.Tell(new SchemaResponse(schema.SchemaData, schema.Name, schema.Properties.ToImmutableDictionary(x=> x.Key, x=> x.Value), schema.type, (long)cmd.getSchemaResponse.RequestId));
+                        _requests.Remove((long)cmd.getSchemaResponse.RequestId);
                         break;
-                    case BaseCommand.Types.Type.LookupResponse:
-                        var m = cmd.LookupTopicResponse;
-                        _manager.Tell(new BrokerLookUp(m.Message, m.Authoritative, m.Response, m.BrokerServiceUrl, m.BrokerServiceUrlTls, (long)m.RequestId));
+                    case BaseCommand.Type.LookupResponse:
+                        var m = cmd.lookupTopicResponse;
+                        _manager.Tell(new BrokerLookUp(m.Message, m.Authoritative, m.Response, m.brokerServiceUrl, m.brokerServiceUrlTls, (long)m.RequestId));
                         _requests.Remove((long)m.RequestId);
                         break;
-                    case BaseCommand.Types.Type.PartitionedMetadataResponse:
-                        var part = cmd.PartitionMetadataResponse;
+                    case BaseCommand.Type.PartitionedMetadataResponse:
+                        var part = cmd.partitionMetadataResponse;
                         var rPay = _requests[(long)part.RequestId];
                         rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
                         _requests.Remove((long)part.RequestId);
                         break;
-                    case BaseCommand.Types.Type.Ping:
-						if (cmd.HasPing)
+                    case BaseCommand.Type.Ping:
 							HandlePing(cmd.Ping);
 						break;
-                    case BaseCommand.Types.Type.Connect:
+                    case BaseCommand.Type.Connect:
                         _manager.Tell(new TcpSuccess(RemoteHostName));
                         break;
-					case BaseCommand.Types.Type.Pong:
-						if (cmd.HasPong)
+					case BaseCommand.Type.Pong:
 							HandlePong(cmd.Pong);
 						break;
 					default:
@@ -231,9 +246,10 @@ namespace SharpPulsar.Akka.Network
                         break;
                 }
 			}
-			finally
-			{
-			}
+			catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
 		}
        
 		private void HandlePong(CommandPong cmdPong)
@@ -261,12 +277,13 @@ namespace SharpPulsar.Akka.Network
 				Log.Info("{} Connected through proxy to target broker at {}", RemoteAddress, ProxyToTargetBrokerAddress);
 			}
 			// Send CONNECT command
-            Self.Tell(new ConnectionCommand(NewConnectCommand().Array));
+            var c = new ConnectionCommand(NewConnectCommand());
+            Self.Tell(c);
             _state = State.SentConnectFrame;
-			Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(_keepAliveIntervalSeconds), Self, Commands.NewPing(), ActorRefs.NoSender);
+			Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(5), Self, new ConnectionCommand(Commands.NewPing().Array) , ActorRefs.NoSender);
 
         }
-		public IByteBuffer NewConnectCommand()
+		public byte[] NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
@@ -274,7 +291,8 @@ namespace SharpPulsar.Akka.Network
 			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthDataShared(Shared.Auth.AuthDataShared.InitAuthData));
 
-			var auth = AuthData.NewBuilder().SetAuthData(Google.Protobuf.ByteString.CopyFrom((byte[])(object)authData.Bytes)).Build();
+			var auth = AuthData.NewBuilder().SetAuthData((byte[])(object)authData.Bytes).Build();
+            
 			return Commands.NewConnect(Authentication.AuthMethodName, auth, _protocolVersion, null, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
         private sealed class ConnectionCommand

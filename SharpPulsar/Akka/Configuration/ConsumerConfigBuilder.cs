@@ -143,7 +143,7 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionType(CommandSubscribe.Types.SubType subscriptionType)
+		public ConsumerConfigBuilder SubscriptionType(CommandSubscribe.SubType subscriptionType)
 		{
 			_conf.SubscriptionType = subscriptionType;
             return this;

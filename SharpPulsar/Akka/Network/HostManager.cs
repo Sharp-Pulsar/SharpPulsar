@@ -39,6 +39,11 @@ namespace SharpPulsar.Akka.Network
             });
         }
 
+        protected override void Unhandled(object message)
+        {
+            Console.WriteLine($"Unhandled {message.GetType()} in {Self.Path}");
+        }
+
         protected override void PreStart()
         {
             for (var i = 0; i < _configuration.ConnectionsPerBroker; i++)

@@ -51,7 +51,7 @@ namespace SharpPulsar.Akka.Reader
         }
         private void Init(ClientConfigurationData configuration)
         {
-            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration),"ReaderManagerHost");
+            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");

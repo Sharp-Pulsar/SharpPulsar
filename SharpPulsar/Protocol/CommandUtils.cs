@@ -36,14 +36,14 @@ namespace SharpPulsar.Protocol
 		{
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(CommandProducer CommandProducer)
+		public static IDictionary<string, string> MetadataFromCommand(CommandProducer commandProducer)
 		{
-			return ToMap(CommandProducer.Metadata);
+			return ToMap(commandProducer.Metadatas);
 		}
 
-		public static IDictionary<string, string> MetadataFromCommand(CommandSubscribe CommandSubscribe)
+		public static IDictionary<string, string> MetadataFromCommand(CommandSubscribe commandSubscribe)
 		{
-			return ToMap(CommandSubscribe.Metadata);
+			return ToMap(commandSubscribe.Metadatas);
 		}
 
 		internal static IList<KeyValue> ToKeyValueList(IDictionary<string, string> metadata)
@@ -56,14 +56,14 @@ namespace SharpPulsar.Protocol
 			return metadata.SetOfKeyValuePairs().Select(e => new KeyValueBuilder().SetKey(e.Key).SetValue(e.Value).Build()).ToList();
 		}
 
-		private static IDictionary<string, string> ToMap(IList<KeyValue> KeyValues)
+		private static IDictionary<string, string> ToMap(IList<KeyValue> keyValues)
 		{
-			if (KeyValues == null || KeyValues.Count == 0)
+			if (keyValues == null || keyValues.Count == 0)
 			{
 				return new Dictionary<string,string>();
 			}
 
-			return KeyValues.ToDictionary(k => k.Key, k => k.Value);
+			return keyValues.ToDictionary(k => k.Key, k => k.Value);
 		}
 	}
 

@@ -30,7 +30,7 @@ namespace SharpPulsar.Impl.Conf
         public BatchMessageId StartMessageId { get; set; } 
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor> Interceptors { get; set; }
-		public CommandSubscribe.Types.SubType SubscriptionType { get; set; } = CommandSubscribe.Types.SubType.Exclusive;
+		public CommandSubscribe.SubType SubscriptionType { get; set; } = CommandSubscribe.SubType.Exclusive;
 		public IMessageListener MessageListener { get; set; }
 		public IConsumerEventListener ConsumerEventListener { get; set; }
 		public ISchema Schema { get; set; }

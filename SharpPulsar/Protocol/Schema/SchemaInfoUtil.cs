@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using SharpPulsar.Protocol.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,8 +47,8 @@ namespace SharpPulsar.Protocol.Schema
             var si = new SchemaInfo
             {
                 Name = schema.Name,
-                Schema = (sbyte[]) (Array) schema.SchemaData.ToByteArray(),
-                Type = Commands.GetSchemaType(schema.Type)
+                Schema = (sbyte[]) (Array) schema.SchemaData,
+                Type = Commands.GetSchemaType(schema.type)
             };
             if (schema.Properties.Count == 0)
 			{

@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl
 			return false;
 		}
 
-		public  void AddAcknowledgment(MessageId msgId, CommandAck.Types.AckType ackType, IDictionary<string, long> properties)
+		public  void AddAcknowledgment(MessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
 		{
 			// no-op
 		}

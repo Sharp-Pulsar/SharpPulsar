@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
+using SharpPulsar.Protocol.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,7 +57,7 @@ namespace SharpPulsar.Impl
             {
                 return msg.SchemaVersion == null;
             }
-            return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion().ToByteArray());
+            return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion());
 		}
 
         public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)

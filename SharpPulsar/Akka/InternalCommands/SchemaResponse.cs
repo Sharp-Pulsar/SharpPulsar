@@ -9,10 +9,10 @@ namespace SharpPulsar.Akka.InternalCommands
         public byte[] Schema { get; }
         public string Name { get; }
         public ImmutableDictionary<string, string> Properties { get; }
-        public Schema.Types.Type Type { get; }
+        public Schema.Type Type { get; }
 
 
-        public SchemaResponse(byte[] schema, string name, ImmutableDictionary<string, string> properties, Schema.Types.Type type, long requestId)
+        public SchemaResponse(byte[] schema, string name, ImmutableDictionary<string, string> properties, Schema.Type type, long requestId)
         {
             Schema = schema;
             Name = name;

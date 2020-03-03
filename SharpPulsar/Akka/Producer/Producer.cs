@@ -337,7 +337,7 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _schemaCache[schemaHash] = r.SchemaVersion;
                 }
-                m.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(r.SchemaVersion));
+                m.MessageBuilder.SetSchemaVersion(r.SchemaVersion);
                 m.SetSchemaState(Message.SchemaState.Ready);
                 Become(() => SendMessage(m));
             });
@@ -633,7 +633,7 @@ namespace SharpPulsar.Akka.Producer
             if (msg.Schema == _schemas[msg.TopicName])
             {
                 if (schemaVersion != null)
-                    msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+                    msgMetadataBuilder.SetSchemaVersion(schemaVersion);
                 msg.SetSchemaState(Message.SchemaState.Ready);
                 return true;
             }
@@ -644,7 +644,7 @@ namespace SharpPulsar.Akka.Producer
             }
 
             if (schemaVersion == null) return true;
-            msgMetadataBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+            msgMetadataBuilder.SetSchemaVersion(schemaVersion);
             msg.SetSchemaState(Message.SchemaState.Ready);
             return true;
         }
@@ -656,7 +656,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 return false;
             }
-            msg.MessageBuilder.SetSchemaVersion(ByteString.CopyFrom(schemaVersion));
+            msg.MessageBuilder.SetSchemaVersion(schemaVersion);
             msg.SetSchemaState(Message.SchemaState.Ready);
             return true;
         }

@@ -94,8 +94,25 @@ namespace SharpPulsar.Protocol.Proto
 
 				return this;
 			}
-			
-            public Builder SetPriorityLevel(int value)
+
+            public Builder SetForceTopicCreation(bool value)
+            {
+                _subscribe.ForceTopicCreation = value;
+                return this;
+            }
+
+            public Builder SetKeySharedMeta(KeySharedMeta.Builder value)
+            {
+                _subscribe.keySharedMeta = value.Build();
+                return this;
+            }
+
+            public Builder SetStartMessageRollbackDurationSec(long value)
+            {
+                _subscribe.StartMessageRollbackDurationSec = (ulong) value;
+                return this;
+            }
+			public Builder SetPriorityLevel(int value)
             {
                 _subscribe.PriorityLevel = value;
 				return this;

@@ -91,7 +91,7 @@ namespace SharpPulsar.Impl
 
 		public ITypedMessageBuilder OrderingKey(sbyte[] orderingKey)
 		{
-			Builder.SetOrderingKey(ByteString.CopyFrom((byte[])(object)orderingKey));
+			Builder.SetOrderingKey((byte[])(object)orderingKey);
 			return this;
 		}
 
@@ -155,7 +155,7 @@ namespace SharpPulsar.Impl
 		{
 			if(clusters == null)
 				throw new NullReferenceException();
-			Builder.AddAllReplicateTo(clusters);
+			Builder.AddAllReplicateTo(clusters.ToList());
 			return this;
 		}
 

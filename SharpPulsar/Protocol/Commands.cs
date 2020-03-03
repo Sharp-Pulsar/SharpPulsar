@@ -12,11 +12,14 @@ using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using ProtoBuf;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Stole;
+using SharpPulsar.Utility;
 using SharpPulsar.Utility.Protobuf;
+using Serializer = SharpPulsar.Stole.Serializer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -76,7 +79,7 @@ namespace SharpPulsar.Protocol
 				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
 				// name. An example would be in broker-to-broker replication. We need to make sure the clients are still
 				// passing both the enum and the string until all brokers are upgraded.
-				connectBuilder.SetAuthMethod(AuthMethod.YcaV1);
+				connectBuilder.SetAuthMethod(AuthMethod.AuthMethodYcaV1);
 			}
 
 			if (!ReferenceEquals(targetBroker, null))
@@ -111,7 +114,7 @@ namespace SharpPulsar.Protocol
 			return res;
 		}
 
-		public static IByteBuffer NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
+		public static byte[] NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
 		{
 			var connectBuilder = CommandConnect.NewBuilder();
 			connectBuilder.SetClientVersion(libVersion ?? "Pulsar Client");
@@ -145,37 +148,10 @@ namespace SharpPulsar.Protocol
 			connectBuilder.SetProtocolVersion(protocolVersion);
 			var connect = connectBuilder.Build();
             var ba = BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect);
-            var s = JsonSerializer.Serialize(ba.Build());
-			
-            var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect));
-            return res;
+           
+            var res = Serializer.Serialize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connect).SetConnect(connect).Build());
+            return res.ToArray();
         }
-
-		public static IByteBuffer NewConnected(int clientProtocoVersion)
-		{
-			return NewConnected(clientProtocoVersion, InvalidMaxMessageSize);
-		}
-
-		public static IByteBuffer NewConnected(int clientProtocolVersion, int maxMessageSize)
-		{
-			var connectedBuilder = CommandConnected.NewBuilder();
-			connectedBuilder.SetServerVersion("Pulsar Server");
-			if (InvalidMaxMessageSize != maxMessageSize)
-			{
-				connectedBuilder.SetMaxMessageSize(maxMessageSize);
-			}
-
-			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
-			// client supports, to avoid confusing the client.
-			var currentProtocolVersion = CurrentProtocolVersion;
-			var versionToAdvertise = Math.Min(CurrentProtocolVersion, clientProtocolVersion);
-
-			var connected = connectedBuilder.Build();
-			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Connected).SetConnected(connectedBuilder));
-			connected.Recycle();
-			connectedBuilder.Recycle();
-			return res;
-		}
 
 		public static IByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
 		{
@@ -191,8 +167,6 @@ namespace SharpPulsar.Protocol
 			var challenge = challengeBuilder.SetChallenge(AuthData.NewBuilder().SetAuthData(brokerData.auth_data).SetAuthMethodName(authMethod).Build()).Build();
 
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AuthChallenge).SetAuthChallenge(challenge));
-			challenge.Recycle();
-			challengeBuilder.Recycle();
 			return res;
 		}
 		
@@ -205,8 +179,7 @@ namespace SharpPulsar.Protocol
 			sendErrorBuilder.SetMessage(errorMsg);
 			var sendError = sendErrorBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.SendError).SetSendError(sendError));
-			sendErrorBuilder.Recycle();
-			sendError.Recycle();
+			
 			return res;
 		}
 
@@ -235,65 +208,7 @@ namespace SharpPulsar.Protocol
 				ReadChecksum(buffer);
 			}
 		}
-		private static IByteBuffer SerializeCommandSendWithSize(BaseCommand.Builder cmdBuilder, ChecksumType checksumType, MessageMetadata msgMetadata, IByteBuffer payload)
-		{
-			// / Wire format
-			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-
-			var cmd = cmdBuilder.Build();
-			var cmdSize = cmd.CalculateSize();
-			var msgMetadataSize = msgMetadata.CalculateSize();
-			var payloadSize = payload.ReadableBytes;
-			var magicAndChecksumLength = ChecksumType.Crc32C.Equals(checksumType) ? (2 + 4) : 0;
-			var includeChecksum = magicAndChecksumLength > 0;
-			// cmdLength + cmdSize + magicLength +
-			// checksumSize + msgMetadataLength +
-			// msgMetadataSize
-			var headerContentSize = 4 + cmdSize + magicAndChecksumLength + 4 + msgMetadataSize;
-			var totalSize = headerContentSize + payloadSize;
-			var headersSize = 4 + headerContentSize; // totalSize + headerLength
-			var checksumReaderIndex = -1;
-
-			var headers = UnpooledByteBufferAllocator.Default.Buffer(headersSize, headersSize);
-			headers.WriteInt(totalSize); // External frame
-
-            // Write cmd
-            headers.WriteInt(cmdSize);
-            var destination = new CodedOutputStream(headers.Array);
-            cmd.WriteTo(destination);
-
-            //Create checksum placeholder
-            if (includeChecksum)
-            {
-                headers.WriteShort(MagicCrc32C);
-                checksumReaderIndex = headers.WriterIndex;
-                headers.SetWriterIndex(headers.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
-            }
-
-            // Write metadata
-            headers.WriteInt(msgMetadataSize);
-            msgMetadata.WriteTo(destination);
-
-            var command = ByteBufPair.Get(headers, payload);
-
-			// write checksum at created checksum-placeholder
-			if (includeChecksum)
-			{
-				headers.MarkReaderIndex();
-				headers.SetReaderIndex(checksumReaderIndex + ChecksumSize);
-				var metadataChecksum = ComputeChecksum(headers);
-				var computedChecksum = ResumeChecksum(metadataChecksum, payload);
-				// set computed checksum
-				headers.SetInt(checksumReaderIndex, computedChecksum);
-				headers.ResetReaderIndex();
-			}
-			//a single buffer with the content of both individual buffers
-			var c = Unpooled.Buffer(command.ReadableBytes());
-            c.WriteBytes(command.First, command.First.ReaderIndex, command.First.ReadableBytes);
-            c.WriteBytes(command.Second, command.Second.ReaderIndex, command.Second.ReadableBytes);
-			return c;
-		}
-
+		
 		public static MessageMetadata ParseMessageMetadata(IByteBuffer buffer)
 		{
 			try
@@ -301,7 +216,8 @@ namespace SharpPulsar.Protocol
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
 				SkipChecksumIfPresent(buffer);
-                return MessageMetadata.Parser.ParseFrom(buffer.Array);
+                var bufferbytes = buffer.Array;
+                return bufferbytes.FromByteArray<MessageMetadata>();
 			}
 			catch (IOException e)
 			{
@@ -347,7 +263,7 @@ namespace SharpPulsar.Protocol
 			}
 			var send = sendBuilder.Build();
 
-			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Send).SetSend(send), ChecksumType.Crc32C, messageData, payload);
+			var res = SerializeCommandSendWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Send).SetSend(send), messageData, payload.Array);
 			return res;
 		}
 
@@ -377,15 +293,15 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
 		{
-			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.initialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
+			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
 		}
 
 		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
-					return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
 
-		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, Api.KeySharedPolicy keySharedPolicy)
+		public static IByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, Api.KeySharedPolicy keySharedPolicy)
 		{
 			var subscribeBuilder = CommandSubscribe.NewBuilder();
 			subscribeBuilder.SetTopic(topic);
@@ -440,7 +356,6 @@ namespace SharpPulsar.Protocol
 			var subscribe = subscribeBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Subscribe).SetSubscribe(subscribe));
 
-            schema?.Recycle();
             return res;
 		}
 
@@ -451,8 +366,6 @@ namespace SharpPulsar.Protocol
 			unsubscribeBuilder.SetRequestId(requestId);
 			var unsubscribe = unsubscribeBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Unsubscribe).SetUnsubscribe(unsubscribe));
-			unsubscribeBuilder.Recycle();
-			unsubscribe.Recycle();
 			return res;
 		}
 
@@ -462,8 +375,6 @@ namespace SharpPulsar.Protocol
 
 			var change = changeBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.ActiveConsumerChange).SetActiveConsumerChange(change));
-			changeBuilder.Recycle();
-			change.Recycle();
 			return res;
 		}
 
@@ -506,8 +417,7 @@ namespace SharpPulsar.Protocol
 			closeConsumerBuilder.SetRequestId(requestId);
 			var closeConsumer = closeConsumerBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.CloseConsumer).SetCloseConsumer(closeConsumer));
-			closeConsumerBuilder.Recycle();
-			closeConsumer.Recycle();
+			
 			return res;
 		}
 
@@ -517,8 +427,7 @@ namespace SharpPulsar.Protocol
 			reachedEndOfTopicBuilder.SetConsumerId(consumerId);
 			var reachedEndOfTopic = reachedEndOfTopicBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.ReachedEndOfTopic).SetReachedEndOfTopic(reachedEndOfTopic));
-			reachedEndOfTopicBuilder.Recycle();
-			reachedEndOfTopic.Recycle();
+			
 			return res;
 		}
 
@@ -529,8 +438,7 @@ namespace SharpPulsar.Protocol
 			closeProducerBuilder.SetRequestId(requestId);
 			var closeProducer = closeProducerBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.CloseProducer).SetCloseProducer(closeProducerBuilder));
-			closeProducerBuilder.Recycle();
-			closeProducer.Recycle();
+			
 			return res;
 		}
 
@@ -544,19 +452,19 @@ namespace SharpPulsar.Protocol
 			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false);
 		}
 
-		private static Proto.Schema.Types.Type GetSchemaType(SchemaType type)
+		private static Proto.Schema.Type GetSchemaType(SchemaType type)
 		{
 			if (type.Value < 0)
 			{
-				return Proto.Schema.Types.Type.None;
+				return Proto.Schema.Type.None;
 			}
 			else
 			{
-				return Enum.GetValues(typeof(Proto.Schema.Types.Type)).Cast<Proto.Schema.Types.Type>().ToList()[type.Value];
+				return Enum.GetValues(typeof(Proto.Schema.Type)).Cast<Proto.Schema.Type>().ToList()[type.Value];
 			}
 		}
 
-		public static SchemaType GetSchemaType(Proto.Schema.Types.Type type)
+		public static SchemaType GetSchemaType(Proto.Schema.Type type)
 		{
 			if (type < 0)
 			{
@@ -582,9 +490,8 @@ namespace SharpPulsar.Protocol
 		}
 		private static Proto.Schema GetSchema(SchemaInfo schemaInfo)
 		{
-			var builder = Proto.Schema.NewBuilder().SetName(schemaInfo.Name).SetSchemaData(ByteString.CopyFrom((byte[])(Array)schemaInfo.Schema)).SetType(GetSchemaType(schemaInfo.Type)).AddAllProperties(schemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
+			var builder = Proto.Schema.NewBuilder().SetName(schemaInfo.Name).SetSchemaData((byte[])(object)schemaInfo.Schema).SetType(GetSchemaType(schemaInfo.Type)).AddAllProperties(schemaInfo.Properties.ToList().Select(entry => KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build()).ToList());
 			var schema = builder.Build();
-			builder.Recycle();
 			return schema;
 		}
 
@@ -611,8 +518,7 @@ namespace SharpPulsar.Protocol
 
 			var producer = producerBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Producer).SetProducer(producer));
-			producerBuilder.Recycle();
-			producer.Recycle();
+			
 			return res;
 		}
 
@@ -623,8 +529,7 @@ namespace SharpPulsar.Protocol
 			partitionMetadataBuilder.SetRequestId(requestId);
 			var partitionMetadata = partitionMetadataBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.PartitionedMetadata).SetPartitionMetadata(partitionMetadata));
-			partitionMetadataBuilder.Recycle();
-			partitionMetadata.Recycle();
+			
 			return res;
 		}
 
@@ -636,8 +541,7 @@ namespace SharpPulsar.Protocol
 			lookupTopicBuilder.SetAuthoritative(authoritative);
 			var lookupBroker = lookupTopicBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Lookup).SetLookupTopic(lookupBroker));
-			lookupTopicBuilder.Recycle();
-			lookupBroker.Recycle();
+			
 			return res;
 		}
 
@@ -645,7 +549,7 @@ namespace SharpPulsar.Protocol
 		{
 			var ackBuilder = CommandAck.NewBuilder();
 			ackBuilder.SetConsumerId(consumerId);
-			ackBuilder.SetAckType(CommandAck.Types.AckType.Individual);
+			ackBuilder.SetAckType(CommandAck.AckType.Individual);
 
 			var entriesCount = entries.Count;
 			for (var i = 0; i < entriesCount; i++)
@@ -667,12 +571,12 @@ namespace SharpPulsar.Protocol
 			return res;
 		}
 
-		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError? validationError, IDictionary<string, long> properties)
+		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
 		{
 			return NewAck(consumerId, ledgerId, entryId, ackType, validationError, properties, 0, 0);
 		}
 
-		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
+		public static IByteBuffer NewAck(long consumerId, long ledgerId, long entryId, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
 		{
 			var ackBuilder = CommandAck.NewBuilder();
 			ackBuilder.SetConsumerId(consumerId);
@@ -737,25 +641,24 @@ namespace SharpPulsar.Protocol
 		    return res;
 		}
 
-		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Types.Mode mode)
+		public static IByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Mode mode)
 		{
 			var topicsBuilder = CommandGetTopicsOfNamespace.NewBuilder();
 			topicsBuilder.SetNamespace(@namespace).SetRequestId(requestId).SetMode(mode);
 
 			var topicsCommand = topicsBuilder.Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetTopicsOfNamespace).SetGetTopicsOfNamespace(topicsCommand));
-			topicsBuilder.Recycle();
-			topicsCommand.Recycle();
+			
 			return res;
 		}
         private static readonly IByteBuffer CmdPing;
 
 		static Commands()
 		{
-			var serializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Ping).SetPing(CommandPing.DefaultInstance));
+			var serializedCmdPing = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Ping).SetPing(CommandPing.NewBuilder().Build()));
 			CmdPing = Unpooled.CopiedBuffer(serializedCmdPing);
 			serializedCmdPing.Release();
-			var serializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Pong).SetPong(CommandPong.DefaultInstance));
+			var serializedCmdPong = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.Pong).SetPong(CommandPong.NewBuilder().Build()));
 			CmdPong = Unpooled.CopiedBuffer(serializedCmdPong);
 			serializedCmdPong.Release();
 		}
@@ -779,7 +682,7 @@ namespace SharpPulsar.Protocol
 			cmdBuilder.SetConsumerId(consumerId).SetRequestId(requestId);
 
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetLastMessageId).SetGetLastMessageId(cmdBuilder.Build()));
-			cmdBuilder.Recycle();
+			
 			return res;
 		}
 
@@ -789,21 +692,21 @@ namespace SharpPulsar.Protocol
 			schema.SetTopic(topic);
 			if (version != null)
 			{
-				schema.SetSchemaVersion(ByteString.CopyFrom((byte[])(object)version.Bytes()));
+				schema.SetSchemaVersion((byte[])(object)version.Bytes());
 			}
 
 			var getSchema = schema.Build();
 
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetSchema).SetGetSchema(getSchema));
-			schema.Recycle();
+			
 			return res;
 		}
 
 		public static IByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
 		{
-			var getOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(requestId).SetTopic(topic).SetSchema(GetSchema(schemaInfo).ToBuilder()).Build();
+			var getOrCreateSchema = CommandGetOrCreateSchema.NewBuilder().SetRequestId(requestId).SetTopic(topic).SetSchema(GetSchema(schemaInfo)).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.GetOrCreateSchema).SetGetOrCreateSchema(getOrCreateSchema));
-			getOrCreateSchema.Recycle();
+			
 			return res;
 		}
 		
@@ -813,7 +716,7 @@ namespace SharpPulsar.Protocol
 		{
 			var commandNewTxn = CommandNewTxn.NewBuilder().SetTcId(tcId).SetRequestId(requestId).SetTxnTtlSeconds(ttlSeconds).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.NewTxn).SetNewTxn(commandNewTxn));
-			commandNewTxn.Recycle();
+			
 			return res;
 		}
 
@@ -821,7 +724,7 @@ namespace SharpPulsar.Protocol
 		{
 			var commandAddPartitionToTxn = CommandAddPartitionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AddPartitionToTxn).SetAddPartitionToTxn(commandAddPartitionToTxn));
-			commandAddPartitionToTxn.Recycle();
+			
 			return res;
 		}
 
@@ -829,7 +732,7 @@ namespace SharpPulsar.Protocol
 		{
 			var commandAddSubscriptionToTxn = CommandAddSubscriptionToTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).AddAllSubscription(subscription).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.AddSubscriptionToTxn).SetAddSubscriptionToTxn(commandAddSubscriptionToTxn));
-			commandAddSubscriptionToTxn.Recycle();
+			
 			return res;
 		}
 
@@ -837,7 +740,7 @@ namespace SharpPulsar.Protocol
 		{
 			var commandEndTxn = CommandEndTxn.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTxnAction(txnAction).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxn).SetEndTxn(commandEndTxn));
-			commandEndTxn.Recycle();
+			
 			return res;
 		}
 
@@ -845,7 +748,7 @@ namespace SharpPulsar.Protocol
 		{
 			var txnEndOnPartition = CommandEndTxnOnPartition.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetTopic(topic).SetTxnAction(txnAction);
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxnOnPartition).SetEndTxnOnPartition(txnEndOnPartition));
-			txnEndOnPartition.Recycle();
+			
 			return res;
 		}
 
@@ -854,34 +757,45 @@ namespace SharpPulsar.Protocol
 		{
 			var commandEndTxnOnSubscription = CommandEndTxnOnSubscription.NewBuilder().SetRequestId(requestId).SetTxnidLeastBits(txnIdLeastBits).SetTxnidMostBits(txnIdMostBits).SetSubscription(subscription).SetTxnAction(txnAction).Build();
 			var res = SerializeWithSize(BaseCommand.NewBuilder().SetType(BaseCommand.Type.EndTxnOnSubscription).SetEndTxnOnSubscription(commandEndTxnOnSubscription));
-			commandEndTxnOnSubscription.Recycle();
+			
 			return res;
 		}
-		
-		public static IByteBuffer SerializeWithSize(BaseCommand.Builder cmdBuilder)
-		{
-			// / Wire format
-			// [TOTAL_SIZE] [CMD_SIZE][CMD]
-			var cmd = cmdBuilder.Build();
-            var cmdBytes = cmd.ToByteArray();
-			var cmdSize = ToBigEndianBytes((uint)cmdBytes.Length);
-			var totalSize = ToBigEndianBytes((uint)cmdBytes.Length + 4);
-
-            var p = new SequenceBuilder<byte>()
-                .Append(totalSize)
-                .Append(cmdSize)
-                .Append(cmdBytes)
-                .Build();
-            return Unpooled.WrappedBuffer(p.ToArray());
-        }
-        public static byte[] ToBigEndianBytes(uint integer)
+        public static IByteBuffer SerializeWithSize(BaseCommand.Builder cmdBuilder)
         {
-            var union = new UIntUnion(integer);
-            if (BitConverter.IsLittleEndian)
-                return new[] { union.B3, union.B2, union.B1, union.B0 };
-            else
-                return new[] { union.B0, union.B1, union.B2, union.B3 };
+            // / Wire format
+            // [TOTAL_SIZE] [CMD_SIZE][CMD]
+			var output = new MemoryStream();
+            using (var stream = new MemoryStream())
+            {
+                // write fake totalLength
+                for (var i = 0; i < 4; i++)
+                {
+                    stream.WriteByte(0);
+
+                }
+                
+                // write commandPayload
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, cmdBuilder.Build(), PrefixStyle.Fixed32BigEndian);
+
+                var frameSize = (int)stream.Length;
+
+                var totalSize = frameSize - 4;
+
+                //write total size and command size
+                stream.Seek(0L, SeekOrigin.Begin);
+
+                using var binaryWriter = new BinaryWriter(stream);
+
+                binaryWriter.Write(ProtoLizer.Int32ToBigEndian(totalSize));
+
+                stream.Seek(0L, SeekOrigin.Begin);
+                stream.CopyToAsync(output);
+
+            }
+            
+            return Unpooled.WrappedBuffer(output.ToArray());
         }
+		
 		public static int ComputeChecksum(IByteBuffer byteBuffer)
         {
             return Crc32CIntChecksum.ComputeChecksum(byteBuffer);
@@ -890,58 +804,80 @@ namespace SharpPulsar.Protocol
         {
             return Crc32CIntChecksum.ResumeChecksum(prev, byteBuffer);
         }
-		public static IByteBuffer SerializeMetadataAndPayload(ChecksumType checksumType, MessageMetadata msgMetadata, IByteBuffer payload)
+		public static IByteBuffer SerializeCommandSendWithSize(BaseCommand.Builder cmdBuilder, MessageMetadata msgMetadata, byte[] payload)
 		{
 			// / Wire format
 			// [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-			var msgMetadataSize = msgMetadata.CalculateSize();
-			var payloadSize = payload.ReadableBytes;
-			var magicAndChecksumLength = ChecksumType.Crc32C.Equals(checksumType) ? (2 + 4) : 0;
-			var includeChecksum = magicAndChecksumLength > 0;
-			var headerContentSize = magicAndChecksumLength + 4 + msgMetadataSize; // magicLength +
-																				  // checksumSize + msgMetadataLength +
-																				  // msgMetadataSize
-			var checksumReaderIndex = -1;
-			var totalSize = headerContentSize + payloadSize;
+            var output = new MemoryStream();
+            using (var stream = new MemoryStream())
+            {
+				// write fake totalLength
+				for (var i = 0; i < 4; i++)
+                {
+                    stream.WriteByte(0);
+                }
 
-			var metadataAndPayload = PooledByteBufferAllocator.Default.Buffer(totalSize, totalSize);
-			try
-			{
-				var outStream = ByteBufCodedOutputStream.Get(metadataAndPayload);
+				// write commandPayload
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, cmdBuilder.Build(), PrefixStyle.Fixed32BigEndian);
 
-				//Create checksum placeholder
-				if (includeChecksum)
-				{
-					metadataAndPayload.WriteShort(MagicCrc32C);
-					checksumReaderIndex = metadataAndPayload.WriterIndex;
-					metadataAndPayload.SetWriterIndex(metadataAndPayload.WriterIndex + ChecksumSize); //skip 4 bytes of checksum
-				}
 
-				// Write metadata
-				metadataAndPayload.WriteInt(msgMetadataSize);
-				outStream.Recycle();
-			}
-			catch (IOException e)
-			{
-				// This is in-memory serialization, should not fail
-				throw new System.Exception(e.Message, e);
-			}
+                var stream1Size = (int) stream.Length;
 
-			// write checksum at created checksum-placeholder
-			if (includeChecksum)
-			{
-				metadataAndPayload.MarkReaderIndex();
-				metadataAndPayload.SetReaderIndex(checksumReaderIndex + ChecksumSize);
-				var metadataChecksum = ComputeChecksum(metadataAndPayload);
-				var computedChecksum = ResumeChecksum(metadataChecksum, payload);
-				// set computed checksum
-				metadataAndPayload.SetInt(checksumReaderIndex, computedChecksum);
-				metadataAndPayload.ResetReaderIndex();
-			}
-			metadataAndPayload.WriteBytes(payload);
+                // write magic number 0x0e01
+                stream.WriteByte(14);
 
-			return metadataAndPayload;
-		}
+                stream.WriteByte(1);
+
+				// write fake CRC sum and fake metadata length
+				for (var i = 0; i < 4; i++)
+                {
+                    stream.WriteByte(0);
+                }
+
+				// write metadata
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, msgMetadata, PrefixStyle.Fixed32BigEndian);
+
+                var stream2Size = (int) stream.Length;
+                var totalMetadataSize = stream2Size - stream1Size - 6;
+
+                // write payload
+                stream.Write(payload, 0, payload.Length);
+
+
+                var frameSize = (int) stream.Length;
+                var totalSize = frameSize - 4;
+
+                var payloadSize = frameSize - stream2Size;
+
+
+                var crcStart = stream1Size + 2;
+
+                var crcPayloadStart = crcStart + 4;
+
+                // write missing sizes
+                using var binaryWriter = new BinaryWriter(stream);
+
+                //write CRC
+                stream.Seek(crcPayloadStart, SeekOrigin.Begin);
+
+                var crc = (int) CRC32C.Get(0u, stream, totalMetadataSize + payloadSize);
+
+                stream.Seek(crcStart, SeekOrigin.Begin);
+
+                binaryWriter.Write(ProtoLizer.Int32ToBigEndian(crc));
+
+                //write total size and command size
+                stream.Seek(0L, SeekOrigin.Begin);
+
+                binaryWriter.Write(ProtoLizer.Int32ToBigEndian(totalSize));
+
+
+                stream.Seek(0L, SeekOrigin.Begin);
+                stream.CopyToAsync(output);
+            }
+
+            return Unpooled.WrappedBuffer(output.ToArray());
+        }
 
 		public static long InitBatchMessageMetadata(MessageMetadata.Builder builder)
 		{
@@ -953,9 +889,9 @@ namespace SharpPulsar.Protocol
 			{
 				messageMetadata.SetReplicatedFrom(builder.GetReplicatedFrom());
 			}
-			if (builder.ReplicateToList.Count > 0)
+			if (builder.ReplicateToList().Count > 0)
 			{
-				messageMetadata.AddAllReplicateTo(builder.ReplicateToList);
+				messageMetadata.AddAllReplicateTo(builder.ReplicateToList());
 			}
 			if (builder.HasSchemaVersion())
 			{
@@ -965,16 +901,16 @@ namespace SharpPulsar.Protocol
 		}
 
 		public static IByteBuffer SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata.Builder singleMessageMetadataBuilder, IByteBuffer payload, IByteBuffer batchBuffer)
-		{
+        {
 			var payLoadSize = payload.ReadableBytes;
 			var singleMessageMetadata = singleMessageMetadataBuilder.SetPayloadSize(payLoadSize).Build();
 			// serialize meta-data size, meta-data and payload for single message in batch
-			var singleMsgMetadataSize = singleMessageMetadata.CalculateSize();
+			var singleMsgMetadataSize = singleMessageMetadata.ByteLength();
 			try
 			{
 				batchBuffer.WriteInt(singleMsgMetadataSize);
-				var outStream = new CodedOutputStream(batchBuffer.Array);
-				singleMessageMetadata.WriteTo(outStream);
+				var outStream = new MemoryStream(batchBuffer.Array);
+				//singleMessageMetadata.WriteTo(outStream);
 			}
 			catch (IOException e)
 			{
@@ -994,7 +930,7 @@ namespace SharpPulsar.Protocol
 			}
 			if (msgBuilder.HasOrderingKey())
 			{
-				singleMessageMetadataBuilder = singleMessageMetadataBuilder.SetOrderingKey(msgBuilder.GetOrderingKey().ToByteArray());
+				singleMessageMetadataBuilder = singleMessageMetadataBuilder.SetOrderingKey(msgBuilder.GetOrderingKey());
 			}
 			if (msgBuilder.Properties.Count > 0)
 			{
@@ -1023,59 +959,35 @@ namespace SharpPulsar.Protocol
 
 		public static IByteBuffer DeSerializeSingleMessageInBatch(IByteBuffer uncompressedPayload, SingleMessageMetadata.Builder singleMessageMetadataBuilder, int index, int batchSize)
         {
-            var single = singleMessageMetadataBuilder.Build();
+            using var stream = new MemoryStream(uncompressedPayload.Array);
+
+            using var binaryReader = new BinaryReader(stream);
+            var singleMessageMetadata =
+                ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream,
+                    PrefixStyle.Fixed32BigEndian);
+
+            var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+			
+			var single = singleMessageMetadataBuilder.Build();
 			var singleMetaSize = (int) uncompressedPayload.ReadUnsignedInt();
 			var writerIndex = uncompressedPayload.WriterIndex;
 			var beginIndex = uncompressedPayload.ReaderIndex + singleMetaSize;
 			uncompressedPayload.SetWriterIndex(beginIndex);
-			var stream = new CodedInputStream(uncompressedPayload.Array);
-			single.MergeFrom(stream);
-            var singleMessagePayloadSize = single.CalculateSize();
+			//var stream = new CodedInputStream(uncompressedPayload.Array);
+            //single.MergeFrom(stream);
+            var singleMessagePayloadSize = 0L;//single.CalculateSize();
 
 			var readerIndex = uncompressedPayload.ReaderIndex;
-			var singleMessagePayload = uncompressedPayload.RetainedSlice(readerIndex, singleMessagePayloadSize);
 			uncompressedPayload.SetWriterIndex(writerIndex);
 
 			// reader now points to beginning of payload read; so move it past message payload just read
 			if (index < batchSize)
 			{
-				uncompressedPayload.SetReaderIndex(readerIndex + singleMessagePayloadSize);
+				//uncompressedPayload.SetReaderIndex(readerIndex + singleMessagePayloadSize);
 			}
 
-			return singleMessagePayload;
-		}
-
-		private static ByteBufPair SerializeCommandMessageWithSize(BaseCommand cmd, IByteBuffer metadataAndPayload)
-		{
-			// / Wire format
-			// [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-			//
-			// metadataAndPayload contains from magic-number to the payload included
-
-
-			var cmdSize = cmd.CalculateSize();
-			var totalSize = 4 + cmdSize + metadataAndPayload.ReadableBytes;
-			var headersSize = 4 + 4 + cmdSize;
-
-			var headers = PooledByteBufferAllocator.Default.Buffer(headersSize);
-			headers.WriteInt(totalSize); // External frame
-
-			try
-			{
-				// Write cmd
-				headers.WriteInt(cmdSize);
-
-				var outStream = new CodedOutputStream(headers.Array);
-				cmd.WriteTo(outStream);
-			}
-			catch (IOException e)
-			{
-				// This is in-memory serialization, should not fail
-				throw new System.Exception(e.Message);
-			}
-
-			return (ByteBufPair) ByteBufPair.Get(headers, metadataAndPayload);
-		}
+            return null; //singleMessagePayload;
+        }
 
 		public static int GetNumberOfMessagesInBatch(IByteBuffer metadataAndPayload, string subscription, long consumerId)
 		{

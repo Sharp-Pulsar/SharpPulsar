@@ -79,11 +79,6 @@ namespace SharpPulsar.Protocol.Proto
                 _base.Connected = value ?? throw new NullReferenceException();
 				return this;
 			}
-			public Builder SetConnected(CommandConnected.Builder builderForValue)
-			{
-                _base.Connected = builderForValue.Build();
-				return this;
-			}
 			
 			public CommandSubscribe GetSubscribe()
 			{

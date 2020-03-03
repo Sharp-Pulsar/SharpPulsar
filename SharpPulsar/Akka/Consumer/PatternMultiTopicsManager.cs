@@ -29,7 +29,7 @@ namespace SharpPulsar.Akka.Consumer
             _topicsPattern = consumer.TopicsPattern;
             var nameSpace = GetNameSpaceFromPattern(consumer.TopicsPattern);
             var requestId = _requestid++;
-            var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Types.Mode.Persistent);
+            var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
             var payload = new Payload(request.Array, requestId, "GetTopicsOfNamespace");
             _network.Tell(payload);
             Receive<NamespaceTopics>(t =>
