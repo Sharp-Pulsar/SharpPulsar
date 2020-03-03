@@ -40,31 +40,31 @@ namespace SharpPulsar.Common.Compression
 		//private static readonly LZ4Compressor compressor = lz4Factory.fastCompressor();
 		//private static readonly LZ4FastDecompressor decompressor = lz4Factory.fastDecompressor();
 
-		public IByteBuffer Encode(IByteBuffer source)
+		public byte[] Encode(byte[] source)
 		{
 			var lz4 = new CompressionCodecLz4();
-			int uncompressedLength = source.ReadableBytes;
+			int uncompressedLength = source.Length;
 			int maxLength = LZ4Codec.MaximumOutputSize(uncompressedLength);
 
-			var sourceNio = source.GetIoBuffer(source.ReaderIndex, source.ReadableBytes).ToArray();
+			var sourceNio = source;
 
-			IByteBuffer target = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
-			var targetNio = target.GetIoBuffer(0, maxLength).ToArray();
+            byte[] target = new byte[maxLength];
+			var targetNio = target;
 
 			int compressedLength = LZ4Codec.Encode(sourceNio, 0, uncompressedLength, targetNio, 0, maxLength);
-			target.SetWriterIndex(compressedLength);
+			//target.SetWriterIndex(compressedLength);
 			return target;
 		}
 
-		public IByteBuffer Decode(IByteBuffer encoded, int uncompressedLength)
+		public byte[] Decode(byte[] encoded, int uncompressedLength)
 		{
-			IByteBuffer uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength);
-			var uncompressedNio = uncompressed.GetIoBuffer(0, uncompressedLength).ToArray();
+			byte[] uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength).Array;
+			var uncompressedNio = uncompressed;
 
-			var encodedNio = encoded.GetIoBuffer(encoded.ReaderIndex, encoded.ReadableBytes).ToArray();
+			var encodedNio = encoded;
 			LZ4Codec.Decode(encodedNio, 0,  encodedNio.Length, uncompressedNio, 0, uncompressedLength);
 
-			uncompressed.SetWriterIndex(uncompressedLength);
+			//uncompressed.SetWriterIndex(uncompressedLength);
 			return uncompressed;
 		}
 	}

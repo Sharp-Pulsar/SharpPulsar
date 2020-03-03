@@ -35,7 +35,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 var requestId = _requestid++;
                 var request = Commands.NewPartitionMetadataRequest(topic, requestId);
-                var pay = new Payload(request.Array, requestId, "CommandPartitionedTopicMetadata", topic);
+                var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
                 _pendingLookupRequests.Add(requestId, pay);
                 _network.Tell(pay);
             }

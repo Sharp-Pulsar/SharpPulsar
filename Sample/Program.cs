@@ -36,7 +36,6 @@ namespace Producer
                 .IoThreads(1)
                 .ClientConfigurationData;
             var pulsarSystem = new PulsarSystem(clientConfig);
-            Task.Delay(5000);
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName("Students")
                 .Topic("students")
@@ -58,9 +57,14 @@ namespace Producer
                 .ReaderListener(new ReaderMessageListener())
                 .Topic("students")
                 .ReaderConfigurationData;
-            
+            //Thread.Sleep(5000);
+            //Console.WriteLine("Creating Producer");
             pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+            //Thread.Sleep(5000);
+            //Console.WriteLine("Creating Consumer");
             //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //Thread.Sleep(5000);
+            //Console.WriteLine("Creating Reader");
             //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
             var students = new Students
             {
@@ -68,6 +72,8 @@ namespace Producer
                 Age = 2020,
                 School = "Akka-Pulsar university"
             };
+            //Thread.Sleep(5000);
+            //Console.WriteLine("Sending Producer");
             //pulsarSystem.Send(new Send(students,"Students", ImmutableDictionary<string, object>.Empty), producer.GetProducer("Students"));
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             

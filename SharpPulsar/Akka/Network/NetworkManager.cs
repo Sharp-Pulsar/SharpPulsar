@@ -19,18 +19,9 @@ namespace SharpPulsar.Akka.Network
             _serviceNameResolver.UpdateServiceUrl(configuration.ServiceUrl);
             _manager = manager;
             _configuration = configuration;
-            Console.WriteLine("Become CreateConnections");
             Become(CreateConnections);
         }
 
-        private void Start()
-        {
-            ReceiveAny(m =>
-            {
-                Stash.Stash();
-            });
-            CreateConnections();
-        }
         private void Stop()
         {
             ReceiveAny(m =>
@@ -41,16 +32,20 @@ namespace SharpPulsar.Akka.Network
         }
         public void Ready()
         {
+
+            Context.Parent.Tell(new ServiceReady());
+            Receive<UpdateService>(u =>
+            {
+                _serviceNameResolver.UpdateServiceUrl(u.Service);
+                Become(Stop);
+            });
+            Receive<TcpSuccess>(x =>
+            {
+                Context.Parent.Forward(x);
+            });
             try
             {
-                Console.WriteLine("Become Ready Unstashing");
                 Stash.UnstashAll();
-                Context.Parent.Tell(new ServiceReady());
-                Receive<UpdateService>(u =>
-                {
-                    _serviceNameResolver.UpdateServiceUrl(u.Service);
-                    Become(Stop);
-                });
             }
             catch (Exception e)
             {
@@ -60,6 +55,10 @@ namespace SharpPulsar.Akka.Network
         
         private void CreateConnections()
         {
+            Receive<TcpSuccess>(x =>
+            {
+                Context.Parent.Forward(x);
+            });
             var dnsResolver = new DefaultNameResolver();
             foreach (var s in _serviceNameResolver.AddressList())
             {
@@ -69,7 +68,6 @@ namespace SharpPulsar.Akka.Network
                 var host = Dns.GetHostEntry(service.Address).HostName;
                 Context.ActorOf(HostManager.Prop(service, _configuration, _manager), "HostManager");
             }
-            Console.WriteLine("Become Ready");
             Become(Ready);
         }
 

@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl
 			{
 				Log.LogWarning("[{}] [{}] Got exception while completing the callback", TopicName, ProducerName, T);
 			}
-            _batches.ToList().ForEach((x => x.Value.BatchedMessageMetadataAndPayload.SafeRelease()));
+            //_batches.ToList().ForEach((x => x.Value.BatchedMessageMetadataAndPayload.SafeRelease()));
 			Clear();
 		}
 
@@ -131,7 +131,7 @@ namespace SharpPulsar.Impl
 			internal MessageMetadata.Builder MessageMetadata = Protocol.Proto.MessageMetadata.NewBuilder();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
-			internal IByteBuffer BatchedMessageMetadataAndPayload;
+			internal byte[] BatchedMessageMetadataAndPayload;
 
 			internal IList<Message> Messages = new List<Message>();
 			internal SendCallback PreviousCallback = null;
@@ -143,7 +143,7 @@ namespace SharpPulsar.Impl
 
 			// keep track of callbacks for individual messages being published in a batch
 			
-			public IByteBuffer CompressedBatchMetadataAndPayload
+			public byte[] CompressedBatchMetadataAndPayload
 			{
 				get
 				{
@@ -151,12 +151,11 @@ namespace SharpPulsar.Impl
 					foreach (var msg in Messages)
 					{
 						MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
-						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, BatchedMessageMetadataAndPayload);
+						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer.Array, BatchedMessageMetadataAndPayload);
 						
 					}
-					int uncompressedSize = BatchedMessageMetadataAndPayload.ReadableBytes;
+					int uncompressedSize = BatchedMessageMetadataAndPayload.Length;
 					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload);
-					BatchedMessageMetadataAndPayload.Release();
 					if (CompressionType != CompressionType.None)
 					{
 						MessageMetadata.SetCompression(CompressionType);
@@ -187,7 +186,7 @@ namespace SharpPulsar.Impl
 					{
 						MessageMetadata.SetOrderingKey((byte[])(object)msg.OrderingKey);
 					}
-					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)));
+					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize))).Array;
 					
 				}
 

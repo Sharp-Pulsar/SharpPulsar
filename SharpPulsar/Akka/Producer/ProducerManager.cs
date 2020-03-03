@@ -50,6 +50,17 @@ namespace SharpPulsar.Akka.Producer
             {
                 Become(Connecting);
             });
+            Receive<TcpSuccess>(f =>
+            {
+                try
+                {
+                    Console.WriteLine($"TCP connection success from {f.Name}");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            });
         }
 
         private void RegisterProducer(ProducerConfigurationData conf)
@@ -88,7 +99,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = _requestIdGenerator++;
             var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
-            var pay = new Payload(request.Array, requestId, "CommandPartitionedTopicMetadata");
+            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata");
             _pendingLookupRequests.Add(requestId, pay);
             _network.Tell(pay);
         }
@@ -120,9 +131,10 @@ namespace SharpPulsar.Akka.Producer
         }
         private void Init(ClientConfigurationData configuration)
         {
-            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
+            Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
             Receive<TcpSuccess>(s =>
             {
+                _network = Sender;
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");
                 Become(Open);
             });
@@ -133,6 +145,7 @@ namespace SharpPulsar.Akka.Producer
             _network.Tell(new TcpReconnect());
             Receive<TcpSuccess>(s =>
             {
+                _network = Sender;
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");
                 Become(Open);
             });
@@ -183,7 +196,7 @@ namespace SharpPulsar.Akka.Producer
                 {
                     var requestId = _requestIdGenerator++;
                     var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(null));
-                    var payload = new Payload(request.Array, requestId, "CommandGetSchema");
+                    var payload = new Payload(request, requestId, "CommandGetSchema");
                     _network.Tell(payload);
                     _pendingLookupRequests.Add(requestId, payload);
                     Become(() => LookupSchema(producerConfig));

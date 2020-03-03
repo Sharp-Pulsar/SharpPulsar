@@ -285,7 +285,7 @@ namespace SharpPulsar.Impl
 		 * @return encryptedData if success
 		 */
 		
-        public virtual IByteBuffer Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata.Builder msgMetadata, IByteBuffer payload)
+        public virtual byte[] Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata.Builder msgMetadata, byte[] payload)
 		{
 			lock (this)
 			{
@@ -335,36 +335,30 @@ namespace SharpPulsar.Impl
 				
 				// Update message metadata with encryption param
 				msgMetadata.SetEncryptionParam(_iv);
-
-				IByteBuffer targetBuf = null;
+                var maxLength = _cipher.GetOutputSize(payload.Length);
+				byte[] targetBuf = new byte[maxLength];
 				try
 				{
 					// Encrypt the data
 					_cipher.Init(true, keyParameter);
 
-					var sourceNioBuf = payload.GetIoBuffer(payload.ReaderIndex, payload.ReadableBytes);
+					var sourceNioBuf = payload;
 
-					var maxLength = _cipher.GetOutputSize(payload.ReadableBytes);
-					targetBuf = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
 					var targetNioBuf = new byte[maxLength];
 
                     var len = _cipher.ProcessBytes(sourceNioBuf.ToArray(), 0, sourceNioBuf.ToArray().Length, targetNioBuf, 0);
 					var bytesStored = _cipher.DoFinal(targetNioBuf, len);
                     
-                    targetBuf.WriteBytes(targetNioBuf);
-					targetBuf.SetWriterIndex(bytesStored);
 
 				}
 				catch (Exception e) 
 				{
 
-					targetBuf?.Release();
 					Log.LogError("{} Failed to encrypt message. {}", _logCtx, e);
 					throw new PulsarClientException.CryptoException(e.Message);
 
 				}
 
-				payload.Release();
 				return targetBuf;
 			}
 		}
@@ -444,49 +438,39 @@ namespace SharpPulsar.Impl
             return true;
         }
 
-		private IByteBuffer DecryptData(AesManaged dataKeySecret, MessageMetadata msgMetadata, IByteBuffer payload)
+		private byte[] DecryptData(AesManaged dataKeySecret, MessageMetadata msgMetadata, byte[] payload)
 		{
 
 			// unpack iv and encrypted data
 			var ivString = msgMetadata.EncryptionParam;
 			ivString.CopyTo(_iv, 0);
             var keyParameter = new AeadParameters(new KeyParameter(dataKeySecret.Key), TagLen, _iv);
-			
-			IByteBuffer targetBuf = null;
+
+
+            int maxLength = _cipher.GetOutputSize(payload.Length);
+			byte[] targetBuf = new byte[maxLength];
 			try
 			{
 				_cipher.Init(false, keyParameter);
-
-				var sourceNioBuf = payload.GetIoBuffer(payload.ReaderIndex, payload.ReadableBytes);
-
-				int maxLength = _cipher.GetOutputSize(payload.ReadableBytes);
-				targetBuf = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
 				var targetNioBuf = new byte[maxLength];
 
-                var len = _cipher.ProcessBytes(sourceNioBuf.ToArray(), 0, sourceNioBuf.ToArray().Length, targetNioBuf, 0);
-                var decryptedSize = _cipher.DoFinal(targetNioBuf, len);
-				//int decryptedSize = _cipher.doFinal(sourceNioBuf, targetNioBuf);
-                targetBuf.WriteBytes(targetNioBuf);
-                targetBuf.SetWriterIndex(decryptedSize);
+                var len = _cipher.ProcessBytes(payload, 0, payload.Length, targetNioBuf, 0);
+                _cipher.DoFinal(targetNioBuf, len);
 
 			}
 			catch (Exception e) 
 			{
 				Log.LogError("{} Failed to decrypt message {}", _logCtx, e.Message);
-				if (targetBuf != null)
-				{
-					targetBuf.Release();
-					targetBuf = null;
-				}
-			}
+                targetBuf = null;
+            }
 
 			return targetBuf;
 		}
 
-		private IByteBuffer GetKeyAndDecryptData(MessageMetadata msgMetadata, IByteBuffer payload)
+		private byte[] GetKeyAndDecryptData(MessageMetadata msgMetadata, byte[] payload)
 		{
 
-            IByteBuffer decryptedData = null;
+            byte[] decryptedData = null;
 
 			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
 
@@ -531,7 +515,7 @@ namespace SharpPulsar.Impl
 		 *
 		 * @return decryptedData if success, null otherwise
 		 */
-		public IByteBuffer Decrypt(MessageMetadata msgMetadata, IByteBuffer payload, ICryptoKeyReader keyReader)
+		public byte[] Decrypt(MessageMetadata msgMetadata, byte[] payload, ICryptoKeyReader keyReader)
 		{
 
 			// If dataKey is present, attempt to decrypt using the existing key

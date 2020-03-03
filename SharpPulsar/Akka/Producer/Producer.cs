@@ -252,7 +252,7 @@ namespace SharpPulsar.Akka.Producer
             var requestid = _requestId++;
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
             var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
-            var payload = new Payload(request.Array, requestid, "CommandProducer");
+            var payload = new Payload(request, requestid, "CommandProducer");
             _pendingLookupRequests.Add(requestid, payload);
             _network.Tell(payload);
         }
@@ -279,7 +279,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestid = _requestId++;
             var request = Commands.NewLookup(_configuration.TopicName, false, requestid);
-            var load = new Payload(request.Array, requestid, "BrokerLookUp");
+            var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
             _pendingLookupRequests.Add(requestid, load);
         }
@@ -360,7 +360,7 @@ namespace SharpPulsar.Akka.Producer
             var requestId = _requestId++;
             var request = Commands.NewGetOrCreateSchema(requestId, _configuration.TopicName, schemaInfo);
             Context.System.Log.Info("[{}] [{}] GetOrCreateSchema request", _configuration.TopicName, ProducerName);
-            var payload = new Payload(request.Array, requestId, "GetOrCreateSchema");
+            var payload = new Payload(request, requestId, "GetOrCreateSchema");
             _broker.Tell(payload);
             _pendingLookupRequests.Add(requestId, payload);
         }
@@ -380,22 +380,19 @@ namespace SharpPulsar.Akka.Producer
         private void SendMessage(Message msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
-            var payload = msg.DataBuffer;
+            var payload = msg.DataBuffer.Array;
             // If compression is enabled, we are compressing, otherwise it will simply use the same buffer
-            var uncompressedSize = payload.ReadableBytes;
+            var uncompressedSize = payload.Length;
             var compressedPayload = payload;
             // Batch will be compressed when closed
             // If a message has a delayed delivery time, we'll always send it individuallyif (!BatchMessagingEnabled || msgMetadataBuilder.HasDeliverAtTime())
             if (!_configuration.BatchingEnabled || msgMetadataBuilder.HasDeliverAtTime())
             {
                 compressedPayload = _compressor.Encode(payload);
-                payload.Release();
-
                 // validate msg-size (For batching this will be check at the batch completion size)
-                var compressedSize = compressedPayload.ReadableBytes;
+                var compressedSize = compressedPayload.Length;
                 if (compressedSize > Commands.DefaultMaxMessageSize)
                 {
-                    compressedPayload.Release();
                     var compressedStr = (!_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None) ? "Compressed" : "";
                     var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
                     Sender.Tell(new ErrorMessage(invalidMessageException));
@@ -407,14 +404,12 @@ namespace SharpPulsar.Akka.Producer
             {
                 var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
                 Sender.Tell(new ErrorMessage(invalidMessageException));
-                compressedPayload.Release();
                 Become(Receive);
                 return;
             }
 
             if (!PopulateMessageSchema(msg))
             {
-                compressedPayload.Release();
                 Become(Receive);
                 return;
             }
@@ -468,7 +463,6 @@ namespace SharpPulsar.Akka.Producer
                             // batch size and/or max message size
                             var (seqid, isBatchFull) = _batchMessageContainer.Add(msg);
                             _lastSequenceIdPushed = seqid;
-                            payload.Release();
                             if (isBatchFull)
                             {
                                 BatchMessageAndSend();
@@ -507,7 +501,7 @@ namespace SharpPulsar.Akka.Producer
                         };
                     }
                     op.NumMessagesInBatch = numMessages;
-                    op.BatchSizeByte = encryptedPayload.ReadableBytes;
+                    op.BatchSizeByte = encryptedPayload.Length;
                     ProcessOpSendMsg(op);
                 }
             }
@@ -516,7 +510,7 @@ namespace SharpPulsar.Akka.Producer
                 Sender.Tell(new ErrorMessage(e));
             }
         }
-        private void DoBatchSendAndAdd(Message msg, IReferenceCounted payload)
+        private void DoBatchSendAndAdd(Message msg, byte[] payload)
         {
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
@@ -530,7 +524,7 @@ namespace SharpPulsar.Akka.Producer
             }
             finally
             {
-                payload.Release();
+                //payload.Release();
             }
         }
         private long GetHighestSequenceId(OpSendMsg op)
@@ -566,12 +560,12 @@ namespace SharpPulsar.Akka.Producer
                 Become(Receive);
             }
         }
-        public IByteBuffer SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        public byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
         }
 
-        public IByteBuffer SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, IByteBuffer compressedPayload)
+        public byte[] SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
         }
@@ -600,7 +594,6 @@ namespace SharpPulsar.Akka.Producer
                 {
                     // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
                     // connection is established
-                    op.Cmd.Retain();
                     Become(() => SendCommand(op));
                 }
 
@@ -622,7 +615,7 @@ namespace SharpPulsar.Akka.Producer
             });
             ReceiveAny(_ => Stash.Stash());
             var requestId = _requestId++;
-            var pay = new Payload(op.Cmd.Array, requestId, "CommandMessage");
+            var pay = new Payload(op.Cmd, requestId, "CommandMessage");
             _broker.Tell(pay);
         }
         private bool PopulateMessageSchema(Message msg)
@@ -660,7 +653,7 @@ namespace SharpPulsar.Akka.Producer
             msg.SetSchemaState(Message.SchemaState.Ready);
             return true;
         }
-        private IByteBuffer EncryptMessage(MessageMetadata.Builder msgMetadata, IByteBuffer compressedPayload)
+        private byte[] EncryptMessage(MessageMetadata.Builder msgMetadata, byte[] compressedPayload)
         {
 
             var encryptedPayload = compressedPayload;
@@ -716,7 +709,7 @@ namespace SharpPulsar.Akka.Producer
         private OpSendMsg CreateOpSendMsg(BatchMessageKeyBasedContainer.KeyedBatch keyedBatch)
         {
             var encryptedPayload = EncryptMessage(keyedBatch.MessageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-            if (encryptedPayload.ReadableBytes > Commands.DefaultMaxMessageSize)
+            if (encryptedPayload.Length > Commands.DefaultMaxMessageSize)
             {
                 keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Commands.DefaultMaxMessageSize + " bytes"));
                 return null;

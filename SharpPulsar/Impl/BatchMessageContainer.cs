@@ -44,7 +44,7 @@ namespace SharpPulsar.Impl
         private  MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
-		private IByteBuffer _batchedMessageMetadataAndPayload;
+		private byte[] _batchedMessageMetadataAndPayload;
 		private IList<Message> _messages = new List<Message>();
 
         public override bool HasSameSchema(Message msg)
@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(MessageMetadata.NewBuilder());
-				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize));
+				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
 			}
 
 			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
@@ -89,21 +89,18 @@ namespace SharpPulsar.Impl
 			return (msg.SequenceId, BatchFull);
 		}
 
-		public IByteBuffer CompressedBatchMetadataAndPayload
+		public byte[] CompressedBatchMetadataAndPayload
 		{
 			get
 			{
-				var batchWriteIndex = _batchedMessageMetadataAndPayload.WriterIndex;
-				var batchReadIndex = _batchedMessageMetadataAndPayload.ReaderIndex;
-    
-				for (int i = 0, n = _messages.Count; i < n; i++)
+                for (int i = 0, n = _messages.Count; i < n; i++)
 				{
 					var msg = _messages[i];
 					var msgBuilder = msg.MessageBuilder;
 					msg.DataBuffer.MarkReaderIndex();
 					try
 					{
-						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, _batchedMessageMetadataAndPayload);
+						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer.Array, _batchedMessageMetadataAndPayload);
 					}
 					catch (System.Exception th)
 					{
@@ -114,15 +111,14 @@ namespace SharpPulsar.Impl
 							var previousMsg = _messages[j];
 							previousMsg.DataBuffer.ResetReaderIndex();
 						}
-						_batchedMessageMetadataAndPayload.SetWriterIndex(batchWriteIndex);
-						_batchedMessageMetadataAndPayload.SetReaderIndex(batchReadIndex);
+						//_batchedMessageMetadataAndPayload.SetWriterIndex(batchWriteIndex);
+						//_batchedMessageMetadataAndPayload.SetReaderIndex(batchReadIndex);
 						throw new System.Exception(th.Message);
 					}
 				}
 				
-				var uncompressedSize = _batchedMessageMetadataAndPayload.ReadableBytes;
+				var uncompressedSize = _batchedMessageMetadataAndPayload.Length;
 				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
-				_batchedMessageMetadataAndPayload.Release();
 				if (CompressionType != ICompressionType.None)
                 {
                     var compression = Enum.GetValues(typeof(Common.Enum.CompressionType)).Cast<Common.Enum.CompressionType>()

@@ -35,7 +35,7 @@ namespace SharpPulsar.Common.Compression
 		/// <param name="raw">
 		///            a buffer with the uncompressed content. The reader/writer indexes will not be modified </param>
 		/// <returns> a new buffer with the compressed content. The buffer needs to be released by the receiver </returns>
-		IByteBuffer Encode(IByteBuffer raw);
+		byte[] Encode(byte[] raw);
 
 		/// <summary>
 		/// Decompress a buffer.
@@ -52,7 +52,7 @@ namespace SharpPulsar.Common.Compression
 		/// <exception cref="IOException">
 		///             if the decompression fails </exception>
 		///             
-		IByteBuffer Decode(IByteBuffer encoded, int uncompressedSize);
+		byte[] Decode(byte[] encoded, int uncompressedSize);
 
 	}
 

@@ -28,8 +28,16 @@ namespace SharpPulsar.Akka.Network
             });
             Receive<TcpSuccess>(f =>
             {
-                connections.Add(f.Name, Sender);
-                Console.WriteLine($"TCP connection success from {f.Name}");
+                try
+                {
+                    if(!connections.ContainsKey(f.Name))
+                        connections.Add(f.Name, Sender);
+                    Context.Parent.Forward(f);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             });
             Receive<Payload>(pay =>
             {

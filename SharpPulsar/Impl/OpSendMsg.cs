@@ -8,13 +8,13 @@ namespace SharpPulsar.Impl
     {
         internal Message Msg;
         internal IList<Message> Msgs;
-        internal IByteBuffer Cmd;
+        internal byte[] Cmd;
         internal ThreadStart RePopulate;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
 
-        internal static OpSendMsg Create(Message msg, IByteBuffer cmd, long sequenceId)
+        internal static OpSendMsg Create(Message msg, byte[] cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -23,7 +23,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, IByteBuffer cmd, long sequenceId)
+        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, IByteBuffer cmd, long lowestSequenceId, long highestSequenceId)
+        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId)
         {
             var op = new OpSendMsg
             {

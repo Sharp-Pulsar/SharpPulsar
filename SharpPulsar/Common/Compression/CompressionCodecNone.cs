@@ -29,17 +29,13 @@ namespace SharpPulsar.Common.Compression
 	public class CompressionCodecNone : CompressionCodec
 	{
 
-		public IByteBuffer Encode(IByteBuffer raw)
+		public byte[] Encode(byte[] raw)
 		{
-			// Provides an encoder that simply returns the same uncompressed buffer
-			raw.Retain();
 			return raw;
 		}
 
-		public IByteBuffer Decode(IByteBuffer encoded, int uncompressedSize)
+		public byte[] Decode(byte[] encoded, int uncompressedSize)
 		{
-			// No decompression is required for this codec
-			encoded.Retain();
 			return encoded;
 		}
 	}

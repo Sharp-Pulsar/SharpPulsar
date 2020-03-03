@@ -32,6 +32,18 @@ namespace SharpPulsar.Akka.Consumer
             {
                 Become(Connecting);
             });
+            Receive<TcpSuccess>(f =>
+            {
+                try
+                {
+                    
+                    Console.WriteLine($"TCP connection success from {f.Name}");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            });
             Stash.UnstashAll();
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
+using ProtoBuf;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 
@@ -8,12 +9,12 @@ namespace SharpPulsar.Stole
 {
     public static class Serializer
     {
-        public static T Deserialize<T>(byte[] sequence)
+        public static BaseCommand Deserialize(byte[] sequence)
         {
             byte[] buffer = new byte[sequence.Length];
-            using var ms = new MemoryStream(sequence); 
-            ProtoBuf.ProtoReader.DirectReadBytes(ms, buffer, 0, sequence.Length);
-            return ProtoBuf.Serializer.Deserialize<T>(ms);
+            using var ms = new MemoryStream(buffer);
+            var o = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BaseCommand>(ms, PrefixStyle.Fixed32BigEndian);
+            return o;
         }
 
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)

@@ -32,15 +32,15 @@ namespace SharpPulsar.Common.Compression
     /// </summary>
     public class CompressionCodecSnappy : CompressionCodec
 	{
-		public IByteBuffer Encode(IByteBuffer source)
+		public byte[] Encode(byte[] source)
 		{
-			int uncompressedLength = source.ReadableBytes;
+			int uncompressedLength = source.Length;
 			int maxLength = SnappyCodec.GetMaxCompressedLength(uncompressedLength);
 
-			var sourceNio = source.GetIoBuffer(source.ReaderIndex, source.ReadableBytes).ToArray();
+			var sourceNio = source;
 
-			var target = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength);
-			var targetNio = target.GetIoBuffer(0, maxLength).ToArray();
+			var target = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength).Array;
+			var targetNio = target;
 
 			int compressedLength = 0;
 			try
@@ -51,19 +51,19 @@ namespace SharpPulsar.Common.Compression
 			{
 				Log.LogError("Failed to compress to Snappy: {}", e.Message);
 			}
-			target.SetWriterIndex(compressedLength);
+			//target.SetWriterIndex(compressedLength);
 			return target;
 		}
 
-		public IByteBuffer Decode(IByteBuffer encoded, int uncompressedLength)
+		public byte[] Decode(byte[] encoded, int uncompressedLength)
 		{
-			IByteBuffer uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength);
-			var uncompressedNio = uncompressed.GetIoBuffer(0, uncompressedLength).ToArray();
+			byte[] uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength).Array;
+			var uncompressedNio = uncompressed;
 
-			var encodedNio = encoded.GetIoBuffer(encoded.ReaderIndex, encoded.ReadableBytes).ToArray();
+			var encodedNio = encoded;
 			SnappyCodec.Uncompress(encodedNio, 0, encodedNio.Length, uncompressedNio, 0);
 
-			uncompressed.SetWriterIndex(uncompressedLength);
+			//uncompressed.SetWriterIndex(uncompressedLength);
 			return uncompressed;
 		}
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(CompressionCodecSnappy));

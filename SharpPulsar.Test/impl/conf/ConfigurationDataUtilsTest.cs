@@ -42,7 +42,7 @@ namespace SharpPulsar.Test.Impl.conf
 				["ServiceUrl"] = "pulsar://localhost:6650",
 				["MaxLookupRequest"] = 70000
 			};
-			confData = ConfigurationDataUtils.LoadData(config, confData);
+			confData = (ClientConfigurationData)ConfigurationDataUtils.LoadData(config, confData);
 			Assert.Equal("pulsar://localhost:6650", confData.ServiceUrl);
             Assert.Equal(70000, confData.MaxLookupRequest);
             Assert.Equal(33, confData.NumIoThreads);

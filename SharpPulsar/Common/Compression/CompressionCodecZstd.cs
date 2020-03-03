@@ -30,7 +30,7 @@ namespace SharpPulsar.Common.Compression
 
 		private const int ZstdCompressionLevel = 3;
 
-		public IByteBuffer Encode(IByteBuffer source)
+		public byte[] Encode(byte[] source)
 		{
             var compressor = new Compressor();
 			
@@ -45,13 +45,13 @@ namespace SharpPulsar.Common.Compression
 
 				compressedLength = Zstd.compress(targetNio, sourceNio, ZstdCompressionLevel);
 			}*/
-            var sourceNio = source.GetIoBuffer(source.ReaderIndex, source.ReadableBytes);
-            var compressed = compressor.Wrap(sourceNio.ToArray());
+            var sourceNio = source;
+            var compressed = compressor.Wrap(sourceNio);
 
-			return Unpooled.WrappedBuffer(compressed);
+			return compressed;
 		}
 
-		public IByteBuffer Decode(IByteBuffer encoded, int uncompressedLength)
+		public byte[] Decode(byte[] encoded, int uncompressedLength)
 		{
 			var decompressor = new Decompressor();
 			/*if (encoded.HasMemoryAddress)
@@ -66,8 +66,8 @@ namespace SharpPulsar.Common.Compression
 				Zstd.decompress(uncompressedNio, encodedNio);
 			}*/
             
-           var rt = decompressor.Unwrap(encoded.Array, uncompressedLength);
-			return Unpooled.WrappedBuffer(rt);
+           var rt = decompressor.Unwrap(encoded, uncompressedLength);
+			return rt;
 		}
 	}
 
