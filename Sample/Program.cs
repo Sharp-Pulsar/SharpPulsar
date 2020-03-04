@@ -30,7 +30,7 @@ namespace Producer
             var producer = new ProducerListener();
             //var jsonSchem = JsonSchema.Of(typeof(Students));
             var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl("http://127.0.0.1:6650")
+                .ServiceUrl("pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
                 .KeepAliveInterval(30, TimeUnit.SECONDS)
                 .IoThreads(1)

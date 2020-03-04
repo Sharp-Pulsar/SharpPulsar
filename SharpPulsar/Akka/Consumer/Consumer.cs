@@ -102,15 +102,15 @@ namespace SharpPulsar.Akka.Consumer
             {
                 var i = 0;
                 var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
-                var builder = MessageIdData.NewBuilder();
+                var builder = new MessageIdData();
                 batches.ForEach(ids =>
                 {
                     var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId)).Select(messageId =>
                     {
-                        builder.SetPartition(messageId.PartitionIndex);
-                        builder.SetLedgerId(messageId.LedgerId);
-                        builder.SetEntryId(messageId.EntryId);
-                        return builder.Build();
+                        builder.Partition = (messageId.PartitionIndex);
+                        builder.ledgerId = (ulong)(messageId.LedgerId);
+                        builder.entryId = (ulong)(messageId.EntryId);
+                        return builder;
                     }).ToList();
                     var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid, messageIdDatas);
                     var payload = new Payload(cmd, requestid, "RedeliverUnacknowledgedMessages");
@@ -274,7 +274,7 @@ namespace SharpPulsar.Akka.Consumer
                     {
                         Context.System.Log.Debug("[{}] [{}] processing message num - {} in batch", _subscriptionName, _consumerName, i);
                     }
-                    var singleMessageMetadataBuilder = SingleMessageMetadata.NewBuilder();
+                    var singleMessageMetadataBuilder = new SingleMessageMetadata();
                     var singleMessagePayload = Commands.DeSerializeSingleMessageInBatch(uncompressedPayload, singleMessageMetadataBuilder, i, batchSize);
 
                     if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorBatchIndex(i))
@@ -290,7 +290,7 @@ namespace SharpPulsar.Akka.Consumer
                         continue;
                     }
 
-                    if (singleMessageMetadataBuilder.HasCompactedOut())
+                    if (singleMessageMetadataBuilder.CompactedOut)
                     {
                         ++skippedMessages;
                         continue;
@@ -298,7 +298,7 @@ namespace SharpPulsar.Akka.Consumer
 
                     var batchMessageIdImpl = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, i, acker);
 
-                    var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder.Build(), singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
+                    var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMessageMetadataBuilder, singleMessagePayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                     if(_hasParentConsumer) 
                         Context.Parent.Tell(new ConsumedMessage(Self, message));
                     else
@@ -553,12 +553,14 @@ namespace SharpPulsar.Akka.Consumer
             else
             {
                 // For non-durable we are going to restart from the next entry
-                var builder = MessageIdData.NewBuilder();
-                builder.SetLedgerId(_startMessageId.LedgerId);
-                builder.SetEntryId(_startMessageId.EntryId);
-                builder.SetBatchIndex(_startMessageId.BatchIndex);
+                var builder = new MessageIdData
+                {
+                    ledgerId = (ulong) (_startMessageId.LedgerId),
+                    entryId = (ulong) (_startMessageId.EntryId),
+                    BatchIndex = (_startMessageId.BatchIndex)
+                };
 
-                startMessageIdData = builder.Build();
+                startMessageIdData = builder;
             }
             var si = (SchemaInfo)_schema.SchemaInfo;
             if (si != null && (SchemaType.Bytes == si.Type || SchemaType.None == si.Type))
@@ -566,9 +568,12 @@ namespace SharpPulsar.Akka.Consumer
                 // don't set schema for Schema.BYTES
                 si = null;
             }
+
+            var intial = Enum.GetValues(typeof(CommandSubscribe.InitialPosition))
+                .Cast<CommandSubscribe.InitialPosition>().ToList()[_conf.SubscriptionInitialPosition.Value];
             // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
             var startMessageRollbackDuration = ( _startMessageRollbackDurationInSec > 0 && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-            var request = Commands.NewSubscribe(_topicName.ToString(), _subscriptionName, _consumerid, requestid, _conf.SubscriptionType, _conf.PriorityLevel, _consumerName, isDurable, startMessageIdData, _conf.Properties, _conf.ReadCompacted, _conf.ReplicateSubscriptionState, CommandSubscribe.ValueOf(_conf.SubscriptionInitialPosition.Value), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, _conf.KeySharedPolicy);
+            var request = Commands.NewSubscribe(_topicName.ToString(), _subscriptionName, _consumerid, requestid, _conf.SubscriptionType, _conf.PriorityLevel, _consumerName, isDurable, startMessageIdData, _conf.Properties, _conf.ReadCompacted, _conf.ReplicateSubscriptionState, intial, startMessageRollbackDuration, si, _createTopicIfDoesNotExist, _conf.KeySharedPolicy);
             var payload = new Payload(request, requestid, "NewSubscribe");
             _broker.Tell(payload);
         }

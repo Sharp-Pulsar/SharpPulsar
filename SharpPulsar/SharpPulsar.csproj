@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Protocol\Proto\Partial\**" />
+    <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
+    <None Remove="Protocol\Proto\Partial\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Common\Compression\CompressionCodecZLib.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
@@ -12,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="akka" Version="1.3.17" />
+    <PackageReference Include="akka.streams" Version="1.3.17" />
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="ConcurrentHashSet" Version="1.1.0" />
     <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />

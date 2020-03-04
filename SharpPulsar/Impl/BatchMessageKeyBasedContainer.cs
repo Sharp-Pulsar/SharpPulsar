@@ -110,11 +110,11 @@ namespace SharpPulsar.Impl
 			{
 				return true;
 			}
-			if (!part.MessageMetadata.HasSchemaVersion())
+			if (part.MessageMetadata.SchemaVersion.Length < 1)
 			{
 				return msg.SchemaVersion == null;
 			}
-			return Equals(msg.SchemaVersion, part.MessageMetadata.GetSchemaVersion());
+			return Equals(msg.SchemaVersion, part.MessageMetadata.SchemaVersion);
 		}
 
 		private string GetKey(Message msg)
@@ -128,7 +128,7 @@ namespace SharpPulsar.Impl
 
 		public class KeyedBatch
 		{
-			internal MessageMetadata.Builder MessageMetadata = Protocol.Proto.MessageMetadata.NewBuilder();
+			internal MessageMetadata MessageMetadata = new MessageMetadata();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
 			internal byte[] BatchedMessageMetadataAndPayload;
@@ -150,7 +150,7 @@ namespace SharpPulsar.Impl
 
 					foreach (var msg in Messages)
 					{
-						MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
+						MessageMetadata msgBuilder = msg.MessageBuilder;
 						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer.Array, BatchedMessageMetadataAndPayload);
 						
 					}
@@ -158,8 +158,8 @@ namespace SharpPulsar.Impl
 					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload);
 					if (CompressionType != CompressionType.None)
 					{
-						MessageMetadata.SetCompression(CompressionType);
-						MessageMetadata.SetUncompressedSize(uncompressedSize);
+						MessageMetadata.Compression = CompressionType;
+						MessageMetadata.UncompressedSize = (uint)uncompressedSize;
 					}
     
 					// Update the current max batch size using the uncompressed size, which is what we need in any case to
@@ -176,17 +176,17 @@ namespace SharpPulsar.Impl
 					SequenceId = Commands.InitBatchMessageMetadata(msg.MessageBuilder);
 					if (msg.HasKey())
 					{
-						MessageMetadata.SetPartitionKey(msg.Key);
+						MessageMetadata.PartitionKey = msg.Key;
 						if (msg.HasBase64EncodedKey())
 						{
-							MessageMetadata.SetPartitionKeyB64Encoded(true);
+							MessageMetadata.PartitionKeyB64Encoded = true;
 						}
 					}
 					if (msg.HasOrderingKey())
 					{
-						MessageMetadata.SetOrderingKey((byte[])(object)msg.OrderingKey);
+						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer((Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize))).Array;
+					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
 					
 				}
 
@@ -202,7 +202,7 @@ namespace SharpPulsar.Impl
 			{
 				Messages = new List<Message>();
 				PreviousCallback = null;
-				MessageMetadata = Protocol.Proto.MessageMetadata.Builder.Create();
+				MessageMetadata = new MessageMetadata();
 				SequenceId = -1;
 				BatchedMessageMetadataAndPayload = null;
 			}

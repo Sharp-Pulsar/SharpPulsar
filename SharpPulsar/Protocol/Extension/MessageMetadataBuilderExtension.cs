@@ -5,26 +5,26 @@ namespace SharpPulsar.Protocol.Extension
 {
     public static class MessageMetadataBuilderExtension
     {
-        public static void SetDeliverAtTime(this MessageMetadata.Builder metadata, DateTimeOffset timestamp)
-            => metadata.SetDeliverAtTime(timestamp.ToUnixTimeMilliseconds());
+        public static void SetDeliverAtTime(this MessageMetadata metadata, DateTimeOffset timestamp)
+            => metadata.DeliverAtTime = timestamp.ToUnixTimeMilliseconds();
 
 
-        public static void SetEventTime(this MessageMetadata.Builder metadata, DateTimeOffset timestamp)
-            => metadata.SetEventTime(timestamp.ToUnixTimeMilliseconds());
+        public static void SetEventTime(this MessageMetadata metadata, DateTimeOffset timestamp)
+            => metadata.EventTime = (ulong)timestamp.ToUnixTimeMilliseconds();
         
-        public static void SetKey(this MessageMetadata.Builder metadata, string? key)
+        public static void SetKey(this MessageMetadata metadata, string? key)
         {
-            metadata.SetPartitionKey(key);
-            metadata.SetPartitionKeyB64Encoded(false);
+            metadata.PartitionKey = key;
+            metadata.PartitionKeyB64Encoded = false;
         }
 
-        public static void SetKey(this MessageMetadata.Builder metadata, byte[]? key)
+        public static void SetKey(this MessageMetadata metadata, byte[] key)
         {
             if (key is null)
                 return;
 
-            metadata.SetPartitionKey(Convert.ToBase64String(key));
-            metadata.SetPartitionKeyB64Encoded(true);
+            metadata.PartitionKey = Convert.ToBase64String(key);
+            metadata.PartitionKeyB64Encoded = true;
         }
     }
 }

@@ -11,9 +11,8 @@ namespace SharpPulsar.Stole
     {
         public static BaseCommand Deserialize(byte[] sequence)
         {
-            byte[] buffer = new byte[sequence.Length];
-            using var ms = new MemoryStream(buffer);
-            var o = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BaseCommand>(ms, PrefixStyle.Fixed32BigEndian);
+            using var ms = new MemoryStream(sequence);
+            var o = ProtoBuf.Serializer.Deserialize<BaseCommand>(ms);
             return o;
         }
 
@@ -29,7 +28,18 @@ namespace SharpPulsar.Stole
                 .Append(commandBytes)
                 .Build();
         }
+        public static ReadOnlySequence<byte> Serialize(CommandConnect command)
+        {
+            var commandBytes = GetBytes(command);
+            var commandSizeBytes = ToBigEndianBytes((uint)commandBytes.Length);
+            var totalSizeBytes = ToBigEndianBytes((uint)commandBytes.Length + 4);
 
+            return new SequenceBuilder<byte>()
+                .Append(totalSizeBytes)
+                .Append(commandSizeBytes)
+                .Append(commandBytes)
+                .Build();
+        }
         public static ReadOnlySequence<byte> Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload)
         {
             var commandBytes = GetBytes(command);

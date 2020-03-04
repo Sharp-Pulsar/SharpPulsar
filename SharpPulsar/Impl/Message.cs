@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
 
     public class Message : IMessage
 	{
-		public MessageMetadata.Builder MessageBuilder { get; }
+		public MessageMetadata MessageBuilder { get; }
 		public IByteBuffer DataBuffer { get; }
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
@@ -41,19 +41,19 @@ namespace SharpPulsar.Impl
 
 		public string TopicName {get;} // only set for incoming messages
 
-        public Message(IByteBuffer data, MessageMetadata.Builder builder, ISchema schema)
+        public Message(IByteBuffer data, MessageMetadata builder, ISchema schema)
         {
             DataBuffer = data;
             MessageBuilder = builder;
             _schema = schema;
         }
-        public Message(byte[] data, MessageMetadata.Builder builder)
+        public Message(byte[] data, MessageMetadata builder)
         {
             DataBuffer = Unpooled.CopiedBuffer(data);
             MessageBuilder = builder;
         }
 		// Constructor for out-going message
-		public static Message Create(MessageMetadata.Builder msgMetadataBuilder, IByteBuffer payload, ISchema schema)
+		public static Message Create(MessageMetadata msgMetadataBuilder, IByteBuffer payload, ISchema schema)
 		{
             var msg = new Message(payload, msgMetadataBuilder, schema);
             return msg;
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
             _properties = new Dictionary<string, string>();
-			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
+			MessageBuilder = msgMetadata;
 			MessageId = messageId;
 			TopicName = topic;
 			RedeliveryCount = redeliveryCount;
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 
 		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
-			MessageBuilder = MessageMetadata.NewBuilder(msgMetadata);
+			MessageBuilder = msgMetadata;
 			MessageId = batchMessageIdImpl;
 			TopicName = topic;
 			RedeliveryCount = redeliveryCount;
@@ -119,18 +119,18 @@ namespace SharpPulsar.Impl
 
 			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
 			{
-				MessageBuilder.SetPartitionKeyB64Encoded(singleMessageMetadata.PartitionKeyB64Encoded);
-				MessageBuilder.SetPartitionKey(singleMessageMetadata.PartitionKey);
+				MessageBuilder.PartitionKeyB64Encoded = (singleMessageMetadata.PartitionKeyB64Encoded);
+				MessageBuilder.PartitionKey = (singleMessageMetadata.PartitionKey);
 			}
 
 			if (singleMessageMetadata.EventTime > 0)
 			{
-				MessageBuilder.SetEventTime((long)singleMessageMetadata.EventTime);
+				MessageBuilder.EventTime = (singleMessageMetadata.EventTime);
 			}
 
 			if (singleMessageMetadata.SequenceId > 0)
 			{
-				MessageBuilder.SetSequenceId((long)singleMessageMetadata.SequenceId);
+				MessageBuilder.SequenceId = (singleMessageMetadata.SequenceId);
 			}
 
 			_schema = schema;
@@ -156,29 +156,29 @@ namespace SharpPulsar.Impl
 		public static Message Deserialize(byte[] headersAndPayload)
 		{
             var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
-            var msg = new Message(headersAndPayload, MessageMetadata.NewBuilder(msgMetadata)) {MessageId = null};
+            var msg = new Message(headersAndPayload, msgMetadata) {MessageId = null};
             msg.Properties.Clear();
 			return msg;
 		}
 
 		public string ReplicatedFrom
 		{
-			set => MessageBuilder?.SetReplicatedFrom(value);
-            get => MessageBuilder != null ? MessageBuilder.GetReplicatedFrom() : string.Empty;
+			set => MessageBuilder.ReplicatedFrom = (value);
+            get => MessageBuilder != null ? MessageBuilder.ReplicatedFrom : string.Empty;
         }
 
-		public bool Replicated => MessageBuilder != null && MessageBuilder.HasReplicatedFrom();
+		public bool Replicated => MessageBuilder != null && !string.IsNullOrWhiteSpace(MessageBuilder.ReplicatedFrom);
 
 
         public IMessageId MessageId { get; set; }
-        public long PublishTime => MessageBuilder?.GetPublishTime() ?? 0L;
+        public long PublishTime => (long)MessageBuilder.PublishTime;
 
         public long EventTime
 		{
 			get
 			{
                 if (MessageBuilder == null) return 0;
-                return MessageBuilder.HasEventTime() ? MessageBuilder.EventTime : 0;
+                return (long)MessageBuilder.EventTime;
             }
 		}
 
@@ -221,9 +221,9 @@ namespace SharpPulsar.Impl
 		{
 			get
             {
-                if (MessageBuilder != null && MessageBuilder.HasSchemaVersion())
+                if (MessageBuilder != null && MessageBuilder.SchemaVersion?.Length > 0)
 				{
-					return (sbyte[])(object)MessageBuilder.GetSchemaVersion();
+					return (sbyte[])(object)MessageBuilder.SchemaVersion;
 				}
 
                 return null;
@@ -256,10 +256,7 @@ namespace SharpPulsar.Impl
             {
                 if (MessageBuilder is null)
                     throw new NullReferenceException();
-				if (MessageBuilder.HasSequenceId())
-				{
-					return (long)MessageBuilder.GetSequenceId();
-				}
+                return (long)MessageBuilder.SequenceId;
 				return -1;
 			}
 		}
@@ -270,9 +267,9 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder is null)
                     throw new NullReferenceException();
-				if (MessageBuilder.HasProducerName())
+				if (!string.IsNullOrWhiteSpace(MessageBuilder.ProducerName))
 				{
-					return MessageBuilder.GetProducerName();
+					return MessageBuilder.ProducerName;
 				}
 				return null;
 			}
@@ -297,7 +294,7 @@ namespace SharpPulsar.Impl
 					{
 						if (MessageBuilder.Properties.Count > 0)
 						{
-							_properties = new Dictionary<string,string>(MessageBuilder.Properties);
+							_properties = MessageBuilder.Properties.ToDictionary(x=>x.Key, x=>x.Value);
 						}
 						else
 						{
@@ -325,7 +322,7 @@ namespace SharpPulsar.Impl
 		{
 			if(MessageBuilder == null)
 				throw  new NullReferenceException();
-			return MessageBuilder.HasPartitionKey();
+			return !string.IsNullOrWhiteSpace(MessageBuilder.PartitionKey);
 		}
 
 
@@ -335,7 +332,7 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder == null)
                     throw new NullReferenceException();
-				return MessageBuilder.GetPartitionKey();
+				return MessageBuilder.PartitionKey;
 			}
 		}
 
@@ -365,7 +362,7 @@ namespace SharpPulsar.Impl
 		{
             if (MessageBuilder == null)
                 throw new NullReferenceException();
-			return MessageBuilder.HasOrderingKey();
+			return MessageBuilder.OrderingKey?.Length > 0;
 		}
 
 		public sbyte[] OrderingKey
@@ -374,7 +371,7 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder == null)
                     throw new NullReferenceException();
-				return (sbyte[])(object)MessageBuilder.GetOrderingKey();
+				return (sbyte[])(object)MessageBuilder.OrderingKey;
 			}
 		}
 
@@ -383,7 +380,7 @@ namespace SharpPulsar.Impl
 		{
             if (MessageBuilder == null)
                 throw new NullReferenceException();
-			return MessageBuilder.ReplicateToList().Count > 0;
+			return MessageBuilder.ReplicateToes.Count > 0;
 		}
 
 		public IList<string> ReplicateTo
@@ -392,7 +389,7 @@ namespace SharpPulsar.Impl
 			{
                 if (MessageBuilder == null)
                     throw new NullReferenceException();
-				return MessageBuilder.ReplicateToList();
+				return MessageBuilder.ReplicateToes;
 			}
 		}
 

@@ -285,7 +285,7 @@ namespace SharpPulsar.Impl
 		 * @return encryptedData if success
 		 */
 		
-        public virtual byte[] Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata.Builder msgMetadata, byte[] payload)
+        public virtual byte[] Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata msgMetadata, byte[] payload)
 		{
 			lock (this)
 			{
@@ -311,13 +311,16 @@ namespace SharpPulsar.Impl
 							IList<KeyValue> kvList = new List<KeyValue>();
 							keyInfo.Metadata.ToList().ForEach(m =>
 							{
-								kvList.Add(KeyValue.NewBuilder().SetKey(m.Key).SetValue(m.Value).Build());
+								kvList.Add(new KeyValue{
+                                    Key = m.Key, Value = m.Value
+                                });
 							});
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue((byte[])(object)keyInfo.Key).AddAllMetadata(kvList).Build());
-						}
+                            msgMetadata.EncryptionKeys.Add(new EncryptionKeys
+                                {Key = keyName, Value = (byte[]) (object) keyInfo.Key, Metadatas = new List<KeyValue>(kvList)});
+                        }
 						else
 						{
-							msgMetadata.AddEncryptionKeys(EncryptionKeys.NewBuilder().SetKey(keyName).SetValue((byte[])(object)keyInfo.Key).Build());
+							msgMetadata.EncryptionKeys.Add(new EncryptionKeys {Key = keyName, Value = (byte[])(object)keyInfo.Key});
 						}
 					}
 					else
@@ -334,7 +337,7 @@ namespace SharpPulsar.Impl
 				var keyParameter = new AeadParameters(new KeyParameter(_dataKey.Key), TagLen, _iv);
 				
 				// Update message metadata with encryption param
-				msgMetadata.SetEncryptionParam(_iv);
+				msgMetadata.EncryptionParam = _iv;
                 var maxLength = _cipher.GetOutputSize(payload.Length);
 				byte[] targetBuf = new byte[maxLength];
 				try

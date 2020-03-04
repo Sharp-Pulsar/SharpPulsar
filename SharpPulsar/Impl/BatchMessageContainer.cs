@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl
 	public class BatchMessageContainer : AbstractBatchMessageContainer
 	{
 		// sequence id for this batch which will be persisted as a single entry by broker
-        private  MessageMetadata.Builder _messageMetadata = MessageMetadata.NewBuilder();
+        private  MessageMetadata _messageMetadata = new MessageMetadata();
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private byte[] _batchedMessageMetadataAndPayload;
@@ -53,11 +53,11 @@ namespace SharpPulsar.Impl
             {
                 return true;
             }
-            if (!_messageMetadata.HasSchemaVersion())
+            if (_messageMetadata.SchemaVersion == null)
             {
                 return msg.SchemaVersion == null;
             }
-            return Equals(msg.SchemaVersion, _messageMetadata.GetSchemaVersion());
+            return Equals(msg.SchemaVersion, _messageMetadata.SchemaVersion);
 		}
 
         public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl
 			{
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
-				_lowestSequenceId = Commands.InitBatchMessageMetadata(MessageMetadata.NewBuilder());
+				_lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadata());
 				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
 			}
 
@@ -82,7 +82,7 @@ namespace SharpPulsar.Impl
 			if (_lowestSequenceId == -1L)
 			{
 				_lowestSequenceId = msg.SequenceId;
-				_messageMetadata.SetSequenceId(_lowestSequenceId);
+				_messageMetadata.SequenceId = (ulong)_lowestSequenceId;
 			}
 			_highestSequenceId = msg.SequenceId;
 
@@ -121,10 +121,10 @@ namespace SharpPulsar.Impl
 				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
 				if (CompressionType != ICompressionType.None)
                 {
-                    var compression = Enum.GetValues(typeof(Common.Enum.CompressionType)).Cast<Common.Enum.CompressionType>()
+                    var compression = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>()
                         .ToList()[(int)CompressionType];
-					_messageMetadata.SetCompression(compression);
-					_messageMetadata.SetUncompressedSize(uncompressedSize);
+					_messageMetadata.Compression = compression;
+					_messageMetadata.UncompressedSize = (uint)uncompressedSize;
 				}
     
 				// Update the current max batch size using the uncompressed size, which is what we need in any case to
@@ -135,13 +135,13 @@ namespace SharpPulsar.Impl
 		}
 
         public List<Message> Messages => _messages.ToList();
-        public MessageMetadata.Builder Metadata => _messageMetadata;
+        public MessageMetadata Metadata => _messageMetadata;
         public int GetNumMessagesInBatch => NumMessagesInBatch;
         public long HighestSequenceId => _highestSequenceId;
 		public override void Clear()
 		{
 			_messages = new List<Message>();
-			_messageMetadata = MessageMetadata.NewBuilder();
+			_messageMetadata = new MessageMetadata();
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
 			_lowestSequenceId = -1L;

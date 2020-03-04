@@ -4,6 +4,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using Akka.IO;
@@ -79,7 +81,8 @@ namespace SharpPulsar.Akka.Network
                     Context.System.Tcp().Tell(new Tcp.Connect(RemoteAddress));
                     break;
                 case Tcp.Connected connected:
-                    Log.Info("Connected to {0}", connected.RemoteAddress.ToString());
+                    Context.Parent.Tell(new TcpSuccess(connected.RemoteAddress.ToString()));
+                    Log.Info("Connected to {0} in onreceive", connected.RemoteAddress.ToString());
                     // Register self as connection handler
                     Sender.Tell(new Tcp.Register(Self));
                     Connection = Sender;
@@ -110,7 +113,7 @@ namespace SharpPulsar.Akka.Network
                 }
                 else if (message is Tcp.Connected connected)
                 {
-                    Log.Info("Connected to {0}", connected.RemoteAddress.ToString());
+                    Log.Info("Connected to {0} in connecting", connected.RemoteAddress.ToString());
                     // Register self as connection handler
                     Sender.Tell(new Tcp.Register(Self));
                     HandleTcpConnected();
@@ -130,7 +133,6 @@ namespace SharpPulsar.Akka.Network
             {
                 if (message is Tcp.Received received)  // data received from pulsar server
                 {
-                    var b = received.Data.ToArray();
                     HandleTcpReceived(received.Data.ToArray());
                 }
                 else if (message is Payload p)   // data received from producer/consumer
@@ -228,7 +230,7 @@ namespace SharpPulsar.Akka.Network
 							HandlePing(cmd.Ping);
 						break;
                     case BaseCommand.Type.Connect:
-                        Context.Parent.Tell(new TcpSuccess(RemoteHostName));
+                        //Context.Parent.Tell(new TcpSuccess(RemoteHostName));
                         break;
 					case BaseCommand.Type.Pong:
 							HandlePong(cmd.Pong);
@@ -283,7 +285,7 @@ namespace SharpPulsar.Akka.Network
 			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthDataShared(Shared.Auth.AuthDataShared.InitAuthData));
             var assemblyName = Assembly.GetCallingAssembly().GetName();
-            var auth = AuthData.NewBuilder().SetAuthData((byte[])(object)authData.Bytes).Build();
+            var auth = new AuthData {auth_data = ((byte[]) (object) authData.Bytes)};
             var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
             return Commands.NewConnect(Authentication.AuthMethodName, auth, 15, clientVersion, ProxyToTargetBrokerAddress, string.Empty, null, string.Empty);

@@ -15,9 +15,9 @@ namespace SharpPulsar.Akka
         public PulsarManager(ClientConfigurationData conf)
         {
             Context.ActorOf(ProducerManager.Prop(conf), "ProducerManager");
-            Context.ActorOf(ConsumerManager.Prop(conf), "ConsumerManager");
-            Context.ActorOf(ReaderManager.Prop(conf), "ReaderManager");
-            Context.ActorOf(TransactionManager.Prop(), "TransactionManager");
+            //Context.ActorOf(ConsumerManager.Prop(conf), "ConsumerManager");
+            //Context.ActorOf(ReaderManager.Prop(conf), "ReaderManager");
+            //Context.ActorOf(TransactionManager.Prop(), "TransactionManager");
             Receive<NewProducer>(cmd =>
             {
                 Context.Child("ProducerManager").Tell(cmd);

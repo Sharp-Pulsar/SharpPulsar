@@ -83,9 +83,9 @@ namespace SharpPulsar.Impl
 			if(data == null)
 				throw new ArgumentException();
 			var inputStream = new CodedInputStream((byte[])(object)data);
-			var builder = MessageIdData.NewBuilder();
+			var builder = new MessageIdData();
 
-            MessageIdData idData = builder.Build();
+            MessageIdData idData = builder;
 			try
 			{
                 //idData.MergeFrom(inputStream);
@@ -118,9 +118,9 @@ namespace SharpPulsar.Impl
             if (data == null)
                 throw new ArgumentException();
             var inputStream = new CodedInputStream((byte[])(object)data);
-            var builder = MessageIdData.NewBuilder();
+            var builder = new MessageIdData();
 
-            MessageIdData idData = builder.Build();
+            MessageIdData idData = builder;
 			try
 			{
 				//idData.MergeFrom(inputStream);
@@ -151,20 +151,18 @@ namespace SharpPulsar.Impl
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual sbyte[] ToByteArray(int batchIndex)
 		{
-			var builder = MessageIdData.NewBuilder();
-			builder.SetLedgerId(_ledgerId);
-			builder.SetEntryId(_entryId);
-			if (_partitionIndex >= 0)
+            var builder = new MessageIdData {ledgerId = (ulong) (_ledgerId), entryId = (ulong) (_entryId)};
+            if (_partitionIndex >= 0)
 			{
-				builder.SetPartition(_partitionIndex);
+				builder.Partition = (_partitionIndex);
 			}
 
 			if (batchIndex != -1)
 			{
-				builder.SetBatchIndex(batchIndex);
+				builder.BatchIndex = (batchIndex);
 			}
 
-			var msgId = builder.Build();
+			var msgId = builder;
 			var size = msgId.ByteLength();
 			var serialized = Unpooled.Buffer(size, size);
 			var stream = new CodedOutputStream(serialized.Array);

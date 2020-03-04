@@ -36,7 +36,7 @@ namespace SharpPulsar.Impl
         private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
 		
 		private readonly string _producer;//topic
-		public MessageMetadata.Builder Builder  = MessageMetadata.NewBuilder();
+		public MessageMetadata Builder  = new MessageMetadata();
 		private readonly ISchema _schema;
 		public  IByteBuffer Content;
 
@@ -71,8 +71,8 @@ namespace SharpPulsar.Impl
 				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
 				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			Builder.SetPartitionKey(key);
-			Builder.SetPartitionKeyB64Encoded(false);
+			Builder.PartitionKey = key;
+			Builder.PartitionKeyB64Encoded = false;
 			return this;
 		}
 
@@ -84,14 +84,14 @@ namespace SharpPulsar.Impl
 				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
 				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 			}
-			Builder.SetPartitionKey(Convert.ToBase64String((byte[])(object)key));
-			Builder.SetPartitionKeyB64Encoded(true);
+			Builder.PartitionKey = Convert.ToBase64String((byte[])(object)key);
+			Builder.PartitionKeyB64Encoded = true;
 			return this;
 		}
 
 		public ITypedMessageBuilder OrderingKey(sbyte[] orderingKey)
 		{
-			Builder.SetOrderingKey((byte[])(object)orderingKey);
+			Builder.OrderingKey = (byte[])(object)orderingKey;
 			return this;
 		}
 
@@ -117,7 +117,7 @@ namespace SharpPulsar.Impl
                 throw new NullReferenceException("Need Non-Null name");
 			if(ReferenceEquals(value, null))
                 throw new NullReferenceException("Need Non-Null value for name: " + name);
-			Builder.AddProperties(KeyValue.NewBuilder().SetKey(name).SetValue(value).Build());
+			Builder.Properties.Add(new KeyValue{ Key = name, Value = value});
 			return this;
 		}
 
@@ -129,7 +129,7 @@ namespace SharpPulsar.Impl
 					throw new NullReferenceException("Need Non-Null name");
 				if(entry.Value == null)
 					throw new NullReferenceException("Need Non-Null value for name: " + entry.Key); ;
-				Builder.AddProperties(KeyValue.NewBuilder().SetKey(entry.Key).SetValue(entry.Value).Build());
+				Builder.Properties.Add(new KeyValue {Key = entry.Key, Value = entry.Value});
 			}
 
 			return this;
@@ -139,7 +139,7 @@ namespace SharpPulsar.Impl
 		{
 			if(timestamp <= 0)
                 throw new ArgumentException("Invalid timestamp : "+ timestamp);
-			Builder.SetEventTime(timestamp);
+			Builder.EventTime = (ulong)timestamp;
 			return this;
 		}
 
@@ -147,7 +147,7 @@ namespace SharpPulsar.Impl
 		{
 			if(sequenceId < 0)
 				throw new ArgumentException();
-			Builder.SetSequenceId(sequenceId);
+			Builder.SequenceId = (ulong)sequenceId;
 			return this;
 		}
 
@@ -155,13 +155,13 @@ namespace SharpPulsar.Impl
 		{
 			if(clusters == null)
 				throw new NullReferenceException();
-			Builder.AddAllReplicateTo(clusters.ToList());
+			Builder.ReplicateToes.AddRange(clusters.ToList());
 			return this;
 		}
 
 		public ITypedMessageBuilder DisableReplication()
 		{
-			Builder.AddReplicateTo("__local__");
+			Builder.ReplicateToes.Add("__local__");
 			return this;
 		}
 
@@ -172,7 +172,7 @@ namespace SharpPulsar.Impl
 
 		public ITypedMessageBuilder DeliverAt(long timestamp)
 		{
-			Builder.SetDeliverAtTime(timestamp);
+			Builder.DeliverAtTime = timestamp;
 			return this;
 		}
 
@@ -234,14 +234,14 @@ namespace SharpPulsar.Impl
 			}
 		}
 
-		public virtual long PublishTime => Builder.GetPublishTime();
+		public virtual long PublishTime => (long)Builder.PublishTime;
 
         public virtual bool HasKey()
 		{
-			return Builder.HasPartitionKey();
+			return !string.IsNullOrWhiteSpace(Builder.PartitionKey);
 		}
 
-		public virtual string GetKey => Builder.GetPartitionKey();
+		public virtual string GetKey => Builder.PartitionKey;
     }
 
 }

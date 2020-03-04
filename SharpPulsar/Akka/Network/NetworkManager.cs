@@ -45,7 +45,7 @@ namespace SharpPulsar.Akka.Network
             });
             try
             {
-                Stash.UnstashAll();
+                //Stash.UnstashAll();
             }
             catch (Exception e)
             {
