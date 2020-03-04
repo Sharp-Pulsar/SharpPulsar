@@ -9,9 +9,9 @@ namespace SharpPulsar.Stole
 {
     public static class Serializer
     {
-        public static BaseCommand Deserialize(byte[] sequence)
+        public static BaseCommand Deserialize(ReadOnlySequence<byte> sequence)
         {
-            using var ms = new MemoryStream(sequence);
+            using var ms = new MemoryStream(sequence.ToArray());
             var o = ProtoBuf.Serializer.Deserialize<BaseCommand>(ms);
             return o;
         }

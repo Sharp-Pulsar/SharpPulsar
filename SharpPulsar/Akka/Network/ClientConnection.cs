@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.IO;
@@ -16,14 +20,20 @@ using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Stole;
 using ByteString = Akka.IO.ByteString;
 using Dns = System.Net.Dns;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class ClientConnection: UntypedActor, IWithUnboundedStash
+    public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
+        private readonly X509Certificate2Collection _clientCertificates;
+        private readonly X509Certificate2? _trustedCertificateAuthority;
+        private readonly bool _verifyCertificateAuthority;
+        private readonly bool _verifyCertificateName;
         protected internal readonly IAuthentication Authentication;
+        private PulsarStream _stream;
         private State _state;
         protected internal EndPoint RemoteAddress;
         protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V0;
@@ -54,6 +64,10 @@ namespace SharpPulsar.Akka.Network
         }
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
+            _clientCertificates = new X509Certificate2Collection();//load certs from path
+            _trustedCertificateAuthority = new X509Certificate2();
+            _verifyCertificateAuthority = conf.TlsHostnameVerificationEnable;
+            _verifyCertificateName = true;
             _keepAliveIntervalSeconds = conf.KeepAliveIntervalSeconds;
             _protocolVersion = conf.ProtocolVersion;
             _conf = conf;
@@ -66,92 +80,37 @@ namespace SharpPulsar.Akka.Network
             Authentication = conf.Authentication;
             _state = State.None;
             //this.keepAliveIntervalSeconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToSecs(conf.KeepAliveIntervalSeconds);
-            Context.System.Tcp().Tell(new Tcp.Connect(endPoint));
+            //Context.System.Tcp().Tell(new Tcp.Connect(endPoint));
+            var connector = new Connector(_clientCertificates, _trustedCertificateAuthority, _verifyCertificateAuthority, _verifyCertificateName);
+            _stream = new PulsarStream(connector.Connect(new Uri(conf.ServiceUrl)));
+            Context.Parent.Tell(new TcpSuccess(conf.ServiceUrl));
+            Receive<Payload>(p =>
+            {
+                _ = _stream.Send(new ReadOnlySequence<byte>(p.Bytes));
+            });
+            Receive<ConnectionCommand>(p =>
+            {
+                _ = _stream.Send(new ReadOnlySequence<byte>(p.Command));
+            });
+            var c = new ConnectionCommand(NewConnectCommand());
+            _ =_stream.Send(new ReadOnlySequence<byte>(c.Command));
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
+
         }
-        
+
         public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
             return Props.Create(() => new ClientConnection(endPoint, conf, manager));
         }
-        protected override void OnReceive(object message)
+
+        protected override void PreStart()
         {
-            switch (message)
-            {
-                case TcpReconnect _:
-                    Context.System.Tcp().Tell(new Tcp.Connect(RemoteAddress));
-                    break;
-                case Tcp.Connected connected:
-                    Context.Parent.Tell(new TcpSuccess(connected.RemoteAddress.ToString()));
-                    Log.Info("Connected to {0} in onreceive", connected.RemoteAddress.ToString());
-                    // Register self as connection handler
-                    Sender.Tell(new Tcp.Register(Self));
-                    Connection = Sender;
-                    HandleTcpConnected();
-                    Become(Connected());
-                    break;
-                case Tcp.Closed closed:
-                case Tcp.Aborted a:
-                case Tcp.ConnectionClosed cl:
-                case Tcp.CommandFailed c:
-                    Console.WriteLine("Connection lost");
-					Context.Parent.Tell(new TcpFailed(Self.Path.Name));
-                    Become(Connecting());
-                    break;
-                default:
-                    Unhandled(message);
-                    break;
-            }
+            _ = ProcessIncommingFrames();
         }
 
-        private UntypedReceive Connecting()
+        protected override void PostStop()
         {
-            return message =>
-            {
-                if (message is TcpReconnect)
-                {
-                    Context.System.Tcp().Tell(new Tcp.Connect(RemoteAddress));
-                }
-                else if (message is Tcp.Connected connected)
-                {
-                    Log.Info("Connected to {0} in connecting", connected.RemoteAddress.ToString());
-                    // Register self as connection handler
-                    Sender.Tell(new Tcp.Register(Self));
-                    HandleTcpConnected();
-                    Connection = Sender;
-                    Become(Connected());
-                    Stash.UnstashAll();
-                }
-                else
-                {
-                    Stash.Stash();
-                }
-            };
-        }
-        private UntypedReceive Connected()
-        {
-            return message =>
-            {
-                if (message is Tcp.Received received)  // data received from pulsar server
-                {
-                    HandleTcpReceived(received.Data.ToArray());
-                }
-                else if (message is Payload p)   // data received from producer/consumer
-                {
-                    var b = p.Bytes;
-                    _requests.Add(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
-                    Connection.Tell(Tcp.Write.Create(ByteString.FromBytes(p.Bytes)));
-                }
-                else if (message is ConnectionCommand b)   // data received from self
-                {
-                    Connection.Tell(Tcp.Write.Create(ByteString.FromBytes(b.Command)));
-                }
-                else if (message is Tcp.PeerClosed)
-                {
-                    Log.Info("Connection closed");
-                    _manager.Tell(new TcpClosed());
-                }
-                else Unhandled(message);
-            };
+            _stream.DisposeAsync().ConfigureAwait(false);
         }
 
         protected override void Unhandled(object message)
@@ -164,12 +123,16 @@ namespace SharpPulsar.Akka.Network
             set => _remoteEndpointProtocolVersion = value;
             get => _remoteEndpointProtocolVersion;
         }
-		public void HandleTcpReceived(byte[] buffer)
+		public void HandleTcpReceived(ReadOnlySequence<byte> buffer)
 		{
             try
 			{
+                var commandSize = buffer.ReadUInt32(0, true);
+                var neb = buffer.Slice(4, commandSize);
+                Console.WriteLine(Encoding.UTF8.GetString(neb.ToArray()));
+                var cmd = Stole.Serializer.Deserialize(buffer.Slice(4, commandSize));
                 // De-serialize the command
-                var cmd = Stole.Serializer.Deserialize(buffer);
+                //var cmd = Stole.Serializer.Deserialize(buffer);
                 if (Log.IsEnabled(LogLevel.DebugLevel))
 				{
 					Log.Debug($"{RemoteAddress} Received cmd {cmd.type.ToString()}");
@@ -189,7 +152,7 @@ namespace SharpPulsar.Akka.Network
                         break;
                     case BaseCommand.Type.Message:
                         var msg = cmd.Message;
-                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer, (int)msg.RedeliveryCount));
+                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), buffer.ToArray(), (int)msg.RedeliveryCount));
                         break;
                     case BaseCommand.Type.Success:
                         var s = cmd.Success;
@@ -282,7 +245,7 @@ namespace SharpPulsar.Akka.Network
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
-			AuthenticationDataProvider = Authentication.GetAuthData(_remoteHostName);
+			AuthenticationDataProvider = Authentication.GetAuthData(_conf.ServiceUrl);
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthDataShared(Shared.Auth.AuthDataShared.InitAuthData));
             var assemblyName = Assembly.GetCallingAssembly().GetName();
             var auth = new AuthData {auth_data = ((byte[]) (object) authData.Bytes)};
@@ -313,8 +276,87 @@ namespace SharpPulsar.Akka.Network
 		{
 			set => ProxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
 		}
+        public async Task ProcessIncommingFrames()
+        {
+            await Task.Yield();
 
-		public virtual string RemoteHostName
+            try
+            {
+                await foreach (var frame in _stream.Frames())
+                {
+                    var commandSize = frame.ReadUInt32(0, true);
+                    var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
+
+                    switch (cmd.type)
+                    {
+                        case BaseCommand.Type.Connected:
+                            var c = cmd.Connected;
+                            Console.WriteLine($"Now connected: ServerVersion = {c.ServerVersion}, ProtocolVersion = {c.ProtocolVersion}");
+                            break;
+                        case BaseCommand.Type.GetTopicsOfNamespaceResponse:
+                            var ns = cmd.getTopicsOfNamespaceResponse;
+                            var requestid = (long)ns.RequestId;
+                            _requests[requestid].Key.Tell(new NamespaceTopics(requestid, ns.Topics.ToList()));
+                            _requests.Remove(requestid);
+                            break;
+                        case BaseCommand.Type.Message:
+                            var msg = cmd.Message;
+                            //_manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), cmd.Message, (int)msg.RedeliveryCount));
+                            break;
+                        case BaseCommand.Type.Success:
+                            var s = cmd.Success;
+                            _manager.Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.Schema != null));
+                            _requests.Remove((long)s.RequestId);
+                            break;
+                        case BaseCommand.Type.SendReceipt:
+                            var send = cmd.SendReceipt;
+                            _manager.Tell(new SentReceipt((long)send.ProducerId, (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId, send.MessageId.BatchIndex, send.MessageId.Partition));
+                            break;
+                        case BaseCommand.Type.GetOrCreateSchemaResponse:
+                            var res = cmd.getOrCreateSchemaResponse;
+                            _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion));
+                            _requests.Remove((long)res.RequestId);
+                            break;
+                        case BaseCommand.Type.ProducerSuccess:
+                            var p = cmd.ProducerSuccess;
+                            _manager.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
+                            _requests.Remove((long)p.RequestId);
+                            break;
+                        case BaseCommand.Type.GetSchemaResponse:
+                            var schema = cmd.getSchemaResponse.Schema;
+                            _manager.Tell(new SchemaResponse(schema.SchemaData, schema.Name, schema.Properties.ToImmutableDictionary(x => x.Key, x => x.Value), schema.type, (long)cmd.getSchemaResponse.RequestId));
+                            _requests.Remove((long)cmd.getSchemaResponse.RequestId);
+                            break;
+                        case BaseCommand.Type.LookupResponse:
+                            var m = cmd.lookupTopicResponse;
+                            _manager.Tell(new BrokerLookUp(m.Message, m.Authoritative, m.Response, m.brokerServiceUrl, m.brokerServiceUrlTls, (long)m.RequestId));
+                            _requests.Remove((long)m.RequestId);
+                            break;
+                        case BaseCommand.Type.PartitionedMetadataResponse:
+                            var part = cmd.partitionMetadataResponse;
+                            var rPay = _requests[(long)part.RequestId];
+                            rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
+                            _requests.Remove((long)part.RequestId);
+                            break;
+                        case BaseCommand.Type.Ping:
+                            HandlePing(cmd.Ping);
+                            break;
+                        case BaseCommand.Type.Connect:
+                            //Context.Parent.Tell(new TcpSuccess(RemoteHostName));
+                            break;
+                        case BaseCommand.Type.Pong:
+                            HandlePong(cmd.Pong);
+                            break;
+                        default:
+                            Console.WriteLine($"{cmd.type.GetType()} Received");
+                            break;
+                    }
+                }
+            }
+            catch { }
+        }
+        
+        public virtual string RemoteHostName
 		{
 			get => _remoteHostName;
 			set => _remoteHostName = value;
