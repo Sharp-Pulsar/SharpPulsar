@@ -3,21 +3,25 @@ using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Akka.Reader;
-using SharpPulsar.Akka.Transaction;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
 {
-    public class PulsarManager:ReceiveActor
+    public class PulsarManager:ReceiveActor, IWithUnboundedStash
     {
+        private IActorRef _network;
+        private ClientConfigurationData _config;
         public PulsarManager(ClientConfigurationData conf)
         {
-            Context.ActorOf(ProducerManager.Prop(conf), "ProducerManager");
-            //Context.ActorOf(ConsumerManager.Prop(conf), "ConsumerManager");
-            //Context.ActorOf(ReaderManager.Prop(conf), "ReaderManager");
-            //Context.ActorOf(TransactionManager.Prop(), "TransactionManager");
+            _config = conf;
+            Become(NetworkSetup);
+        }
+
+        private void Ready()
+        {
             Receive<NewProducer>(cmd =>
             {
                 Context.Child("ProducerManager").Tell(cmd);
@@ -37,11 +41,26 @@ namespace SharpPulsar.Akka
                     c.Tell(u);
                 }
             });
+            Stash.UnstashAll();
         }
-
+        
+        private void NetworkSetup()
+        {
+            _network = Context.ActorOf(NetworkManager.Prop(Self, _config), "NetworkManager");
+            Receive<TcpSuccess>(x =>
+            {
+                Context.ActorOf(ProducerManager.Prop(_config, _network), "ProducerManager");
+                Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
+                Context.ActorOf(ReaderManager.Prop(_config, _network), "ReaderManager");
+                Become(Ready);
+            });
+            ReceiveAny(c=> Stash.Stash());
+        }
         public static Props Prop(ClientConfigurationData conf)
         {
             return Props.Create(()=> new PulsarManager(conf));
         }
+
+        public IStash Stash { get; set; }
     }
 }

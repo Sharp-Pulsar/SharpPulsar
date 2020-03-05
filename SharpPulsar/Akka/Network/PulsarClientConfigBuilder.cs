@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
@@ -22,7 +23,7 @@ using SharpPulsar.Utility;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Akka.Configuration
+namespace SharpPulsar.Akka.Network
 {
 
 	public sealed class PulsarClientConfigBuilder
@@ -40,6 +41,26 @@ namespace SharpPulsar.Akka.Configuration
 
         }
 
+        public PulsarClientConfigBuilder AddTlsCerts(X509Certificate2Collection certs)
+        {
+            _conf.TlsTrustCerts = certs;
+            return this;
+        }
+        public PulsarClientConfigBuilder AddTrustedAuthCert(X509Certificate2 cert)
+        {
+            _conf.TrustedCertificateAuthority = cert;
+            return this;
+        }
+        public PulsarClientConfigBuilder VerifyCertAuth(bool verify)
+        {
+            _conf.VerifyCertificateAuthority = verify;
+            return this;
+        }
+        public PulsarClientConfigBuilder VerifyCertName(bool verify)
+        {
+            _conf.VerifyCertificateName = verify;
+            return this;
+        }
 		public PulsarClientConfigBuilder ServiceUrl(string serviceUrl)
 		{
 			if (string.IsNullOrWhiteSpace(serviceUrl))
@@ -126,12 +147,6 @@ namespace SharpPulsar.Akka.Configuration
 		public PulsarClientConfigBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
 		{
 			_conf.TlsHostnameVerificationEnable = enableTlsHostnameVerification;
-            return this;
-		}
-
-		public PulsarClientConfigBuilder TlsTrustCertsFilePath(string tlsTrustCertsFilePath)
-		{
-			_conf.TlsTrustCertsFilePath = tlsTrustCertsFilePath;
             return this;
 		}
 

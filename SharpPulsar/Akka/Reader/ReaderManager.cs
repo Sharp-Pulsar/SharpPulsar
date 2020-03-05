@@ -10,33 +10,19 @@ namespace SharpPulsar.Akka.Reader
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
-        public ReaderManager(ClientConfigurationData configuration)
+        public ReaderManager(ClientConfigurationData configuration, IActorRef network)
         {
+            _network = network;
             _config = configuration;
             Become(() => Init(configuration));
         }
-        public static Props Prop(ClientConfigurationData clientConfiguration)
+        public static Props Prop(ClientConfigurationData clientConfiguration, IActorRef network)
         {
-            return Props.Create(() => new ReaderManager(clientConfiguration));
+            return Props.Create(() => new ReaderManager(clientConfiguration, network));
         }
         private void Open()
         {
             Receive<NewReader>(NewReader);
-            Receive<TcpClosed>(_ =>
-            {
-                Become(Connecting);
-            });
-            Receive<TcpSuccess>(f =>
-            {
-                try
-                {
-                    Console.WriteLine($"TCP connection success from {f.Name}");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            });
             Stash.UnstashAll();
         }
 
@@ -47,22 +33,9 @@ namespace SharpPulsar.Akka.Reader
             var readerConfig = reader.ReaderConfiguration;
             Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network));
         }
-        private void Connecting()
-        {
-            _network.Tell(new TcpReconnect());
-            Receive<TcpSuccess>(s =>
-            {
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(m =>
-            {
-                Stash.Stash();
-            });
-        }
+        
         private void Init(ClientConfigurationData configuration)
         {
-            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");

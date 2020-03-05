@@ -43,7 +43,7 @@ namespace SharpPulsar.Akka.Network
             {
                 var n = _randomNumber.Next(0, _configuration.ConnectionsPerBroker - 1);
                 var actor = connections.Values.ToList()[n];
-                actor.Tell(pay);
+                actor.Forward(pay);
             });
         }
 

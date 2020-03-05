@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
-using ProtoBuf;
-using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 
-namespace SharpPulsar.Stole
+namespace SharpPulsar.Akka.Network
 {
     public static class Serializer
     {
@@ -49,7 +47,7 @@ namespace SharpPulsar.Stole
             var metadataSizeBytes = ToBigEndianBytes((uint)metadataBytes.Length);
 
             var sb = new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload);
-            var checksum = dotCrc32C.Calculate(sb.Build());
+            var checksum = DotCrc32C.Calculate(sb.Build());
 
             return sb.Prepend(ToBigEndianBytes(checksum))
                 .Prepend(new byte[] { 0x0e, 0x01 })

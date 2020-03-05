@@ -16,6 +16,7 @@ using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
@@ -59,7 +60,7 @@ namespace Producer
                 .ReaderConfigurationData;
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Producer");
-            pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+            var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Consumer");
             //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));

@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Impl.Auth;
 using System;
+using System.Security.Cryptography.X509Certificates;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -36,6 +37,9 @@ namespace SharpPulsar.Impl.Conf
 		public int NumIoThreads { get; set; } = 1;
 		public int NumListenerThreads { get; set; } = 1;
 		public int ConnectionsPerBroker { get; set; } = 1;
+		public X509Certificate2 TrustedCertificateAuthority { get; set; }
+        public bool VerifyCertificateAuthority { get; set; } = false;
+        public bool VerifyCertificateName { get; set; } = false;
 
 		public bool UseTcpNoDelay { get; set; } = true;
 		public bool TlsAllowInsecureConnection { get; set; } = false;
@@ -86,8 +90,8 @@ namespace SharpPulsar.Impl.Conf
             set => _serviceUrl = value;
         }
 
-        public int ProtocolVersion { get; set; } = 6;
-		public string TlsTrustCertsFilePath { get; set; }
+        public int ProtocolVersion { get; set; } = 15;
+		public X509Certificate2Collection TlsTrustCerts { get; set; }
 
 		public DateTime Clock { get; set; } = DateTime.Now;
         

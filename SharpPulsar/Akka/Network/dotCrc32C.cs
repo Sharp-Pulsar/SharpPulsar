@@ -1,17 +1,14 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Buffers;
 
-namespace SharpPulsar.Stole
+namespace SharpPulsar.Akka.Network
 {
-    public static class dotCrc32C
+    public static class DotCrc32C
     {
         private const uint Generator = 0x82F63B78u;
 
         private static readonly uint[] Lookup;
 
-        static dotCrc32C()
+        static DotCrc32C()
         {
             Lookup = new uint[16 * 256];
 

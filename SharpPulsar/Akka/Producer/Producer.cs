@@ -1,9 +1,5 @@
 ﻿using Akka.Actor;
-using DotNetty.Buffers;
-using DotNetty.Common;
-using Google.Protobuf;
 using Org.BouncyCastle.Crypto;
-using SharpPulsar.Akka.Handlers;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
@@ -23,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
 
@@ -37,9 +34,6 @@ namespace SharpPulsar.Akka.Producer
         private long _producerId;
         public string ProducerName;
         private readonly bool _userProvidedProducerName = false;
-
-        private string _connectionId;
-        private string _connectedSince;
         private long _lastSequenceIdPushed;
         private long _lastSequenceId;
         private readonly CompressionCodec _compressor;
@@ -47,15 +41,12 @@ namespace SharpPulsar.Akka.Producer
 
         private readonly IDictionary<string, string> _metadata;
         private sbyte[] _schemaVersion;
-        private long _sequenceId;
-        private long _requestId;
         private bool _multiSchemaMode;
         private BatchMessageKeyBasedContainer _batchMessageContainer;
         private Dictionary<string, ISchema> _schemas;
         private ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        private readonly object MultiSchemaMode;
         private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
         private bool _isPartitioned;
         private int _partitionIndex;
@@ -68,9 +59,11 @@ namespace SharpPulsar.Akka.Producer
             _producerInterceptor = configuration.Interceptors;
             _schemas.Add("default", configuration.Schema);
             _configuration = configuration;
-            _producerId = producerid;
+            if (isPartitioned)
+                _producerId = Interlocked.Increment(ref IdGenerators.ProducerId);
+            else
+                _producerId = producerid;
             _network = network;
-            _producerId = producerid;
             ProducerName = configuration.ProducerName;
             if (!configuration.MultiSchema)
             {
@@ -86,11 +79,11 @@ namespace SharpPulsar.Akka.Producer
             if (configuration.InitialSequenceId != null)
             {
                 var initialSequenceId = (long)configuration.InitialSequenceId;
-                _sequenceId = initialSequenceId;
+                IdGenerators.SequenceId = initialSequenceId;
             }
             else
             {
-                _sequenceId = -1L;
+                IdGenerators.SequenceId = -1L;
             }
 
             if (configuration.EncryptionEnabled)
@@ -111,7 +104,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 _batchMessageContainer = null;
             }
-            if (!configuration.Properties.Any())
+            if (configuration.Properties == null)
             {
                 _metadata = new Dictionary<string, string>();
             }
@@ -217,7 +210,7 @@ namespace SharpPulsar.Akka.Producer
                 _pendingLookupRequests.Remove(p.RequestId);
                 if (string.IsNullOrWhiteSpace(ProducerName))
                     ProducerName = p.Name;
-                _sequenceId = p.LastSequenceId;
+                IdGenerators.SequenceId = p.LastSequenceId;
                 var schemaVersion = p.SchemaVersion;
                 if (schemaVersion != null)
                 {
@@ -242,14 +235,13 @@ namespace SharpPulsar.Akka.Producer
             if (_isPartitioned)
             {
                 var index = int.Parse(Self.Path.Name);
-                _producerId = index;
                 ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
             }
             SendNewProducerCommand();
         }
         private void SendNewProducerCommand()
         {
-            var requestid = _requestId++;
+            var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
             var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request, requestid, "CommandProducer");
@@ -277,7 +269,7 @@ namespace SharpPulsar.Akka.Producer
 
         private void SendBrokerLookUpCommand()
         {
-            var requestid = _requestId++;
+            var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
             var request = Commands.NewLookup(_configuration.TopicName, false, requestid);
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
@@ -357,7 +349,7 @@ namespace SharpPulsar.Akka.Producer
         }
         private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo)
         {
-            var requestId = _requestId++;
+            var requestId = Interlocked.Increment(ref IdGenerators.ReaderId);
             var request = Commands.NewGetOrCreateSchema(requestId, _configuration.TopicName, schemaInfo);
             Context.System.Log.Info("[{}] [{}] GetOrCreateSchema request", _configuration.TopicName, ProducerName);
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
@@ -420,7 +412,7 @@ namespace SharpPulsar.Akka.Producer
                 long sequenceId;
                 if (msgMetadataBuilder.SequenceId < 1)
                 {
-                    sequenceId = _sequenceId++;
+                    sequenceId = Interlocked.Increment(ref IdGenerators.SequenceId);
                     msgMetadataBuilder.SequenceId = (ulong)sequenceId;
                 }
                 else
@@ -615,7 +607,7 @@ namespace SharpPulsar.Akka.Producer
                 Become(Receive);
             });
             ReceiveAny(_ => Stash.Stash());
-            var requestId = _requestId++;
+            var requestId = Interlocked.Increment(ref IdGenerators.ReaderId);
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
             _broker.Tell(pay);
         }

@@ -2,9 +2,8 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
-namespace SharpPulsar.Stole
+namespace SharpPulsar.Akka.Network
 {
     public sealed class SequenceBuilder<T> where T : notnull
     {

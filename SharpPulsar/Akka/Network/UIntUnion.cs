@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Runtime.InteropServices;
 
-namespace SharpPulsar.Stole
+namespace SharpPulsar.Akka.Network
 {
     [StructLayout(LayoutKind.Explicit)]
     public struct UIntUnion

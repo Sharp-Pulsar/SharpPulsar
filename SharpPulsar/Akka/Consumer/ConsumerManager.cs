@@ -15,35 +15,20 @@ namespace SharpPulsar.Akka.Consumer
         private IActorRef _network;
         private long _consumerid;
         private ClientConfigurationData _config;
-        public ConsumerManager(ClientConfigurationData configuration)
+        public ConsumerManager(ClientConfigurationData configuration, IActorRef network)
         {
+            _network = network;
             _config = configuration;
             Become(() => Init(configuration));
         }
 
-        public static Props Prop(ClientConfigurationData configuration)
+        public static Props Prop(ClientConfigurationData configuration, IActorRef network)
         {
-            return Props.Create(() => new ConsumerManager(configuration));
+            return Props.Create(() => new ConsumerManager(configuration, network));
         }
         private void Open()
         {
             Receive<NewConsumer>(NewConsumer);
-            Receive<TcpClosed>(_ =>
-            {
-                Become(Connecting);
-            });
-            Receive<TcpSuccess>(f =>
-            {
-                try
-                {
-                    
-                    Console.WriteLine($"TCP connection success from {f.Name}");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            });
             Stash.UnstashAll();
         }
 
@@ -90,7 +75,6 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void Init(ClientConfigurationData configuration)
         {
-            _network = Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
             Receive<TcpSuccess>(s =>
             {
                 Console.WriteLine($"Pulsar handshake completed with {s.Name}");

@@ -12,7 +12,7 @@ using System.Linq;
 using System.Text;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
-using Serializer = SharpPulsar.Stole.Serializer;
+using Serializer = SharpPulsar.Akka.Network.Serializer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

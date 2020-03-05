@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
@@ -11,20 +12,19 @@ namespace SharpPulsar.Akka.Producer
     public class PartitionedProducer: ReceiveActor
     {
         private IActorRef _router;
-        private long _producerId;
         private int _partitions;
         private ProducerConfigurationData _configuration;
-        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
+        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
         {
             _configuration = configuration;
             var routees = new List<string>();
             var path = Context.Self.Path;
             for (var i = 0; i < configuration.Partitions; i++)
             {
-                routees.Add($"{path}/Partition/{i}");
+                routees.Add($"{path}/Partition/{Interlocked.Increment(ref IdGenerators.ProducerId)}");
             }
             //Surely this is pulsar's custom routing policy ;)
-            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, producerid, network, true).WithRouter(new ConsistentHashingGroup(routees)), "Partition");
+            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, Interlocked.Increment(ref IdGenerators.ProducerId), network, true).WithRouter(new ConsistentHashingGroup(routees)), "Partition");
             Receive<RegisteredProducer>(p =>
             {
                 if (_partitions++ == configuration.Partitions)
@@ -44,9 +44,9 @@ namespace SharpPulsar.Akka.Producer
             });
             //listen to partition change messsage
         }
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
         {
-            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, producerid, network));
+            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, network));
         }
     }
 }

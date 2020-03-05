@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using SharpPulsar.Stole;
 
 namespace SharpPulsar.Akka.Network
 {

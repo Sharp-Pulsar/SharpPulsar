@@ -19,8 +19,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using SharpPulsar.Common.Naming;
+using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network
 {
@@ -30,45 +29,37 @@ namespace SharpPulsar.Akka.Network
         private readonly X509Certificate2? _trustedCertificateAuthority;
         private readonly bool _verifyCertificateAuthority;
         private readonly bool _verifyCertificateName;
+        private bool _encrypt;
 
-        public Connector(X509Certificate2Collection clientCertificates, X509Certificate2? trustedCertificateAuthority, bool verifyCertificateAuthority, bool verifyCertificateName)
+        public Connector(ClientConfigurationData conf)
         {
-            _clientCertificates = clientCertificates;
-            _trustedCertificateAuthority = trustedCertificateAuthority;
-            _verifyCertificateAuthority = verifyCertificateAuthority;
-            _verifyCertificateName = verifyCertificateName;
+            if(conf.TlsTrustCerts != null)
+                _clientCertificates = conf.TlsTrustCerts;
+            if(conf.TrustedCertificateAuthority != null)
+                _trustedCertificateAuthority = conf.TrustedCertificateAuthority;
+            _verifyCertificateAuthority = conf.VerifyCertificateAuthority;
+            _verifyCertificateName = conf.VerifyCertificateName;
+            _encrypt = conf.UseTls;
         }
 
-        public Stream Connect(Uri serviceUrl)
+        public Stream Connect(IPEndPoint endPoint)
         {
-            var scheme = serviceUrl.Scheme;
-            var host = serviceUrl.Host;
-            var port = serviceUrl.Port;
-            var encrypt = scheme == "pulsar+ssl";
+            var host = Dns.GetHostEntry(endPoint.Address).HostName;
+            var stream = GetStream(endPoint);
 
-            if (port == -1)
-                port = encrypt ? 6651 : 6650;
-            var stream = GetStream(host, port);
-
-            if (encrypt)
+            if (_encrypt)
                 stream = EncryptStream(stream, host);
 
             return stream;
         }
 
-        private Stream GetStream(string host, int port)
+        private Stream GetStream(IPEndPoint endPoint)
         {
             var tcpClient = new TcpClient();
 
             try
             {
-                var type = Uri.CheckHostName(host);
-
-                if (type == UriHostNameType.IPv4 || type == UriHostNameType.IPv6)
-                    tcpClient.Connect(IPAddress.Parse(host), port);
-                else
-                    tcpClient.Connect(host, port);
-
+                tcpClient.Connect(endPoint);
                 return tcpClient.GetStream();
             }
             catch
@@ -80,7 +71,7 @@ namespace SharpPulsar.Akka.Network
 
         private Stream EncryptStream(Stream stream, string host)
         {
-            SslStream? sslStream = null;
+            SslStream sslStream = null;
 
             try
             {

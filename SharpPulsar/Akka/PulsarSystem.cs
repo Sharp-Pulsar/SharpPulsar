@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.Configuration;
+using Hocon;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
@@ -21,7 +21,7 @@ namespace SharpPulsar.Akka
         public PulsarSystem(ClientConfigurationData conf)
         {
             _conf = conf;
-            var config = ConfigurationFactory.ParseString(@"
+            var config = HoconConfigurationFactory.ParseString(@"
             akka
             {
                 loglevel = DEBUG
@@ -42,12 +42,24 @@ namespace SharpPulsar.Akka
             _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
-        
-        
-        public void CreateProducer(CreateProducer producer)
+
+        /// <summary>
+        /// Create a producer Actor. Topic is returned for uniformity purposes!
+        /// </summary>
+        /// <param name="producer"></param>
+        /// <returns>string</returns>
+        public string CreateProducer(CreateProducer producer)
         {
-            var p = new NewProducer(producer.Schema, _conf, producer.ProducerConfiguration);
+            var conf = producer.ProducerConfiguration;
+
+            if (!TopicName.IsValid(conf.TopicName))
+                throw new ArgumentException("Topic is invalid");
+
+            var topic = TopicName.Get(conf.TopicName);
+            conf.TopicName = topic.ToString();
+            var p = new NewProducer(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);
+            return topic.ToString();
         }
         public void CreateReader(CreateReader reader)
         {

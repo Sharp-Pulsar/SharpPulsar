@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using Akka.Actor;
+using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Conf;
@@ -23,93 +21,50 @@ namespace SharpPulsar.Akka.Producer
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
-        private long _producerId;
-
-        private long _requestIdGenerator = 0;
+        private ProducerConfigurationData _producerConfiguration;
+        private IProducerEventListener _listener;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         private readonly Dictionary<string, IActorRef> _producers = new Dictionary<string, IActorRef>();
-        public ProducerManager(ClientConfigurationData configuration)
+        public ProducerManager(ClientConfigurationData configuration, IActorRef network)
         {
+            _network = network;
             _config = configuration;
-            Become(()=>Init(configuration));
         }
 
-        private void Open()
+        protected override void PreStart()
         {
-            Stash.UnstashAll();
+            Become(Init);
+        }
+
+        private void Init()
+        {
             Receive<NewProducer>(NewProducer);
-            Receive<Send>(s =>
+            Receive<Partitions>(x =>
             {
-                _producers[s.Topic]?.Tell(s);
-            });
-            Receive<BulkSend>(s =>
-            {
-                _producers[s.Topic]?.Tell(s);
-            });
-            Receive<TcpClosed>(_ =>
-            {
-                Become(Connecting);
-            });
-            Receive<TcpSuccess>(f =>
-            {
-                try
-                {
-                    Console.WriteLine($"TCP connection success from {f.Name}");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            });
-        }
 
-        private void RegisterProducer(ProducerConfigurationData conf)
-        {
+                _listener.Log($"Found {x.Partition} partition for Topic: {_producerConfiguration.TopicName}");
+                _producerConfiguration.Partitions = x.Partition;
+               _producerConfiguration.UseTls = _config.UseTls;
+                _pendingLookupRequests.Remove(x.RequestId);
+                if (x.Partition > 0)
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network));
+                else
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network));
+            });
             Receive<RegisteredProducer>(p =>
             {
                 _producers.Add(p.Topic, Sender);
                 Become(Open);
                 Stash.UnstashAll();
             });
-            ReceiveAny(m=> Stash.Stash());
-        }
-        private void PartitionedTopicMetadata(ProducerConfigurationData conf)
-        {
-            Receive<Partitions>(x =>
-            {
-                conf.Partitions = x.Partition;
-                conf.UseTls = _config.UseTls;
-                _pendingLookupRequests.Remove(x.RequestId);
-                if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, conf, _producerId++, _network));
-                else
-                    Context.ActorOf(Producer.Prop(_config, conf, _producerId++, _network));
-                Become(()=> RegisterProducer(conf));
-            });
-            ReceiveAny(_=> Stash.Stash());
-            SendPartitionMetadataRequestCommand(conf);
-        }
-
-        protected override void Unhandled(object message)
-        {
-            Console.WriteLine($"unhandled '{message.GetType()}'");
-        }
-
-        private void SendPartitionMetadataRequestCommand(ProducerConfigurationData conf)
-        {
-            var requestId = _requestIdGenerator++;
-            var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
-            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata");
-            _pendingLookupRequests.Add(requestId, pay);
-            _network.Tell(pay);
-        }
-        private void LookupSchema(ProducerConfigurationData conf)
-        {
             Receive<SchemaResponse>(s =>
             {
+                _listener.Log($"Found {s.Name} schema for Topic: {_producerConfiguration.TopicName}");
                 var info = new SchemaInfo
                 {
-                    Name = s.Name, Schema = (sbyte[]) (object) s.Schema, Properties = s.Properties
+                    Name = s.Name,
+                    Schema = (sbyte[])(object)s.Schema,
+                    Properties = s.Properties
                 };
                 if (s.Type == Schema.Type.None)
                 {
@@ -123,40 +78,52 @@ namespace SharpPulsar.Akka.Producer
                 {
                     info.Type = SchemaType.Date;
                 }
-                conf.Schema = ISchema.GetSchema(info);
+                _producerConfiguration.Schema = ISchema.GetSchema(info);
                 _pendingLookupRequests.Remove(s.RequestId);
-                Become(()=> PartitionedTopicMetadata(conf));
+                SendPartitionMetadataRequestCommand(_producerConfiguration);
             });
-            ReceiveAny(_=> Stash.Stash());
-        }
-        private void Init(ClientConfigurationData configuration)
-        {
-            Context.ActorOf(NetworkManager.Prop(Self, configuration), "NetworkManager");
-            Receive<TcpSuccess>(s =>
+            ReceiveAny(x =>
             {
-                _network = Sender;
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(_=>Stash.Stash());
-        }
-        private void Connecting()
-        {
-            _network.Tell(new TcpReconnect());
-            Receive<TcpSuccess>(s =>
-            {
-                _network = Sender;
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(m=>
-            {
+                Console.WriteLine($"Stashing message of type {x.GetType()}: producer not created!");
                 Stash.Stash();
             });
         }
-        public static Props Prop(ClientConfigurationData configuration)
+        private void Open()
         {
-            return Props.Create(()=> new ProducerManager(configuration));
+            Receive<Send>(s =>
+            {
+                if(_producers.ContainsKey(s.Topic))
+                    _producers[s.Topic]?.Tell(s);
+                else
+                    _listener.Log($"{s.Topic} producer not created");
+            });
+            Receive<BulkSend>(s =>
+            {
+                if (_producers.ContainsKey(s.Topic))
+                    _producers[s.Topic]?.Tell(s);
+                else
+                    _listener.Log($"{s.Topic} producer not created");
+            });
+            Stash.UnstashAll();
+        }
+        
+        protected override void Unhandled(object message)
+        {
+            Console.WriteLine($"unhandled '{message.GetType()}'");
+        }
+
+        private void SendPartitionMetadataRequestCommand(ProducerConfigurationData conf)
+        {
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
+            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata");
+            _pendingLookupRequests.Add(requestId, pay);
+            _network.Tell(pay);
+        }
+        
+        public static Props Prop(ClientConfigurationData configuration, IActorRef network)
+        {
+            return Props.Create(()=> new ProducerManager(configuration, network));
         }
 
         private void NewProducer(NewProducer producer)
@@ -164,6 +131,9 @@ namespace SharpPulsar.Akka.Producer
             var schema = producer.ProducerConfiguration.Schema;
             var clientConfig = producer.Configuration;
             var producerConfig = producer.ProducerConfiguration;
+            _producerConfiguration = producerConfig;
+            _listener = _producerConfiguration.ProducerEventListener;
+            _listener.Log($"creating producer for topic: {producerConfig.TopicName}");
             if (clientConfig == null)
             {
                 Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined")));
@@ -176,33 +146,26 @@ namespace SharpPulsar.Akka.Producer
                 return;
             }
 
-            var topic = producerConfig.TopicName;
-
-            if (!TopicName.IsValid(topic))
-            {
-                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'")));
-                return;
-            }
-            var topicName = TopicName.Get(topic);
-            producerConfig.TopicName = topicName.ToString();
             if (schema is AutoProduceBytesSchema autoProduceBytesSchema)
             {
                
                 if (autoProduceBytesSchema.SchemaInitialized())
                 {
-                    Become(() => PartitionedTopicMetadata(producerConfig));
+                    SendPartitionMetadataRequestCommand(_producerConfiguration);
                 }
                 else
                 {
-                    var requestId = _requestIdGenerator++;
-                    var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(null));
+                    var requestId = Interlocked.Increment(ref IdGenerators.RequestId); 
+                    var request = Commands.NewGetSchema(requestId, producerConfig.TopicName, BytesSchemaVersion.Of(null));
                     var payload = new Payload(request, requestId, "CommandGetSchema");
                     _network.Tell(payload);
                     _pendingLookupRequests.Add(requestId, payload);
-                    Become(() => LookupSchema(producerConfig));
                 }
             }
-            Become(()=> PartitionedTopicMetadata(producerConfig));
+            else
+            {
+                SendPartitionMetadataRequestCommand(_producerConfiguration); 
+            }
 		}
 
         public IStash Stash { get; set; }
