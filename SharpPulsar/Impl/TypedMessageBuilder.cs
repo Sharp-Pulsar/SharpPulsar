@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
 	public class TypedMessageBuilder : ITypedMessageBuilder
 	{
         private static readonly IByteBuffer EmptyContent = Unpooled.WrappedBuffer(new byte[0]);
-		
+        private string _topic;
 		private readonly string _producer;//topic
 		public MessageMetadata Builder  = new MessageMetadata();
 		private readonly ISchema _schema;
@@ -63,6 +63,13 @@ namespace SharpPulsar.Impl
 			return -1L;
 		}
 
+        public ITypedMessageBuilder Topic(string topic)
+        {
+			if(string.IsNullOrWhiteSpace(topic))
+				throw new ArgumentException("Topic cannot be null");
+            _topic = topic;
+            return this;
+        }
 		public ITypedMessageBuilder Key(string key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
@@ -230,8 +237,8 @@ namespace SharpPulsar.Impl
 			get
 			{
 				BeforeSend();
-				return Impl.Message.Create(Builder, Content, _schema);
-			}
+				return  Impl.Message.Create(Builder, Content, _schema, _topic);
+            }
 		}
 
 		public virtual long PublishTime => (long)Builder.PublishTime;

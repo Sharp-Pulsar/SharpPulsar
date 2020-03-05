@@ -184,7 +184,7 @@ namespace SharpPulsar.Akka.Network
                 {
                     var commandSize = frame.ReadUInt32(0, true);
                     var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
-
+                    var t = cmd.type;
                     switch (cmd.type)
                     {
                         case BaseCommand.Type.Connected:
@@ -213,7 +213,7 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.GetOrCreateSchemaResponse:
                             var res = cmd.getOrCreateSchemaResponse;
-                            _manager.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion));
+                            _requests[(long)res.RequestId].Key.Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage, res.ErrorCode, res.SchemaVersion));
                             _requests.Remove((long)res.RequestId);
                             break;
                         case BaseCommand.Type.ProducerSuccess:

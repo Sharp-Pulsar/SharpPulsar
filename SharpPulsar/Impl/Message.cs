@@ -41,11 +41,12 @@ namespace SharpPulsar.Impl
 
 		public string TopicName {get;} // only set for incoming messages
 
-        public Message(IByteBuffer data, MessageMetadata builder, ISchema schema)
+        public Message(IByteBuffer data, MessageMetadata builder, ISchema schema, string topic)
         {
             DataBuffer = data;
             MessageBuilder = builder;
             _schema = schema;
+            TopicName = topic;
         }
         public Message(byte[] data, MessageMetadata builder)
         {
@@ -53,9 +54,9 @@ namespace SharpPulsar.Impl
             MessageBuilder = builder;
         }
 		// Constructor for out-going message
-		public static Message Create(MessageMetadata msgMetadataBuilder, IByteBuffer payload, ISchema schema)
+		public static Message Create(MessageMetadata msgMetadataBuilder, IByteBuffer payload, ISchema schema, string topic)
 		{
-            var msg = new Message(payload, msgMetadataBuilder, schema);
+            var msg = new Message(payload, msgMetadataBuilder, schema, topic);
             return msg;
 		}
 

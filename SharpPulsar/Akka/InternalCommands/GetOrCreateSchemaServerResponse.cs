@@ -5,7 +5,7 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
-    public class GetOrCreateSchemaServerResponse
+    public sealed class GetOrCreateSchemaServerResponse
     {
         public GetOrCreateSchemaServerResponse(long requestId, string errorMessage, ServerError errorCode, byte[] schemaVersion)
         {

@@ -75,7 +75,14 @@ namespace Producer
             };
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");
-            //pulsarSystem.Send(new Send(students,"Students", ImmutableDictionary<string, object>.Empty), producer.GetProducer("Students"));
+            IActorRef produce = null;
+            while (produce == null)
+            {
+                produce = producer.GetProducer(topic);
+                Thread.Sleep(100);
+            }
+            Console.WriteLine($"Acquired producer for topic: {topic}");
+            pulsarSystem.Send(new Send(students,topic, ImmutableDictionary<string, object>.Empty), produce);
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)

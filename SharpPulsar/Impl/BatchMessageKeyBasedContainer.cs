@@ -2,15 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using DotNetty.Buffers;
-using DotNetty.Common.Utilities;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Shared;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -51,12 +46,12 @@ namespace SharpPulsar.Impl
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.LogDebug("[{}] [{}] add message to batch, num messages in batch so far is {}", TopicName, ProducerName, NumMessagesInBatch);
+				Log.LogDebug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
 			NumMessagesInBatch++;
 			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
 			var key = GetKey(msg);
-			var part = _batches[key];
+			_batches.TryGetValue(key, out var part);
 			if (part == null)
 			{
 				part = new KeyedBatch();
@@ -105,7 +100,7 @@ namespace SharpPulsar.Impl
 		public override bool HasSameSchema(Message msg)
 		{
 			var key = GetKey(msg);
-			var part = _batches[key];
+			_batches.TryGetValue(key, out var part);
 			if (part == null || part.Messages.Count == 0)
 			{
 				return true;

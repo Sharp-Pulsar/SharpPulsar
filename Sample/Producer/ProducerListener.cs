@@ -20,7 +20,8 @@ namespace Samples.Producer
         public void ProducerCreated(CreatedProducer producer)
         {
             Console.WriteLine($"Producer for topic: {producer.Topic}");
-            _actorRefs.Add(producer.Topic, producer.Producer);
+            if(!_actorRefs.ContainsKey(producer.Topic))
+                _actorRefs.Add(producer.Topic, producer.Producer);
         }
 
         public void MessageSent(SentReceipt receipt)
