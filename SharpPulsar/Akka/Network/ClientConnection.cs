@@ -20,8 +20,6 @@ using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using ByteString = Akka.IO.ByteString;
-using Dns = System.Net.Dns;
 
 namespace SharpPulsar.Akka.Network
 {
@@ -109,35 +107,14 @@ namespace SharpPulsar.Akka.Network
 
 		private void HandlePong(CommandPong cmdPong)
 		{
-			
-		}
-        
-		public void HandleTcpConnected()
-		{
-			RemoteHostName = Dns.GetHostEntry(((IPEndPoint)RemoteAddress).Address).HostName;
-			if (Log.IsEnabled(LogLevel.DebugLevel))
-			{
-				Log.Debug("[{}] Scheduling keep-alive task every {} s", RemoteAddress, _keepAliveIntervalSeconds);
-			}
-			
-			if (ReferenceEquals(ProxyToTargetBrokerAddress, null))
-			{
-				if (Log.IsEnabled(LogLevel.DebugLevel))
-				{
-					Log.Debug("{} Connected to broker", RemoteAddress);
-				}
-			}
-			else
-			{
-				Log.Info("{} Connected through proxy to target broker at {}", RemoteAddress, ProxyToTargetBrokerAddress);
-			}
-			// Send CONNECT command
-            var c = new ConnectionCommand(NewConnectCommand());
-            Self.Tell(c);
-            _state = State.SentConnectFrame;
-			Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()) , ActorRefs.NoSender);
-
+            // Immediately reply success to ping requests
+            if (Log.IsEnabled(LogLevel.DebugLevel))
+            {
+                Log.Debug($"[{RemoteAddress}] Replying back to pong message");
+            }
+            //Self.Tell(new ConnectionCommand(Commands.NewPing()));
         }
+        
 		public byte[] NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
@@ -165,7 +142,7 @@ namespace SharpPulsar.Akka.Network
 			// Immediately reply success to ping requests
 			if (Log.IsEnabled(LogLevel.DebugLevel))
 			{
-				Log.Debug("[{}] Replying back to ping message", RemoteAddress);
+				Log.Debug($"[{RemoteAddress}] Replying back to ping message");
 			}
 			Self.Tell(new ConnectionCommand(Commands.NewPong()));
 		}
@@ -239,9 +216,6 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.Ping:
                             HandlePing(cmd.Ping);
-                            break;
-                        case BaseCommand.Type.Connect:
-                            //Context.Parent.Tell(new TcpSuccess(RemoteHostName));
                             break;
                         case BaseCommand.Type.Pong:
                             HandlePong(cmd.Pong);

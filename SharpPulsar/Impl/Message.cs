@@ -34,14 +34,14 @@ namespace SharpPulsar.Impl
     public class Message : IMessage
 	{
 		public MessageMetadata MessageBuilder { get; }
-		public IByteBuffer DataBuffer { get; }
+		public byte[] DataBuffer { get; }
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 
 		public string TopicName {get;} // only set for incoming messages
 
-        public Message(IByteBuffer data, MessageMetadata builder, ISchema schema, string topic)
+        public Message(byte[] data, MessageMetadata builder, ISchema schema, string topic)
         {
             DataBuffer = data;
             MessageBuilder = builder;
@@ -50,11 +50,11 @@ namespace SharpPulsar.Impl
         }
         public Message(byte[] data, MessageMetadata builder)
         {
-            DataBuffer = Unpooled.CopiedBuffer(data);
+            DataBuffer = data;
             MessageBuilder = builder;
         }
 		// Constructor for out-going message
-		public static Message Create(MessageMetadata msgMetadataBuilder, IByteBuffer payload, ISchema schema, string topic)
+		public static Message Create(MessageMetadata msgMetadataBuilder, byte[] payload, ISchema schema, string topic)
 		{
             var msg = new Message(payload, msgMetadataBuilder, schema, topic);
             return msg;
@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			DataBuffer = Unpooled.CopiedBuffer(payload);
+			DataBuffer = payload;
             EncryptionCtx = encryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
@@ -103,7 +103,7 @@ namespace SharpPulsar.Impl
 			TopicName = topic;
 			RedeliveryCount = redeliveryCount;
 
-			DataBuffer = Unpooled.CopiedBuffer(payload);
+			DataBuffer = payload;
 			EncryptionCtx = encryptionCtx;
 
 			if (singleMessageMetadata.Properties.Count > 0)
@@ -137,11 +137,7 @@ namespace SharpPulsar.Impl
 			_schema = schema;
 		}
 
-		public Message(string topic, string msgId, IDictionary<string, string> properties, sbyte[] payload, ISchema schema) : this(topic, msgId, properties, Unpooled.WrappedBuffer((byte[])(object)payload), schema)
-		{
-		}
-
-		public Message(string topic, string msgId, IDictionary<string, string> properties, IByteBuffer payload, ISchema schema)
+		public Message(string topic, string msgId, IDictionary<string, string> properties, byte[] payload, ISchema schema)
 		{
 			var data = msgId.Split(":", true);
 			var ledgerId = long.Parse(data[0]);
@@ -200,17 +196,10 @@ namespace SharpPulsar.Impl
         } 
 		public sbyte[] Data
 		{
-			get
-			{
-				if (DataBuffer.ArrayOffset == 0 && DataBuffer.Capacity == DataBuffer.Array.Length)
-				{
-					return (sbyte[])(object) DataBuffer.Array;
-				}
+            get
+            {
+                return (sbyte[])(object)DataBuffer;
 
-                // Need to copy into a smaller byte array
-                var data = new byte[DataBuffer.ReadableBytes];
-                DataBuffer.ReadBytes(data);
-                return (sbyte[])(object)data;
             }
 		}
 

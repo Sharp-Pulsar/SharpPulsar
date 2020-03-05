@@ -56,8 +56,8 @@ namespace SharpPulsar.Impl
         
 		public bool HaveEnoughSpace(Message msg)
 		{
-			var messageSize = msg.DataBuffer.ReadableBytes;
-			return ((MaxBytesInBatch <= 0 && (messageSize + CurrentBatchSizeBytes) <= Commands.DefaultMaxMessageSize) || (MaxBytesInBatch > 0 && (messageSize + CurrentBatchSizeBytes) <= MaxBytesInBatch)) && (MaxNumMessagesInBatch <= 0 || _numMessagesInBatch < MaxNumMessagesInBatch);
+			var messageSize = msg.DataBuffer.Length;
+			return (MaxBytesInBatch <= 0 && messageSize + CurrentBatchSizeBytes <= Commands.DefaultMaxMessageSize) || (MaxBytesInBatch > 0 && messageSize + CurrentBatchSizeBytes <= MaxBytesInBatch) && (MaxNumMessagesInBatch <= 0) || (_numMessagesInBatch < MaxNumMessagesInBatch);
 		}
 
 		public virtual bool BatchFull => (MaxBytesInBatch > 0 && CurrentBatchSizeBytes >= MaxBytesInBatch) || (MaxBytesInBatch <= 0 && CurrentBatchSizeBytes >= Commands.DefaultMaxMessageSize) || (MaxNumMessagesInBatch > 0 && _numMessagesInBatch >= MaxNumMessagesInBatch);

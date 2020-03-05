@@ -49,7 +49,7 @@ namespace SharpPulsar.Impl
 				Log.LogDebug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
 			NumMessagesInBatch++;
-			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
+			CurrentBatchSizeBytes += msg.DataBuffer.Length;
 			var key = GetKey(msg);
 			_batches.TryGetValue(key, out var part);
 			if (part == null)
@@ -146,7 +146,7 @@ namespace SharpPulsar.Impl
 					foreach (var msg in Messages)
 					{
 						MessageMetadata msgBuilder = msg.MessageBuilder;
-						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer.Array, BatchedMessageMetadataAndPayload);
+						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, BatchedMessageMetadataAndPayload);
 						
 					}
 					int uncompressedSize = BatchedMessageMetadataAndPayload.Length;

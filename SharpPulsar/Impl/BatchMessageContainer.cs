@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl
 				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
 			}
 
-			CurrentBatchSizeBytes += msg.DataBuffer.ReadableBytes;
+			CurrentBatchSizeBytes += msg.DataBuffer.Length;
 			_messages.Add(msg);
 
 			if (_lowestSequenceId == -1L)
@@ -97,22 +97,13 @@ namespace SharpPulsar.Impl
 				{
 					var msg = _messages[i];
 					var msgBuilder = msg.MessageBuilder;
-					msg.DataBuffer.MarkReaderIndex();
 					try
 					{
-						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer.Array, _batchedMessageMetadataAndPayload);
+						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, _batchedMessageMetadataAndPayload);
 					}
 					catch (System.Exception th)
 					{
-						// serializing batch message can corrupt the index of message and batch-message. Reset the index so,
-						// next iteration doesn't send corrupt message to broker.
-						for (var j = 0; j <= i; j++)
-						{
-							var previousMsg = _messages[j];
-							previousMsg.DataBuffer.ResetReaderIndex();
-						}
-						//_batchedMessageMetadataAndPayload.SetWriterIndex(batchWriteIndex);
-						//_batchedMessageMetadataAndPayload.SetReaderIndex(batchReadIndex);
+						
 						throw new System.Exception(th.Message);
 					}
 				}

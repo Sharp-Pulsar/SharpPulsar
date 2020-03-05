@@ -42,7 +42,9 @@ namespace Producer
                 .Topic("students")
                 .Schema(jsonSchema)
                 .EventListener(producer)
-                .AddEncryptionKey("sessions").ProducerConfigurationData;
+                .AddEncryptionKey("sessions")
+                .EnableBatching(false)
+                .ProducerConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("Student")
@@ -87,7 +89,7 @@ namespace Producer
             
             while (true)
             {
-                
+                Console.Write(".");
             }
             //system.Tcp().Tell(new Tcp.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 6650)));
         }

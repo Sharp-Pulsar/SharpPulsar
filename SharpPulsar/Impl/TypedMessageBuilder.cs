@@ -38,13 +38,13 @@ namespace SharpPulsar.Impl
 		private readonly string _producer;//topic
 		public MessageMetadata Builder  = new MessageMetadata();
 		private readonly ISchema _schema;
-		public  IByteBuffer Content;
+		public  byte[] Content;
 
         public TypedMessageBuilder(string producer, ISchema schema)
 		{
 			_producer = producer;
 			_schema = schema;
-			Content = EmptyContent;
+			Content = new byte[0]{};
 		}
 
 		private long BeforeSend()
@@ -114,7 +114,7 @@ namespace SharpPulsar.Impl
 			}
 
             var data = (byte[])(object)_schema.Encode(value);
-            Content = Unpooled.WrappedBuffer(data);
+            Content = data;
 			return this;
 		}
 

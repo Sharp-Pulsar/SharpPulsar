@@ -113,7 +113,20 @@ namespace SharpPulsar.Akka.Producer
             {
                 _metadata = new SortedDictionary<string, string>(configuration.Properties);
             }
-            Become(LookUpBroker);
+            Receive<BrokerLookUp>(l =>
+            {
+                _pendingLookupRequests.Remove(l.RequestId);
+                var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
+
+                var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
+                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Sender));
+                Become(Init);
+            });
+            Receive<AddPublicKeyCipher>(a =>
+            {
+                AddKey();
+            });
+            SendBrokerLookUpCommand();
         }
 
         public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
@@ -143,7 +156,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<TcpClosed>(_ =>
             {
-                Become(LookUpBroker);
+                SendBrokerLookUpCommand();
             });
             Receive<Send>(ProcessSend);
             Receive<SentReceipt>(s =>
@@ -218,7 +231,6 @@ namespace SharpPulsar.Akka.Producer
                 var message = builder.Message;
 
                 var interceptorMessage = (Message)BeforeSend(message);
-                interceptorMessage.DataBuffer.Retain();
                 if (_producerInterceptor != null)
                 {
                     _listener.Log(interceptorMessage.Properties);
@@ -275,25 +287,7 @@ namespace SharpPulsar.Akka.Producer
             _pendingLookupRequests.Add(requestid, payload);
             _network.Tell(payload);
         }
-        private void LookUpBroker()
-        {
-            Receive<BrokerLookUp>(l =>
-            {
-                _pendingLookupRequests.Remove(l.RequestId);
-                var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
-
-                var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
-                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Sender));
-                Become(Init);
-            });
-            Receive<AddPublicKeyCipher>(a =>
-            {
-                AddKey();
-            });
-            ReceiveAny(_ => Stash.Stash());
-            SendBrokerLookUpCommand();
-        }
-
+       
         private void SendBrokerLookUpCommand()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
@@ -375,13 +369,13 @@ namespace SharpPulsar.Akka.Producer
         private void SendMessage(Message msg)
         {
             var msgMetadataBuilder = msg.MessageBuilder;
-            var payload = msg.DataBuffer.Array;
+            var payload = msg.DataBuffer;
             // If compression is enabled, we are compressing, otherwise it will simply use the same buffer
             var uncompressedSize = payload.Length;
             var compressedPayload = payload;
             // Batch will be compressed when closed
-            // If a message has a delayed delivery time, we'll always send it individuallyif (!BatchMessagingEnabled || msgMetadataBuilder.HasDeliverAtTime())
-            if (!_configuration.BatchingEnabled || msgMetadataBuilder.DeliverAtTime < 1)
+            // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || msgMetadataBuilder.HasDeliverAtTime())
+            if (!_configuration.BatchingEnabled || msgMetadataBuilder.DeliverAtTime > 0)
             {
                 compressedPayload = _compressor.Encode(payload);
                 // validate msg-size (For batching this will be check at the batch completion size)
@@ -431,9 +425,12 @@ namespace SharpPulsar.Akka.Producer
                     }
                     msgMetadataBuilder.UncompressedSize = (uint)uncompressedSize;
                 }
-                if (CanAddToBatch(msg))
+
+                var canAddToBatch = CanAddToBatch(msg);
+                if (canAddToBatch)
                 {
-                    if (CanAddToCurrentBatch(msg))
+                    var canAddToCurrentBatch = CanAddToCurrentBatch(msg);
+                    if (canAddToCurrentBatch)
                     {
                         // should trigger complete the batch message, new message will add to a new batch and new batch
                         // sequence id use the new message, so that broker can handle the message duplication
@@ -506,7 +503,7 @@ namespace SharpPulsar.Akka.Producer
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
             {
-                log.Debug($"[{_configuration.TopicName}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.DataBuffer.ReadableBytes}");
+                log.Debug($"[{_configuration.TopicName}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.DataBuffer.Length}");
             }
             try
             {
@@ -600,7 +597,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = Interlocked.Increment(ref IdGenerators.ReaderId);
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            _broker.Tell(pay);
+            _network.Tell(pay);
         }
         private bool PopulateMessageSchema(Message msg)
         {
@@ -710,7 +707,7 @@ namespace SharpPulsar.Akka.Producer
             long currentBatchSizeBytes = 0;
             foreach (var message in keyedBatch.Messages)
             {
-                currentBatchSizeBytes += message.DataBuffer.ReadableBytes;
+                currentBatchSizeBytes += message.DataBuffer.Length;
             }
             keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
             var cmd = SendMessage(_producerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
