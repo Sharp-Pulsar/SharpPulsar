@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
     public class Message : IMessage
 	{
 		public MessageMetadata Metadata { get; }
-		public byte[] Payload { get; }
+		public byte[] Payload { get; set; }
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;

@@ -174,7 +174,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 msg.Metadata.SchemaVersion = r.SchemaVersion;
                 msg.SetSchemaState(Message.SchemaState.Ready);
-                SendMessage(msg);
+                PrepareMessage(msg);
             });
             Receive<BulkSend>(s =>
             {
@@ -234,7 +234,7 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _listener.Log(interceptorMessage.Properties);
                 }
-                SendMessage(interceptorMessage);
+                PrepareMessage(interceptorMessage);
             }
             catch (Exception e)
             {
@@ -306,11 +306,7 @@ namespace SharpPulsar.Akka.Producer
         {
 
         }
-        private bool IsMultiSchemaEnabled(bool autoEnable)
-        {
-            
-            return true;
-        }
+        
         private IMessage BeforeSend(IMessage message)
         {
             if (_producerInterceptor != null && _producerInterceptor.Count > 0)
@@ -360,57 +356,45 @@ namespace SharpPulsar.Akka.Producer
             _pendingLookupRequests.Add(requestId, payload);
         }
 
-        private void SendMessage(Message msg)
+        private void PrepareMessage(Message msg)
         {
-            var metadata = msg.Metadata;
-            var payload = msg.Payload;
-            // If compression is enabled, we are compressing, otherwise it will simply use the same buffer
-            var uncompressedSize = payload.Length;
-            var compressedPayload = payload;
-            // Batch will be compressed when closed
-            // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
-            if (!_configuration.BatchingEnabled || metadata.DeliverAtTime > 0)
-            {
-                compressedPayload = _compressor.Encode(payload);
-                // validate msg-size (For batching this will be check at the batch completion size)
-                var compressedSize = compressedPayload.Length;
-                if (compressedSize > Commands.DefaultMaxMessageSize)
-                {
-                    var compressedStr = !_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
-                    var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
-                    Sender.Tell(new ErrorMessage(invalidMessageException));
-                    return;
-                }
-            }
-            if (!msg.Replicated && !string.IsNullOrWhiteSpace(metadata.ProducerName))
-            {
-                var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
-                //Sender.Tell(new ErrorMessage(invalidMessageException));
-                return;
-            }
-
-            if (!PopulateMessageSchema(msg))
-            {
-                return;
-            }
-
             try
             {
-                long sequenceId;
+                var metadata = msg.Metadata;
+                var payload = msg.Payload;
+                // If compression is enabled, we are compressing, otherwise it will simply use the same buffer
+                var uncompressedSize = payload.Length;
+                // Batch will be compressed when closed
+                // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
+                if (!_configuration.BatchingEnabled || metadata.DeliverAtTime > 0)
+                {
+                    var compressedPayload = _compressor.Encode(payload);
+                    // validate msg-size (For batching this will be check at the batch completion size)
+                    var compressedSize = compressedPayload.Length;
+                    if (compressedSize > Commands.DefaultMaxMessageSize)
+                    {
+                        var compressedStr = !_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
+                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
+                        return;
+                    }
+
+                    msg.Payload = compressedPayload;
+                }
+                if (!PopulateMessageSchema(msg))
+                {
+                    return;
+                }
+
                 if (metadata.SequenceId < 1)
                 {
-                    sequenceId = Interlocked.Increment(ref IdGenerators.SequenceId);
+                    var sequenceId = Interlocked.Increment(ref IdGenerators.SequenceId);
                     metadata.SequenceId = (ulong)sequenceId;
-                }
-                else
-                {
-                    sequenceId = (long)metadata.SequenceId;
                 }
                 if (metadata.PublishTime < 1)
                 {
                     metadata.PublishTime = (ulong)DateTime.Now.Millisecond;
 
-                    if (!string.IsNullOrWhiteSpace(metadata.ProducerName))
+                    if (string.IsNullOrWhiteSpace(metadata.ProducerName))
                         metadata.ProducerName = ProducerName;
 
                     if (_configuration.CompressionType != ICompressionType.None)
@@ -420,79 +404,94 @@ namespace SharpPulsar.Akka.Producer
                     metadata.UncompressedSize = (uint)uncompressedSize;
                 }
 
-                var canAddToBatch = CanAddToBatch(msg);
-                if (canAddToBatch)
-                {
-                    var canAddToCurrentBatch = CanAddToCurrentBatch(msg);
-                    if (canAddToCurrentBatch)
-                    {
-                        // should trigger complete the batch message, new message will add to a new batch and new batch
-                        // sequence id use the new message, so that broker can handle the message duplication
-                        if (sequenceId <= _lastSequenceIdPushed)
-                        {
-                            if (sequenceId <= _lastSequenceId)
-                            {
-                                Context.System.Log.Warning($"Message with sequence id {sequenceId} is definitely a duplicate");
-                            }
-                            else
-                            {
-                                Context.System.Log.Info($"Message with sequence id {sequenceId} might be a duplicate but cannot be determined at this time.");
-                            }
-                            DoBatchSendAndAdd(msg, payload);
-                        }
-                        else
-                        {
-                            // handle boundary cases where message being added would exceed
-                            // batch size and/or max message size
-                            var (_, isBatchFull) = _batchMessageContainer.Add(msg);
-                            //_lastSequenceIdPushed = seqid;
-                            if (isBatchFull)
-                            {
-                                BatchMessageAndSend();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        DoBatchSendAndAdd(msg, payload);
-                    }
-                    
-                }
-                else
-                {
-                    var encryptedPayload = EncryptMessage(metadata, compressedPayload);
-                    // When publishing during replication, we need to set the correct number of message in batch
-                    // This is only used in tracking the publish rate stats
-                    var numMessages = msg.Metadata.NumMessagesInBatch > 0 ? msg.Metadata.NumMessagesInBatch : 1;
-                    OpSendMsg op = null;
-                    var schemaState = msg.GetSchemaState();
-                    if (schemaState == Message.SchemaState.Ready)
-                    {
-                        var msgMetadata = metadata;
-                        var cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
-                        op = OpSendMsg.Create(msg, cmd, sequenceId);
-                    }
-                    else
-                    {
-                        op = OpSendMsg.Create(msg, null, sequenceId);
-                        op.RePopulate = () =>
-                        {
-                            var msgMetadata = metadata;
-                            op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
-
-                        };
-                    }
-                    op.NumMessagesInBatch = numMessages;
-                    op.BatchSizeByte = encryptedPayload.Length;
-                    ProcessOpSendMsg(op);
-                }
+                SendMessage(msg);
             }
             catch (Exception e)
             {
-                Sender.Tell(new ErrorMessage(e));
+                Context.System.Log.Error(e.ToString());
             }
         }
-        private void DoBatchSendAndAdd(Message msg, byte[] payload)
+        private void SendMessage(Message msg)
+        {
+            var canAddToBatch = CanAddToBatch(msg);
+            if (canAddToBatch)
+            {
+                BatchMessage(msg);
+            }
+            else
+            {
+                SendImmediate(msg);
+            }
+        }
+        private void BatchMessage(Message msg)
+        {
+            var metadata = msg.Metadata;
+            var sequenceid = (long)metadata.SequenceId;
+            var canAddToCurrentBatch = CanAddToCurrentBatch(msg);
+            if (canAddToCurrentBatch)
+            {
+                // should trigger complete the batch message, new message will add to a new batch and new batch
+                // sequence id use the new message, so that broker can handle the message duplication
+                if (sequenceid <= _lastSequenceIdPushed)
+                {
+                    if (sequenceid <= _lastSequenceId)
+                    {
+                        Context.System.Log.Warning($"Message with sequence id {sequenceid} is definitely a duplicate");
+                    }
+                    else
+                    {
+                        Context.System.Log.Info($"Message with sequence id {sequenceid} might be a duplicate but cannot be determined at this time.");
+                    }
+                    DoBatchSendAndAdd(msg);
+                }
+                else
+                {
+                    // handle boundary cases where message being added would exceed
+                    // batch size and/or max message size
+                    var (_, isBatchFull) = _batchMessageContainer.Add(msg);
+                    //_lastSequenceIdPushed = seqid;
+                    if (isBatchFull)
+                    {
+                        BatchMessageAndSend();
+                    }
+                }
+            }
+            else
+            {
+                DoBatchSendAndAdd(msg);
+            }
+        }
+        private void SendImmediate(Message msg)
+        {
+            MessageMetadata metadata = msg.Metadata;
+            var encryptedPayload = EncryptMessage(metadata, msg.Payload);
+            // When publishing during replication, we need to set the correct number of message in batch
+            // This is only used in tracking the publish rate stats
+            var numMessages = metadata.NumMessagesInBatch > 0 ? metadata.NumMessagesInBatch : 1;
+            OpSendMsg op = null;
+            var sequenceid = (long) metadata.SequenceId;
+            var schemaState = msg.GetSchemaState();
+            if (schemaState == Message.SchemaState.Ready)
+            {
+                var msgMetadata = metadata;
+                var cmd = SendMessage(_producerId, sequenceid, numMessages, msgMetadata, encryptedPayload);
+                op = OpSendMsg.Create(msg, cmd, sequenceid);
+            }
+            else
+            {
+                op = OpSendMsg.Create(msg, null, sequenceid);
+                op.RePopulate = () =>
+                {
+                    var msgMetadata = metadata;
+                    op.Cmd = SendMessage(_producerId, sequenceid, numMessages, msgMetadata, encryptedPayload);
+
+                };
+            }
+            op.NumMessagesInBatch = numMessages;
+            op.BatchSizeByte = encryptedPayload.Length;
+            ProcessOpSendMsg(op);
+        }
+        private void DoBatchSendAndAdd(Message msg)
         {
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
@@ -609,12 +608,6 @@ namespace SharpPulsar.Akka.Producer
                 }
             }
             
-            if (!IsMultiSchemaEnabled(true))
-            {
-                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' is disabled the `MultiSchema`")));
-                return false;
-            }
-
             if (schemaVersion == null) return true;
             metadata.SchemaVersion = schemaVersion;
             msg.SetSchemaState(Message.SchemaState.Ready);
@@ -660,7 +653,7 @@ namespace SharpPulsar.Akka.Producer
 
         private bool CanAddToCurrentBatch(Message msg)
         {
-            return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
+            return _batchMessageContainer.HaveEnoughSpace(msg) || _batchMessageContainer.HasSameSchema(msg);
         }
 
         private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
