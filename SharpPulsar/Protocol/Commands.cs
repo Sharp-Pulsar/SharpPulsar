@@ -241,10 +241,8 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, byte[] payload)
 		{
-			var send = new CommandSend();
-			send.ProducerId = (ulong)producerId;
-			send.SequenceId = (ulong)sequenceId;
-			if (numMessages > 1)
+            var send = new CommandSend {ProducerId = (ulong) producerId, SequenceId = (ulong) sequenceId};
+            if (numMessages > 1)
 			{
 				send.NumMessages = numMessages;
 			}

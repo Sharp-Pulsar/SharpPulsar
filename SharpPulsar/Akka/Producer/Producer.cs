@@ -31,7 +31,7 @@ namespace SharpPulsar.Akka.Producer
         private IActorRef _network;
         private ProducerConfigurationData _configuration;
         private IProducerEventListener _listener;
-        private long _producerId;
+        private readonly long _producerId;
         public string ProducerName;
         private readonly bool _userProvidedProducerName = false;
         private long _lastSequenceIdPushed;
@@ -120,22 +120,8 @@ namespace SharpPulsar.Akka.Producer
 
                 var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
                 _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Sender));
-                Become(Init);
-            });
-            Receive<AddPublicKeyCipher>(a =>
-            {
-                AddKey();
-            });
-            SendBrokerLookUpCommand();
-        }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
-        {
-            return Props.Create(() => new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
-        }
-
-        private void Init()
-        {
+            });
             Receive<TcpSuccess>(s =>
             {
                 _listener.Log($"Pulsar handshake completed with {s.Name}");
@@ -145,9 +131,20 @@ namespace SharpPulsar.Akka.Producer
             {
                 AddKey();
             });
-            ReceiveAny(_ => Stash.Stash());
+            Receive<AddPublicKeyCipher>(a =>
+            {
+                AddKey();
+            });
+            ReceiveAny(c => Stash.Stash());
+            SendBrokerLookUpCommand();
         }
 
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
+        {
+            return Props.Create(() => new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
+        }
+
+        
         public void Receive()
         {
             Receive<AddPublicKeyCipher>(a =>
@@ -266,10 +263,6 @@ namespace SharpPulsar.Akka.Producer
                     _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
                 }
             });
-            Receive<AddPublicKeyCipher>(a =>
-            {
-                AddKey();
-            });
             ReceiveAny(x => Stash.Stash());
             if (_isPartitioned)
             {
@@ -285,7 +278,7 @@ namespace SharpPulsar.Akka.Producer
             var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request, requestid, "CommandProducer");
             _pendingLookupRequests.Add(requestid, payload);
-            _network.Tell(payload);
+            _broker.Tell(payload);
         }
        
         private void SendBrokerLookUpCommand()
@@ -350,7 +343,6 @@ namespace SharpPulsar.Akka.Producer
             else
             {
                 schemaInfo = (SchemaInfo)SchemaFields.Bytes.SchemaInfo;
-
             }
 
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
@@ -595,9 +587,9 @@ namespace SharpPulsar.Akka.Producer
 
         private void SendCommand(OpSendMsg op)
         {
-            var requestId = Interlocked.Increment(ref IdGenerators.ReaderId);
+            var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            _network.Tell(pay);
+            _broker.Tell(pay);
         }
         private bool PopulateMessageSchema(Message msg)
         {

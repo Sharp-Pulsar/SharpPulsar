@@ -2,17 +2,12 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
-using Akka.IO;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -27,6 +22,7 @@ namespace SharpPulsar.Akka.Network
     {
         protected internal readonly IAuthentication Authentication;
         private PulsarStream _stream;
+        private ReadOnlySequence<byte> _pong = new ReadOnlySequence<byte>(Commands.NewPong());
         private State _state;
         protected internal EndPoint RemoteAddress;
         protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
@@ -81,7 +77,7 @@ namespace SharpPulsar.Akka.Network
             });
             var c = new ConnectionCommand(NewConnectCommand());
             _ =_stream.Send(new ReadOnlySequence<byte>(c.Command));
-            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
+           // Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
 
         }
 
@@ -144,12 +140,12 @@ namespace SharpPulsar.Akka.Network
 			{
 				Log.Debug($"[{RemoteAddress}] Replying back to ping message");
 			}
-			Self.Tell(new ConnectionCommand(Commands.NewPong()));
+            _ = _stream.Send(_pong);
 		}
         
         public virtual IPEndPoint TargetBroker
 		{
-			set => ProxyToTargetBrokerAddress = $"{value.Address.ToString()}:{value.Port:D}";
+			set => ProxyToTargetBrokerAddress = $"{value.Address}:{value.Port:D}";
 		}
         public async Task ProcessIncommingFrames()
         {
@@ -162,6 +158,7 @@ namespace SharpPulsar.Akka.Network
                     var commandSize = frame.ReadUInt32(0, true);
                     var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
                     var t = cmd.type;
+                    
                     switch (cmd.type)
                     {
                         case BaseCommand.Type.Connected:
@@ -217,8 +214,8 @@ namespace SharpPulsar.Akka.Network
                         case BaseCommand.Type.Ping:
                             HandlePing(cmd.Ping);
                             break;
-                        case BaseCommand.Type.Pong:
-                            HandlePong(cmd.Pong);
+                        case BaseCommand.Type.CloseProducer:
+                            Console.WriteLine($"<<<<<<<<<<<<<{cmd.CloseProducer.ProducerId} closed>>>>>>>>>>");
                             break;
                         default:
                             Console.WriteLine($"{cmd.type.GetType()} Received");

@@ -84,12 +84,17 @@ namespace Producer
                 Thread.Sleep(100);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
-            pulsarSystem.Send(new Send(students,topic, ImmutableDictionary<string, object>.Empty), produce);
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)
             {
-                Console.Write(".");
+                var read = Console.ReadLine();
+                if (read == "s")
+                {
+                    pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
+
+                }
+                //Console.Write(".");
             }
             //system.Tcp().Tell(new Tcp.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 6650)));
         }
