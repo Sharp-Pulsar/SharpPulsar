@@ -130,10 +130,23 @@ namespace SharpPulsar.Akka.Consumer
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
                 SendFlow(_requestedFlowPermits);
-                Become(ReceiveMessages);
                 _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
             });
-            ReceiveAny(_ => Stash.Stash());
+            Receive<MessageReceived>(m =>
+            {
+                var msgId = new MessageIdData
+                {
+                    entryId = (ulong)m.MessageId.EntryId,
+                    ledgerId = (ulong)m.MessageId.LedgerId,
+                    Partition = m.MessageId.Partition,
+                    BatchIndex = m.MessageId.BatchIndex
+                };
+                HandleMessage(msgId, m.RedeliveryCount, m.Data);
+            });
+            Receive<AckMessage>(AckMessage);
+            Receive<AckMessages>(AckMessages);
+            Receive<AckMultiMessage>(AckMultiMessage);
+            ReceiveAny(x => _consumerEventListener.Log($"{x.GetType().Name} was unhandled!"));
             SendBrokerLookUpCommand();
         }
 
@@ -204,26 +217,6 @@ namespace SharpPulsar.Akka.Consumer
 
         }
         
-        private void ReceiveMessages()
-        {
-            Receive<MessageReceived>(m =>
-            {
-                var msgId = new MessageIdData
-                {
-                    entryId = (ulong) m.MessageId.EntryId,
-                    ledgerId = (ulong) m.MessageId.LedgerId,
-                    Partition = m.MessageId.Partition,
-                    BatchIndex = m.MessageId.BatchIndex
-                };
-                HandleMessage(msgId, m.RedeliveryCount, m.Data);
-            });
-            Receive<AckMessage>(AckMessage);
-            Receive<AckMessages>(AckMessages);
-            Receive<AckMultiMessage>(AckMultiMessage);
-            ReceiveAny(x=> _consumerEventListener.Log($"{x.GetType().Name} was unhandled!"));
-            Stash.UnstashAll();
-        }
-
         private void HandleMessage(MessageIdData messageId, int redeliveryCount, byte[] headersAndPayload)
         {
             if (Context.System.Log.IsDebugEnabled)

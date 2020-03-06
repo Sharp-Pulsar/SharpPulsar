@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl
 				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
 			}
 
-			CurrentBatchSizeBytes += msg.DataBuffer.Length;
+			CurrentBatchSizeBytes += msg.Payload.Length;
 			_messages.Add(msg);
 
 			if (_lowestSequenceId == -1L)
@@ -96,15 +96,15 @@ namespace SharpPulsar.Impl
                 for (int i = 0, n = _messages.Count; i < n; i++)
 				{
 					var msg = _messages[i];
-					var msgBuilder = msg.MessageBuilder;
+					var msgMetadata = msg.Metadata;
 					try
 					{
-						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, _batchedMessageMetadataAndPayload);
+						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, _batchedMessageMetadataAndPayload);
 					}
-					catch (System.Exception th)
+					catch (Exception th)
 					{
 						
-						throw new System.Exception(th.Message);
+						throw new Exception(th.Message);
 					}
 				}
 				
@@ -142,7 +142,7 @@ namespace SharpPulsar.Impl
 
 		public override bool Empty => _messages.Count == 0;
 
-        public override void Discard(System.Exception ex)
+        public override void Discard(Exception ex)
 		{
 			Clear();
 		}

@@ -39,12 +39,12 @@ namespace Producer
                 .ClientConfigurationData;
             var pulsarSystem = new PulsarSystem(clientConfig);
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("Students")
-                .Topic("students")
+                .ProducerName("Staff")
+                .Topic("staff")
                 .Schema(jsonSchema)
                 .EventListener(producer)
                 .AddEncryptionKey("sessions")
-                .EnableBatching(true)
+                .EnableBatching(false)
                 .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
 
@@ -56,17 +56,17 @@ namespace Producer
                 .ReaderConfigurationData;
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Producer");
-            //var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+            var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("Student")
-                .ForceTopicCreation(true)
-                .SubscriptionName("Student-Subscription")
-                .Topic("persistent://public/default/students")
+                .ConsumerName("Staff")
+                .ForceTopicCreation(false)
+                .SubscriptionName("Staff-Subscription")
+                .Topic(topic)
                 .Schema(jsonSchema)
                 .MessageListener(new ConsumerMessageListener())
                 .ConsumerEventListener(new ConsumerEventListener())
-                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
             pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
@@ -76,13 +76,13 @@ namespace Producer
 
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");
-            /*IActorRef produce = null;
+            IActorRef produce = null;
             while (produce == null)
             {
                 produce = producer.GetProducer(topic);
                 Thread.Sleep(100);
             }
-            Console.WriteLine($"Acquired producer for topic: {topic}");*/
+            Console.WriteLine($"Acquired producer for topic: {topic}");
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)
@@ -96,7 +96,7 @@ namespace Producer
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };
-                    //pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
+                    pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
                     /*for (var i = 0; i < 150; i++)
                     {
                         var students = new Students

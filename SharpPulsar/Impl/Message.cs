@@ -25,7 +25,6 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    using DotNetty.Buffers;
     using Pulsar.Common.Auth;
     using Protocol.Proto;
     using System.Linq;
@@ -33,30 +32,30 @@ namespace SharpPulsar.Impl
 
     public class Message : IMessage
 	{
-		public MessageMetadata MessageBuilder { get; }
-		public byte[] DataBuffer { get; }
+		public MessageMetadata Metadata { get; }
+		public byte[] Payload { get; }
 		private ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 
 		public string TopicName {get;} // only set for incoming messages
 
-        public Message(byte[] data, MessageMetadata builder, ISchema schema, string topic)
+        public Message(byte[] data, MessageMetadata metadata, ISchema schema, string topic)
         {
-            DataBuffer = data;
-            MessageBuilder = builder;
+            Payload = data;
+            Metadata = metadata;
             _schema = schema;
             TopicName = topic;
         }
-        public Message(byte[] data, MessageMetadata builder)
+        public Message(byte[] data, MessageMetadata metadata)
         {
-            DataBuffer = data;
-            MessageBuilder = builder;
+            Payload = data;
+            Metadata = metadata;
         }
 		// Constructor for out-going message
-		public static Message Create(MessageMetadata msgMetadataBuilder, byte[] payload, ISchema schema, string topic)
+		public static Message Create(MessageMetadata msgMetadata, byte[] payload, ISchema schema, string topic)
 		{
-            var msg = new Message(payload, msgMetadataBuilder, schema, topic);
+            var msg = new Message(payload, msgMetadata, schema, topic);
             return msg;
 		}
 
@@ -73,7 +72,7 @@ namespace SharpPulsar.Impl
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
             _properties = new Dictionary<string, string>();
-			MessageBuilder = msgMetadata;
+			Metadata = msgMetadata;
 			MessageId = messageId;
 			TopicName = topic;
 			RedeliveryCount = redeliveryCount;
@@ -81,7 +80,7 @@ namespace SharpPulsar.Impl
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			DataBuffer = payload;
+			Payload = payload;
             EncryptionCtx = encryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
@@ -98,12 +97,12 @@ namespace SharpPulsar.Impl
 
 		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
 		{
-			MessageBuilder = msgMetadata;
+			Metadata = msgMetadata;
 			MessageId = batchMessageIdImpl;
 			TopicName = topic;
 			RedeliveryCount = redeliveryCount;
 
-			DataBuffer = payload;
+			Payload = payload;
 			EncryptionCtx = encryptionCtx;
 
 			if (singleMessageMetadata.Properties.Count > 0)
@@ -120,18 +119,18 @@ namespace SharpPulsar.Impl
 
 			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
 			{
-				MessageBuilder.PartitionKeyB64Encoded = (singleMessageMetadata.PartitionKeyB64Encoded);
-				MessageBuilder.PartitionKey = (singleMessageMetadata.PartitionKey);
+				Metadata.PartitionKeyB64Encoded = (singleMessageMetadata.PartitionKeyB64Encoded);
+				Metadata.PartitionKey = (singleMessageMetadata.PartitionKey);
 			}
 
 			if (singleMessageMetadata.EventTime > 0)
 			{
-				MessageBuilder.EventTime = (singleMessageMetadata.EventTime);
+				Metadata.EventTime = (singleMessageMetadata.EventTime);
 			}
 
 			if (singleMessageMetadata.SequenceId > 0)
 			{
-				MessageBuilder.SequenceId = (singleMessageMetadata.SequenceId);
+				Metadata.SequenceId = (singleMessageMetadata.SequenceId);
 			}
 
 			_schema = schema;
@@ -144,7 +143,7 @@ namespace SharpPulsar.Impl
 			var entryId = long.Parse(data[1]);
 			MessageId = data.Length == 3 ? new BatchMessageId(ledgerId, entryId, -1, int.Parse(data[2])) : new MessageId(ledgerId, entryId, -1);
 			TopicName = topic;
-			DataBuffer = payload;
+			Payload = payload;
 			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
 			_schema = schema;
 			RedeliveryCount = 0;
@@ -160,22 +159,22 @@ namespace SharpPulsar.Impl
 
 		public string ReplicatedFrom
 		{
-			set => MessageBuilder.ReplicatedFrom = (value);
-            get => MessageBuilder != null ? MessageBuilder.ReplicatedFrom : string.Empty;
+			set => Metadata.ReplicatedFrom = (value);
+            get => Metadata != null ? Metadata.ReplicatedFrom : string.Empty;
         }
 
-		public bool Replicated => MessageBuilder != null && !string.IsNullOrWhiteSpace(MessageBuilder.ReplicatedFrom);
+		public bool Replicated => Metadata != null && !string.IsNullOrWhiteSpace(Metadata.ReplicatedFrom);
 
 
         public IMessageId MessageId { get; set; }
-        public long PublishTime => (long)MessageBuilder.PublishTime;
+        public long PublishTime => (long)Metadata.PublishTime;
 
         public long EventTime
 		{
 			get
 			{
-                if (MessageBuilder == null) return 0;
-                return (long)MessageBuilder.EventTime;
+                if (Metadata == null) return 0;
+                return (long)Metadata.EventTime;
             }
 		}
 
@@ -194,16 +193,9 @@ namespace SharpPulsar.Impl
                 return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex);
             }
         } 
-		public sbyte[] Data
-		{
-            get
-            {
-                return (sbyte[])(object)DataBuffer;
+		public sbyte[] Data => (sbyte[])(object)Payload;
 
-            }
-		}
-
-		public ISchema Schema => _schema;
+        public ISchema Schema => _schema;
 
         public int RedeliveryCount { get; }
 
@@ -211,9 +203,9 @@ namespace SharpPulsar.Impl
 		{
 			get
             {
-                if (MessageBuilder != null && MessageBuilder.SchemaVersion?.Length > 0)
+                if (Metadata != null && Metadata.SchemaVersion?.Length > 0)
 				{
-					return (sbyte[])(object)MessageBuilder.SchemaVersion;
+					return (sbyte[])(object)Metadata.SchemaVersion;
 				}
 
                 return null;
@@ -244,9 +236,9 @@ namespace SharpPulsar.Impl
 		{
 			get
             {
-                if (MessageBuilder is null)
+                if (Metadata is null)
                     throw new NullReferenceException();
-                return (long)MessageBuilder.SequenceId;
+                return (long)Metadata.SequenceId;
 				return -1;
 			}
 		}
@@ -255,11 +247,11 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-                if (MessageBuilder is null)
+                if (Metadata is null)
                     throw new NullReferenceException();
-				if (!string.IsNullOrWhiteSpace(MessageBuilder.ProducerName))
+				if (!string.IsNullOrWhiteSpace(Metadata.ProducerName))
 				{
-					return MessageBuilder.ProducerName;
+					return Metadata.ProducerName;
 				}
 				return null;
 			}
@@ -278,21 +270,9 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-				lock (this)
-				{
-					if (_properties == null)
-					{
-						if (MessageBuilder.Properties.Count > 0)
-						{
-							_properties = MessageBuilder.Properties.ToDictionary(x=>x.Key, x=>x.Value);
-						}
-						else
-						{
-							_properties = new Dictionary<string, string>();
-						}
-					}
-					return _properties;
-				}
+                if (_properties != null) return _properties;
+                _properties = Metadata.Properties.Count > 0 ? Metadata.Properties.ToDictionary(x => x.Key, x => x.Value) : new Dictionary<string, string>();
+                return _properties;
 			}
             set => _properties = value;
         }
@@ -310,9 +290,9 @@ namespace SharpPulsar.Impl
 
 		public bool HasKey()
 		{
-			if(MessageBuilder == null)
+			if(Metadata == null)
 				throw  new NullReferenceException();
-			return !string.IsNullOrWhiteSpace(MessageBuilder.PartitionKey);
+			return !string.IsNullOrWhiteSpace(Metadata.PartitionKey);
 		}
 
 
@@ -320,24 +300,24 @@ namespace SharpPulsar.Impl
 		{
 			get
 			{
-                if (MessageBuilder == null)
+                if (Metadata == null)
                     throw new NullReferenceException();
-				return MessageBuilder.PartitionKey;
+				return Metadata.PartitionKey;
 			}
 		}
 
 		public bool HasBase64EncodedKey()
 		{
-            if (MessageBuilder == null)
+            if (Metadata == null)
                 throw new NullReferenceException();
-			return MessageBuilder.PartitionKeyB64Encoded;
+			return Metadata.PartitionKeyB64Encoded;
 		}
 
 		public sbyte[] KeyBytes
 		{
 			get
 			{
-				if (MessageBuilder == null)
+				if (Metadata == null)
 					throw new NullReferenceException();
 				if (HasBase64EncodedKey())
 				{
@@ -350,36 +330,36 @@ namespace SharpPulsar.Impl
 
 		public bool HasOrderingKey()
 		{
-            if (MessageBuilder == null)
+            if (Metadata == null)
                 throw new NullReferenceException();
-			return MessageBuilder.OrderingKey?.Length > 0;
+			return Metadata.OrderingKey?.Length > 0;
 		}
 
 		public sbyte[] OrderingKey
 		{
 			get
 			{
-                if (MessageBuilder == null)
+                if (Metadata == null)
                     throw new NullReferenceException();
-				return (sbyte[])(object)MessageBuilder.OrderingKey;
+				return (sbyte[])(object)Metadata.OrderingKey;
 			}
 		}
 
 		
 		public bool HasReplicateTo()
 		{
-            if (MessageBuilder == null)
+            if (Metadata == null)
                 throw new NullReferenceException();
-			return MessageBuilder.ReplicateToes.Count > 0;
+			return Metadata.ReplicateToes.Count > 0;
 		}
 
 		public IList<string> ReplicateTo
 		{
 			get
 			{
-                if (MessageBuilder == null)
+                if (Metadata == null)
                     throw new NullReferenceException();
-				return MessageBuilder.ReplicateToes;
+				return Metadata.ReplicateToes;
 			}
 		}
 

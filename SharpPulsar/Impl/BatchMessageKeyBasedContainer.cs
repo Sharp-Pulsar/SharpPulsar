@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Protocol;
@@ -46,7 +45,7 @@ namespace SharpPulsar.Impl
 				Log.LogDebug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
 			NumMessagesInBatch++;
-			CurrentBatchSizeBytes += msg.DataBuffer.Length;
+			CurrentBatchSizeBytes += msg.Payload.Length;
 			var key = GetKey(msg);
 			Batches.TryGetValue(key, out var part);
 			if (part == null)
@@ -143,8 +142,8 @@ namespace SharpPulsar.Impl
 
 					foreach (var msg in Messages)
 					{
-						MessageMetadata msgBuilder = msg.MessageBuilder;
-						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, BatchedMessageMetadataAndPayload);
+						MessageMetadata msgBuilder = msg.Metadata;
+						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgBuilder, msg.Payload, BatchedMessageMetadataAndPayload);
 						
 					}
 					int uncompressedSize = BatchedMessageMetadataAndPayload.Length;
@@ -166,7 +165,7 @@ namespace SharpPulsar.Impl
 			{
 				if (Messages.Count == 0)
 				{
-					SequenceId = Commands.InitBatchMessageMetadata(msg.MessageBuilder);
+					SequenceId = Commands.InitBatchMessageMetadata(msg.Metadata);
 					if (msg.HasKey())
 					{
 						MessageMetadata.PartitionKey = msg.Key;

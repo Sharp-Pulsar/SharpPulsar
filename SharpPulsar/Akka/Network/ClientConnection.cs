@@ -211,6 +211,10 @@ namespace SharpPulsar.Akka.Network
                             rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
                             _requests.Remove((long)part.RequestId);
                             break;
+                        case BaseCommand.Type.SendError:
+                            var e = cmd.SendError;
+                            Console.WriteLine($"Send Error {e.Message}>>>>>{e.Error}");
+                            break;
                         case BaseCommand.Type.Ping:
                             HandlePing(cmd.Ping);
                             break;
