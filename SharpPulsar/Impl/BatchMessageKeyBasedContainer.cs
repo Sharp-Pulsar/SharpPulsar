@@ -39,9 +39,6 @@ namespace SharpPulsar.Impl
 	/// </summary>
 	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
 	{
-
-		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
-
 		public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
@@ -51,7 +48,7 @@ namespace SharpPulsar.Impl
 			NumMessagesInBatch++;
 			CurrentBatchSizeBytes += msg.DataBuffer.Length;
 			var key = GetKey(msg);
-			_batches.TryGetValue(key, out var part);
+			Batches.TryGetValue(key, out var part);
 			if (part == null)
 			{
 				part = new KeyedBatch();
@@ -61,7 +58,8 @@ namespace SharpPulsar.Impl
 				part.MaxBatchSize = MaxBatchSize;
 				part.TopicName = TopicName;
 				part.ProducerName = ProducerName;
-				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
+				if (!Batches.ContainsKey(key)) 
+                    Batches.Add(key, part);
 			}
 			else
 			{
@@ -74,18 +72,18 @@ namespace SharpPulsar.Impl
 		{
 			NumMessagesInBatch = 0;
 			CurrentBatchSizeBytes = 0;
-			_batches = new Dictionary<string, KeyedBatch>();
+			Batches = new Dictionary<string, KeyedBatch>();
 		}
 
-        public IDictionary<string, KeyedBatch> Batches => _batches;
-		public override bool Empty => _batches.Count == 0;
+        public IDictionary<string, KeyedBatch> Batches { get; private set; } = new Dictionary<string, KeyedBatch>();
+		public override bool Empty => Batches.Count == 0;
 
         public override void Discard(Exception ex)
 		{
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				_batches.ToList().ForEach(x => x.Value.Discard(ex));
+				Batches.ToList().ForEach(x => x.Value.Discard(ex));
 			}
 			catch (System.Exception T)
 			{
@@ -100,7 +98,7 @@ namespace SharpPulsar.Impl
 		public override bool HasSameSchema(Message msg)
 		{
 			var key = GetKey(msg);
-			_batches.TryGetValue(key, out var part);
+			Batches.TryGetValue(key, out var part);
 			if (part == null || part.Messages.Count == 0)
 			{
 				return true;
@@ -181,7 +179,7 @@ namespace SharpPulsar.Impl
 					{
 						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					BatchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
+					BatchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)];
 					
 				}
 

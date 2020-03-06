@@ -99,7 +99,11 @@ namespace SharpPulsar.Akka.Producer
             if (configuration.BatchingEnabled)
             {
                 //var containerBuilder = configuration.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
-                _batchMessageContainer = new BatchMessageKeyBasedContainer();
+                _batchMessageContainer = new BatchMessageKeyBasedContainer
+                {
+                    TopicName = configuration.TopicName, ProducerName = _configuration.ProducerName,
+                    Compressor = _compressor
+                };
             }
             else
             {
@@ -383,7 +387,7 @@ namespace SharpPulsar.Akka.Producer
             if (!msg.Replicated && !string.IsNullOrWhiteSpace(msgMetadataBuilder.ProducerName))
             {
                 var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' can not reuse the same message");
-                Sender.Tell(new ErrorMessage(invalidMessageException));
+                //Sender.Tell(new ErrorMessage(invalidMessageException));
                 return;
             }
 
@@ -442,8 +446,8 @@ namespace SharpPulsar.Akka.Producer
                         {
                             // handle boundary cases where message being added would exceed
                             // batch size and/or max message size
-                            var (seqid, isBatchFull) = _batchMessageContainer.Add(msg);
-                            _lastSequenceIdPushed = seqid;
+                            var (_, isBatchFull) = _batchMessageContainer.Add(msg);
+                            //_lastSequenceIdPushed = seqid;
                             if (isBatchFull)
                             {
                                 BatchMessageAndSend();
@@ -523,6 +527,7 @@ namespace SharpPulsar.Akka.Producer
                 try
                 {
                     IList<OpSendMsg> opSendMsgs;
+
                     opSendMsgs = CreateOpSendMsgs();
                     _batchMessageContainer.Clear();
                     foreach (var opSendMsg in opSendMsgs)
@@ -534,10 +539,6 @@ namespace SharpPulsar.Akka.Producer
                 {
                     log.Error($"[{_configuration.TopicName}] [{ProducerName}] error while create opSendMsg by batch message container: {T}");
                 }
-            }
-            else
-            {
-                Become(Receive);
             }
         }
         public byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
@@ -557,13 +558,13 @@ namespace SharpPulsar.Akka.Producer
             }
             try
             {
-                if (op.Msg != null && _configuration.BatchingEnabled)
+                if (_configuration.BatchingEnabled)
                 {
                     BatchMessageAndSend();
                 }
                 if (op.Msg != null)
                 {
-                    _lastSequenceIdPushed = Math.Max(_lastSequenceIdPushed, GetHighestSequenceId(op));
+                    //_lastSequenceIdPushed = Math.Max(_lastSequenceIdPushed, GetHighestSequenceId(op));
                 }
                 if (op.Msg != null && op.Msg.GetSchemaState() == 0)
                 {

@@ -65,7 +65,7 @@ namespace SharpPulsar.Akka.Network
             else
                 return new[] { union.B0, union.B1, union.B2, union.B3 };
         }
-        private static byte[] GetBytes<T>(T item)
+        public static byte[] GetBytes<T>(T item)
         {
             using var ms = new MemoryStream();
             ProtoBuf.Serializer.Serialize(ms, item);

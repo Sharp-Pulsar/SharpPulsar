@@ -10,6 +10,7 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
+using DotNetty.Buffers;
 using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
@@ -804,22 +805,20 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, byte[] payload, byte[] batchBuffer)
         {
-			/*var payLoadSize = payload.ReadableBytes;
-			var singleMessageMetadata = singleMessageMetadata.PayloadSize(payLoadSize).Build();
-			// serialize meta-data size, meta-data and payload for single message in batch
-			var singleMsgMetadataSize = singleMessageMetadata.ByteLength();
-			try
-			{
-				batchBuffer.WriteInt(singleMsgMetadataSize);
-				var outStream = new MemoryStream(batchBuffer.Array);
-				//singleMessageMetadata.WriteTo(outStream);
-			}
-			catch (IOException e)
-			{
-				throw new System.Exception(e.Message, e);
-			}
-			return batchBuffer.WriteBytes(payload);*/
-			return new byte[67];
+            var payLoadSize = payload.Length;
+            singleMessageMetadataBuilder.PayloadSize = payLoadSize;
+			var singleMessageMetadata = singleMessageMetadataBuilder;
+            // serialize meta-data size, meta-data and payload for single message in batch
+            var metaBytes = Serializer.GetBytes(singleMessageMetadata);
+            try
+            {
+                batchBuffer = metaBytes.Concat(payload).ToArray();
+                return batchBuffer;
+            }
+            catch (IOException e)
+            {
+                throw new Exception(e.Message, e);
+            }
 		}
 
 		public static byte[] SerializeSingleMessageInBatchWithPayload(MessageMetadata msg, byte[] payload, byte[] batchBuffer)

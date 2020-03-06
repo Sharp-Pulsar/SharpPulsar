@@ -43,7 +43,8 @@ namespace Producer
                 .Schema(jsonSchema)
                 .EventListener(producer)
                 .AddEncryptionKey("sessions")
-                .EnableBatching(false)
+                .EnableBatching(true)
+                .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
@@ -69,12 +70,7 @@ namespace Producer
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
             //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
-            var students = new Students
-            {
-                Name = "Ebere",
-                Age = 2020,
-                School = "Akka-Pulsar university"
-            };
+           
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");
             IActorRef produce = null;
@@ -91,8 +87,23 @@ namespace Producer
                 var read = Console.ReadLine();
                 if (read == "s")
                 {
+                    var students = new Students
+                    {
+                        Name = $"Ebere",
+                        Age = 2020,
+                        School = "Akka-Pulsar university"
+                    };
                     pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
-
+                    /*for (var i = 0; i < 150; i++)
+                    {
+                        var students = new Students
+                        {
+                            Name = $"Ebere {i}",
+                            Age = 2020 + i,
+                            School = "Akka-Pulsar university"
+                        };
+                        pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
+                    }*/
                 }
                 //Console.Write(".");
             }
