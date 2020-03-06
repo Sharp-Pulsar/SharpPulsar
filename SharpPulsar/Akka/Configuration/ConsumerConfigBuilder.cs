@@ -41,6 +41,8 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
+				if(string.IsNullOrWhiteSpace(_conf.SubscriptionName))
+					throw new ArgumentException("Subscription Name is required!");
 				if(_conf.Schema == null)
 					throw new ArgumentException("Hey, we need the schema!");
                 if (_conf.StartMessageId == null)
@@ -55,7 +57,11 @@ namespace SharpPulsar.Akka.Configuration
 			_conf = (ConsumerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
-		
+		public ConsumerConfigBuilder ForceTopicCreation(bool force)
+        {
+            _conf.ForceTopicCreation = force;
+            return this;
+        }
 		public ConsumerConfigBuilder Topic(params string[] topicNames)
 		{
 			if(topicNames == null || topicNames.Length < 1)
@@ -114,7 +120,7 @@ namespace SharpPulsar.Akka.Configuration
 		public ConsumerConfigBuilder SubscriptionName(string subscriptionName)
 		{
 			if(string.IsNullOrWhiteSpace(subscriptionName))
-                throw new NullReferenceException("subscriptionName cannot be blank");
+                throw new NullReferenceException("SubscriptionName cannot be blank");
 			_conf.SubscriptionName = subscriptionName;
             return this;
 		}

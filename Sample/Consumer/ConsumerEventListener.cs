@@ -35,9 +35,15 @@ namespace Samples.Consumer
             Console.WriteLine(log);
         }
 
+        public IActorRef GetConsumer(string topic)
+        {
+            if (_actorRefs.ContainsKey(topic))
+                return _actorRefs[topic];
+            return null;
+        }
         public void ConsumerCreated(CreatedConsumer consumer)
         {
-            Console.WriteLine($"Producer for topic: {consumer.Topic}");
+            Console.WriteLine($"Consumer for topic: {consumer.Topic}");
             _actorRefs.Add(consumer.Topic, consumer.Consumer);
         }
     }

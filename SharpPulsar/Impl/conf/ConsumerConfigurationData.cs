@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
@@ -32,6 +33,7 @@ namespace SharpPulsar.Impl.Conf
 		public List<IConsumerInterceptor> Interceptors { get; set; }
 		public CommandSubscribe.SubType SubscriptionType { get; set; } = CommandSubscribe.SubType.Exclusive;
 		public IMessageListener MessageListener { get; set; }
+        public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
 		public ISchema Schema { get; set; }
         public bool UseTls { get; set; } = false;
@@ -73,7 +75,8 @@ namespace SharpPulsar.Impl.Conf
 
 		public DeadLetterPolicy DeadLetterPolicy { get; set; }
 
-		public SubscriptionInitialPosition SubscriptionInitialPosition { get; set; }
+        public SubscriptionInitialPosition SubscriptionInitialPosition { get; set; } =
+            SubscriptionInitialPosition.Earliest;
 		public Regex TopicsPattern { get; set; }
 
 		public SortedDictionary<string, string> Properties { get; set; }
@@ -87,8 +90,7 @@ namespace SharpPulsar.Impl.Conf
 			{
 				if(TopicNames.Count == 1)
 				{
-					TopicNames.GetEnumerator().MoveNext();
-					return TopicNames.GetEnumerator().Current;
+					return TopicNames.First();
 				}
 				return string.Empty;
 			}

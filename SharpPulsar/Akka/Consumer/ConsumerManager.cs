@@ -19,19 +19,19 @@ namespace SharpPulsar.Akka.Consumer
         {
             _network = network;
             _config = configuration;
-            Become(() => Init(configuration));
+            Receive<NewConsumer>(NewConsumer);
+        }
+
+        protected override void Unhandled(object message)
+        {
+            Console.WriteLine($"Unhandled message: {message.GetType().Name}");
         }
 
         public static Props Prop(ClientConfigurationData configuration, IActorRef network)
         {
             return Props.Create(() => new ConsumerManager(configuration, network));
         }
-        private void Open()
-        {
-            Receive<NewConsumer>(NewConsumer);
-            Stash.UnstashAll();
-        }
-
+        
         private void NewConsumer(NewConsumer consumer)
         {
             var schema = consumer.ConsumerConfiguration.Schema;
@@ -60,29 +60,7 @@ namespace SharpPulsar.Akka.Consumer
                     break;
             }
         }
-        private void Connecting()
-        {
-            _network.Tell(new TcpReconnect());
-            Receive<TcpSuccess>(s =>
-            {
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(m =>
-            {
-                Stash.Stash();
-            });
-        }
-        private void Init(ClientConfigurationData configuration)
-        {
-            Receive<TcpSuccess>(s =>
-            {
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(_ => Stash.Stash());
-        }
-
+       
         public IStash Stash { get; set; }
     }
 }

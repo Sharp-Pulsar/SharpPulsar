@@ -17,6 +17,7 @@ using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
+using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
@@ -47,14 +48,6 @@ namespace Producer
                 .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
 
-            var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("Student")
-                .Topic("students")
-                .Schema(jsonSchema)
-                .MessageListener(new ConsumerMessageListener())
-                .ConsumerEventListener(new ConsumerEventListener())
-                .ConsumerConfigurationData;
-
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("Students")
                 .Schema(jsonSchema)
@@ -63,23 +56,33 @@ namespace Producer
                 .ReaderConfigurationData;
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Producer");
-            var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
-            //Thread.Sleep(5000);
-            //Console.WriteLine("Creating Consumer");
-            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName("Student")
+                .ForceTopicCreation(true)
+                .SubscriptionName("Student-Subscription")
+                .Topic("persistent://public/default/students")
+                .Schema(jsonSchema)
+                .MessageListener(new ConsumerMessageListener())
+                .ConsumerEventListener(new ConsumerEventListener())
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+          
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
             //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
-           
+
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");
-            IActorRef produce = null;
+            /*IActorRef produce = null;
             while (produce == null)
             {
                 produce = producer.GetProducer(topic);
                 Thread.Sleep(100);
             }
-            Console.WriteLine($"Acquired producer for topic: {topic}");
+            Console.WriteLine($"Acquired producer for topic: {topic}");*/
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
             
             while (true)
@@ -93,7 +96,7 @@ namespace Producer
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };
-                    pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
+                    //pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
                     /*for (var i = 0; i < 150; i++)
                     {
                         var students = new Students
