@@ -1,5 +1,8 @@
 # SharpPulsar
-CSharp Port of Pulsar Java Client
+SharpPulsar is Apache Pulsar client built with Akka.net, inspired from the Pulsar java client. 
 
-This is still a Work In Progress
-If you have the time please let make it!
+The goal is to match java client features so that .Net developers lack nothing!
+
+The library is a work in progress!
+
+More soon!
