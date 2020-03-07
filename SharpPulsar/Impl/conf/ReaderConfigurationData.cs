@@ -24,6 +24,7 @@ namespace SharpPulsar.Impl.Conf
     public sealed class ReaderConfigurationData
 	{
 		public IMessageId StartMessageId { get; set; }
+		public IConsumerEventListener EventListener { get; set; }
 		public long StartMessageFromRollbackDurationInSec { get; set; }
         public ISchema Schema { get; set; }
 		public int ReceiverQueueSize { get; set; } = 1000;

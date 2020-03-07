@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;
 using System.Text;
@@ -14,15 +13,13 @@ using Samples.Reader;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 
-namespace Producer
+namespace Samples
 {
     class Program
     {
@@ -47,17 +44,19 @@ namespace Producer
                 .EnableBatching(false)
                 .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
-
-            var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("Students")
-                .Schema(jsonSchema)
-                .ReaderListener(new ReaderMessageListener())
-                .Topic("students")
-                .ReaderConfigurationData;
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Producer");
             var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
 
+
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("Staff")
+                .Schema(jsonSchema)
+                .ReaderListener(new ReaderMessageListener())
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .EventListener(new ConsumerEventListener())
+                .ReaderConfigurationData;
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("Staff")
                 .ForceTopicCreation(false)
@@ -69,10 +68,10 @@ namespace Producer
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
-            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
-            //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+            pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
 
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");

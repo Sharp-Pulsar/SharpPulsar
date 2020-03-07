@@ -38,7 +38,7 @@ namespace SharpPulsar.Akka
             {
                 foreach (var c in Context.GetChildren())
                 {
-                    c.Tell(u);
+                    //c.Tell(u);
                 }
             });
             Stash.UnstashAll();

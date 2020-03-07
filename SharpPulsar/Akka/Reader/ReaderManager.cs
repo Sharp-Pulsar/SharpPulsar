@@ -1,7 +1,5 @@
-﻿using System;
-using Akka.Actor;
+﻿using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Reader
@@ -14,18 +12,17 @@ namespace SharpPulsar.Akka.Reader
         {
             _network = network;
             _config = configuration;
-            Become(() => Init(configuration));
+            Receive<NewReader>(NewReader);
+            ReceiveAny(x =>
+            {
+                Context.System.Log.Info($"{x.GetType().Name} not supported");
+            });
         }
         public static Props Prop(ClientConfigurationData clientConfiguration, IActorRef network)
         {
             return Props.Create(() => new ReaderManager(clientConfiguration, network));
         }
-        private void Open()
-        {
-            Receive<NewReader>(NewReader);
-            Stash.UnstashAll();
-        }
-
+        
         private void NewReader(NewReader reader)
         {
             var schema = reader.ReaderConfiguration.Schema;
@@ -34,15 +31,6 @@ namespace SharpPulsar.Akka.Reader
             Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network));
         }
         
-        private void Init(ClientConfigurationData configuration)
-        {
-            Receive<TcpSuccess>(s =>
-            {
-                Console.WriteLine($"Pulsar handshake completed with {s.Name}");
-                Become(Open);
-            });
-            ReceiveAny(_ => Stash.Stash());
-        }
         public IStash Stash { get; set; }
     }
 }

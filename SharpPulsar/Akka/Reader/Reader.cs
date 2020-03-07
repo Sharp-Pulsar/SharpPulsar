@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
@@ -12,7 +13,6 @@ namespace SharpPulsar.Akka.Reader
 {
     public class Reader: ReceiveActor
     {
-        private long _readerid;
         private IReaderListener _readerListener;
         public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network)
         {
@@ -30,6 +30,7 @@ namespace SharpPulsar.Akka.Reader
             consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
             consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
             consumerConfiguration.Schema = readerConfiguration.Schema;
+            consumerConfiguration.ConsumerEventListener = readerConfiguration.EventListener;
             
             if(readerConfiguration.StartMessageId != null)
                 consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
@@ -52,7 +53,7 @@ namespace SharpPulsar.Akka.Reader
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName,
-                consumerConfiguration, _readerid++, network, true, partitionIdx, SubscriptionMode.NonDurable));
+                consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable));
             Receive<ConsumedMessage>(m =>
             {
                 _readerListener.Received(m.Message);
