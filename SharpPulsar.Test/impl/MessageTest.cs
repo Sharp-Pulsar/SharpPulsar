@@ -35,9 +35,9 @@ namespace SharpPulsar.Test.Impl
 		public void TestMessageImplReplicatedInfo()
 		{
 			var @from = "ClusterNameOfReplicatedFrom";
-			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
-			var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var builder = new MessageMetadata {ReplicatedFrom = @from};
+            var payload = new byte[0];
+			var msg = Message.Create(builder, payload, SchemaFields.Bytes, "test");
 
 			Assert.True(msg.Replicated);
 			Assert.Equal(@from, msg.ReplicatedFrom);
@@ -45,9 +45,9 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public  void TestMessageImplNoReplicatedInfo()
 		{
-			var builder = MessageMetadata.NewBuilder();
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var builder = new MessageMetadata();
+            var payload = new byte[0];
+			var msg = Message.Create(builder, payload, SchemaFields.Bytes, "test");
 
 			Assert.False(msg.Replicated);
 			Assert.True(msg.ReplicatedFrom.Length == 0);
@@ -57,11 +57,11 @@ namespace SharpPulsar.Test.Impl
 		{
 			var @from = "ClusterNameOfReplicatedFromForTopicMessage";
 			var topicName = "myTopic";
-			var builder = MessageMetadata.NewBuilder().SetReplicatedFrom(@from);
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var builder = new MessageMetadata {ReplicatedFrom = @from};
+            var payload = new byte[0];
+			var msg = Message.Create(builder, payload, SchemaFields.Bytes, topicName);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
-			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
+			var topicMessage = new TopicMessageImpl(topicName, topicName, msg);
 
 			Assert.True(topicMessage.Replicated);
 			Assert.Equal(@from, msg.ReplicatedFrom);
@@ -70,11 +70,11 @@ namespace SharpPulsar.Test.Impl
 		public void TestTopicMessageImplNoReplicatedInfo()
 		{
 			var topicName = "myTopic";
-			var builder = MessageMetadata.NewBuilder();
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var builder = new MessageMetadata();
+            var payload = new byte[0];
+			var msg = Message.Create(builder, payload, SchemaFields.Bytes, topicName);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
-			var topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
+			var topicMessage = new TopicMessageImpl(topicName, topicName, msg);
 
 			Assert.False(topicMessage.Replicated);
 			Assert.True(topicMessage.ReplicatedFrom.Length == 0);

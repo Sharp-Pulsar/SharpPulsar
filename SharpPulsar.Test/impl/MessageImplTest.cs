@@ -34,39 +34,41 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
 		public void TestGetSequenceIdNotAssociated()
 		{
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-			var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+			var builder = new MessageMetadata();
+            var payload = new byte[0];
+			var msg = Message.Create(builder, payload, SchemaFields.Bytes, "test");
 
-			Assert.Equal(msg.SequenceId, -1);
+			Assert.Equal(msg.SequenceId, 0);
 		}
 		[Fact]
 		public void TestGetSequenceIdAssociated()
 		{
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().SetSequenceId(1234);
+			var builder = new MessageMetadata();
+            builder.SequenceId = (1234);
 
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var payload = new byte[0];
+            var msg = Message.Create(builder, payload, SchemaFields.Bytes, "tests");
 
 			Assert.Equal(1234, msg.SequenceId);
 		}
 		[Fact]
 		public void TestGetProducerNameNotAssigned()
 		{
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
+			var builder = new MessageMetadata();
 
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+            var payload = new byte[0];
+            var msg = Message.Create(builder, payload, SchemaFields.Bytes, "tests");
 
 			Assert.Null(msg.ProducerName);
 		}
 		[Fact]
 		public void TestGetProducerNameAssigned()
 		{
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().SetProducerName("test-producer");
+            var builder = new MessageMetadata {ProducerName = "test-producer"};
 
-            var payload = Unpooled.WrappedBuffer(new byte[0]);
-            var msg = Message<sbyte[]>.Create(builder, payload, SchemaFields.Bytes);
+
+            var payload = new byte[0];
+            var msg = Message.Create(builder, payload, SchemaFields.Bytes, "Tests");
 
 			Assert.Equal("test-producer", msg.ProducerName);
 		}

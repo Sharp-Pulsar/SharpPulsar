@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
 using System.Text;
-using System.Text.Json;
 using Avro;
-using DotNetty.Buffers;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Shared;
 using Xunit;
@@ -32,8 +27,7 @@ using Xunit;
 namespace SharpPulsar.Test.Impl.schema
 {
     using Bar = SchemaTestUtils.Bar;
-	using DerivedFoo = SchemaTestUtils.DerivedFoo;
-	using Foo = SchemaTestUtils.Foo;
+    using Foo = SchemaTestUtils.Foo;
 	using NestedBar = SchemaTestUtils.NestedBar;
 	using NestedBarList = SchemaTestUtils.NestedBarList;
 
@@ -42,7 +36,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullSchema()
 		{
-			var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+			var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 			Assert.Equal(SchemaType.Json,jsonSchema.SchemaInfo.Type);
 			
 			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
@@ -68,7 +62,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullSchema()
 		{
-            var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
 			Assert.Equal(SchemaType.Json, jsonSchema.SchemaInfo.Type);
 			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
 			Assert.Contains("SharpPulsar.Test.Impl.schema", schemaJson);
@@ -84,7 +78,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullEncodeAndDecode()
 		{
-			var jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+			var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
 
 			var bar = new Bar {Field1 = true};
 
@@ -98,8 +92,8 @@ namespace SharpPulsar.Test.Impl.schema
 			var bytes2 = jsonSchema.Encode(foo2);
 			Assert.True(bytes2.Length > 0);
 
-			var object1 = jsonSchema.Decode(bytes1);
-			var object2 = jsonSchema.Decode(bytes2);
+			var object1 = (Foo)jsonSchema.Decode(bytes1, typeof(Foo));
+			var object2 = (Foo)jsonSchema.Decode(bytes2, typeof(Foo));
 
 			Assert.Equal(foo1.Color,object1.Color);
             Assert.Equal(foo1.Field1, object1.Field1);
@@ -110,7 +104,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullEncodeAndDecode()
 		{
-			JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 
 			var foo1 = new Foo
 			{
@@ -123,7 +117,7 @@ namespace SharpPulsar.Test.Impl.schema
 			var foo2 = new Foo {Field1 = "foo2", Field2 = "bar2"};
 
             sbyte[] bytes1 = jsonSchema.Encode(foo1);
-			Foo object1 = jsonSchema.Decode(bytes1);
+			Foo object1 = (Foo)jsonSchema.Decode(bytes1, typeof(Foo));
 			Assert.True(bytes1.Length > 0);
 			Assert.Equal(foo1.Field1, object1.Field1);
 
@@ -143,7 +137,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullNestedClasses()
 		{
-			JsonSchema<NestedBar> jsonSchema = JsonSchema<NestedBar>.Of(ISchemaDefinition<NestedBar>.Builder().WithPojo(typeof(NestedBar)).Build());
+			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).Build());
 			//JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(typeof(NestedBarList)).Build());
 
             var bar = new Bar {Field1 = true};
@@ -152,7 +146,7 @@ namespace SharpPulsar.Test.Impl.schema
 
             sbyte[] bytes = jsonSchema.Encode(nested);
 			Assert.True(bytes.Length > 0);
-			Assert.Equal( nested.Field1, jsonSchema.Decode(bytes).Field1);
+			Assert.Equal( nested.Field1, ((NestedBar)jsonSchema.Decode(bytes, typeof(NestedBar))).Field1);
 
             List<Bar> list = new List<Bar>{ bar};
             var nestedList = new NestedBarList {Field1 = true, ListBar = list};
@@ -165,7 +159,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullNestedClasses()
 		{
-			JsonSchema<NestedBar> jsonSchema = JsonSchema<NestedBar>.Of(ISchemaDefinition<NestedBar>.Builder().WithPojo(typeof(NestedBar)).WithAlwaysAllowNull(false).Build());
+			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).WithAlwaysAllowNull(false).Build());
 			//JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(typeof(NestedBarList)).WithAlwaysAllowNull(false).Build());
 
             var bar = new Bar {Field1 = true};
@@ -174,7 +168,7 @@ namespace SharpPulsar.Test.Impl.schema
 
             sbyte[] bytes = jsonSchema.Encode(nested);
 			Assert.True(bytes.Length > 0);
-			Assert.Equal( nested.Field1, jsonSchema.Decode(bytes).Field1);
+			Assert.Equal( nested.Field1, ((NestedBar)jsonSchema.Decode(bytes, typeof(NestedBar))).Field1);
 
 			List<Bar> list = new List<Bar> { bar };
             var nestedList = new NestedBarList {Field1 = true, ListBar = list};
@@ -188,24 +182,23 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullDecodeWithInvalidContentWithPojo()
 		{
-		    JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-			Assert.Throws<AvroException>(()=>jsonSchema.Decode(new sbyte[0]));
+		    JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
+			Assert.Throws<AvroException>(()=>jsonSchema.Decode(new sbyte[0], typeof(Foo)));
 		}
         
 		[Fact]
 		public void TestDecodeByteBuf()
 		{
-			JsonSchema<Foo> jsonSchema = JsonSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 
             var foo1 = new Foo {Field1 = "foo1", Field2 = "bar1", Field4 = new Bar(), FieldUnableNull = "notNull"};
 
             var foo2 = new Foo {Field1 = "foo2", Field2 = "bar2"};
 
             sbyte[] bytes1 = jsonSchema.Encode(foo1);
-			var byteBuf = UnpooledByteBufferAllocator.Default.Buffer(bytes1.Length);
-			byteBuf.WriteBytes((byte[])(object)bytes1);
+			var byteBuf = (byte[])(object)bytes1;
 			Assert.True(bytes1.Length > 0);
-			Assert.Equal( foo1.Field1, jsonSchema.Decode(byteBuf).Field1);
+			Assert.Equal(foo1.Field1, ((Foo)jsonSchema.Decode(byteBuf, typeof(Foo))).Field1);
 
 		}
 	}

@@ -43,18 +43,17 @@ namespace SharpPulsar.Test.Impl.schema
 			TestBytesSchema(SchemaFields.Bytes);
 		}
 
-		private void TestBytesSchema(ISchema<sbyte[]> schema)
+		private void TestBytesSchema(ISchema schema)
 		{
 			var data = (sbyte[])(object)Encoding.UTF8.GetBytes("hello world");
 
 			var serializedData = schema.Encode(data);
 			Assert.Same(data, serializedData);
 
-			var deserializedData = schema.Decode(serializedData);
+			var deserializedData = (sbyte[])schema.Decode(serializedData, typeof(sbyte[]));
             Assert.Same(data, deserializedData);
-			var byteBuf = UnpooledByteBufferAllocator.Default.Buffer(deserializedData.Length);
-			byteBuf.WriteBytes((byte[])(object)deserializedData);
-            var getbytes = ((BytesSchema) schema).Decode(byteBuf);
+			var byteBuf = deserializedData;
+            var getbytes = (sbyte[])schema.Decode(byteBuf, typeof(sbyte[]));
             var bystring = Encoding.UTF8.GetString((byte[])(object)getbytes);
 			Assert.Equal("hello world", bystring);
 			//Assert.Equal(data, getbytes);
