@@ -7,6 +7,7 @@ The library is a work in progress!
 
 ## Note
 JsonSchema is basically AvroSchema underneath!
+
 Supported pulsar cluster versions: 2.5+
 
 ### Getting Started
