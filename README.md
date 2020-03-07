@@ -17,4 +17,5 @@ What you can try:
 - [X] Automatic reconnect
 - [X] Producer
 - [X] Consumer
+- [X] Reader
 - [X] Schema Registration
