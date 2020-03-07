@@ -9,7 +9,7 @@ The library is a work in progress!
 JsonSchema is basically AvroSchema underneath!
 
 ### Getting Started
-Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample)
+Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 What you can try:
 - [X] Service discovery
 - [X] Automatic reconnect
