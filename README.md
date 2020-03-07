@@ -5,4 +5,14 @@ The goal is to match java client features so that .Net developers lack nothing!
 
 The library is a work in progress!
 
-More soon!
+## Note
+JsonSchema is basically AvroSchema underneath!
+
+### Getting Started
+Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample)
+What you can try:
+- [X] Service discovery
+- [X] Automatic reconnect
+- [X] Producer
+- [X] Consumer
+- [X] Schema Registration
