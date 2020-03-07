@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public abstract bool SupportSchemaVersioning();
 		public abstract sbyte[] Encode(object message);
-		public abstract void Validate(sbyte[] message);
+		public abstract void Validate(sbyte[] message, Type returnType);
 
 		/// <summary>
 		/// Check if the message read able length length is a valid object for this schema.
@@ -56,7 +56,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(IByteBuffer byteBuf)
+		public virtual void Validate(byte[] byteBuf, Type returnType)
 		{
 			throw new SchemaSerializationException("This method is not supported");
 		}
@@ -67,7 +67,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract object Decode(IByteBuffer byteBuf, Type returnType);
+		public abstract object Decode(byte[] byteBuf, Type returnType);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual object Decode(IByteBuffer byteBuf, sbyte[] schemaVersion, Type returnType)
+		public virtual object Decode(byte[] byteBuf, sbyte[] schemaVersion, Type returnType)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf, returnType);

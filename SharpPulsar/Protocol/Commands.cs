@@ -853,7 +853,7 @@ namespace SharpPulsar.Protocol
 			}
 		}
 
-		public static byte[] DeSerializeSingleMessageInBatch(byte[] uncompressedPayload, SingleMessageMetadata singleMessageMetadataBuilder, int index, int batchSize)
+		public static byte[] DeSerializeSingleMessageInBatch(byte[] uncompressedPayload, SingleMessageMetadata singleMessageMetadata, int index, int batchSize)
         {
             /*using var stream = new MemoryStream(uncompressedPayload.Array);
 

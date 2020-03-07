@@ -70,15 +70,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 
         public override bool RequireFetchingSchemaInfo()
         {
-            throw new System.NotImplementedException();
+            return true;
         }
 
         public override bool SupportSchemaVersioning()
         {
-            throw new System.NotImplementedException();
+            return true;
         }
 
-        public override void Validate(sbyte[] message)
+        public override void Validate(sbyte[] message, Type returnType)
         {
             throw new System.NotImplementedException();
         }

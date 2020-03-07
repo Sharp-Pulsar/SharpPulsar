@@ -1,9 +1,11 @@
 ﻿
+using System.Buffers;
+
 namespace SharpPulsar.Akka.Consumer
 {
     public class MessageReceived
     {
-        public MessageReceived(long consumerId, MessageIdReceived messageId, byte[] data, int redeliveryCount)
+        public MessageReceived(long consumerId, MessageIdReceived messageId, ReadOnlySequence<byte> data, int redeliveryCount)
         {
             ConsumerId = consumerId;
             MessageId = messageId;
@@ -13,7 +15,7 @@ namespace SharpPulsar.Akka.Consumer
 
         public long ConsumerId { get; }
         public MessageIdReceived MessageId { get; }
-        public byte[] Data { get; }
+        public ReadOnlySequence<byte> Data { get; }
         public int RedeliveryCount { get; }
     }
 

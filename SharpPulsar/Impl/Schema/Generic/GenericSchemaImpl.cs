@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Schema.Generic
         public abstract ISchema Json(Type pojo);
         public abstract override bool RequireFetchingSchemaInfo();
 		public abstract override bool SupportSchemaVersioning();
-		public abstract override void Validate(sbyte[] message);
+		public abstract override void Validate(sbyte[] message, Type returnType);
 
 
         // the flag controls whether to use the provided schema as reader schema

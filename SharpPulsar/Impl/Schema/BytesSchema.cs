@@ -88,9 +88,9 @@ namespace SharpPulsar.Impl.Schema
 			return (sbyte[])message;
 		}
 
-        public override void Validate(sbyte[] message)
+        public override void Validate(sbyte[] message, Type returnType)
         {
-            throw new System.NotImplementedException();
+            
         }
 
         public override object Decode(sbyte[] bytes, Type returnType)
@@ -98,17 +98,13 @@ namespace SharpPulsar.Impl.Schema
 			return bytes;
 		}
 
-		public override object Decode(IByteBuffer byteBuf, Type returnType)
+		public override object Decode(byte[] byteBuf, Type returnType)
 		{
 			if (byteBuf == null)
 			{
 				return null;
 			}
-			int size = byteBuf.ReadableBytes;
-			var bytes = new sbyte[size];
-
-			byteBuf.ReadBytes((byte[])(object)bytes, 0, size);
-			return Convert.ChangeType(bytes, returnType);
+			return Convert.ChangeType(byteBuf, returnType);
 		}
 
 	}

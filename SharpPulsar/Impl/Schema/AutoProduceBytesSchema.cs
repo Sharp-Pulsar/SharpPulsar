@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			EnsureSchemaInitialized();
 
-			_schema.Validate(message);
+			_schema.Validate(message, null);
 		}
 
 		public sbyte[] Encode(object message)
@@ -81,7 +81,7 @@ namespace SharpPulsar.Impl.Schema
 			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				_schema.Validate((sbyte[])message);
+				_schema.Validate((sbyte[])message, null);
 			}
 
 			return (sbyte[])message;
@@ -94,7 +94,7 @@ namespace SharpPulsar.Impl.Schema
 			if (_requireSchemaValidation)
 			{
 				// verify the message can be detected by the underlying schema
-				_schema.Decode(bytes, schemaVersion);
+				_schema.Decode(bytes, schemaVersion, typeof(sbyte[]));
 			}
 
 			return bytes;

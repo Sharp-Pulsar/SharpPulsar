@@ -119,25 +119,25 @@ namespace SharpPulsar.Impl.Schema
 		}
 
 		public override bool RequireFetchingSchemaInfo()
-		{
-			throw new NotImplementedException();
-		}
+        {
+            return true;
+        }
 
 		public override bool SupportSchemaVersioning()
 		{
-			throw new NotImplementedException();
+			return true;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(sbyte[] message, Type returnType)
 		{
 			throw new NotImplementedException();
 		}
         
-		public override object Decode(IByteBuffer byteBuf, Type returnType)
+		public override object Decode(byte[] byteBuf, Type returnType)
 		{
             if (Reader == null)
                 Reader = new GenericAvroReader(Schema, new sbyte[] { 0 });
-            return Reader.Read(byteBuf.Array, returnType);
+            return Reader.Read(byteBuf, returnType);
 		}
 
 	}

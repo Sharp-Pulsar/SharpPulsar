@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -14,7 +15,6 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class PatternMultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
-        private long _requestid;
         private IActorRef _network;
         private Regex _topicsPattern;
         private IMessageListener _messageListener;
@@ -28,7 +28,7 @@ namespace SharpPulsar.Akka.Consumer
             _messageListener = consumer.MessageListener;
             _topicsPattern = consumer.TopicsPattern;
             var nameSpace = GetNameSpaceFromPattern(consumer.TopicsPattern);
-            var requestId = _requestid++;
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
             var payload = new Payload(request, requestId, "GetTopicsOfNamespace");
             _network.Tell(payload);

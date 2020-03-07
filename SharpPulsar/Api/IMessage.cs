@@ -202,6 +202,8 @@ namespace SharpPulsar.Api
 		/// @since 2.4.0 </summary>
 		/// <returns> the name of cluster, from which the message is replicated. </returns>
 		string ReplicatedFrom {get;}
-	}
+
+        T ToTypeOf<T>();
+    }
 
 }

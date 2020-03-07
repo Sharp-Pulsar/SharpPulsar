@@ -1,8 +1,6 @@
 ﻿using System;
 using SharpPulsar.Api.Schema;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl;
-using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,9 +40,9 @@ namespace SharpPulsar.Api
 		/// </summary>
 		/// <param name="message"> the messages to verify </param>
 		/// <exception cref="Exceptions.SchemaSerializationException"> if it is not a valid message </exception>
-		virtual void Validate(sbyte[] message)
+		virtual void Validate(sbyte[] message, Type returnType)
 		{
-			Decode(message);
+			Decode(message, returnType);
 		}
 
 		/// <summary>
@@ -90,10 +88,10 @@ namespace SharpPulsar.Api
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes)
+		virtual object Decode(sbyte[] bytes, Type returnType)
 		{
 			// use `null` to indicate ignoring schema version
-			return Decode(bytes, null);
+			return Decode(bytes, null, returnType);
 		}
         
 		/// <summary>
@@ -104,10 +102,10 @@ namespace SharpPulsar.Api
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion, Type returnType)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return Decode(bytes);
+			return Decode(bytes, returnType);
 		}
 
 		/// <returns> an object that represents the Schema associated metadata </returns>

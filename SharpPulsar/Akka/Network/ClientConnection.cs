@@ -173,7 +173,7 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.Message:
                             var msg = cmd.Message;
-                            //_manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), cmd.Message, (int)msg.RedeliveryCount));
+                            _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount));
                             break;
                         case BaseCommand.Type.Success:
                             var s = cmd.Success;

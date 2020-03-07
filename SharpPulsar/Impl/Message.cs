@@ -212,34 +212,33 @@ namespace SharpPulsar.Impl
             }
 		}
 
-		public object Value
-		{
-			get
+        public T ToTypeOf<T>()
+        {
+            // check if the schema passed in from client supports schema versioning or not
+            // this is an optimization to only get schema version when necessary
+            if (_schema.SupportSchemaVersioning())
             {
-                // check if the schema passed in from client supports schema versioning or not
-                // this is an optimization to only get schema version when necessary
-                if (_schema.SupportSchemaVersioning())
+                var schemaversion = SchemaVersion;
+                if (schemaversion == null)
                 {
-                    var schemaversion = SchemaVersion;
-                    if (null == schemaversion)
-                    {
-                        return _schema.Decode(Data);
-                    }
-
-                    return _schema.Decode(Data, schemaversion);
+                    return (T)_schema.Decode(Data, typeof(T));
                 }
 
-                return _schema.Decode(Data);
+                return (T)_schema.Decode(Data, schemaversion, typeof(T));
             }
+
+            return (T)_schema.Decode(Data, typeof(T));
 		}
-		public long SequenceId
+
+        public object Value => Data;
+
+        public long SequenceId
 		{
 			get
             {
                 if (Metadata is null)
                     throw new NullReferenceException();
                 return (long)Metadata.SequenceId;
-				return -1;
 			}
 		}
 

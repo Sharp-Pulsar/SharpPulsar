@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -53,7 +54,7 @@ namespace SharpPulsar.Akka.Consumer
                     break;
                 case ConsumerType.Single:
                     var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);
-                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, _consumerid++, _network, false, partitionIndex, SubscriptionMode.Durable), "SingleTopic");
+                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable), "SingleTopic");
                     break;
                 default:
                     Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Are you high? How am I suppose to know the consumer type you want to create? ;)!")));

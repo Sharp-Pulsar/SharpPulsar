@@ -4,10 +4,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
-using Avro;
-using Avro.Generic;
-using Avro.Specific;
-using DotNetty.Buffers;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Utilities.Encoders;
 using SharpPulsar.Api.Schema;
@@ -16,7 +12,6 @@ using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -85,35 +80,16 @@ namespace SharpPulsar.Impl.Schema
 			return _reader.Read((byte[])(object)bytes, returnType);
 		}
 
-		public object Decode(byte[] bytes, sbyte[] schemaVersion, Type returnType)
-		{
-			try
-			{
-				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(bytes, returnType);
-			}
-			catch (System.Exception e)
-			{
-				if (e is AvroTypeException)
-				{
-					throw new SchemaSerializationException(e);
-				}
-				Log.LogError("Can't get generic schema for topic {} schema version {}", _schemaInfoProvider.TopicName, Hex.Encode((byte[])(object)schemaVersion), e);
-				throw new System.Exception("Can't get generic schema for topic " + _schemaInfoProvider.TopicName);
-			}
-
-        }
-
-		public override object Decode(IByteBuffer byteBuf, Type returnType)
+		
+		public override object Decode(byte[] msg, Type returnType)
         {
-            var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
 			return _reader.Read(msg, returnType);
 		}
 
-		public override object Decode(IByteBuffer byteBuf, sbyte[] schemaVersion, Type returnType)
+		public override object Decode(byte[] msg, sbyte[] schemaVersion, Type returnType)
 		{
 			try
 			{
-                var msg = (byte[])(object)byteBuf.GetIoBuffers(byteBuf.ReaderIndex, byteBuf.ReadableBytes).ToArray();
 				return _readerCache[BytesSchemaVersion.Of(schemaVersion)].Read(msg, returnType);
             }
 			catch (System.Exception e)

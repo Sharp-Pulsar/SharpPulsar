@@ -109,6 +109,10 @@ namespace SharpPulsar.Impl
         public virtual bool Replicated => _msg.Replicated;
 
         public virtual string ReplicatedFrom => _msg.ReplicatedFrom;
+        public T ToTypeOf<T>()
+        {
+            throw new System.NotImplementedException();
+        }
 
         public virtual IMessage Message => _msg;
     }

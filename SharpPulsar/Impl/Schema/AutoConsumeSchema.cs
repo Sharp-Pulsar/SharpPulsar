@@ -57,7 +57,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			EnsureSchemaInitialized();
 
-			_schema.Validate(message);
+			_schema.Validate(message, null);
 		}
 
 		public bool SupportSchemaVersioning()

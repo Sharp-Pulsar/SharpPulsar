@@ -13,7 +13,12 @@ namespace SharpPulsar.Akka.Network
             var o = ProtoBuf.Serializer.Deserialize<BaseCommand>(ms);
             return o;
         }
-
+        public static T Deserialize<T>(ReadOnlySequence<byte> sequence)
+        {
+            using var ms = new MemoryStream(sequence.ToArray());
+            var o = ProtoBuf.Serializer.Deserialize<T>(ms);
+            return o;
+        }
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)
         {
             var commandBytes = GetBytes(command);
@@ -50,7 +55,7 @@ namespace SharpPulsar.Akka.Network
             var checksum = DotCrc32C.Calculate(sb.Build());
 
             return sb.Prepend(ToBigEndianBytes(checksum))
-                .Prepend(new byte[] { 0x0e, 0x01 })
+                .Prepend(Constants.MagicNumber)
                 .Prepend(commandBytes)
                 .Prepend(commandSizeBytes)
                 .Prepend(ToBigEndianBytes((uint)sb.Length))

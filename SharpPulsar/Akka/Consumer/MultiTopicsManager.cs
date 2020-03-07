@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -16,9 +17,7 @@ namespace SharpPulsar.Akka.Consumer
     {
         private ClientConfigurationData _clientConfiguration;
         private ConsumerConfigurationData _consumerConfiguration;
-        private long _requestid;
         private IActorRef _network;
-        private long _consumerid;
         private IMessageListener _listener;
         private IConsumerEventListener _event;
         private bool _hasParentConsumer;
@@ -33,7 +32,7 @@ namespace SharpPulsar.Akka.Consumer
             _event = configuration.ConsumerEventListener;
             foreach (var topic in configuration.TopicNames)
             {
-                var requestId = _requestid++;
+                var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
                 var request = Commands.NewPartitionMetadataRequest(topic, requestId);
                 var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
                 _pendingLookupRequests.Add(requestId, pay);
@@ -44,7 +43,7 @@ namespace SharpPulsar.Akka.Consumer
                 for (var i = 0; i < p.Partition; i++)
                 {
                     var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, _consumerid++, _network, true, i, SubscriptionMode.Durable));
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
                 }
 
                 _pendingLookupRequests.Remove(p.RequestId);
