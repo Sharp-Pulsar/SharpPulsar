@@ -26,7 +26,7 @@ namespace SharpPulsar.Akka.Network
                 connections.Remove(f.Name);
                 Console.WriteLine($"TCP connection failure from {f.Name}");
             });
-            Receive<TcpSuccess>(f =>
+            Receive<ConnectedServerInfo>(f =>
             {
                 try
                 {

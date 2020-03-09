@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +31,7 @@ namespace SharpPulsar.Impl
 
 		public IBatchMessageContainer Build()
 		{
-			return new BatchMessageKeyBasedContainer();
+			return new BatchMessageKeyBasedContainer(Commands.DefaultMaxMessageSize);
 		}
 	}
 

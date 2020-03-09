@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(new MessageMetadata());
-				_batchedMessageMetadataAndPayload = PooledByteBufferAllocator.Default.Buffer(Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)).Array;
+				_batchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)];
 			}
 
 			CurrentBatchSizeBytes += msg.Payload.Length;

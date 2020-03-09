@@ -47,8 +47,9 @@ namespace SharpPulsar.Akka
         private void NetworkSetup()
         {
             _network = Context.ActorOf(NetworkManager.Prop(Self, _config), "NetworkManager");
-            Receive<TcpSuccess>(x =>
+            Receive<ConnectedServerInfo>(s =>
             {
+                Context.System.Log.Info($"Connected to Pulsar Server[{s.Version}]. Setting up managers");
                 Context.ActorOf(ProducerManager.Prop(_config, _network), "ProducerManager");
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
                 Context.ActorOf(ReaderManager.Prop(_config, _network), "ReaderManager");

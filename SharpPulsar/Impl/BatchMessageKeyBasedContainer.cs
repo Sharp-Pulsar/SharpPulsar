@@ -37,7 +37,12 @@ namespace SharpPulsar.Impl
 	/// [(k1, v1), (k1, v2), (k1, v3)], [(k2, v1), (k2, v2), (k2, v3)], [(k3, v1), (k3, v2), (k3, v3)]
 	/// </summary>
 	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
-	{
+    {
+        private static int _maxMessageSize;
+        public BatchMessageKeyBasedContainer(int maxMessageSize)
+        {
+            _maxMessageSize = maxMessageSize;
+        }
 		public override (long LastSequenceIdPushed, bool BatchFul) Add(Message msg)
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
@@ -178,7 +183,7 @@ namespace SharpPulsar.Impl
 					{
 						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					BatchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, Commands.DefaultMaxMessageSize)];
+					BatchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, _maxMessageSize)];
 					
 				}
 

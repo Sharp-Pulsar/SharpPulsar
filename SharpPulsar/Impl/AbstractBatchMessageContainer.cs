@@ -30,8 +30,9 @@ namespace SharpPulsar.Impl
 	/// </summary>
 	public abstract class AbstractBatchMessageContainer : BatchMessageContainerBase
 	{
+		
 		public abstract bool MultiBatches {get;}
-		public abstract void Discard(System.Exception ex);
+		public abstract void Discard(Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
 		public abstract bool HasSameSchema(Message msg);

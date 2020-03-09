@@ -34,7 +34,9 @@ namespace Samples
                 .ServiceUrl("pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
                 .ClientConfigurationData;
+
             var pulsarSystem = new PulsarSystem(clientConfig);
+
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName("Staff")
                 .Topic("staff")

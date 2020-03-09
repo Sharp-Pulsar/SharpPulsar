@@ -42,10 +42,7 @@ namespace SharpPulsar.Protocol
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
-		public static Crc32CIntChecksum _intChecksum = new Crc32CIntChecksum();
 
-		public const short MagicCrc32C = 0x0e01;
-		private const int ChecksumSize = 4;
 		
 		public static byte[] NewConnect(string authMethodName, string authData, string libVersion)
 		{

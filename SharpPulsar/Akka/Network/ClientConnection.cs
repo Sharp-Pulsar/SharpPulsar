@@ -18,27 +18,27 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class ClientConnection: ReceiveActor, IWithUnboundedStash
+    public sealed class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
-        protected internal readonly IAuthentication Authentication;
+        internal readonly IAuthentication Authentication;
         private PulsarStream _stream;
+        private IActorRef _self;
+        private IActorRef _parent;
         private ReadOnlySequence<byte> _pong = new ReadOnlySequence<byte>(Commands.NewPong());
         private State _state;
-        protected internal EndPoint RemoteAddress;
-        protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
+        internal EndPoint RemoteAddress;
+        internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
         public IActorRef Connection;
         private Dictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new Dictionary<long, KeyValuePair<IActorRef, Payload>>();
 
-        public  int MaxMessageSize = Commands.DefaultMaxMessageSize;
-
-        protected internal string ProxyToTargetBrokerAddress;
+        internal string ProxyToTargetBrokerAddress;
         private string _remoteHostName;
 
         private ILoggingAdapter Log;
         private ClientConfigurationData _conf;
         private IActorRef _manager;
         // Added for mutual authentication.
-        protected internal IAuthenticationDataProvider AuthenticationDataProvider;
+        internal IAuthenticationDataProvider AuthenticationDataProvider;
 
         public enum State
         {
@@ -50,6 +50,8 @@ namespace SharpPulsar.Akka.Network
         }
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
+            _self = Self;
+            RemoteHostName = Dns.GetHostEntry(((IPEndPoint) endPoint).Address).HostName;
             _conf = conf;
             _manager = manager;
             Connection = Self;
@@ -59,23 +61,22 @@ namespace SharpPulsar.Akka.Network
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
             Authentication = conf.Authentication;
             _state = State.None;
-            //this.keepAliveIntervalSeconds = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToSecs(conf.KeepAliveIntervalSeconds);
-            //Context.System.Tcp().Tell(new Tcp.Connect(endPoint));
             var connector = new Connector(conf);
             _stream = new PulsarStream(connector.Connect((IPEndPoint)endPoint));
-            Context.Parent.Tell(new TcpSuccess(conf.ServiceUrl));
+            _parent = Context.Parent;
+            //Context.Parent.Tell(new TcpSuccess(conf.ServiceUrl));
             Receive<Payload>(p =>
             {
-                _requests.Add(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
+                _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                 _ = _stream.Send(new ReadOnlySequence<byte>(p.Bytes));
             });
             Receive<ConnectionCommand>(p =>
             {
                 _ = _stream.Send(new ReadOnlySequence<byte>(p.Command));
             });
+            //if we got here, lets assume connection was successful
             var c = new ConnectionCommand(NewConnectCommand());
             _ =_stream.Send(new ReadOnlySequence<byte>(c.Command));
-           // Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
 
         }
 
@@ -99,22 +100,12 @@ namespace SharpPulsar.Akka.Network
             Console.WriteLine($"Unhandled {message.GetType()} in {Self.Path}");
         }
 
-		private void HandlePong(CommandPong cmdPong)
-		{
-            // Immediately reply success to ping requests
-            if (Log.IsEnabled(LogLevel.DebugLevel))
-            {
-                Log.Debug($"[{RemoteAddress}] Replying back to pong message");
-            }
-            //Self.Tell(new ConnectionCommand(Commands.NewPing()));
-        }
-        
 		public byte[] NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
-			AuthenticationDataProvider = Authentication.GetAuthData(_conf.ServiceUrl);
+			AuthenticationDataProvider = Authentication.GetAuthData(RemoteHostName);
 			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthDataShared(Shared.Auth.AuthDataShared.InitAuthData));
             var assemblyName = Assembly.GetCallingAssembly().GetName();
             var auth = new AuthData {auth_data = ((byte[]) (object) authData.Bytes)};
@@ -136,12 +127,12 @@ namespace SharpPulsar.Akka.Network
 			// Immediately reply success to ping requests
 			if (Log.IsEnabled(LogLevel.DebugLevel))
 			{
-				Log.Debug($"[{RemoteAddress}] Replying back to ping message");
+				//Log.Debug($"[{RemoteAddress}] Replying back to ping message");
 			}
             _ = _stream.Send(_pong);
 		}
         
-        public virtual IPEndPoint TargetBroker
+        public IPEndPoint TargetBroker
 		{
 			set => ProxyToTargetBrokerAddress = $"{value.Address}:{value.Port:D}";
 		}
@@ -161,7 +152,8 @@ namespace SharpPulsar.Akka.Network
                     {
                         case BaseCommand.Type.Connected:
                             var c = cmd.Connected;
-                            Console.WriteLine($"Now connected: ServerVersion = {c.ServerVersion}, ProtocolVersion = {c.ProtocolVersion}");
+                            _parent.Tell(new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion, RemoteHostName), _self);
+                            Log.Info($"Now connected: ServerVersion = {c.ServerVersion}, ProtocolVersion = {c.ProtocolVersion}");
                             break;
                         case BaseCommand.Type.GetTopicsOfNamespaceResponse:
                             var ns = cmd.getTopicsOfNamespaceResponse;
@@ -228,7 +220,7 @@ namespace SharpPulsar.Akka.Network
             catch { }
         }
         
-        public virtual string RemoteHostName
+        public string RemoteHostName
 		{
 			get => _remoteHostName;
 			set => _remoteHostName = value;

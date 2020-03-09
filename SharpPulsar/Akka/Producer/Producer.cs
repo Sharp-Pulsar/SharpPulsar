@@ -38,6 +38,7 @@ namespace SharpPulsar.Akka.Producer
         private long _lastSequenceId;
         private readonly CompressionCodec _compressor;
         private readonly MessageCrypto _msgCrypto = null;
+        private ConnectedServerInfo _serverInfo;
 
         private readonly IDictionary<string, string> _metadata;
         private bool _multiSchemaMode;
@@ -94,19 +95,7 @@ namespace SharpPulsar.Akka.Producer
                 Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
 
             }
-            if (configuration.BatchingEnabled)
-            {
-                //var containerBuilder = configuration.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
-                _batchMessageContainer = new BatchMessageKeyBasedContainer
-                {
-                    TopicName = configuration.TopicName, ProducerName = _configuration.ProducerName,
-                    Compressor = _compressor
-                };
-            }
-            else
-            {
-                _batchMessageContainer = null;
-            }
+            
             if (configuration.Properties == null)
             {
                 _metadata = new Dictionary<string, string>();
@@ -124,9 +113,25 @@ namespace SharpPulsar.Akka.Producer
                 _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Sender));
 
             });
-            Receive<TcpSuccess>(s =>
+            Receive<ConnectedServerInfo>(s =>
             {
-                _listener.Log($"Pulsar handshake completed with {s.Name}");
+                if (_configuration.BatchingEnabled)
+                {
+                    //var containerBuilder = configuration.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
+                    _batchMessageContainer = new BatchMessageKeyBasedContainer(s.MaxMessageSize)
+                    {
+                        TopicName = _configuration.TopicName,
+                        ProducerName = _configuration.ProducerName,
+                        Compressor = _compressor
+                    };
+
+                }
+                else
+                {
+                    _batchMessageContainer = null;
+                }
+                _listener.Log($"Connected to Pulsar Server[{s.Version}]. Negotiating producer(s)");
+                _serverInfo = s;
                 Become(CreateProducer);
             });
             Receive<AddPublicKeyCipher>(a =>
@@ -371,10 +376,10 @@ namespace SharpPulsar.Akka.Producer
                     var compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
                     var compressedSize = compressedPayload.Length;
-                    if (compressedSize > Commands.DefaultMaxMessageSize)
+                    if (compressedSize > _serverInfo.MaxMessageSize)
                     {
                         var compressedStr = !_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
-                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{Commands.DefaultMaxMessageSize}' bytes");
+                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
                         return;
                     }
 
@@ -681,9 +686,9 @@ namespace SharpPulsar.Akka.Producer
         private OpSendMsg CreateOpSendMsg(BatchMessageKeyBasedContainer.KeyedBatch keyedBatch)
         {
             var encryptedPayload = EncryptMessage(keyedBatch.MessageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-            if (encryptedPayload.Length > Commands.DefaultMaxMessageSize)
+            if (encryptedPayload.Length > _serverInfo.MaxMessageSize)
             {
-                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Commands.DefaultMaxMessageSize + " bytes"));
+                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + _serverInfo.MaxMessageSize + " bytes"));
                 return null;
             }
 

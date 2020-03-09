@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Network
                 var u = _randomHost.Next(0, _hosts.Count);
                 _hosts.ToList()[u].Value.Forward(x);
             });
-            Receive<TcpSuccess>(x =>
+            Receive<ConnectedServerInfo>(x =>
             {
                 Context.Parent.Forward(x);
             });
@@ -73,7 +73,7 @@ namespace SharpPulsar.Akka.Network
         
         private void CreateConnections()
         {
-            Receive<TcpSuccess>(x =>
+            Receive<ConnectedServerInfo>(x =>
             {
                 Context.Parent.Forward(x);
                 Become(Ready);

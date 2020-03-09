@@ -61,6 +61,10 @@ namespace SharpPulsar.Akka.Reader
                 // it will specify the subscription position anyway
                 m.Consumer.Tell(new AckMessages(m.Message.ReceivedId));
             });
+            ReceiveAny(x =>
+            {
+
+            });
         }
 
         public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network)

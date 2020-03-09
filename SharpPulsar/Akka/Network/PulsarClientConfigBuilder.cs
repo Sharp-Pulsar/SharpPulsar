@@ -30,10 +30,6 @@ namespace SharpPulsar.Akka.Network
 	{
 		private ClientConfigurationData _conf = new ClientConfigurationData();
 
-        public ClientConfigurationData Build()
-        {
-            return _conf;
-        }
 		public PulsarClientConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = (ClientConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);

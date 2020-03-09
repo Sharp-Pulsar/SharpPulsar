@@ -50,6 +50,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
         private readonly BatchMessageId _initialStartMessageId;
+        private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly MessageCrypto _msgCrypto;
         private bool _hasParentConsumer;
@@ -59,6 +60,7 @@ namespace SharpPulsar.Akka.Consumer
 
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode)
         {
+            _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
             _listener = configuration.MessageListener;
             _createTopicIfDoesNotExist = configuration.ForceTopicCreation;
             _subscriptionName = configuration.SubscriptionName;
@@ -96,9 +98,10 @@ namespace SharpPulsar.Akka.Consumer
                 _schema = ISchema.GetSchema(schema.ToSchemaInfo());
                 NewSubscribe();
             });
-            Receive<TcpSuccess>(s =>
+            Receive<ConnectedServerInfo>(s =>
             {
-                _consumerEventListener.Log($"Pulsar handshake completed with {s.Name}");
+                _consumerEventListener.Log($"Connected to Pulsar Server[{s.Version}]. Subscribing");
+                _serverInfo = s;
                 if (_schema != null && _schema.SupportSchemaVersioning())
                 {
 
@@ -116,6 +119,7 @@ namespace SharpPulsar.Akka.Consumer
                 {
                     NewSubscribe();
                 }
+
             });
             Receive<SubscribeSuccess>(s =>
             {
@@ -496,7 +500,7 @@ namespace SharpPulsar.Akka.Consumer
             var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
             var uncompressedSize = (int)msgMetadata.UncompressedSize;
             var payloadSize = payload.Length;
-            if (payloadSize > Commands.DefaultMaxMessageSize)
+            if (payloadSize > _serverInfo.MaxMessageSize)
             {
                 // payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
                 Context.System.Log.Error($"[{_topicName}][{_subscriptionName}] Got corrupted payload message size {payloadSize} at {messageId}");
