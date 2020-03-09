@@ -13,7 +13,7 @@ namespace Samples.Consumer
         public void Received(IActorRef consumer, IMessage msg)
         {
             var students = msg.ToTypeOf<Students>();
-            Console.WriteLine($"{msg.TopicName} >> {students.Name}");
+            Console.WriteLine($"Consumer >> {students.Name}");
             if (msg.MessageId is MessageId m)
                 consumer.Tell(new AckMessage(new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex)));
             else if(msg.MessageId is BatchMessageId b)

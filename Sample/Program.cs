@@ -13,6 +13,7 @@ using Samples.Reader;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
@@ -68,7 +69,7 @@ namespace Samples
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
-            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
             pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
@@ -91,7 +92,7 @@ namespace Samples
                 {
                     var students = new Students
                     {
-                        Name = $"Ebere",
+                        Name = $"Ebere: {DateTime.Now.Millisecond}",
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };

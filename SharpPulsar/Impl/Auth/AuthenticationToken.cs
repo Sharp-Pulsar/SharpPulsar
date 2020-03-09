@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl.Auth
 	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
-		private Func<string> tokenSupplier;
+		private Func<string> _tokenSupplier;
 
 		public AuthenticationToken()
 		{
@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl.Auth
 
 		public AuthenticationToken(Func<string> tokenSupplier)
 		{
-			this.tokenSupplier = tokenSupplier;
+			this._tokenSupplier = tokenSupplier;
 		}
 
 		public void Close()
@@ -55,7 +55,7 @@ namespace SharpPulsar.Impl.Auth
 
 		public string AuthMethodName => "token";
 
-        public IAuthenticationDataProvider AuthData => new AuthenticationDataToken(tokenSupplier);
+        public IAuthenticationDataProvider AuthData => new AuthenticationDataToken(_tokenSupplier);
 
         public void Configure(string encodedAuthParamString)
 		{
@@ -63,13 +63,13 @@ namespace SharpPulsar.Impl.Auth
 			// the prefix
 			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
 			{
-				tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
+				_tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
 			}
 			else if (encodedAuthParamString.EndsWith(".key", StringComparison.Ordinal))
 			{
 				// Read token from a file
 				var filePath = encodedAuthParamString;
-				tokenSupplier = () =>
+				_tokenSupplier = () =>
 				{
 				    try
                     {
@@ -85,7 +85,7 @@ namespace SharpPulsar.Impl.Auth
 			}
 			else
 			{
-				this.tokenSupplier = () => encodedAuthParamString;
+				this._tokenSupplier = () => encodedAuthParamString;
 			}
 		}
 

@@ -35,10 +35,10 @@ namespace SharpPulsar.Impl.Auth
 	public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
-		private const long serialVersionUID = 1L;
+		private const long SerialVersionUid = 1L;
 
-		private string certFilePath;
-		private string keyFilePath;
+		private string _certFilePath;
+		private string _keyFilePath;
 
 		// Load Bouncy Castle
 		static AuthenticationTls()
@@ -52,8 +52,8 @@ namespace SharpPulsar.Impl.Auth
 
 		public AuthenticationTls(string certFilePath, string keyFilePath)
 		{
-			this.certFilePath = certFilePath;
-			this.keyFilePath = keyFilePath;
+			this._certFilePath = certFilePath;
+			this._keyFilePath = keyFilePath;
 		}
 		public void Close()
 		{
@@ -69,7 +69,7 @@ namespace SharpPulsar.Impl.Auth
 			{
 				try
 				{
-					return new AuthenticationDataTls(certFilePath, keyFilePath);
+					return new AuthenticationDataTls(_certFilePath, _keyFilePath);
 				}
 				catch (System.Exception e)
 				{
@@ -103,7 +103,7 @@ namespace SharpPulsar.Impl.Auth
 			throw new NotImplementedException();
 		}
 
-		public void Configure(IDictionary<string, string> AuthParams)
+		public void Configure(IDictionary<string, string> authParams)
 		{
 			throw new NotImplementedException();
 		}
@@ -117,14 +117,14 @@ namespace SharpPulsar.Impl.Auth
 		{
 			set
 			{
-				certFilePath = value["tlsCertFile"];
-				keyFilePath = value["tlsKeyFile"];
+				_certFilePath = value["tlsCertFile"];
+				_keyFilePath = value["tlsKeyFile"];
 			}
 		}
 
-		public virtual string CertFilePath => certFilePath;
+		public virtual string CertFilePath => _certFilePath;
 
-        public virtual string KeyFilePath => keyFilePath;
+        public virtual string KeyFilePath => _keyFilePath;
     }
 
 }

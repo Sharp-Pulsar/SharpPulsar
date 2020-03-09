@@ -8,7 +8,7 @@ namespace Samples.Reader
         public void Received(IMessage msg)
         {
             var students = msg.ToTypeOf<Students>();
-            Console.WriteLine($"{msg.TopicName} >> {students.Name}");
+            Console.WriteLine($"Reader >> {students.Name}");
         }
     }
 }
