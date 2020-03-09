@@ -33,26 +33,16 @@ namespace SharpPulsar.Impl.Conf
 	{
 		public long OperationTimeoutMs { get; set; } = 30000;
 		public long StatsIntervalSeconds { get; set; } = 60;
-
-		public int NumIoThreads { get; set; } = 1;
-		public int NumListenerThreads { get; set; } = 1;
 		public int ConnectionsPerBroker { get; set; } = 1;
 		public X509Certificate2 TrustedCertificateAuthority { get; set; }
         public bool VerifyCertificateAuthority { get; set; } = false;
         public bool VerifyCertificateName { get; set; } = false;
 
-		public bool UseTcpNoDelay { get; set; } = true;
-		public bool TlsAllowInsecureConnection { get; set; } = false;
 		public bool TlsHostnameVerificationEnable { get; set; } = false;
 		public int ConcurrentLookupRequest { get; set; } = 5000;
 		public int MaxLookupRequest { get; set; } = 50000;
 		public int MaxNumberOfRejectedRequestPerConnection { get; set; } = 50;
-		public int KeepAliveIntervalSeconds { get; set; } = 30;
-		public int ConnectionTimeoutMs { get; set; } = 10000;
-		public int RequestTimeoutMs { get; set; } = 60000;
-		public long InitialBackoffIntervalNanos { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToNanos(100);
-		public long MaxBackoffIntervalNanos { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToNanos(60);
-
+		
         private IAuthentication _authentication;
 		public IAuthentication Authentication
 		{

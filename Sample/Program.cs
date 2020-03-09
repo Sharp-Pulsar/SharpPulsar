@@ -24,6 +24,7 @@ namespace Samples
 {
     class Program
     {
+        //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
         static Task Main(string[] args)
         {
             var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
@@ -32,8 +33,6 @@ namespace Samples
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
-                .KeepAliveInterval(30, TimeUnit.SECONDS)
-                .IoThreads(1)
                 .ClientConfigurationData;
             var pulsarSystem = new PulsarSystem(clientConfig);
             var producerConfig = new ProducerConfigBuilder()
@@ -92,7 +91,7 @@ namespace Samples
                 {
                     var students = new Students
                     {
-                        Name = $"Ebere: {DateTime.Now.Millisecond}",
+                        Name = $"Ebere: {DateTimeOffset.Now.Millisecond}",
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };

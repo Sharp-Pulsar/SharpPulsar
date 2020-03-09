@@ -114,30 +114,12 @@ namespace SharpPulsar.Akka.Network
             return this;
 		}
 
-		public PulsarClientConfigBuilder IoThreads(int numIoThreads)
-		{
-			_conf.NumIoThreads = numIoThreads;
-            return this;
-		}
-
-		public PulsarClientConfigBuilder ListenerThreads(int numListenerThreads)
-		{
-			_conf.NumListenerThreads = numListenerThreads;
-            return this;
-		}
-
 		public PulsarClientConfigBuilder ConnectionsPerBroker(int connectionsPerBroker)
 		{
 			_conf.ConnectionsPerBroker = connectionsPerBroker;
             return this;
 		}
-
-		public PulsarClientConfigBuilder EnableTcpNoDelay(bool useTcpNoDelay)
-		{
-			_conf.UseTcpNoDelay = useTcpNoDelay;
-            return this;
-		}
-
+		
 		public PulsarClientConfigBuilder EnableTls(bool useTls)
 		{
 			_conf.UseTls = useTls;
@@ -147,12 +129,6 @@ namespace SharpPulsar.Akka.Network
 		public PulsarClientConfigBuilder EnableTlsHostnameVerification(bool enableTlsHostnameVerification)
 		{
 			_conf.TlsHostnameVerificationEnable = enableTlsHostnameVerification;
-            return this;
-		}
-
-		public PulsarClientConfigBuilder AllowTlsInsecureConnection(bool tlsAllowInsecureConnection)
-		{
-			_conf.TlsAllowInsecureConnection = tlsAllowInsecureConnection;
             return this;
 		}
 
@@ -177,32 +153,6 @@ namespace SharpPulsar.Akka.Network
 		public PulsarClientConfigBuilder MaxNumberOfRejectedRequestPerConnection(int maxNumberOfRejectedRequestPerConnection)
 		{
 			_conf.MaxNumberOfRejectedRequestPerConnection = maxNumberOfRejectedRequestPerConnection;
-            return this;
-		}
-
-		public PulsarClientConfigBuilder KeepAliveInterval(int keepAliveInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
-		{
-			if(keepAliveInterval < 1)
-				throw new ArgumentException("Keep Alive Interval should be greater than 0");
-			_conf.KeepAliveIntervalSeconds = (int)unit.ToSeconds(keepAliveInterval);
-            return this;
-		}
-
-		public PulsarClientConfigBuilder ConnectionTimeout(int duration, BAMCIS.Util.Concurrent.TimeUnit unit)
-		{
-			_conf.ConnectionTimeoutMs = (int)unit.ToMillis(duration);
-            return this;
-		}
-
-		public PulsarClientConfigBuilder StartingBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
-		{
-			_conf.InitialBackoffIntervalNanos = unit.ToNanos(duration);
-            return this;
-		}
-
-		public PulsarClientConfigBuilder MaxBackoffInterval(long duration, BAMCIS.Util.Concurrent.TimeUnit unit)
-		{
-			_conf.MaxBackoffIntervalNanos = unit.ToNanos(duration);
             return this;
 		}
 

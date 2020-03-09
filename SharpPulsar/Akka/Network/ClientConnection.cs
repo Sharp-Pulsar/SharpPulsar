@@ -26,7 +26,6 @@ namespace SharpPulsar.Akka.Network
         private State _state;
         protected internal EndPoint RemoteAddress;
         protected internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
-        private readonly long _keepAliveIntervalSeconds;
         public IActorRef Connection;
         private Dictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new Dictionary<long, KeyValuePair<IActorRef, Payload>>();
 
@@ -51,7 +50,6 @@ namespace SharpPulsar.Akka.Network
         }
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
-            _keepAliveIntervalSeconds = conf.KeepAliveIntervalSeconds;
             _conf = conf;
             _manager = manager;
             Connection = Self;
