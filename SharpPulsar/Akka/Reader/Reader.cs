@@ -13,7 +13,7 @@ namespace SharpPulsar.Akka.Reader
 {
     public class Reader: ReceiveActor
     {
-        private IReaderListener _readerListener;
+        private readonly IReaderListener _readerListener;
         public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network)
         {
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);

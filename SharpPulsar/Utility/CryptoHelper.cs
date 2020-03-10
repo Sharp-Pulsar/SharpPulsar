@@ -1,193 +1,130 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Encodings;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
 
 namespace SharpPulsar.Utility
 {
-    //https://gist.github.com/ststeiger/f4b29a140b1e3fd618679f89b7f3ff4a
     internal static class CryptoHelper
     {
-        /// <summary>
-        /// Export private (including public) key from MS RSACryptoServiceProvider into OpenSSH PEM string
-        /// slightly modified from https://stackoverflow.com/a/23739932/2860309
-        /// </summary>
-        /// <param name="csp"></param>
-        /// <returns></returns>
-        public static byte[] ExportPrivateKey(RSACryptoServiceProvider csp)
+
+        public static byte[] Encrypt(byte[] data, byte[] key)
         {
-            var outputStream = new StringWriter();
-            if (csp.PublicOnly) throw new ArgumentException("CSP does not contain a private key", "csp");
-            var parameters = csp.ExportParameters(true);
-            using (var stream = new MemoryStream())
+            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var keys = (RsaKeyParameters)pr.ReadObject();
+
+            // Pure mathematical RSA implementation
+            // RsaEngine eng = new RsaEngine();
+
+            // PKCS1 v1.5 paddings
+            // Pkcs1Encoding eng = new Pkcs1Encoding(new RsaEngine());
+
+            // PKCS1 OAEP paddings
+            var eng = new OaepEncoding(new RsaEngine());
+            eng.Init(true, keys);
+
+            var length = data.Length;
+            
+            var blockSize = eng.GetInputBlockSize();
+            var encryptedData = new List<byte>();
+            for (var chunkPosition = 0; chunkPosition < length; chunkPosition += blockSize)
             {
-                var writer = new BinaryWriter(stream);
-                writer.Write((byte)0x30); // SEQUENCE
-                using (var innerStream = new MemoryStream())
-                {
-                    var innerWriter = new BinaryWriter(innerStream);
-                    EncodeIntegerBigEndian(innerWriter, new byte[] { 0x00 }); // Version
-                    EncodeIntegerBigEndian(innerWriter, parameters.Modulus);
-                    EncodeIntegerBigEndian(innerWriter, parameters.Exponent);
-                    EncodeIntegerBigEndian(innerWriter, parameters.D);
-                    EncodeIntegerBigEndian(innerWriter, parameters.P);
-                    EncodeIntegerBigEndian(innerWriter, parameters.Q);
-                    EncodeIntegerBigEndian(innerWriter, parameters.DP);
-                    EncodeIntegerBigEndian(innerWriter, parameters.DQ);
-                    EncodeIntegerBigEndian(innerWriter, parameters.InverseQ);
-                    var length = (int)innerStream.Length;
-                    EncodeLength(writer, length);
-                    writer.Write(innerStream.GetBuffer(), 0, length);
-                }
-
-                var base64 = Convert.ToBase64String(stream.GetBuffer(), 0, (int)stream.Length).ToCharArray();
-                // WriteLine terminates with \r\n, we want only \n
-                outputStream.Write("-----BEGIN RSA PRIVATE KEY-----\n");
-                // Output as Base64 with lines chopped at 64 characters
-                for (var i = 0; i < base64.Length; i += 64)
-                {
-                    outputStream.Write(base64, i, Math.Min(64, base64.Length - i));
-                    outputStream.Write("\n");
-                }
-                outputStream.Write("-----END RSA PRIVATE KEY-----");
+                var chunkSize = Math.Min(blockSize, length - chunkPosition);
+                encryptedData.AddRange(eng.ProcessBlock(data, chunkPosition, chunkSize));
             }
-
-            var o = outputStream.ToString();
-            return Encoding.UTF8.GetBytes(o);
+            return encryptedData.ToArray();
         }
 
-        /// <summary>
-        /// Export public key from MS RSACryptoServiceProvider into OpenSSH PEM string
-        /// slightly modified from https://stackoverflow.com/a/28407693
-        /// </summary>
-        /// <param name="csp"></param>
-        /// <returns></returns>
-        public static byte[] ExportPublicKey(RSACryptoServiceProvider csp)
+        public static byte[] Decrypt(byte[] data, byte[] key)
         {
-            var outputStream = new StringWriter();
-            var parameters = csp.ExportParameters(false);
-            using (var stream = new MemoryStream())
-            {
-                var writer = new BinaryWriter(stream);
-                writer.Write((byte)0x30); // SEQUENCE
-                using (var innerStream = new MemoryStream())
-                {
-                    var innerWriter = new BinaryWriter(innerStream);
-                    innerWriter.Write((byte)0x30); // SEQUENCE
-                    EncodeLength(innerWriter, 13);
-                    innerWriter.Write((byte)0x06); // OBJECT IDENTIFIER
-                    var rsaEncryptionOid = new byte[] { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01 };
-                    EncodeLength(innerWriter, rsaEncryptionOid.Length);
-                    innerWriter.Write(rsaEncryptionOid);
-                    innerWriter.Write((byte)0x05); // NULL
-                    EncodeLength(innerWriter, 0);
-                    innerWriter.Write((byte)0x03); // BIT STRING
-                    using (var bitStringStream = new MemoryStream())
-                    {
-                        var bitStringWriter = new BinaryWriter(bitStringStream);
-                        bitStringWriter.Write((byte)0x00); // # of unused bits
-                        bitStringWriter.Write((byte)0x30); // SEQUENCE
-                        using (var paramsStream = new MemoryStream())
-                        {
-                            var paramsWriter = new BinaryWriter(paramsStream);
-                            EncodeIntegerBigEndian(paramsWriter, parameters.Modulus); // Modulus
-                            EncodeIntegerBigEndian(paramsWriter, parameters.Exponent); // Exponent
-                            var paramsLength = (int)paramsStream.Length;
-                            EncodeLength(bitStringWriter, paramsLength);
-                            bitStringWriter.Write(paramsStream.GetBuffer(), 0, paramsLength);
-                        }
-                        var bitStringLength = (int)bitStringStream.Length;
-                        EncodeLength(innerWriter, bitStringLength);
-                        innerWriter.Write(bitStringStream.GetBuffer(), 0, bitStringLength);
-                    }
-                    var length = (int)innerStream.Length;
-                    EncodeLength(writer, length);
-                    writer.Write(innerStream.GetBuffer(), 0, length);
-                }
+            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
 
-                var base64 = Convert.ToBase64String(stream.GetBuffer(), 0, (int)stream.Length).ToCharArray();
-                // WriteLine terminates with \r\n, we want only \n
-                outputStream.Write("-----BEGIN PUBLIC KEY-----\n");
-                for (var i = 0; i < base64.Length; i += 64)
-                {
-                    outputStream.Write(base64, i, Math.Min(64, base64.Length - i));
-                    outputStream.Write("\n");
-                }
-                outputStream.Write("-----END PUBLIC KEY-----");
+            // Pure mathematical RSA implementation
+            // RsaEngine eng = new RsaEngine();
+
+            // PKCS1 v1.5 paddings
+            // Pkcs1Encoding eng = new Pkcs1Encoding(new RsaEngine());
+
+            // PKCS1 OAEP paddings
+            var eng = new OaepEncoding(new RsaEngine());
+            eng.Init(false, keys.Private);
+
+            var length = data.Length;
+            var blockSize = eng.GetInputBlockSize();
+            var decryptedData = new List<byte>();
+            for (var chunkPosition = 0; chunkPosition < length; chunkPosition += blockSize)
+            {
+                var chunkSize = Math.Min(blockSize, length - chunkPosition);
+                decryptedData.AddRange(eng.ProcessBlock(data, chunkPosition, chunkSize));
+            }
+            return decryptedData.ToArray();
+        }
+        public static RSACryptoServiceProvider GetRsaProviderFromPem(string pemstr)
+        {
+            var rsaKey = new RSACryptoServiceProvider();
+
+            RSACryptoServiceProvider MakePublicRcsp(RSACryptoServiceProvider rcsp, RsaKeyParameters rkp)
+            {
+                var rsaParameters = DotNetUtilities.ToRSAParameters(rkp);
+                rcsp.ImportParameters(rsaParameters);
+                return rsaKey;
             }
 
-            var o = outputStream.ToString();
-            return Encoding.UTF8.GetBytes(o);
+            Func<RSACryptoServiceProvider, RsaPrivateCrtKeyParameters, RSACryptoServiceProvider> MakePrivateRCSP = (rcsp, rkp) =>
+            {
+                var rsaParameters = DotNetUtilities.ToRSAParameters(rkp);
+                rcsp.ImportParameters(rsaParameters);
+                return rsaKey;
+            };
+
+            var reader = new PemReader(new StringReader(pemstr));
+            var kp = reader.ReadObject();
+
+            // If object has Private/Public property, we have a Private PEM
+            return (kp.GetType() == typeof(RsaPrivateCrtKeyParameters)) ? MakePrivateRCSP(rsaKey, (RsaPrivateCrtKeyParameters)kp) : MakePublicRcsp(rsaKey, (RsaKeyParameters)kp);
+        }
+        public static byte[] Encrypt(byte[] key, byte[] payload, byte[] iv)
+        {
+            using var aes = Aes.Create();
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 256;
+            var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+            using var memoryStream = new MemoryStream(payload);
+            using var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write);
+            using var output = new MemoryStream();
+            cryptoStream.CopyTo(output);
+            return output.ToArray();
         }
 
-        /// <summary>
-        /// https://stackoverflow.com/a/23739932/2860309
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="length"></param>
-        private static void EncodeLength(BinaryWriter stream, int length)
+        public static byte[] Decrypt(byte[] key, byte[] payload, byte[] iv)
         {
-            if (length < 0) throw new ArgumentOutOfRangeException("length", "Length must be non-negative");
-            if (length < 0x80)
-            {
-                // Short form
-                stream.Write((byte)length);
-            }
-            else
-            {
-                // Long form
-                var temp = length;
-                var bytesRequired = 0;
-                while (temp > 0)
-                {
-                    temp >>= 8;
-                    bytesRequired++;
-                }
-                stream.Write((byte)(bytesRequired | 0x80));
-                for (var i = bytesRequired - 1; i >= 0; i--)
-                {
-                    stream.Write((byte)(length >> (8 * i) & 0xff));
-                }
-            }
-        }
+            //byte[] iv = new byte[16];
+            //byte[] buffer = Convert.FromBase64String(cipherText);
 
-        /// <summary>
-        /// https://stackoverflow.com/a/23739932/2860309
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="value"></param>
-        /// <param name="forceUnsigned"></param>
-        private static void EncodeIntegerBigEndian(BinaryWriter stream, byte[] value, bool forceUnsigned = true)
-        {
-            stream.Write((byte)0x02); // INTEGER
-            var prefixZeros = 0;
-            for (var i = 0; i < value.Length; i++)
-            {
-                if (value[i] != 0) break;
-                prefixZeros++;
-            }
-            if (value.Length - prefixZeros == 0)
-            {
-                EncodeLength(stream, 1);
-                stream.Write((byte)0);
-            }
-            else
-            {
-                if (forceUnsigned && value[prefixZeros] > 0x7f)
-                {
-                    // Add a prefix zero to force unsigned if the MSB is 1
-                    EncodeLength(stream, value.Length - prefixZeros + 1);
-                    stream.Write((byte)0);
-                }
-                else
-                {
-                    EncodeLength(stream, value.Length - prefixZeros);
-                }
-                for (var i = prefixZeros; i < value.Length; i++)
-                {
-                    stream.Write(value[i]);
-                }
-            }
+            using var aes = Aes.Create();
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 256;
+            var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+            using var memoryStream = new MemoryStream(payload);
+            using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
+            using var output = new MemoryStream();
+            cryptoStream.CopyTo(output);
+            return output.ToArray();
         }
     }
 }

@@ -92,7 +92,7 @@ namespace SharpPulsar.Akka.Producer
                 _msgCrypto = new MessageCrypto(logCtx, true);
 
                 // Regenerate data key cipher at fixed interval
-                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
+                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
 
             }
             
@@ -133,10 +133,6 @@ namespace SharpPulsar.Akka.Producer
                 _listener.Log($"Connected to Pulsar Server[{s.Version}]. Negotiating producer(s)");
                 _serverInfo = s;
                 Become(CreateProducer);
-            });
-            Receive<AddPublicKeyCipher>(a =>
-            {
-                AddKey();
             });
             Receive<AddPublicKeyCipher>(a =>
             {

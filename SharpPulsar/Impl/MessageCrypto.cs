@@ -23,16 +23,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Security.Cryptography;
-using DotNetty.Buffers;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
@@ -55,111 +58,67 @@ namespace SharpPulsar.Impl
 		private const string RsaTrans = "RSA/NONE/OAEPWithSHA1AndMGF1Padding";
 		private const string Aesgcm = "AES/GCM/NoPadding";
 
-		private static SymmetricAlgorithm _keyGenerator;//https://www.c-sharpcorner.com/article/generating-symmetric-private-key-in-c-sharp-and-net/
+		private static RsaKeyPairGenerator _keyGenerator;
 		private const int TagLen = 16 * 8;
-		public const int IvLen = 128;
+		public const int IvLen = 256;
 		private byte[] _iv = new byte[IvLen];
-		private GcmBlockCipher _cipher;
-		internal MD5 Digest;
+		private SHA256Managed _hash;
 		private string _logCtx;
 
         private long _lastKeyAccess;
 		// Data key which is used to encrypt message
-		private AesManaged _dataKey;//https://stackoverflow.com/questions/39093489/c-sharp-equivalent-of-the-java-secretkeyspec-for-aes
-		private ConcurrentDictionary<IByteBuffer, AesManaged> _dataKeyCache;
+		private AesManaged _dataKey;
+        private ConcurrentDictionary<byte[], AesManaged> _dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
-		private ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
+		private readonly ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
 
-		internal static readonly SecureRandom SecureRandom;
-		static MessageCrypto()
-		{
-			SecureRandom rand = null;
-			try
-			{
-				rand = SecureRandom.GetInstance("NativePRNGNonBlocking");
-			}
-			catch (Exception)
-			{
-				rand = new SecureRandom();
-			}
-
-			SecureRandom = rand;
-
-			// Initial seed
-			SecureRandom.NextBytes(new byte[IvLen/8]);
-		}
-
+		private readonly SecureRandom _secureRandom;
+		
 		public MessageCrypto(string logCtx, bool keyGenNeeded)
 		{
-
+			_dataKey = new AesManaged();
+			_hash = new SHA256Managed();
+			_keyGenerator = new RsaKeyPairGenerator();
+            _keyGenerator.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
+			_secureRandom = new SecureRandom();
 			_logCtx = logCtx;
 			_encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
-			_dataKeyCache = new ConcurrentDictionary<IByteBuffer, AesManaged>(); //CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
+			_dataKeyCache = new ConcurrentDictionary<byte[], AesManaged>(); //CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
 
 			try
 			{
-
-				_cipher = new GcmBlockCipher(new AesEngine());//https://stackoverflow.com/questions/34206699/bouncycastle-aes-gcm-nopadding-and-secretkeyspec-in-c-sharp
-															 // If keygen is not needed(e.g: consumer), data key will be decrypted from the message
+                // If keygen is not needed(e.g: consumer), data key will be decrypted from the message
 				if (!keyGenNeeded)
 				{
 
-					Digest = MD5.Create();//new MD5CryptoServiceProvider();
+					_hash = new SHA256Managed();//new MD5CryptoServiceProvider();
 
 					_dataKey = null;
 					return;
 				}
-				_keyGenerator = new AesCryptoServiceProvider();
-				var aesKeyLength = _keyGenerator.KeySize;
-				if (aesKeyLength <= 128)
-				{
-					Log.LogWarning("{} AES Cryptographic strength is limited to {} bits. Consider installing JCE Unlimited Strength Jurisdiction Policy Files.", logCtx, aesKeyLength);
-					_keyGenerator.IV = SecureRandom.GetNextBytes(SecureRandom, aesKeyLength);
-				}
-				else
-				{
-					_keyGenerator.IV = SecureRandom.GetNextBytes(SecureRandom, 256);
-				}
-
-			}
+				
+            }
 			catch (Exception e) 
 			{
-
-				_cipher = null;
 				Log.LogError("{} MessageCrypto initialization Failed {}", logCtx, e.Message);
 
 			}
 
 			// Generate data key to encrypt messages
-			_keyGenerator.GenerateKey();
-            _dataKey = new AesManaged {Key = _keyGenerator.Key, Mode = CipherMode.CBC, Padding = PaddingMode.PKCS7};
+            if (_dataKey != null) _dataKey.Key = PublicDataKey();
 
             _iv = new byte[IvLen];
 		}
 
         private RSACryptoServiceProvider LoadPublicKey(sbyte[] keyBytes)
 		{
-			var keyReader = new StringReader(StringHelper.NewString(keyBytes));
-            var pr = new PemReader(keyReader);
-			var publicKey = (AsymmetricKeyParameter)pr.ReadObject();
-            var rsaParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)publicKey);
-
-            var csp = new RSACryptoServiceProvider();// cspParams);
-            csp.ImportParameters(rsaParams);
-            return csp;
+            return CryptoHelper.GetRsaProviderFromPem(StringHelper.NewString(keyBytes).Trim());
 		}
 
 		private RSACryptoServiceProvider LoadPrivateKey(sbyte[] keyBytes)
 		{
-            var keyReader = new StringReader(StringHelper.NewString(keyBytes));
-            var pr = new PemReader(keyReader);
-            var keyPair = (AsymmetricCipherKeyPair)pr.ReadObject();
-            var rsaParams = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)keyPair.Private);
-
-            var csp = new RSACryptoServiceProvider();// cspParams);
-            csp.ImportParameters(rsaParams);
-            return csp;
+            return CryptoHelper.GetRsaProviderFromPem(StringHelper.NewString(keyBytes).Trim());
 		}
 
 		/*
@@ -174,21 +133,16 @@ namespace SharpPulsar.Impl
 		 */
 		public virtual void AddPublicKeyCipher(ISet<string> keyNames, ICryptoKeyReader keyReader)
 		{
-			lock (this)
-			{
+            // Generate data key
+            _dataKey.Key = PublicDataKey();
 
-				// Generate data key
-                _keyGenerator.GenerateKey();
-                _dataKey = new AesManaged { Key = _keyGenerator.Key, Mode = CipherMode.CBC, Padding = PaddingMode.PKCS7 };
-
-				foreach (var key in keyNames)
-				{
-					AddPublicKeyCipher(key, keyReader);
-				}
-			}
+            foreach (var key in keyNames)
+            {
+                AddPublicKeyCipher(key, keyReader);
+            }
 		}
 
-        private void AddPublicKeyCipher(string keyName, ICryptoKeyReader keyReader)
+		private void AddPublicKeyCipher(string keyName, ICryptoKeyReader keyReader)
 		{
 
 			if (string.ReferenceEquals(keyName, null) || keyReader == null)
@@ -198,58 +152,10 @@ namespace SharpPulsar.Impl
 
 			// Read the public key and its info using callback
 			var keyInfo = keyReader.GetPublicKey(keyName, null);
-
-            RSACryptoServiceProvider pubKey;
-
-			try
-			{
-				pubKey = LoadPublicKey(keyInfo.Key);
-			}
-			catch (Exception e)
-			{
-				var msg = _logCtx + "Failed to load public key " + keyName + ". " + e.Message;
-				Log.LogError(msg);
-				throw new PulsarClientException.CryptoException(msg);
-			}
-
-            byte[] encryptedKey;
-
-			try
-			{
-                // Encrypt data key using public key
-                GcmBlockCipher dataKeyCipher;
-                if (pubKey.KeyExchangeAlgorithm != null && pubKey.KeyExchangeAlgorithm.StartsWith(Rsa, StringComparison.OrdinalIgnoreCase))
-				{
-					dataKeyCipher = new GcmBlockCipher(new AesEngine()); 
-				}
-                else
-				{
-					var msg = _logCtx + "Unsupported key type " + pubKey.KeyExchangeAlgorithm + " for key " + keyName;
-					Log.LogError(msg);
-					throw new PulsarClientException.CryptoException(msg);
-				}
-				SecureRandom.NextBytes(_iv);
-				var key = CryptoHelper.ExportPublicKey(pubKey);
-                var keyParameter = new AeadParameters(new KeyParameter(key), TagLen, _iv);
-				//var keyParameter = ParameterUtilities.CreateKeyParameter("AES", key);
-                //ICipherParameters cipherParameters = new ParametersWithIV(keyParameter, _iv);
-				dataKeyCipher.Init(true, keyParameter);
-
-                encryptedKey = new byte[dataKeyCipher.GetOutputSize(_dataKey.Key.Length)];
-                var len = dataKeyCipher.ProcessBytes(_dataKey.Key, 0, _dataKey.Key.Length, encryptedKey, 0);
-
-				dataKeyCipher.DoFinal(encryptedKey, len);
-
-			}
-			catch (Exception e) 
-			{
-				Log.LogError("{} Failed to encrypt data key {}. {}", _logCtx, keyName, e.Message);
-				throw new PulsarClientException.CryptoException(e.Message);
-			}
+            var encryptedKey = CryptoHelper.Encrypt(_dataKey.Key, (byte[])(object)keyInfo.Key);
 			var eki = new EncryptionKeyInfo((sbyte[])(object)encryptedKey, keyInfo.Metadata);
 			_encryptedDataKeyMap[keyName] = eki;
 		}
-
 		/*
 		 * Remove a key <p> Remove the key identified by the keyName from the list of keys.<p>
 		 *
@@ -287,189 +193,146 @@ namespace SharpPulsar.Impl
 		
         public virtual byte[] Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata msgMetadata, byte[] payload)
 		{
-			lock (this)
+			if (encKeys.Count == 0)
 			{
-				if (encKeys.Count == 0)
-				{
-					return payload;
-				}
+				return payload;
+			}
 
-				// Update message metadata with encrypted data key
-				foreach (var keyName in encKeys)
+			// Update message metadata with encrypted data key
+			foreach (var keyName in encKeys)
+			{
+				if (_encryptedDataKeyMap[keyName] == null)
 				{
-					if (_encryptedDataKeyMap[keyName] == null)
+					// Attempt to load the key. This will allow us to load keys as soon as
+					// a new key is added to producer config
+					AddPublicKeyCipher(keyName, keyReader);
+				}
+				var keyInfo = _encryptedDataKeyMap[keyName];
+				if (keyInfo != null)
+				{
+					if (keyInfo.Metadata != null && keyInfo.Metadata.Count > 0)
 					{
-						// Attempt to load the key. This will allow us to load keys as soon as
-						// a new key is added to producer config
-						AddPublicKeyCipher(keyName, keyReader);
-					}
-					var keyInfo = _encryptedDataKeyMap[keyName];
-					if (keyInfo != null)
-					{
-						if (keyInfo.Metadata != null && keyInfo.Metadata.Count > 0)
+						IList<KeyValue> kvList = new List<KeyValue>();
+						keyInfo.Metadata.ToList().ForEach(m =>
 						{
-							IList<KeyValue> kvList = new List<KeyValue>();
-							keyInfo.Metadata.ToList().ForEach(m =>
+							kvList.Add(new KeyValue
 							{
-								kvList.Add(new KeyValue{
-                                    Key = m.Key, Value = m.Value
-                                });
+								Key = m.Key,
+								Value = m.Value
 							});
-                            msgMetadata.EncryptionKeys.Add(new EncryptionKeys
-                                {Key = keyName, Value = (byte[]) (object) keyInfo.Key, Metadatas = new List<KeyValue>(kvList)});
-                        }
-						else
-						{
-							msgMetadata.EncryptionKeys.Add(new EncryptionKeys {Key = keyName, Value = (byte[])(object)keyInfo.Key});
-						}
+						});
+						msgMetadata.EncryptionKeys.Add(new EncryptionKeys{ Key = keyName, Value = (byte[])(object)keyInfo.Key, Metadatas = new List<KeyValue>(kvList) });
 					}
 					else
 					{
-						// We should never reach here.
-						Log.LogError("{} Failed to find encrypted Data key for key {}.", _logCtx, keyName);
+						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = (byte[])(object)keyInfo.Key });
 					}
-
 				}
-
-				// Create gcm param
-				// TODO: Replace random with counter and periodic refreshing based on timer/counter value
-				SecureRandom.NextBytes(_iv);
-				var keyParameter = new AeadParameters(new KeyParameter(_dataKey.Key), TagLen, _iv);
-				
-				// Update message metadata with encryption param
-				msgMetadata.EncryptionParam = _iv;
-                var maxLength = _cipher.GetOutputSize(payload.Length);
-				byte[] targetBuf = new byte[maxLength];
-				try
+				else
 				{
-					// Encrypt the data
-					_cipher.Init(true, keyParameter);
-
-					var sourceNioBuf = payload;
-
-					var targetNioBuf = new byte[maxLength];
-
-                    var len = _cipher.ProcessBytes(sourceNioBuf.ToArray(), 0, sourceNioBuf.ToArray().Length, targetNioBuf, 0);
-					var bytesStored = _cipher.DoFinal(targetNioBuf, len);
-                    
-
-				}
-				catch (Exception e) 
-				{
-
-					Log.LogError("{} Failed to encrypt message. {}", _logCtx, e);
-					throw new PulsarClientException.CryptoException(e.Message);
-
+					// We should never reach here.
+					Log.LogError("{} Failed to find encrypted Data key for key {}.", _logCtx, keyName);
 				}
 
-				return targetBuf;
 			}
+
+			// Create gcm param
+			// TODO: Replace random with counter and periodic refreshing based on timer/counter value
+			SecureRandom.NextBytes(_iv);
+			// Update message metadata with encryption param
+			msgMetadata.EncryptionParam = _iv;
+			try
+			{
+				// Encrypt the data
+                var eData = CryptoHelper.Encrypt(payload, _dataKey);
+
+				return eData;
+            }
+			catch (Exception e)
+			{
+
+				Log.LogError("{} Failed to encrypt message. {}", _logCtx, e);
+				throw new PulsarClientException.CryptoException(e.Message);
+
+			}
+
 		}
 
 		private bool DecryptDataKey(string keyName, byte[] encryptedDataKey, IList<KeyValue> encKeyMeta, ICryptoKeyReader keyReader)
 		{
 
-			IDictionary<string, string> keyMeta = new Dictionary<string, string>();
-			encKeyMeta.ToList().ForEach(kv =>
-			{
-				keyMeta[kv.Key] = kv.Value;
-			});
-
-			// Read the private key info using callback
-			var keyInfo = keyReader.GetPrivateKey(keyName, keyMeta);
+            // Read the private key info using callback
+            EncryptionKeyInfo keyInfo = keyReader.GetPrivateKey(keyName, encKeyMeta.ToDictionary(x=>x.Key, x=> x.Value));
 
 			// Convert key from byte to PivateKey
-            RSACryptoServiceProvider  privateKey;
-			try
-			{
-				privateKey = LoadPrivateKey(keyInfo.Key);
-				if (privateKey == null)
-				{
-					Log.LogError("{} Failed to load private key {}.", _logCtx, keyName);
-					return false;
-				}
-			}
-			catch (Exception e)
-			{
-                Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
-				return false;
-			}
-
-			// Decrypt data key to decrypt messages
-            byte[] dataKeyValue;
-			byte[] keyDigest;
-            using var cipherStream = new MemoryStream(encryptedDataKey);
-            using var cipherReader = new BinaryReader(cipherStream);
+            RSACryptoServiceProvider privateKey;
             try
             {
-
-                // Decrypt data key using private key
-                GcmBlockCipher dataKeyCipher;
-                if (privateKey.KeyExchangeAlgorithm != null && privateKey.KeyExchangeAlgorithm.StartsWith(Rsa, StringComparison.OrdinalIgnoreCase))
+                privateKey = LoadPrivateKey(keyInfo.Key);
+                if (privateKey == null)
                 {
-                    dataKeyCipher = new GcmBlockCipher(new AesEngine());
-                }
-                else
-                {
-                    Log.LogError("Unsupported key type {} for key {}.", privateKey.KeyExchangeAlgorithm, keyName);
+                    Log.LogError("{} Failed to load private key {}.", _logCtx, keyName);
                     return false;
                 }
-                
-                var key = CryptoHelper.ExportPrivateKey(privateKey);
-
-                var keyParameter = new AeadParameters(new KeyParameter(key), TagLen, _iv);
-                    
-                    
-                dataKeyCipher.Init(false, keyParameter);
-                //Decrypt Cipher Text
-                var cipherText = cipherReader.ReadBytes(encryptedDataKey.Length - _iv.Length);
-                dataKeyValue = new byte[dataKeyCipher.GetOutputSize(cipherText.Length)];
-
-                var len = dataKeyCipher.ProcessBytes(cipherText, 0, cipherText.Length, dataKeyValue, 0);
-                dataKeyCipher.DoFinal(dataKeyValue, len);
-
-                keyDigest = Digest.ComputeHash(encryptedDataKey);
-
             }
             catch (Exception e)
             {
                 Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
                 return false;
             }
-            _dataKey = new AesManaged { Key = dataKeyValue, Mode = CipherMode.CBC, Padding = PaddingMode.PKCS7 };// new (dataKeyValue, "AES");
-            _dataKeyCache.TryAdd(Unpooled.WrappedBuffer(keyDigest), _dataKey);
+
+			// Decrypt data key to decrypt messages
+            byte[] dataKeyValue;
+            byte[] keyDigest;
+			try
+            {
+
+				// Decrypt data key using private key
+                dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, privateKey.ExportRSAPrivateKey());
+                keyDigest = _hash.ComputeHash(encryptedDataKey);
+
+            }
+            catch (Exception e) 
+            {
+                Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
+                return false;
+            }
+            _dataKey = new AsymmetricCipherKeyPair();
+            _dataKey = dataKeyValue;
+            _dataKeyCache.TryAdd(keyDigest, _dataKey);
             return true;
         }
 
-		private byte[] DecryptData(AesManaged dataKeySecret, MessageMetadata msgMetadata, byte[] payload)
+		private byte[] DecryptData(byte[] dataKeySecret, MessageMetadata msgMetadata, byte[] payload)
 		{
 
 			// unpack iv and encrypted data
 			var ivString = msgMetadata.EncryptionParam;
-			ivString.CopyTo(_iv, 0);
-            var keyParameter = new AeadParameters(new KeyParameter(dataKeySecret.Key), TagLen, _iv);
-
-
-            int maxLength = _cipher.GetOutputSize(payload.Length);
-			byte[] targetBuf = new byte[maxLength];
 			try
-			{
-				_cipher.Init(false, keyParameter);
-				var targetNioBuf = new byte[maxLength];
-
-                var len = _cipher.ProcessBytes(payload, 0, payload.Length, targetNioBuf, 0);
-                _cipher.DoFinal(targetNioBuf, len);
-
-			}
+            {
+				var dData = CryptoHelper.Decrypt(dataKeySecret, payload);
+                return dData;
+            }
 			catch (Exception e) 
 			{
 				Log.LogError("{} Failed to decrypt message {}", _logCtx, e.Message);
-                targetBuf = null;
             }
 
-			return targetBuf;
-		}
+            return null;
+        }
 
+        private byte[] PublicDataKey()
+        {
+            var keys = _keyGenerator.GenerateKeyPair();
+            var pubF = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keys.Public);
+            return pubF.GetEncoded();
+		}
+        private byte[] PrivateDataKey()
+        {
+            var keys = _keyGenerator.GenerateKeyPair();
+            var privF = PrivateKeyInfoFactory.CreatePrivateKeyInfo(keys.Private);
+            return privF.GetEncoded();
+        }
 		private byte[] GetKeyAndDecryptData(MessageMetadata msgMetadata, byte[] payload)
 		{
 
@@ -483,7 +346,7 @@ namespace SharpPulsar.Impl
 
 				var msgDataKey = encKeys[i].Value;
 				var keyDigest = Digest.ComputeHash(msgDataKey);
-				if (_dataKeyCache.TryGetValue(Unpooled.WrappedBuffer(keyDigest), out var storedSecretKey))
+				if (_dataKeyCache.TryGetValue(keyDigest, out var storedSecretKey))
 				{
 
 					// Taking a small performance hit here if the hash collides. When it
