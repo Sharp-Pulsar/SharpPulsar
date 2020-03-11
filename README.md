@@ -19,3 +19,5 @@ What you can try:
 - [X] Consumer
 - [X] Reader
 - [X] Schema Registration
+- [X] End-To-End Message Encryption
+
