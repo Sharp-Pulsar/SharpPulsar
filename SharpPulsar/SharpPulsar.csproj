@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.0.1-alpha</Version>
+    <Version>0.2.0</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar client built with Akka.net, inspired from the Pulsar java client</Description>
     <PackageTags>Alpha</PackageTags>
@@ -10,7 +10,8 @@
 With this release, Pulsar's:
 Simple Producer
 Simple Consumer
-Reader</PackageReleaseNotes>
+Reader
+End-To-End Encryption</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
