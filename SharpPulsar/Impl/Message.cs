@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Utility;
@@ -223,7 +224,6 @@ namespace SharpPulsar.Impl
                 {
                     return (T)_schema.Decode(Data, typeof(T));
                 }
-
                 return (T)_schema.Decode(Data, schemaversion, typeof(T));
             }
 

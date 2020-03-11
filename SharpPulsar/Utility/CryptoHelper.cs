@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -18,8 +19,34 @@ namespace SharpPulsar.Utility
     //https://gist.github.com/saldoukhov/59cbf22745bb45c17461dfb5986fca62
     //https://gist.github.com/dziwoki/cc41b523c2bd43ee646b957f0aa91943
     //https://stackoverflow.com/questions/41607885/the-input-data-is-not-a-complete-block-when-decrypting-using-aes
-    internal static class CryptoHelper
+    public static class CryptoHelper
     {
+        public static byte[] Encrypt(byte[] data, byte[] key, byte[] encodingParam)
+        {
+            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var keys = (RsaKeyParameters)pr.ReadObject();
+
+            // Pure mathematical RSA implementation
+            // RsaEngine eng = new RsaEngine();
+
+            // PKCS1 v1.5 paddings
+            // Pkcs1Encoding eng = new Pkcs1Encoding(new RsaEngine());
+
+            // PKCS1 OAEP paddings
+            var eng = new OaepEncoding(new RsaEngine(), new Sha256Digest(), encodingParam);
+            eng.Init(true, keys);
+
+            var length = data.Length;
+            
+            var blockSize = eng.GetInputBlockSize();
+            var encryptedData = new List<byte>();
+            for (var chunkPosition = 0; chunkPosition < length; chunkPosition += blockSize)
+            {
+                var chunkSize = Math.Min(blockSize, length - chunkPosition);
+                encryptedData.AddRange(eng.ProcessBlock(data, chunkPosition, chunkSize));
+            }
+            return encryptedData.ToArray();
+        }
         public static byte[] Encrypt(byte[] data, byte[] key)
         {
             var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
@@ -36,7 +63,7 @@ namespace SharpPulsar.Utility
             eng.Init(true, keys);
 
             var length = data.Length;
-            
+
             var blockSize = eng.GetInputBlockSize();
             var encryptedData = new List<byte>();
             for (var chunkPosition = 0; chunkPosition < length; chunkPosition += blockSize)
@@ -47,6 +74,31 @@ namespace SharpPulsar.Utility
             return encryptedData.ToArray();
         }
 
+        public static byte[] Decrypt(byte[] data, byte[] key, byte[] encodingParam)
+        {
+            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
+
+            // Pure mathematical RSA implementation
+            // RsaEngine eng = new RsaEngine();
+
+            // PKCS1 v1.5 paddings
+            // Pkcs1Encoding eng = new Pkcs1Encoding(new RsaEngine());
+
+            // PKCS1 OAEP paddings
+            var eng = new OaepEncoding(new RsaEngine(),new Sha256Digest(), encodingParam);
+            eng.Init(false, keys.Private);
+
+            var length = data.Length;
+            var blockSize = eng.GetInputBlockSize();
+            var decryptedData = new List<byte>();
+            for (var chunkPosition = 0; chunkPosition < length; chunkPosition += blockSize)
+            {
+                var chunkSize = Math.Min(blockSize, length - chunkPosition);
+                decryptedData.AddRange(eng.ProcessBlock(data, chunkPosition, chunkSize));
+            }
+            return decryptedData.ToArray();
+        }
         public static byte[] Decrypt(byte[] data, byte[] key)
         {
             var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
@@ -98,31 +150,39 @@ namespace SharpPulsar.Utility
         }
         public static byte[] Encrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
-
+            byte[] output;
             byte[] payload = data;
-            using var aes = Aes.Create();
-            aes.Key = key;
-            aes.IV = iv;
-            aes.KeySize = keySize;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.Zeros;
+            using var aes = new AesCryptoServiceProvider
+            {
+                //BlockSize = 128,
+                KeySize = keySize,
+                Key = key,
+                IV = iv,
+                Mode = CipherMode.CBC,
+                Padding = PaddingMode.Zeros
+            };
+
             using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
-            return encrypt.TransformFinalBlock(payload, 0, payload.Length);
+            output = encrypt.TransformFinalBlock(data, 0, data.Length);
+            return output;
         }
 
         public static byte[] Decrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
-            //byte[] iv = new byte[16];
-            //byte[] buffer = Convert.FromBase64String(cipherText);
+            byte[] output;
             byte[] payload = data;
-            using var aes = Aes.Create();
-            aes.Key = key;
-            aes.IV = iv;
-            aes.KeySize = keySize;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.Zeros;
+            using var aes = new AesCryptoServiceProvider
+            {
+                //BlockSize=128,
+                KeySize = keySize,
+                Key = key,
+                IV = iv,
+                Mode = CipherMode.CBC,
+                Padding = PaddingMode.Zeros
+            };
             using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
-            return  decrypt.TransformFinalBlock(payload, 0, payload.Length);
+            output = decrypt.TransformFinalBlock(data, 0, data.Length);
+            return output;
         }
     }
 }

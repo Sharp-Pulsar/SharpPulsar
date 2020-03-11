@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -38,13 +39,12 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("Crypto")
-                .Topic("Crypto")
+                .ProducerName("Crypto3")
+                .Topic("Crypto3")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
-                .AddEncryptionKey("pulsar")
                 .Schema(jsonSchema)
                 .EventListener(producer)
-                .AddEncryptionKey("Crypto")
+                .AddEncryptionKey("Crypto3")
                 .EnableBatching(false)
                 .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
@@ -54,7 +54,7 @@ namespace Samples
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("Crypto")
+                .ReaderName("Crypto3")
                 .Schema(jsonSchema)
                 .ReaderListener(new ReaderMessageListener())
                 .Topic(topic)
@@ -64,9 +64,9 @@ namespace Samples
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("Crypto")
+                .ConsumerName("Crypto3")
                 .ForceTopicCreation(false)
-                .SubscriptionName("Crypto-Subscription")
+                .SubscriptionName("Crypto3-Subscription")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Topic(topic)
                 .Schema(jsonSchema)
@@ -98,7 +98,7 @@ namespace Samples
                 {
                     var students = new Students
                     {
-                        Name = $"Ebere: {DateTimeOffset.Now.Millisecond} - Decrypted",
+                        Name = $"Ebere: {DateTimeOffset.Now.Millisecond} - Decrypted {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };
