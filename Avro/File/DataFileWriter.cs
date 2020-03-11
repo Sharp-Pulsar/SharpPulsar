@@ -231,14 +231,19 @@ namespace Avro.File
             _blockEncoder = new BinaryEncoder(_blockStream);
 
             if (_codec == null)
+            {
                 _codec = Codec.CreateCodec(Codec.Type.Null);
+            }
 
             _isOpen = true;
         }
 
         private void AssertOpen()
         {
-            if (!_isOpen) throw new AvroRuntimeException("Cannot complete operation: avro file/stream not open");
+            if (!_isOpen)
+            {
+                throw new AvroRuntimeException("Cannot complete operation: avro file/stream not open");
+            }
         }
 
         private IFileWriter<T> Create(Schema schema, Stream outStream, Codec codec)
@@ -276,7 +281,9 @@ namespace Avro.File
         private void WriteIfBlockFull()
         {
             if (BufferInUse() >= _syncInterval)
+            {
                 WriteBlock();
+            }
         }
 
         private long BufferInUse()

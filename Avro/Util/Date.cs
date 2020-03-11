@@ -41,7 +41,9 @@ namespace Avro.Util
         public override void ValidateSchema(LogicalSchema schema)
         {
             if (Schema.Type.Int != schema.BaseSchema.Tag)
+            {
                 throw new AvroTypeException("'date' can only be used with an underlying int type");
+            }
         }
 
         /// <inheritdoc/>

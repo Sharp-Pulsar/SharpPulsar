@@ -21,18 +21,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Modes;
-using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
@@ -49,26 +43,15 @@ namespace SharpPulsar.Impl
 	public class MessageCrypto
 	{
 
-		private const string Ecdsa = "ECDSA";
-		private const string Rsa = "RSA";
-		private const string Ecies = "ECIES";
-
-		// Ideally the transformation should also be part of the message property. This will prevent client
-		// from assuming hardcoded value. However, it will increase the size of the message even further.
-		private const string RsaTrans = "RSA/NONE/OAEPWithSHA1AndMGF1Padding";
-		private const string Aesgcm = "AES/GCM/NoPadding";
-
-		private static RsaKeyPairGenerator _keyGenerator;
-		private const int TagLen = 16 * 8;
+		private readonly AesManaged _keyGenerator;
+		private const int TagLen = 32 * 8;
 		public const int IvLen = 256;
-		private byte[] _iv = new byte[IvLen];
-		private SHA256Managed _hash;
+		private byte[] _iv;
+		private SHA256 _hash;
 		private string _logCtx;
-
-        private long _lastKeyAccess;
 		// Data key which is used to encrypt message
-		private AesManaged _dataKey;
-        private ConcurrentDictionary<byte[], AesManaged> _dataKeyCache;
+		private byte[] _dataKey;
+        private ConcurrentDictionary<string, byte[]> _dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
 		private readonly ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
@@ -77,14 +60,14 @@ namespace SharpPulsar.Impl
 		
 		public MessageCrypto(string logCtx, bool keyGenNeeded)
 		{
-			_dataKey = new AesManaged();
-			_hash = new SHA256Managed();
-			_keyGenerator = new RsaKeyPairGenerator();
-            _keyGenerator.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
+
+            _iv = new byte[16];
+			_hash = SHA256.Create();
+			_keyGenerator = new AesManaged();
 			_secureRandom = new SecureRandom();
 			_logCtx = logCtx;
 			_encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
-			_dataKeyCache = new ConcurrentDictionary<byte[], AesManaged>(); //CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
+			_dataKeyCache = new ConcurrentDictionary<string,byte[]>(); //CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
 
 			try
 			{
@@ -92,12 +75,14 @@ namespace SharpPulsar.Impl
 				if (!keyGenNeeded)
 				{
 
-					_hash = new SHA256Managed();//new MD5CryptoServiceProvider();
+					_hash = SHA256.Create();//new MD5CryptoServiceProvider();
 
 					_dataKey = null;
 					return;
 				}
-				
+				_secureRandom.NextBytes(_iv);
+                _keyGenerator.IV = _iv;
+
             }
 			catch (Exception e) 
 			{
@@ -106,9 +91,8 @@ namespace SharpPulsar.Impl
 			}
 
 			// Generate data key to encrypt messages
-            if (_dataKey != null) _dataKey.Key = PublicDataKey();
-
-            _iv = new byte[IvLen];
+            _keyGenerator.GenerateKey();
+            _dataKey = _keyGenerator.Key;
 		}
 
         private RSACryptoServiceProvider LoadPublicKey(sbyte[] keyBytes)
@@ -134,7 +118,8 @@ namespace SharpPulsar.Impl
 		public virtual void AddPublicKeyCipher(ISet<string> keyNames, ICryptoKeyReader keyReader)
 		{
             // Generate data key
-            _dataKey.Key = PublicDataKey();
+			_keyGenerator.GenerateKey();
+            _dataKey = _keyGenerator.Key;
 
             foreach (var key in keyNames)
             {
@@ -152,7 +137,7 @@ namespace SharpPulsar.Impl
 
 			// Read the public key and its info using callback
 			var keyInfo = keyReader.GetPublicKey(keyName, null);
-            var encryptedKey = CryptoHelper.Encrypt(_dataKey.Key, (byte[])(object)keyInfo.Key);
+            var encryptedKey = CryptoHelper.Encrypt(_dataKey, (byte[])(object)keyInfo.Key);
 			var eki = new EncryptionKeyInfo((sbyte[])(object)encryptedKey, keyInfo.Metadata);
 			_encryptedDataKeyMap[keyName] = eki;
 		}
@@ -238,15 +223,16 @@ namespace SharpPulsar.Impl
 
 			// Create gcm param
 			// TODO: Replace random with counter and periodic refreshing based on timer/counter value
-			SecureRandom.NextBytes(_iv);
-			// Update message metadata with encryption param
+			_secureRandom.NextBytes(_iv);
+            // Update message metadata with encryption param
 			msgMetadata.EncryptionParam = _iv;
 			try
 			{
 				// Encrypt the data
-                var eData = CryptoHelper.Encrypt(payload, _dataKey);
+                
+                var encData = CryptoHelper.Encrypt(_dataKey, payload, _iv, TagLen);
 
-				return eData;
+				return encData;
             }
 			catch (Exception e)
 			{
@@ -265,31 +251,16 @@ namespace SharpPulsar.Impl
             EncryptionKeyInfo keyInfo = keyReader.GetPrivateKey(keyName, encKeyMeta.ToDictionary(x=>x.Key, x=> x.Value));
 
 			// Convert key from byte to PivateKey
-            RSACryptoServiceProvider privateKey;
-            try
-            {
-                privateKey = LoadPrivateKey(keyInfo.Key);
-                if (privateKey == null)
-                {
-                    Log.LogError("{} Failed to load private key {}.", _logCtx, keyName);
-                    return false;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
-                return false;
-            }
-
+            
 			// Decrypt data key to decrypt messages
             byte[] dataKeyValue;
-            byte[] keyDigest;
+            string keyDigest;
 			try
             {
 
 				// Decrypt data key using private key
-                dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, privateKey.ExportRSAPrivateKey());
-                keyDigest = _hash.ComputeHash(encryptedDataKey);
+                dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, (byte[])(object)keyInfo.Key);
+                keyDigest = Convert.ToBase64String(_hash.ComputeHash(encryptedDataKey));
 
             }
             catch (Exception e) 
@@ -297,8 +268,8 @@ namespace SharpPulsar.Impl
                 Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
                 return false;
             }
-            _dataKey = new AsymmetricCipherKeyPair();
             _dataKey = dataKeyValue;
+			Console.WriteLine(keyDigest);
             _dataKeyCache.TryAdd(keyDigest, _dataKey);
             return true;
         }
@@ -307,11 +278,13 @@ namespace SharpPulsar.Impl
 		{
 
 			// unpack iv and encrypted data
-			var ivString = msgMetadata.EncryptionParam;
+			var iv = msgMetadata.EncryptionParam;
+            _iv = iv;
 			try
             {
-				var dData = CryptoHelper.Decrypt(dataKeySecret, payload);
-                return dData;
+                var encData = CryptoHelper.Decrypt(dataKeySecret, payload, _iv, TagLen);
+				
+                return encData;
             }
 			catch (Exception e) 
 			{
@@ -321,18 +294,6 @@ namespace SharpPulsar.Impl
             return null;
         }
 
-        private byte[] PublicDataKey()
-        {
-            var keys = _keyGenerator.GenerateKeyPair();
-            var pubF = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keys.Public);
-            return pubF.GetEncoded();
-		}
-        private byte[] PrivateDataKey()
-        {
-            var keys = _keyGenerator.GenerateKeyPair();
-            var privF = PrivateKeyInfoFactory.CreatePrivateKeyInfo(keys.Private);
-            return privF.GetEncoded();
-        }
 		private byte[] GetKeyAndDecryptData(MessageMetadata msgMetadata, byte[] payload)
 		{
 
@@ -341,31 +302,30 @@ namespace SharpPulsar.Impl
 			IList<EncryptionKeys> encKeys = msgMetadata.EncryptionKeys;
 
 			// Go through all keys to retrieve data key from cache
-			for (var i = 0; i < encKeys.Count; i++)
-			{
+			foreach (var t in encKeys)
+            {
+                var msgDataKey = t.Value;
+                var keyDigest = Convert.ToBase64String(_hash.ComputeHash(msgDataKey));
+				Console.WriteLine(keyDigest);
+                if (_dataKeyCache.TryGetValue(keyDigest, out var storedSecretKey))
+                {
 
-				var msgDataKey = encKeys[i].Value;
-				var keyDigest = Digest.ComputeHash(msgDataKey);
-				if (_dataKeyCache.TryGetValue(keyDigest, out var storedSecretKey))
-				{
-
-					// Taking a small performance hit here if the hash collides. When it
-					// retruns a different key, decryption fails. At this point, we would
-					// call decryptDataKey to refresh the cache and come here again to decrypt.
-					decryptedData = DecryptData(storedSecretKey, msgMetadata, payload);
-					// If decryption succeeded, data is non null
-					if (decryptedData != null)
-					{
-						break;
-					}
-				}
-				else
-				{
-					// First time, entry won't be present in cache
-					Log.LogWarning("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", _logCtx);
-				}
-
-			}
+                    // Taking a small performance hit here if the hash collides. When it
+                    // retruns a different key, decryption fails. At this point, we would
+                    // call decryptDataKey to refresh the cache and come here again to decrypt.
+                    decryptedData = DecryptData(storedSecretKey, msgMetadata, payload);
+                    // If decryption succeeded, data is non null
+                    if (decryptedData != null)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    // First time, entry won't be present in cache
+                    Log.LogWarning("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", _logCtx);
+                }
+            }
 			return decryptedData;
 
 		}

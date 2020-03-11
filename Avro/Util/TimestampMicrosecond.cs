@@ -40,7 +40,9 @@ namespace Avro.Util
         public override void ValidateSchema(LogicalSchema schema)
         {
             if (Schema.Type.Long != schema.BaseSchema.Tag)
+            {
                 throw new AvroTypeException("'timestamp-micros' can only be used with an underlying long type");
+            }
         }
 
         /// <inheritdoc/>

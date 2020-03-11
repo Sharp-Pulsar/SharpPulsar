@@ -107,7 +107,9 @@ namespace Avro.Specific
             RecordSchema rs = (RecordSchema)readerSchema;
 
             if (rs.Name == null)
+            {
                 return base.ReadRecord(reuse, writerSchema, readerSchema, dec);
+            }
 
             ISpecificRecord rec = (reuse != null ? reuse : ObjectCreator.Instance.New(rs.Fullname, Schema.Type.Record)) as ISpecificRecord;
             object obj;
@@ -135,7 +137,10 @@ namespace Avro.Specific
             var defaultDecoder = new BinaryDecoder(defaultStream);
             foreach (Field rf in rs)
             {
-                if (writerSchema.Contains(rf.Name)) continue;
+                if (writerSchema.Contains(rf.Name))
+                {
+                    continue;
+                }
 
                 defaultStream.Position = 0; // reset for writing
                 Resolver.EncodeDefaultValue(defaultEncoder, rf.Schema, rf.DefaultValue);
@@ -203,7 +208,9 @@ namespace Avro.Specific
             {
                 array = reuse as System.Collections.IList;
                 if (array == null)
+                {
                     throw new AvroException("array object does not implement non-generic IList");
+                }
 
                 array.Clear();
             }
@@ -214,7 +221,9 @@ namespace Avro.Specific
             for (int n = (int)dec.ReadArrayStart(); n != 0; n = (int)dec.ReadArrayNext())
             {
                 for (int j = 0; j < n; j++, i++)
+                {
                     array.Add(Read(null, writerSchema.ItemSchema, rs.ItemSchema, dec));
+                }
             }
             return array;
         }
@@ -236,7 +245,9 @@ namespace Avro.Specific
             {
                 map = reuse as System.Collections.IDictionary;
                 if (map == null)
+                {
                     throw new AvroException("map object does not implement non-generic IList");
+                }
 
                 map.Clear();
             }

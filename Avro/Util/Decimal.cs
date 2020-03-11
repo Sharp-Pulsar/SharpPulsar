@@ -43,22 +43,30 @@ namespace Avro.Util
         public override void ValidateSchema(LogicalSchema schema)
         {
             if (Schema.Type.Bytes != schema.BaseSchema.Tag && Schema.Type.Fixed != schema.BaseSchema.Tag)
+            {
                 throw new AvroTypeException("'decimal' can only be used with an underlying bytes or fixed type");
+            }
 
             var precisionVal = schema.GetProperty("precision");
 
             if (string.IsNullOrEmpty(precisionVal))
+            {
                 throw new AvroTypeException("'decimal' requires a 'precision' property");
+            }
 
             var precision = int.Parse(precisionVal, CultureInfo.CurrentCulture);
 
             if (precision <= 0)
+            {
                 throw new AvroTypeException("'decimal' requires a 'precision' property that is greater than zero");
+            }
 
             var scale = GetScalePropertyValueFromSchema(schema);
 
             if (scale < 0 || scale > precision)
+            {
                 throw new AvroTypeException("'decimal' requires a 'scale' property that is zero or less than or equal to 'precision'");
+            }
         }
 
         /// <inheritdoc/>      
@@ -69,7 +77,9 @@ namespace Avro.Util
             var scale = decimalValue.Scale;
 
             if (scale != logicalScale)
+            {
                 throw new ArgumentOutOfRangeException(nameof(logicalValue), $"The decimal value has a scale of {scale} which cannot be encoded against a logical 'decimal' with a scale of {logicalScale}");
+            }
 
             var buffer = decimalValue.UnscaledValue.ToByteArray();
 

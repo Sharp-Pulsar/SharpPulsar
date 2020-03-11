@@ -38,13 +38,13 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("Staff")
-                .Topic("staff")
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv"))
+                .ProducerName("Crypto")
+                .Topic("Crypto")
+                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .AddEncryptionKey("pulsar")
                 .Schema(jsonSchema)
                 .EventListener(producer)
-                .AddEncryptionKey("sessions")
+                .AddEncryptionKey("Crypto")
                 .EnableBatching(false)
                 .BatchingMaxMessages(3)
                 .ProducerConfigurationData;
@@ -54,20 +54,20 @@ namespace Samples
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("Staff")
+                .ReaderName("Crypto")
                 .Schema(jsonSchema)
                 .ReaderListener(new ReaderMessageListener())
                 .Topic(topic)
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv"))
+                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .StartMessageId(MessageIdFields.Latest)
                 .EventListener(new ConsumerEventListener())
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("Staff")
+                .ConsumerName("Crypto")
                 .ForceTopicCreation(false)
-                .SubscriptionName("Staff-Subscription")
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv"))
+                .SubscriptionName("Crypto-Subscription")
+                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Topic(topic)
                 .Schema(jsonSchema)
                 .MessageListener(new ConsumerMessageListener())
@@ -98,7 +98,7 @@ namespace Samples
                 {
                     var students = new Students
                     {
-                        Name = $"Ebere: {DateTimeOffset.Now.Millisecond}",
+                        Name = $"Ebere: {DateTimeOffset.Now.Millisecond} - Decrypted",
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };

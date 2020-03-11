@@ -67,8 +67,11 @@ namespace Avro.Generic
             return (v,e) =>
                        {
                             if( v == null || !(v is GenericEnum) || !(v as GenericEnum).Schema.Equals(es))
-                                throw TypeMismatch(v, "enum", "GenericEnum");
-                            e.WriteEnum(es.Ordinal((v as GenericEnum ).Value));
+                           {
+                               throw TypeMismatch(v, "enum", "GenericEnum");
+                           }
+
+                           e.WriteEnum(es.Ordinal((v as GenericEnum ).Value));
                        };
         }
 
@@ -97,7 +100,11 @@ namespace Avro.Generic
         /// <returns>True if the two parameters are compatible, false otherwise.</returns>
         protected override bool UnionBranchMatches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null) return false;
+            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            {
+                return false;
+            }
+
             switch (sc.Tag)
             {
                 case Schema.Type.Null:
@@ -143,7 +150,10 @@ namespace Avro.Generic
         {
             public void EnsureArrayObject( object value )
             {
-                if( value == null || !( value is Array ) ) throw TypeMismatch( value, "array", "Array" );
+                if( value == null || !( value is Array ) )
+                {
+                    throw TypeMismatch( value, "array", "Array" );
+                }
             }
 
             public long GetArrayLength( object value )

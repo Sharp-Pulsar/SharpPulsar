@@ -62,7 +62,10 @@ namespace Avro.Generic
             ReaderSchema = readerSchema;
             WriterSchema = writerSchema;
             if (!ReaderSchema.CanRead(WriterSchema))
+            {
                 throw new AvroException("Schema mismatch. Reader: " + ReaderSchema + ", writer: " + WriterSchema);
+            }
+
             _reader = ResolveReader(writerSchema, readerSchema);
         }
 
@@ -265,7 +268,10 @@ namespace Avro.Generic
             // fill in defaults for any reader fields not in the writer schema
             foreach (Field rf in readerSchema)
             {
-                if (writerSchema.Contains(rf.Name)) continue;
+                if (writerSchema.Contains(rf.Name))
+                {
+                    continue;
+                }
 
                 var defaultStream = new MemoryStream();
                 var defaultEncoder = new BinaryEncoder(defaultStream);
@@ -425,7 +431,11 @@ namespace Avro.Generic
         protected static Schema FindBranch(UnionSchema us, Schema s)
         {
             int index = us.MatchingBranch(s);
-            if (index >= 0) return us[index];
+            if (index >= 0)
+            {
+                return us[index];
+            }
+
             throw new AvroException("No matching schema for " + s + " in " + us);
         }
 
@@ -482,7 +492,10 @@ namespace Avro.Generic
                     {
                         for (long n = d.ReadArrayStart(); n != 0; n = d.ReadArrayNext())
                         {
-                            for (long i = 0; i < n; i++) itemSkip(d);
+                            for (long i = 0; i < n; i++)
+                            {
+                                itemSkip(d);
+                            }
                         }
                     };
                 case Schema.Type.Map:
@@ -684,9 +697,21 @@ namespace Avro.Generic
 
             public override bool Equals( object obj )
             {
-                if( ReferenceEquals( null, obj ) ) return false;
-                if( ReferenceEquals( this, obj ) ) return true;
-                if( obj.GetType() != this.GetType() ) return false;
+                if( ReferenceEquals( null, obj ) )
+                {
+                    return false;
+                }
+
+                if ( ReferenceEquals( this, obj ) )
+                {
+                    return true;
+                }
+
+                if ( obj.GetType() != this.GetType() )
+                {
+                    return false;
+                }
+
                 return Equals( (SchemaPair) obj );
             }
 

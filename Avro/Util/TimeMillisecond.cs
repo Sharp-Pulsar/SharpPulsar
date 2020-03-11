@@ -42,7 +42,9 @@ namespace Avro.Util
         public override void ValidateSchema(LogicalSchema schema)
         {
             if (Schema.Type.Int != schema.BaseSchema.Tag)
+            {
                 throw new AvroTypeException("'time-millis' can only be used with an underlying int type");
+            }
         }
 
         /// <inheritdoc/>
@@ -51,7 +53,9 @@ namespace Avro.Util
             var time = (TimeSpan)logicalValue;
 
             if (time > _maxTime)
+            {
                 throw new ArgumentOutOfRangeException(nameof(logicalValue), "A 'time-millis' value can only have the range '00:00:00' to '23:59:59'.");
+            }
 
             return (int)(time - UnixEpochDateTime.TimeOfDay).TotalMilliseconds;
         }

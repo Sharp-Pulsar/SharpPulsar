@@ -43,10 +43,14 @@ namespace Avro.Generic
             set
             {
                 if (!(value is FixedSchema))
+                {
                     throw new AvroException("Schema " + value.Name + " in set is not FixedSchema");
+                }
 
                 if ((value as FixedSchema).Size != this.value.Length)
+                {
                     throw new AvroException("Schema " + value.Name + " Size " + (value as FixedSchema).Size + "is not equal to bytes length " + this.value.Length);
+                }
 
                 schema = value;
             }
@@ -103,13 +107,24 @@ namespace Avro.Generic
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            if (this == obj) return true;
+            if (this == obj)
+            {
+                return true;
+            }
+
             if (obj != null && obj is GenericFixed)
             {
                 GenericFixed that = obj as GenericFixed;
                 if (that.Schema.Equals(this.Schema))
                 {
-                    for (int i = 0; i < value.Length; i++) if (this.value[i] != that.value[i]) return false;
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        if (this.value[i] != that.value[i])
+                        {
+                            return false;
+                        }
+                    }
+
                     return true;
                 }
             }

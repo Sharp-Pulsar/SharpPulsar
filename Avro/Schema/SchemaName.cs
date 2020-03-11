@@ -99,9 +99,13 @@ namespace Avro
             {
                 JsonHelper.writeIfNotNullOrEmpty(writer, "name", this.Name);
                 if (!String.IsNullOrEmpty(this.Space))
+                {
                     JsonHelper.writeIfNotNullOrEmpty(writer, "namespace", this.Space);
+                }
                 else if (!String.IsNullOrEmpty(this.EncSpace)) // need to put enclosing name space for code generated classes
+                {
                     JsonHelper.writeIfNotNullOrEmpty(writer, "namespace", this.EncSpace);
+                }
             }
         }
 
@@ -112,7 +116,11 @@ namespace Avro
         /// <returns>true or false</returns>
         public override bool Equals(Object obj)
         {
-            if (obj == this) return true;
+            if (obj == this)
+            {
+                return true;
+            }
+
             if (obj != null && obj is SchemaName)
             {
                 SchemaName that = (SchemaName)obj;
@@ -166,7 +174,10 @@ namespace Avro
         public bool Contains(SchemaName name)
         {
             if (Names.ContainsKey(name))
+            {
                 return true;
+            }
+
             return false;
         }
 
@@ -179,7 +190,9 @@ namespace Avro
         public bool Add(SchemaName name, NamedSchema schema)
         {
             if (Names.ContainsKey(name))
+            {
                 return false;
+            }
 
             Names.Add(name, schema);
             return true;

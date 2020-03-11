@@ -92,7 +92,11 @@ namespace Avro
         /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema is UnionSchema || Tag == writerSchema.Tag) return true;
+            if (writerSchema is UnionSchema || Tag == writerSchema.Tag)
+            {
+                return true;
+            }
+
             Type t = writerSchema.Tag;
             switch (Tag)
             {
@@ -114,13 +118,18 @@ namespace Avro
         /// <returns>true two schemas are equal, false otherwise</returns>
         public override bool Equals(object obj)
         {
-            if (this == obj) return true;
+            if (this == obj)
+            {
+                return true;
+            }
 
             if (obj != null && obj is PrimitiveSchema)
             {
                 var that = obj as PrimitiveSchema;
                 if (this.Tag == that.Tag)
+                {
                     return areEqual(that.Props, this.Props);
+                }
             }
             return false;
         }

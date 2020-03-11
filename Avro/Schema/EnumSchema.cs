@@ -57,7 +57,9 @@ namespace Avro
 
             JArray jsymbols = jtok["symbols"] as JArray;
             if (null == jsymbols)
+            {
                 throw new SchemaParseException($"Enum has no symbols: {name} at '{jtok.Path}'");
+            }
 
             List<string> symbols = new List<string>();
             IDictionary<string, int> symbolMap = new Dictionary<string, int>();
@@ -66,7 +68,9 @@ namespace Avro
             {
                 string s = (string)jsymbol.Value;
                 if (symbolMap.ContainsKey(s))
+                {
                     throw new SchemaParseException($"Duplicate symbol: {s} at '{jtok.Path}'");
+                }
 
                 symbolMap[s] = i++;
                 symbols.Add(s);
@@ -97,7 +101,11 @@ namespace Avro
                             string doc)
                             : base(Type.Enumeration, name, aliases, props, names, doc)
         {
-            if (null == name.Name) throw new SchemaParseException("name cannot be null for enum schema.");
+            if (null == name.Name)
+            {
+                throw new SchemaParseException("name cannot be null for enum schema.");
+            }
+
             this.Symbols = symbols;
             this.symbolMap = symbolMap;
         }
@@ -115,7 +123,10 @@ namespace Avro
             writer.WritePropertyName("symbols");
             writer.WriteStartArray();
             foreach (string s in this.Symbols)
+            {
                 writer.WriteValue(s);
+            }
+
             writer.WriteEndArray();
         }
 
@@ -128,7 +139,11 @@ namespace Avro
         public int Ordinal(string symbol)
         {
             int result;
-            if (symbolMap.TryGetValue(symbol, out result)) return result;
+            if (symbolMap.TryGetValue(symbol, out result))
+            {
+                return result;
+            }
+
             throw new AvroException("No such symbol: " + symbol);
         }
 
@@ -141,7 +156,11 @@ namespace Avro
         {
             get
             {
-                if (index < Symbols.Count) return Symbols[index];
+                if (index < Symbols.Count)
+                {
+                    return Symbols[index];
+                }
+
                 throw new AvroException("Enumeration out of range. Must be less than " + Symbols.Count + ", but is " + index);
             }
         }
@@ -172,7 +191,11 @@ namespace Avro
         /// <returns></returns>
         public override bool Equals(object obj)
         {
-            if (obj == this) return true;
+            if (obj == this)
+            {
+                return true;
+            }
+
             if (obj != null && obj is EnumSchema)
             {
                 EnumSchema that = obj as EnumSchema;
@@ -199,7 +222,11 @@ namespace Avro
         public override int GetHashCode()
         {
             int result = SchemaName.GetHashCode() + getHashCode(Props);
-            foreach (string s in Symbols) result += 23 * s.GetHashCode();
+            foreach (string s in Symbols)
+            {
+                result += 23 * s.GetHashCode();
+            }
+
             return result;
         }
 
@@ -210,11 +237,19 @@ namespace Avro
         /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema.Tag != Tag) return false;
+            if (writerSchema.Tag != Tag)
+            {
+                return false;
+            }
 
             EnumSchema that = writerSchema as EnumSchema;
             if (!that.SchemaName.Equals(SchemaName))
-                if (!InAliases(that.SchemaName)) return false;
+            {
+                if (!InAliases(that.SchemaName))
+                {
+                    return false;
+                }
+            }
 
             // we defer checking of symbols. Writer may have a symbol missing from the reader,
             // but if writer never used the missing symbol, then reader should still be able to read the data

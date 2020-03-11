@@ -13,9 +13,13 @@ using Org.BouncyCastle.Security;
 
 namespace SharpPulsar.Utility
 {
+    //https://www.c-sharpcorner.com/article/encryption-and-decryption-using-a-symmetric-key-in-c-sharp/
+    //http://www.idc-online.com/technical_references/pdfs/information_technology/Bouncy_Castle_Net_Implementation_RSA_Algorithm.pdf
+    //https://gist.github.com/saldoukhov/59cbf22745bb45c17461dfb5986fca62
+    //https://gist.github.com/dziwoki/cc41b523c2bd43ee646b957f0aa91943
+    //https://stackoverflow.com/questions/41607885/the-input-data-is-not-a-complete-block-when-decrypting-using-aes
     internal static class CryptoHelper
     {
-
         public static byte[] Encrypt(byte[] data, byte[] key)
         {
             var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
@@ -92,39 +96,33 @@ namespace SharpPulsar.Utility
             // If object has Private/Public property, we have a Private PEM
             return (kp.GetType() == typeof(RsaPrivateCrtKeyParameters)) ? MakePrivateRCSP(rsaKey, (RsaPrivateCrtKeyParameters)kp) : MakePublicRcsp(rsaKey, (RsaKeyParameters)kp);
         }
-        public static byte[] Encrypt(byte[] key, byte[] payload, byte[] iv)
+        public static byte[] Encrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
+
+            byte[] payload = data;
             using var aes = Aes.Create();
             aes.Key = key;
             aes.IV = iv;
-            aes.Padding = PaddingMode.None;
-            aes.KeySize = 256;
-            var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-
-            using var memoryStream = new MemoryStream(payload);
-            using var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write);
-            using var output = new MemoryStream();
-            cryptoStream.CopyTo(output);
-            return output.ToArray();
+            aes.KeySize = keySize;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.Zeros;
+            using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
+            return encrypt.TransformFinalBlock(payload, 0, payload.Length);
         }
 
-        public static byte[] Decrypt(byte[] key, byte[] payload, byte[] iv)
+        public static byte[] Decrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
             //byte[] iv = new byte[16];
             //byte[] buffer = Convert.FromBase64String(cipherText);
-
+            byte[] payload = data;
             using var aes = Aes.Create();
             aes.Key = key;
             aes.IV = iv;
-            aes.Padding = PaddingMode.None;
-            aes.KeySize = 256;
-            var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-
-            using var memoryStream = new MemoryStream(payload);
-            using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
-            using var output = new MemoryStream();
-            cryptoStream.CopyTo(output);
-            return output.ToArray();
+            aes.KeySize = keySize;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.Zeros;
+            using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
+            return  decrypt.TransformFinalBlock(payload, 0, payload.Length);
         }
     }
 }

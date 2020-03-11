@@ -46,13 +46,24 @@ namespace Avro.Specific
         /// <returns>True if the fixed instances have equal values.</returns>
         protected bool Equals(SpecificFixed obj)
         {
-            if (this == obj) return true;
+            if (this == obj)
+            {
+                return true;
+            }
+
             if (obj != null && obj is SpecificFixed)
             {
                 SpecificFixed that = obj as SpecificFixed;
                 if (that.Schema.Equals(this.Schema))
                 {
-                    for (int i = 0; i < value.Length; i++) if (this.value[i] != that.Value[i]) return false;
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        if (this.value[i] != that.Value[i])
+                        {
+                            return false;
+                        }
+                    }
+
                     return true;
                 }
             }
@@ -63,9 +74,21 @@ namespace Avro.Specific
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != this.GetType())
+            {
+                return false;
+            }
+
             return Equals((SpecificFixed) obj);
         }
 

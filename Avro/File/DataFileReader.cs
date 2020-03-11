@@ -177,7 +177,9 @@ namespace Avro.File
         public void Seek(long position)
         {
             if (!_stream.CanSeek)
+            {
                 throw new AvroRuntimeException("Not a valid input stream - must be seekable!");
+            }
 
             _stream.Position = position;
             _decoder = new BinaryDecoder(_stream);
@@ -234,7 +236,10 @@ namespace Avro.File
         public long PreviousSync()
         {
             if (!_stream.CanSeek)
+            {
                 throw new AvroRuntimeException("Not a valid input stream - must be seekable!");
+            }
+
             return _blockStart;
         }
 
@@ -326,7 +331,9 @@ namespace Avro.File
                 throw new AvroRuntimeException("Not a valid data file!", e);
             }
             if (!firstBytes.SequenceEqual(DataFileConstants.Magic))
+            {
                 throw new AvroRuntimeException("Not a valid data file!");
+            }
 
             // read meta data
             long len = _decoder.ReadMapStart();
@@ -384,7 +391,9 @@ namespace Avro.File
             try
             {
                 if (!HasNext())
+                {
                     throw new AvroRuntimeException("No more datum objects remaining in block!");
+                }
 
                 T result = _reader.Read(reuse, _datumDecoder);
                 if (--_blockRemaining == 0)
@@ -403,13 +412,17 @@ namespace Avro.File
         private void BlockFinished()
         {
             if (_stream.CanSeek)
+            {
                 _blockStart = _stream.Position;
+            }
         }
 
         private DataBlock NextRawBlock(DataBlock reuse)
         {
             if (!HasNextBlock())
+            {
                 throw new AvroRuntimeException("No data remaining in block!");
+            }
 
             if (reuse == null || reuse.Data.Length < _blockSize)
             {
@@ -425,7 +438,9 @@ namespace Avro.File
             _decoder.ReadFixed(_syncBuffer);
 
             if (!Enumerable.SequenceEqual(_syncBuffer, _header.SyncData))
+            {
                 throw new AvroRuntimeException("Invalid sync!");
+            }
 
             _availableBlock = false;
             return reuse;
@@ -435,9 +450,13 @@ namespace Avro.File
         {
             long currentPosition = _stream.Position;
             if (_stream.ReadByte() != -1)
+            {
                 _stream.Position = currentPosition;
+            }
             else
+            {
                 return false;
+            }
 
             return true;
         }
@@ -448,13 +467,17 @@ namespace Avro.File
             {
                 // block currently being read
                 if (_availableBlock)
+                {
                     return true;
+                }
 
                 // check to ensure still data to read
                 if (_stream.CanSeek)
                 {
                     if (!DataLeft())
+                    {
                         return false;
+                    }
 
                     _blockRemaining = _decoder.ReadLong();      // read block count
                 }

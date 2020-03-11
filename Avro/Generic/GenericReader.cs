@@ -135,7 +135,9 @@ namespace Avro.Generic
         public T Read<T>(T reuse, Decoder decoder)
         {
             if (!ReaderSchema.CanRead(WriterSchema))
+            {
                 throw new AvroException("Schema mismatch. Reader: " + ReaderSchema + ", writer: " + WriterSchema);
+            }
 
             return (T)Read(reuse, WriterSchema, ReaderSchema, decoder);
         }
@@ -154,7 +156,7 @@ namespace Avro.Generic
         {
             if (readerSchema.Tag == Schema.Type.Union && writerSchema.Tag != Schema.Type.Union)
             {
-                readerSchema = findBranch(readerSchema as UnionSchema, writerSchema);
+                readerSchema = FindBranch(readerSchema as UnionSchema, writerSchema);
             }
             /*
             if (!readerSchema.CanRead(writerSchema))
@@ -296,7 +298,10 @@ namespace Avro.Generic
             var defaultDecoder = new BinaryDecoder(defaultStream);
             foreach (Field rf in rs)
             {
-                if (writerSchema.Contains(rf.Name)) continue;
+                if (writerSchema.Contains(rf.Name))
+                {
+                    continue;
+                }
 
                 defaultStream.Position = 0; // reset for writing
                 Resolver.EncodeDefaultValue(defaultEncoder, rf.Schema, rf.DefaultValue);
@@ -406,13 +411,21 @@ namespace Avro.Generic
             int i = 0;
             for (int n = (int)d.ReadArrayStart(); n != 0; n = (int)d.ReadArrayNext())
             {
-                if (GetArraySize(result) < (i + n)) ResizeArray(ref result, i + n);
+                if (GetArraySize(result) < (i + n))
+                {
+                    ResizeArray(ref result, i + n);
+                }
+
                 for (int j = 0; j < n; j++, i++)
                 {
                     SetArrayElement(result, i, Read(GetArrayElement(result, i), writerSchema.ItemSchema, rs.ItemSchema, d));
                 }
             }
-            if (GetArraySize(result) != i) ResizeArray(ref result, i);
+            if (GetArraySize(result) != i)
+            {
+                ResizeArray(ref result, i);
+            }
+
             return result;
         }
 
@@ -544,10 +557,14 @@ namespace Avro.Generic
             Schema ws = writerSchema[index];
 
             if (readerSchema is UnionSchema)
-                readerSchema = findBranch(readerSchema as UnionSchema, ws);
+            {
+                readerSchema = FindBranch(readerSchema as UnionSchema, ws);
+            }
             else
                 if (!readerSchema.CanRead(ws))
-                    throw new AvroException("Schema mismatch. Reader: " + ReaderSchema + ", writer: " + WriterSchema);
+            {
+                throw new AvroException("Schema mismatch. Reader: " + ReaderSchema + ", writer: " + WriterSchema);
+            }
 
             return Read(reuse, ws, readerSchema, d);
         }
@@ -650,7 +667,11 @@ namespace Avro.Generic
                     d.SkipBytes();
                     break;
                 case Schema.Type.Record:
-                    foreach (Field f in writerSchema as RecordSchema) Skip(f.Schema, d);
+                    foreach (Field f in writerSchema as RecordSchema)
+                    {
+                        Skip(f.Schema, d);
+                    }
+
                     break;
                 case Schema.Type.Enumeration:
                     d.SkipEnum();
@@ -663,7 +684,10 @@ namespace Avro.Generic
                         Schema s = (writerSchema as ArraySchema).ItemSchema;
                         for (long n = d.ReadArrayStart(); n != 0; n = d.ReadArrayNext())
                         {
-                            for (long i = 0; i < n; i++) Skip(s, d);
+                            for (long i = 0; i < n; i++)
+                            {
+                                Skip(s, d);
+                            }
                         }
                     }
                     break;
@@ -693,10 +717,14 @@ namespace Avro.Generic
         /// <param name="us">Union schema.</param>
         /// <param name="s">Schema to find in the union schema.</param>
         /// <returns>Schema branch in the union schema.</returns>
-        protected static Schema findBranch(UnionSchema us, Schema s)
+        protected static Schema FindBranch(UnionSchema us, Schema s)
         {
             int index = us.MatchingBranch(s);
-            if (index >= 0) return us[index];
+            if (index >= 0)
+            {
+                return us[index];
+            }
+
             throw new AvroException("No matching schema for " + s + " in " + us);
         }
 

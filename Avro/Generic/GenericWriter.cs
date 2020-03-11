@@ -176,7 +176,10 @@ namespace Avro.Generic
         /// <param name="encoder">The encoder to use while serialization</param>
         protected virtual void WriteNull(object value, Encoder encoder)
         {
-            if (value != null) throw TypeMismatch(value, "null", "null");
+            if (value != null)
+            {
+                throw TypeMismatch(value, "null", "null");
+            }
         }
 
         /// <summary>
@@ -188,7 +191,11 @@ namespace Avro.Generic
         /// <param name="writer">The writer which should be used to write the given type.</param>
         protected virtual void Write<T>(object value, Schema.Type tag, Writer<T> writer)
         {
-            if (!(value is T)) throw TypeMismatch(value, tag.ToString(), typeof(T).ToString());
+            if (!(value is T))
+            {
+                throw TypeMismatch(value, tag.ToString(), typeof(T).ToString());
+            }
+
             writer((T)value);
         }
 
@@ -255,7 +262,10 @@ namespace Avro.Generic
         protected virtual void WriteEnum(EnumSchema es, object value, Encoder encoder)
         {
             if (value == null || !(value is GenericEnum) || !(value as GenericEnum).Schema.Equals(es))
+            {
                 throw TypeMismatch(value, "enum", "GenericEnum");
+            }
+
             encoder.WriteEnum(es.Ordinal((value as GenericEnum).Value));
         }
 
@@ -288,7 +298,10 @@ namespace Avro.Generic
         /// <param name="value"></param>
         protected virtual void EnsureArrayObject(object value)
         {
-            if (value == null || !(value is Array)) throw TypeMismatch(value, "array", "Array");
+            if (value == null || !(value is Array))
+            {
+                throw TypeMismatch(value, "array", "Array");
+            }
         }
 
         /// <summary>
@@ -347,7 +360,10 @@ namespace Avro.Generic
         /// <param name="value"></param>
         protected virtual void EnsureMapObject(object value)
         {
-            if (value == null || !(value is IDictionary<string, object>)) throw TypeMismatch(value, "map", "IDictionary<string, object>");
+            if (value == null || !(value is IDictionary<string, object>))
+            {
+                throw TypeMismatch(value, "map", "IDictionary<string, object>");
+            }
         }
 
         /// <summary>
@@ -401,7 +417,10 @@ namespace Avro.Generic
         {
             for (int i = 0; i < us.Count; i++)
             {
-                if (Matches(us[i], obj)) return i;
+                if (Matches(us[i], obj))
+                {
+                    return i;
+                }
             }
             throw new AvroException("Cannot find a match for " + obj.GetType() + " in " + us);
         }
@@ -467,7 +486,11 @@ namespace Avro.Generic
         /// <returns>True if the two parameters are compatible, false otherwise.</returns>
         protected virtual bool Matches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null) return false;
+            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            {
+                return false;
+            }
+
             switch (sc.Tag)
             {
                 case Schema.Type.Null:

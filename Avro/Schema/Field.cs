@@ -124,8 +124,16 @@ namespace Avro
         internal Field(Schema schema, string name, IList<string> aliases, int pos, string doc,
                         JToken defaultValue, SortOrder sortorder, PropertyMap props)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name), "name cannot be null.");
-            if (null == schema) throw new ArgumentNullException("type", "type cannot be null.");
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name), "name cannot be null.");
+            }
+
+            if (null == schema)
+            {
+                throw new ArgumentNullException("type", "type cannot be null.");
+            }
+
             this.Schema = schema;
             this.Name = name;
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -162,7 +170,9 @@ namespace Avro
             }
 
             if (null != this.Props)
+            {
                 this.Props.WriteJson(writer);
+            }
 
             if (null != Aliases)
             {
@@ -188,16 +198,22 @@ namespace Avro
         {
             JToken jaliases = jtok["aliases"];
             if (null == jaliases)
+            {
                 return null;
+            }
 
             if (jaliases.Type != JTokenType.Array)
+            {
                 throw new SchemaParseException($"Aliases must be of format JSON array of strings at '{jtok.Path}'");
+            }
 
             var aliases = new List<string>();
             foreach (JToken jalias in jaliases)
             {
                 if (jalias.Type != JTokenType.String)
+                {
                     throw new SchemaParseException($"Aliases must be of format JSON array of strings at '{jtok.Path}'");
+                }
 
                 aliases.Add((string)jalias);
             }
@@ -211,7 +227,11 @@ namespace Avro
         /// <returns>custom property value</returns>
         public string GetProperty(string key)
         {
-            if (null == this.Props) return null;
+            if (null == this.Props)
+            {
+                return null;
+            }
+
             string v;
             return this.Props.TryGetValue(key, out v) ? v : null;
         }
@@ -223,7 +243,11 @@ namespace Avro
         /// <returns>true if two fields are equal, false otherwise</returns>
         public override bool Equals(object obj)
         {
-            if (obj == this) return true;
+            if (obj == this)
+            {
+                return true;
+            }
+
             if (obj != null && obj is Field)
             {
                 Field that = obj as Field;

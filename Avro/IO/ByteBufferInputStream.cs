@@ -43,7 +43,11 @@ namespace Avro.IO
         /// <inheritdoc/>
         public override int Read(byte[] b, int off, int len)
         {
-            if (len == 0) return 0;
+            if (len == 0)
+            {
+                return 0;
+            }
+
             MemoryStream buffer = GetNextNonEmptyBuffer();
             long remaining = buffer.Length - buffer.Position;
             if (len > remaining)
@@ -72,7 +76,9 @@ namespace Avro.IO
             {
                 MemoryStream buffer = _buffers[_currentBuffer];
                 if (buffer.Position < buffer.Length)
+                {
                     return buffer;
+                }
 
                 _currentBuffer++;
             }

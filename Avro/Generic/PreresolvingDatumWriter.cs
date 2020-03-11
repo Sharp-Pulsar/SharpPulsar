@@ -113,7 +113,10 @@ namespace Avro.Generic
         /// <param name="encoder">The encoder to use while serialization</param>
         protected void WriteNull(object value, Encoder encoder)
         {
-            if (value != null) throw TypeMismatch(value, "null", "null");
+            if (value != null)
+            {
+                throw TypeMismatch(value, "null", "null");
+            }
         }
 
         /// <summary>
@@ -125,7 +128,11 @@ namespace Avro.Generic
         /// <param name="writer">The writer which should be used to write the given type.</param>
         protected void Write<TValue>(object value, Schema.Type tag, Writer<TValue> writer)
         {
-            if (!(value is TValue)) throw TypeMismatch(value, tag.ToString(), typeof(TValue).ToString());
+            if (!(value is TValue))
+            {
+                throw TypeMismatch(value, tag.ToString(), typeof(TValue).ToString());
+            }
+
             writer((TValue)value);
         }
 
@@ -316,7 +323,10 @@ namespace Avro.Generic
         {
             for (int i = 0; i < branchSchemas.Length; i++)
             {
-                if (UnionBranchMatches(branchSchemas[i], obj)) return i;
+                if (UnionBranchMatches(branchSchemas[i], obj))
+                {
+                    return i;
+                }
             }
             throw new AvroException("Cannot find a match for " + obj.GetType() + " in " + us);
         }

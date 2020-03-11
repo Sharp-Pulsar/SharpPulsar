@@ -51,7 +51,9 @@ namespace Avro.Specific
         protected override void EnsureRecordObject(RecordSchema recordSchema, object value)
         {
             if (!(value is ISpecificRecord))
+            {
                 throw new AvroTypeException("Record object is not derived from ISpecificRecord");
+            }
         }
 
         /// <inheritdoc/>
@@ -82,8 +84,11 @@ namespace Avro.Specific
             return (v,e) =>
                        {
                            if(v == null)
-                                throw new AvroTypeException("value is null in SpecificDefaultWriter.WriteEnum");
-                           if(v.GetType() == type)
+                           {
+                               throw new AvroTypeException("value is null in SpecificDefaultWriter.WriteEnum");
+                           }
+
+                           if (v.GetType() == type)
                            {
                                int translated = translator[(int)v];
                                if (translated == -1)
@@ -107,7 +112,9 @@ namespace Avro.Specific
         {
             var fixedrec = value as SpecificFixed;
             if (fixedrec == null)
+            {
                 throw new AvroTypeException("Fixed object is not derived from SpecificFixed");
+            }
 
             encoder.WriteFixed(fixedrec.Value);
         }
@@ -115,7 +122,11 @@ namespace Avro.Specific
         /// <inheritdoc/>
         protected override bool UnionBranchMatches( Schema sc, object obj )
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null) return false;
+            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            {
+                return false;
+            }
+
             switch (sc.Tag)
             {
                 case Schema.Type.Null:

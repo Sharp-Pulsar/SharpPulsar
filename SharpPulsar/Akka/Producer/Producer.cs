@@ -92,7 +92,7 @@ namespace SharpPulsar.Akka.Producer
                 _msgCrypto = new MessageCrypto(logCtx, true);
 
                 // Regenerate data key cipher at fixed interval
-                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
+                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(0), TimeSpan.FromHours(4), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
 
             }
             

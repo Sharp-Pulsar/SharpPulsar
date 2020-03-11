@@ -96,7 +96,10 @@ namespace Avro
             for (int i = 0; i < names.Length; ++i)
             {
                 if (ReservedKeywords.Contains(names[i]))
+                {
                     builder.Append(At);
+                }
+
                 builder.Append(names[i]);
                 builder.Append(Dot);
             }
@@ -114,7 +117,10 @@ namespace Avro
             var builder = new StringBuilder(name.Length);
             for (int i = 0; i < name.Length; ++i)
                 if (name[i] != At)
+                {
                     builder.Append(name[i]);
+                }
+
             return builder.ToString();
         }
     }

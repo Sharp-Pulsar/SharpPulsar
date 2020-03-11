@@ -79,7 +79,7 @@ namespace SharpPulsar.Akka.Consumer
             _topicName = TopicName.Get(topic);
             _schema = configuration.Schema;
             // Create msgCrypto if not created already
-            _msgCrypto = configuration.CryptoKeyReader == null ? new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false) : null;
+            _msgCrypto = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
             Receive<BrokerLookUp>(l =>
             {
                 _pendingLookupRequests.Remove(l.RequestId);
@@ -388,8 +388,28 @@ namespace SharpPulsar.Akka.Consumer
             EncryptionContext encryptionCtx = null;
             if (msgMetadata.EncryptionKeys.Count > 0)
             {
+                IDictionary<string, EncryptionContext.EncryptionKey> keys = new Dictionary<string, EncryptionContext.EncryptionKey>();
+                foreach(var kv in msgMetadata.EncryptionKeys)
+                {
+                    var neC = new EncryptionContext.EncryptionKey
+                    {
+                        KeyValue = (sbyte[]) (object) kv.Value,
+                        Metadata = new Dictionary<string, string>()
+                    };
+                    foreach (var m in kv.Metadatas)
+                    {
+                        if (!neC.Metadata.ContainsKey(m.Key))
+                        {
+                            neC.Metadata.Add(m.Key, m.Value);
+                        }
+                    }
+
+                    if (!keys.ContainsKey(kv.Key))
+                    {
+                        keys.Add(kv.Key, neC);
+                    }
+                }
                 encryptionCtx = new EncryptionContext();
-                IDictionary<string, EncryptionContext.EncryptionKey> keys = msgMetadata.EncryptionKeys.ToDictionary(e => e.Key, e => new EncryptionContext.EncryptionKey { KeyValue = (sbyte[])(object)e.Value, Metadata = e.Metadatas?.ToDictionary(k => k.Key, k => k.Value) });
                 var encParam = new sbyte[MessageCrypto.IvLen];
                 msgMetadata.EncryptionParam.CopyTo((byte[])(object)encParam, 0);
                 int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;

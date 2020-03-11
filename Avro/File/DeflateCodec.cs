@@ -75,7 +75,10 @@ namespace Avro.File
         public override bool Equals(object other)
         {
             if (this == other)
+            {
                 return true;
+            }
+
             return this.GetType().Name == other.GetType().Name;
         }
 

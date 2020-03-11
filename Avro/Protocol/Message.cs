@@ -75,7 +75,11 @@ namespace Avro
         /// </param>
         public Message(string name, string doc, RecordSchema request, Schema response, UnionSchema error, bool? oneway)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name), "name cannot be null.");
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name), "name cannot be null.");
+            }
+
             this.Request = request;
             this.Response = response;
             this.Error = error;
@@ -126,7 +130,9 @@ namespace Avro
             {
                 Schema errorSchema = Schema.ParseJson(jerrors, names, encspace);
                 if (!(errorSchema is UnionSchema))
+                {
                     throw new AvroException($"Not a UnionSchema at {jerrors.Path}");
+                }
 
                 uerrorSchema = errorSchema as UnionSchema;
             }
@@ -152,7 +158,9 @@ namespace Avro
             JsonHelper.writeIfNotNullOrEmpty(writer, "doc", this.Doc);
 
             if (null != this.Request)
+            {
                 this.Request.WriteJsonFields(writer, names, null);
+            }
 
             if (null != this.Response)
             {
@@ -182,10 +190,17 @@ namespace Avro
         /// <returns></returns>
         public override bool Equals(Object obj)
         {
-          if (obj == this) return true;
-          if (!(obj is Message)) return false;
+          if (obj == this)
+            {
+                return true;
+            }
 
-          Message that = obj as Message;
+            if (!(obj is Message))
+            {
+                return false;
+            }
+
+            Message that = obj as Message;
           return this.Name.Equals(that.Name, StringComparison.Ordinal) &&
                  this.Request.Equals(that.Request) &&
                  areEqual(this.Response, that.Response) &&

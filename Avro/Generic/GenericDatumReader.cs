@@ -175,7 +175,9 @@ namespace Avro.Generic
             public void EnsureSize(ref object array, int targetSize)
             {
                 if (((object[])array).Length < targetSize)
+                {
                     SizeTo(ref array, targetSize);
+                }
             }
 
             public void Resize(ref object array, int targetSize)

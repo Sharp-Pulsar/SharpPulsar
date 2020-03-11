@@ -165,7 +165,9 @@ namespace Avro.Specific
                 {
                     array = reuse as IList;
                     if( array == null )
+                    {
                         throw new AvroException( "array object does not implement non-generic IList" );
+                    }
                     // retaining existing behavior where array contents aren't reused
                     // TODO: try to reuse contents?
                     array.Clear();
@@ -216,7 +218,9 @@ namespace Avro.Specific
                 {
                     map = reuse as IDictionary;
                     if (map == null)
+                    {
                         throw new AvroException("map object does not implement non-generic IList");
+                    }
 
                     map.Clear();
                 }

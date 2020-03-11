@@ -44,7 +44,7 @@ namespace Samples.Consumer
         public void ConsumerCreated(CreatedConsumer consumer)
         {
             Console.WriteLine($"Consumer for topic: {consumer.Topic}");
-            _actorRefs.Add(consumer.Topic, consumer.Consumer);
+            _actorRefs[consumer.Topic] =  consumer.Consumer;
         }
     }
 }

@@ -93,7 +93,11 @@ namespace Avro.IO
         public void WriteFloat(float value)
         {
             byte[] buffer = BitConverter.GetBytes(value);
-            if (!BitConverter.IsLittleEndian) Array.Reverse(buffer);
+            if (!BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(buffer);
+            }
+
             writeBytes(buffer);
         }
         /// <summary>
@@ -151,7 +155,10 @@ namespace Avro.IO
         /// <inheritdoc/>
         public void SetItemCount(long value)
         {
-            if (value > 0) WriteLong(value);
+            if (value > 0)
+            {
+                WriteLong(value);
+            }
         }
 
         /// <inheritdoc/>

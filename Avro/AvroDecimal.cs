@@ -62,7 +62,9 @@ namespace Avro
             var scale = bytes[14];
 
             if (bytes[15] == 128)
+            {
                 unscaledValue *= BigInteger.MinusOne;
+            }
 
             UnscaledValue = unscaledValue;
             Scale = scale;
@@ -135,7 +137,9 @@ namespace Avro
             var number = UnscaledValue.ToString(CultureInfo.CurrentCulture);
 
             if (Scale > 0)
+            {
                 return number.Insert(number.Length - Scale, CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
+            }
 
             return number;
         }
@@ -496,7 +500,9 @@ namespace Avro
             var scaledValue = BigInteger.Divide(UnscaledValue, scaleDivisor);
 
             if (scaledValue > new BigInteger(Decimal.MaxValue))
+            {
                 throw new ArgumentOutOfRangeException("value", "The value " + UnscaledValue + " cannot fit into " + conversionType.Name + ".");
+            }
 
             var leftOfDecimal = (decimal)scaledValue;
             var rightOfDecimal = ((decimal)remainder) / ((decimal)scaleDivisor);
@@ -705,10 +711,14 @@ namespace Avro
         public int CompareTo(object obj)
         {
             if (obj == null)
+            {
                 return 1;
+            }
 
             if (!(obj is AvroDecimal))
+            {
                 throw new ArgumentException("Compare to object must be a BigDecimal", nameof(obj));
+            }
 
             return CompareTo((AvroDecimal)obj);
         }
@@ -727,11 +737,15 @@ namespace Avro
 
             // if both are the same value, return the value
             if (unscaledValueCompare == scaleCompare)
+            {
                 return unscaledValueCompare;
+            }
 
             // if the scales are both the same return unscaled value
             if (scaleCompare == 0)
+            {
                 return unscaledValueCompare;
+            }
 
             var scaledValue = BigInteger.Divide(UnscaledValue, BigInteger.Pow(new BigInteger(10), Scale));
             var otherScaledValue = BigInteger.Divide(other.UnscaledValue, BigInteger.Pow(new BigInteger(10), other.Scale));

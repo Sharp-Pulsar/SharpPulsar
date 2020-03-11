@@ -62,12 +62,20 @@ namespace Avro
             if (null == jfields)
             {
                 jfields = jtok["request"];      // anonymous record from messages
-                if (null != jfields) request = true;
+                if (null != jfields)
+                {
+                    request = true;
+                }
             }
             if (null == jfields)
+            {
                 throw new SchemaParseException($"'fields' cannot be null for record at '{jtok.Path}'");
+            }
+
             if (jfields.Type != JTokenType.Array)
+            {
                 throw new SchemaParseException($"'fields' not an array for record at '{jtok.Path}'");
+            }
 
             var name = GetName(jtok, encspace);
             var aliases = NamedSchema.GetAliases(jtok, name.Space, name.EncSpace);
@@ -89,16 +97,18 @@ namespace Avro
             foreach (JObject jfield in jfields)
             {
                 string fieldName = JsonHelper.GetRequiredString(jfield, "name");
-                Field field = createField(jfield, fieldPos++, names, name.Namespace);  // add record namespace for field look up
+                Field field = CreateField(jfield, fieldPos++, names, name.Namespace);  // add record namespace for field look up
                 fields.Add(field);
                 try
                 {
-                    addToFieldMap(fieldMap, fieldName, field);
-                    addToFieldMap(fieldAliasMap, fieldName, field);
+                    AddToFieldMap(fieldMap, fieldName, field);
+                    AddToFieldMap(fieldAliasMap, fieldName, field);
 
                     if (null != field.Aliases)    // add aliases to field lookup map so reader function will find it when writer field name appears only as an alias on the reader field
                         foreach (string alias in field.Aliases)
-                            addToFieldMap(fieldAliasMap, alias, field);
+                        {
+                            AddToFieldMap(fieldAliasMap, alias, field);
+                        }
                 }
                 catch (SchemaParseException e)
                 {
@@ -126,7 +136,11 @@ namespace Avro
                                 IDictionary<string, Field> fieldAliasMap, SchemaNames names, string doc)
                                 : base(type, name, aliases, props, names, doc)
         {
-            if (!request && null == name.Name) throw new SchemaParseException("name cannot be null for record schema.");
+            if (!request && null == name.Name)
+            {
+                throw new SchemaParseException("name cannot be null for record schema.");
+            }
+
             this.Fields = fields;
             this.request = request;
             this.fieldLookup = fieldMap;
@@ -141,7 +155,7 @@ namespace Avro
         /// <param name="names">list of named schemas already read</param>
         /// <param name="encspace">enclosing namespace of the records schema</param>
         /// <returns>new Field object</returns>
-        private static Field createField(JToken jfield, int pos, SchemaNames names, string encspace)
+        private static Field CreateField(JToken jfield, int pos, SchemaNames names, string encspace)
         {
             var name = JsonHelper.GetRequiredString(jfield, "name");
             var doc = JsonHelper.GetOptionalString(jfield, "doc");
@@ -149,7 +163,9 @@ namespace Avro
             var jorder = JsonHelper.GetOptionalString(jfield, "order");
             Field.SortOrder sortorder = Field.SortOrder.ignore;
             if (null != jorder)
+            {
                 sortorder = (Field.SortOrder) Enum.Parse(typeof(Field.SortOrder), jorder);
+            }
 
             var aliases = Field.GetAliases(jfield);
             var props = Schema.GetProperties(jfield);
@@ -157,15 +173,21 @@ namespace Avro
 
             JToken jtype = jfield["type"];
             if (null == jtype)
+            {
                 throw new SchemaParseException($"'type' was not found for field: name at '{jfield.Path}'");
+            }
+
             var schema = Schema.ParseJson(jtype, names, encspace);
             return new Field(schema, name, aliases, pos, doc, defaultValue, sortorder, props);
         }
 
-        private static void addToFieldMap(Dictionary<string, Field> map, string name, Field field)
+        private static void AddToFieldMap(Dictionary<string, Field> map, string name, Field field)
         {
             if (map.ContainsKey(name))
+            {
                 throw new SchemaParseException("field or alias " + name + " is a duplicate name");
+            }
+
             map.Add(name, field);
         }
 
@@ -178,7 +200,11 @@ namespace Avro
         {
             get
             {
-                if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
+                if (string.IsNullOrEmpty(name))
+                {
+                    throw new ArgumentNullException(nameof(name));
+                }
+
                 Field field;
                 return fieldLookup.TryGetValue(name, out field) ? field : null;
             }
@@ -243,15 +269,22 @@ namespace Avro
 
             // we allow reading for empty fields, so writing of records with empty fields are allowed as well
             if (request)
+            {
                 writer.WritePropertyName("request");
+            }
             else
+            {
                 writer.WritePropertyName("fields");
+            }
+
             writer.WriteStartArray();
 
             if (null != this.Fields && this.Fields.Count > 0)
             {
                 foreach (Field field in this)
+                {
                     field.writeJson(writer, names, this.Namespace); // use the namespace of the record for the fields
+                }
             }
             writer.WriteEndArray();
         }
@@ -263,7 +296,11 @@ namespace Avro
         /// <returns>true if the two schemas are equal, false otherwise</returns>
         public override bool Equals(object obj)
         {
-            if (obj == this) return true;
+            if (obj == this)
+            {
+                return true;
+            }
+
             if (obj != null && obj is RecordSchema)
             {
                 RecordSchema that = obj as RecordSchema;
@@ -271,7 +308,14 @@ namespace Avro
                 {
                     if (this.SchemaName.Equals(that.SchemaName) && this.Count == that.Count)
                     {
-                        for (int i = 0; i < Fields.Count; i++) if (!Fields[i].Equals(that.Fields[i])) return false;
+                        for (int i = 0; i < Fields.Count; i++)
+                        {
+                            if (!Fields[i].Equals(that.Fields[i]))
+                            {
+                                return false;
+                            }
+                        }
+
                         return areEqual(that.Props, this.Props);
                     }
                     return false;
@@ -289,7 +333,11 @@ namespace Avro
             return protect(() => 0, () =>
             {
                 int result = SchemaName.GetHashCode();
-                foreach (Field f in Fields) result += 29 * f.GetHashCode();
+                foreach (Field f in Fields)
+                {
+                    result += 29 * f.GetHashCode();
+                }
+
                 result += getHashCode(Props);
                 return result;
             }, this);
@@ -302,14 +350,19 @@ namespace Avro
         /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if ((writerSchema.Tag != Type.Record) && (writerSchema.Tag != Type.Error)) return false;
+            if ((writerSchema.Tag != Type.Record) && (writerSchema.Tag != Type.Error))
+            {
+                return false;
+            }
 
             RecordSchema that = writerSchema as RecordSchema;
             return protect(() => true, () =>
             {
                 if (!that.SchemaName.Equals(SchemaName))
                     if (!InAliases(that.SchemaName))
+                    {
                         return false;
+                    }
 
                 foreach (Field f in this)
                 {
@@ -319,13 +372,22 @@ namespace Avro
                             foreach (string alias in f.Aliases)
                             {
                                 f2 = that[alias];
-                                if (null != f2) break;
+                                if (null != f2)
+                                {
+                                    break;
+                                }
                             }
 
                     if (f2 == null && f.DefaultValue != null)
+                    {
                         continue;         // Writer field missing, reader has default.
+                    }
 
-                    if (f2 != null && f.Schema.CanRead(f2.Schema)) continue;    // Both fields exist and are compatible.
+                    if (f2 != null && f.Schema.CanRead(f2.Schema))
+                    {
+                        continue;    // Both fields exist and are compatible.
+                    }
+
                     return false;
                 }
                 return true;
@@ -361,10 +423,13 @@ namespace Avro
         private T protect<T>(Function<T> bypass, Function<T> main, RecordSchema that)
         {
             if (seen == null)
+            {
                 seen = new List<RecordSchemaPair>();
-
+            }
             else if (seen.Find((RecordSchemaPair rs) => rs.first == this && rs.second == that) != null)
+            {
                 return bypass();
+            }
 
             RecordSchemaPair p = new RecordSchemaPair(this, that);
             seen.Add(p);

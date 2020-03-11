@@ -102,9 +102,15 @@ namespace Avro.Specific
             public override bool Equals(object obj)
             {
                 if (ReferenceEquals(null, obj))
+                {
                     return false;
+                }
+
                 if (obj.GetType() != typeof(NameCtorKey))
+                {
                     return false;
+                }
+
                 return Equals((NameCtorKey)obj);
             }
             public override int GetHashCode()

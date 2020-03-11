@@ -43,9 +43,14 @@ namespace Avro
             foreach (JProperty prop in jo.Properties())
             {
                 if (ReservedProps.Contains(prop.Name))
+                {
                     continue;
+                }
+
                 if (!ContainsKey(prop.Name))
+                {
                     Add(prop.Name, JsonConvert.SerializeObject(prop.Value));
+                }
             }
         }
 
@@ -57,7 +62,9 @@ namespace Avro
         public void Set(string key, string value)
         {
             if (ReservedProps.Contains(key))
+            {
                 throw new AvroException("Can't set reserved property: " + key);
+            }
 
             string oldValue;
             if (TryGetValue(key, out oldValue))
@@ -79,7 +86,10 @@ namespace Avro
         {
             foreach (KeyValuePair<string, string> kp in this)
             {
-                if (ReservedProps.Contains(kp.Key)) continue;
+                if (ReservedProps.Contains(kp.Key))
+                {
+                    continue;
+                }
 
                 writer.WritePropertyName(kp.Key);
                 writer.WriteRawValue(kp.Value);
@@ -93,19 +103,30 @@ namespace Avro
         /// <returns>true if contents of the two maps are the same, false otherwise</returns>
         public override bool Equals(object obj)
         {
-            if (this == obj) return true;
+            if (this == obj)
+            {
+                return true;
+            }
 
             if (obj != null && obj is PropertyMap)
             {
                 var that = obj as PropertyMap;
                 if (this.Count != that.Count)
+                {
                     return false;
+                }
+
                 foreach (KeyValuePair<string, string> pair in this)
                 {
                     if (!that.ContainsKey(pair.Key))
+                    {
                         return false;
+                    }
+
                     if (!pair.Value.Equals(that[pair.Key], StringComparison.Ordinal))
+                    {
                         return false;
+                    }
                 }
                 return true;
             }
@@ -121,7 +142,10 @@ namespace Avro
             int hash = this.Count;
             int index = 1;
             foreach (KeyValuePair<string, string> pair in this)
+            {
                 hash += (pair.Key.GetHashCode() + pair.Value.GetHashCode()) * index++;
+            }
+
             return hash;
         }
     }

@@ -67,7 +67,9 @@ namespace Avro.Specific
         {
             var rec = value as ISpecificRecord;
             if (rec == null)
+            {
                 throw new AvroTypeException("Record object is not derived from ISpecificRecord");
+            }
 
             foreach (Field field in schema)
             {
@@ -93,7 +95,9 @@ namespace Avro.Specific
         {
             var fixedrec = value as SpecificFixed;
             if (fixedrec == null)
+            {
                 throw new AvroTypeException("Fixed object is not derived from SpecificFixed");
+            }
 
             encoder.WriteFixed(fixedrec.Value);
         }
@@ -107,7 +111,9 @@ namespace Avro.Specific
         protected override void WriteEnum(EnumSchema schema, object value, Encoder encoder)
         {
             if (value == null)
+            {
                 throw new AvroTypeException("value is null in SpecificDefaultWriter.WriteEnum");
+            }
 
             encoder.WriteEnum(schema.Ordinal(value.ToString()));
         }
@@ -124,7 +130,9 @@ namespace Avro.Specific
         {
             var arr = value as System.Collections.IList;
             if (arr == null)
+            {
                 throw new AvroTypeException("Array does not implement non-generic IList");
+            }
 
             long l = arr.Count;
             encoder.WriteArrayStart();
@@ -147,7 +155,9 @@ namespace Avro.Specific
         {
             var map = value as System.Collections.IDictionary;
             if (map == null)
+            {
                 throw new AvroTypeException("Map does not implement non-generic IDictionary");
+            }
 
             encoder.WriteArrayStart();
             encoder.SetItemCount(map.Count);
@@ -185,7 +195,11 @@ namespace Avro.Specific
         /// <inheritdoc/>
         protected override bool Matches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null) return false;
+            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            {
+                return false;
+            }
+
             switch (sc.Tag)
             {
                 case Schema.Type.Null:

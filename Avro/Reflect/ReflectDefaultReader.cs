@@ -335,7 +335,10 @@ namespace Avro.Reflect
                     {
                         JToken val = jo[field.Name];
                         if (val == null)
+                        {
                             val = field.DefaultValue;
+                        }
+
                         if (val == null)
                         {
                             throw new AvroException($"No default value for field {field.Name}");
@@ -417,8 +420,8 @@ namespace Avro.Reflect
                     Field rf;
                     if (rs.TryGetField(wf.Name, out rf))
                     {
-//                        obj = _classCache.GetClass(writerSchema).GetValue(rec, rf);
-                        _classCache.GetClass(writerSchema).SetValue(rec, rf, Read(obj, wf.Schema, rf.Schema, dec));
+                        // obj = _classCache.GetClass(writerSchema).GetValue(rec, rf);
+                        _classCache.GetClass(writerSchema).SetValue(rec, rf, this.Read(obj, wf.Schema, rf.Schema, dec));
                     }
                     else
                     {
@@ -484,7 +487,10 @@ namespace Avro.Reflect
             {
                 array = reuse as IEnumerable;
                 if (array == null)
+                {
                     throw new AvroException("array object is not an IEnumerable");
+                }
+
                 arrayHelper = _classCache.GetArrayHelper(rs, array);
 
                 arrayHelper.Clear();
@@ -523,7 +529,9 @@ namespace Avro.Reflect
             {
                 map = reuse as System.Collections.IDictionary;
                 if (map == null)
+                {
                     throw new AvroException("map object does not implement IDictionary");
+                }
 
                 map.Clear();
             }

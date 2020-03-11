@@ -64,7 +64,9 @@ namespace Avro
                 try
                 {
                     if (md5 == null)
+                    {
                         md5 = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(ToString()));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -86,9 +88,20 @@ namespace Avro
                         string doc, IEnumerable<Schema> types,
                         IDictionary<string,Message> messages)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name), "name cannot be null.");
-            if (null == types) throw new ArgumentNullException(nameof(types), "types cannot be null.");
-            if (null == messages) throw new ArgumentNullException(nameof(messages), "messages cannot be null.");
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name), "name cannot be null.");
+            }
+
+            if (null == types)
+            {
+                throw new ArgumentNullException(nameof(types), "types cannot be null.");
+            }
+
+            if (null == messages)
+            {
+                throw new ArgumentNullException(nameof(messages), "messages cannot be null.");
+            }
 
             this.Name = name;
             this.Namespace = space;
@@ -104,7 +117,10 @@ namespace Avro
         /// <returns>Protocol object</returns>
         public static Protocol Parse(string jstring)
         {
-            if (string.IsNullOrEmpty(jstring)) throw new ArgumentNullException("json", "json cannot be null.");
+            if (string.IsNullOrEmpty(jstring))
+            {
+                throw new ArgumentNullException("json", "json cannot be null.");
+            }
 
             JToken jtok = null;
             try
@@ -193,7 +209,9 @@ namespace Avro
             writer.WriteStartArray();
 
             foreach (Schema type in this.Types)
+            {
                 type.WriteJson(writer, names, this.Namespace);
+            }
 
             writer.WriteEndArray();
 
@@ -217,8 +235,15 @@ namespace Avro
         /// <returns></returns>
         public override bool Equals(object obj)
         {
-            if (obj == this) return true;
-            if (!(obj is Protocol)) return false;
+            if (obj == this)
+            {
+                return true;
+            }
+
+            if (!(obj is Protocol))
+            {
+                return false;
+            }
 
             Protocol that = obj as Protocol;
 
@@ -237,9 +262,19 @@ namespace Avro
         /// <returns></returns>
         private bool TypesEquals(IList<Schema> that)
         {
-            if (Types.Count != that.Count) return false;
+            if (Types.Count != that.Count)
+            {
+                return false;
+            }
+
             foreach (Schema schema in Types)
-                if (!that.Contains(schema)) return false;
+            {
+                if (!that.Contains(schema))
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -252,13 +287,22 @@ namespace Avro
         /// <returns></returns>
         private bool MessagesEquals(IDictionary<string, Message> that)
         {
-            if (Messages.Count != that.Count) return false;
+            if (Messages.Count != that.Count)
+            {
+                return false;
+            }
+
             foreach (KeyValuePair<string, Message> pair in Messages)
             {
                 if (!that.ContainsKey(pair.Key))
+                {
                     return false;
+                }
+
                 if (!pair.Value.Equals(that[pair.Key]))
+                {
                     return false;
+                }
             }
             return true;
         }
@@ -281,7 +325,10 @@ namespace Avro
         {
             int hash = Types.Count;
             foreach (Schema schema in Types)
+            {
                 hash += schema.GetHashCode();
+            }
+
             return hash;
         }
 
@@ -293,7 +340,10 @@ namespace Avro
         {
             int hash = Messages.Count;
             foreach (KeyValuePair<string, Message> pair in Messages)
+            {
                 hash += pair.Key.GetHashCode() + pair.Value.GetHashCode();
+            }
+
             return hash;
         }
     }

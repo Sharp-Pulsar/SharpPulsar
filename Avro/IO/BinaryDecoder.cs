@@ -51,8 +51,16 @@ namespace Avro.IO
         public bool ReadBoolean()
         {
             byte b = read();
-            if (b == 0) return false;
-            if (b == 1) return true;
+            if (b == 0)
+            {
+                return false;
+            }
+
+            if (b == 1)
+            {
+                return true;
+            }
+
             throw new AvroException("Not a boolean value in the stream: " + b);
         }
 
@@ -95,7 +103,9 @@ namespace Avro.IO
             byte[] buffer = read(4);
 
             if (!BitConverter.IsLittleEndian)
+            {
                 Array.Reverse(buffer);
+            }
 
             return BitConverter.ToSingle(buffer, 0);
 
@@ -331,7 +341,11 @@ namespace Avro.IO
         private byte read()
         {
             int n = stream.ReadByte();
-            if (n >= 0) return (byte)n;
+            if (n >= 0)
+            {
+                return (byte)n;
+            }
+
             throw new AvroException("End of stream reached");
         }
 
@@ -340,7 +354,11 @@ namespace Avro.IO
             while (len > 0)
             {
                 int n = stream.Read(buffer, start, len);
-                if (n <= 0) throw new AvroException("End of stream reached");
+                if (n <= 0)
+                {
+                    throw new AvroException("End of stream reached");
+                }
+
                 start += n;
                 len -= n;
             }

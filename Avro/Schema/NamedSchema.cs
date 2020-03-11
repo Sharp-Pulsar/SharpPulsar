@@ -91,7 +91,10 @@ namespace Avro
                 default:
                     NamedSchema result;
                     if (names.TryGetValue(type, null, encspace, out result))
+                    {
                         return result;
+                    }
+
                     return null;
             }
         }
@@ -114,7 +117,9 @@ namespace Avro
             this.aliases = aliases;
             if (null != name.Name)  // Added this check for anonymous records inside Message
                 if (!names.Add(name, this))
+                {
                     throw new AvroException("Duplicate schema name " + name.Fullname);
+                }
         }
 
         /// <summary>
@@ -142,16 +147,22 @@ namespace Avro
         {
             JToken jaliases = jtok["aliases"];
             if (null == jaliases)
+            {
                 return null;
+            }
 
             if (jaliases.Type != JTokenType.Array)
+            {
                 throw new SchemaParseException($"Aliases must be of format JSON array of strings at '{jtok.Path}'");
+            }
 
             var aliases = new List<SchemaName>();
             foreach (JToken jalias in jaliases)
             {
                 if (jalias.Type != JTokenType.String)
+                {
                     throw new SchemaParseException($"Aliases must be of format JSON array of strings at '{jtok.Path}'");
+                }
 
                 aliases.Add(new SchemaName((string)jalias, space, encspace));
             }
@@ -171,7 +182,12 @@ namespace Avro
             if (null != aliases)
             {
                 foreach (SchemaName alias in aliases)
-                    if (name.Equals(alias)) return true;
+                {
+                    if (name.Equals(alias))
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -190,9 +206,14 @@ namespace Avro
                 SchemaName schemaName = this.SchemaName;
                 string name;
                 if (schemaName.Namespace != encspace)
+                {
                     name = schemaName.Namespace + "." + schemaName.Name;  // we need to add the qualifying namespace of the target schema if it's not the same as current namespace
+                }
                 else
+                {
                     name = schemaName.Name;
+                }
+
                 writer.WriteValue(name);
             }
             else

@@ -156,23 +156,34 @@ namespace Avro
         /// <returns>new Schema object</returns>
         internal static Schema ParseJson(JToken jtok, SchemaNames names, string encspace)
         {
-            if (null == jtok) throw new ArgumentNullException("j", "j cannot be null.");
+            if (null == jtok)
+            {
+                throw new ArgumentNullException("j", "j cannot be null.");
+            }
 
             if (jtok.Type == JTokenType.String) // primitive schema with no 'type' property or primitive or named type of a record field
             {
                 string value = (string)jtok;
 
                 PrimitiveSchema ps = PrimitiveSchema.NewInstance(value);
-                if (null != ps) return ps;
+                if (null != ps)
+                {
+                    return ps;
+                }
 
                 NamedSchema schema = null;
-                if (names.TryGetValue(value, null, encspace, out schema)) return schema;
+                if (names.TryGetValue(value, null, encspace, out schema))
+                {
+                    return schema;
+                }
 
                 throw new SchemaParseException($"Undefined name: {value} at '{jtok.Path}'");
             }
 
             if (jtok is JArray) // union schema with no 'type' property or union type for a record field
+            {
                 return UnionSchema.NewInstance(jtok as JArray, null, names, encspace);
+            }
 
             if (jtok is JObject) // JSON object with open/close parenthesis, it must have a 'type' property
             {
@@ -180,7 +191,9 @@ namespace Avro
 
                 JToken jtype = jo["type"];
                 if (null == jtype)
+                {
                     throw new SchemaParseException($"Property type is required at '{jtok.Path}'");
+                }
 
                 var props = Schema.GetProperties(jtok);
 
@@ -189,14 +202,25 @@ namespace Avro
                     string type = (string)jtype;
 
                     if (type.Equals("array", StringComparison.Ordinal))
+                    {
                         return ArraySchema.NewInstance(jtok, props, names, encspace);
+                    }
+
                     if (type.Equals("map", StringComparison.Ordinal))
+                    {
                         return MapSchema.NewInstance(jtok, props, names, encspace);
+                    }
+
                     if (null != jo["logicalType"]) // logical type based on a primitive
+                    {
                         return LogicalSchema.NewInstance(jtok, props, names, encspace);
+                    }
 
                     Schema schema = PrimitiveSchema.NewInstance((string)type, props);
-                    if (null != schema) return schema;
+                    if (null != schema)
+                    {
+                        return schema;
+                    }
 
                     return NamedSchema.NewInstance(jo, props, names, encspace);
                 }
@@ -215,7 +239,11 @@ namespace Avro
         /// <returns>new Schema object</returns>
         public static Schema Parse(string json)
         {
-            if (string.IsNullOrEmpty(json)) throw new ArgumentNullException(nameof(json), "json cannot be null.");
+            if (string.IsNullOrEmpty(json))
+            {
+                throw new ArgumentNullException(nameof(json), "json cannot be null.");
+            }
+
             return Parse(json.Trim(), new SchemaNames(), null); // standalone schema, so no enclosing namespace
         }
 
@@ -229,7 +257,10 @@ namespace Avro
         internal static Schema Parse(string json, SchemaNames names, string encspace)
         {
             Schema sc = PrimitiveSchema.NewInstance(json);
-            if (null != sc) return sc;
+            if (null != sc)
+            {
+                return sc;
+            }
 
             try
             {
@@ -255,9 +286,13 @@ namespace Avro
             var props = new PropertyMap();
             props.Parse(jtok);
             if (props.Count > 0)
+            {
                 return props;
+            }
             else
+            {
                 return null;
+            }
         }
 
         /// <summary>
@@ -278,7 +313,9 @@ namespace Avro
             WriteJson(writer, new SchemaNames(), null); // stand alone schema, so no enclosing name space
 
             if (this is PrimitiveSchema || this is UnionSchema)
+            {
                 writer.WriteEndObject();
+            }
 
             return sw.ToString();
         }
@@ -324,7 +361,11 @@ namespace Avro
         {
             writeStartObject(writer);
             WriteJsonFields(writer, names, encspace);
-            if (null != this.Props) Props.WriteJson(writer);
+            if (null != this.Props)
+            {
+                Props.WriteJson(writer);
+            }
+
             writer.WriteEndObject();
         }
 
@@ -335,7 +376,11 @@ namespace Avro
         /// <returns>custom property value</returns>
         public string GetProperty(string key)
         {
-            if (null == this.Props) return null;
+            if (null == this.Props)
+            {
+                return null;
+            }
+
             string v;
             return this.Props.TryGetValue(key, out v) ? v : null;
         }

@@ -55,11 +55,15 @@ namespace Avro
             {
                 Schema unionType = Schema.ParseJson(jvalue, names, encspace);
                 if (null == unionType)
+                {
                     throw new SchemaParseException($"Invalid JSON in union {jvalue.ToString()} at '{jvalue.Path}'");
+                }
 
                 string name = unionType.Fullname;
                 if (uniqueSchemas.ContainsKey(name))
+                {
                     throw new SchemaParseException($"Duplicate type in union: {name} at '{jvalue.Path}'");
+                }
 
                 uniqueSchemas.Add(name, name);
                 schemas.Add(unionType);
@@ -75,7 +79,10 @@ namespace Avro
         private UnionSchema(List<Schema> schemas, PropertyMap props) : base(Type.Union, props)
         {
             if (schemas == null)
+            {
                 throw new ArgumentNullException(nameof(schemas));
+            }
+
             this.Schemas = schemas;
         }
 
@@ -102,7 +109,10 @@ namespace Avro
         {
             writer.WriteStartArray();
             foreach (Schema schema in this.Schemas)
+            {
                 schema.WriteJson(writer, names, encspace);
+            }
+
             writer.WriteEndArray();
         }
 
@@ -113,10 +123,20 @@ namespace Avro
         /// <returns>The index of the matching branch. If non matches a -1 is returned.</returns>
         public int MatchingBranch(Schema s)
         {
-            if (s is UnionSchema) throw new AvroException("Cannot find a match against union schema");
+            if (s is UnionSchema)
+            {
+                throw new AvroException("Cannot find a match against union schema");
+            }
             // Try exact match.
             //for (int i = 0; i < Count; i++) if (Schemas[i].Equals(s)) return i; // removed this for performance's sake
-            for (int i = 0; i < Count; i++) if (Schemas[i].CanRead(s)) return i;
+            for (int i = 0; i < Count; i++)
+            {
+                if (Schemas[i].CanRead(s))
+                {
+                    return i;
+                }
+            }
+
             return -1;
         }
 
@@ -137,13 +157,24 @@ namespace Avro
         /// <returns>true if objects are equal, false otherwise</returns>
         public override bool Equals(object obj)
         {
-            if (obj == this) return true;
+            if (obj == this)
+            {
+                return true;
+            }
+
             if (obj != null && obj is UnionSchema)
             {
                 UnionSchema that = obj as UnionSchema;
                 if (that.Count == Count)
                 {
-                    for (int i = 0; i < Count; i++) if (!that[i].Equals(this[i])) return false;
+                    for (int i = 0; i < Count; i++)
+                    {
+                        if (!that[i].Equals(this[i]))
+                        {
+                            return false;
+                        }
+                    }
+
                     return areEqual(that.Props, this.Props);
                 }
             }
@@ -157,7 +188,11 @@ namespace Avro
         public override int GetHashCode()
         {
             int result = 53;
-            foreach (Schema schema in Schemas) result += 89 * schema.GetHashCode();
+            foreach (Schema schema in Schemas)
+            {
+                result += 89 * schema.GetHashCode();
+            }
+
             result += getHashCode(Props);
             return result;
         }
