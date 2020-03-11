@@ -15,19 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Avro;
-using Avro.IO;
-using Avro.Generic;
-
 namespace Avro.Specific
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Avro;
+    using Avro.Generic;
+    using Avro.IO;
+
     /// <summary>
-    /// Generic wrapper class for writing data from specific objects
+    /// Generic wrapper class for writing data from specific objects.
     /// </summary>
-    /// <typeparam name="T">type name of specific object</typeparam>
+    /// <typeparam name="T">type name of specific object.</typeparam>
     public class SpecificWriter<T> : GenericWriter<T>
     {
         /// <summary>
@@ -45,23 +45,23 @@ namespace Avro.Specific
     }
 
     /// <summary>
-    /// Class for writing data from any specific objects
+    /// Class for writing data from any specific objects.
     /// </summary>
     public class SpecificDefaultWriter : DefaultWriter
     {
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
-        /// <param name="schema">schema of the object to be written</param>
+        /// <param name="schema">schema of the object to be written.</param>
         public SpecificDefaultWriter(Schema schema) : base(schema) { }
 
         /// <summary>
         /// Serialized a record using the given RecordSchema. It uses GetField method
         /// to extract the field value from the given object.
         /// </summary>
-        /// <param name="schema">The RecordSchema to use for serialization</param>
-        /// <param name="value">The value to be serialized</param>
-        /// <param name="encoder">The Encoder for serialization</param>
+        /// <param name="schema">The RecordSchema to use for serialization.</param>
+        /// <param name="value">The value to be serialized.</param>
+        /// <param name="encoder">The Encoder for serialization.</param>
 
         protected override void WriteRecord(RecordSchema schema, object value, Encoder encoder)
         {
@@ -75,7 +75,7 @@ namespace Avro.Specific
             {
                 try
                 {
-                    Write(field.Schema, rec.Get(field.Pos), encoder);
+                    this.Write(field.Schema, rec.Get(field.Pos), encoder);
                 }
                 catch (Exception ex)
                 {
@@ -86,11 +86,11 @@ namespace Avro.Specific
 
         /// <summary>
         /// Validates that the record is a fixed record object and that the schema in the object is the
-        /// same as the given writer schema. Writes the given fixed record into the given encoder
+        /// same as the given writer schema. Writes the given fixed record into the given encoder.
         /// </summary>
-        /// <param name="schema">writer schema</param>
-        /// <param name="value">fixed object to write</param>
-        /// <param name="encoder">encoder to write to</param>
+        /// <param name="schema">writer schema.</param>
+        /// <param name="value">fixed object to write.</param>
+        /// <param name="encoder">encoder to write to.</param>
         protected override void WriteFixed(FixedSchema schema, object value, Encoder encoder)
         {
             var fixedrec = value as SpecificFixed;
@@ -105,9 +105,9 @@ namespace Avro.Specific
         /// <summary>
         /// Writes the given enum value into the given encoder.
         /// </summary>
-        /// <param name="schema">writer schema</param>
-        /// <param name="value">enum value</param>
-        /// <param name="encoder">encoder to write to</param>
+        /// <param name="schema">writer schema.</param>
+        /// <param name="value">enum value.</param>
+        /// <param name="encoder">encoder to write to.</param>
         protected override void WriteEnum(EnumSchema schema, object value, Encoder encoder)
         {
             if (value == null)
@@ -123,9 +123,9 @@ namespace Avro.Specific
         /// given value is an array. It then calls GetArrayLength() and GetArrayElement()
         /// to access the members of the array and then serialize them.
         /// </summary>
-        /// <param name="schema">The ArraySchema for serialization</param>
-        /// <param name="value">The value being serialized</param>
-        /// <param name="encoder">The encoder for serialization</param>
+        /// <param name="schema">The ArraySchema for serialization.</param>
+        /// <param name="value">The value being serialized.</param>
+        /// <param name="encoder">The encoder for serialization.</param>
         protected override void WriteArray(ArraySchema schema, object value, Encoder encoder)
         {
             var arr = value as System.Collections.IList;
@@ -140,7 +140,7 @@ namespace Avro.Specific
             for (int i = 0; i < l; i++)
             {
                 encoder.StartItem();
-                Write(schema.ItemSchema, arr[i], encoder);
+                this.Write(schema.ItemSchema, arr[i], encoder);
             }
             encoder.WriteArrayEnd();
         }
@@ -148,9 +148,9 @@ namespace Avro.Specific
         /// <summary>
         /// Writes the given map into the given encoder.
         /// </summary>
-        /// <param name="schema">writer schema</param>
-        /// <param name="value">map to write</param>
-        /// <param name="encoder">encoder to write to</param>
+        /// <param name="schema">writer schema.</param>
+        /// <param name="value">map to write.</param>
+        /// <param name="encoder">encoder to write to.</param>
         protected override void WriteMap(MapSchema schema, object value, Encoder encoder)
         {
             var map = value as System.Collections.IDictionary;
@@ -165,7 +165,7 @@ namespace Avro.Specific
             {
                 encoder.StartItem();
                 encoder.WriteString(de.Key as string);
-                Write(schema.ValueSchema, de.Value, encoder);
+                this.Write(schema.ValueSchema, de.Value, encoder);
             }
             encoder.WriteMapEnd();
         }
@@ -175,17 +175,17 @@ namespace Avro.Specific
         /// the resolved schema member. The default implementation of this method uses
         /// ResolveUnion to find the member schema within the UnionSchema.
         /// </summary>
-        /// <param name="us">The UnionSchema to resolve against</param>
-        /// <param name="value">The value to be serialized</param>
-        /// <param name="encoder">The encoder for serialization</param>
+        /// <param name="us">The UnionSchema to resolve against.</param>
+        /// <param name="value">The value to be serialized.</param>
+        /// <param name="encoder">The encoder for serialization.</param>
         protected override void WriteUnion(UnionSchema us, object value, Encoder encoder)
         {
             for (int i = 0; i < us.Count; i++)
             {
-                if (Matches(us[i], value))
+                if (this.Matches(us[i], value))
                 {
                     encoder.WriteUnionIndex(i);
-                    Write(us[i], value, encoder);
+                    this.Write(us[i], value, encoder);
                     return;
                 }
             }

@@ -15,19 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-
 namespace Avro
 {
+    using System;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Base class for all schema types
+    /// Base class for all schema types.
     /// </summary>
     public abstract class Schema
     {
         /// <summary>
-        /// Enum for schema types
+        /// Enum for schema types.
         /// </summary>
         public enum Type
         {
@@ -113,20 +113,20 @@ namespace Avro
         }
 
         /// <summary>
-        /// Schema type property
+        /// Gets schema type property.
         /// </summary>
         public Type Tag { get; private set; }
 
         /// <summary>
-        /// Additional JSON attributes apart from those defined in the AVRO spec
+        /// Gets additional JSON attributes apart from those defined in the AVRO spec.
         /// </summary>
         internal PropertyMap Props { get; private set; }
 
         /// <summary>
-        /// Constructor for schema class
+        /// Constructor for schema class.
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
         protected Schema(Type type, PropertyMap props)
         {
             this.Tag = type;
@@ -134,26 +134,26 @@ namespace Avro
         }
 
         /// <summary>
-        /// If this is a record, enum or fixed, returns its name, otherwise the name the primitive type.
+        /// Gets if this is a record, enum or fixed, returns its name, otherwise the name the primitive type.
         /// </summary>
         public abstract string Name { get; }
 
         /// <summary>
-        /// The name of this schema. If this is a named schema such as an enum, it returns the fully qualified
+        /// Gets the name of this schema. If this is a named schema such as an enum, it returns the fully qualified
         /// name for the schema. For other schemas, it returns the type of the schema.
         /// </summary>
         public virtual string Fullname
         {
-            get { return Name; }
+            get { return this.Name; }
         }
 
         /// <summary>
-        /// Static class to return new instance of schema object
+        /// Static class to return new instance of schema object.
         /// </summary>
-        /// <param name="jtok">JSON object</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
-        /// <returns>new Schema object</returns>
+        /// <param name="jtok">JSON object.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
+        /// <returns>new Schema object.</returns>
         internal static Schema ParseJson(JToken jtok, SchemaNames names, string encspace)
         {
             if (null == jtok)
@@ -233,10 +233,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses a given JSON string to create a new schema object
+        /// Parses a given JSON string to create a new schema object.
         /// </summary>
-        /// <param name="json">JSON string</param>
-        /// <returns>new Schema object</returns>
+        /// <param name="json">JSON string.</param>
+        /// <returns>new Schema object.</returns>
         public static Schema Parse(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -248,12 +248,12 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses a JSON string to create a new schema object
+        /// Parses a JSON string to create a new schema object.
         /// </summary>
-        /// <param name="json">JSON string</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
-        /// <returns>new Schema object</returns>
+        /// <param name="json">JSON string.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
+        /// <returns>new Schema object.</returns>
         internal static Schema Parse(string json, SchemaNames names, string encspace)
         {
             Schema sc = PrimitiveSchema.NewInstance(json);
@@ -277,10 +277,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Static function to parse custom properties (not defined in the Avro spec) from the given JSON object
+        /// Static function to parse custom properties (not defined in the Avro spec) from the given JSON object.
         /// </summary>
-        /// <param name="jtok">JSON object to parse</param>
-        /// <returns>Property map if custom properties were found, null if no custom properties found</returns>
+        /// <param name="jtok">JSON object to parse.</param>
+        /// <returns>Property map if custom properties were found, null if no custom properties found.</returns>
         internal static PropertyMap GetProperties(JToken jtok)
         {
             var props = new PropertyMap();
@@ -310,7 +310,7 @@ namespace Avro
                 writer.WritePropertyName("type");
             }
 
-            WriteJson(writer, new SchemaNames(), null); // stand alone schema, so no enclosing name space
+            this.WriteJson(writer, new SchemaNames(), null); // stand alone schema, so no enclosing name space
 
             if (this is PrimitiveSchema || this is UnionSchema)
             {
@@ -321,9 +321,9 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes opening { and 'type' property
+        /// Writes opening { and 'type' property.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
+        /// <param name="writer">JSON writer.</param>
         private void writeStartObject(JsonTextWriter writer)
         {
             writer.WriteStartObject();
@@ -332,48 +332,48 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns symbol name for the given schema type
+        /// Returns symbol name for the given schema type.
         /// </summary>
-        /// <param name="type">schema type</param>
-        /// <returns>symbol name</returns>
+        /// <param name="type">schema type.</param>
+        /// <returns>symbol name.</returns>
         public static string GetTypeString(Type type)
         {
             return type != Type.Enumeration ? type.ToString().ToLowerInvariant() : "enum";
         }
 
         /// <summary>
-        /// Default implementation for writing schema properties in JSON format
+        /// Default implementation for writing schema properties in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         protected internal virtual void WriteJsonFields(JsonTextWriter writer, SchemaNames names, string encspace)
         {
         }
 
         /// <summary>
-        /// Writes schema object in JSON format
+        /// Writes schema object in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         protected internal virtual void WriteJson(JsonTextWriter writer, SchemaNames names, string encspace)
         {
-            writeStartObject(writer);
-            WriteJsonFields(writer, names, encspace);
+            this.writeStartObject(writer);
+            this.WriteJsonFields(writer, names, encspace);
             if (null != this.Props)
             {
-                Props.WriteJson(writer);
+                this.Props.WriteJson(writer);
             }
 
             writer.WriteEndObject();
         }
 
         /// <summary>
-        /// Returns the schema's custom property value given the property name
+        /// Returns the schema's custom property value given the property name.
         /// </summary>
-        /// <param name="key">custom property name</param>
-        /// <returns>custom property value</returns>
+        /// <param name="key">custom property name.</param>
+        /// <returns>custom property value.</returns>
         public string GetProperty(string key)
         {
             if (null == this.Props)
@@ -386,12 +386,12 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hash code function
+        /// Hash code function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return Tag.GetHashCode() + getHashCode(Props);
+            return this.Tag.GetHashCode() + getHashCode(this.Props);
         }
 
         /// <summary>
@@ -400,21 +400,21 @@ namespace Avro
         /// </summary>
         /// <param name="writerSchema">The writer's schema to match against.</param>
         /// <returns>True if and only if the current schema matches the writer's.</returns>
-        public virtual bool CanRead(Schema writerSchema) { return Tag == writerSchema.Tag; }
+        public virtual bool CanRead(Schema writerSchema) { return this.Tag == writerSchema.Tag; }
 
         /// <summary>
-        /// Compares two objects, null is equal to null
+        /// Compares two objects, null is equal to null.
         /// </summary>
-        /// <param name="o1">first object</param>
-        /// <param name="o2">second object</param>
-        /// <returns>true if two objects are equal, false otherwise</returns>
+        /// <param name="o1">first object.</param>
+        /// <param name="o2">second object.</param>
+        /// <returns>true if two objects are equal, false otherwise.</returns>
         protected static bool areEqual(object o1, object o2)
         {
             return o1 == null ? o2 == null : o1.Equals(o2);
         }
 
         /// <summary>
-        /// Hash code helper function
+        /// Hash code helper function.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>

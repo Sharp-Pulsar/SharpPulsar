@@ -15,20 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Avro.Generic
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Text;
+
     /// <summary>
     /// The default type used by GenericReader and GenericWriter for RecordSchema.
     /// </summary>
     public class GenericRecord : IEquatable<GenericRecord>
     {
         /// <summary>
-        /// Schema for this record.
+        /// Gets schema for this record.
         /// </summary>
         public RecordSchema Schema { get; private set; }
 
@@ -56,7 +56,7 @@ namespace Avro.Generic
         /// </exception>
         public object this[string fieldName]
         {
-            get { return contents[fieldName]; }
+            get { return this.contents[fieldName]; }
         }
 
         /// <summary>
@@ -71,11 +71,11 @@ namespace Avro.Generic
         /// </exception>
         public void Add(string fieldName, object fieldValue)
         {
-            if (Schema.Contains(fieldName))
+            if (this.Schema.Contains(fieldName))
             {
                 // TODO: Use a matcher to verify that object has the right type for the field.
                 //contents.Add(fieldName, fieldValue);
-                contents[fieldName] = fieldValue;
+                this.contents[fieldName] = fieldValue;
                 return;
             }
             throw new AvroException("No such field: " + fieldName);
@@ -96,7 +96,7 @@ namespace Avro.Generic
         /// </returns>
         public bool TryGetValue(string fieldName, out object result)
         {
-            return contents.TryGetValue(fieldName, out result);
+            return this.contents.TryGetValue(fieldName, out result);
         }
 
         /// <inheritdoc/>
@@ -108,14 +108,14 @@ namespace Avro.Generic
             }
 
             return obj is GenericRecord
-                && Equals((GenericRecord)obj);
+                && this.Equals((GenericRecord)obj);
         }
 
         /// <inheritdoc/>
         public bool Equals(GenericRecord other)
         {
-            return Schema.Equals(other.Schema)
-                && mapsEqual(contents, other.contents);
+            return this.Schema.Equals(other.Schema)
+                && mapsEqual(this.contents, other.contents);
         }
 
         private static bool mapsEqual(IDictionary d1, IDictionary d2)
@@ -195,7 +195,7 @@ namespace Avro.Generic
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return 31 * contents.GetHashCode()/* + 29 * Schema.GetHashCode()*/;
+            return 31 * this.contents.GetHashCode()/* + 29 * Schema.GetHashCode()*/;
         }
 
         /// <inheritdoc/>
@@ -203,10 +203,10 @@ namespace Avro.Generic
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("Schema: ");
-            sb.Append(Schema);
+            sb.Append(this.Schema);
             sb.Append(", contents: ");
             sb.Append("{ ");
-            foreach (KeyValuePair<string, object> kv in contents)
+            foreach (KeyValuePair<string, object> kv in this.contents)
             {
                 sb.Append(kv.Key);
                 sb.Append(": ");

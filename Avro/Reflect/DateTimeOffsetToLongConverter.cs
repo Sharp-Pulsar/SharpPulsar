@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Reflect
 {
+    using System;
+
     /// <summary>
-    /// Convert C# DateTimeOffset properties to long unix time
+    /// Convert C# DateTimeOffset properties to long unix time.
     /// </summary>
     public class DateTimeOffsetToLongConverter : IAvroFieldConverter
     {
         /// <summary>
-        /// Convert from DateTimeOffset to Unix long
+        /// Convert from DateTimeOffset to Unix long.
         /// </summary>
-        /// <param name="o">DateTimeOffset</param>
-        /// <param name="s">Schema</param>
+        /// <param name="o">DateTimeOffset.</param>
+        /// <param name="s">Schema.</param>
         /// <returns></returns>
         public object ToAvroType(object o, Schema s)
         {
@@ -38,10 +38,10 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Convert from Unix long to DateTimeOffset
+        /// Convert from Unix long to DateTimeOffset.
         /// </summary>
-        /// <param name="o">long</param>
-        /// <param name="s">Schema</param>
+        /// <param name="o">long.</param>
+        /// <param name="s">Schema.</param>
         /// <returns></returns>
         public object FromAvroType(object o, Schema s)
         {
@@ -50,7 +50,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Avro type
+        /// Avro type.
         /// </summary>
         /// <returns></returns>
         public Type GetAvroType()
@@ -59,7 +59,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Property type
+        /// Property type.
         /// </summary>
         /// <returns></returns>
         public Type GetPropertyType()

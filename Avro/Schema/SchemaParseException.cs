@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro
 {
+    using System;
+
     /// <summary>
     /// Used to communicate an exception that occurred while parsing a schema.
     /// </summary>

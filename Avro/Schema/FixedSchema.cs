@@ -15,30 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Class for fixed schemas
+    /// Class for fixed schemas.
     /// </summary>
     public class FixedSchema : NamedSchema
     {
         /// <summary>
-        /// Fixed size for the bytes
+        /// Gets or sets fixed size for the bytes.
         /// </summary>
         public int Size { get; set; }
 
         /// <summary>
-        /// Static function to return new instance of the fixed schema class
+        /// Static function to return new instance of the fixed schema class.
         /// </summary>
-        /// <param name="jtok">JSON object for the fixed schema</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
-        /// <param name="names">list of named schema already parsed in</param>
-        /// <param name="encspace">enclosing namespace of the fixed schema</param>
+        /// <param name="jtok">JSON object for the fixed schema.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
+        /// <param name="names">list of named schema already parsed in.</param>
+        /// <param name="encspace">enclosing namespace of the fixed schema.</param>
         /// <returns></returns>
         internal static FixedSchema NewInstance(JToken jtok, PropertyMap props, SchemaNames names, string encspace)
         {
@@ -56,14 +56,14 @@ namespace Avro
         }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
-        /// <param name="name">name of the fixed schema</param>
-        /// <param name="aliases">list of aliases for the name</param>
-        /// <param name="size">fixed size</param>
-        /// <param name="props">custom properties on this schema</param>
-        /// <param name="names">list of named schema already parsed in</param>
-        /// <param name="doc">documentation for this named schema</param>
+        /// <param name="name">name of the fixed schema.</param>
+        /// <param name="aliases">list of aliases for the name.</param>
+        /// <param name="size">fixed size.</param>
+        /// <param name="props">custom properties on this schema.</param>
+        /// <param name="names">list of named schema already parsed in.</param>
+        /// <param name="doc">documentation for this named schema.</param>
         private FixedSchema(SchemaName name, IList<SchemaName> aliases, int size, PropertyMap props, SchemaNames names,
             string doc)
                             : base(Type.Fixed, name, aliases, props, names, doc)
@@ -82,11 +82,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes the fixed schema class in JSON format
+        /// Writes the fixed schema class in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schema already written</param>
-        /// <param name="encspace">enclosing namespace for the fixed schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schema already written.</param>
+        /// <param name="encspace">enclosing namespace for the fixed schema.</param>
         protected internal override void WriteJsonFields(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             base.WriteJsonFields(writer, names, encspace);
@@ -95,10 +95,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Compares two fixed schemas
+        /// Compares two fixed schemas.
         /// </summary>
-        /// <param name="obj">fixed schema to compare against this schema</param>
-        /// <returns>true if two schemas are the same, false otherwise</returns>
+        /// <param name="obj">fixed schema to compare against this schema.</param>
+        /// <returns>true if two schemas are the same, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -109,45 +109,45 @@ namespace Avro
             if (obj != null && obj is FixedSchema)
             {
                 FixedSchema that = obj as FixedSchema;
-                return SchemaName.Equals(that.SchemaName) && Size == that.Size && areEqual(that.Props, this.Props);
+                return this.SchemaName.Equals(that.SchemaName) && this.Size == that.Size && areEqual(that.Props, this.Props);
             }
             return false;
         }
 
         /// <summary>
-        /// Hash code function
+        /// Hash code function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return 53 * SchemaName.GetHashCode() + 47 * Size + getHashCode(Props);
+            return 53 * this.SchemaName.GetHashCode() + 47 * this.Size + getHashCode(this.Props);
         }
 
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema.Tag != Tag)
+            if (writerSchema.Tag != this.Tag)
             {
                 return false;
             }
 
             FixedSchema that = writerSchema as FixedSchema;
-            if (that.Size != Size)
+            if (that.Size != this.Size)
             {
                 return false;
             }
 
-            if (that.SchemaName.Equals(SchemaName))
+            if (that.SchemaName.Equals(this.SchemaName))
             {
                 return true;
             }
             else
             {
-                return InAliases(that.SchemaName);
+                return this.InAliases(that.SchemaName);
             }
         }
     }

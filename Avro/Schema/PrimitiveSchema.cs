@@ -15,32 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json;
+
     /// <summary>
-    /// Class for schemas of primitive types
+    /// Class for schemas of primitive types.
     /// </summary>
     public sealed class PrimitiveSchema : UnnamedSchema
     {
         /// <summary>
-        /// Constructor for primitive schema
+        /// Constructor for primitive schema.
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
         private PrimitiveSchema(Type type, PropertyMap props) : base(type, props)
         {
         }
 
         /// <summary>
-        /// Static function to return new instance of primitive schema
+        /// Static function to return new instance of primitive schema.
         /// </summary>
-        /// <param name="type">primitive type</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
+        /// <param name="type">primitive type.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
         /// <returns></returns>
         public static PrimitiveSchema NewInstance(string type, PropertyMap props = null)
         {
@@ -75,30 +75,30 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes primitive schema in JSON format
+        /// Writes primitive schema in JSON format.
         /// </summary>
         /// <param name="w"></param>
         /// <param name="names"></param>
         /// <param name="encspace"></param>
         protected internal override void WriteJson(JsonTextWriter w, SchemaNames names, string encspace)
         {
-            w.WriteValue(Name);
+            w.WriteValue(this.Name);
         }
 
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema is UnionSchema || Tag == writerSchema.Tag)
+            if (writerSchema is UnionSchema || this.Tag == writerSchema.Tag)
             {
                 return true;
             }
 
             Type t = writerSchema.Tag;
-            switch (Tag)
+            switch (this.Tag)
             {
                 case Type.Double:
                     return t == Type.Int || t == Type.Long || t == Type.Float;
@@ -112,10 +112,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Function to compare equality of two primitive schemas
+        /// Function to compare equality of two primitive schemas.
         /// </summary>
-        /// <param name="obj">other primitive schema</param>
-        /// <returns>true two schemas are equal, false otherwise</returns>
+        /// <param name="obj">other primitive schema.</param>
+        /// <returns>true two schemas are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (this == obj)
@@ -135,12 +135,12 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hashcode function
+        /// Hashcode function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return 13 * Tag.GetHashCode() + getHashCode(Props);
+            return 13 * this.Tag.GetHashCode() + getHashCode(this.Props);
         }
     }
 }

@@ -1,5 +1,7 @@
 
-/*
+namespace Avro
+{
+    /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,12 +19,10 @@
  * limitations under the License.
  */
 
-using System;
-using System.Globalization;
-using System.Numerics;
+    using System;
+    using System.Globalization;
+    using System.Numerics;
 
-namespace Avro
-{
     /// <summary>
     /// Represents a big decimal.
     /// </summary>
@@ -31,6 +31,7 @@ namespace Avro
     public struct AvroDecimal : IConvertible, IFormattable, IComparable, IComparable<AvroDecimal>, IEquatable<AvroDecimal>
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given double.
         /// </summary>
         /// <param name="value">The double value.</param>
@@ -40,6 +41,7 @@ namespace Avro
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given float.
         /// </summary>
         /// <param name="value">The float value.</param>
@@ -49,6 +51,7 @@ namespace Avro
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given decimal.
         /// </summary>
         /// <param name="value">The decimal value.</param>
@@ -72,34 +75,47 @@ namespace Avro
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given int.
         /// </summary>
         /// <param name="value">The int value.</param>
         public AvroDecimal(int value)
-            : this(new BigInteger(value), 0) { }
+            : this(new BigInteger(value), 0)
+        {
+        }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given long.
         /// </summary>
         /// <param name="value">The long value.</param>
         public AvroDecimal(long value)
-            : this(new BigInteger(value), 0) { }
+            : this(new BigInteger(value), 0)
+        {
+        }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given unsigned int.
         /// </summary>
         /// <param name="value">The unsigned int value.</param>
         public AvroDecimal(uint value)
-            : this(new BigInteger(value), 0) { }
+            : this(new BigInteger(value), 0)
+        {
+        }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given unsigned long.
         /// </summary>
         /// <param name="value">The unsigned long value.</param>
         public AvroDecimal(ulong value)
-            : this(new BigInteger(value), 0) { }
+            : this(new BigInteger(value), 0)
+        {
+        }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AvroDecimal"/> struct.
         /// Initializes a new instance of the <see cref="AvroDecimal"/> class from a given <see cref="BigInteger"/>
         /// and a scale.
         /// </summary>

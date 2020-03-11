@@ -32,51 +32,51 @@ namespace Avro.IO
         void ReadNull();
 
         /// <summary>
-        /// Read a boolean Avro type
+        /// Read a boolean Avro type.
         /// </summary>
-        /// <returns>The boolean just read</returns>
+        /// <returns>The boolean just read.</returns>
         bool ReadBoolean();
 
         /// <summary>
         /// Reads an int Avro type.
         /// </summary>
-        /// <returns>The int just read</returns>
+        /// <returns>The int just read.</returns>
         int ReadInt();
 
         /// <summary>
         /// Reads a long Avro type.
         /// </summary>
-        /// <returns>The long just read</returns>
+        /// <returns>The long just read.</returns>
         long ReadLong();
 
         /// <summary>
-        /// Reads a float Avro type
+        /// Reads a float Avro type.
         /// </summary>
-        /// <returns>The float just read</returns>
+        /// <returns>The float just read.</returns>
         float ReadFloat();
 
         /// <summary>
-        /// Reads a double Avro type
+        /// Reads a double Avro type.
         /// </summary>
-        /// <returns>The double just read</returns>
+        /// <returns>The double just read.</returns>
         double ReadDouble();
 
         /// <summary>
-        /// Reads the bytes Avro type
+        /// Reads the bytes Avro type.
         /// </summary>
-        /// <returns>The bytes just read</returns>
+        /// <returns>The bytes just read.</returns>
         byte[] ReadBytes();
 
         /// <summary>
-        /// Reads a string Avro type
+        /// Reads a string Avro type.
         /// </summary>
-        /// <returns>The string just read</returns>
+        /// <returns>The string just read.</returns>
         string ReadString();
 
         /// <summary>
-        /// Reads an enum AvroType
+        /// Reads an enum AvroType.
         /// </summary>
-        /// <returns>The enum just read</returns>
+        /// <returns>The enum just read.</returns>
         int ReadEnum();
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Avro.IO
         /// for (int n = decoder.ReadArrayStart(); n > 0; n = decoder.ReadArrayNext())
         /// {
         ///     // Read one array entry.
-        /// }
+        /// }.
         /// </summary>
         /// <returns>The number of entries in the initial chunk, 0 if the array is empty.</returns>
         long ReadArrayStart();
@@ -107,7 +107,7 @@ namespace Avro.IO
         /// for (int n = decoder.ReadMapStart(); n > 0; n = decoder.ReadMapNext())
         /// {
         ///     // Read one map entry.
-        /// }
+        /// }.
         /// </summary>
         /// <returns>The number of entries in the initial chunk, 0 if the map is empty.</returns>
         long ReadMapStart();
@@ -125,7 +125,7 @@ namespace Avro.IO
         int ReadUnionIndex();
 
         /// <summary>
-        /// A convenience method for ReadFixed(buffer, 0, buffer.Length);
+        /// A convenience method for ReadFixed(buffer, 0, buffer.Length);.
         /// </summary>
         /// <param name="buffer"> The buffer to read into.</param>
         void ReadFixed(byte[] buffer);
@@ -133,9 +133,9 @@ namespace Avro.IO
         /// <summary>
         /// Read a Fixed Avro type of length.
         /// </summary>
-        /// <param name="buffer">Buffer to read into</param>
-        /// <param name="start">Starting position of buffer to read into</param>
-        /// <param name="length">Number of bytes to read</param>
+        /// <param name="buffer">Buffer to read into.</param>
+        /// <param name="start">Starting position of buffer to read into.</param>
+        /// <param name="length">Number of bytes to read.</param>
         void ReadFixed(byte[] buffer, int start, int length);
 
         /// <summary>

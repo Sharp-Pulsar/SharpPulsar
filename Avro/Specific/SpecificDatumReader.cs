@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Collections;
-using Avro.Generic;
-using Avro.IO;
-
 namespace Avro.Specific
 {
+    using System.Collections;
+    using Avro.Generic;
+    using Avro.IO;
+
     /// <summary>
     /// PreresolvingDatumReader for reading data to ISpecificRecord classes.
     /// </summary>
-    /// <see cref="PreresolvingDatumReader{T}">For more information about performance considerations for choosing this implementation</see>
+    /// <see cref="PreresolvingDatumReader{T}">For more information about performance considerations for choosing this implementation.</see>
     public class SpecificDatumReader<T> : PreresolvingDatumReader<T>
     {
         /// <summary>
@@ -104,12 +104,12 @@ namespace Avro.Specific
 
             public SpecificRecordAccess(RecordSchema readerSchema)
             {
-                typeName = readerSchema.Fullname;
+                this.typeName = readerSchema.Fullname;
             }
 
             public object CreateRecord(object reuse)
             {
-                return reuse ?? ObjectCreator.Instance.New(typeName, Schema.Type.Record);
+                return reuse ?? ObjectCreator.Instance.New(this.typeName, Schema.Type.Record);
             }
 
             public object GetField(object record, string fieldName, int fieldPos)
@@ -129,12 +129,12 @@ namespace Avro.Specific
 
             public SpecificFixedAccess(FixedSchema readerSchema)
             {
-                typeName = readerSchema.Fullname;
+                this.typeName = readerSchema.Fullname;
             }
 
             public object CreateFixed(object reuse)
             {
-                return reuse ?? ObjectCreator.Instance.New(typeName, Schema.Type.Fixed);
+                return reuse ?? ObjectCreator.Instance.New(this.typeName, Schema.Type.Fixed);
             }
 
             public byte[] GetFixedBuffer(object rec)
@@ -154,7 +154,7 @@ namespace Avro.Specific
                 type = type.Remove(0, 6);              // remove IList<
                 type = type.Remove(type.Length - 1);   // remove >
 
-                typeName = type;
+                this.typeName = type;
             }
 
             public object Create(object reuse)
@@ -173,7 +173,7 @@ namespace Avro.Specific
                     array.Clear();
                 }
                 else
-                    array = ObjectCreator.Instance.New(typeName, Schema.Type.Array) as IList;
+                    array = ObjectCreator.Instance.New(this.typeName, Schema.Type.Array) as IList;
                 return array;
             }
 
@@ -208,7 +208,7 @@ namespace Avro.Specific
                 type = type.Remove(0, 19);             // remove IDictionary<string,
                 type = type.Remove(type.Length - 1);   // remove >
 
-                typeName = type;
+                this.typeName = type;
             }
 
             public object Create(object reuse)
@@ -225,7 +225,7 @@ namespace Avro.Specific
                     map.Clear();
                 }
                 else
-                    map = ObjectCreator.Instance.New(typeName, Schema.Type.Map) as System.Collections.IDictionary;
+                    map = ObjectCreator.Instance.New(this.typeName, Schema.Type.Map) as System.Collections.IDictionary;
                 return map;
             }
 

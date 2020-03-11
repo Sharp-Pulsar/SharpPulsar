@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Util
 {
+    using System;
+
     /// <summary>
     /// The 'date' logical type.
     /// </summary>

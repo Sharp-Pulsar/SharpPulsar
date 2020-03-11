@@ -15,47 +15,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
     /// A set of messages forming an application protocol.
     /// </summary>
     public class Protocol
     {
         /// <summary>
-        /// Name of the protocol
+        /// Gets or sets name of the protocol.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// Namespace of the protocol
+        /// Gets or sets namespace of the protocol.
         /// </summary>
         public string Namespace { get; set; }
 
         /// <summary>
-        /// Documentation for the protocol
+        /// Gets or sets documentation for the protocol.
         /// </summary>
         public string Doc { get; set; }
 
         /// <summary>
-        /// List of schemas objects representing the different schemas defined under the 'types' attribute
+        /// Gets or sets list of schemas objects representing the different schemas defined under the 'types' attribute.
         /// </summary>
         public IList<Schema> Types { get; set; }
 
         /// <summary>
-        /// List of message objects representing the different schemas defined under the 'messages' attribute
+        /// Gets or sets list of message objects representing the different schemas defined under the 'messages' attribute.
         /// </summary>
         public IDictionary<string,Message> Messages { get; set; }
 
         private byte[] md5;
 
         /// <summary>
-        /// MD5 hash of the text of this protocol.
+        /// Gets mD5 hash of the text of this protocol.
         /// </summary>
         public byte[] MD5
         {
@@ -63,27 +63,27 @@ namespace Avro
             {
                 try
                 {
-                    if (md5 == null)
+                    if (this.md5 == null)
                     {
-                        md5 = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(ToString()));
+                        this.md5 = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(this.ToString()));
                     }
                 }
                 catch (Exception ex)
                 {
                     throw new AvroRuntimeException("MD5 get exception", ex);
                 }
-                return md5;
+                return this.md5;
             }
         }
 
         /// <summary>
-        /// Constructor for Protocol class
+        /// Constructor for Protocol class.
         /// </summary>
-        /// <param name="name">required name of protocol</param>
-        /// <param name="space">optional namespace</param>
-        /// <param name="doc">optional documentation</param>
-        /// <param name="types">required list of types</param>
-        /// <param name="messages">required list of messages</param>
+        /// <param name="name">required name of protocol.</param>
+        /// <param name="space">optional namespace.</param>
+        /// <param name="doc">optional documentation.</param>
+        /// <param name="types">required list of types.</param>
+        /// <param name="messages">required list of messages.</param>
         public Protocol(string name, string space,
                         string doc, IEnumerable<Schema> types,
                         IDictionary<string,Message> messages)
@@ -111,10 +111,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses the given JSON string to create a Protocol object
+        /// Parses the given JSON string to create a Protocol object.
         /// </summary>
-        /// <param name="jstring">JSON string</param>
-        /// <returns>Protocol object</returns>
+        /// <param name="jstring">JSON string.</param>
+        /// <returns>Protocol object.</returns>
         public static Protocol Parse(string jstring)
         {
             if (string.IsNullOrEmpty(jstring))
@@ -135,10 +135,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses the given JSON object to create a Protocol object
+        /// Parses the given JSON object to create a Protocol object.
         /// </summary>
-        /// <param name="jtok">JSON object</param>
-        /// <returns>Protocol object</returns>
+        /// <param name="jtok">JSON object.</param>
+        /// <returns>Protocol object.</returns>
         private static Protocol Parse(JToken jtok)
         {
             string name = JsonHelper.GetRequiredString(jtok, "protocol");
@@ -172,9 +172,9 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes Protocol in JSON format
+        /// Writes Protocol in JSON format.
         /// </summary>
-        /// <returns>JSON string</returns>
+        /// <returns>JSON string.</returns>
         public override string ToString()
         {
             using (System.IO.StringWriter sw = new System.IO.StringWriter())
@@ -185,7 +185,7 @@ namespace Avro
                     writer.Formatting = Newtonsoft.Json.Formatting.Indented;
 #endif
 
-                    WriteJson(writer, new SchemaNames());
+                    this.WriteJson(writer, new SchemaNames());
                     writer.Flush();
                     return sw.ToString();
                 }
@@ -193,10 +193,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes Protocol in JSON format
+        /// Writes Protocol in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
         internal void WriteJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names)
         {
             writer.WriteStartObject();
@@ -229,7 +229,7 @@ namespace Avro
         }
 
         /// <summary>
-        /// Tests equality of this protocol object with the passed object
+        /// Tests equality of this protocol object with the passed object.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -249,25 +249,25 @@ namespace Avro
 
             return this.Name.Equals(that.Name, StringComparison.Ordinal)
                 && this.Namespace.Equals(that.Namespace, StringComparison.Ordinal)
-                && TypesEquals(that.Types)
-                && MessagesEquals(that.Messages);
+                && this.TypesEquals(that.Types)
+                && this.MessagesEquals(that.Messages);
         }
 
         /// <summary>
         /// Test equality of this protocols Types list with the passed Types list.
         /// Order of schemas does not matter, as long as all types in this protocol
-        /// are also defined in the passed protocol
+        /// are also defined in the passed protocol.
         /// </summary>
         /// <param name="that"></param>
         /// <returns></returns>
         private bool TypesEquals(IList<Schema> that)
         {
-            if (Types.Count != that.Count)
+            if (this.Types.Count != that.Count)
             {
                 return false;
             }
 
-            foreach (Schema schema in Types)
+            foreach (Schema schema in this.Types)
             {
                 if (!that.Contains(schema))
                 {
@@ -281,18 +281,18 @@ namespace Avro
         /// <summary>
         /// Test equality of this protocols Message map with the passed Message map
         /// Order of messages does not matter, as long as all messages in this protocol
-        /// are also defined in the passed protocol
+        /// are also defined in the passed protocol.
         /// </summary>
         /// <param name="that"></param>
         /// <returns></returns>
         private bool MessagesEquals(IDictionary<string, Message> that)
         {
-            if (Messages.Count != that.Count)
+            if (this.Messages.Count != that.Count)
             {
                 return false;
             }
 
-            foreach (KeyValuePair<string, Message> pair in Messages)
+            foreach (KeyValuePair<string, Message> pair in this.Messages)
             {
                 if (!that.ContainsKey(pair.Key))
                 {
@@ -308,23 +308,23 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the hash code of this protocol object
+        /// Returns the hash code of this protocol object.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return Name.GetHashCode() + Namespace.GetHashCode() +
-                   GetTypesHashCode() + GetMessagesHashCode();
+            return this.Name.GetHashCode() + this.Namespace.GetHashCode() +
+                   this.GetTypesHashCode() + this.GetMessagesHashCode();
         }
 
         /// <summary>
-        /// Returns the hash code of the Types list
+        /// Returns the hash code of the Types list.
         /// </summary>
         /// <returns></returns>
         private int GetTypesHashCode()
         {
-            int hash = Types.Count;
-            foreach (Schema schema in Types)
+            int hash = this.Types.Count;
+            foreach (Schema schema in this.Types)
             {
                 hash += schema.GetHashCode();
             }
@@ -333,13 +333,13 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the hash code of the Messages map
+        /// Returns the hash code of the Messages map.
         /// </summary>
         /// <returns></returns>
         private int GetMessagesHashCode()
         {
-            int hash = Messages.Count;
-            foreach (KeyValuePair<string, Message> pair in Messages)
+            int hash = this.Messages.Count;
+            foreach (KeyValuePair<string, Message> pair in this.Messages)
             {
                 hash += pair.Key.GetHashCode() + pair.Value.GetHashCode();
             }

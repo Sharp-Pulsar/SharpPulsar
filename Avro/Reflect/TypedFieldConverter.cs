@@ -16,27 +16,27 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Reflect
 {
+    using System;
+
     /// <summary>
-    /// Constructor
+    /// Constructor.
     /// </summary>
-    /// <typeparam name="TAvro">Avro type</typeparam>
-    /// <typeparam name="TProperty">Property type</typeparam>
+    /// <typeparam name="TAvro">Avro type.</typeparam>
+    /// <typeparam name="TProperty">Property type.</typeparam>
     public abstract class TypedFieldConverter<TAvro, TProperty> : IAvroFieldConverter
     {
         /// <summary>
-        /// Convert from Avro type to property type
+        /// Convert from Avro type to property type.
         /// </summary>
-        /// <param name="o">Avro value</param>
-        /// <param name="s">Schema</param>
-        /// <returns>Property value</returns>
+        /// <param name="o">Avro value.</param>
+        /// <param name="s">Schema.</param>
+        /// <returns>Property value.</returns>
         public abstract TProperty From(TAvro o, Schema s);
 
         /// <summary>
-        /// Convert from property type to Avro type
+        /// Convert from property type to Avro type.
         /// </summary>
         /// <param name="o"></param>
         /// <param name="s"></param>
@@ -44,7 +44,7 @@ namespace Avro.Reflect
         public abstract TAvro To(TProperty o, Schema s);
 
         /// <summary>
-        /// Implement untyped interface
+        /// Implement untyped interface.
         /// </summary>
         /// <param name="o"></param>
         /// <param name="s"></param>
@@ -56,11 +56,11 @@ namespace Avro.Reflect
                 throw new AvroException($"Converter from {typeof(TAvro).Name} to {typeof(TProperty).Name} cannot convert object of type {o.GetType().Name} to {typeof(TAvro).Name}, object {o.ToString()}");
             }
 
-            return From((TAvro)o, s);
+            return this.From((TAvro)o, s);
         }
 
         /// <summary>
-        /// Implement untyped interface
+        /// Implement untyped interface.
         /// </summary>
         /// <returns></returns>
         public Type GetAvroType()
@@ -69,7 +69,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Implement untyped interface
+        /// Implement untyped interface.
         /// </summary>
         /// <returns></returns>
         public Type GetPropertyType()
@@ -78,7 +78,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Implement untyped interface
+        /// Implement untyped interface.
         /// </summary>
         /// <param name="o"></param>
         /// <param name="s"></param>
@@ -90,7 +90,7 @@ namespace Avro.Reflect
                 throw new AvroException($"Converter from {typeof(TAvro).Name} to {typeof(TProperty).Name} cannot convert object of type {o.GetType().Name} to {typeof(TProperty).Name}, object {o.ToString()}");
             }
 
-            return To((TProperty)o, s);
+            return this.To((TProperty)o, s);
         }
     }
 }

@@ -15,47 +15,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
-    /// Class to store schema name, namespace and enclosing namespace
+    /// Class to store schema name, namespace and enclosing namespace.
     /// </summary>
     public class SchemaName
     {
         /// <summary>
-        /// Name of the schema
+        /// Gets name of the schema.
         /// </summary>
         public String Name { get; private set; }
 
         /// <summary>
-        /// Namespace specified within the schema
+        /// Gets namespace specified within the schema.
         /// </summary>
         public String Space { get; private set; }
 
         /// <summary>
-        /// Namespace from the most tightly enclosing schema
+        /// Gets namespace from the most tightly enclosing schema.
         /// </summary>
         public String EncSpace { get; private set; }
 
         /// <summary>
-        /// Namespace.Name of the schema
+        /// Gets namespace.Name of the schema.
         /// </summary>
-        public String Fullname { get { return string.IsNullOrEmpty(Namespace) ? this.Name : Namespace + "." + this.Name; } }
+        public String Fullname { get { return string.IsNullOrEmpty(this.Namespace) ? this.Name : this.Namespace + "." + this.Name; } }
 
         /// <summary>
-        /// Namespace of the schema
+        /// Gets namespace of the schema.
         /// </summary>
         public String Namespace { get { return string.IsNullOrEmpty(this.Space) ? this.EncSpace : this.Space; } }
 
         /// <summary>
-        /// Constructor for SchemaName
+        /// Constructor for SchemaName.
         /// </summary>
-        /// <param name="name">name of the schema</param>
-        /// <param name="space">namespace of the schema</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="name">name of the schema.</param>
+        /// <param name="space">namespace of the schema.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         public SchemaName(String name, String space, String encspace)
         {
             if (name == null)
@@ -79,20 +79,20 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the full name of the schema
+        /// Returns the full name of the schema.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return Fullname;
+            return this.Fullname;
         }
 
         /// <summary>
-        /// Writes the schema name in JSON format
+        /// Writes the schema name in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         internal void WriteJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             if (null != this.Name)  // write only if not anonymous
@@ -110,10 +110,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Compares two schema names
+        /// Compares two schema names.
         /// </summary>
-        /// <param name="obj">SchameName object to compare against this object</param>
-        /// <returns>true or false</returns>
+        /// <param name="obj">SchameName object to compare against this object.</param>
+        /// <returns>true or false.</returns>
         public override bool Equals(Object obj)
         {
             if (obj == this)
@@ -124,17 +124,17 @@ namespace Avro
             if (obj != null && obj is SchemaName)
             {
                 SchemaName that = (SchemaName)obj;
-                return areEqual(that.Name, Name) && areEqual(that.Namespace, Namespace);
+                return areEqual(that.Name, this.Name) && areEqual(that.Namespace, this.Namespace);
             }
             return false;
         }
 
         /// <summary>
-        /// Compares two objects
+        /// Compares two objects.
         /// </summary>
-        /// <param name="obj1">first object</param>
-        /// <param name="obj2">second object</param>
-        /// <returns>true or false</returns>
+        /// <param name="obj1">first object.</param>
+        /// <param name="obj2">second object.</param>
+        /// <returns>true or false.</returns>
         private static bool areEqual(object obj1, object obj2)
         {
             return obj1 == null ? obj2 == null : obj1.Equals(obj2);
@@ -143,37 +143,37 @@ namespace Avro
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return string.IsNullOrEmpty(Fullname) ? 0 : 29 * Fullname.GetHashCode();
+            return string.IsNullOrEmpty(this.Fullname) ? 0 : 29 * this.Fullname.GetHashCode();
         }
     }
 
     /// <summary>
     /// A class that contains a list of named schemas. This is used when reading or writing a schema/protocol.
-    /// This prevents reading and writing of duplicate schema definitions within a protocol or schema file
+    /// This prevents reading and writing of duplicate schema definitions within a protocol or schema file.
     /// </summary>
     public class SchemaNames
     {
         /// <summary>
-        /// Map of schema name and named schema objects
+        /// Gets map of schema name and named schema objects.
         /// </summary>
         public IDictionary<SchemaName, NamedSchema> Names { get; private set; }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         public SchemaNames()
         {
-            Names = new Dictionary<SchemaName, NamedSchema>();
+            this.Names = new Dictionary<SchemaName, NamedSchema>();
         }
 
         /// <summary>
-        /// Checks if given name is in the map
+        /// Checks if given name is in the map.
         /// </summary>
-        /// <param name="name">schema name</param>
-        /// <returns>true or false</returns>
+        /// <param name="name">schema name.</param>
+        /// <returns>true or false.</returns>
         public bool Contains(SchemaName name)
         {
-            if (Names.ContainsKey(name))
+            if (this.Names.ContainsKey(name))
             {
                 return true;
             }
@@ -182,54 +182,54 @@ namespace Avro
         }
 
         /// <summary>
-        /// Adds a schema name to the map if it doesn't exist yet
+        /// Adds a schema name to the map if it doesn't exist yet.
         /// </summary>
-        /// <param name="name">schema name</param>
-        /// <param name="schema">schema object</param>
-        /// <returns>true if schema was added to the list, false if schema is already in the list</returns>
+        /// <param name="name">schema name.</param>
+        /// <param name="schema">schema object.</param>
+        /// <returns>true if schema was added to the list, false if schema is already in the list.</returns>
         public bool Add(SchemaName name, NamedSchema schema)
         {
-            if (Names.ContainsKey(name))
+            if (this.Names.ContainsKey(name))
             {
                 return false;
             }
 
-            Names.Add(name, schema);
+            this.Names.Add(name, schema);
             return true;
         }
 
         /// <summary>
-        /// Adds a named schema to the list
+        /// Adds a named schema to the list.
         /// </summary>
-        /// <param name="schema">schema object</param>
-        /// <returns>true if schema was added to the list, false if schema is already in the list</returns>
+        /// <param name="schema">schema object.</param>
+        /// <returns>true if schema was added to the list, false if schema is already in the list.</returns>
         public bool Add(NamedSchema schema)
         {
             SchemaName name = schema.SchemaName;
-            return Add(name, schema);
+            return this.Add(name, schema);
         }
 
         /// <summary>
-        /// Tries to get the value for the given name fields
+        /// Tries to get the value for the given name fields.
         /// </summary>
-        /// <param name="name">name of the schema</param>
-        /// <param name="space">namespace of the schema</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
-        /// <param name="schema">schema object found</param>
-        /// <returns>true if name is found in the map, false otherwise</returns>
+        /// <param name="name">name of the schema.</param>
+        /// <param name="space">namespace of the schema.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
+        /// <param name="schema">schema object found.</param>
+        /// <returns>true if name is found in the map, false otherwise.</returns>
         public bool TryGetValue(string name, string space, string encspace, out NamedSchema schema)
         {
             SchemaName schemaname = new SchemaName(name, space, encspace);
-            return Names.TryGetValue(schemaname, out schema);
+            return this.Names.TryGetValue(schemaname, out schema);
         }
 
         /// <summary>
-        /// Returns the enumerator for the map
+        /// Returns the enumerator for the map.
         /// </summary>
         /// <returns></returns>
         public IEnumerator<KeyValuePair<SchemaName, NamedSchema>> GetEnumerator()
         {
-            return Names.GetEnumerator();
+            return this.Names.GetEnumerator();
         }
     }
 }

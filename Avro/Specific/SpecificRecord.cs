@@ -19,12 +19,12 @@
 namespace Avro.Specific
 {
     /// <summary>
-    /// Interface class for generated classes
+    /// Interface class for generated classes.
     /// </summary>
     public interface ISpecificRecord
     {
         /// <summary>
-        /// Schema of this instance.
+        /// Gets schema of this instance.
         /// </summary>
         Schema Schema { get; }
 

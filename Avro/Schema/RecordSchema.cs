@@ -15,31 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using Newtonsoft.Json.Linq;
+
     internal delegate T Function<T>();
 
     /// <summary>
-    /// Class for record schemas
+    /// Class for record schemas.
     /// </summary>
     public class RecordSchema : NamedSchema
     {
         /// <summary>
-        /// List of fields in the record
+        /// Gets list of fields in the record.
         /// </summary>
         public List<Field> Fields { get; private set; }
 
         /// <summary>
-        /// Number of fields in the record
+        /// Gets number of fields in the record.
         /// </summary>
-        public int Count { get { return Fields.Count; } }
+        public int Count { get { return this.Fields.Count; } }
 
         /// <summary>
-        /// Map of field name and Field object for faster field lookups
+        /// Map of field name and Field object for faster field lookups.
         /// </summary>
         private readonly IDictionary<string, Field> fieldLookup;
 
@@ -47,14 +47,14 @@ namespace Avro
         private bool request;
 
         /// <summary>
-        /// Static function to return new instance of the record schema
+        /// Static function to return new instance of the record schema.
         /// </summary>
-        /// <param name="type">type of record schema, either record or error</param>
-        /// <param name="jtok">JSON object for the record schema</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
-        /// <param name="names">list of named schema already read</param>
-        /// <param name="encspace">enclosing namespace of the records schema</param>
-        /// <returns>new RecordSchema object</returns>
+        /// <param name="type">type of record schema, either record or error.</param>
+        /// <param name="jtok">JSON object for the record schema.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
+        /// <param name="names">list of named schema already read.</param>
+        /// <param name="encspace">enclosing namespace of the records schema.</param>
+        /// <returns>new RecordSchema object.</returns>
         internal static RecordSchema NewInstance(Type type, JToken jtok, PropertyMap props, SchemaNames names, string encspace)
         {
             bool request = false;
@@ -119,18 +119,18 @@ namespace Avro
         }
 
         /// <summary>
-        /// Constructor for the record schema
+        /// Constructor for the record schema.
         /// </summary>
-        /// <param name="type">type of record schema, either record or error</param>
-        /// <param name="name">name of the record schema</param>
-        /// <param name="aliases">list of aliases for the record name</param>
-        /// <param name="props">custom properties on this schema</param>
-        /// <param name="fields">list of fields for the record</param>
-        /// <param name="request">true if this is an anonymous record with 'request' instead of 'fields'</param>
-        /// <param name="fieldMap">map of field names and field objects</param>
-        /// <param name="fieldAliasMap">map of field aliases and field objects</param>
-        /// <param name="names">list of named schema already read</param>
-        /// <param name="doc">documentation for this named schema</param>
+        /// <param name="type">type of record schema, either record or error.</param>
+        /// <param name="name">name of the record schema.</param>
+        /// <param name="aliases">list of aliases for the record name.</param>
+        /// <param name="props">custom properties on this schema.</param>
+        /// <param name="fields">list of fields for the record.</param>
+        /// <param name="request">true if this is an anonymous record with 'request' instead of 'fields'.</param>
+        /// <param name="fieldMap">map of field names and field objects.</param>
+        /// <param name="fieldAliasMap">map of field aliases and field objects.</param>
+        /// <param name="names">list of named schema already read.</param>
+        /// <param name="doc">documentation for this named schema.</param>
         private RecordSchema(Type type, SchemaName name, IList<SchemaName> aliases,  PropertyMap props,
                                 List<Field> fields, bool request, IDictionary<string, Field> fieldMap,
                                 IDictionary<string, Field> fieldAliasMap, SchemaNames names, string doc)
@@ -148,13 +148,13 @@ namespace Avro
         }
 
         /// <summary>
-        /// Creates a new field for the record
+        /// Creates a new field for the record.
         /// </summary>
-        /// <param name="jfield">JSON object for the field</param>
-        /// <param name="pos">position number of the field</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="encspace">enclosing namespace of the records schema</param>
-        /// <returns>new Field object</returns>
+        /// <param name="jfield">JSON object for the field.</param>
+        /// <param name="pos">position number of the field.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the records schema.</param>
+        /// <returns>new Field object.</returns>
         private static Field CreateField(JToken jfield, int pos, SchemaNames names, string encspace)
         {
             var name = JsonHelper.GetRequiredString(jfield, "name");
@@ -194,8 +194,8 @@ namespace Avro
         /// <summary>
         /// Returns the field with the given name.
         /// </summary>
-        /// <param name="name">field name</param>
-        /// <returns>Field object</returns>
+        /// <param name="name">field name.</param>
+        /// <returns>Field object.</returns>
         public Field this[string name]
         {
             get
@@ -206,18 +206,18 @@ namespace Avro
                 }
 
                 Field field;
-                return fieldLookup.TryGetValue(name, out field) ? field : null;
+                return this.fieldLookup.TryGetValue(name, out field) ? field : null;
             }
         }
 
         /// <summary>
         /// Returns true if and only if the record contains a field by the given name.
         /// </summary>
-        /// <param name="fieldName">The name of the field</param>
-        /// <returns>true if the field exists, false otherwise</returns>
+        /// <param name="fieldName">The name of the field.</param>
+        /// <returns>true if the field exists, false otherwise.</returns>
         public bool Contains(string fieldName)
         {
-            return fieldLookup.ContainsKey(fieldName);
+            return this.fieldLookup.ContainsKey(fieldName);
         }
 
         /// <summary>
@@ -231,7 +231,7 @@ namespace Avro
         /// <returns>True if a field with the specified name exists; false otherwise.</returns>
         public bool TryGetField(string fieldName, out Field field)
         {
-            return fieldLookup.TryGetValue(fieldName, out field);
+            return this.fieldLookup.TryGetValue(fieldName, out field);
         }
 
         /// <summary>
@@ -245,30 +245,30 @@ namespace Avro
         /// <returns>True if a field with the specified alias exists; false otherwise.</returns>
         public bool TryGetFieldAlias(string fieldName, out Field field)
         {
-            return fieldAliasLookup.TryGetValue(fieldName, out field);
+            return this.fieldAliasLookup.TryGetValue(fieldName, out field);
         }
 
         /// <summary>
-        /// Returns an enumerator which enumerates over the fields of this record schema
+        /// Returns an enumerator which enumerates over the fields of this record schema.
         /// </summary>
-        /// <returns>Enumerator over the field in the order of their definition</returns>
+        /// <returns>Enumerator over the field in the order of their definition.</returns>
         public IEnumerator<Field> GetEnumerator()
         {
-            return Fields.GetEnumerator();
+            return this.Fields.GetEnumerator();
         }
 
         /// <summary>
-        /// Writes the records schema in JSON format
+        /// Writes the records schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the record schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the record schema.</param>
         protected internal override void WriteJsonFields(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             base.WriteJsonFields(writer, names, encspace);
 
             // we allow reading for empty fields, so writing of records with empty fields are allowed as well
-            if (request)
+            if (this.request)
             {
                 writer.WritePropertyName("request");
             }
@@ -290,10 +290,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Compares equality of two record schemas
+        /// Compares equality of two record schemas.
         /// </summary>
-        /// <param name="obj">record schema to compare against this schema</param>
-        /// <returns>true if the two schemas are equal, false otherwise</returns>
+        /// <param name="obj">record schema to compare against this schema.</param>
+        /// <returns>true if the two schemas are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -304,13 +304,13 @@ namespace Avro
             if (obj != null && obj is RecordSchema)
             {
                 RecordSchema that = obj as RecordSchema;
-                return protect(() => true, () =>
+                return this.protect(() => true, () =>
                 {
                     if (this.SchemaName.Equals(that.SchemaName) && this.Count == that.Count)
                     {
-                        for (int i = 0; i < Fields.Count; i++)
+                        for (int i = 0; i < this.Fields.Count; i++)
                         {
-                            if (!Fields[i].Equals(that.Fields[i]))
+                            if (!this.Fields[i].Equals(that.Fields[i]))
                             {
                                 return false;
                             }
@@ -325,20 +325,20 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hash code function
+        /// Hash code function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return protect(() => 0, () =>
+            return this.protect(() => 0, () =>
             {
-                int result = SchemaName.GetHashCode();
-                foreach (Field f in Fields)
+                int result = this.SchemaName.GetHashCode();
+                foreach (Field f in this.Fields)
                 {
                     result += 29 * f.GetHashCode();
                 }
 
-                result += getHashCode(Props);
+                result += getHashCode(this.Props);
                 return result;
             }, this);
         }
@@ -346,8 +346,8 @@ namespace Avro
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
             if ((writerSchema.Tag != Type.Record) && (writerSchema.Tag != Type.Error))
@@ -356,10 +356,10 @@ namespace Avro
             }
 
             RecordSchema that = writerSchema as RecordSchema;
-            return protect(() => true, () =>
+            return this.protect(() => true, () =>
             {
-                if (!that.SchemaName.Equals(SchemaName))
-                    if (!InAliases(that.SchemaName))
+                if (!that.SchemaName.Equals(this.SchemaName))
+                    if (!this.InAliases(that.SchemaName))
                     {
                         return false;
                     }

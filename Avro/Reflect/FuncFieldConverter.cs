@@ -16,26 +16,26 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Reflect
 {
+    using System;
+
     /// <summary>
-    /// Field converter using a Func
+    /// Field converter using a Func.
     /// </summary>
-    /// <typeparam name="TAvro">Avro type</typeparam>
-    /// <typeparam name="TProperty">Property type</typeparam>
+    /// <typeparam name="TAvro">Avro type.</typeparam>
+    /// <typeparam name="TProperty">Property type.</typeparam>
     public class FuncFieldConverter<TAvro, TProperty> : TypedFieldConverter<TAvro, TProperty>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FuncFieldConverter{A, P}"/> class.
         /// </summary>
-        /// <param name="from">Delegate to convert from C# type to Avro type</param>
-        /// <param name="to">Delegate to convert from Avro type to C# type</param>
+        /// <param name="from">Delegate to convert from C# type to Avro type.</param>
+        /// <param name="to">Delegate to convert from Avro type to C# type.</param>
         public FuncFieldConverter(Func<TAvro, Schema, TProperty> from, Func<TProperty, Schema, TAvro> to)
         {
-            _from = from;
-            _to = to;
+            this._from = from;
+            this._to = to;
         }
 
         private Func<TAvro, Schema, TProperty> _from;
@@ -50,7 +50,7 @@ namespace Avro.Reflect
         /// <returns></returns>
         public override TProperty From(TAvro o, Schema s)
         {
-            return _from(o, s);
+            return this._from(o, s);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Avro.Reflect
         /// <returns></returns>
         public override TAvro To(TProperty o, Schema s)
         {
-            return _to(o, s);
+            return this._to(o, s);
         }
     }
 }

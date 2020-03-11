@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.IO;
-
 namespace Avro.IO
 {
+    using System;
+    using System.IO;
+
     /// <summary>
     /// Write leaf values.
     /// </summary>
@@ -46,7 +46,7 @@ namespace Avro.IO
         }
 
         /// <summary>
-        /// null is written as zero bytes
+        /// null is written as zero bytes.
         /// </summary>
         public void WriteNull()
         {
@@ -55,33 +55,33 @@ namespace Avro.IO
         /// <summary>
         /// true is written as 1 and false 0.
         /// </summary>
-        /// <param name="b">Boolean value to write</param>
+        /// <param name="b">Boolean value to write.</param>
         public void WriteBoolean(bool b)
         {
-            writeByte((byte)(b ? 1 : 0));
+            this.writeByte((byte)(b ? 1 : 0));
         }
 
         /// <summary>
         /// int and long values are written using variable-length, zig-zag coding.
         /// </summary>
-        /// <param name="value">Value to write</param>
+        /// <param name="value">Value to write.</param>
         public void WriteInt(int value)
         {
-            WriteLong(value);
+            this.WriteLong(value);
         }
         /// <summary>
         /// int and long values are written using variable-length, zig-zag coding.
         /// </summary>
-        /// <param name="value">Value to write</param>
+        /// <param name="value">Value to write.</param>
         public void WriteLong(long value)
         {
             ulong n = (ulong)((value << 1) ^ (value >> 63));
             while ((n & ~0x7FUL) != 0)
             {
-                writeByte((byte)((n & 0x7f) | 0x80));
+                this.writeByte((byte)((n & 0x7f) | 0x80));
                 n >>= 7;
             }
-            writeByte((byte)n);
+            this.writeByte((byte)n);
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Avro.IO
                 Array.Reverse(buffer);
             }
 
-            writeBytes(buffer);
+            this.writeBytes(buffer);
         }
         /// <summary>
         ///A double is written as 8 bytes.
@@ -110,14 +110,14 @@ namespace Avro.IO
         {
             long bits = BitConverter.DoubleToInt64Bits(value);
 
-            writeByte((byte)(bits & 0xFF));
-            writeByte((byte)((bits >> 8) & 0xFF));
-            writeByte((byte)((bits >> 16) & 0xFF));
-            writeByte((byte)((bits >> 24) & 0xFF));
-            writeByte((byte)((bits >> 32) & 0xFF));
-            writeByte((byte)((bits >> 40) & 0xFF));
-            writeByte((byte)((bits >> 48) & 0xFF));
-            writeByte((byte)((bits >> 56) & 0xFF));
+            this.writeByte((byte)(bits & 0xFF));
+            this.writeByte((byte)((bits >> 8) & 0xFF));
+            this.writeByte((byte)((bits >> 16) & 0xFF));
+            this.writeByte((byte)((bits >> 24) & 0xFF));
+            this.writeByte((byte)((bits >> 32) & 0xFF));
+            this.writeByte((byte)((bits >> 40) & 0xFF));
+            this.writeByte((byte)((bits >> 48) & 0xFF));
+            this.writeByte((byte)((bits >> 56) & 0xFF));
 
         }
 
@@ -127,8 +127,8 @@ namespace Avro.IO
         /// <param name="value"></param>
         public void WriteBytes(byte[] value)
         {
-            WriteLong(value.Length);
-            writeBytes(value);
+            this.WriteLong(value.Length);
+            this.writeBytes(value);
         }
 
         /// <summary>
@@ -138,13 +138,13 @@ namespace Avro.IO
         /// <param name="value"></param>
         public void WriteString(string value)
         {
-            WriteBytes(System.Text.Encoding.UTF8.GetBytes(value));
+            this.WriteBytes(System.Text.Encoding.UTF8.GetBytes(value));
         }
 
         /// <inheritdoc/>
         public void WriteEnum(int value)
         {
-            WriteLong(value);
+            this.WriteLong(value);
         }
 
         /// <inheritdoc/>
@@ -157,7 +157,7 @@ namespace Avro.IO
         {
             if (value > 0)
             {
-                WriteLong(value);
+                this.WriteLong(value);
             }
         }
 
@@ -169,7 +169,7 @@ namespace Avro.IO
         /// <inheritdoc/>
         public void WriteArrayEnd()
         {
-            WriteLong(0);
+            this.WriteLong(0);
         }
 
         /// <inheritdoc/>
@@ -180,35 +180,35 @@ namespace Avro.IO
         /// <inheritdoc/>
         public void WriteMapEnd()
         {
-            WriteLong(0);
+            this.WriteLong(0);
         }
 
         /// <inheritdoc/>
         public void WriteUnionIndex(int value)
         {
-            WriteLong(value);
+            this.WriteLong(value);
         }
 
         /// <inheritdoc/>
         public void WriteFixed(byte[] data)
         {
-            WriteFixed(data, 0, data.Length);
+            this.WriteFixed(data, 0, data.Length);
         }
 
         /// <inheritdoc/>
         public void WriteFixed(byte[] data, int start, int len)
         {
-            Stream.Write(data, start, len);
+            this.Stream.Write(data, start, len);
         }
 
         private void writeBytes(byte[] bytes)
         {
-            Stream.Write(bytes, 0, bytes.Length);
+            this.Stream.Write(bytes, 0, bytes.Length);
         }
 
         private void writeByte(byte b)
         {
-            Stream.WriteByte(b);
+            this.Stream.WriteByte(b);
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace Avro.IO
         /// </summary>
         public void Flush()
         {
-            Stream.Flush();
+            this.Stream.Flush();
         }
     }
 }

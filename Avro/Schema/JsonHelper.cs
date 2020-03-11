@@ -15,23 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text.RegularExpressions;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
     class JsonHelper
     {
         /// <summary>
         /// Retrieves the optional string property value for the given property name from the given JSON object.
         /// This throws an exception if property exists but it is not a string.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="field">property name</param>
-        /// <returns>property value if property exists, null if property doesn't exist in the JSON object</returns>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="field">property name.</param>
+        /// <returns>property value if property exists, null if property doesn't exist in the JSON object.</returns>
         public static string GetOptionalString(JToken jtok, string field)
         {
             if (null == jtok)
@@ -60,9 +60,9 @@ namespace Avro
         /// <summary>
         /// Retrieves the required string property value for the given property name from the given JSON object.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="field">property name</param>
-        /// <returns>property value</returns>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="field">property name.</param>
+        /// <returns>property value.</returns>
         public static string GetRequiredString(JToken jtok, string field)
         {
             string value = GetOptionalString(jtok, field);
@@ -77,9 +77,9 @@ namespace Avro
         /// <summary>
         /// Retrieves the required int property value for the given property name from the given JSON object.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="field">property name</param>
-        /// <returns>property value</returns>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="field">property name.</param>
+        /// <returns>property value.</returns>
         public static int GetRequiredInteger(JToken jtok, string field)
         {
             if (string.IsNullOrEmpty(field))
@@ -104,9 +104,9 @@ namespace Avro
         /// <summary>
         /// Retrieves the optional boolean property value for the given property name from the given JSON object.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="field">property name</param>
-        /// <returns>null if property doesn't exist, otherise returns property boolean value</returns>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="field">property name.</param>
+        /// <returns>null if property doesn't exist, otherise returns property boolean value.</returns>
         public static bool? GetOptionalBoolean(JToken jtok, string field)
         {
             if (null == jtok)
@@ -134,11 +134,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes JSON property name and value if value is not null
+        /// Writes JSON property name and value if value is not null.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="key">property name</param>
-        /// <param name="value">property value</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="key">property name.</param>
+        /// <param name="value">property value.</param>
         internal static void writeIfNotNullOrEmpty(JsonTextWriter writer, string key, string value)
         {
             if (string.IsNullOrEmpty(value))

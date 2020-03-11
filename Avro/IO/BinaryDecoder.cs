@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.IO;
-
 namespace Avro.IO
 {
+    using System;
+    using System.IO;
+
     /// <summary>
-    /// Decoder for Avro binary format
+    /// Decoder for Avro binary format.
     /// </summary>
     public class BinaryDecoder : Decoder
     {
@@ -37,7 +37,7 @@ namespace Avro.IO
         }
 
         /// <summary>
-        /// null is written as zero bytes
+        /// null is written as zero bytes.
         /// </summary>
         public void ReadNull()
         {
@@ -50,7 +50,7 @@ namespace Avro.IO
         /// <returns></returns>
         public bool ReadBoolean()
         {
-            byte b = read();
+            byte b = this.read();
             if (b == 0)
             {
                 return false;
@@ -70,7 +70,7 @@ namespace Avro.IO
         /// <returns>An integer value.</returns>
         public int ReadInt()
         {
-            return (int)ReadLong();
+            return (int)this.ReadLong();
         }
 
         /// <summary>
@@ -79,12 +79,12 @@ namespace Avro.IO
         /// <returns>A long value.</returns>
         public long ReadLong()
         {
-            byte b = read();
+            byte b = this.read();
             ulong n = b & 0x7FUL;
             int shift = 7;
             while ((b & 0x80) != 0)
             {
-                b = read();
+                b = this.read();
                 n |= (b & 0x7FUL) << shift;
                 shift += 7;
             }
@@ -100,7 +100,7 @@ namespace Avro.IO
         /// <returns></returns>
         public float ReadFloat()
         {
-            byte[] buffer = read(4);
+            byte[] buffer = this.read(4);
 
             if (!BitConverter.IsLittleEndian)
             {
@@ -124,14 +124,14 @@ namespace Avro.IO
         /// <returns>A double value.</returns>
         public double ReadDouble()
         {
-            long bits = (stream.ReadByte() & 0xffL) |
-              (stream.ReadByte() & 0xffL) << 8 |
-              (stream.ReadByte() & 0xffL) << 16 |
-              (stream.ReadByte() & 0xffL) << 24 |
-              (stream.ReadByte() & 0xffL) << 32 |
-              (stream.ReadByte() & 0xffL) << 40 |
-              (stream.ReadByte() & 0xffL) << 48 |
-              (stream.ReadByte() & 0xffL) << 56;
+            long bits = (this.stream.ReadByte() & 0xffL) |
+              (this.stream.ReadByte() & 0xffL) << 8 |
+              (this.stream.ReadByte() & 0xffL) << 16 |
+              (this.stream.ReadByte() & 0xffL) << 24 |
+              (this.stream.ReadByte() & 0xffL) << 32 |
+              (this.stream.ReadByte() & 0xffL) << 40 |
+              (this.stream.ReadByte() & 0xffL) << 48 |
+              (this.stream.ReadByte() & 0xffL) << 56;
              return BitConverter.Int64BitsToDouble(bits);
         }
 
@@ -141,7 +141,7 @@ namespace Avro.IO
         /// <returns></returns>
         public byte[] ReadBytes()
         {
-            return read(ReadLong());
+            return this.read(this.ReadLong());
         }
 
         /// <summary>
@@ -150,10 +150,10 @@ namespace Avro.IO
         /// <returns>String read from the stream.</returns>
         public string ReadString()
         {
-            int length = ReadInt();
+            int length = this.ReadInt();
             byte[] buffer = new byte[length];
             //TODO: Fix this because it's lame;
-            ReadFixed(buffer);
+            this.ReadFixed(buffer);
             return System.Text.Encoding.UTF8.GetString(buffer);
         }
 
@@ -163,7 +163,7 @@ namespace Avro.IO
         /// <returns>Ordinal value of the enum.</returns>
         public int ReadEnum()
         {
-            return ReadInt();
+            return this.ReadInt();
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Avro.IO
         /// <returns>Size of the first block of an array.</returns>
         public long ReadArrayStart()
         {
-            return doReadItemCount();
+            return this.doReadItemCount();
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Avro.IO
         /// <returns>Number of items in the next block of an array.</returns>
         public long ReadArrayNext()
         {
-            return doReadItemCount();
+            return this.doReadItemCount();
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace Avro.IO
         /// <returns>Size of the next block of map-entries.</returns>
         public long ReadMapStart()
         {
-            return doReadItemCount();
+            return this.doReadItemCount();
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace Avro.IO
         /// <returns>Number of entires in the next block of a map.</returns>
         public long ReadMapNext()
         {
-            return doReadItemCount();
+            return this.doReadItemCount();
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace Avro.IO
         /// <returns>Tag index of a union.</returns>
         public int ReadUnionIndex()
         {
-            return ReadInt();
+            return this.ReadInt();
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Avro.IO
         /// <param name="buffer">Buffer to read the fixed value into.</param>
         public void ReadFixed(byte[] buffer)
         {
-            ReadFixed(buffer, 0, buffer.Length);
+            this.ReadFixed(buffer, 0, buffer.Length);
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Avro.IO
         /// </param>
         public void ReadFixed(byte[] buffer, int start, int length)
         {
-            Read(buffer, start, length);
+            this.Read(buffer, start, length);
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipNull()
         {
-            ReadNull();
+            this.ReadNull();
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipBoolean()
         {
-            ReadBoolean();
+            this.ReadBoolean();
         }
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipInt()
         {
-            ReadInt();
+            this.ReadInt();
         }
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipLong()
         {
-            ReadLong();
+            this.ReadLong();
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipFloat()
         {
-            Skip(4);
+            this.Skip(4);
         }
 
         /// <summary>
@@ -281,7 +281,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipDouble()
         {
-            Skip(8);
+            this.Skip(8);
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipBytes()
         {
-            Skip(ReadLong());
+            this.Skip(this.ReadLong());
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipString()
         {
-            SkipBytes();
+            this.SkipBytes();
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipEnum()
         {
-            ReadLong();
+            this.ReadLong();
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Avro.IO
         /// </summary>
         public void SkipUnionIndex()
         {
-            ReadLong();
+            this.ReadLong();
         }
 
         /// <summary>
@@ -322,14 +322,14 @@ namespace Avro.IO
         /// <param name="len">Length of the fixed to skip.</param>
         public void SkipFixed(int len)
         {
-            Skip(len);
+            this.Skip(len);
         }
 
         // Read p bytes into a new byte buffer
         private byte[] read(long p)
         {
             byte[] buffer = new byte[p];
-            Read(buffer, 0, buffer.Length);
+            this.Read(buffer, 0, buffer.Length);
             return buffer;
         }
 
@@ -340,7 +340,7 @@ namespace Avro.IO
 
         private byte read()
         {
-            int n = stream.ReadByte();
+            int n = this.stream.ReadByte();
             if (n >= 0)
             {
                 return (byte)n;
@@ -353,7 +353,7 @@ namespace Avro.IO
         {
             while (len > 0)
             {
-                int n = stream.Read(buffer, start, len);
+                int n = this.stream.Read(buffer, start, len);
                 if (n <= 0)
                 {
                     throw new AvroException("End of stream reached");
@@ -366,10 +366,10 @@ namespace Avro.IO
 
         private long doReadItemCount()
         {
-            long result = ReadLong();
+            long result = this.ReadLong();
             if (result < 0)
             {
-                ReadLong(); // Consume byte-count if present
+                this.ReadLong(); // Consume byte-count if present
                 result = -result;
             }
             return result;
@@ -377,12 +377,12 @@ namespace Avro.IO
 
         private void Skip(int p)
         {
-            stream.Seek(p, SeekOrigin.Current);
+            this.stream.Seek(p, SeekOrigin.Current);
         }
 
         private void Skip(long p)
         {
-            stream.Seek(p, SeekOrigin.Current);
+            this.stream.Seek(p, SeekOrigin.Current);
         }
 
         internal void skip(long block_size)

@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Concurrent;
-using Avro;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections.Concurrent;
+    using Avro;
+
     /// <summary>
     /// Cache of enum types. Cache key is the schema fullname.
     /// </summary>
@@ -29,7 +29,7 @@ namespace Avro.Reflect
         private static ConcurrentDictionary<string, Type> _nameEnumMap = new ConcurrentDictionary<string, Type>();
 
         /// <summary>
-        /// Add and entry to the cache
+        /// Add and entry to the cache.
         /// </summary>
         /// <param name="schema"></param>
         /// <param name="dotnetEnum"></param>
@@ -39,7 +39,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Lookup an entry in the cache - based on the schema fullname
+        /// Lookup an entry in the cache - based on the schema fullname.
         /// </summary>
         /// <param name="schema"></param>
         /// <returns></returns>

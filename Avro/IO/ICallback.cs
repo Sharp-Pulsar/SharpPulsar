@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.IO
 {
+    using System;
+
     /// <summary>
     /// Obsolete - This will be removed from the public API in a future version.
     /// </summary>

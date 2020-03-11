@@ -15,21 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Class for fields defined in a record
+    /// Class for fields defined in a record.
     /// </summary>
     public class Field
     {
         /// <summary>
-        /// Enum for the sorting order of record fields
+        /// Enum for the sorting order of record fields.
         /// </summary>
         public enum SortOrder
         {
@@ -55,40 +54,40 @@ namespace Avro
         public readonly string Name;
 
         /// <summary>
-        /// List of aliases for the field name
+        /// List of aliases for the field name.
         /// </summary>
         [Obsolete("Use Aliases instead. This will be removed from the public API in a future version.")]
         public readonly IList<string> aliases;
 
 #pragma warning disable CS0618 // Type or member is obsolete
         /// <summary>
-        /// List of aliases for the field name.
+        /// Gets list of aliases for the field name.
         /// </summary>
-        public IList<string> Aliases => aliases;
+        public IList<string> Aliases => this.aliases;
 #pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
-        /// Position of the field within its record.
+        /// Gets position of the field within its record.
         /// </summary>
         public int Pos { get; private set; }
 
         /// <summary>
-        /// Documentation for the field, if any. Null if there is no documentation.
+        /// Gets documentation for the field, if any. Null if there is no documentation.
         /// </summary>
         public string Documentation { get; private set; }
 
         /// <summary>
-        /// The default value for the field stored as JSON object, if defined. Otherwise, null.
+        /// Gets the default value for the field stored as JSON object, if defined. Otherwise, null.
         /// </summary>
         public JToken DefaultValue { get; private set; }
 
         /// <summary>
-        /// Order of the field
+        /// Gets order of the field.
         /// </summary>
         public SortOrder? Ordering { get; private set; }
 
         /// <summary>
-        /// Field type's schema
+        /// Gets field type's schema.
         /// </summary>
         public Schema Schema { get; private set; }
 
@@ -101,13 +100,13 @@ namespace Avro
         private readonly PropertyMap Props;
 
         /// <summary>
-        /// Static comparer object for JSON objects such as the fields default value
+        /// Static comparer object for JSON objects such as the fields default value.
         /// </summary>
         internal static JTokenEqualityComparer JtokenEqual = new JTokenEqualityComparer();
 
         /// <summary>
         /// A flag to indicate if reader schema has a field that is missing from writer schema and has a default value
-        /// This is set in CanRead() which is always be called before deserializing data
+        /// This is set in CanRead() which is always be called before deserializing data.
         /// </summary>
 
         /// <summary>
@@ -147,11 +146,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes the Field class in JSON format
+        /// Writes the Field class in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace for the field</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace for the field.</param>
         protected internal void writeJson(JsonTextWriter writer, SchemaNames names, string encspace)
         {
             writer.WriteStartObject();
@@ -166,7 +165,7 @@ namespace Avro
             if (null != this.Schema)
             {
                 writer.WritePropertyName("type");
-                Schema.WriteJson(writer, names, encspace);
+                this.Schema.WriteJson(writer, names, encspace);
             }
 
             if (null != this.Props)
@@ -174,11 +173,11 @@ namespace Avro
                 this.Props.WriteJson(writer);
             }
 
-            if (null != Aliases)
+            if (null != this.Aliases)
             {
                 writer.WritePropertyName("aliases");
                 writer.WriteStartArray();
-                foreach (string name in Aliases)
+                foreach (string name in this.Aliases)
                 {
                     writer.WriteValue(name);
                 }
@@ -190,9 +189,9 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses the 'aliases' property from the given JSON token
+        /// Parses the 'aliases' property from the given JSON token.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
+        /// <param name="jtok">JSON object to read.</param>
         /// <returns>List of string that represents the list of alias. If no 'aliases' specified, then it returns null.</returns>
         internal static IList<string> GetAliases(JToken jtok)
         {
@@ -221,10 +220,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the field's custom property value given the property name
+        /// Returns the field's custom property value given the property name.
         /// </summary>
-        /// <param name="key">custom property name</param>
-        /// <returns>custom property value</returns>
+        /// <param name="key">custom property name.</param>
+        /// <returns>custom property value.</returns>
         public string GetProperty(string key)
         {
             if (null == this.Props)
@@ -237,10 +236,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Compares two field objects
+        /// Compares two field objects.
         /// </summary>
-        /// <param name="obj">field to compare with this field</param>
-        /// <returns>true if two fields are equal, false otherwise</returns>
+        /// <param name="obj">field to compare with this field.</param>
+        /// <returns>true if two fields are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -251,37 +250,37 @@ namespace Avro
             if (obj != null && obj is Field)
             {
                 Field that = obj as Field;
-                return areEqual(that.Name, Name) && that.Pos == Pos && areEqual(that.Documentation, Documentation)
-                    && areEqual(that.Ordering, Ordering) && JtokenEqual.Equals(that.DefaultValue, DefaultValue)
-                    && that.Schema.Equals(Schema) && areEqual(that.Props, this.Props);
+                return areEqual(that.Name, this.Name) && that.Pos == this.Pos && areEqual(that.Documentation, this.Documentation)
+                    && areEqual(that.Ordering, this.Ordering) && JtokenEqual.Equals(that.DefaultValue, this.DefaultValue)
+                    && that.Schema.Equals(this.Schema) && areEqual(that.Props, this.Props);
             }
             return false;
         }
 
         /// <summary>
-        /// Compares two objects
+        /// Compares two objects.
         /// </summary>
-        /// <param name="o1">first object</param>
-        /// <param name="o2">second object</param>
-        /// <returns>true if two objects are equal, false otherwise</returns>
+        /// <param name="o1">first object.</param>
+        /// <param name="o2">second object.</param>
+        /// <returns>true if two objects are equal, false otherwise.</returns>
         private static bool areEqual(object o1, object o2)
         {
             return o1 == null ? o2 == null : o1.Equals(o2);
         }
 
         /// <summary>
-        /// Hash code function
+        /// Hash code function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return 17 * Name.GetHashCode() + Pos + 19 * getHashCode(Documentation) +
-                   23 * getHashCode(Ordering) + 29 * getHashCode(DefaultValue) + 31 * Schema.GetHashCode() +
-                   37 * getHashCode(Props);
+            return 17 * this.Name.GetHashCode() + this.Pos + 19 * getHashCode(this.Documentation) +
+                   23 * getHashCode(this.Ordering) + 29 * getHashCode(this.DefaultValue) + 31 * this.Schema.GetHashCode() +
+                   37 * getHashCode(this.Props);
         }
 
         /// <summary>
-        /// Hash code helper function
+        /// Hash code helper function.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>

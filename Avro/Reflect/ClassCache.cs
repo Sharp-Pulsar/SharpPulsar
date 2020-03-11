@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
+
     /// <summary>
     /// Class holds a cache of C# classes and their properties. The key for the cache is the schema full name.
     /// </summary>
@@ -35,7 +35,7 @@ namespace Avro.Reflect
 
         private void AddClassNameMapItem(RecordSchema schema, Type dotnetClass)
         {
-            if (schema != null && GetClass(schema) != null)
+            if (schema != null && this.GetClass(schema) != null)
             {
                 return;
             }
@@ -45,11 +45,11 @@ namespace Avro.Reflect
                 throw new AvroException($"Type {dotnetClass.Name} is not a class");
             }
 
-            _nameClassMap.TryAdd(schema.Fullname, new DotnetClass(dotnetClass, schema, this));
+            this._nameClassMap.TryAdd(schema.Fullname, new DotnetClass(dotnetClass, schema, this));
         }
 
         /// <summary>
-        /// Add a default field converter
+        /// Add a default field converter.
         /// </summary>
         /// <param name="converter"></param>
         public static void AddDefaultConverter(IAvroFieldConverter converter)
@@ -71,11 +71,11 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Find a default converter
+        /// Find a default converter.
         /// </summary>
         /// <param name="tag"></param>
         /// <param name="propType"></param>
-        /// <returns>The first matching converter - null if there isnt one</returns>
+        /// <returns>The first matching converter - null if there isnt one.</returns>
         public IAvroFieldConverter GetDefaultConverter(Avro.Schema.Type tag, Type propType)
         {
             Type avroType;
@@ -138,7 +138,7 @@ namespace Avro.Reflect
         /// Add an array helper. Array helpers are used for collections that are not generic lists.
         /// </summary>
         /// <param name="name">Name of the helper. Corresponds to metadata "helper" field in the schema.</param>
-        /// <param name="helperType">Type of helper. Inherited from ArrayHelper</param>
+        /// <param name="helperType">Type of helper. Inherited from ArrayHelper.</param>
         public void AddArrayHelper(string name, Type helperType)
         {
             if (!typeof(ArrayHelper).IsAssignableFrom(helperType))
@@ -146,13 +146,13 @@ namespace Avro.Reflect
                 throw new AvroException($"{helperType.Name} is not an ArrayHelper");
             }
 
-            _nameArrayMap.TryAdd(name, helperType);
+            this._nameArrayMap.TryAdd(name, helperType);
         }
 
         /// <summary>
         /// Find an array helper for an array schema node.
         /// </summary>
-        /// <param name="schema">Schema</param>
+        /// <param name="schema">Schema.</param>
         /// <param name="enumerable">The array object. If it is null then Add(), Count() and Clear methods will throw exceptions.</param>
         /// <returns></returns>
         public ArrayHelper GetArrayHelper(ArraySchema schema, IEnumerable enumerable)
@@ -163,7 +163,7 @@ namespace Avro.Reflect
             string s = null;
             s = schema.GetHelper();
 
-            if (s != null && _nameArrayMap.TryGetValue(s, out h))
+            if (s != null && this._nameArrayMap.TryGetValue(s, out h))
             {
                 return (ArrayHelper)Activator.CreateInstance(h, enumerable);
             }
@@ -179,7 +179,7 @@ namespace Avro.Reflect
         public DotnetClass GetClass(RecordSchema schema)
         {
             DotnetClass c;
-            if (!_nameClassMap.TryGetValue(schema.Fullname, out c))
+            if (!this._nameClassMap.TryGetValue(schema.Fullname, out c))
             {
                return null;
             }
@@ -190,8 +190,8 @@ namespace Avro.Reflect
         /// <summary>
         /// Add an entry to the class cache.
         /// </summary>
-        /// <param name="objType">Type of the C# class</param>
-        /// <param name="s">Schema</param>
+        /// <param name="objType">Type of the C# class.</param>
+        /// <param name="s">Schema.</param>
         public void LoadClassCache(Type objType, Schema s)
         {
             switch (s)
@@ -210,12 +210,12 @@ namespace Avro.Reflect
                         throw new AvroException($"Cant map type {objType.Name} to record {rs.Fullname}");
                     }
 
-                    AddClassNameMapItem(rs, objType);
-                    var c = GetClass(rs);
+                    this.AddClassNameMapItem(rs, objType);
+                    var c = this.GetClass(rs);
                     foreach (var f in rs.Fields)
                     {
                         var t = c.GetPropertyType(f);
-                        LoadClassCache(t, f.Schema);
+                        this.LoadClassCache(t, f.Schema);
                     }
 
                     break;
@@ -230,7 +230,7 @@ namespace Avro.Reflect
                         throw new AvroException($"{objType.Name} needs to be a generic type");
                     }
 
-                    LoadClassCache(objType.GenericTypeArguments[0], ars.ItemSchema);
+                    this.LoadClassCache(objType.GenericTypeArguments[0], ars.ItemSchema);
                     break;
                 case MapSchema ms:
                     if (!typeof(IDictionary).IsAssignableFrom(objType))
@@ -248,7 +248,7 @@ namespace Avro.Reflect
                         throw new AvroException($"First type parameter of {objType.Name} must be assignable to string");
                     }
 
-                    LoadClassCache(objType.GenericTypeArguments[1], ms.ValueSchema);
+                    this.LoadClassCache(objType.GenericTypeArguments[1], ms.ValueSchema);
                     break;
                 case NamedSchema ns:
                     EnumCache.AddEnumNameMapItem(ns, objType);
@@ -261,7 +261,7 @@ namespace Avro.Reflect
                         {
                             if (o.Tag != Schema.Type.Null)
                             {
-                                LoadClassCache(objType, o);
+                                this.LoadClassCache(objType, o);
                             }
                         }
 
@@ -271,7 +271,7 @@ namespace Avro.Reflect
                         // check the schema types are registered
                         foreach (var o in us.Schemas)
                         {
-                            if (o.Tag == Schema.Type.Record && GetClass(o as RecordSchema) == null)
+                            if (o.Tag == Schema.Type.Record && this.GetClass(o as RecordSchema) == null)
                             {
                                 throw new AvroException($"Class for union record type {o.Fullname} is not registered. Create a ClassCache object and call LoadClassCache");
                             }

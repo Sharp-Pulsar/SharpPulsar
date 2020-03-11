@@ -16,26 +16,26 @@
  * limitations under the License.
  */
 
-using Avro.IO;
-using Avro.Generic;
-
 namespace Avro.Reflect
 {
+    using Avro.Generic;
+    using Avro.IO;
+
     /// <summary>
-    /// Generic wrapper class for writing data from specific objects
+    /// Generic wrapper class for writing data from specific objects.
     /// </summary>
-    /// <typeparam name="T">type name of specific object</typeparam>
+    /// <typeparam name="T">type name of specific object.</typeparam>
     public class ReflectWriter<T> : DatumWriter<T>
     {
         /// <summary>
-        /// Default writer
+        /// Gets default writer.
         /// </summary>
-        public ReflectDefaultWriter Writer { get => _writer; }
+        public ReflectDefaultWriter Writer { get => this._writer; }
 
         private readonly ReflectDefaultWriter _writer;
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="schema"></param>
         /// <param name="cache"></param>
@@ -45,9 +45,9 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// The schema
+        /// Gets the schema.
         /// </summary>
-        public Schema Schema { get => _writer.Schema; }
+        public Schema Schema { get => this._writer.Schema; }
 
         /// <summary>
         /// Constructor with already created default writer.
@@ -55,17 +55,17 @@ namespace Avro.Reflect
         /// <param name="writer"></param>
         public ReflectWriter(ReflectDefaultWriter writer)
         {
-            _writer = writer;
+            this._writer = writer;
         }
 
         /// <summary>
         /// Serializes the given object using this writer's schema.
         /// </summary>
-        /// <param name="value">The value to be serialized</param>
-        /// <param name="encoder">The encoder to use for serializing</param>
+        /// <param name="value">The value to be serialized.</param>
+        /// <param name="encoder">The encoder to use for serializing.</param>
         public void Write(T value, Encoder encoder)
         {
-            _writer.Write(value, encoder);
+            this._writer.Write(value, encoder);
         }
     }
 }

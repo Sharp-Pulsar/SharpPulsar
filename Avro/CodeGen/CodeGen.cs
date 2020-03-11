@@ -15,62 +15,62 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Text;
-using Microsoft.CSharp;
-
 namespace Avro
 {
+    using System;
+    using System.CodeDom;
+    using System.CodeDom.Compiler;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Reflection;
+    using System.Text;
+    using Microsoft.CSharp;
+
     /// <summary>
     /// Generates C# code from Avro schemas and protocols.
     /// </summary>
     public class CodeGen
     {
         /// <summary>
-        /// Object that contains all the generated types
+        /// Gets object that contains all the generated types.
         /// </summary>
         public CodeCompileUnit CompileUnit { get; private set; }
 
         /// <summary>
-        /// List of schemas to generate code for
+        /// Gets list of schemas to generate code for.
         /// </summary>
         public IList<Schema> Schemas { get; private set; }
 
         /// <summary>
-        /// List of protocols to generate code for
+        /// Gets list of protocols to generate code for.
         /// </summary>
         public IList<Protocol> Protocols { get; private set; }
 
         /// <summary>
-        /// Mapping of Avro namespaces to C# namespaces
+        /// Gets mapping of Avro namespaces to C# namespaces.
         /// </summary>
         public IDictionary<string, string> NamespaceMapping { get; private set; }
 
         /// <summary>
-        /// List of generated namespaces
+        /// List of generated namespaces.
         /// </summary>
         [Obsolete("Use NamespaceLookup instead. This will be removed from the public API in a future version.")]
         protected Dictionary<string, CodeNamespace> namespaceLookup = new Dictionary<string, CodeNamespace>(StringComparer.Ordinal);
 
         /// <summary>
-        /// List of generated namespaces.
+        /// Gets or sets list of generated namespaces.
         /// </summary>
         protected Dictionary<string, CodeNamespace> NamespaceLookup
         {
 #pragma warning disable CS0618 // Type or member is obsolete
-            get => namespaceLookup;
-            set => namespaceLookup = value;
+            get => this.namespaceLookup;
+            set => this.namespaceLookup = value;
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>
-        /// Default constructor
+        /// Default constructor.
         /// </summary>
         public CodeGen()
         {
@@ -80,27 +80,27 @@ namespace Avro
         }
 
         /// <summary>
-        /// Adds a protocol object to generate code for
+        /// Adds a protocol object to generate code for.
         /// </summary>
-        /// <param name="protocol">protocol object</param>
+        /// <param name="protocol">protocol object.</param>
         public virtual void AddProtocol(Protocol protocol)
         {
-            Protocols.Add(protocol);
+            this.Protocols.Add(protocol);
         }
 
         /// <summary>
-        /// Adds a schema object to generate code for
+        /// Adds a schema object to generate code for.
         /// </summary>
-        /// <param name="schema">schema object</param>
+        /// <param name="schema">schema object.</param>
         public virtual void AddSchema(Schema schema)
         {
-            Schemas.Add(schema);
+            this.Schemas.Add(schema);
         }
 
         /// <summary>
-        /// Adds a namespace object for the given name into the dictionary if it doesn't exist yet
+        /// Adds a namespace object for the given name into the dictionary if it doesn't exist yet.
         /// </summary>
-        /// <param name="name">name of namespace</param>
+        /// <param name="name">name of namespace.</param>
         /// <returns></returns>
         protected virtual CodeNamespace addNamespace(string name)
         {
@@ -111,10 +111,10 @@ namespace Avro
 
             CodeNamespace ns = null;
 
-            if (!NamespaceLookup.TryGetValue(name, out ns))
+            if (!this.NamespaceLookup.TryGetValue(name, out ns))
             {
                 string csharpNamespace;
-                ns = NamespaceMapping.TryGetValue(name, out csharpNamespace)
+                ns = this.NamespaceMapping.TryGetValue(name, out csharpNamespace)
                     ? new CodeNamespace(csharpNamespace)
                     : new CodeNamespace(CodeGenUtil.Instance.Mangle(name));
 
@@ -123,42 +123,42 @@ namespace Avro
                     ns.Imports.Add(nci);
                 }
 
-                CompileUnit.Namespaces.Add(ns);
-                NamespaceLookup.Add(name, ns);
+                this.CompileUnit.Namespaces.Add(ns);
+                this.NamespaceLookup.Add(name, ns);
             }
             return ns;
         }
 
         /// <summary>
-        /// Generates code for the given protocol and schema objects
+        /// Generates code for the given protocol and schema objects.
         /// </summary>
-        /// <returns>CodeCompileUnit object</returns>
+        /// <returns>CodeCompileUnit object.</returns>
         public virtual CodeCompileUnit GenerateCode()
         {
-            CompileUnit = new CodeCompileUnit();
+            this.CompileUnit = new CodeCompileUnit();
 
-            processSchemas();
-            processProtocols();
+            this.processSchemas();
+            this.processProtocols();
 
-            return CompileUnit;
+            return this.CompileUnit;
         }
 
         /// <summary>
-        /// Generates code for the schema objects
+        /// Generates code for the schema objects.
         /// </summary>
         protected virtual void processSchemas()
         {
             foreach (Schema schema in this.Schemas)
             {
-                SchemaNames names = generateNames(schema);
+                SchemaNames names = this.generateNames(schema);
                 foreach (KeyValuePair<SchemaName, NamedSchema> sn in names)
                 {
                     switch (sn.Value.Tag)
                     {
-                        case Schema.Type.Enumeration: processEnum(sn.Value); break;
-                        case Schema.Type.Fixed: processFixed(sn.Value); break;
-                        case Schema.Type.Record: processRecord(sn.Value); break;
-                        case Schema.Type.Error: processRecord(sn.Value); break;
+                        case Schema.Type.Enumeration: this.processEnum(sn.Value); break;
+                        case Schema.Type.Fixed: this.processFixed(sn.Value); break;
+                        case Schema.Type.Record: this.processRecord(sn.Value); break;
+                        case Schema.Type.Error: this.processRecord(sn.Value); break;
                         default:
                             throw new CodeGenException("Names in schema should only be of type NamedSchema, type found " + sn.Value.Tag);
                     }
@@ -167,63 +167,63 @@ namespace Avro
         }
 
         /// <summary>
-        /// Generates code for the protocol objects
+        /// Generates code for the protocol objects.
         /// </summary>
         protected virtual void processProtocols()
         {
-            foreach (Protocol protocol in Protocols)
+            foreach (Protocol protocol in this.Protocols)
             {
-                SchemaNames names = generateNames(protocol);
+                SchemaNames names = this.generateNames(protocol);
                 foreach (KeyValuePair<SchemaName, NamedSchema> sn in names)
                 {
                     switch (sn.Value.Tag)
                     {
-                        case Schema.Type.Enumeration: processEnum(sn.Value); break;
-                        case Schema.Type.Fixed: processFixed(sn.Value); break;
-                        case Schema.Type.Record: processRecord(sn.Value); break;
-                        case Schema.Type.Error: processRecord(sn.Value); break;
+                        case Schema.Type.Enumeration: this.processEnum(sn.Value); break;
+                        case Schema.Type.Fixed: this.processFixed(sn.Value); break;
+                        case Schema.Type.Record: this.processRecord(sn.Value); break;
+                        case Schema.Type.Error: this.processRecord(sn.Value); break;
                         default:
                             throw new CodeGenException("Names in protocol should only be of type NamedSchema, type found " + sn.Value.Tag);
                     }
                 }
 
-                processInterface(protocol);
+                this.processInterface(protocol);
             }
         }
 
         /// <summary>
-        /// Generate list of named schemas from given protocol
+        /// Generate list of named schemas from given protocol.
         /// </summary>
-        /// <param name="protocol">protocol to process</param>
+        /// <param name="protocol">protocol to process.</param>
         /// <returns></returns>
         protected virtual SchemaNames generateNames(Protocol protocol)
         {
             var names = new SchemaNames();
             foreach (Schema schema in protocol.Types)
             {
-                addName(schema, names);
+                this.addName(schema, names);
             }
 
             return names;
         }
 
         /// <summary>
-        /// Generate list of named schemas from given schema
+        /// Generate list of named schemas from given schema.
         /// </summary>
-        /// <param name="schema">schema to process</param>
+        /// <param name="schema">schema to process.</param>
         /// <returns></returns>
         protected virtual SchemaNames generateNames(Schema schema)
         {
             var names = new SchemaNames();
-            addName(schema, names);
+            this.addName(schema, names);
             return names;
         }
 
         /// <summary>
-        /// Recursively search the given schema for named schemas and adds them to the given container
+        /// Recursively search the given schema for named schemas and adds them to the given container.
         /// </summary>
-        /// <param name="schema">schema object to search</param>
-        /// <param name="names">list of named schemas</param>
+        /// <param name="schema">schema object to search.</param>
+        /// <param name="names">list of named schemas.</param>
         protected virtual void addName(Schema schema, SchemaNames names)
         {
             NamedSchema ns = schema as NamedSchema;
@@ -259,26 +259,26 @@ namespace Avro
                     names.Add(rs);
                     foreach (Field field in rs.Fields)
                     {
-                        addName(field.Schema, names);
+                        this.addName(field.Schema, names);
                     }
 
                     break;
 
                 case Schema.Type.Array:
                     var asc = schema as ArraySchema;
-                    addName(asc.ItemSchema, names);
+                    this.addName(asc.ItemSchema, names);
                     break;
 
                 case Schema.Type.Map:
                     var ms = schema as MapSchema;
-                    addName(ms.ValueSchema, names);
+                    this.addName(ms.ValueSchema, names);
                     break;
 
                 case Schema.Type.Union:
                     var us = schema as UnionSchema;
                     foreach (Schema usc in us.Schemas)
                     {
-                        addName(usc, names);
+                        this.addName(usc, names);
                     }
 
                     break;
@@ -289,9 +289,9 @@ namespace Avro
         }
 
         /// <summary>
-        /// Creates a class declaration for fixed schema
+        /// Creates a class declaration for fixed schema.
         /// </summary>
-        /// <param name="schema">fixed schema</param>
+        /// <param name="schema">fixed schema.</param>
         protected virtual void processFixed(Schema schema)
         {
             FixedSchema fixedSchema = schema as FixedSchema;
@@ -309,11 +309,11 @@ namespace Avro
 
             if (fixedSchema.Documentation != null)
             {
-                ctd.Comments.Add(createDocComment(fixedSchema.Documentation));
+                ctd.Comments.Add(this.createDocComment(fixedSchema.Documentation));
             }
 
             // create static schema field
-            createSchemaField(schema, ctd, true);
+            this.createSchemaField(schema, ctd, true);
 
             // Add Size field
             string sizefname = "fixedSize";
@@ -343,14 +343,14 @@ namespace Avro
                 throw new CodeGenException("Namespace required for enum schema " + fixedSchema.Name);
             }
 
-            CodeNamespace codens = addNamespace(nspace);
+            CodeNamespace codens = this.addNamespace(nspace);
             codens.Types.Add(ctd);
         }
 
         /// <summary>
-        /// Creates an enum declaration
+        /// Creates an enum declaration.
         /// </summary>
-        /// <param name="schema">enum schema</param>
+        /// <param name="schema">enum schema.</param>
         protected virtual void processEnum(Schema schema)
         {
             EnumSchema enumschema = schema as EnumSchema;
@@ -365,7 +365,7 @@ namespace Avro
 
             if (enumschema.Documentation != null)
             {
-                ctd.Comments.Add(createDocComment(enumschema.Documentation));
+                ctd.Comments.Add(this.createDocComment(enumschema.Documentation));
             }
 
             foreach (string symbol in enumschema.Symbols)
@@ -385,7 +385,7 @@ namespace Avro
                 throw new CodeGenException("Namespace required for enum schema " + enumschema.Name);
             }
 
-            CodeNamespace codens = addNamespace(nspace);
+            CodeNamespace codens = this.addNamespace(nspace);
 
             codens.Types.Add(ctd);
         }
@@ -404,7 +404,7 @@ namespace Avro
             ctd.IsClass = true;
             ctd.BaseTypes.Add("Avro.Specific.ISpecificProtocol");
 
-            AddProtocolDocumentation(protocol, ctd);
+            this.AddProtocolDocumentation(protocol, ctd);
 
             // Add static protocol field.
             var protocolField = new CodeMemberField();
@@ -472,7 +472,7 @@ namespace Avro
                 throw new CodeGenException("Namespace required for enum schema " + nspace);
             }
 
-            CodeNamespace codens = addNamespace(nspace);
+            CodeNamespace codens = this.addNamespace(nspace);
 
             codens.Types.Add(ctd);
 
@@ -486,7 +486,7 @@ namespace Avro
 
 
 
-            AddProtocolDocumentation(protocol, ctd);
+            this.AddProtocolDocumentation(protocol, ctd);
 
             AddMethods(protocol, true, ctd);
 
@@ -579,7 +579,7 @@ namespace Avro
             // Add interface documentation
             if (protocol.Doc != null && protocol.Doc.Trim() != string.Empty)
             {
-                var interfaceDoc = createDocComment(protocol.Doc);
+                var interfaceDoc = this.createDocComment(protocol.Doc);
                 if (interfaceDoc != null)
                 {
                     ctd.Comments.Add(interfaceDoc);
@@ -588,10 +588,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Creates a class declaration
+        /// Creates a class declaration.
         /// </summary>
-        /// <param name="schema">record schema</param>
-        /// <returns>A new class code type declaration</returns>
+        /// <param name="schema">record schema.</param>
+        /// <returns>A new class code type declaration.</returns>
         protected virtual CodeTypeDeclaration processRecord(Schema schema)
         {
             RecordSchema recordSchema = schema as RecordSchema;
@@ -612,10 +612,10 @@ namespace Avro
 
             if (recordSchema.Documentation != null)
             {
-                ctd.Comments.Add(createDocComment(recordSchema.Documentation));
+                ctd.Comments.Add(this.createDocComment(recordSchema.Documentation));
             }
 
-            createSchemaField(schema, ctd, isError);
+            this.createSchemaField(schema, ctd, isError);
 
             // declare Get() to be used by the Writer classes
             var cmmGet = new CodeMemberMethod();
@@ -658,7 +658,7 @@ namespace Avro
                 CodeCommentStatement propertyComment = null;
                 if (!string.IsNullOrEmpty(field.Documentation))
                 {
-                    propertyComment = createDocComment(field.Documentation);
+                    propertyComment = this.createDocComment(field.Documentation);
                     if (null != propertyComment)
                     {
                         codeField.Comments.Add(propertyComment);
@@ -740,7 +740,7 @@ namespace Avro
                 throw new CodeGenException("Namespace required for record schema " + recordSchema.Name);
             }
 
-            CodeNamespace codens = addNamespace(nspace);
+            CodeNamespace codens = this.addNamespace(nspace);
 
             codens.Types.Add(ctd);
 
@@ -748,10 +748,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Gets the string representation of the schema's data type
+        /// Gets the string representation of the schema's data type.
         /// </summary>
-        /// <param name="schema">schema</param>
-        /// <param name="nullible">flag to indicate union with null</param>
+        /// <param name="schema">schema.</param>
+        /// <param name="nullible">flag to indicate union with null.</param>
         /// <param name="nullibleEnum">
         /// This method sets this value to indicate whether the enum is nullable. True indicates
         /// that it is nullable. False indicates that it is not nullable.
@@ -892,10 +892,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Gets the schema of a union with null
+        /// Gets the schema of a union with null.
         /// </summary>
-        /// <param name="schema">union schema</param>
-        /// <returns>schema that is nullible</returns>
+        /// <param name="schema">union schema.</param>
+        /// <returns>schema that is nullible.</returns>
         public static Schema getNullableType(UnionSchema schema)
         {
             Schema ret = null;
@@ -922,10 +922,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Creates the static schema field for class types
+        /// Creates the static schema field for class types.
         /// </summary>
-        /// <param name="schema">schema</param>
-        /// <param name="ctd">CodeTypeDeclaration for the class</param>
+        /// <param name="schema">schema.</param>
+        /// <param name="ctd">CodeTypeDeclaration for the class.</param>
         /// <param name="overrideFlag">
         /// Indicates whether we should add the <see cref="MemberAttributes.Override"/> to the
         /// generated property.
@@ -961,10 +961,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Creates an XML documentation for the given comment
+        /// Creates an XML documentation for the given comment.
         /// </summary>
-        /// <param name="comment">comment</param>
-        /// <returns>CodeCommentStatement object</returns>
+        /// <param name="comment">comment.</param>
+        /// <returns>CodeCommentStatement object.</returns>
         protected virtual CodeCommentStatement createDocComment(string comment)
         {
             string text = string.Format(CultureInfo.InvariantCulture,
@@ -973,9 +973,9 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes the generated compile unit into one file
+        /// Writes the generated compile unit into one file.
         /// </summary>
-        /// <param name="outputFile">name of output file to write to</param>
+        /// <param name="outputFile">name of output file to write to.</param>
         public virtual void WriteCompileUnit(string outputFile)
         {
             var cscp = new CSharpCodeProvider();
@@ -987,14 +987,14 @@ namespace Avro
 
             using (var outfile = new StreamWriter(outputFile))
             {
-                cscp.GenerateCodeFromCompileUnit(CompileUnit, outfile, opts);
+                cscp.GenerateCodeFromCompileUnit(this.CompileUnit, outfile, opts);
             }
         }
 
         /// <summary>
-        /// Writes each types in each namespaces into individual files
+        /// Writes each types in each namespaces into individual files.
         /// </summary>
-        /// <param name="outputdir">name of directory to write to</param>
+        /// <param name="outputdir">name of directory to write to.</param>
         public virtual void WriteTypes(string outputdir)
         {
             var cscp = new CSharpCodeProvider();
@@ -1004,7 +1004,7 @@ namespace Avro
             opts.IndentString = "\t";
             opts.BlankLinesBetweenMembers = false;
 
-            CodeNamespaceCollection nsc = CompileUnit.Namespaces;
+            CodeNamespaceCollection nsc = this.CompileUnit.Namespaces;
             for (int i = 0; i < nsc.Count; i++)
             {
                 var ns = nsc[i];

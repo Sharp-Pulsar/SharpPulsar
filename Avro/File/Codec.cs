@@ -25,27 +25,27 @@ namespace Avro.File
     public abstract class Codec
     {
         /// <summary>
-        /// Compress data using implemented codec
+        /// Compress data using implemented codec.
         /// </summary>
         /// <param name="uncompressedData"></param>
         /// <returns></returns>
         abstract public byte[] Compress(byte[] uncompressedData);
 
         /// <summary>
-        /// Decompress data using implemented codec
+        /// Decompress data using implemented codec.
         /// </summary>
         /// <param name="compressedData"></param>
         /// <returns></returns>
         abstract public byte[] Decompress(byte[] compressedData);
 
         /// <summary>
-        /// Name of this codec type
+        /// Name of this codec type.
         /// </summary>
         /// <returns></returns>
         abstract public string GetName();
 
         /// <summary>
-        ///  Codecs must implement an equals() method
+        ///  Codecs must implement an equals() method.
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
@@ -53,13 +53,13 @@ namespace Avro.File
 
         /// <summary>
         /// Codecs must implement a HashCode() method that is
-        /// consistent with Equals
+        /// consistent with Equals.
         /// </summary>
         /// <returns></returns>
         abstract public override int GetHashCode();
 
         /// <summary>
-        /// Codec types
+        /// Codec types.
         /// </summary>
         public enum Type
         {
@@ -78,7 +78,7 @@ namespace Avro.File
 
         /// <summary>
         /// Factory method to return child
-        /// codec instance based on Codec.Type
+        /// codec instance based on Codec.Type.
         /// </summary>
         /// <param name="codecType"></param>
         /// <returns></returns>
@@ -95,7 +95,7 @@ namespace Avro.File
 
         /// <summary>
         /// Factory method to return child
-        /// codec instance based on string type
+        /// codec instance based on string type.
         /// </summary>
         /// <param name="codecType"></param>
         /// <returns></returns>
@@ -111,12 +111,12 @@ namespace Avro.File
         }
 
         /// <summary>
-        /// Returns name of codec
+        /// Returns name of codec.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return GetName();
+            return this.GetName();
         }
     }
 }

@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-
 namespace Avro.Generic
 {
+    using System;
+
     /// <summary>
-    /// The default type used by GenericReader and GenericWriter for objects for FixedSchema
+    /// The default type used by GenericReader and GenericWriter for objects for FixedSchema.
     /// </summary>
     public class GenericFixed
     {
@@ -31,13 +31,13 @@ namespace Avro.Generic
         private FixedSchema schema;
 
         /// <summary>
-        /// Schema for this fixed.
+        /// Gets or sets schema for this fixed.
         /// </summary>
         public FixedSchema Schema
         {
             get
             {
-                return schema;
+                return this.schema;
             }
 
             set
@@ -52,7 +52,7 @@ namespace Avro.Generic
                     throw new AvroException("Schema " + value.Name + " Size " + (value as FixedSchema).Size + "is not equal to bytes length " + this.value.Length);
                 }
 
-                schema = value;
+                this.schema = value;
             }
         }
 
@@ -62,7 +62,7 @@ namespace Avro.Generic
         /// <param name="schema">Schema for this fixed.</param>
         public GenericFixed(FixedSchema schema)
         {
-            value = new byte[schema.Size];
+            this.value = new byte[schema.Size];
             this.Schema = schema;
         }
 
@@ -75,7 +75,7 @@ namespace Avro.Generic
         {
             this.value = new byte[schema.Size];
             this.Schema = schema;
-            Value = value;
+            this.Value = value;
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Avro.Generic
         }
 
         /// <summary>
-        /// Value of this fixed.
+        /// Gets or sets value of this fixed.
         /// </summary>
         public byte[] Value
         {
@@ -100,7 +100,7 @@ namespace Avro.Generic
                     Array.Copy(value, this.value, value.Length);
                     return;
                 }
-                throw new AvroException("Invalid length for fixed: " + value.Length + ", (" + Schema + ")");
+                throw new AvroException("Invalid length for fixed: " + value.Length + ", (" + this.Schema + ")");
             }
         }
 
@@ -117,7 +117,7 @@ namespace Avro.Generic
                 GenericFixed that = obj as GenericFixed;
                 if (that.Schema.Equals(this.Schema))
                 {
-                    for (int i = 0; i < value.Length; i++)
+                    for (int i = 0; i < this.value.Length; i++)
                     {
                         if (this.value[i] != that.value[i])
                         {
@@ -134,8 +134,8 @@ namespace Avro.Generic
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            int result = Schema.GetHashCode();
-            foreach (byte b in value)
+            int result = this.Schema.GetHashCode();
+            foreach (byte b in this.value)
             {
                 result += 23 * b;
             }

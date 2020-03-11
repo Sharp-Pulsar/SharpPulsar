@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-
 namespace Avro.IO
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+
     /// <summary>
     /// Utility to present <see cref="MemoryStream"/>s as an <see cref="InputStream"/>.
     /// </summary>
@@ -37,7 +37,7 @@ namespace Avro.IO
         /// <param name="buffers"></param>
         public ByteBufferInputStream(IList<MemoryStream> buffers)
         {
-            _buffers = buffers;
+            this._buffers = buffers;
         }
 
         /// <inheritdoc/>
@@ -48,7 +48,7 @@ namespace Avro.IO
                 return 0;
             }
 
-            MemoryStream buffer = GetNextNonEmptyBuffer();
+            MemoryStream buffer = this.GetNextNonEmptyBuffer();
             long remaining = buffer.Length - buffer.Position;
             if (len > remaining)
             {
@@ -72,21 +72,21 @@ namespace Avro.IO
 
         private MemoryStream GetNextNonEmptyBuffer()
         {
-            while (_currentBuffer < _buffers.Count)
+            while (this._currentBuffer < this._buffers.Count)
             {
-                MemoryStream buffer = _buffers[_currentBuffer];
+                MemoryStream buffer = this._buffers[this._currentBuffer];
                 if (buffer.Position < buffer.Length)
                 {
                     return buffer;
                 }
 
-                _currentBuffer++;
+                this._currentBuffer++;
             }
             throw new EndOfStreamException();
         }
 
         /// <summary>
-        /// Throws a <see cref="NotSupportedException"/>.
+        /// Gets throws a <see cref="NotSupportedException"/>.
         /// </summary>
         /// <exception cref="NotSupportedException">
         /// Always thows.

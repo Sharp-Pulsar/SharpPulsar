@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Util
 {
+    using System;
+
     /// <summary>
     /// Base for all logical type implementations that are based on the Unix Epoch date/time.
     /// </summary>

@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.IO;
-
 namespace Avro.File
 {
+    using System;
+    using System.IO;
+
     /// <summary>
     /// Encapsulates a block of data read by the <see cref="DataFileReader{T}"/>.
     /// We will remove this class from the public API in a future version because it is only meant
@@ -29,17 +29,17 @@ namespace Avro.File
     public class DataBlock
     {
         /// <summary>
-        /// Raw bytes within this block.
+        /// Gets or sets raw bytes within this block.
         /// </summary>
         public byte[] Data { get;  set; }
 
         /// <summary>
-        /// Number of entries in this block.
+        /// Gets or sets number of entries in this block.
         /// </summary>
         public long NumberOfEntries { get; set; }
 
         /// <summary>
-        /// Size of this block in bytes.
+        /// Gets or sets size of this block in bytes.
         /// </summary>
         public long BlockSize { get; set; }
 
@@ -50,14 +50,14 @@ namespace Avro.File
         /// <param name="blockSize">Size of this block in bytes.</param>
         public DataBlock(long numberOfEntries, long blockSize)
         {
-            NumberOfEntries = numberOfEntries;
-            BlockSize = blockSize;
-            Data = new byte[blockSize];
+            this.NumberOfEntries = numberOfEntries;
+            this.BlockSize = blockSize;
+            this.Data = new byte[blockSize];
         }
 
         internal Stream GetDataAsStream()
         {
-            return new MemoryStream(Data);
+            return new MemoryStream(this.Data);
         }
     }
 }

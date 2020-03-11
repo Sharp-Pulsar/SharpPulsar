@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System.Collections.Generic;
-
 namespace Avro.Util
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// A factory for logical type implementations.
     /// </summary>
@@ -28,14 +28,14 @@ namespace Avro.Util
         private readonly IDictionary<string, LogicalType> _logicalTypes;
 
         /// <summary>
-        /// Returns the <see cref="LogicalTypeFactory" /> singleton.
+        /// Gets returns the <see cref="LogicalTypeFactory" /> singleton.
         /// </summary>
         /// <returns>The <see cref="LogicalTypeFactory" /> singleton. </returns>
         public static LogicalTypeFactory Instance { get; } = new LogicalTypeFactory();
 
         private LogicalTypeFactory()
         {
-            _logicalTypes = new Dictionary<string, LogicalType>()
+            this._logicalTypes = new Dictionary<string, LogicalType>()
             {
                 { Decimal.LogicalTypeName, new Decimal() },
                 { Date.LogicalTypeName, new Date() },
@@ -52,7 +52,7 @@ namespace Avro.Util
         /// <param name="logicalType">The <see cref="LogicalType"/> implementation that should be registered.</param>
         public void Register(LogicalType logicalType)
         {
-            _logicalTypes[logicalType.Name] = logicalType;
+            this._logicalTypes[logicalType.Name] = logicalType;
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Avro.Util
         {
             try
             {
-                if (!_logicalTypes.TryGetValue(schema.LogicalTypeName, out LogicalType logicalType))
+                if (!this._logicalTypes.TryGetValue(schema.LogicalTypeName, out LogicalType logicalType))
                 {
                     throw new AvroTypeException("Logical type '" + schema.LogicalTypeName + "' is not supported.");
                 }

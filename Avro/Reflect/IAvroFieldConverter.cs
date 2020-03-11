@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
- using System;
-
 namespace Avro.Reflect
 {
+    using System;
+
     /// <summary>
     /// Converters can be added to properties with an AvroField attribute. Converters convert between the
     /// property type and the avro type.
@@ -27,29 +27,29 @@ namespace Avro.Reflect
     public interface IAvroFieldConverter
     {
         /// <summary>
-        /// Convert from the C# type to the avro type
+        /// Convert from the C# type to the avro type.
         /// </summary>
-        /// <param name="o">Value to convert</param>
-        /// <param name="s">Schema</param>
-        /// <returns>Converted value</returns>
+        /// <param name="o">Value to convert.</param>
+        /// <param name="s">Schema.</param>
+        /// <returns>Converted value.</returns>
         object ToAvroType(object o, Schema s);
 
         /// <summary>
-        /// Convert from the avro type to the C# type
+        /// Convert from the avro type to the C# type.
         /// </summary>
-        /// <param name="o">Value to convert</param>
-        /// <param name="s">Schema</param>
-        /// <returns>Converted value</returns>
+        /// <param name="o">Value to convert.</param>
+        /// <param name="s">Schema.</param>
+        /// <returns>Converted value.</returns>
         object FromAvroType(object o, Schema s);
 
         /// <summary>
-        /// Avro type
+        /// Avro type.
         /// </summary>
         /// <returns></returns>
         Type GetAvroType();
 
         /// <summary>
-        /// Property type
+        /// Property type.
         /// </summary>
         /// <returns></returns>
         Type GetPropertyType();

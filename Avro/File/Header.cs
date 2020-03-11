@@ -15,27 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Collections.Generic;
-
 namespace Avro.File
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Header on an Avro data file.
     /// </summary>
     public class Header
     {
         /// <summary>
-        /// Metadata in this header.
+        /// Gets metadata in this header.
         /// </summary>
         public IDictionary<string, byte[]> MetaData { get; }
 
         /// <summary>
-        /// Sync token.
+        /// Gets sync token.
         /// </summary>
         public byte[] SyncData { get; }
 
         /// <summary>
-        /// Avro schema.
+        /// Gets or sets avro schema.
         /// </summary>
         public Schema Schema { get; set; }
 
@@ -44,8 +44,8 @@ namespace Avro.File
         /// </summary>
         public Header()
         {
-            MetaData = new Dictionary<string, byte[]>();
-            SyncData = new byte[16];
+            this.MetaData = new Dictionary<string, byte[]>();
+            this.SyncData = new byte[16];
         }
     }
 }

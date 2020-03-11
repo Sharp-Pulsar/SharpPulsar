@@ -15,37 +15,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Class for union schemas
+    /// Class for union schemas.
     /// </summary>
     public class UnionSchema : UnnamedSchema
     {
         /// <summary>
-        /// List of schemas in the union
+        /// Gets list of schemas in the union.
         /// </summary>
         public IList<Schema> Schemas { get; private set; }
 
         /// <summary>
-        /// Count of schemas in the union
+        /// Gets count of schemas in the union.
         /// </summary>
-        public int Count { get { return Schemas.Count; } }
+        public int Count { get { return this.Schemas.Count; } }
 
         /// <summary>
-        /// Static function to return instance of the union schema
+        /// Static function to return instance of the union schema.
         /// </summary>
-        /// <param name="jarr">JSON object for the union schema</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
-        /// <returns>new UnionSchema object</returns>
+        /// <param name="jarr">JSON object for the union schema.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
+        /// <returns>new UnionSchema object.</returns>
         internal static UnionSchema NewInstance(JArray jarr, PropertyMap props, SchemaNames names, string encspace)
         {
             List<Schema> schemas = new List<Schema>();
@@ -72,10 +72,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Contructor for union schema
+        /// Contructor for union schema.
         /// </summary>
         /// <param name="schemas"></param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
         private UnionSchema(List<Schema> schemas, PropertyMap props) : base(Type.Union, props)
         {
             if (schemas == null)
@@ -95,16 +95,16 @@ namespace Avro
         {
             get
             {
-                return Schemas[index];
+                return this.Schemas[index];
             }
         }
 
         /// <summary>
-        /// Writes union schema in JSON format
+        /// Writes union schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         protected internal override void WriteJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             writer.WriteStartArray();
@@ -129,9 +129,9 @@ namespace Avro
             }
             // Try exact match.
             //for (int i = 0; i < Count; i++) if (Schemas[i].Equals(s)) return i; // removed this for performance's sake
-            for (int i = 0; i < Count; i++)
+            for (int i = 0; i < this.Count; i++)
             {
-                if (Schemas[i].CanRead(s))
+                if (this.Schemas[i].CanRead(s))
                 {
                     return i;
                 }
@@ -143,18 +143,18 @@ namespace Avro
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            return writerSchema.Tag == Schema.Type.Union || MatchingBranch(writerSchema) >= 0;
+            return writerSchema.Tag == Schema.Type.Union || this.MatchingBranch(writerSchema) >= 0;
         }
 
         /// <summary>
-        /// Compares two union schema objects
+        /// Compares two union schema objects.
         /// </summary>
-        /// <param name="obj">union schema object to compare against this schema</param>
-        /// <returns>true if objects are equal, false otherwise</returns>
+        /// <param name="obj">union schema object to compare against this schema.</param>
+        /// <returns>true if objects are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -165,9 +165,9 @@ namespace Avro
             if (obj != null && obj is UnionSchema)
             {
                 UnionSchema that = obj as UnionSchema;
-                if (that.Count == Count)
+                if (that.Count == this.Count)
                 {
-                    for (int i = 0; i < Count; i++)
+                    for (int i = 0; i < this.Count; i++)
                     {
                         if (!that[i].Equals(this[i]))
                         {
@@ -182,18 +182,18 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hash code function
+        /// Hash code function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
             int result = 53;
-            foreach (Schema schema in Schemas)
+            foreach (Schema schema in this.Schemas)
             {
                 result += 89 * schema.GetHashCode();
             }
 
-            result += getHashCode(Props);
+            result += getHashCode(this.Props);
             return result;
         }
     }

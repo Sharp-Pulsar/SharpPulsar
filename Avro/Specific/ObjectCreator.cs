@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Reflection;
-
 namespace Avro.Specific
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Reflection;
+
     /// <summary>
     /// Resolves and creates types associated with a schema and/or name. You should generally use
     /// the shared <see cref="Instance"/> to take advantage caching.
@@ -29,27 +29,27 @@ namespace Avro.Specific
     public sealed class ObjectCreator
     {
         /// <summary>
-        /// Shareable instance of the <see cref="ObjectCreator"/>.
+        /// Gets shareable instance of the <see cref="ObjectCreator"/>.
         /// </summary>
         public static ObjectCreator Instance { get; } = new ObjectCreator();
 
         /// <summary>
-        /// Static generic dictionary type used for creating new dictionary instances
+        /// Static generic dictionary type used for creating new dictionary instances.
         /// </summary>
         private readonly Type GenericMapType = typeof(Dictionary<,>);
 
         /// <summary>
-        /// Static generic list type used for creating new array instances
+        /// Static generic list type used for creating new array instances.
         /// </summary>
         private readonly Type GenericListType = typeof(List<>);
 
         /// <summary>
-        /// Static generic list type used for creating new IList instances
+        /// Static generic list type used for creating new IList instances.
         /// </summary>
         private readonly Type GenericIListType = typeof(IList<>);
 
         /// <summary>
-        /// Static generic nullable type used for creating new nullable instances
+        /// Static generic nullable type used for creating new nullable instances.
         /// </summary>
         private readonly Type GenericNullableType = typeof(Nullable<>);
 
@@ -61,7 +61,7 @@ namespace Avro.Specific
         /// <summary>
         /// Obsolete: This will be removed from the public API in a future version.
         /// </summary>
-        /// <returns>Obsolete</returns>
+        /// <returns>Obsolete.</returns>
         [Obsolete("This will be removed from the public API in a future version.")]
         public delegate object CtorDelegate();
 
@@ -70,12 +70,12 @@ namespace Avro.Specific
         /// </summary>
         public ObjectCreator()
         {
-            typeCacheByName = new ConcurrentDictionary<string, Type>();
-            execAssembly = Assembly.GetExecutingAssembly();
-            entryAssembly = Assembly.GetEntryAssembly();
+            this.typeCacheByName = new ConcurrentDictionary<string, Type>();
+            this.execAssembly = Assembly.GetExecutingAssembly();
+            this.entryAssembly = Assembly.GetEntryAssembly();
 
             // entryAssembly returns null when running from NUnit
-            diffAssembly = entryAssembly != null && execAssembly != entryAssembly;
+            this.diffAssembly = this.entryAssembly != null && this.execAssembly != this.entryAssembly;
         }
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -92,12 +92,12 @@ namespace Avro.Specific
             public NameCtorKey(string value1, Schema.Type value2)
                 : this()
             {
-                name = value1;
-                type = value2;
+                this.name = value1;
+                this.type = value2;
             }
             public bool Equals(NameCtorKey other)
             {
-                return Equals(other.name, name) && other.type == type;
+                return Equals(other.name, this.name) && other.type == this.type;
             }
             public override bool Equals(object obj)
             {
@@ -111,13 +111,13 @@ namespace Avro.Specific
                     return false;
                 }
 
-                return Equals((NameCtorKey)obj);
+                return this.Equals((NameCtorKey)obj);
             }
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    return ((name != null ? name.GetHashCode() : 0) * 397) ^ type.GetHashCode();
+                    return ((this.name != null ? this.name.GetHashCode() : 0) * 397) ^ this.type.GetHashCode();
                 }
             }
             public static bool operator ==(NameCtorKey left, NameCtorKey right)
@@ -134,33 +134,33 @@ namespace Avro.Specific
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
-        /// Find the type with the given name
+        /// Find the type with the given name.
         /// </summary>
-        /// <param name="name">the object type to locate</param>
-        /// <returns>the object type, or <c>null</c> if not found</returns>
+        /// <param name="name">the object type to locate.</param>
+        /// <returns>the object type, or <c>null</c> if not found.</returns>
         /// <exception cref="AvroException">
         /// No type found matching the given name.
         /// </exception>
         private Type FindType(string name)
         {
-            return typeCacheByName.GetOrAdd(name, (_) =>
+            return this.typeCacheByName.GetOrAdd(name, (_) =>
             {
                 Type type = null;
 
-                if (TryGetIListItemTypeName(name, out var itemTypeName))
+                if (this.TryGetIListItemTypeName(name, out var itemTypeName))
                 {
-                    return GenericIListType.MakeGenericType(FindType(itemTypeName));
+                    return this.GenericIListType.MakeGenericType(this.FindType(itemTypeName));
                 }
 
-                if (TryGetNullableItemTypeName(name, out itemTypeName))
+                if (this.TryGetNullableItemTypeName(name, out itemTypeName))
                 {
-                    return GenericNullableType.MakeGenericType(FindType(itemTypeName));
+                    return this.GenericNullableType.MakeGenericType(this.FindType(itemTypeName));
                 }
 
                 // if entry assembly different from current assembly, try entry assembly first
-                if (diffAssembly)
+                if (this.diffAssembly)
                 {
-                    type = entryAssembly.GetType(name);
+                    type = this.entryAssembly.GetType(name);
                 }
 
                 // try current assembly and mscorlib
@@ -254,7 +254,7 @@ namespace Avro.Specific
         }
 
         /// <summary>
-        /// Gets the type for the specified schema
+        /// Gets the type for the specified schema.
         /// </summary>
         /// <param name="schema"></param>
         /// <returns></returns>
@@ -291,11 +291,11 @@ namespace Avro.Specific
                         Type itemType = null;
                         if (s1.Tag == Schema.Type.Null)
                         {
-                            itemType = GetType(s2);
+                            itemType = this.GetType(s2);
                         }
                         else if (s2.Tag == Schema.Type.Null)
                         {
-                            itemType = GetType(s1);
+                            itemType = this.GetType(s1);
                         }
 
                         if (itemType != null)
@@ -304,7 +304,7 @@ namespace Avro.Specific
                             {
                                 try
                                 {
-                                    return GenericNullableType.MakeGenericType(itemType);
+                                    return this.GenericNullableType.MakeGenericType(itemType);
                                 }
                                 catch
                                 {
@@ -320,16 +320,16 @@ namespace Avro.Specific
             case Schema.Type.Array:
                 {
                     ArraySchema arrSchema = schema as ArraySchema;
-                    Type itemSchema = GetType(arrSchema.ItemSchema);
+                    Type itemSchema = this.GetType(arrSchema.ItemSchema);
 
-                    return GenericListType.MakeGenericType(itemSchema);
+                    return this.GenericListType.MakeGenericType(itemSchema);
                 }
             case Schema.Type.Map:
                 {
                     MapSchema mapSchema = schema as MapSchema;
-                    Type itemSchema = GetType(mapSchema.ValueSchema);
+                    Type itemSchema = this.GetType(mapSchema.ValueSchema);
 
-                    return GenericMapType.MakeGenericType(typeof(string), itemSchema );
+                    return this.GenericMapType.MakeGenericType(typeof(string), itemSchema );
                 }
             case Schema.Type.Enumeration:
             case Schema.Type.Record:
@@ -339,7 +339,7 @@ namespace Avro.Specific
                     // Should all be named types
                     if (schema is NamedSchema named)
                     {
-                        return FindType(named.Fullname);
+                        return this.FindType(named.Fullname);
                     }
 
                     break;
@@ -347,46 +347,46 @@ namespace Avro.Specific
             }
 
             // Fallback
-            return FindType(schema.Name);
+            return this.FindType(schema.Name);
         }
 
         /// <summary>
-        /// Gets the type of the specified type name
+        /// Gets the type of the specified type name.
         /// </summary>
-        /// <param name="name">name of the object to get type of</param>
-        /// <param name="schemaType">schema type for the object</param>
-        /// <returns>Type</returns>
+        /// <param name="name">name of the object to get type of.</param>
+        /// <param name="schemaType">schema type for the object.</param>
+        /// <returns>Type.</returns>
         /// <exception cref="AvroException">
         /// No type found matching the given name.
         /// </exception>
         public Type GetType(string name, Schema.Type schemaType)
         {
-            Type type = FindType(name);
+            Type type = this.FindType(name);
 
             if (schemaType == Schema.Type.Map)
             {
-                type = GenericMapType.MakeGenericType(typeof(string), type);
+                type = this.GenericMapType.MakeGenericType(typeof(string), type);
             }
             else if (schemaType == Schema.Type.Array)
             {
-                type = GenericListType.MakeGenericType(type);
+                type = this.GenericListType.MakeGenericType(type);
             }
 
             return type;
         }
 
         /// <summary>
-        /// Creates new instance of the given type
+        /// Creates new instance of the given type.
         /// </summary>
-        /// <param name="name">fully qualified name of the type</param>
-        /// <param name="schemaType">type of schema</param>
-        /// <returns>new object of the given type</returns>
+        /// <param name="name">fully qualified name of the type.</param>
+        /// <param name="schemaType">type of schema.</param>
+        /// <returns>new object of the given type.</returns>
         /// <exception cref="AvroException">
         /// No type found matching the given name.
         /// </exception>
         public object New(string name, Schema.Type schemaType)
         {
-            return Activator.CreateInstance(GetType(name, schemaType));
+            return Activator.CreateInstance(this.GetType(name, schemaType));
         }
     }
 }

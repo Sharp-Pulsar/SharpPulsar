@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Globalization;
-
 namespace Avro
 {
+    using System.Globalization;
+
     /// <summary>
-    /// Base class for all unnamed schemas
+    /// Base class for all unnamed schemas.
     /// </summary>
     public abstract class UnnamedSchema : Schema
     {
@@ -28,7 +28,7 @@ namespace Avro
         /// Base constructor for an <see cref="UnnamedSchema"/>.
         /// </summary>
         /// <param name="type">Type of schema.</param>
-        /// <param name="props">Dictionary that provides access to custom properties</param>
+        /// <param name="props">Dictionary that provides access to custom properties.</param>
         protected UnnamedSchema(Type type, PropertyMap props) : base(type, props)
         {
         }
@@ -36,7 +36,7 @@ namespace Avro
         /// <inheritdoc/>
         public override string Name
         {
-            get { return Tag.ToString().ToLower(CultureInfo.InvariantCulture); }
+            get { return this.Tag.ToString().ToLower(CultureInfo.InvariantCulture); }
         }
     }
 }

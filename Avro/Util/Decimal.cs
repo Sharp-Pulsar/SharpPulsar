@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.Globalization;
-using System.Numerics;
-using Avro.Generic;
-
 namespace Avro.Util
 {
+    using System;
+    using System.Globalization;
+    using System.Numerics;
+    using Avro.Generic;
+
     /// <summary>
     /// The 'decimal' logical type.
     /// </summary>

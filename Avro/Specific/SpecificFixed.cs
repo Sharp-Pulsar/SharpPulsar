@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Avro.Generic;
-
 namespace Avro.Specific
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Avro.Generic;
+
     /// <summary>
-    /// Base class for all generated classes
+    /// Base class for all generated classes.
     /// </summary>
     public abstract class SpecificFixed : GenericFixed
     {
@@ -35,7 +35,7 @@ namespace Avro.Specific
         public SpecificFixed(uint size) : base(size) { }
 
         /// <summary>
-        /// Schema of this instance.
+        /// Gets schema of this instance.
         /// </summary>
         public abstract new Schema Schema { get; }
 
@@ -56,7 +56,7 @@ namespace Avro.Specific
                 SpecificFixed that = obj as SpecificFixed;
                 if (that.Schema.Equals(this.Schema))
                 {
-                    for (int i = 0; i < value.Length; i++)
+                    for (int i = 0; i < this.value.Length; i++)
                     {
                         if (this.value[i] != that.Value[i])
                         {
@@ -89,14 +89,14 @@ namespace Avro.Specific
                 return false;
             }
 
-            return Equals((SpecificFixed) obj);
+            return this.Equals((SpecificFixed) obj);
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            int result = Schema.GetHashCode();
-            foreach (byte b in value)
+            int result = this.Schema.GetHashCode();
+            foreach (byte b in this.value)
             {
                 result += 23 * b;
             }

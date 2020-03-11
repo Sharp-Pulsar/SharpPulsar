@@ -16,27 +16,27 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using Avro.IO;
-using Avro.Specific;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections;
+    using Avro.IO;
+    using Avro.Specific;
+
     /// <summary>
-    /// Class for writing data from any specific objects
+    /// Class for writing data from any specific objects.
     /// </summary>
     public class ReflectDefaultWriter : SpecificDefaultWriter
     {
         private ClassCache _classCache = new ClassCache();
 
         /// <summary>
-        /// Class cache
+        /// Gets class cache.
         /// </summary>
-        public ClassCache ClassCache { get => _classCache; }
+        public ClassCache ClassCache { get => this._classCache; }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="objType"></param>
         /// <param name="schema"></param>
@@ -46,14 +46,14 @@ namespace Avro.Reflect
         {
             if (cache != null)
             {
-                _classCache = cache;
+                this._classCache = cache;
             }
 
-            _classCache.LoadClassCache(objType, schema);
+            this._classCache.LoadClassCache(objType, schema);
         }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="schema"></param>
         public ReflectDefaultWriter(Schema schema)
@@ -65,9 +65,9 @@ namespace Avro.Reflect
         /// Serialized a record using the given RecordSchema. It uses GetField method
         /// to extract the field value from the given object.
         /// </summary>
-        /// <param name="schema">The RecordSchema to use for serialization</param>
-        /// <param name="value">The value to be serialized</param>
-        /// <param name="encoder">The Encoder for serialization</param>
+        /// <param name="schema">The RecordSchema to use for serialization.</param>
+        /// <param name="value">The value to be serialized.</param>
+        /// <param name="encoder">The Encoder for serialization.</param>
 
         protected override void WriteRecord(RecordSchema schema, object value, Encoder encoder)
         {
@@ -75,9 +75,9 @@ namespace Avro.Reflect
             {
                 try
                 {
-                    var v = _classCache.GetClass(schema).GetValue(value, field);
+                    var v = this._classCache.GetClass(schema).GetValue(value, field);
 
-                    Write(field.Schema, v, encoder);
+                    this.Write(field.Schema, v, encoder);
                 }
                 catch (Exception ex)
                 {
@@ -88,11 +88,11 @@ namespace Avro.Reflect
 
         /// <summary>
         /// Validates that the record is a fixed record object and that the schema in the object is the
-        /// same as the given writer schema. Writes the given fixed record into the given encoder
+        /// same as the given writer schema. Writes the given fixed record into the given encoder.
         /// </summary>
-        /// <param name="schema">writer schema</param>
-        /// <param name="value">fixed object to write</param>
-        /// <param name="encoder">encoder to write to</param>
+        /// <param name="schema">writer schema.</param>
+        /// <param name="value">fixed object to write.</param>
+        /// <param name="encoder">encoder to write to.</param>
         protected override void WriteFixed(FixedSchema schema, object value, Encoder encoder)
         {
             var fixedrec = value as byte[];
@@ -114,9 +114,9 @@ namespace Avro.Reflect
         /// given value is an array. It then calls GetArrayLength() and GetArrayElement()
         /// to access the members of the array and then serialize them.
         /// </summary>
-        /// <param name="schema">The ArraySchema for serialization</param>
-        /// <param name="value">The value being serialized</param>
-        /// <param name="encoder">The encoder for serialization</param>
+        /// <param name="schema">The ArraySchema for serialization.</param>
+        /// <param name="value">The value being serialized.</param>
+        /// <param name="encoder">The encoder for serialization.</param>
         protected override void WriteArray(ArraySchema schema, object value, Encoder encoder)
         {
             var arr = value as IEnumerable;
@@ -125,14 +125,14 @@ namespace Avro.Reflect
                 throw new AvroTypeException("Array does not implement have registered ReflectArray derived type");
             }
 
-            var arrayHelper = _classCache.GetArrayHelper(schema, (IEnumerable)value);
+            var arrayHelper = this._classCache.GetArrayHelper(schema, (IEnumerable)value);
             long l = arrayHelper.Count();
             encoder.WriteArrayStart();
             encoder.SetItemCount(l);
             foreach (var v in arr)
             {
                 encoder.StartItem();
-                Write(schema.ItemSchema, v, encoder);
+                this.Write(schema.ItemSchema, v, encoder);
             }
 
             encoder.WriteArrayEnd();
@@ -141,9 +141,9 @@ namespace Avro.Reflect
         /// <summary>
         /// Writes the given map into the given encoder.
         /// </summary>
-        /// <param name="schema">writer schema</param>
-        /// <param name="value">map to write</param>
-        /// <param name="encoder">encoder to write to</param>
+        /// <param name="schema">writer schema.</param>
+        /// <param name="value">map to write.</param>
+        /// <param name="encoder">encoder to write to.</param>
         protected override void WriteMap(MapSchema schema, object value, Encoder encoder)
         {
             if (value == null)
@@ -188,7 +188,7 @@ namespace Avro.Reflect
                     return obj is string;
                 case Schema.Type.Error:
                 case Schema.Type.Record:
-                    return _classCache.GetClass(sc as RecordSchema).GetClassType() == obj.GetType();
+                    return this._classCache.GetClass(sc as RecordSchema).GetClassType() == obj.GetType();
                 case Schema.Type.Enumeration:
                     return EnumCache.GetEnumeration(sc as EnumSchema) == obj.GetType();
                 case Schema.Type.Array:

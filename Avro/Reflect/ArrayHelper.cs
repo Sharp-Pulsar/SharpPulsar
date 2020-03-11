@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+
     /// <summary>
     /// Class to help serialize and deserialize arrays. Arrays need the following methods Count(), Add(), Clear().true
     /// This class allows these methods to be specified externally to the collection.
@@ -32,7 +32,7 @@ namespace Avro.Reflect
         private static Type _defaultType = typeof(List<>);
 
         /// <summary>
-        /// Collection type to apply by default to all array objects. If not set this defaults to a generic List.
+        /// Gets or sets collection type to apply by default to all array objects. If not set this defaults to a generic List.
         /// </summary>
         public static Type DefaultType
         {
@@ -41,7 +41,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// The array
+        /// Gets or sets the array.
         /// </summary>
         public IEnumerable Enumerable { get; set; }
 
@@ -51,7 +51,7 @@ namespace Avro.Reflect
         /// <value></value>
         public virtual int Count()
         {
-            IList e = (IList)Enumerable;
+            IList e = (IList)this.Enumerable;
             return e.Count;
         }
 
@@ -61,7 +61,7 @@ namespace Avro.Reflect
         /// <param name="o">Element to add to the array.</param>
         public virtual void Add(object o)
         {
-            IList e = (IList)Enumerable;
+            IList e = (IList)this.Enumerable;
             e.Add(o);
         }
 
@@ -71,12 +71,12 @@ namespace Avro.Reflect
         /// <value></value>
         public virtual void Clear()
         {
-            IList e = (IList)Enumerable;
+            IList e = (IList)this.Enumerable;
             e.Clear();
         }
 
         /// <summary>
-        /// Type of the array to create when deserializing
+        /// Gets type of the array to create when deserializing.
         /// </summary>
         public virtual Type ArrayType
         {
@@ -84,12 +84,12 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="enumerable">Enumerable to initialize this helper with.</param>
         public ArrayHelper(IEnumerable enumerable)
         {
-            Enumerable = enumerable;
+            this.Enumerable = enumerable;
         }
     }
 }

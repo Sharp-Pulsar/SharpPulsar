@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Text;
+
     /// <summary>
     /// Collection of static methods for generating the cannonical form of schemas.
     /// </summary>
@@ -43,7 +43,7 @@ namespace Avro
         /// <summary>
         /// Parses a schema into the canonical form as defined by Avro spec.
         /// </summary>
-        /// <param name="s">Schema</param>
+        /// <param name="s">Schema.</param>
         /// <returns>Parsing Canonical Form of a schema as defined by Avro spec.</returns>
         public static string ToParsingForm(Schema s)
         {
@@ -57,29 +57,29 @@ namespace Avro
         /// algorithm used to compute the fingerprint is selected by the
         /// argument <i>fpName</i>.
         /// </para>
-        /// <para>If <i>fpName</i> equals the string
+        /// <para>If <i>fpName</i> equals the string.
         /// <code>"CRC-64-AVRO"</code>, then the result of <see cref="Fingerprint64(byte[])"/> is
         /// returned in little-endian format.
         /// </para>
-        /// <para>If <i>fpName</i> equals the string
+        /// <para>If <i>fpName</i> equals the string.
         /// <code>"MD5"</code>, then the standard MD5 algorithm is used.
         /// </para>
-        /// <para>If <i>fpName</i> equals the string
+        /// <para>If <i>fpName</i> equals the string.
         /// <code>"SHA-256"</code>, then the standard SHA-256 algorithm is used.
         /// </para>
         /// <para>Otherwise, <i>fpName</i> is
-        /// not recognized and an
-        /// <code>ArgumentException</code> is thrown
+        /// not recognized and an.
+        /// <code>ArgumentException</code> is thrown.
         /// </para>
-        /// <para> Recommended Avro practice dictiates that
-        /// <code>"CRC-64-AVRO"</code> is used for 64-bit fingerprints,
-        /// <code>"MD5"</code> is used for 128-bit fingerprints, and
+        /// <para> Recommended Avro practice dictiates that.
+        /// <code>"CRC-64-AVRO"</code> is used for 64-bit fingerprints,.
+        /// <code>"MD5"</code> is used for 128-bit fingerprints, and.
         /// <code>"SHA-256"</code> is used for 256-bit fingerprints.
         /// </para>
         /// </summary>
         /// <param name="fpName">Name of the hashing algorithm.</param>
         /// <param name="data">Data to be hashed.</param>
-        /// <returns>Fingerprint</returns>
+        /// <returns>Fingerprint.</returns>
         public static byte[] Fingerprint(string fpName, byte[] data)
         {
             switch (fpName)
@@ -110,7 +110,7 @@ namespace Avro
         /// </summary>
         /// <param name="fpName">Name of the hashing algorithm.</param>
         /// <param name="s">Schema to be hashed.</param>
-        /// <returns>Fingerprint</returns>
+        /// <returns>Fingerprint.</returns>
         public static byte[] ParsingFingerprint(string fpName, Schema s)
         {
             return Fingerprint(fpName, Encoding.UTF8.GetBytes(ToParsingForm(s)));
@@ -120,7 +120,7 @@ namespace Avro
         /// Returns <see cref="Fingerprint64(byte[])"/> applied to the parsing canonical form of the supplied schema.
         /// </summary>
         /// <param name="s">Schema to be hashed.</param>
-        /// <returns>Fingerprint</returns>
+        /// <returns>Fingerprint.</returns>
         public static long ParsingFingerprint64(Schema s)
         {
             return Fingerprint64(Encoding.UTF8.GetBytes(ToParsingForm(s)));
@@ -130,7 +130,7 @@ namespace Avro
         /// Computes the 64-bit Rabin Fingerprint (as recommended in the Avro spec) of a byte string.
         /// </summary>
         /// <param name="data">Data to be hashed.</param>
-        /// <returns>Fingerprint</returns>
+        /// <returns>Fingerprint.</returns>
         private static long Fingerprint64(byte[] data)
         {
 #pragma warning disable CS0618 // Type or member is obsolete - remove with Empty64 made private.

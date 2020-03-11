@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Reflection;
-using System.Collections;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections;
+    using System.Reflection;
+
     internal class DotnetProperty
     {
         private PropertyInfo _property;
@@ -32,13 +32,13 @@ namespace Avro.Reflect
         {
             Type propType;
 
-            if (Converter == null)
+            if (this.Converter == null)
             {
-                propType = _property.PropertyType;
+                propType = this._property.PropertyType;
             }
             else
             {
-                propType = Converter.GetAvroType();
+                propType = this.Converter.GetAvroType();
             }
 
             switch (schemaTag)
@@ -81,17 +81,17 @@ namespace Avro.Reflect
 
         public DotnetProperty(PropertyInfo property, Avro.Schema.Type schemaTag,  IAvroFieldConverter converter, ClassCache cache)
         {
-            _property = property;
-            Converter = converter;
+            this._property = property;
+            this.Converter = converter;
 
-            if (!IsPropertyCompatible(schemaTag))
+            if (!this.IsPropertyCompatible(schemaTag))
             {
-                if (Converter == null)
+                if (this.Converter == null)
                 {
-                    var c = cache.GetDefaultConverter(schemaTag, _property.PropertyType);
+                    var c = cache.GetDefaultConverter(schemaTag, this._property.PropertyType);
                     if (c != null)
                     {
-                        Converter = c;
+                        this.Converter = c;
                         return;
                     }
                 }
@@ -107,33 +107,33 @@ namespace Avro.Reflect
 
         public virtual Type GetPropertyType()
         {
-            if (Converter != null)
+            if (this.Converter != null)
             {
-                return Converter.GetAvroType();
+                return this.Converter.GetAvroType();
             }
 
-            return _property.PropertyType;
+            return this._property.PropertyType;
         }
 
         public virtual object GetValue(object o, Schema s)
         {
-            if (Converter != null)
+            if (this.Converter != null)
             {
-                return Converter.ToAvroType(_property.GetValue(o), s);
+                return this.Converter.ToAvroType(this._property.GetValue(o), s);
             }
 
-            return _property.GetValue(o);
+            return this._property.GetValue(o);
         }
 
         public virtual void SetValue(object o, object v, Schema s)
         {
-            if (Converter != null)
+            if (this.Converter != null)
             {
-                _property.SetValue(o, Converter.FromAvroType(v, s));
+                this._property.SetValue(o, this.Converter.FromAvroType(v, s));
             }
             else
             {
-                _property.SetValue(o, v);
+                this._property.SetValue(o, v);
             }
         }
     }

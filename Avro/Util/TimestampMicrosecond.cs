@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Util
 {
+    using System;
+
     /// <summary>
     /// The 'timestamp-micros' logical type.
     /// </summary>

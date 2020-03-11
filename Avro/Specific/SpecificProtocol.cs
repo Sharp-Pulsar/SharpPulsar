@@ -24,7 +24,7 @@ namespace Avro.Specific
     public interface ISpecificProtocol
     {
         /// <summary>
-        /// Protocol for this instance.
+        /// Gets protocol for this instance.
         /// </summary>
         Protocol Protocol { get; }
 
@@ -44,9 +44,9 @@ namespace Avro.Specific
     public interface ICallbackRequestor
     {
         /// <summary>
-        /// Request
+        /// Request.
         /// </summary>
-        /// <typeparam name="T">Type</typeparam>
+        /// <typeparam name="T">Type.</typeparam>
         /// <param name="messageName">Name of the message.</param>
         /// <param name="args">Arguments for the message.</param>
         /// <param name="callback">Callback.</param>

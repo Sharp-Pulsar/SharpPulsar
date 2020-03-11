@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Collections.Generic;
-using System.IO;
-
 namespace Avro.IO
 {
+    using System.Collections.Generic;
+    using System.IO;
+
     /// <summary>
     /// Utility to collect data written to an <see cref="OutputStream"/> in
     /// <see cref="MemoryStream"/>s.
@@ -37,12 +37,12 @@ namespace Avro.IO
         /// </summary>
         public ByteBufferOutputStream()
         {
-            Reset();
+            this.Reset();
         }
 
         private void Reset()
         {
-            _buffers = new List<MemoryStream> {CreateBuffer()};
+            this._buffers = new List<MemoryStream> {CreateBuffer()};
         }
 
         private List<MemoryStream> _buffers;
@@ -63,7 +63,7 @@ namespace Avro.IO
                 stream.Position = stream.Length;
             }
 
-            _buffers.InsertRange(0, lists);
+            this._buffers.InsertRange(0, lists);
         }
 
         /// <summary>
@@ -77,13 +77,13 @@ namespace Avro.IO
                 stream.Position = stream.Length;
             }
 
-            _buffers.AddRange(lists);
+            this._buffers.AddRange(lists);
         }
 
         /// <inheritdoc/>
         public override void Write(byte[] b, int off, int len)
         {
-            var buffer = _buffers[_buffers.Count -1];
+            var buffer = this._buffers[this._buffers.Count -1];
             var remaining = (int) (buffer.Length - buffer.Position);
             while (len > remaining)
             {
@@ -92,7 +92,7 @@ namespace Avro.IO
                 off += remaining;
 
                 buffer = CreateBuffer();
-                _buffers.Add(buffer);
+                this._buffers.Add(buffer);
 
                 remaining = (int) buffer.Length;
             }
@@ -106,9 +106,9 @@ namespace Avro.IO
         /// <returns>All memory stream data.</returns>
         public List<MemoryStream> GetBufferList()
         {
-            List<MemoryStream> result = _buffers;
+            List<MemoryStream> result = this._buffers;
 
-            Reset();
+            this.Reset();
 
             foreach (MemoryStream b in result)
             {
@@ -126,7 +126,7 @@ namespace Avro.IO
             get
             {
                 long sum = 0;
-                foreach (var buffer in _buffers)
+                foreach (var buffer in this._buffers)
                 {
                     sum += buffer.Length;
                 }

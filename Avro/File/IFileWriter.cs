@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-
 namespace Avro.File
 {
+    using System;
+
     /// <summary>
     /// Defines the interface for an object that stores in a file a sequence of data conforming to
     /// a schema.

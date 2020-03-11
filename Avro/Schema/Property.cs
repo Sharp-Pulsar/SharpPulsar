@@ -15,28 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
     /// Provides access to custom properties (those not defined in the Avro spec) in a JSON object.
     /// </summary>
     public class PropertyMap : Dictionary<string, string>
     {
         /// <summary>
-        /// Set of reserved schema property names, any other properties not defined in this set are custom properties and can be added to this map
+        /// Set of reserved schema property names, any other properties not defined in this set are custom properties and can be added to this map.
         /// </summary>
         private static readonly HashSet<string> ReservedProps = new HashSet<string>() { "type", "name", "namespace", "fields", "items", "size", "symbols", "values", "aliases", "order", "doc", "default", "logicalType" };
 
         /// <summary>
         /// Parses the custom properties from the given JSON object and stores them
-        /// into the schema's list of custom properties
+        /// into the schema's list of custom properties.
         /// </summary>
-        /// <param name="jtok">JSON object to prase</param>
+        /// <param name="jtok">JSON object to prase.</param>
         public void Parse(JToken jtok)
         {
             JObject jo = jtok as JObject;
@@ -47,18 +47,18 @@ namespace Avro
                     continue;
                 }
 
-                if (!ContainsKey(prop.Name))
+                if (!this.ContainsKey(prop.Name))
                 {
-                    Add(prop.Name, JsonConvert.SerializeObject(prop.Value));
+                    this.Add(prop.Name, JsonConvert.SerializeObject(prop.Value));
                 }
             }
         }
 
         /// <summary>
-        /// Adds a custom property to the schema
+        /// Adds a custom property to the schema.
         /// </summary>
-        /// <param name="key">custom property name</param>
-        /// <param name="value">custom property value</param>
+        /// <param name="key">custom property name.</param>
+        /// <param name="value">custom property value.</param>
         public void Set(string key, string value)
         {
             if (ReservedProps.Contains(key))
@@ -67,7 +67,7 @@ namespace Avro
             }
 
             string oldValue;
-            if (TryGetValue(key, out oldValue))
+            if (this.TryGetValue(key, out oldValue))
             {
                 if (!oldValue.Equals(value, StringComparison.Ordinal))
                 {
@@ -75,13 +75,13 @@ namespace Avro
                 }
             }
             else
-                Add(key, value);
+                this.Add(key, value);
         }
 
         /// <summary>
-        /// Writes the schema's custom properties in JSON format
+        /// Writes the schema's custom properties in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
+        /// <param name="writer">JSON writer.</param>
         public void WriteJson(JsonTextWriter writer)
         {
             foreach (KeyValuePair<string, string> kp in this)
@@ -97,10 +97,10 @@ namespace Avro
         }
 
         /// <summary>
-        /// Function to compare equality of two PropertyMaps
+        /// Function to compare equality of two PropertyMaps.
         /// </summary>
-        /// <param name="obj">other PropertyMap</param>
-        /// <returns>true if contents of the two maps are the same, false otherwise</returns>
+        /// <param name="obj">other PropertyMap.</param>
+        /// <returns>true if contents of the two maps are the same, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (this == obj)
@@ -134,7 +134,7 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hashcode function
+        /// Hashcode function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()

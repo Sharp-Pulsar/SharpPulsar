@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.IO;
-using System.IO.Compression;
-
 namespace Avro.File
 {
+    using System.IO;
+    using System.IO.Compression;
+
     /// <summary>
     /// Implements deflate compression and decompression.
     /// </summary>

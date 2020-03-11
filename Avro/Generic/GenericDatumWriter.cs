@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using Encoder = Avro.IO.Encoder;
-
 namespace Avro.Generic
 {
+    using System;
+    using System.Collections.Generic;
+    using Encoder = Avro.IO.Encoder;
+
     /// <summary>
     /// PreresolvingDatumWriter for writing data from GenericRecords or primitive types.
-    /// <see cref="PreresolvingDatumWriter{T}">For more information about performance considerations for choosing this implementation</see>
+    /// <see cref="PreresolvingDatumWriter{T}">For more information about performance considerations for choosing this implementation</see>.
     /// </summary>
     public class GenericDatumWriter<T> : PreresolvingDatumWriter<T>
     {
@@ -95,8 +95,8 @@ namespace Avro.Generic
         /// the data is byte[] and there are fixed and bytes schemas as branches, it choose the first one that matches.
         /// Also it does not recognize the arrays of primitive types.
         /// </remarks>
-        /// <param name="sc">Schema to compare</param>
-        /// <param name="obj">Object to compare</param>
+        /// <param name="sc">Schema to compare.</param>
+        /// <param name="obj">Object to compare.</param>
         /// <returns>True if the two parameters are compatible, false otherwise.</returns>
         protected override bool UnionBranchMatches(Schema sc, object obj)
         {

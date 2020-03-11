@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using Avro.IO;
-
 namespace Avro.Generic
 {
+    using System;
+    using System.Collections.Generic;
+    using Avro.IO;
+
     /// <summary>
     /// <see cref="PreresolvingDatumReader{T}"/> for reading data to <see cref="GenericRecord"/>
     /// classes or primitives.

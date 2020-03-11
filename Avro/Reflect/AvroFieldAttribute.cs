@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-using System;
-using System.Reflection;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Reflection;
+
     /// <summary>
     /// Attribute that specifies the mapping between an Avro field and C# class property.
     /// </summary>
@@ -28,26 +28,26 @@ namespace Avro.Reflect
     public class AvroFieldAttribute : Attribute
     {
         /// <summary>
-        /// Name of the field in the Avro Schema
+        /// Gets or sets name of the field in the Avro Schema.
         /// </summary>
         public string FieldName { get; set; }
 
         /// <summary>
-        /// Convert the property into a standard Avro type - e.g. DateTimeOffset to long
+        /// Gets or sets convert the property into a standard Avro type - e.g. DateTimeOffset to long.
         /// </summary>
         public IAvroFieldConverter Converter { get; set; }
 
         /// <summary>
-        /// Attribute to hold a field name and optionally a converter
+        /// Attribute to hold a field name and optionally a converter.
         /// </summary>
         /// <param name="fieldName"></param>
         /// <param name="converter"></param>
         public AvroFieldAttribute(string fieldName, Type converter = null)
         {
-            FieldName = fieldName;
+            this.FieldName = fieldName;
             if (converter != null)
             {
-                Converter = (IAvroFieldConverter)Activator.CreateInstance(converter);
+                this.Converter = (IAvroFieldConverter)Activator.CreateInstance(converter);
             }
         }
 
@@ -57,10 +57,10 @@ namespace Avro.Reflect
         /// <param name="converter"></param>
         public AvroFieldAttribute(Type converter)
         {
-            FieldName = null;
+            this.FieldName = null;
             if (converter != null)
             {
-                Converter = (IAvroFieldConverter)Activator.CreateInstance(converter);
+                this.Converter = (IAvroFieldConverter)Activator.CreateInstance(converter);
             }
         }
     }

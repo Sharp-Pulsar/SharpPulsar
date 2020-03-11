@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using Avro.IO;
-using Avro.Generic;
-
 namespace Avro.File
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using Avro.Generic;
+    using Avro.IO;
+
     /// <summary>
     /// Stores in a file a sequence of data conforming to a schema. The schema is stored in the file
     /// with the data. Each datum in a file is of the same schema. Data is written with a
@@ -50,7 +50,7 @@ namespace Avro.File
 
         /// <summary>
         /// Open a new writer instance to write
-        /// to a file path, using a Null codec
+        /// to a file path, using a Null codec.
         /// </summary>
         /// <param name="writer">Datum writer to use.</param>
         /// <param name="path">Path to the file.</param>
@@ -62,7 +62,7 @@ namespace Avro.File
 
         /// <summary>
         /// Open a new writer instance to write
-        /// to an output stream, using a Null codec
+        /// to an output stream, using a Null codec.
         /// </summary>
         /// <param name="writer">Datum writer to use.</param>
         /// <param name="outStream">Stream to write to.</param>
@@ -74,7 +74,7 @@ namespace Avro.File
 
         /// <summary>
         /// Open a new writer instance to write
-        /// to a file path with a specified codec
+        /// to a file path with a specified codec.
         /// </summary>
         /// <param name="writer">Datum writer to use.</param>
         /// <param name="path">Path to the file.</param>
@@ -87,7 +87,7 @@ namespace Avro.File
 
         /// <summary>
         /// Open a new writer instance to write
-        /// to an output stream with a specified codec
+        /// to an output stream with a specified codec.
         /// </summary>
         /// <param name="writer">Datum writer to use.</param>
         /// <param name="outStream">Stream to write to.</param>
@@ -100,8 +100,8 @@ namespace Avro.File
 
         DataFileWriter(DatumWriter<T> writer)
         {
-            _writer = writer;
-            _syncInterval = DataFileConstants.DefaultSyncInterval;
+            this._writer = writer;
+            this._syncInterval = DataFileConstants.DefaultSyncInterval;
         }
 
         /// <inheritdoc/>
@@ -113,11 +113,11 @@ namespace Avro.File
         /// <inheritdoc/>
         public void SetMeta(string key, byte[] value)
         {
-            if (IsReservedMeta(key))
+            if (this.IsReservedMeta(key))
             {
                 throw new AvroRuntimeException("Cannot set reserved meta key: " + key);
             }
-            _metaData.Add(key, value);
+            this._metaData.Add(key, value);
         }
 
         /// <inheritdoc/>
@@ -125,7 +125,7 @@ namespace Avro.File
         {
             try
             {
-                SetMeta(key, GetByteValue(value.ToString(CultureInfo.InvariantCulture)));
+                this.SetMeta(key, this.GetByteValue(value.ToString(CultureInfo.InvariantCulture)));
             }
             catch (Exception e)
             {
@@ -138,7 +138,7 @@ namespace Avro.File
         {
             try
             {
-                SetMeta(key, GetByteValue(value));
+                this.SetMeta(key, this.GetByteValue(value));
             }
             catch (Exception e)
             {
@@ -153,94 +153,94 @@ namespace Avro.File
             {
                 throw new AvroRuntimeException("Invalid sync interval value: " + syncInterval);
             }
-            _syncInterval = syncInterval;
+            this._syncInterval = syncInterval;
         }
 
         /// <inheritdoc/>
         public void Append(T datum)
         {
-            AssertOpen();
-            EnsureHeader();
+            this.AssertOpen();
+            this.EnsureHeader();
 
-            long usedBuffer = _blockStream.Position;
+            long usedBuffer = this._blockStream.Position;
 
             try
             {
-                _writer.Write(datum, _blockEncoder);
+                this._writer.Write(datum, this._blockEncoder);
             }
             catch (Exception e)
             {
-                _blockStream.Position = usedBuffer;
+                this._blockStream.Position = usedBuffer;
                 throw new AvroRuntimeException("Error appending datum to writer", e);
             }
-            _blockCount++;
-            WriteIfBlockFull();
+            this._blockCount++;
+            this.WriteIfBlockFull();
         }
 
         private void EnsureHeader()
         {
-            if (!_headerWritten)
+            if (!this._headerWritten)
             {
-                WriteHeader();
-                _headerWritten = true;
+                this.WriteHeader();
+                this._headerWritten = true;
             }
         }
 
         /// <inheritdoc/>
         public void Flush()
         {
-            EnsureHeader();
-            SyncInternal();
+            this.EnsureHeader();
+            this.SyncInternal();
         }
 
         /// <inheritdoc/>
         public long Sync()
         {
-            SyncInternal();
-            return _stream.Position;
+            this.SyncInternal();
+            return this._stream.Position;
         }
 
         private void SyncInternal()
         {
-            AssertOpen();
-            WriteBlock();
+            this.AssertOpen();
+            this.WriteBlock();
         }
 
         /// <inheritdoc/>
         public void Close()
         {
-            EnsureHeader();
-            Flush();
-            _stream.Flush();
-            _stream.Close();
-            _isOpen = false;
+            this.EnsureHeader();
+            this.Flush();
+            this._stream.Flush();
+            this._stream.Close();
+            this._isOpen = false;
         }
 
         private void WriteHeader()
         {
-            _encoder.WriteFixed(DataFileConstants.Magic);
-            WriteMetaData();
-            WriteSyncData();
+            this._encoder.WriteFixed(DataFileConstants.Magic);
+            this.WriteMetaData();
+            this.WriteSyncData();
         }
 
         private void Init()
         {
-            _blockCount = 0;
-            _encoder = new BinaryEncoder(_stream);
-            _blockStream = new MemoryStream();
-            _blockEncoder = new BinaryEncoder(_blockStream);
+            this._blockCount = 0;
+            this._encoder = new BinaryEncoder(this._stream);
+            this._blockStream = new MemoryStream();
+            this._blockEncoder = new BinaryEncoder(this._blockStream);
 
-            if (_codec == null)
+            if (this._codec == null)
             {
-                _codec = Codec.CreateCodec(Codec.Type.Null);
+                this._codec = Codec.CreateCodec(Codec.Type.Null);
             }
 
-            _isOpen = true;
+            this._isOpen = true;
         }
 
         private void AssertOpen()
         {
-            if (!_isOpen)
+            if (!this._isOpen)
             {
                 throw new AvroRuntimeException("Cannot complete operation: avro file/stream not open");
             }
@@ -248,12 +248,12 @@ namespace Avro.File
 
         private IFileWriter<T> Create(Schema schema, Stream outStream, Codec codec)
         {
-            _codec = codec;
-            _stream = outStream;
-            _metaData = new Dictionary<string, byte[]>();
-            _schema = schema;
+            this._codec = codec;
+            this._stream = outStream;
+            this._metaData = new Dictionary<string, byte[]>();
+            this._schema = schema;
 
-            Init();
+            this.Init();
 
             return this;
         }
@@ -261,74 +261,74 @@ namespace Avro.File
         private void WriteMetaData()
         {
             // Add sync, code & schema to metadata
-            GenerateSyncData();
+            this.GenerateSyncData();
             //SetMetaInternal(DataFileConstants.MetaDataSync, _syncData); - Avro 1.5.4 C
-            SetMetaInternal(DataFileConstants.MetaDataCodec, GetByteValue(_codec.GetName()));
-            SetMetaInternal(DataFileConstants.MetaDataSchema, GetByteValue(_schema.ToString()));
+            this.SetMetaInternal(DataFileConstants.MetaDataCodec, this.GetByteValue(this._codec.GetName()));
+            this.SetMetaInternal(DataFileConstants.MetaDataSchema, this.GetByteValue(this._schema.ToString()));
 
             // write metadata
-            int size = _metaData.Count;
-            _encoder.WriteInt(size);
+            int size = this._metaData.Count;
+            this._encoder.WriteInt(size);
 
-            foreach (KeyValuePair<string, byte[]> metaPair in _metaData)
+            foreach (KeyValuePair<string, byte[]> metaPair in this._metaData)
             {
-                _encoder.WriteString(metaPair.Key);
-                _encoder.WriteBytes(metaPair.Value);
+                this._encoder.WriteString(metaPair.Key);
+                this._encoder.WriteBytes(metaPair.Value);
             }
-            _encoder.WriteMapEnd();
+            this._encoder.WriteMapEnd();
         }
 
         private void WriteIfBlockFull()
         {
-            if (BufferInUse() >= _syncInterval)
+            if (this.BufferInUse() >= this._syncInterval)
             {
-                WriteBlock();
+                this.WriteBlock();
             }
         }
 
         private long BufferInUse()
         {
-            return _blockStream.Position;
+            return this._blockStream.Position;
         }
 
         private void WriteBlock()
         {
-            if (_blockCount > 0)
+            if (this._blockCount > 0)
             {
-                byte[] dataToWrite = _blockStream.ToArray();
+                byte[] dataToWrite = this._blockStream.ToArray();
 
                 // write count
-                _encoder.WriteLong(_blockCount);
+                this._encoder.WriteLong(this._blockCount);
 
                 // write data
-                _encoder.WriteBytes(_codec.Compress(dataToWrite));
+                this._encoder.WriteBytes(this._codec.Compress(dataToWrite));
 
                 // write sync marker
-                _encoder.WriteFixed(_syncData);
+                this._encoder.WriteFixed(this._syncData);
 
                 // reset / re-init block
-                _blockCount = 0;
-                _blockStream = new MemoryStream();
-                _blockEncoder = new BinaryEncoder(_blockStream);
+                this._blockCount = 0;
+                this._blockStream = new MemoryStream();
+                this._blockEncoder = new BinaryEncoder(this._blockStream);
             }
         }
 
         private void WriteSyncData()
         {
-            _encoder.WriteFixed(_syncData);
+            this._encoder.WriteFixed(this._syncData);
         }
 
         private void GenerateSyncData()
         {
-            _syncData = new byte[16];
+            this._syncData = new byte[16];
 
             Random random = new Random();
-            random.NextBytes(_syncData);
+            random.NextBytes(this._syncData);
         }
 
         private void SetMetaInternal(string key, byte[] value)
         {
-            _metaData.Add(key, value);
+            this._metaData.Add(key, value);
         }
 
         private byte[] GetByteValue(string value)
@@ -339,7 +339,7 @@ namespace Avro.File
         /// <inheritdoc/>
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -351,7 +351,7 @@ namespace Avro.File
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            Close();
+            this.Close();
         }
     }
 }

@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Avro.IO;
-
 namespace Avro.Generic
 {
+    using Avro.IO;
+
     /// <summary>
     /// Defines the interface for an object that reads data of a schema.
     /// </summary>
@@ -28,12 +28,12 @@ namespace Avro.Generic
     public interface DatumReader<T>
     {
         /// <summary>
-        /// Schema used to read the data.
+        /// Gets schema used to read the data.
         /// </summary>
         Schema ReaderSchema { get; }
 
         /// <summary>
-        /// Schema that was used to write the data.
+        /// Gets schema that was used to write the data.
         /// </summary>
         Schema WriterSchema { get; }
 

@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-using System;
-using System.IO;
-
 namespace Avro.IO
 {
+    using System;
+    using System.IO;
+
     /// <summary>
     /// Base class for an output stream.
     /// </summary>

@@ -24,22 +24,22 @@ namespace Avro.Generic
     public class GenericEnum
     {
         /// <summary>
-        /// Schema for this enum.
+        /// Gets schema for this enum.
         /// </summary>
         public EnumSchema Schema { get; private set; }
 
         private string value;
 
         /// <summary>
-        /// Value of the enum.
+        /// Gets or sets value of the enum.
         /// </summary>
         public string Value {
-            get { return value; }
+            get { return this.value; }
             set
             {
-                if (! Schema.Contains(value))
+                if (! this.Schema.Contains(value))
                 {
-                    throw new AvroException("Unknown value for enum: " + value + "(" + Schema + ")");
+                    throw new AvroException("Unknown value for enum: " + value + "(" + this.Schema + ")");
                 }
 
                 this.value = value;
@@ -66,20 +66,20 @@ namespace Avro.Generic
             }
 
             return (obj != null && obj is GenericEnum)
-                ? Value.Equals((obj as GenericEnum).Value, System.StringComparison.Ordinal)
+                ? this.Value.Equals((obj as GenericEnum).Value, System.StringComparison.Ordinal)
                 : false;
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return 17 * Value.GetHashCode();
+            return 17 * this.Value.GetHashCode();
         }
 
         /// <inheritdoc/>
         public override string ToString()
         {
-            return "Schema: " + Schema + ", value: " + Value;
+            return "Schema: " + this.Schema + ", value: " + this.Value;
         }
     }
 }

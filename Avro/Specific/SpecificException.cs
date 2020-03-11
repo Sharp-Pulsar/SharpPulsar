@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Specific
 {
+    using System;
+
     /// <summary>
     /// Base class for specific exceptions.
     /// </summary>

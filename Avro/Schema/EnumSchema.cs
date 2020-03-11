@@ -15,41 +15,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Class for enum type schemas
+    /// Class for enum type schemas.
     /// </summary>
     public class EnumSchema : NamedSchema
     {
         /// <summary>
-        /// List of strings representing the enum symbols
+        /// Gets list of strings representing the enum symbols.
         /// </summary>
         public IList<string> Symbols { get; private set;  }
 
         /// <summary>
-        /// Map of enum symbols and it's corresponding ordinal number
+        /// Map of enum symbols and it's corresponding ordinal number.
         /// </summary>
         private readonly IDictionary<string, int> symbolMap;
 
         /// <summary>
-        /// Count of enum symbols
+        /// Gets count of enum symbols.
         /// </summary>
-        public int Count { get { return Symbols.Count; } }
+        public int Count { get { return this.Symbols.Count; } }
 
         /// <summary>
-        /// Static function to return new instance of EnumSchema
+        /// Static function to return new instance of EnumSchema.
         /// </summary>
-        /// <param name="jtok">JSON object for enum schema</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
-        /// <param name="names">list of named schema already parsed in</param>
-        /// <param name="encspace">enclosing namespace for the enum schema</param>
-        /// <returns>new instance of enum schema</returns>
+        /// <param name="jtok">JSON object for enum schema.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
+        /// <param name="names">list of named schema already parsed in.</param>
+        /// <param name="encspace">enclosing namespace for the enum schema.</param>
+        /// <returns>new instance of enum schema.</returns>
         internal static EnumSchema NewInstance(JToken jtok, PropertyMap props, SchemaNames names, string encspace)
         {
             SchemaName name = NamedSchema.GetName(jtok, encspace);
@@ -87,15 +87,15 @@ namespace Avro
         }
 
         /// <summary>
-        /// Constructor for enum schema
+        /// Constructor for enum schema.
         /// </summary>
-        /// <param name="name">name of enum</param>
-        /// <param name="aliases">list of aliases for the name</param>
-        /// <param name="symbols">list of enum symbols</param>
-        /// <param name="symbolMap">map of enum symbols and value</param>
-        /// <param name="props">custom properties on this schema</param>
-        /// <param name="names">list of named schema already read</param>
-        /// <param name="doc">documentation for this named schema</param>
+        /// <param name="name">name of enum.</param>
+        /// <param name="aliases">list of aliases for the name.</param>
+        /// <param name="symbols">list of enum symbols.</param>
+        /// <param name="symbolMap">map of enum symbols and value.</param>
+        /// <param name="props">custom properties on this schema.</param>
+        /// <param name="names">list of named schema already read.</param>
+        /// <param name="doc">documentation for this named schema.</param>
         private EnumSchema(SchemaName name, IList<SchemaName> aliases, List<string> symbols,
                             IDictionary<String, int> symbolMap, PropertyMap props, SchemaNames names,
                             string doc)
@@ -111,11 +111,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes enum schema in JSON format
+        /// Writes enum schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schema already written</param>
-        /// <param name="encspace">enclosing namespace of the enum schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schema already written.</param>
+        /// <param name="encspace">enclosing namespace of the enum schema.</param>
         protected internal override void WriteJsonFields(Newtonsoft.Json.JsonTextWriter writer,
                                                             SchemaNames names, string encspace)
         {
@@ -134,12 +134,12 @@ namespace Avro
         /// Returns the position of the given symbol within this enum.
         /// Throws AvroException if the symbol is not found in this enum.
         /// </summary>
-        /// <param name="symbol">name of the symbol to find</param>
-        /// <returns>position of the given symbol in this enum schema</returns>
+        /// <param name="symbol">name of the symbol to find.</param>
+        /// <returns>position of the given symbol in this enum schema.</returns>
         public int Ordinal(string symbol)
         {
             int result;
-            if (symbolMap.TryGetValue(symbol, out result))
+            if (this.symbolMap.TryGetValue(symbol, out result))
             {
                 return result;
             }
@@ -148,44 +148,44 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the enum symbol of the given index to the list
+        /// Returns the enum symbol of the given index to the list.
         /// </summary>
-        /// <param name="index">symbol index</param>
-        /// <returns>symbol name</returns>
+        /// <param name="index">symbol index.</param>
+        /// <returns>symbol name.</returns>
         public string this[int index]
         {
             get
             {
-                if (index < Symbols.Count)
+                if (index < this.Symbols.Count)
                 {
-                    return Symbols[index];
+                    return this.Symbols[index];
                 }
 
-                throw new AvroException("Enumeration out of range. Must be less than " + Symbols.Count + ", but is " + index);
+                throw new AvroException("Enumeration out of range. Must be less than " + this.Symbols.Count + ", but is " + index);
             }
         }
 
         /// <summary>
-        /// Checks if given symbol is in the list of enum symbols
+        /// Checks if given symbol is in the list of enum symbols.
         /// </summary>
-        /// <param name="symbol">symbol to check</param>
-        /// <returns>true if symbol exist, false otherwise</returns>
+        /// <param name="symbol">symbol to check.</param>
+        /// <returns>true if symbol exist, false otherwise.</returns>
         public bool Contains(string symbol)
         {
-            return symbolMap.ContainsKey(symbol);
+            return this.symbolMap.ContainsKey(symbol);
         }
 
         /// <summary>
         /// Returns an enumerator that enumerates the symbols in this enum schema in the order of their definition.
         /// </summary>
-        /// <returns>Enumeration over the symbols of this enum schema</returns>
+        /// <returns>Enumeration over the symbols of this enum schema.</returns>
         public IEnumerator<string> GetEnumerator()
         {
-            return Symbols.GetEnumerator();
+            return this.Symbols.GetEnumerator();
         }
 
         /// <summary>
-        /// Checks equality of two enum schema
+        /// Checks equality of two enum schema.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -199,11 +199,11 @@ namespace Avro
             if (obj != null && obj is EnumSchema)
             {
                 EnumSchema that = obj as EnumSchema;
-                if (SchemaName.Equals(that.SchemaName) && Count == that.Count)
+                if (this.SchemaName.Equals(that.SchemaName) && this.Count == that.Count)
                 {
-                    for (int i = 0; i < Count; i++)
+                    for (int i = 0; i < this.Count; i++)
                     {
-                        if (!Symbols[i].Equals(that.Symbols[i], StringComparison.Ordinal))
+                        if (!this.Symbols[i].Equals(that.Symbols[i], StringComparison.Ordinal))
                         {
                             return false;
                         }
@@ -216,13 +216,13 @@ namespace Avro
         }
 
         /// <summary>
-        /// Hashcode function
+        /// Hashcode function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            int result = SchemaName.GetHashCode() + getHashCode(Props);
-            foreach (string s in Symbols)
+            int result = this.SchemaName.GetHashCode() + getHashCode(this.Props);
+            foreach (string s in this.Symbols)
             {
                 result += 23 * s.GetHashCode();
             }
@@ -233,19 +233,19 @@ namespace Avro
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema.Tag != Tag)
+            if (writerSchema.Tag != this.Tag)
             {
                 return false;
             }
 
             EnumSchema that = writerSchema as EnumSchema;
-            if (!that.SchemaName.Equals(SchemaName))
+            if (!that.SchemaName.Equals(this.SchemaName))
             {
-                if (!InAliases(that.SchemaName))
+                if (!this.InAliases(that.SchemaName))
                 {
                     return false;
                 }

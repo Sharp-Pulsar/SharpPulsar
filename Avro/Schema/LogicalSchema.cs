@@ -16,29 +16,29 @@
  * limitations under the License.
  */
 
-using System;
-using Avro.Util;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using Avro.Util;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
     /// Class for logical type schemas.
     /// </summary>
     public class LogicalSchema : UnnamedSchema
     {
         /// <summary>
-        /// Schema for the underlying type that the logical type is based on.
+        /// Gets schema for the underlying type that the logical type is based on.
         /// </summary>
         public Schema BaseSchema { get; private set; }
 
         /// <summary>
-        /// The logical type name.
+        /// Gets the logical type name.
         /// </summary>
         public string LogicalTypeName { get; private set; }
 
         /// <summary>
-        /// The logical type implementation that supports this logical type.
+        /// Gets the logical type implementation that supports this logical type.
         /// </summary>
         public LogicalType LogicalType { get; private set; }
 
@@ -60,27 +60,27 @@ namespace Avro
                 throw new ArgumentNullException(nameof(baseSchema));
             }
 
-            BaseSchema = baseSchema;
-            LogicalTypeName = logicalTypeName;
-            LogicalType = LogicalTypeFactory.Instance.GetFromLogicalSchema(this);
+            this.BaseSchema = baseSchema;
+            this.LogicalTypeName = logicalTypeName;
+            this.LogicalType = LogicalTypeFactory.Instance.GetFromLogicalSchema(this);
         }
 
         /// <summary>
-        /// Writes logical schema in JSON format
+        /// Writes logical schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the schema.</param>
         protected internal override void WriteJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("type");
-            BaseSchema.WriteJson(writer, names, encspace);
+            this.BaseSchema.WriteJson(writer, names, encspace);
             writer.WritePropertyName("logicalType");
-            writer.WriteValue(LogicalTypeName);
-            if (null != Props)
+            writer.WriteValue(this.LogicalTypeName);
+            if (null != this.Props)
             {
-                Props.WriteJson(writer);
+                this.Props.WriteJson(writer);
             }
 
             writer.WriteEndObject();
@@ -89,24 +89,24 @@ namespace Avro
         /// <summary>
         /// Checks if this schema can read data written by the given schema. Used for decoding data.
         /// </summary>
-        /// <param name="writerSchema">writer schema</param>
-        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise</returns>
+        /// <param name="writerSchema">writer schema.</param>
+        /// <returns>true if this and writer schema are compatible based on the AVRO specification, false otherwise.</returns>
         public override bool CanRead(Schema writerSchema)
         {
-            if (writerSchema.Tag != Tag)
+            if (writerSchema.Tag != this.Tag)
             {
                 return false;
             }
 
             LogicalSchema that = writerSchema as LogicalSchema;
-            return BaseSchema.CanRead(that.BaseSchema);
+            return this.BaseSchema.CanRead(that.BaseSchema);
         }
 
         /// <summary>
-        /// Function to compare equality of two logical schemas
+        /// Function to compare equality of two logical schemas.
         /// </summary>
-        /// <param name="obj">other logical schema</param>
-        /// <returns>true if two schemas are equal, false otherwise</returns>
+        /// <param name="obj">other logical schema.</param>
+        /// <returns>true if two schemas are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (this == obj)
@@ -116,21 +116,21 @@ namespace Avro
 
             if (obj != null && obj is LogicalSchema that)
             {
-                if (BaseSchema.Equals(that.BaseSchema))
+                if (this.BaseSchema.Equals(that.BaseSchema))
                 {
-                    return areEqual(that.Props, Props);
+                    return areEqual(that.Props, this.Props);
                 }
             }
             return false;
         }
 
         /// <summary>
-        /// Hashcode function
+        /// Hashcode function.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return 29 * BaseSchema.GetHashCode() + getHashCode(Props);
+            return 29 * this.BaseSchema.GetHashCode() + getHashCode(this.Props);
         }
     }
 }

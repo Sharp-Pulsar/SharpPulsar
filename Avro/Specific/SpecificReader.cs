@@ -15,47 +15,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.IO;
-using Avro;
-using Avro.IO;
-using Avro.Generic;
-
 namespace Avro.Specific
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using Avro;
+    using Avro.Generic;
+    using Avro.IO;
+
     /// <summary>
-    /// Reader wrapper class for reading data and storing into specific classes
+    /// Reader wrapper class for reading data and storing into specific classes.
     /// </summary>
-    /// <typeparam name="T">Specific class type</typeparam>
+    /// <typeparam name="T">Specific class type.</typeparam>
     public class SpecificReader<T> : DatumReader<T>
     {
         /// <summary>
-        /// Reader class for reading data and storing into specific classes
+        /// Reader class for reading data and storing into specific classes.
         /// </summary>
         private readonly SpecificDefaultReader reader;
 
         /// <summary>
-        /// Schema for the writer class
+        /// Gets schema for the writer class.
         /// </summary>
-        public Schema WriterSchema { get { return reader.WriterSchema; } }
+        public Schema WriterSchema { get { return this.reader.WriterSchema; } }
 
         /// <summary>
-        /// Schema for the reader class
+        /// Gets schema for the reader class.
         /// </summary>
-        public Schema ReaderSchema { get { return reader.ReaderSchema; } }
+        public Schema ReaderSchema { get { return this.reader.ReaderSchema; } }
 
         /// <summary>
         /// Constructs a generic reader for the given schemas using the DefaultReader. If the
         /// reader's and writer's schemas are different this class performs the resolution.
         /// </summary>
-        /// <param name="writerSchema">The schema used while generating the data</param>
-        /// <param name="readerSchema">The schema desired by the reader</param>
+        /// <param name="writerSchema">The schema used while generating the data.</param>
+        /// <param name="readerSchema">The schema desired by the reader.</param>
         public SpecificReader(Schema writerSchema, Schema readerSchema)
         {
-            reader = new SpecificDefaultReader(writerSchema, readerSchema);
+            this.reader = new SpecificDefaultReader(writerSchema, readerSchema);
         }
 
         /// <summary>
@@ -69,27 +69,27 @@ namespace Avro.Specific
         }
 
         /// <summary>
-        /// Generic read function
+        /// Generic read function.
         /// </summary>
-        /// <param name="reuse">object to store data read</param>
-        /// <param name="dec">decorder to use for reading data</param>
+        /// <param name="reuse">object to store data read.</param>
+        /// <param name="dec">decorder to use for reading data.</param>
         /// <returns></returns>
         public T Read(T reuse, Decoder dec)
         {
-            return reader.Read(reuse, dec);
+            return this.reader.Read(reuse, dec);
         }
     }
 
     /// <summary>
-    /// Reader class for reading data and storing into specific classes
+    /// Reader class for reading data and storing into specific classes.
     /// </summary>
     public class SpecificDefaultReader : DefaultReader
     {
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
-        /// <param name="writerSchema">schema of the object that wrote the data</param>
-        /// <param name="readerSchema">schema of the object that will store the data</param>
+        /// <param name="writerSchema">schema of the object that wrote the data.</param>
+        /// <param name="readerSchema">schema of the object that will store the data.</param>
         public SpecificDefaultReader(Schema writerSchema, Schema readerSchema) : base(writerSchema,readerSchema)
         {
         }
@@ -97,11 +97,11 @@ namespace Avro.Specific
         /// <summary>
         /// Deserializes a record from the stream.
         /// </summary>
-        /// <param name="reuse">If not null, a record object that could be reused for returning the result</param>
-        /// <param name="writerSchema">The writer's RecordSchema</param>
+        /// <param name="reuse">If not null, a record object that could be reused for returning the result.</param>
+        /// <param name="writerSchema">The writer's RecordSchema.</param>
         /// <param name="readerSchema">The reader's schema, must be RecordSchema too.</param>
-        /// <param name="dec">The decoder for deserialization</param>
-        /// <returns>The record object just read</returns>
+        /// <param name="dec">The decoder for deserialization.</param>
+        /// <returns>The record object just read.</returns>
         protected override object ReadRecord(object reuse, RecordSchema writerSchema, Schema readerSchema, Decoder dec)
         {
             RecordSchema rs = (RecordSchema)readerSchema;
@@ -121,10 +121,10 @@ namespace Avro.Specific
                     if (rs.TryGetField(wf.Name, out rf))
                     {
                         obj = rec.Get(rf.Pos);
-                        rec.Put(rf.Pos, Read(obj, wf.Schema, rf.Schema, dec));
+                        rec.Put(rf.Pos, this.Read(obj, wf.Schema, rf.Schema, dec));
                     }
                     else
-                        Skip(wf.Schema, dec);
+                        this.Skip(wf.Schema, dec);
                 }
                 catch (Exception ex)
                 {
@@ -148,7 +148,7 @@ namespace Avro.Specific
                 defaultStream.Position = 0; // reset for reading
 
                 obj = rec.Get(rf.Pos);
-                rec.Put(rf.Pos, Read(obj, rf.Schema, rf.Schema, defaultDecoder));
+                rec.Put(rf.Pos, this.Read(obj, rf.Schema, rf.Schema, defaultDecoder));
             }
 
             return rec;
@@ -179,13 +179,13 @@ namespace Avro.Specific
         }
 
         /// <summary>
-        /// Reads an enum from the given decoder
+        /// Reads an enum from the given decoder.
         /// </summary>
-        /// <param name="reuse">object to store data read</param>
-        /// <param name="writerSchema">schema of the object that wrote the data</param>
-        /// <param name="readerSchema">schema of the object that will store the data</param>
-        /// <param name="dec">decoder object that contains the data to be read</param>
-        /// <returns>enum value</returns>
+        /// <param name="reuse">object to store data read.</param>
+        /// <param name="writerSchema">schema of the object that wrote the data.</param>
+        /// <param name="readerSchema">schema of the object that will store the data.</param>
+        /// <param name="dec">decoder object that contains the data to be read.</param>
+        /// <returns>enum value.</returns>
         protected override object ReadEnum(object reuse, EnumSchema writerSchema, Schema readerSchema, Decoder dec)
         {
             EnumSchema rs = readerSchema as EnumSchema;
@@ -193,13 +193,13 @@ namespace Avro.Specific
         }
 
         /// <summary>
-        /// Reads an array from the given decoder
+        /// Reads an array from the given decoder.
         /// </summary>
-        /// <param name="reuse">object to store data read</param>
-        /// <param name="writerSchema">schema of the object that wrote the data</param>
-        /// <param name="readerSchema">schema of the object that will store the data</param>
-        /// <param name="dec">decoder object that contains the data to be read</param>
-        /// <returns>array</returns>
+        /// <param name="reuse">object to store data read.</param>
+        /// <param name="writerSchema">schema of the object that wrote the data.</param>
+        /// <param name="readerSchema">schema of the object that will store the data.</param>
+        /// <param name="dec">decoder object that contains the data to be read.</param>
+        /// <returns>array.</returns>
         protected override object ReadArray(object reuse, ArraySchema writerSchema, Schema readerSchema, Decoder dec)
         {
             ArraySchema rs = readerSchema as ArraySchema;
@@ -215,14 +215,14 @@ namespace Avro.Specific
                 array.Clear();
             }
             else
-                array = ObjectCreator.Instance.New(getTargetType(readerSchema), Schema.Type.Array) as System.Collections.IList;
+                array = ObjectCreator.Instance.New(this.getTargetType(readerSchema), Schema.Type.Array) as System.Collections.IList;
 
             int i = 0;
             for (int n = (int)dec.ReadArrayStart(); n != 0; n = (int)dec.ReadArrayNext())
             {
                 for (int j = 0; j < n; j++, i++)
                 {
-                    array.Add(Read(null, writerSchema.ItemSchema, rs.ItemSchema, dec));
+                    array.Add(this.Read(null, writerSchema.ItemSchema, rs.ItemSchema, dec));
                 }
             }
             return array;
@@ -252,24 +252,24 @@ namespace Avro.Specific
                 map.Clear();
             }
             else
-                map = ObjectCreator.Instance.New(getTargetType(readerSchema), Schema.Type.Map) as System.Collections.IDictionary;
+                map = ObjectCreator.Instance.New(this.getTargetType(readerSchema), Schema.Type.Map) as System.Collections.IDictionary;
 
             for (int n = (int)d.ReadMapStart(); n != 0; n = (int)d.ReadMapNext())
             {
                 for (int j = 0; j < n; j++)
                 {
                     string k = d.ReadString();
-                    map[k] = Read(null, writerSchema.ValueSchema, rs.ValueSchema, d);   // always create new map item
+                    map[k] = this.Read(null, writerSchema.ValueSchema, rs.ValueSchema, d);   // always create new map item
                 }
             }
             return map;
         }
 
         /// <summary>
-        /// Gets the target type name in the given schema
+        /// Gets the target type name in the given schema.
         /// </summary>
-        /// <param name="schema">schema containing the type to be determined</param>
-        /// <returns>Name of the type</returns>
+        /// <param name="schema">schema containing the type to be determined.</param>
+        /// <returns>Name of the type.</returns>
         protected virtual string getTargetType(Schema schema)
         {
             bool nEnum = false;

@@ -16,47 +16,47 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using Avro.IO;
-using Avro.Specific;
-using Newtonsoft.Json.Linq;
-
 namespace Avro.Reflect
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using Avro.IO;
+    using Avro.Specific;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Reader class for reading data and storing into specific classes
+    /// Reader class for reading data and storing into specific classes.
     /// </summary>
     public class ReflectDefaultReader : SpecificDefaultReader
     {
         /// <summary>
-        /// C# type to create when deserializing a map. Must implement IDictionary&lt;,&gt; and the first
-        /// type parameter must be a string. Default is System.Collections.Generic.Dictionary
+        /// Gets or sets c# type to create when deserializing a map. Must implement IDictionary&lt;,&gt; and the first
+        /// type parameter must be a string. Default is System.Collections.Generic.Dictionary.
         /// </summary>
-        public Type MapType { get => _mapType; set => _mapType = value; }
+        public Type MapType { get => this._mapType; set => this._mapType = value; }
 
         private ClassCache _classCache = new ClassCache();
 
         /// <summary>
-        /// Class cache
+        /// Gets class cache.
         /// </summary>
-        public ClassCache ClassCache { get => _classCache; }
+        public ClassCache ClassCache { get => this._classCache; }
 
         private Type _mapType = typeof(Dictionary<,>);
 
         private Func<Type, object> _recordFactory = x => Activator.CreateInstance(x);
 
         /// <summary>
-        /// Delegate to a factory method to create objects of type x. If you are deserializing to interfaces
-        /// you could use an IoC container factory insread of the default. Default is Activator.CreateInstance()
+        /// Gets or sets delegate to a factory method to create objects of type x. If you are deserializing to interfaces
+        /// you could use an IoC container factory insread of the default. Default is Activator.CreateInstance().
         /// </summary>
         /// <returns></returns>
-        public Func<Type, object> RecordFactory { get => _recordFactory; set => _recordFactory = value; }
+        public Func<Type, object> RecordFactory { get => this._recordFactory; set => this._recordFactory = value; }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="objType"></param>
         /// <param name="writerSchema"></param>
@@ -67,17 +67,17 @@ namespace Avro.Reflect
         {
             if (cache != null)
             {
-                _classCache = cache;
+                this._classCache = cache;
             }
 
-            _classCache.LoadClassCache(objType, readerSchema);
+            this._classCache.LoadClassCache(objType, readerSchema);
         }
 
         /// <summary>
-        /// Gets the string representation of the schema's data type
+        /// Gets the string representation of the schema's data type.
         /// </summary>
-        /// <param name="schema">schema</param>
-        /// <param name="nullable">flag to indicate union with null</param>
+        /// <param name="schema">schema.</param>
+        /// <param name="nullable">flag to indicate union with null.</param>
         /// <returns></returns>
         internal Type GetTypeFromSchema(Schema schema, bool nullable)
         {
@@ -141,7 +141,7 @@ namespace Avro.Reflect
                     }
 
                     Type recordtype = null;
-                    recordtype = _classCache.GetClass(recordSchema).GetClassType();
+                    recordtype = this._classCache.GetClass(recordSchema).GetClassType();
                     if (recordtype == null)
                     {
                         throw new Exception(string.Format(CultureInfo.InvariantCulture,
@@ -157,8 +157,8 @@ namespace Avro.Reflect
                         throw new Exception("Unable to cast schema into an array schema");
                     }
 
-                    var arrayHelper = _classCache.GetArrayHelper(arraySchema, null);
-                    return arrayHelper.ArrayType.MakeGenericType(new Type[] { GetTypeFromSchema(arraySchema.ItemSchema, false) });
+                    var arrayHelper = this._classCache.GetArrayHelper(arraySchema, null);
+                    return arrayHelper.ArrayType.MakeGenericType(new Type[] { this.GetTypeFromSchema(arraySchema.ItemSchema, false) });
 
                 case Schema.Type.Map:
                     var mapSchema = schema as MapSchema;
@@ -167,7 +167,7 @@ namespace Avro.Reflect
                         throw new Exception("Unable to cast schema into a map schema");
                     }
 
-                    return MapType.MakeGenericType(new Type[] { typeof(string), GetTypeFromSchema(mapSchema.ValueSchema, false) });
+                    return this.MapType.MakeGenericType(new Type[] { typeof(string), this.GetTypeFromSchema(mapSchema.ValueSchema, false) });
 
                 case Schema.Type.Union:
                     var unionSchema = schema as UnionSchema;
@@ -183,7 +183,7 @@ namespace Avro.Reflect
                     }
                     else
                     {
-                        return GetTypeFromSchema(nullibleType, true);
+                        return this.GetTypeFromSchema(nullibleType, true);
                     }
             }
 
@@ -191,7 +191,7 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Gets the default value for a schema object
+        /// Gets the default value for a schema object.
         /// </summary>
         /// <param name="s"></param>
         /// <param name="defaultValue"></param>
@@ -307,11 +307,11 @@ namespace Avro.Reflect
                     }
 
                     JArray jarr = defaultValue as JArray;
-                    var array = (IEnumerable)Activator.CreateInstance(GetTypeFromSchema(s, false));
-                    var arrayHelper = _classCache.GetArrayHelper(s as ArraySchema, array);
+                    var array = (IEnumerable)Activator.CreateInstance(this.GetTypeFromSchema(s, false));
+                    var arrayHelper = this._classCache.GetArrayHelper(s as ArraySchema, array);
                     foreach (JToken jitem in jarr)
                     {
-                        arrayHelper.Add(GetDefaultValue((s as ArraySchema).ItemSchema, jitem));
+                        arrayHelper.Add(this.GetDefaultValue((s as ArraySchema).ItemSchema, jitem));
                     }
 
                     return array;
@@ -325,7 +325,7 @@ namespace Avro.Reflect
 
                     RecordSchema rcs = s as RecordSchema;
                     JObject jo = defaultValue as JObject;
-                    var rec = RecordFactory(GetTypeFromSchema(rcs, false));
+                    var rec = this.RecordFactory(this.GetTypeFromSchema(rcs, false));
                     if (rec == null)
                     {
                         throw new Exception($"Couldn't create type matching schema name {rcs.Fullname}");
@@ -344,7 +344,7 @@ namespace Avro.Reflect
                             throw new AvroException($"No default value for field {field.Name}");
                         }
 
-                        _classCache.GetClass(rcs).SetValue(rec, field, GetDefaultValue(field.Schema, val));
+                        this._classCache.GetClass(rcs).SetValue(rec, field, this.GetDefaultValue(field.Schema, val));
                     }
 
                     return rec;
@@ -356,17 +356,17 @@ namespace Avro.Reflect
                     }
 
                     jo = defaultValue as JObject;
-                    var map = (System.Collections.IDictionary)Activator.CreateInstance(GetTypeFromSchema(s, false));
+                    var map = (System.Collections.IDictionary)Activator.CreateInstance(this.GetTypeFromSchema(s, false));
 
                     foreach (KeyValuePair<string, JToken> jp in jo)
                     {
-                        map.Add(jp.Key, GetDefaultValue((s as MapSchema).ValueSchema, jp.Value));
+                        map.Add(jp.Key, this.GetDefaultValue((s as MapSchema).ValueSchema, jp.Value));
                     }
 
                     return map;
 
                 case Schema.Type.Union:
-                    return GetDefaultValue((s as UnionSchema).Schemas[0], defaultValue);
+                    return this.GetDefaultValue((s as UnionSchema).Schemas[0], defaultValue);
 
                 default:
                     throw new AvroException($"Unsupported schema type {s.Tag}");
@@ -377,8 +377,8 @@ namespace Avro.Reflect
         /// Deserializes a enum. Uses CreateEnum to construct the new enum object.
         /// </summary>
         /// <param name="reuse">If appropirate, uses this instead of creating a new enum object.</param>
-        /// <param name="writerSchema">The schema the writer used while writing the enum</param>
-        /// <param name="readerSchema">The schema the reader is using</param>
+        /// <param name="writerSchema">The schema the writer used while writing the enum.</param>
+        /// <param name="readerSchema">The schema the reader is using.</param>
         /// <param name="d">The decoder for deserialization.</param>
         /// <returns>An enum object.</returns>
         protected override object ReadEnum(object reuse, EnumSchema writerSchema, Schema readerSchema, Decoder d)
@@ -393,11 +393,11 @@ namespace Avro.Reflect
         /// <summary>
         /// Deserializes a record from the stream.
         /// </summary>
-        /// <param name="reuse">If not null, a record object that could be reused for returning the result</param>
-        /// <param name="writerSchema">The writer's RecordSchema</param>
+        /// <param name="reuse">If not null, a record object that could be reused for returning the result.</param>
+        /// <param name="writerSchema">The writer's RecordSchema.</param>
         /// <param name="readerSchema">The reader's schema, must be RecordSchema too.</param>
-        /// <param name="dec">The decoder for deserialization</param>
-        /// <returns>The record object just read</returns>
+        /// <param name="dec">The decoder for deserialization.</param>
+        /// <returns>The record object just read.</returns>
         protected override object ReadRecord(object reuse, RecordSchema writerSchema, Schema readerSchema, Decoder dec)
         {
             RecordSchema rs = (RecordSchema)readerSchema;
@@ -405,7 +405,7 @@ namespace Avro.Reflect
             object rec = reuse;
             if (rec == null)
             {
-                rec = RecordFactory(GetTypeFromSchema(rs, false));
+                rec = this.RecordFactory(this.GetTypeFromSchema(rs, false));
                 if (rec == null)
                 {
                     throw new Exception($"Couldn't create type matching schema name {rs.Fullname}");
@@ -421,11 +421,11 @@ namespace Avro.Reflect
                     if (rs.TryGetField(wf.Name, out rf))
                     {
                         // obj = _classCache.GetClass(writerSchema).GetValue(rec, rf);
-                        _classCache.GetClass(writerSchema).SetValue(rec, rf, this.Read(obj, wf.Schema, rf.Schema, dec));
+                        this._classCache.GetClass(writerSchema).SetValue(rec, rf, this.Read(obj, wf.Schema, rf.Schema, dec));
                     }
                     else
                     {
-                        Skip(wf.Schema, dec);
+                        this.Skip(wf.Schema, dec);
                     }
                 }
                 catch (Exception ex)
@@ -441,7 +441,7 @@ namespace Avro.Reflect
                     continue;
                 }
 
-                _classCache.GetClass(rs).SetValue(rec, rf, GetDefaultValue(rf.Schema, rf.DefaultValue));
+                this._classCache.GetClass(rs).SetValue(rec, rf, this.GetDefaultValue(rf.Schema, rf.DefaultValue));
             }
 
             return rec;
@@ -471,13 +471,13 @@ namespace Avro.Reflect
         }
 
         /// <summary>
-        /// Reads an array from the given decoder
+        /// Reads an array from the given decoder.
         /// </summary>
-        /// <param name="reuse">object to store data read</param>
-        /// <param name="writerSchema">schema of the object that wrote the data</param>
-        /// <param name="readerSchema">schema of the object that will store the data</param>
-        /// <param name="dec">decoder object that contains the data to be read</param>
-        /// <returns>array</returns>
+        /// <param name="reuse">object to store data read.</param>
+        /// <param name="writerSchema">schema of the object that wrote the data.</param>
+        /// <param name="readerSchema">schema of the object that will store the data.</param>
+        /// <param name="dec">decoder object that contains the data to be read.</param>
+        /// <returns>array.</returns>
         protected override object ReadArray(object reuse, ArraySchema writerSchema, Schema readerSchema, Decoder dec)
         {
             ArraySchema rs = readerSchema as ArraySchema;
@@ -491,14 +491,14 @@ namespace Avro.Reflect
                     throw new AvroException("array object is not an IEnumerable");
                 }
 
-                arrayHelper = _classCache.GetArrayHelper(rs, array);
+                arrayHelper = this._classCache.GetArrayHelper(rs, array);
 
                 arrayHelper.Clear();
             }
             else
             {
-                array = Activator.CreateInstance(GetTypeFromSchema(rs, false)) as IEnumerable;
-                arrayHelper = _classCache.GetArrayHelper(rs, array);
+                array = Activator.CreateInstance(this.GetTypeFromSchema(rs, false)) as IEnumerable;
+                arrayHelper = this._classCache.GetArrayHelper(rs, array);
             }
 
             int i = 0;
@@ -506,7 +506,7 @@ namespace Avro.Reflect
             {
                 for (int j = 0; j < n; j++, i++)
                 {
-                    arrayHelper.Add(Read(null, writerSchema.ItemSchema, rs.ItemSchema, dec));
+                    arrayHelper.Add(this.Read(null, writerSchema.ItemSchema, rs.ItemSchema, dec));
                 }
             }
 
@@ -537,7 +537,7 @@ namespace Avro.Reflect
             }
             else
             {
-                map = (System.Collections.IDictionary)Activator.CreateInstance(GetTypeFromSchema(rs, false));
+                map = (System.Collections.IDictionary)Activator.CreateInstance(this.GetTypeFromSchema(rs, false));
             }
 
             for (int n = (int)d.ReadMapStart(); n != 0; n = (int)d.ReadMapNext())
@@ -545,7 +545,7 @@ namespace Avro.Reflect
                 for (int j = 0; j < n; j++)
                 {
                     string k = d.ReadString();
-                    map[k] = Read(null, writerSchema.ValueSchema, rs.ValueSchema, d);   // always create new map item
+                    map[k] = this.Read(null, writerSchema.ValueSchema, rs.ValueSchema, d);   // always create new map item
                 }
             }
 

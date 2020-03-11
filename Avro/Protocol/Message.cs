@@ -15,59 +15,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using Newtonsoft.Json.Linq;
-
 namespace Avro
 {
+    using System;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
     /// Represents a message in an Avro protocol.
     /// </summary>
     public class Message
     {
         /// <summary>
-        /// Name of the message
+        /// Gets or sets name of the message.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// Documentation for the message
+        /// Gets or sets documentation for the message.
         /// </summary>
         public string Doc { get; set; }
 
         /// <summary>
-        /// Anonymous record for the list of parameters for the request fields
+        /// Gets or sets anonymous record for the list of parameters for the request fields.
         /// </summary>
         public RecordSchema Request { get; set; }
 
         /// <summary>
-        /// Schema object for the 'response' attribute
+        /// Gets or sets schema object for the 'response' attribute.
         /// </summary>
         public Schema Response { get; set; }
 
         /// <summary>
-        /// Union schema object for the 'error' attribute
+        /// Gets or sets union schema object for the 'error' attribute.
         /// </summary>
         public UnionSchema Error { get; set; }
 
         /// <summary>
-        /// Optional one-way attribute
+        /// Gets or sets optional one-way attribute.
         /// </summary>
         public bool? Oneway { get; set; }
 
         /// <summary>
-        /// Explicitly defined protocol errors plus system added "string" error
+        /// Gets or sets explicitly defined protocol errors plus system added "string" error.
         /// </summary>
         public UnionSchema SupportedErrors { get; set; }
 
         /// <summary>
-        /// Constructor for Message class
+        /// Constructor for Message class.
         /// </summary>
-        /// <param name="name">name property</param>
-        /// <param name="doc">doc property</param>
-        /// <param name="request">list of parameters</param>
-        /// <param name="response">response property</param>
-        /// <param name="error">error union schema</param>
+        /// <param name="name">name property.</param>
+        /// <param name="doc">doc property.</param>
+        /// <param name="request">list of parameters.</param>
+        /// <param name="response">response property.</param>
+        /// <param name="error">error union schema.</param>
         /// <param name="oneway">
         /// Indicates that this is a one-way message. This may only be true when
         /// <paramref name="response"/> is <see cref="Schema.Type.Null"/> and there are no errors
@@ -106,11 +106,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses the messages section of a protocol definition
+        /// Parses the messages section of a protocol definition.
         /// </summary>
-        /// <param name="jmessage">messages JSON object</param>
-        /// <param name="names">list of parsed names</param>
-        /// <param name="encspace">enclosing namespace</param>
+        /// <param name="jmessage">messages JSON object.</param>
+        /// <param name="names">list of parsed names.</param>
+        /// <param name="encspace">enclosing namespace.</param>
         /// <returns></returns>
         internal static Message Parse(JProperty jmessage, SchemaNames names, string encspace)
         {
@@ -147,11 +147,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes the messages section of a protocol definition
+        /// Writes the messages section of a protocol definition.
         /// </summary>
-        /// <param name="writer">writer</param>
-        /// <param name="names">list of names written</param>
-        /// <param name="encspace">enclosing namespace</param>
+        /// <param name="writer">writer.</param>
+        /// <param name="names">list of names written.</param>
+        /// <param name="encspace">enclosing namespace.</param>
         internal void writeJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             writer.WriteStartObject();
@@ -165,7 +165,7 @@ namespace Avro
             if (null != this.Response)
             {
                 writer.WritePropertyName("response");
-                Response.WriteJson(writer, names, encspace);
+                this.Response.WriteJson(writer, names, encspace);
             }
 
             if (null != this.Error)
@@ -174,17 +174,17 @@ namespace Avro
                 this.Error.WriteJson(writer, names, encspace);
             }
 
-            if (null != Oneway)
+            if (null != this.Oneway)
             {
                 writer.WritePropertyName("one-way");
-                writer.WriteValue(Oneway);
+                writer.WriteValue(this.Oneway);
             }
 
             writer.WriteEndObject();
         }
 
         /// <summary>
-        /// Tests equality of this Message object with the passed object
+        /// Tests equality of this Message object with the passed object.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -208,19 +208,19 @@ namespace Avro
         }
 
         /// <summary>
-        /// Returns the hash code of this Message object
+        /// Returns the hash code of this Message object.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return Name.GetHashCode() +
-                   Request.GetHashCode() +
-                  (Response == null ? 0 : Response.GetHashCode()) +
-                  (Error == null ? 0 : Error.GetHashCode());
+            return this.Name.GetHashCode() +
+                   this.Request.GetHashCode() +
+                  (this.Response == null ? 0 : this.Response.GetHashCode()) +
+                  (this.Error == null ? 0 : this.Error.GetHashCode());
         }
 
         /// <summary>
-        /// Tests equality of two objects taking null values into account
+        /// Tests equality of two objects taking null values into account.
         /// </summary>
         /// <param name="o1"></param>
         /// <param name="o2"></param>

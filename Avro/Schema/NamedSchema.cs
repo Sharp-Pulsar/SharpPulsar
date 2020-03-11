@@ -15,65 +15,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json.Linq;
-
-
 namespace Avro
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json.Linq;
+
     /// <summary>
-    /// Base class for all named schemas: fixed, enum, record
+    /// Base class for all named schemas: fixed, enum, record.
     /// </summary>
     public abstract class NamedSchema : Schema
     {
         /// <summary>
-        /// Name of the schema, contains name, namespace and enclosing namespace
+        /// Gets name of the schema, contains name, namespace and enclosing namespace.
         /// </summary>
         public SchemaName SchemaName { get; private set; }
 
         /// <summary>
-        /// Name of the schema
+        /// Gets name of the schema.
         /// </summary>
         public override string Name
         {
-            get { return SchemaName.Name; }
+            get { return this.SchemaName.Name; }
         }
 
         /// <summary>
-        /// Namespace of the schema
+        /// Gets namespace of the schema.
         /// </summary>
         public string Namespace
         {
-            get { return SchemaName.Namespace; }
+            get { return this.SchemaName.Namespace; }
         }
 
         /// <summary>
-        /// Namespace.Name of the schema
+        /// Gets namespace.Name of the schema.
         /// </summary>
         public override string Fullname
         {
-            get { return SchemaName.Fullname; }
+            get { return this.SchemaName.Fullname; }
         }
 
         /// <summary>
-        /// Documentation for the schema, if any. Null if there is no documentation.
+        /// Gets documentation for the schema, if any. Null if there is no documentation.
         /// </summary>
         public string Documentation { get; private set; }
 
         /// <summary>
-        /// List of aliases for this named schema
+        /// List of aliases for this named schema.
         /// </summary>
         private readonly IList<SchemaName> aliases;
 
         /// <summary>
-        /// Static function to return a new instance of the named schema
+        /// Static function to return a new instance of the named schema.
         /// </summary>
-        /// <param name="jo">JSON object of the named schema</param>
-        /// <param name="props">dictionary that provides access to custom properties</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="encspace">enclosing namespace of the named schema</param>
+        /// <param name="jo">JSON object of the named schema.</param>
+        /// <param name="props">dictionary that provides access to custom properties.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the named schema.</param>
         /// <returns></returns>
         internal static NamedSchema NewInstance(JObject jo, PropertyMap props, SchemaNames names, string encspace)
         {
@@ -100,14 +99,14 @@ namespace Avro
         }
 
         /// <summary>
-        /// Constructor for named schema class
+        /// Constructor for named schema class.
         /// </summary>
-        /// <param name="type">schema type</param>
-        /// <param name="name">name</param>
-        /// <param name="aliases">aliases for this named schema</param>
-        /// <param name="props">custom properties on this schema</param>
-        /// <param name="names">list of named schemas already read</param>
-        /// <param name="doc">documentation for this named schema</param>
+        /// <param name="type">schema type.</param>
+        /// <param name="name">name.</param>
+        /// <param name="aliases">aliases for this named schema.</param>
+        /// <param name="props">custom properties on this schema.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="doc">documentation for this named schema.</param>
         protected NamedSchema(Type type, SchemaName name, IList<SchemaName> aliases, PropertyMap props, SchemaNames names,
             string doc)
                                 : base(type, props)
@@ -124,11 +123,11 @@ namespace Avro
 
         /// <summary>
         /// Parses the name and namespace from the given JSON schema object then creates
-        /// SchemaName object including the given enclosing namespace
+        /// SchemaName object including the given enclosing namespace.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="encspace">enclosing namespace</param>
-        /// <returns>new SchemaName object</returns>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="encspace">enclosing namespace.</param>
+        /// <returns>new SchemaName object.</returns>
         protected static SchemaName GetName(JToken jtok, string encspace)
         {
             String n = JsonHelper.GetOptionalString(jtok, "name");      // Changed this to optional string for anonymous records in messages
@@ -137,11 +136,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Parses the 'aliases' property from the given JSON token
+        /// Parses the 'aliases' property from the given JSON token.
         /// </summary>
-        /// <param name="jtok">JSON object to read</param>
-        /// <param name="space">namespace of the name this alias is for</param>
-        /// <param name="encspace">enclosing namespace of the name this alias is for</param>
+        /// <param name="jtok">JSON object to read.</param>
+        /// <param name="space">namespace of the name this alias is for.</param>
+        /// <param name="encspace">enclosing namespace of the name this alias is for.</param>
         /// <returns>List of SchemaName that represents the list of alias. If no 'aliases' specified, then it returns null.</returns>
         protected static IList<SchemaName> GetAliases(JToken jtok, string space, string encspace)
         {
@@ -179,9 +178,9 @@ namespace Avro
         /// </returns>
         protected bool InAliases(SchemaName name)
         {
-            if (null != aliases)
+            if (null != this.aliases)
             {
-                foreach (SchemaName alias in aliases)
+                foreach (SchemaName alias in this.aliases)
                 {
                     if (name.Equals(alias))
                     {
@@ -193,11 +192,11 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes named schema in JSON format
+        /// Writes named schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the named schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the named schema.</param>
         protected internal override void WriteJson(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             if (!names.Add(this))
@@ -222,20 +221,20 @@ namespace Avro
         }
 
         /// <summary>
-        /// Writes named schema in JSON format
+        /// Writes named schema in JSON format.
         /// </summary>
-        /// <param name="writer">JSON writer</param>
-        /// <param name="names">list of named schemas already written</param>
-        /// <param name="encspace">enclosing namespace of the named schema</param>
+        /// <param name="writer">JSON writer.</param>
+        /// <param name="names">list of named schemas already written.</param>
+        /// <param name="encspace">enclosing namespace of the named schema.</param>
         protected internal override void WriteJsonFields(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
             this.SchemaName.WriteJson(writer, names, encspace);
 
-            if (null != aliases)
+            if (null != this.aliases)
             {
                 writer.WritePropertyName("aliases");
                 writer.WriteStartArray();
-                foreach (SchemaName name in aliases)
+                foreach (SchemaName name in this.aliases)
                 {
                     string fullname = (null != name.Space) ? name.Space + "." + name.Name : name.Name;
                     writer.WriteValue(fullname);

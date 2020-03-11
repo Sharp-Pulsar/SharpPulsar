@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Collections.Generic;
-using System.IO;
-using Avro.IO;
-
 namespace Avro.Generic
 {
+    using System.Collections.Generic;
+    using System.IO;
+    using Avro.IO;
+
     /// <summary>
     /// A general purpose reader of data from avro streams. This reader analyzes and resolves the reader and writer schemas
     /// when constructed so that reads can be more efficient. Once constructed, a reader can be reused or shared among threads
@@ -59,20 +59,20 @@ namespace Avro.Generic
         /// <param name="readerSchema">Schema to use to read the data.</param>
         protected PreresolvingDatumReader(Schema writerSchema, Schema readerSchema)
         {
-            ReaderSchema = readerSchema;
-            WriterSchema = writerSchema;
-            if (!ReaderSchema.CanRead(WriterSchema))
+            this.ReaderSchema = readerSchema;
+            this.WriterSchema = writerSchema;
+            if (!this.ReaderSchema.CanRead(this.WriterSchema))
             {
-                throw new AvroException("Schema mismatch. Reader: " + ReaderSchema + ", writer: " + WriterSchema);
+                throw new AvroException("Schema mismatch. Reader: " + this.ReaderSchema + ", writer: " + this.WriterSchema);
             }
 
-            _reader = ResolveReader(writerSchema, readerSchema);
+            this._reader = this.ResolveReader(writerSchema, readerSchema);
         }
 
         /// <inheritdoc/>
         public T Read(T reuse, Decoder decoder)
         {
-            return (T)_reader(reuse, decoder);
+            return (T)this._reader(reuse, decoder);
         }
 
         /// <summary>
@@ -122,21 +122,21 @@ namespace Avro.Generic
             switch (writerSchema.Tag)
             {
                 case Schema.Type.Null:
-                    return ReadNull;
+                    return this.ReadNull;
                 case Schema.Type.Boolean:
-                    return ReadBoolean;
+                    return this.ReadBoolean;
                 case Schema.Type.Int:
                     {
                         switch (readerSchema.Tag)
                         {
                             case Schema.Type.Long:
-                                return Read(d => (long) d.ReadInt());
+                                return this.Read(d => (long) d.ReadInt());
                             case Schema.Type.Float:
-                                return Read(d => (float) d.ReadInt());
+                                return this.Read(d => (float) d.ReadInt());
                             case Schema.Type.Double:
-                                return Read(d => (double) d.ReadInt());
+                                return this.Read(d => (double) d.ReadInt());
                             default:
-                                return Read(d => d.ReadInt());
+                                return this.Read(d => d.ReadInt());
                         }
                     }
                 case Schema.Type.Long:
@@ -144,11 +144,11 @@ namespace Avro.Generic
                         switch (readerSchema.Tag)
                         {
                             case Schema.Type.Float:
-                                return Read(d => (float) d.ReadLong());
+                                return this.Read(d => (float) d.ReadLong());
                             case Schema.Type.Double:
-                                return Read(d => (double) d.ReadLong());
+                                return this.Read(d => (double) d.ReadLong());
                             default:
-                                return Read(d => d.ReadLong());
+                                return this.Read(d => d.ReadLong());
                         }
                     }
                 case Schema.Type.Float:
@@ -156,32 +156,32 @@ namespace Avro.Generic
                         switch (readerSchema.Tag)
                         {
                             case Schema.Type.Double:
-                                return Read(d => (double) d.ReadFloat());
+                                return this.Read(d => (double) d.ReadFloat());
                             default:
-                                return Read(d => d.ReadFloat());
+                                return this.Read(d => d.ReadFloat());
                         }
                     }
                 case Schema.Type.Double:
-                    return Read(d => d.ReadDouble());
+                    return this.Read(d => d.ReadDouble());
                 case Schema.Type.String:
-                    return Read(d => d.ReadString());
+                    return this.Read(d => d.ReadString());
                 case Schema.Type.Bytes:
-                    return Read(d => d.ReadBytes());
+                    return this.Read(d => d.ReadBytes());
                 case Schema.Type.Error:
                 case Schema.Type.Record:
-                    return ResolveRecord((RecordSchema)writerSchema, (RecordSchema)readerSchema);
+                    return this.ResolveRecord((RecordSchema)writerSchema, (RecordSchema)readerSchema);
                 case Schema.Type.Enumeration:
-                    return ResolveEnum((EnumSchema)writerSchema, (EnumSchema)readerSchema);
+                    return this.ResolveEnum((EnumSchema)writerSchema, (EnumSchema)readerSchema);
                 case Schema.Type.Fixed:
-                    return ResolveFixed((FixedSchema)writerSchema, (FixedSchema)readerSchema);
+                    return this.ResolveFixed((FixedSchema)writerSchema, (FixedSchema)readerSchema);
                 case Schema.Type.Array:
-                    return ResolveArray((ArraySchema)writerSchema, (ArraySchema)readerSchema);
+                    return this.ResolveArray((ArraySchema)writerSchema, (ArraySchema)readerSchema);
                 case Schema.Type.Map:
-                    return ResolveMap((MapSchema)writerSchema, (MapSchema)readerSchema);
+                    return this.ResolveMap((MapSchema)writerSchema, (MapSchema)readerSchema);
                 case Schema.Type.Union:
-                    return ResolveUnion((UnionSchema)writerSchema, readerSchema);
+                    return this.ResolveUnion((UnionSchema)writerSchema, readerSchema);
                 case Schema.Type.Logical:
-                    return ResolveLogical((LogicalSchema)writerSchema, (LogicalSchema)readerSchema);
+                    return this.ResolveLogical((LogicalSchema)writerSchema, (LogicalSchema)readerSchema);
                 default:
                     throw new AvroException("Unknown schema type: " + writerSchema);
             }
@@ -189,7 +189,7 @@ namespace Avro.Generic
 
         private ReadItem ResolveEnum(EnumSchema writerSchema, EnumSchema readerSchema)
         {
-            var enumAccess = GetEnumAccess(readerSchema);
+            var enumAccess = this.GetEnumAccess(readerSchema);
 
             if (readerSchema.Equals(writerSchema))
             {
@@ -228,16 +228,16 @@ namespace Avro.Generic
             var schemaPair = new SchemaPair(writerSchema, readerSchema);
             ReadItem recordReader;
 
-            if (_recordReaders.TryGetValue(schemaPair, out recordReader))
+            if (this._recordReaders.TryGetValue(schemaPair, out recordReader))
             {
                 return recordReader;
             }
 
             FieldReader[] fieldReaderArray = null;
-            var recordAccess = GetRecordAccess(readerSchema);
+            var recordAccess = this.GetRecordAccess(readerSchema);
 
-            recordReader = (r, d) => ReadRecord(r, d, recordAccess, fieldReaderArray);
-            _recordReaders.Add(schemaPair, recordReader);
+            recordReader = (r, d) => this.ReadRecord(r, d, recordAccess, fieldReaderArray);
+            this._recordReaders.Add(schemaPair, recordReader);
 
             var readSteps = new List<FieldReader>();
 
@@ -246,8 +246,8 @@ namespace Avro.Generic
                 Field rf;
                 if (readerSchema.TryGetFieldAlias(wf.Name, out rf))
                 {
-                    var readItem = ResolveReader(wf.Schema, rf.Schema);
-                    if(IsReusable(rf.Schema.Tag))
+                    var readItem = this.ResolveReader(wf.Schema, rf.Schema);
+                    if(this.IsReusable(rf.Schema.Tag))
                     {
                         readSteps.Add((rec,d) => recordAccess.AddField(rec, rf.Name, rf.Pos,
                             readItem(recordAccess.GetField(rec, rf.Name, rf.Pos), d)));
@@ -260,7 +260,7 @@ namespace Avro.Generic
                 }
                 else
                 {
-                    var skip = GetSkip(wf.Schema);
+                    var skip = this.GetSkip(wf.Schema);
                     readSteps.Add((rec, d) => skip(d));
                 }
             }
@@ -281,10 +281,10 @@ namespace Avro.Generic
                 defaultStream.Flush();
 	            var defaultBytes = defaultStream.ToArray();
 
-                var readItem = ResolveReader(rf.Schema, rf.Schema);
+                var readItem = this.ResolveReader(rf.Schema, rf.Schema);
 
                 var rfInstance = rf;
-                if(IsReusable(rf.Schema.Tag))
+                if(this.IsReusable(rf.Schema.Tag))
                 {
                     readSteps.Add((rec, d) => recordAccess.AddField(rec, rfInstance.Name, rfInstance.Pos,
                         readItem(recordAccess.GetField(rec, rfInstance.Name, rfInstance.Pos),
@@ -330,23 +330,23 @@ namespace Avro.Generic
                     }
                     else
                     {
-                        lookup[i] = ResolveReader(writerBranch, unionReader[readerBranch]);
+                        lookup[i] = this.ResolveReader(writerBranch, unionReader[readerBranch]);
                     }
                 }
                 else
                 {
                     if (!readerSchema.CanRead(writerBranch))
                     {
-                        lookup[i] = (r, d) => { throw new AvroException( "Schema mismatch Reader: " + ReaderSchema + ", writer: " + WriterSchema ); };
+                        lookup[i] = (r, d) => { throw new AvroException( "Schema mismatch Reader: " + this.ReaderSchema + ", writer: " + this.WriterSchema ); };
                     }
                     else
                     {
-                        lookup[i] = ResolveReader(writerBranch, readerSchema);
+                        lookup[i] = this.ResolveReader(writerBranch, readerSchema);
                     }
                 }
             }
 
-            return (r, d) => ReadUnion(r, d, lookup);
+            return (r, d) => this.ReadUnion(r, d, lookup);
         }
 
         private object ReadUnion(object reuse, Decoder d, ReadItem[] branchLookup)
@@ -359,10 +359,10 @@ namespace Avro.Generic
             var rs = readerSchema.ValueSchema;
             var ws = writerSchema.ValueSchema;
 
-            var reader = ResolveReader(ws, rs);
-            var mapAccess = GetMapAccess(readerSchema);
+            var reader = this.ResolveReader(ws, rs);
+            var mapAccess = this.GetMapAccess(readerSchema);
 
-            return (r,d) => ReadMap(r, d, mapAccess, reader);
+            return (r,d) => this.ReadMap(r, d, mapAccess, reader);
         }
 
         private object ReadMap(object reuse, Decoder decoder, MapAccess mapAccess, ReadItem valueReader)
@@ -378,10 +378,10 @@ namespace Avro.Generic
 
         private ReadItem ResolveArray(ArraySchema writerSchema, ArraySchema readerSchema)
         {
-            var itemReader = ResolveReader(writerSchema.ItemSchema, readerSchema.ItemSchema);
+            var itemReader = this.ResolveReader(writerSchema.ItemSchema, readerSchema.ItemSchema);
 
-            var arrayAccess = GetArrayAccess(readerSchema);
-            return (r, d) => ReadArray(r, d, arrayAccess, itemReader, IsReusable(readerSchema.ItemSchema.Tag));
+            var arrayAccess = this.GetArrayAccess(readerSchema);
+            return (r, d) => this.ReadArray(r, d, arrayAccess, itemReader, this.IsReusable(readerSchema.ItemSchema.Tag));
         }
 
         private object ReadArray(object reuse, Decoder decoder, ArrayAccess arrayAccess, ReadItem itemReader, bool itemReusable)
@@ -400,7 +400,7 @@ namespace Avro.Generic
 
         private ReadItem ResolveLogical(LogicalSchema writerSchema, LogicalSchema readerSchema)
         {
-            var baseReader = ResolveReader(writerSchema.BaseSchema, readerSchema.BaseSchema);
+            var baseReader = this.ResolveReader(writerSchema.BaseSchema, readerSchema.BaseSchema);
             return (r, d) => readerSchema.LogicalType.ConvertToLogicalValue(baseReader(r, d), readerSchema);
         }
 
@@ -411,8 +411,8 @@ namespace Avro.Generic
                 throw new AvroException("Size mismatch between reader and writer fixed schemas. Writer: " + writerSchema +
                     ", reader: " + readerSchema);
             }
-            var fixedAccess = GetFixedAccess(readerSchema);
-            return (r, d) => ReadFixed(r, d, fixedAccess);
+            var fixedAccess = this.GetFixedAccess(readerSchema);
+            return (r, d) => this.ReadFixed(r, d, fixedAccess);
         }
 
         private object ReadFixed(object reuse, Decoder decoder, FixedAccess fixedAccess)
@@ -479,7 +479,7 @@ namespace Avro.Generic
                 case Schema.Type.Record:
                     var recordSkips = new List<DecoderSkip>();
                     var recSchema = (RecordSchema)writerSchema;
-                    recSchema.Fields.ForEach(r => recordSkips.Add(GetSkip(r.Schema)));
+                    recSchema.Fields.ForEach(r => recordSkips.Add(this.GetSkip(r.Schema)));
                     return d => recordSkips.ForEach(s=>s(d));
                 case Schema.Type.Enumeration:
                     return d => d.SkipEnum();
@@ -487,7 +487,7 @@ namespace Avro.Generic
                     var size = ((FixedSchema)writerSchema).Size;
                     return d => d.SkipFixed(size);
                 case Schema.Type.Array:
-                    var itemSkip = GetSkip(((ArraySchema)writerSchema).ItemSchema);
+                    var itemSkip = this.GetSkip(((ArraySchema)writerSchema).ItemSchema);
                     return d =>
                     {
                         for (long n = d.ReadArrayStart(); n != 0; n = d.ReadArrayNext())
@@ -500,7 +500,7 @@ namespace Avro.Generic
                     };
                 case Schema.Type.Map:
                     {
-                        var valueSkip = GetSkip(((MapSchema)writerSchema).ValueSchema);
+                        var valueSkip = this.GetSkip(((MapSchema)writerSchema).ValueSchema);
                         return d =>
                         {
                             for (long n = d.ReadMapStart(); n != 0; n = d.ReadMapNext())
@@ -514,12 +514,12 @@ namespace Avro.Generic
                     var lookup = new DecoderSkip[unionSchema.Count];
                     for (int i = 0; i < unionSchema.Count; i++)
                     {
-                        lookup[i] = GetSkip( unionSchema[i] );
+                        lookup[i] = this.GetSkip( unionSchema[i] );
                     }
                     return d => lookup[d.ReadUnionIndex()](d);
                 case Schema.Type.Logical:
                     var logicalSchema = (LogicalSchema)writerSchema;
-                    return GetSkip(logicalSchema.BaseSchema);
+                    return this.GetSkip(logicalSchema.BaseSchema);
                 default:
                     throw new AvroException("Unknown schema type: " + writerSchema);
             }
@@ -547,7 +547,7 @@ namespace Avro.Generic
             /// <summary>
             /// Creates a new record object. Derived classes can override this to return an object of their choice.
             /// </summary>
-            /// <param name="reuse">If appropriate, will reuse this object instead of constructing a new one</param>
+            /// <param name="reuse">If appropriate, will reuse this object instead of constructing a new one.</param>
             /// <returns></returns>
             object CreateRecord(object reuse);
 
@@ -558,7 +558,7 @@ namespace Avro.Generic
             /// <param name="record">The record object to be probed into. This is guaranteed to be one that was returned
             /// by a previous call to CreateRecord.</param>
             /// <param name="fieldName">The name of the field to probe.</param>
-            /// <param name="fieldPos">field number</param>
+            /// <param name="fieldPos">field number.</param>
             /// <returns>The value of the field, if found. Null otherwise.</returns>
             object GetField(object record, string fieldName, int fieldPos);
 
@@ -569,8 +569,8 @@ namespace Avro.Generic
             /// <param name="record">The record object to be probed into. This is guaranteed to be one that was returned
             /// by a previous call to CreateRecord.</param>
             /// <param name="fieldName">The name of the field to probe.</param>
-            /// <param name="fieldPos">field number</param>
-            /// <param name="fieldValue">The value to be added for the field</param>
+            /// <param name="fieldPos">field number.</param>
+            /// <param name="fieldValue">The value to be added for the field.</param>
             void AddField(object record, string fieldName, int fieldPos, object fieldValue);
         }
 
@@ -604,7 +604,7 @@ namespace Avro.Generic
             /// Returns a buffer of appropriate size to read data into.
             /// </summary>
             /// <param name="f">The fixed object. It is guaranteed that this is something that has been previously
-            /// returned by CreateFixed</param>
+            /// returned by CreateFixed.</param>
             /// <returns>A byte buffer of fixed's size.</returns>
             byte[] GetFixedBuffer(object f);
         }
@@ -618,12 +618,12 @@ namespace Avro.Generic
             /// Creates a new array object. The initial size of the object could be anything.
             /// </summary>
             /// <param name="reuse">If appropriate use this instead of creating a new one.</param>
-            /// <returns>An object suitable to deserialize an avro array</returns>
+            /// <returns>An object suitable to deserialize an avro array.</returns>
             object Create(object reuse);
 
             /// <summary>
             /// Hint that the array should be able to handle at least targetSize elements. The array
-            /// is not required to be resized
+            /// is not required to be resized.
             /// </summary>
             /// <param name="array">Array object who needs to support targetSize elements. This is guaranteed to be somthing returned by
             /// a previous call to CreateArray().</param>
@@ -686,13 +686,13 @@ namespace Avro.Generic
 
             public SchemaPair( Schema writerSchema, Schema readerSchema )
             {
-                _writerSchema = writerSchema;
-                _readerSchema = readerSchema;
+                this._writerSchema = writerSchema;
+                this._readerSchema = readerSchema;
             }
 
             protected bool Equals( SchemaPair other )
             {
-                return Equals( _writerSchema, other._writerSchema ) && Equals( _readerSchema, other._readerSchema );
+                return Equals( this._writerSchema, other._writerSchema ) && Equals( this._readerSchema, other._readerSchema );
             }
 
             public override bool Equals( object obj )
@@ -712,14 +712,14 @@ namespace Avro.Generic
                     return false;
                 }
 
-                return Equals( (SchemaPair) obj );
+                return this.Equals( (SchemaPair) obj );
             }
 
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    return ( ( _writerSchema != null ? _writerSchema.GetHashCode() : 0 ) * 397 ) ^ ( _readerSchema != null ? _readerSchema.GetHashCode() : 0 );
+                    return ( ( this._writerSchema != null ? this._writerSchema.GetHashCode() : 0 ) * 397 ) ^ ( this._readerSchema != null ? this._readerSchema.GetHashCode() : 0 );
                 }
             }
         }

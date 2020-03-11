@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Avro.Util
 {
+    using System;
+
     /// <summary>
     /// Base for all logical type implementations.
     /// </summary>
     public abstract class LogicalType
     {
         /// <summary>
-        /// The logical type name.
+        /// Gets the logical type name.
         /// </summary>
         public string Name { get; }
 
@@ -36,7 +36,7 @@ namespace Avro.Util
         /// <param name="name">The logical type name.</param>
         protected LogicalType(string name)
         {
-            Name = name;
+            this.Name = name;
         }
 
         /// <summary>

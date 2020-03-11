@@ -15,17 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using Avro.Generic;
-using Avro.IO;
-using Avro.Specific;
-
 namespace Avro.File
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using Avro.Generic;
+    using Avro.IO;
+    using Avro.Specific;
+
     /// <summary>
     /// Provides access to Avro data written using the <see cref="DataFileWriter{T}"/>.
     /// </summary>
@@ -56,7 +56,7 @@ namespace Avro.File
         private readonly CreateDatumReader _datumReaderFactory;
 
         /// <summary>
-        ///  Open a reader for a file using path
+        ///  Open a reader for a file using path.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
@@ -66,18 +66,18 @@ namespace Avro.File
         }
 
         /// <summary>
-        ///  Open a reader for a file using path and the reader's schema
+        ///  Open a reader for a file using path and the reader's schema.
         /// </summary>
-        /// <param name="path">Path to the file</param>
-        /// <param name="readerSchema">Schema used to read data from the file</param>
-        /// <returns>A new file reader</returns>
+        /// <param name="path">Path to the file.</param>
+        /// <param name="readerSchema">Schema used to read data from the file.</param>
+        /// <returns>A new file reader.</returns>
         public static IFileReader<T> OpenReader(string path, Schema readerSchema)
         {
             return OpenReader(new FileStream(path, FileMode.Open), readerSchema);
         }
 
         /// <summary>
-        ///  Open a reader for a stream
+        ///  Open a reader for a stream.
         /// </summary>
         /// <param name="inStream"></param>
         /// <returns></returns>
@@ -87,23 +87,23 @@ namespace Avro.File
         }
 
         /// <summary>
-        /// Open a reader for a stream using the reader's schema
+        /// Open a reader for a stream using the reader's schema.
         /// </summary>
-        /// <param name="inStream">Stream containing the file contents</param>
-        /// <param name="readerSchema">Schema used to read the file</param>
-        /// <returns>A new file reader</returns>
+        /// <param name="inStream">Stream containing the file contents.</param>
+        /// <param name="readerSchema">Schema used to read the file.</param>
+        /// <returns>A new file reader.</returns>
         public static IFileReader<T> OpenReader(Stream inStream, Schema readerSchema)
         {
             return OpenReader(inStream, readerSchema, CreateDefaultReader);
         }
 
         /// <summary>
-        ///  Open a reader for a stream using the reader's schema and a custom DatumReader
+        ///  Open a reader for a stream using the reader's schema and a custom DatumReader.
         /// </summary>
-        /// <param name="inStream">Stream of file contents</param>
-        /// <param name="readerSchema">Schema used to read the file</param>
-        /// <param name="datumReaderFactory">Factory to create datum readers given a reader an writer schema</param>
-        /// <returns>A new file reader</returns>
+        /// <param name="inStream">Stream of file contents.</param>
+        /// <param name="readerSchema">Schema used to read the file.</param>
+        /// <param name="datumReaderFactory">Factory to create datum readers given a reader an writer schema.</param>
+        /// <returns>A new file reader.</returns>
         public static IFileReader<T> OpenReader(Stream inStream, Schema readerSchema, CreateDatumReader datumReaderFactory)
         {
             return new DataFileReader<T>(inStream, readerSchema, datumReaderFactory);         // (not supporting 1.2 or below, format)
@@ -111,28 +111,28 @@ namespace Avro.File
 
         DataFileReader(Stream stream, Schema readerSchema, CreateDatumReader datumReaderFactory)
         {
-            _readerSchema = readerSchema;
-            _datumReaderFactory = datumReaderFactory;
-            Init(stream);
-            BlockFinished();
+            this._readerSchema = readerSchema;
+            this._datumReaderFactory = datumReaderFactory;
+            this.Init(stream);
+            this.BlockFinished();
         }
 
         /// <inheritdoc/>
         public Header GetHeader()
         {
-            return _header;
+            return this._header;
         }
 
         /// <inheritdoc/>
         public Schema GetSchema()
         {
-            return _header.Schema;
+            return this._header.Schema;
         }
 
         /// <inheritdoc/>
         public ICollection<string> GetMetaKeys()
         {
-            return _header.MetaData.Keys;
+            return this._header.MetaData.Keys;
         }
 
         /// <inheritdoc/>
@@ -140,7 +140,7 @@ namespace Avro.File
         {
             try
             {
-                return _header.MetaData[key];
+                return this._header.MetaData[key];
             }
             catch (KeyNotFoundException)
             {
@@ -151,13 +151,13 @@ namespace Avro.File
         /// <inheritdoc/>
         public long GetMetaLong(string key)
         {
-            return long.Parse(GetMetaString(key), CultureInfo.InvariantCulture);
+            return long.Parse(this.GetMetaString(key), CultureInfo.InvariantCulture);
         }
 
         /// <inheritdoc/>
         public string GetMetaString(string key)
         {
-            byte[] value = GetMeta(key);
+            byte[] value = this.GetMeta(key);
             if (value == null)
             {
                 return null;
@@ -176,26 +176,26 @@ namespace Avro.File
         /// <inheritdoc/>
         public void Seek(long position)
         {
-            if (!_stream.CanSeek)
+            if (!this._stream.CanSeek)
             {
                 throw new AvroRuntimeException("Not a valid input stream - must be seekable!");
             }
 
-            _stream.Position = position;
-            _decoder = new BinaryDecoder(_stream);
-            _datumDecoder = null;
-            _blockRemaining = 0;
-            _blockStart = position;
+            this._stream.Position = position;
+            this._decoder = new BinaryDecoder(this._stream);
+            this._datumDecoder = null;
+            this._blockRemaining = 0;
+            this._blockStart = position;
         }
 
         /// <inheritdoc/>
         public void Sync(long position)
         {
-            Seek(position);
+            this.Seek(position);
             // work around an issue where 1.5.4 C stored sync in metadata
-            if ((position == 0) && (GetMeta(DataFileConstants.MetaDataSync) != null))
+            if ((position == 0) && (this.GetMeta(DataFileConstants.MetaDataSync) != null))
             {
-                Init(_stream); // re-init to skip header
+                this.Init(this._stream); // re-init to skip header
                 return;
             }
 
@@ -206,14 +206,14 @@ namespace Avro.File
                 // read until sync mark matched
                 do
                 {
-                    _decoder.ReadFixed(_syncBuffer);
-                    if (Enumerable.SequenceEqual(_syncBuffer, _header.SyncData))
+                    this._decoder.ReadFixed(this._syncBuffer);
+                    if (Enumerable.SequenceEqual(this._syncBuffer, this._header.SyncData))
                     {
                         done = true;
                     }
                     else
                     {
-                        _stream.Position -= DataFileConstants.SyncSize - 1;
+                        this._stream.Position -= DataFileConstants.SyncSize - 1;
                     }
                 }
                 while (!done);
@@ -223,30 +223,30 @@ namespace Avro.File
                 // could not find .. default to EOF
             }
 
-            _blockStart = _stream.Position;
+            this._blockStart = this._stream.Position;
         }
 
         /// <inheritdoc/>
         public bool PastSync(long position)
         {
-            return (_blockStart >= position + DataFileConstants.SyncSize) || (_blockStart >= _stream.Length);
+            return (this._blockStart >= position + DataFileConstants.SyncSize) || (this._blockStart >= this._stream.Length);
         }
 
         /// <inheritdoc/>
         public long PreviousSync()
         {
-            if (!_stream.CanSeek)
+            if (!this._stream.CanSeek)
             {
                 throw new AvroRuntimeException("Not a valid input stream - must be seekable!");
             }
 
-            return _blockStart;
+            return this._blockStart;
         }
 
         /// <inheritdoc/>
         public long Tell()
         {
-            return _stream.Position;
+            return this._stream.Position;
         }
 
         /// <inheritdoc/>
@@ -254,9 +254,9 @@ namespace Avro.File
         {
             get
             {
-                while (HasNext())
+                while (this.HasNext())
                 {
-                    yield return Next();
+                    yield return this.Next();
                 }
             }
         }
@@ -266,19 +266,19 @@ namespace Avro.File
         {
             try
             {
-                if (_blockRemaining == 0)
+                if (this._blockRemaining == 0)
                 {
                     // TODO: Check that the (block) stream is not partially read
                     /*if (_datumDecoder != null)
                     { }*/
-                    if (HasNextBlock())
+                    if (this.HasNextBlock())
                     {
-                        _currentBlock = NextRawBlock(_currentBlock);
-                        _currentBlock.Data = _codec.Decompress(_currentBlock.Data);
-                        _datumDecoder = new BinaryDecoder(_currentBlock.GetDataAsStream());
+                        this._currentBlock = this.NextRawBlock(this._currentBlock);
+                        this._currentBlock.Data = this._codec.Decompress(this._currentBlock.Data);
+                        this._datumDecoder = new BinaryDecoder(this._currentBlock.GetDataAsStream());
                     }
                 }
-                return _blockRemaining != 0;
+                return this._blockRemaining != 0;
             }
             catch (Exception e)
             {
@@ -292,13 +292,13 @@ namespace Avro.File
         /// </summary>
         public void Reset()
         {
-            Init(_stream);
+            this.Init(this._stream);
         }
 
         /// <inheritdoc/>
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -310,21 +310,21 @@ namespace Avro.File
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            _stream.Close();
+            this._stream.Close();
         }
 
         private void Init(Stream stream)
         {
-            _stream = stream;
-            _header = new Header();
-            _decoder = new BinaryDecoder(stream);
-            _syncBuffer = new byte[DataFileConstants.SyncSize];
+            this._stream = stream;
+            this._header = new Header();
+            this._decoder = new BinaryDecoder(stream);
+            this._syncBuffer = new byte[DataFileConstants.SyncSize];
 
             // read magic
             byte[] firstBytes = new byte[DataFileConstants.Magic.Length];
             try
             {
-                _decoder.ReadFixed(firstBytes);
+                this._decoder.ReadFixed(firstBytes);
             }
             catch (Exception e)
             {
@@ -336,27 +336,27 @@ namespace Avro.File
             }
 
             // read meta data
-            long len = _decoder.ReadMapStart();
+            long len = this._decoder.ReadMapStart();
             if (len > 0)
             {
                 do
                 {
                     for (long i = 0; i < len; i++)
                     {
-                        string key = _decoder.ReadString();
-                        byte[] val = _decoder.ReadBytes();
-                        _header.MetaData.Add(key, val);
+                        string key = this._decoder.ReadString();
+                        byte[] val = this._decoder.ReadBytes();
+                        this._header.MetaData.Add(key, val);
                     }
-                } while ((len = _decoder.ReadMapNext()) != 0);
+                } while ((len = this._decoder.ReadMapNext()) != 0);
             }
 
             // read in sync data
-            _decoder.ReadFixed(_header.SyncData);
+            this._decoder.ReadFixed(this._header.SyncData);
 
             // parse schema and set codec
-            _header.Schema = Schema.Parse(GetMetaString(DataFileConstants.MetaDataSchema));
-            _reader = _datumReaderFactory(_header.Schema, _readerSchema ?? _header.Schema);
-            _codec = ResolveCodec();
+            this._header.Schema = Schema.Parse(this.GetMetaString(DataFileConstants.MetaDataSchema));
+            this._reader = this._datumReaderFactory(this._header.Schema, this._readerSchema ?? this._header.Schema);
+            this._codec = this.ResolveCodec();
         }
 
         private static DatumReader<T> CreateDefaultReader(Schema writerSchema, Schema readerSchema)
@@ -377,28 +377,28 @@ namespace Avro.File
 
         private Codec ResolveCodec()
         {
-            return Codec.CreateCodecFromString(GetMetaString(DataFileConstants.MetaDataCodec));
+            return Codec.CreateCodecFromString(this.GetMetaString(DataFileConstants.MetaDataCodec));
         }
 
         /// <inheritdoc/>
         public T Next()
         {
-            return Next(default(T));
+            return this.Next(default(T));
         }
 
         private T Next(T reuse)
         {
             try
             {
-                if (!HasNext())
+                if (!this.HasNext())
                 {
                     throw new AvroRuntimeException("No more datum objects remaining in block!");
                 }
 
-                T result = _reader.Read(reuse, _datumDecoder);
-                if (--_blockRemaining == 0)
+                T result = this._reader.Read(reuse, this._datumDecoder);
+                if (--this._blockRemaining == 0)
                 {
-                    BlockFinished();
+                    this.BlockFinished();
                 }
                 return result;
             }
@@ -411,47 +411,47 @@ namespace Avro.File
 
         private void BlockFinished()
         {
-            if (_stream.CanSeek)
+            if (this._stream.CanSeek)
             {
-                _blockStart = _stream.Position;
+                this._blockStart = this._stream.Position;
             }
         }
 
         private DataBlock NextRawBlock(DataBlock reuse)
         {
-            if (!HasNextBlock())
+            if (!this.HasNextBlock())
             {
                 throw new AvroRuntimeException("No data remaining in block!");
             }
 
-            if (reuse == null || reuse.Data.Length < _blockSize)
+            if (reuse == null || reuse.Data.Length < this._blockSize)
             {
-                reuse = new DataBlock(_blockRemaining, _blockSize);
+                reuse = new DataBlock(this._blockRemaining, this._blockSize);
             }
             else
             {
-                reuse.NumberOfEntries = _blockRemaining;
-                reuse.BlockSize = _blockSize;
+                reuse.NumberOfEntries = this._blockRemaining;
+                reuse.BlockSize = this._blockSize;
             }
 
-            _decoder.ReadFixed(reuse.Data, 0, (int)reuse.BlockSize);
-            _decoder.ReadFixed(_syncBuffer);
+            this._decoder.ReadFixed(reuse.Data, 0, (int)reuse.BlockSize);
+            this._decoder.ReadFixed(this._syncBuffer);
 
-            if (!Enumerable.SequenceEqual(_syncBuffer, _header.SyncData))
+            if (!Enumerable.SequenceEqual(this._syncBuffer, this._header.SyncData))
             {
                 throw new AvroRuntimeException("Invalid sync!");
             }
 
-            _availableBlock = false;
+            this._availableBlock = false;
             return reuse;
         }
 
         private bool DataLeft()
         {
-            long currentPosition = _stream.Position;
-            if (_stream.ReadByte() != -1)
+            long currentPosition = this._stream.Position;
+            if (this._stream.ReadByte() != -1)
             {
-                _stream.Position = currentPosition;
+                this._stream.Position = currentPosition;
             }
             else
             {
@@ -466,20 +466,20 @@ namespace Avro.File
             try
             {
                 // block currently being read
-                if (_availableBlock)
+                if (this._availableBlock)
                 {
                     return true;
                 }
 
                 // check to ensure still data to read
-                if (_stream.CanSeek)
+                if (this._stream.CanSeek)
                 {
-                    if (!DataLeft())
+                    if (!this.DataLeft())
                     {
                         return false;
                     }
 
-                    _blockRemaining = _decoder.ReadLong();      // read block count
+                    this._blockRemaining = this._decoder.ReadLong();      // read block count
                 }
                 else
                 {
@@ -487,7 +487,7 @@ namespace Avro.File
                     // some data to read is to reach the end and raise an AvroException here.
                     try
                     {
-                        _blockRemaining = _decoder.ReadLong();      // read block count
+                        this._blockRemaining = this._decoder.ReadLong();      // read block count
                     }
                     catch(AvroException)
                     {
@@ -495,13 +495,13 @@ namespace Avro.File
                     }
                 }
 
-                _blockSize = _decoder.ReadLong();           // read block size
-                if (_blockSize > System.Int32.MaxValue || _blockSize < 0)
+                this._blockSize = this._decoder.ReadLong();           // read block size
+                if (this._blockSize > System.Int32.MaxValue || this._blockSize < 0)
                 {
                     throw new AvroRuntimeException("Block size invalid or too large for this " +
-                                                   "implementation: " + _blockSize);
+                                                   "implementation: " + this._blockSize);
                 }
-                _availableBlock = true;
+                this._availableBlock = true;
                 return true;
             }
             catch (Exception e)
@@ -517,17 +517,17 @@ namespace Avro.File
         private class DataBlock
         {
             /// <summary>
-            /// Raw bytes within this block.
+            /// Gets or sets raw bytes within this block.
             /// </summary>
             public byte[] Data { get;  set; }
 
             /// <summary>
-            /// Number of entries in this block.
+            /// Gets or sets number of entries in this block.
             /// </summary>
             public long NumberOfEntries { get; set; }
 
             /// <summary>
-            /// Size of this block in bytes.
+            /// Gets or sets size of this block in bytes.
             /// </summary>
             public long BlockSize { get; set; }
 
@@ -538,14 +538,14 @@ namespace Avro.File
             /// <param name="blockSize">Size of this block in bytes.</param>
             public DataBlock(long numberOfEntries, long blockSize)
             {
-                NumberOfEntries = numberOfEntries;
-                BlockSize = blockSize;
-                Data = new byte[blockSize];
+                this.NumberOfEntries = numberOfEntries;
+                this.BlockSize = blockSize;
+                this.Data = new byte[blockSize];
             }
 
             internal Stream GetDataAsStream()
             {
-                return new MemoryStream(Data);
+                return new MemoryStream(this.Data);
             }
         }
     }

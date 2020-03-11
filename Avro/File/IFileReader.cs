@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-
 namespace Avro.File
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
     /// Defines the interface for an object that reads data from a file.
     /// </summary>
@@ -45,7 +45,7 @@ namespace Avro.File
         ICollection<string> GetMetaKeys();
 
         /// <summary>
-        /// Return an enumeration of the remaining entries in the file.
+        /// Gets return an enumeration of the remaining entries in the file.
         /// </summary>
         /// <returns>An enumeration of the remaining entries in the file.</returns>
         IEnumerable<T> NextEntries { get; }

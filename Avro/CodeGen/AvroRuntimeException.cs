@@ -1,3 +1,7 @@
+// <copyright file="AvroRuntimeException.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -15,10 +19,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-
 namespace Avro
 {
+    using System;
+
     /// <summary>
     /// A generic Avro exception.
     /// </summary>
