@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Configuration;
 using Hocon;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -21,7 +22,7 @@ namespace SharpPulsar.Akka
         public PulsarSystem(ClientConfigurationData conf)
         {
             _conf = conf;
-            var config = HoconConfigurationFactory.ParseString(@"
+            var config = ConfigurationFactory.ParseString(@"
             akka
             {
                 loglevel = DEBUG
