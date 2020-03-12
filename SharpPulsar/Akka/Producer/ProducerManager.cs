@@ -47,9 +47,9 @@ namespace SharpPulsar.Akka.Producer
                _producerConfiguration.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network));
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), "partitionedproducer");
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network));
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), "producer");
             });
             Receive<RegisteredProducer>(p =>
             {

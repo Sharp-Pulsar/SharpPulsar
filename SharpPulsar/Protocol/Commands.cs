@@ -491,12 +491,12 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
 		{
-			var producer = new CommandProducer();
-			producer.Topic = topic;
-			producer.ProducerId = (ulong)producerId;
-			producer.RequestId = (ulong)requestId;
-			producer.Epoch = (ulong)epoch;
-			if (!ReferenceEquals(producerName, null))
+            var producer = new CommandProducer
+            {
+                Topic = topic, ProducerId = (ulong) producerId, RequestId = (ulong) requestId, Epoch = (ulong) epoch
+            };
+			
+            if (!ReferenceEquals(producerName, null))
 			{
 				producer.ProducerName = producerName;
 			}

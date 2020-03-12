@@ -39,8 +39,8 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("Crypto3")
-                .Topic("Crypto3")
+                .ProducerName("partitioned-topic")
+                .Topic("persistent://public/default/partitioned-topic")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Schema(jsonSchema)
                 .EventListener(producer)
@@ -54,7 +54,7 @@ namespace Samples
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("Crypto3")
+                .ReaderName("partitioned-topic")
                 .Schema(jsonSchema)
                 .ReaderListener(new ReaderMessageListener())
                 .Topic(topic)
@@ -64,7 +64,7 @@ namespace Samples
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("Crypto3")
+                .ConsumerName("partitioned-topic")
                 .ForceTopicCreation(false)
                 .SubscriptionName("Crypto3-Subscription")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
@@ -75,10 +75,10 @@ namespace Samples
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
-            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
-            pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+            //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
 
             //Thread.Sleep(5000);
             //Console.WriteLine("Sending Producer");
@@ -102,7 +102,7 @@ namespace Samples
                         Age = 2020,
                         School = "Akka-Pulsar university"
                     };
-                    pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty), produce);
+                    pulsarSystem.Send(new Send(students, topic, ImmutableDictionary<string, object>.Empty, $"{DateTime.Now.Millisecond}"), produce);
                     /*for (var i = 0; i < 150; i++)
                     {
                         var students = new Students

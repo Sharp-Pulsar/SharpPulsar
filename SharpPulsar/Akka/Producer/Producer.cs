@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using Akka.Routing;
 using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
 
@@ -50,9 +51,11 @@ namespace SharpPulsar.Akka.Producer
         private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
         private Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
         private bool _isPartitioned;
+        private IActorRef _parent;
 
-        public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
+        public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
+            _parent = parent;
             _listener = configuration.ProducerEventListener;
             _schemas = new Dictionary<string, ISchema>();
             _isPartitioned = isPartitioned;
@@ -142,9 +145,9 @@ namespace SharpPulsar.Akka.Producer
             SendBrokerLookUpCommand();
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
-            return Props.Create(() => new Producer(clientConfiguration, configuration, producerid, network, isPartitioned));
+            return Props.Create(()=> new Producer(clientConfiguration, configuration, producerid, network, isPartitioned, parent));
         }
 
         
@@ -259,7 +262,7 @@ namespace SharpPulsar.Akka.Producer
                 Become(Receive);
                 if (_isPartitioned)
                 {
-                    Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
+                    _parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
                 }
                 else
                 {
@@ -269,7 +272,7 @@ namespace SharpPulsar.Akka.Producer
             ReceiveAny(x => Stash.Stash());
             if (_isPartitioned)
             {
-                var index = int.Parse(Self.Path.Name);
+                var index = Interlocked.Increment(ref IdGenerators.PartitionIndex);
                 ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
             }
             SendNewProducerCommand();

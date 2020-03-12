@@ -16,19 +16,15 @@ namespace SharpPulsar.Akka.Producer
         private ProducerConfigurationData _configuration;
         public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
         {
+            _partitions = configuration.Partitions;
             _configuration = configuration;
-            var routees = new List<string>();
-            var path = Context.Self.Path;
-            for (var i = 0; i < configuration.Partitions; i++)
-            {
-                routees.Add($"{path}/Partition/{Interlocked.Increment(ref IdGenerators.ProducerId)}");
-            }
             //Surely this is pulsar's custom routing policy ;)
-            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, Interlocked.Increment(ref IdGenerators.ProducerId), network, true).WithRouter(new ConsistentHashingGroup(routees)), "Partition");
+            _router = Context.ActorOf(Producer.Prop(clientConfiguration, configuration, Interlocked.Increment(ref IdGenerators.ProducerId), network, true, Self).WithRouter(new ConsistentHashingPool(configuration.Partitions)), "Partition");
             Receive<RegisteredProducer>(p =>
             {
                 if (_partitions++ == configuration.Partitions)
                 {
+                    IdGenerators.PartitionIndex = 0;//incase we want to create multiple partitioned producer
                     _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
                 }
             });
