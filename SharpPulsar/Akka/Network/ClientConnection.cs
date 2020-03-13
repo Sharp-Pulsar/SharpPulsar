@@ -67,7 +67,7 @@ namespace SharpPulsar.Akka.Network
             //Context.Parent.Tell(new TcpSuccess(conf.ServiceUrl));
             Receive<Payload>(p =>
             {
-                _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
+                var t = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                 _ = _stream.Send(new ReadOnlySequence<byte>(p.Bytes));
             });
             Receive<ConnectionCommand>(p =>
@@ -77,7 +77,7 @@ namespace SharpPulsar.Akka.Network
             //if we got here, lets assume connection was successful
             var c = new ConnectionCommand(NewConnectCommand());
             _ =_stream.Send(new ReadOnlySequence<byte>(c.Command));
-
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
         }
 
         public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
@@ -185,9 +185,18 @@ namespace SharpPulsar.Akka.Network
                             _requests[(long)p.RequestId].Key.Tell(new ProducerCreated(p.ProducerName, (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
                             _requests.Remove((long)p.RequestId);
                             break;
+                        case BaseCommand.Type.Error:
+                            var er = cmd.Error;
+                            Console.WriteLine(er.Message);
+                            _requests.Remove((long)er.RequestId);
+                            break;
                         case BaseCommand.Type.GetSchemaResponse:
                             var schema = cmd.getSchemaResponse.Schema;
-                            _requests[(long)cmd.getSchemaResponse.RequestId].Key.Tell(new SchemaResponse(schema.SchemaData, schema.Name, schema.Properties.ToImmutableDictionary(x => x.Key, x => x.Value), schema.type, (long)cmd.getSchemaResponse.RequestId));
+                            var a = _requests[(long) cmd.getSchemaResponse.RequestId].Key;
+                            if(schema == null)
+                                a.Tell(new NullSchema());
+                            else
+                                a.Tell(new SchemaResponse(schema.SchemaData, schema.Name, schema.Properties.ToImmutableDictionary(x => x.Key, x => x.Value), schema.type, (long)cmd.getSchemaResponse.RequestId));
                             _requests.Remove((long)cmd.getSchemaResponse.RequestId);
                             break;
                         case BaseCommand.Type.LookupResponse:
@@ -212,7 +221,7 @@ namespace SharpPulsar.Akka.Network
                             Console.WriteLine($"<<<<<<<<<<<<<{cmd.CloseProducer.ProducerId} closed>>>>>>>>>>");
                             break;
                         default:
-                            Console.WriteLine($"{cmd.type.GetType()} Received");
+                            Console.WriteLine($"{cmd.type} Received");
                             break;
                     }
                 }

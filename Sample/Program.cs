@@ -20,6 +20,7 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Schema;
+using SharpPulsar.Protocol.Proto;
 
 namespace Samples
 {
@@ -69,13 +70,14 @@ namespace Samples
                 .SubscriptionName("Crypto3-Subscription")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Topic(topic)
+                .SubscriptionType(CommandSubscribe.SubType.Shared)
                 .Schema(jsonSchema)
                 .MessageListener(new ConsumerMessageListener())
                 .ConsumerEventListener(new ConsumerEventListener())
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
-            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Multi));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
             //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));

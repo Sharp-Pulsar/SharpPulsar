@@ -108,18 +108,9 @@ namespace SharpPulsar.Akka
         private static bool TopicNamesValid(ICollection<string> topics)
         {
             var @namespace = TopicName.Get(topics.First()).Namespace;
-            var result = topics.Where(topic =>
-            {
-                var topicInvalid = !TopicName.IsValid(topic);
-                if (topicInvalid)
-                {
-                    return true;
-                }
-                var newNamespace = TopicName.Get(topic).Namespace;
-                return !@namespace.Equals(newNamespace);
-            }).First();
+            var result = topics.FirstOrDefault(topic => TopicName.IsValid(topic) && @namespace.Equals(TopicName.Get(topic).Namespace));
 
-            if (!string.IsNullOrWhiteSpace(result))
+            if (string.IsNullOrWhiteSpace(result))
             {
                 throw new ArgumentException($"Received invalid topic name: {string.Join("; ", result) }");
             }

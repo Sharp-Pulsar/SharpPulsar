@@ -21,4 +21,5 @@ namespace SharpPulsar.Akka.InternalCommands
             RequestId = requestId;
         }
     }
+    public sealed class NullSchema { }
 }

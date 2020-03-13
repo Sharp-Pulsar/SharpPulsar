@@ -47,10 +47,10 @@ namespace SharpPulsar.Akka.Consumer
             switch (consumer.ConsumerType)
             {
                 case ConsumerType.Pattern:
-                    Context.ActorOf(PatternMultiTopicsManager.Prop(clientConfig, consumerConfig, _network));
+                    Context.ActorOf(PatternMultiTopicsManager.Prop(clientConfig, consumerConfig, _network), "PatternMultiTopics");
                     break;
                 case ConsumerType.Multi:
-                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false), "MultiTopicsManager");
+                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false), "MultiTopics");
                     break;
                 case ConsumerType.Single:
                     var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);

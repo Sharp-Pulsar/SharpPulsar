@@ -40,6 +40,7 @@ namespace SharpPulsar.Akka.Producer
         private readonly CompressionCodec _compressor;
         private readonly MessageCrypto _msgCrypto = null;
         private ConnectedServerInfo _serverInfo;
+        private string _topic;
 
         private readonly IDictionary<string, string> _metadata;
         private bool _multiSchemaMode;
@@ -53,8 +54,9 @@ namespace SharpPulsar.Akka.Producer
         private bool _isPartitioned;
         private IActorRef _parent;
 
-        public Producer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
+        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
+            _topic = topic;
             _parent = parent;
             _listener = configuration.ProducerEventListener;
             _schemas = new Dictionary<string, ISchema>();
@@ -63,10 +65,7 @@ namespace SharpPulsar.Akka.Producer
             _producerInterceptor = configuration.Interceptors;
             _schemas.Add("default", configuration.Schema);
             _configuration = configuration;
-            if (isPartitioned)
-                _producerId = Interlocked.Increment(ref IdGenerators.ProducerId);
-            else
-                _producerId = producerid;
+            _producerId = producerid;
             _network = network;
             ProducerName = configuration.ProducerName;
             if (!configuration.MultiSchema)
@@ -91,7 +90,7 @@ namespace SharpPulsar.Akka.Producer
 
             if (configuration.EncryptionEnabled)
             {
-                var logCtx = "[" + configuration.TopicName + "] [" + ProducerName + "] [" + _producerId + "]";
+                var logCtx = "[" + _topic + "] [" + ProducerName + "] [" + _producerId + "]";
                 _msgCrypto = new MessageCrypto(logCtx, true);
 
                 // Regenerate data key cipher at fixed interval
@@ -113,7 +112,7 @@ namespace SharpPulsar.Akka.Producer
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
                 var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
-                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Sender));
+                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Self));
 
             });
             Receive<ConnectedServerInfo>(s =>
@@ -123,7 +122,7 @@ namespace SharpPulsar.Akka.Producer
                     //var containerBuilder = configuration.BatcherBuilder ?? DefaultImplementation.NewDefaultBatcherBuilder();
                     _batchMessageContainer = new BatchMessageKeyBasedContainer(s.MaxMessageSize)
                     {
-                        TopicName = _configuration.TopicName,
+                        TopicName = _topic,
                         ProducerName = _configuration.ProducerName,
                         Compressor = _compressor
                     };
@@ -145,9 +144,9 @@ namespace SharpPulsar.Akka.Producer
             SendBrokerLookUpCommand();
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
-            return Props.Create(()=> new Producer(clientConfiguration, configuration, producerid, network, isPartitioned, parent));
+            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, parent));
         }
 
         
@@ -259,21 +258,20 @@ namespace SharpPulsar.Akka.Producer
                     _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
                 }
 
-                Become(Receive);
                 if (_isPartitioned)
                 {
-                    _parent.Tell(new RegisteredProducer(_producerId, ProducerName, _configuration.TopicName));
+                    _parent.Tell(new RegisteredProducer(_producerId, ProducerName, _topic));
                 }
                 else
                 {
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic));
                 }
+                Become(Receive);
             });
             ReceiveAny(x => Stash.Stash());
             if (_isPartitioned)
             {
-                var index = Interlocked.Increment(ref IdGenerators.PartitionIndex);
-                ProducerName = TopicName.Get(_configuration.TopicName).GetPartition(index).ToString();
+                ProducerName = _topic;
             }
             SendNewProducerCommand();
         }
@@ -281,7 +279,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
-            var request = Commands.NewProducer(_configuration.TopicName, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
+            var request = Commands.NewProducer(_topic, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request, requestid, "CommandProducer");
             _pendingLookupRequests.Add(requestid, payload);
             _broker.Tell(payload);
@@ -289,8 +287,8 @@ namespace SharpPulsar.Akka.Producer
        
         private void SendBrokerLookUpCommand()
         {
-            var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
-            var request = Commands.NewLookup(_configuration.TopicName, false, requestid);
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewLookup(_topic, false, requestid);
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
             _pendingLookupRequests.Add(requestid, load);
@@ -353,8 +351,8 @@ namespace SharpPulsar.Akka.Producer
         }
         private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId)
         {
-            var request = Commands.NewGetOrCreateSchema(requestId, _configuration.TopicName, schemaInfo);
-            Context.System.Log.Info($"[{_configuration.TopicName}] [{ProducerName}] GetOrCreateSchema request");
+            var request = Commands.NewGetOrCreateSchema(requestId, _topic, schemaInfo);
+            Context.System.Log.Info($"[{_topic}] [{ProducerName}] GetOrCreateSchema request");
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
             _broker.Tell(payload);
             _pendingLookupRequests.Add(requestId, payload);
@@ -378,7 +376,7 @@ namespace SharpPulsar.Akka.Producer
                     if (compressedSize > _serverInfo.MaxMessageSize)
                     {
                         var compressedStr = !_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
-                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_configuration.TopicName}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
+                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_topic}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
                         return;
                     }
 
@@ -500,7 +498,7 @@ namespace SharpPulsar.Akka.Producer
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
             {
-                log.Debug($"[{_configuration.TopicName}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.Payload.Length}");
+                log.Debug($"[{_topic}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.Payload.Length}");
             }
             try
             {
@@ -521,7 +519,7 @@ namespace SharpPulsar.Akka.Producer
             var log = Context.System.Log;
             if (log.IsDebugEnabled)
             {
-                log.Debug($"[{_configuration.TopicName}] [{ProducerName}] Batching the messages from the batch container with {_batchMessageContainer.NumMessagesInBatch} messages");
+                log.Debug($"[{_topic}] [{ProducerName}] Batching the messages from the batch container with {_batchMessageContainer.NumMessagesInBatch} messages");
             }
             if (!_batchMessageContainer.Empty)
             {
@@ -538,7 +536,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 catch (Exception T)
                 {
-                    log.Error($"[{_configuration.TopicName}] [{ProducerName}] error while create opSendMsg by batch message container: {T}");
+                    log.Error($"[{_topic}] [{ProducerName}] error while create opSendMsg by batch message container: {T}");
                 }
             }
         }
@@ -582,7 +580,7 @@ namespace SharpPulsar.Akka.Producer
 
             catch (Exception T)
             {
-                Context.System.Log.Error($"[{_configuration.TopicName}] [{ ProducerName}] error while closing out batch -- {T}");
+                Context.System.Log.Error($"[{_topic}] [{ ProducerName}] error while closing out batch -- {T}");
                 Sender.Tell(new ErrorMessage(new PulsarClientException(T.Message)));
             }
         }
@@ -645,7 +643,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 // Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
                 if (_configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send) throw e;
-                Context.System.Log.Warning($"[{_configuration.TopicName}] [{ProducerName}] Failed to encrypt message '{e.Message}'. Proceeding with publishing unencrypted message");
+                Context.System.Log.Warning($"[{_topic}] [{ProducerName}] Failed to encrypt message '{e.Message}'. Proceeding with publishing unencrypted message");
                 return compressedPayload;
             }
             return encryptedPayload;
@@ -664,7 +662,7 @@ namespace SharpPulsar.Akka.Producer
 
         public override string ToString()
         {
-            return "Producer{" + "topic='" + _configuration.TopicName + '\'' + '}';
+            return "Producer{" + "topic='" + _topic + '\'' + '}';
         }
         public IStash Stash { get; set; }
         private IList<OpSendMsg> CreateOpSendMsgs()

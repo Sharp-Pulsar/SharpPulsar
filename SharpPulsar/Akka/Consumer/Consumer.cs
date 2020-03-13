@@ -98,6 +98,10 @@ namespace SharpPulsar.Akka.Consumer
                 _schema = ISchema.GetSchema(schema.ToSchemaInfo());
                 NewSubscribe();
             });
+            Receive<NullSchema>(n =>
+            {
+                NewSubscribe();
+            });
             Receive<ConnectedServerInfo>(s =>
             {
                 _consumerEventListener.Log($"Connected to Pulsar Server[{s.Version}]. Subscribing");
@@ -596,6 +600,8 @@ namespace SharpPulsar.Akka.Consumer
                 .Cast<CommandSubscribe.InitialPosition>().ToList()[_conf.SubscriptionInitialPosition.Value];
             // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
             var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
+            if (_conf.SubscriptionType == CommandSubscribe.SubType.Exclusive && _hasParentConsumer)
+                _subscriptionName = _subscriptionName + $"-{_consumerid}";
             var request = Commands.NewSubscribe(_topicName.ToString(), _subscriptionName, _consumerid, requestid, _conf.SubscriptionType, _conf.PriorityLevel, _consumerName, isDurable, startMessageIdData, _conf.Properties, _conf.ReadCompacted, _conf.ReplicateSubscriptionState, intial, startMessageRollbackDuration, si, _createTopicIfDoesNotExist, _conf.KeySharedPolicy);
             var payload = new Payload(request, requestid, "NewSubscribe");
             _broker.Tell(payload);

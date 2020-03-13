@@ -49,13 +49,12 @@ namespace SharpPulsar.Akka.Producer
                 if (x.Partition > 0)
                     Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), "partitionedproducer");
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), "producer");
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), "producer");
             });
             Receive<RegisteredProducer>(p =>
             {
                 _producers.Add(p.Topic, Sender);
                 Become(Open);
-                Stash.UnstashAll();
             });
             Receive<SchemaResponse>(s =>
             {

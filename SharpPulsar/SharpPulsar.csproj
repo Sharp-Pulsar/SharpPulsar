@@ -30,8 +30,7 @@ End-To-End Encryption</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.1" />
-    <PackageReference Include="akka.streams" Version="1.4.1" />
+    <PackageReference Include="akka" Version="1.4.2" />
     <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs.Protobuf" Version="0.6.0" />
