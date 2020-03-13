@@ -20,4 +20,6 @@ What you can try:
 - [X] Reader
 - [X] Schema Registration
 - [X] End-To-End Message Encryption
+- [X] Partitioned Producer
+- [X] MultiTopics Consumer
 
