@@ -136,6 +136,7 @@ namespace SharpPulsar.Akka.Producer
                 _serverInfo = s;
                 Become(CreateProducer);
             });
+            
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -246,6 +247,11 @@ namespace SharpPulsar.Akka.Producer
         }
         private void CreateProducer()
         {
+            Receive<PulsarError>(e =>
+            {
+                if(e.ShouldRetry)
+                    SendNewProducerCommand();
+            });
             Receive<ProducerCreated>(p =>
             {
                 _pendingLookupRequests.Remove(p.RequestId);

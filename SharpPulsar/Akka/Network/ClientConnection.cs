@@ -187,7 +187,8 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.Error:
                             var er = cmd.Error;
-                            Console.WriteLine(er.Message);
+                            Console.WriteLine($"{er.Error} >>>>> {er.Message}");
+                            _requests[(long) er.RequestId].Key.Tell(new PulsarError(er.Message));
                             _requests.Remove((long)er.RequestId);
                             break;
                         case BaseCommand.Type.GetSchemaResponse:

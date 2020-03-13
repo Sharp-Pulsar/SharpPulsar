@@ -77,7 +77,6 @@ namespace Samples
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
           
-            //pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Multi));
             //Thread.Sleep(5000);
             //Console.WriteLine("Creating Reader");
             //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
@@ -91,8 +90,10 @@ namespace Samples
                 Thread.Sleep(100);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Multi));
+
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
-            
+
             while (true)
             {
                 var read = Console.ReadLine();

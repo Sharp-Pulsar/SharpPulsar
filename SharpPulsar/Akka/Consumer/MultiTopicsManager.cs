@@ -40,10 +40,10 @@ namespace SharpPulsar.Akka.Consumer
             }
             Receive<Partitions>(p =>
             {
-                for (var i = 1; i <= p.Partition; i++)
+                for (var i = 0; i < p.Partition; i++)
                 {
                     var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
                 }
 
                 _pendingLookupRequests.Remove(p.RequestId);
