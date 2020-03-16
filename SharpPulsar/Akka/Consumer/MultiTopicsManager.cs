@@ -35,27 +35,6 @@ namespace SharpPulsar.Akka.Consumer
 
         private void BecomeReady()
         {
-            ReceiveAny(x => Stash.Stash());
-            foreach (var topic in _consumerConfiguration.TopicNames)
-            {
-                var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
-                var request = Commands.NewPartitionMetadataRequest(topic, requestId);
-                var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-                _pendingLookupRequests.Add(requestId, pay);
-                _network.Tell(pay);
-            }
-            Become(Ready);
-        }
-
-        private void Ready()
-        {
-            /*Receive<TimestampSeek>(s =>
-            {
-                foreach (var c in Context.GetChildren())
-                {
-                    c.Forward(s);
-                }
-            });*/
             Receive<Partitions>(p =>
             {
                 if (p.Partition > 0)
@@ -84,8 +63,17 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _event.Log($"{a.GetType().Name}, not supported!");
             });
-            Stash.UnstashAll();
+            foreach (var topic in _consumerConfiguration.TopicNames)
+            {
+                var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+                var request = Commands.NewPartitionMetadataRequest(topic, requestId);
+                var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
+                _pendingLookupRequests.Add(requestId, pay);
+                _network.Tell(pay);
+            }
+           
         }
+
         public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer)
         {
             return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer));

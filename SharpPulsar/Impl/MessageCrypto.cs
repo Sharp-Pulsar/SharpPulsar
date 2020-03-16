@@ -23,13 +23,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
@@ -93,16 +88,6 @@ namespace SharpPulsar.Impl
 			// Generate data key to encrypt messages
 			_keyGenerator.GenerateKey();
 			_dataKey = _keyGenerator.Key;
-		}
-
-		private RSACryptoServiceProvider LoadPublicKey(sbyte[] keyBytes)
-		{
-			return CryptoHelper.GetRsaProviderFromPem(StringHelper.NewString(keyBytes).Trim());
-		}
-
-		private RSACryptoServiceProvider LoadPrivateKey(sbyte[] keyBytes)
-		{
-			return CryptoHelper.GetRsaProviderFromPem(StringHelper.NewString(keyBytes).Trim());
 		}
 
 		/*
@@ -269,7 +254,6 @@ namespace SharpPulsar.Impl
 				return false;
 			}
 			_dataKey = dataKeyValue;
-			Console.WriteLine(keyDigest);
 			_dataKeyCache.TryAdd(keyDigest, _dataKey);
 			return true;
 		}
@@ -306,7 +290,7 @@ namespace SharpPulsar.Impl
 			{
 				var msgDataKey = t.Value;
 				var keyDigest = Convert.ToBase64String(_hash.ComputeHash(msgDataKey));
-				Console.WriteLine(keyDigest);
+				
 				if (_dataKeyCache.TryGetValue(keyDigest, out var storedSecretKey))
 				{
 
