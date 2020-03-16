@@ -1,9 +1,13 @@
 # SharpPulsar
-SharpPulsar is Apache Pulsar client built with Akka.net, inspired from the Pulsar java client. 
+SharpPulsar is [Apache Pulsar](https://github.com/apache/pulsar) Client built using [Akka.net](https://github.com/akkadotnet/akka.net). 
 
 The goal is to match java client features so that .Net developers lack nothing!
 
-The library is a work in progress!
+# What Is Akka.Net?
+**Akka.NET** is a professional-grade port of the popular Java/Scala framework [Akka](http://akka.io) distributed actor framework to .NET.
+
+# What Is Apache Pulsar?
+Pulsar is a distributed pub-sub messaging platform with a very flexible messaging model and an intuitive client API.
 
 ## Note
 JsonSchema is basically AvroSchema underneath!
