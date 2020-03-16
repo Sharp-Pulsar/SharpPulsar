@@ -14,7 +14,6 @@ namespace SharpPulsar.Akka.Consumer
     public class ConsumerManager:ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _network;
-        private long _consumerid;
         private ClientConfigurationData _config;
         public ConsumerManager(ClientConfigurationData configuration, IActorRef network)
         {

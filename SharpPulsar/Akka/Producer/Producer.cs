@@ -41,6 +41,7 @@ namespace SharpPulsar.Akka.Producer
         private readonly MessageCrypto _msgCrypto = null;
         private ConnectedServerInfo _serverInfo;
         private string _topic;
+        private int _partitionIndex = -1;
 
         private readonly IDictionary<string, string> _metadata;
         private bool _multiSchemaMode;
@@ -67,6 +68,8 @@ namespace SharpPulsar.Akka.Producer
             _configuration = configuration;
             _producerId = producerid;
             _network = network;
+            if (isPartitioned)
+                _partitionIndex = int.Parse(Self.Path.Name);
             ProducerName = configuration.ProducerName;
             if (!configuration.MultiSchema)
             {
@@ -126,7 +129,6 @@ namespace SharpPulsar.Akka.Producer
                         ProducerName = _configuration.ProducerName,
                         Compressor = _compressor
                     };
-
                 }
                 else
                 {
@@ -164,8 +166,9 @@ namespace SharpPulsar.Akka.Producer
             Receive<Send>(ProcessSend);
             Receive<SentReceipt>(s =>
             {
-                _listener.MessageSent(s);
-                Become(Receive);
+                var ns = new SentReceipt(s.ProducerId, s.SequenceId, s.EntryId, s.LedgerId, s.BatchIndex, _partitionIndex);
+                _listener.MessageSent(ns);
+                //Become(Receive);
             });
             Receive<GetOrCreateSchemaServerResponse>(r =>
             {

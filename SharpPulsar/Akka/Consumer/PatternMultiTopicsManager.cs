@@ -27,7 +27,12 @@ namespace SharpPulsar.Akka.Consumer
             _configuration = consumer;
             _messageListener = consumer.MessageListener;
             _topicsPattern = consumer.TopicsPattern;
-            var nameSpace = GetNameSpaceFromPattern(consumer.TopicsPattern);
+            BecomeStart();
+        }
+
+        private void BecomeStart()
+        {
+            var nameSpace = GetNameSpaceFromPattern(_configuration.TopicsPattern);
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
             var payload = new Payload(request, requestId, "GetTopicsOfNamespace");
@@ -40,7 +45,7 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<ConsumedMessage>(m =>
             {
-                 _messageListener.Received(m.Consumer, m.Message);
+                _messageListener.Received(m.Consumer, m.Message);
             });
         }
         private NamespaceName GetNameSpaceFromPattern(Regex pattern)

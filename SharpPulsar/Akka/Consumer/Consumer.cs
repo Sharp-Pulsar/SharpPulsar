@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -30,7 +31,7 @@ namespace SharpPulsar.Akka.Consumer
     {
         private int _partitionIndex;
         private const int MaxRedeliverUnacknowledged = 1000;
-        private ClientConfigurationData _clientConfiguration;
+        private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
         private ConsumerConfigurationData _conf;
         private string _consumerName;
@@ -46,7 +47,6 @@ namespace SharpPulsar.Akka.Consumer
 
         private readonly DeadLetterPolicy _deadLetterPolicy;
         private readonly bool _createTopicIfDoesNotExist;
-        private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
         private readonly BatchMessageId _initialStartMessageId;
@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-
+        private bool _firstSuccess = true;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode)
         {
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
@@ -138,8 +138,21 @@ namespace SharpPulsar.Akka.Consumer
                     };
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
-                SendFlow(_requestedFlowPermits);
-                _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
+
+                if (_firstSuccess)
+                {
+                    SendFlow(_requestedFlowPermits);
+                    _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
+                    _firstSuccess = false;
+                }
+            });
+            Receive<LastMessageId>(x=>
+            {
+                LastMessageId();
+            });
+            Receive<LastMessageIdResponse>(x =>
+            {
+                _consumerEventListener.LastMessageId(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
             });
             Receive<MessageReceived>(m =>
             {
@@ -158,6 +171,9 @@ namespace SharpPulsar.Akka.Consumer
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
             Receive<AckMultiMessage>(AckMultiMessage);
+            Receive<SeekForMessageId>(Seek);
+            Receive<TimestampSeek>(Seek);
+            Receive<RedeliverMessages>(r => {RedeliverUnacknowledgedMessages(r.Messages); });
             ReceiveAny(x => _consumerEventListener.Log($"{x.GetType().Name} was unhandled!"));
             SendBrokerLookUpCommand();
         }
@@ -171,7 +187,7 @@ namespace SharpPulsar.Akka.Consumer
             _broker.Tell(payload);
         }
 
-        private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+        private void RedeliverUnacknowledgedMessages(ImmutableHashSet<Unacked> messageIds)
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             if (_conf.SubscriptionType != CommandSubscribe.SubType.Shared && _conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
@@ -183,12 +199,11 @@ namespace SharpPulsar.Akka.Consumer
             }
             else
             {
-                var i = 0;
                 var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
                 var builder = new MessageIdData();
                 batches.ForEach(ids =>
                 {
-                    var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId)).Select(messageId =>
+                    var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId.LedgerId, messageId.EntryId, messageId.PartitionIndex, -1)).Select(messageId =>
                     {
                         builder.Partition = (messageId.PartitionIndex);
                         builder.ledgerId = (ulong)(messageId.LedgerId);
@@ -201,7 +216,7 @@ namespace SharpPulsar.Akka.Consumer
                 });
             }
         }
-        private bool ProcessPossibleToDlq(MessageId messageId)
+        private bool ProcessPossibleToDlq(long ledgerid, long entryid, int partitionindex, int batchindex)
         {
            return false;
         }
@@ -210,25 +225,33 @@ namespace SharpPulsar.Akka.Consumer
         {
             return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode));
         }
-        private void NegativeAcknowledge(IMessageId messageId)
-        {
-
-        }
-
+        
         private bool HasReachedEndOfTopic()
         {
             return false;
         }
         
-        private void Seek(IMessageId messageId)
+        private void Seek(SeekForMessageId m)
         {
-
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewSeek(_consumerid, requestid, m.LedgerId, m.EntryId);
+            var payload = new Payload(request, requestid, "NewSeek");
+            _broker.Tell(payload);
         }
-        private void Seek(long timestamp)
+        private void Seek(TimestampSeek s)
         {
-
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewSeek(_consumerid, requestid, s.Timestamp);
+            var payload = new Payload(request, requestid, "NewSeek");
+            _broker.Tell(payload);
         }
-        
+        private void LastMessageId()
+        {
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewGetLastMessageId(_consumerid, requestid);
+            var payload = new Payload(request, requestid, "NewGetLastMessageId");
+            _broker.Tell(payload);
+        }
         private void HandleMessage(MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data)
         {
             if (Context.System.Log.IsDebugEnabled)

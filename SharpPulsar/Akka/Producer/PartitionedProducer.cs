@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using Akka.Actor;
-using Akka.Dispatch;
-using Akka.Event;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 
@@ -27,11 +26,14 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self));
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), i.ToString());
                 routees.Add(c.Path.ToString());
             }
             //Surely this is pulsar's custom routing policy ;)
-            _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), "Partition");
+            if(configuration.MessageRoutingMode == MessageRoutingMode.RoundRobinPartition)
+                 _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), "Partition");
+            else
+                _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), "Partition");
             Receive<RegisteredProducer>(p =>
             {
                 _partitions += 1;
@@ -49,10 +51,13 @@ namespace SharpPulsar.Akka.Producer
             
             Receive<BulkSend>(s =>
             {
-                var msg = new ConsistentHashableEnvelope(s, s.RoutingKey);
-                _router.Tell(msg);
+                foreach (var m in s.Messages)
+                {
+                    var msg = new ConsistentHashableEnvelope(m, m.RoutingKey);
+                    _router.Tell(msg);
+                }
             });
-            //listen to partition change messsage
+            
         }
         public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
         {

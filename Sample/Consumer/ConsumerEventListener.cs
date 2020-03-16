@@ -46,5 +46,10 @@ namespace Samples.Consumer
             Console.WriteLine($"Consumer for topic: {consumer.Topic}");
             _actorRefs[consumer.Topic] =  consumer.Consumer;
         }
+
+        public void LastMessageId(LastMessageIdReceived received)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

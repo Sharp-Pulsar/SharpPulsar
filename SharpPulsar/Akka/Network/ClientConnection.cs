@@ -150,6 +150,12 @@ namespace SharpPulsar.Akka.Network
                     
                     switch (cmd.type)
                     {
+                        case BaseCommand.Type.GetLastMessageIdResponse:
+                            var mid = cmd.getLastMessageIdResponse.LastMessageId;
+                            var rquestid = (long)cmd.getLastMessageIdResponse.RequestId;
+                            _requests[rquestid].Key.Tell(new LastMessageIdResponse((long)mid.ledgerId, (long)mid.entryId, mid.Partition, mid.BatchIndex));
+                            _requests.Remove(rquestid);
+                            break;
                         case BaseCommand.Type.Connected:
                             var c = cmd.Connected;
                             _parent.Tell(new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion, RemoteHostName), _self);

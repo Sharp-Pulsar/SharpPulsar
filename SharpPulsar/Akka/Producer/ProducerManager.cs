@@ -58,7 +58,6 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<SchemaResponse>(s =>
             {
-                _listener.Log($"Found {s.Name} schema for Topic: {_producerConfiguration.TopicName}");
                 var info = new SchemaInfo
                 {
                     Name = s.Name,

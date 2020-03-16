@@ -13,7 +13,7 @@ namespace SharpPulsar.Akka.Consumer
 {   /// <summary>
     /// Agregates consumers
     /// </summary>
-    public class MultiTopicsManager:ReceiveActor
+    public class MultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
         private ClientConfigurationData _clientConfiguration;
         private ConsumerConfigurationData _consumerConfiguration;
@@ -30,7 +30,13 @@ namespace SharpPulsar.Akka.Consumer
             _hasParentConsumer = hasParentConsumer;
             _listener = configuration.MessageListener;
             _event = configuration.ConsumerEventListener;
-            foreach (var topic in configuration.TopicNames)
+            BecomeReady();
+        }
+
+        private void BecomeReady()
+        {
+            ReceiveAny(x => Stash.Stash());
+            foreach (var topic in _consumerConfiguration.TopicNames)
             {
                 var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
                 var request = Commands.NewPartitionMetadataRequest(topic, requestId);
@@ -38,32 +44,53 @@ namespace SharpPulsar.Akka.Consumer
                 _pendingLookupRequests.Add(requestId, pay);
                 _network.Tell(pay);
             }
+            Become(Ready);
+        }
+
+        private void Ready()
+        {
+            /*Receive<TimestampSeek>(s =>
+            {
+                foreach (var c in Context.GetChildren())
+                {
+                    c.Forward(s);
+                }
+            });*/
             Receive<Partitions>(p =>
             {
-                for (var i = 0; i < p.Partition; i++)
+                if (p.Partition > 0)
                 {
-                    var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
+                    for (var i = 0; i < p.Partition; i++)
+                    {
+                        var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
+                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
+                    }
+                }
+                else
+                {
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable));
                 }
 
                 _pendingLookupRequests.Remove(p.RequestId);
             });
             Receive<ConsumedMessage>(m =>
             {
-                if(_hasParentConsumer)
+                if (_hasParentConsumer)
                     Context.Parent.Tell(m);
                 else
                     _listener.Received(m.Consumer, m.Message);
             });
             ReceiveAny(a =>
             {
-                _event.Log($"{a.GetType()}, unhandled");
+                _event.Log($"{a.GetType().Name}, not supported!");
             });
+            Stash.UnstashAll();
         }
-        
         public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer)
         {
             return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer));
         }
+
+        public IStash Stash { get; set; }
     }
 }
