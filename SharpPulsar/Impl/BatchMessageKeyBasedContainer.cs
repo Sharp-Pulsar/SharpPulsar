@@ -47,7 +47,7 @@ namespace SharpPulsar.Impl
 		{
 			if (Log.IsEnabled(LogLevel.Debug))
 			{
-				Log.LogDebug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
+				Log.LogDebug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {Batches.Count}");
 			}
 			NumMessagesInBatch++;
 			CurrentBatchSizeBytes += msg.Payload.Length;

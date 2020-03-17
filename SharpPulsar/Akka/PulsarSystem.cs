@@ -92,7 +92,7 @@ namespace SharpPulsar.Akka
         {
            producer.Tell(send);
         }
-        public void BatchSend(BulkSend send, IActorRef producer)
+        public void BulkSend(BulkSend send, IActorRef producer)
         {
             producer.Tell(send);
         }

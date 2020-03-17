@@ -424,54 +424,9 @@ namespace SharpPulsar.Akka.Producer
         }
         private void SendMessage(Message msg)
         {
-            var canAddToBatch = CanAddToBatch(msg);
-            if (canAddToBatch)
-            {
-                BatchMessage(msg);
-            }
-            else
-            {
-                SendImmediate(msg);
-            }
+            SendImmediate(msg);
         }
-        private void BatchMessage(Message msg)
-        {
-            var metadata = msg.Metadata;
-            var sequenceid = (long)metadata.SequenceId;
-            var canAddToCurrentBatch = CanAddToCurrentBatch(msg);
-            if (canAddToCurrentBatch)
-            {
-                // should trigger complete the batch message, new message will add to a new batch and new batch
-                // sequence id use the new message, so that broker can handle the message duplication
-                if (sequenceid <= _lastSequenceIdPushed)
-                {
-                    if (sequenceid <= _lastSequenceId)
-                    {
-                        Context.System.Log.Warning($"Message with sequence id {sequenceid} is definitely a duplicate");
-                    }
-                    else
-                    {
-                        Context.System.Log.Info($"Message with sequence id {sequenceid} might be a duplicate but cannot be determined at this time.");
-                    }
-                    DoBatchSendAndAdd(msg);
-                }
-                else
-                {
-                    // handle boundary cases where message being added would exceed
-                    // batch size and/or max message size
-                    var (_, isBatchFull) = _batchMessageContainer.Add(msg);
-                    //_lastSequenceIdPushed = seqid;
-                    if (isBatchFull)
-                    {
-                        BatchMessageAndSend();
-                    }
-                }
-            }
-            else
-            {
-                DoBatchSendAndAdd(msg);
-            }
-        }
+       
         private void SendImmediate(Message msg)
         {
             MessageMetadata metadata = msg.Metadata;

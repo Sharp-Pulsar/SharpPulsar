@@ -119,11 +119,11 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder EnableBatching(bool batchMessagesEnabled)
+		/*public ProducerConfigBuilder EnableBatching(bool batchMessagesEnabled)
 		{
 			_conf.BatchingEnabled = batchMessagesEnabled;
             return this;
-		}
+		}*/
 
 		public ProducerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
