@@ -16,7 +16,8 @@ Supported pulsar cluster versions: 2.5+
 
 ### Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/0.3.0) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
-What you can try:
+
+Features:
 - [X] Service discovery
 - [X] Automatic reconnect
 - [X] Producer
@@ -26,4 +27,6 @@ What you can try:
 - [X] End-To-End Message Encryption
 - [X] Partitioned Producer
 - [X] MultiTopics Consumer
+- [x] Pattern Multi-Topics Consumer
+- [x] Bulk Publishing - for simplicity sake!
 
