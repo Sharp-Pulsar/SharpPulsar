@@ -39,7 +39,6 @@ MultiTopics Consumer</PackageReleaseNotes>
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="DotNetty.Handlers" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
-    <PackageReference Include="Hocon.Configuration" Version="2.0.3" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.2" />

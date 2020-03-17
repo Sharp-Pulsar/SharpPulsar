@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -31,7 +32,7 @@ namespace Samples
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
         public static readonly Dictionary<string, IActorRef> Producers = new Dictionary<string, IActorRef>();
         public static readonly HashSet<string> Receipts = new HashSet<string>();
-
+        
         public static readonly Dictionary<string, IActorRef> Consumers = new Dictionary<string, IActorRef>();
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
         static Task Main(string[] args)
@@ -41,7 +42,11 @@ namespace Samples
             {
                 Console.WriteLine(o.ToString());
             }, (s, p) => Producers.Add(s, p), s => Receipts.Add(s));
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) => Consumers.Add(s, c), (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
+            {
+                if(!Consumers.ContainsKey(s))
+                    Consumers.Add(s, c);
+            }, (s, response) => LastMessageId.Add(s, response));
             //var jsonSchem = JsonSchema.Of(typeof(Students));
 
             #region messageListener
@@ -101,11 +106,11 @@ namespace Samples
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("partitioned-topic")
-                .ForceTopicCreation(false)
-                .SubscriptionName("Crypto3-Subscription")
+                .ConsumerName("pattern")
+                .ForceTopicCreation(true)
+                .SubscriptionName("pattern-Subscription")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
-                .Topic(topic)
+                .TopicsPattern(new Regex("persistent://public/default/.*"))
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Shared)
                 .Schema(jsonSchema)
@@ -122,7 +127,7 @@ namespace Samples
                 Thread.Sleep(100);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
-            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Multi));
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Pattern));
 
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
 

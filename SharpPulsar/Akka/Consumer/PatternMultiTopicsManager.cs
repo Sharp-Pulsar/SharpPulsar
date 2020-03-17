@@ -56,9 +56,9 @@ namespace SharpPulsar.Akka.Consumer
         // return result should contain only topic names, without partition part
         private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
         {
-            var pattern = topicsPattern.ToString().Contains("://") ? new Regex(topicsPattern.ToString().Split(@"\:\/\/")[1]) : topicsPattern;
+            var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
 
-            return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(topic.Split(@"\:\/\/")[1]).Success).ToList();
+            return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic,@"\:\/\/")[1]).Success).ToList();
         }
 
         public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network)
