@@ -69,7 +69,7 @@ var producerListener = new DefaultProducerListener((o) =>
             });
 
 ````
-2 - Instantiate `PulsarSystem` with Client Configuration:
+3 - Instantiate `PulsarSystem` with Client Configuration:
 ````
 var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650")
@@ -78,7 +78,7 @@ var clientConfig = new PulsarClientConfigBuilder()
 
 var pulsarSystem = new PulsarSystem(clientConfig);
 ````
-3 - Create a Producer with Producer Configuration:
+4 - Create a Producer with Producer Configuration:
 ````
 var producerConfig = new ProducerConfigBuilder()
                 .ProducerName("producer")
@@ -91,7 +91,7 @@ var producerConfig = new ProducerConfigBuilder()
 
 ````
 
-4 - Create a Consumer with Consumer Configuration:
+5 - Create a Consumer with Consumer Configuration:
 ````
 var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("topic")
@@ -105,7 +105,7 @@ var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerConfigurationData;
  pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
 ````
-5 - Create a Reader with Reader Configuration:
+6 - Create a Reader with Reader Configuration:
 ````
   var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("partitioned-topic")
@@ -117,7 +117,7 @@ var consumerConfig = new ConsumerConfigBuilder()
                 .ReaderConfigurationData;
   pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
 ````
-6 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
+7 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
 
 
 ## Supported features
