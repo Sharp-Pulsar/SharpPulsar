@@ -90,7 +90,6 @@ namespace Samples
                 .Schema(jsonSchema)
                 .AddEncryptionKey("Crypto3")
                 .EventListener(producerListener)
-                .BatchingMaxMessages(5)
                 .ProducerConfigurationData;
 
             var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
