@@ -17,7 +17,108 @@ Supported pulsar cluster versions: 2.5+
 ### Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/0.3.0) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 
-Features:
+## Usage
+1 - Ready your Schema:
+````
+ var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+````
+2 - Make ready your Listeners for Producer, Consumer and Reader. Due to the async nature of Actors' `Tell`, listeners are a way 
+    for you to hear what they have got to report back!:
+    
+````
+var producerListener = new DefaultProducerListener((o) =>
+            {
+                Console.WriteLine(o.ToString());
+            }, (s, p) => Producers.Add(s, p), s =>
+            {
+                Receipts.Add(s);
+            });
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
+            {
+                if(!Consumers.ContainsKey(s))
+                    Consumers.Add(s, c);
+            }, (s, response) => LastMessageId.Add(s, response));
+            //var jsonSchem = JsonSchema.Of(typeof(Students));
+
+            #region messageListener
+
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var students = m.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(students);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, message =>
+            {
+                var students = message.ToTypeOf<Students>();
+                Console.WriteLine(JsonSerializer.Serialize(students));
+            });
+
+````
+2 - Instantiate `PulsarSystem` with Client Configuration:
+````
+var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl("pulsar://localhost:6650")
+                .ConnectionsPerBroker(1)
+                .ClientConfigurationData;
+
+var pulsarSystem = new PulsarSystem(clientConfig);
+````
+3 - Create a Producer with Producer Configuration:
+````
+var producerConfig = new ProducerConfigBuilder()
+                .ProducerName("producer")
+                .Topic("test-topic")
+                .Schema(jsonSchema)
+                .EventListener(producerListener)
+                .ProducerConfigurationData;
+
+  var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+
+````
+
+4 - Create a Consumer with Consumer Configuration:
+````
+var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName("topic")
+                .ForceTopicCreation(true)
+                .SubscriptionName("pattern-Subscription")
+                .Topic(topic)
+                .ConsumerEventListener(consumerListener)
+                .Schema(jsonSchema)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
+                .ConsumerConfigurationData;
+ pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
+````
+5 - Create a Reader with Reader Configuration:
+````
+  var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("partitioned-topic")
+                .Schema(jsonSchema)
+                .EventListener(consumerListener)
+                .ReaderListener(messageListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+  pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+````
+6 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
+
+
+## Supported features
 - [X] Service discovery
 - [X] Automatic reconnect
 - [X] Producer
