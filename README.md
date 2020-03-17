@@ -15,7 +15,7 @@ JsonSchema is basically AvroSchema underneath!
 Supported pulsar cluster versions: 2.5+
 
 ### Getting Started
-Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/0.3.0) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
+Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/0.4.0) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 
 ## Usage
 1 - Ready your Schema:
