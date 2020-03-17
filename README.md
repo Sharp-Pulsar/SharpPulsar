@@ -21,6 +21,8 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
 1 - Ready your Schema:
 ````
  var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+ or
+ var jsonSchem = JsonSchema.Of(typeof(Students));
 ````
 2 - Make ready your Listeners for Producer, Consumer and Reader. Due to the async nature of Actors' `Tell`, listeners are a way 
     for you to hear what they have got to report back!:
