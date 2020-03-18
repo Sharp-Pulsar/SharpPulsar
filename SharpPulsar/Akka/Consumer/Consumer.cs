@@ -80,102 +80,9 @@ namespace SharpPulsar.Akka.Consumer
             _schema = configuration.Schema;
             // Create msgCrypto if not created already
             _msgCrypto = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
-            Receive<BrokerLookUp>(l =>
-            {
-                _pendingLookupRequests.Remove(l.RequestId);
-                var uri = _conf.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
-
-                var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
-                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Self));
-            });
-            Receive<SchemaResponse>(s =>
-            {
-                var schema = new SchemaDataBuilder()
-                    .SetData((sbyte[])(object)s.Schema)
-                    .SetProperties(s.Properties)
-                    .SetType(SchemaType.ValueOf((int)s.Type))
-                    .Build();
-                _schema = ISchema.GetSchema(schema.ToSchemaInfo());
-                NewSubscribe();
-            });
-            Receive<NullSchema>(n =>
-            {
-                NewSubscribe();
-            });
-            Receive<ConnectedServerInfo>(s =>
-            {
-                _consumerEventListener.Log($"Connected to Pulsar Server[{s.Version}]. Subscribing");
-                _serverInfo = s;
-                if (_schema != null && _schema.SupportSchemaVersioning())
-                {
-
-                    if (_schema.RequireFetchingSchemaInfo())
-                    {
-                        SendGetSchemaCommand(null);
-                    }
-                    else
-                    {
-                        NewSubscribe();
-                    }
-
-                }
-                else
-                {
-                    NewSubscribe();
-                }
-
-            });
-            Receive<SubscribeSuccess>(s =>
-            {
-                if (s.HasSchema)
-                {
-                    var schemaInfo = new SchemaInfo
-                    {
-                        Name = s.Schema.Name,
-                        Properties = s.Schema.Properties.ToDictionary(x => x.Key, x => x.Value),
-                        Type = s.Schema.type == Schema.Type.Json ? SchemaType.Json : SchemaType.None,
-                        Schema = (sbyte[])(object)s.Schema.SchemaData
-                    };
-                    _schema = ISchema.GetSchema(schemaInfo);
-                }
-
-                if (_firstSuccess)
-                {
-                    SendFlow(_requestedFlowPermits);
-                    _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
-                    _firstSuccess = false;
-                }
-            });
-            Receive<LastMessageId>(x=>
-            {
-                LastMessageId();
-            });
-            Receive<LastMessageIdResponse>(x =>
-            {
-                _consumerEventListener.LastMessageId(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
-            });
-            Receive<MessageReceived>(m =>
-            {
-                _requestedFlowPermits--;
-                var msgId = new MessageIdData
-                {
-                    entryId = (ulong)m.MessageId.EntryId,
-                    ledgerId = (ulong)m.MessageId.LedgerId,
-                    Partition = m.MessageId.Partition,
-                    BatchIndex = m.MessageId.BatchIndex
-                };
-                HandleMessage(msgId, m.RedeliveryCount, m.Data);
-                if(_requestedFlowPermits == 0)
-                    SendFlow(_conf.ReceiverQueueSize);
-            });
-            Receive<AckMessage>(AckMessage);
-            Receive<AckMessages>(AckMessages);
-            Receive<AckMultiMessage>(AckMultiMessage);
-            Receive<SeekForMessageId>(Seek);
-            Receive<TimestampSeek>(Seek);
-            Receive<RedeliverMessages>(r => {RedeliverUnacknowledgedMessages(r.Messages); });
-            ReceiveAny(x => _consumerEventListener.Log($"{x.GetType().Name} was unhandled!"));
-            SendBrokerLookUpCommand();
+            
+            ReceiveAny(x => Stash.Stash());
+            BecomeLookUp();
         }
 
         protected override void PostStop()
@@ -636,7 +543,134 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(reqt, requestid, "NewFlow");
             _broker.Tell(payload);
         }
-        
+
+        private void BecomeLookUp()
+        {
+            SendBrokerLookUpCommand();
+            Become(LookUp);
+        }
+
+        private void BecomeActive()
+        {
+            Context.Watch(_broker);
+            Become(Active);
+        }
+
+        private void Active()
+        {
+            Receive<Terminated>(t => t.ActorRef.Equals(_broker), l => BecomeLookUp());
+            
+            Receive<LastMessageId>(x =>
+            {
+                LastMessageId();
+            });
+            Receive<LastMessageIdResponse>(x =>
+            {
+                _consumerEventListener.LastMessageId(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
+            });
+            Receive<MessageReceived>(m =>
+            {
+                _requestedFlowPermits--;
+                var msgId = new MessageIdData
+                {
+                    entryId = (ulong)m.MessageId.EntryId,
+                    ledgerId = (ulong)m.MessageId.LedgerId,
+                    Partition = m.MessageId.Partition,
+                    BatchIndex = m.MessageId.BatchIndex
+                };
+                HandleMessage(msgId, m.RedeliveryCount, m.Data);
+                if (_requestedFlowPermits == 0)
+                    SendFlow(_conf.ReceiverQueueSize);
+            });
+            Receive<AckMessage>(AckMessage);
+            Receive<AckMessages>(AckMessages);
+            Receive<AckMultiMessage>(AckMultiMessage);
+            Receive<SeekForMessageId>(Seek);
+            Receive<TimestampSeek>(Seek);
+            Receive<SubscribeSuccess>(s =>
+            {
+                if (s.HasSchema)
+                {
+                    var schemaInfo = new SchemaInfo
+                    {
+                        Name = s.Schema.Name,
+                        Properties = s.Schema.Properties.ToDictionary(x => x.Key, x => x.Value),
+                        Type = s.Schema.type == Schema.Type.Json ? SchemaType.Json : SchemaType.None,
+                        Schema = (sbyte[])(object)s.Schema.SchemaData
+                    };
+                    _schema = ISchema.GetSchema(schemaInfo);
+                }
+                //SendFlow(_requestedFlowPermits);
+            });
+            Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
+        }
+        private void LookUp()
+        {
+            Receive<BrokerLookUp>(l =>
+            {
+                _pendingLookupRequests.Remove(l.RequestId);
+                var uri = _conf.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
+
+                var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
+                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Self));
+            });
+            Receive<ConnectedServerInfo>(s =>
+            {
+                _consumerEventListener.Log($"Connected to Pulsar Server[{s.Version}]. Subscribing");
+                _serverInfo = s;
+                if (_schema != null && _schema.SupportSchemaVersioning())
+                {
+
+                    if (_schema.RequireFetchingSchemaInfo())
+                    {
+                        SendGetSchemaCommand(null);
+                    }
+                    else
+                    {
+                        NewSubscribe();
+                    }
+
+                }
+                else
+                {
+                    NewSubscribe();
+                }
+
+            });
+            Receive<SchemaResponse>(s =>
+            {
+                var schema = new SchemaDataBuilder()
+                    .SetData((sbyte[])(object)s.Schema)
+                    .SetProperties(s.Properties)
+                    .SetType(SchemaType.ValueOf((int)s.Type))
+                    .Build();
+                _schema = ISchema.GetSchema(schema.ToSchemaInfo());
+                NewSubscribe();
+            });
+            Receive<NullSchema>(n =>
+            {
+                NewSubscribe();
+            });
+            Receive<SubscribeSuccess>(s =>
+            {
+                if (s.HasSchema)
+                {
+                    var schemaInfo = new SchemaInfo
+                    {
+                        Name = s.Schema.Name,
+                        Properties = s.Schema.Properties.ToDictionary(x => x.Key, x => x.Value),
+                        Type = s.Schema.type == Schema.Type.Json ? SchemaType.Json : SchemaType.None,
+                        Schema = (sbyte[])(object)s.Schema.SchemaData
+                    };
+                    _schema = ISchema.GetSchema(schemaInfo);
+                }
+                SendFlow(_requestedFlowPermits);
+                _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
+                BecomeActive();
+                Stash.UnstashAll();
+            });
+            ReceiveAny(_=> Stash.Stash());
+        }
         private void SendBrokerLookUpCommand()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);

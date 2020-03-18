@@ -46,6 +46,7 @@ namespace Samples
             {
                 if(!Consumers.ContainsKey(s))
                     Consumers.Add(s, c);
+                //c.Tell(new TimestampSeek(DateTimeOffset.Now.AddDays(-2).ToUnixTimeMilliseconds()));
             }, (s, response) => LastMessageId.Add(s, response));
             //var jsonSchem = JsonSchema.Of(typeof(Students));
 

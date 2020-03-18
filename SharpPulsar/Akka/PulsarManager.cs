@@ -41,7 +41,6 @@ namespace SharpPulsar.Akka
                     //c.Tell(u);
                 }
             });
-            Stash.UnstashAll();
         }
         
         private void NetworkSetup()
@@ -49,11 +48,11 @@ namespace SharpPulsar.Akka
             _network = Context.ActorOf(NetworkManager.Prop(Self, _config), "NetworkManager");
             Receive<ConnectedServerInfo>(s =>
             {
-                Context.System.Log.Info($"Connected to Pulsar Server[{s.Version}]. Setting up managers");
                 Context.ActorOf(ProducerManager.Prop(_config, _network), "ProducerManager");
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
                 Context.ActorOf(ReaderManager.Prop(_config, _network), "ReaderManager");
                 Become(Ready);
+                Stash.UnstashAll();
             });
             ReceiveAny(c=> Stash.Stash());
         }

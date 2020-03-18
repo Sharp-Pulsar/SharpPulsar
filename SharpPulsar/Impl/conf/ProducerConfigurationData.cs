@@ -48,7 +48,7 @@ namespace SharpPulsar.Impl.Conf
         public IMessageRouter CustomMessageRouter { get; set; } = null;
 		public long BatchingMaxPublishDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
 		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-		public bool BatchingEnabled { get; set; } = true; // enabled by default
+		public bool BatchingEnabled { get; set; } = false; // enabled by default
 
         [JsonIgnore]
 		public IBatcherBuilder BatcherBuilder { get; set; } = DefaultImplementation.NewDefaultBatcherBuilder();

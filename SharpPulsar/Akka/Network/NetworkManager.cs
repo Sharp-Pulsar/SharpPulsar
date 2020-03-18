@@ -23,17 +23,9 @@ namespace SharpPulsar.Akka.Network
             _serviceNameResolver.UpdateServiceUrl(configuration.ServiceUrl);
             _manager = manager;
             _configuration = configuration;
-            var dnsResolver = new DefaultNameResolver();
-            foreach (var s in _serviceNameResolver.AddressList())
-            {
-                var service = s;
-                if (!dnsResolver.IsResolved(s))
-                    service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
-                var host = Dns.GetHostEntry(service.Address).HostName;
-                var h = Context.ActorOf(HostManager.Prop(service, _configuration, _manager), Regex.Replace(host, @"[^\w\d]", ""));
-                _hosts.Add(host, h);
-            }
-            Become(CreateConnections);
+            
+            ReceiveAny(_=> Stash.Stash());
+            BecomeCreateConnections();
         }
 
         private void Stop()
@@ -70,7 +62,21 @@ namespace SharpPulsar.Akka.Network
                 Console.WriteLine(e);
             }
         }
-        
+
+        private void BecomeCreateConnections()
+        {
+            var dnsResolver = new DefaultNameResolver();
+            foreach (var s in _serviceNameResolver.AddressList())
+            {
+                var service = s;
+                if (!dnsResolver.IsResolved(s))
+                    service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
+                var host = Dns.GetHostEntry(service.Address).HostName;
+                var h = Context.ActorOf(HostManager.Prop(service, _configuration, _manager), Regex.Replace(host, @"[^\w\d]", ""));
+                _hosts.Add(host, h);
+            }
+            Become(CreateConnections);
+        }
         private void CreateConnections()
         {
             Receive<ConnectedServerInfo>(x =>
@@ -80,7 +86,6 @@ namespace SharpPulsar.Akka.Network
             });
             ReceiveAny(x =>
             {
-                Console.WriteLine($"Stashing {x.GetType()}");
                 Stash.Stash();
             });
         }
