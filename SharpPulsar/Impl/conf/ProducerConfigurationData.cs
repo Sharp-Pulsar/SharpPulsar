@@ -108,11 +108,11 @@ namespace SharpPulsar.Impl.Conf
             set => _batchingMaxBytes = value;
         }
 
-		public void SetSendTimeoutMs(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
-			if (sendTimeout < 1)
+			if (sendTimeoutMs < 1)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
-			SendTimeoutMs = timeUnit.ToMillis(sendTimeout);
+			SendTimeoutMs = sendTimeoutMs;
 		}
 
 		public void SetBatchingMaxPublishDelayMicros(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)

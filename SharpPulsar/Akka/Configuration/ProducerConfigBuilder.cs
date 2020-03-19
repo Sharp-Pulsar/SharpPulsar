@@ -71,9 +71,9 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder SendTimeout(int sendTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public ProducerConfigBuilder SendTimeout(long sendTimeoutMs)
 		{
-			_conf.SetSendTimeoutMs(sendTimeout, unit);
+			_conf.SetSendTimeoutMs(sendTimeoutMs);
             return this;
 		}
 

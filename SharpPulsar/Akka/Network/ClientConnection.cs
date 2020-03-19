@@ -7,6 +7,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Dispatch;
 using Akka.Event;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
@@ -51,7 +52,7 @@ namespace SharpPulsar.Akka.Network
         public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
         {
             _self = Self;
-            RemoteHostName = Dns.GetHostEntry(((IPEndPoint) endPoint).Address).HostName;
+            RemoteHostName = "kubernetes";//Dns.GetHostEntry(((IPEndPoint) endPoint).Address).HostName;
             _conf = conf;
             _manager = manager;
             Connection = Self;
@@ -60,11 +61,29 @@ namespace SharpPulsar.Akka.Network
             if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
             Authentication = conf.Authentication;
-            _state = State.None;
-            var connector = new Connector(conf);
-            _stream = new PulsarStream(connector.Connect((IPEndPoint)endPoint));
+            
             _parent = Context.Parent;
-            //Context.Parent.Tell(new TcpSuccess(conf.ServiceUrl));
+            Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new OpenConnection(), ActorRefs.NoSender);
+            var connector = new Connector(_conf);
+            Receive<OpenConnection>(e =>
+            {
+                try
+                {
+                   
+                    Context.System.Log.Info($"Opening Connection to: {RemoteAddress}");
+                    _stream = new PulsarStream(connector.Connect((IPEndPoint)RemoteAddress));
+                    _ = ProcessIncommingFrames();
+                    var c = new ConnectionCommand(NewConnectCommand());
+                    //if we got here, lets assume connection was successful
+                    Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
+                    _ = _stream.Send(new ReadOnlySequence<byte>(c.Command));
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new OpenConnection(), ActorRefs.NoSender);
+                }
+            });
             Receive<Payload>(p =>
             {
                 var t = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
@@ -74,10 +93,12 @@ namespace SharpPulsar.Akka.Network
             {
                 _ = _stream.Send(new ReadOnlySequence<byte>(p.Command));
             });
-            //if we got here, lets assume connection was successful
-            var c = new ConnectionCommand(NewConnectCommand());
-            _ =_stream.Send(new ReadOnlySequence<byte>(c.Command));
-            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
+            ReceiveAny(_ => { Stash.Stash(); });
+        }
+
+        private void Open()
+        {
+           
         }
 
         public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
@@ -85,14 +106,17 @@ namespace SharpPulsar.Akka.Network
             return Props.Create(() => new ClientConnection(endPoint, conf, manager));
         }
 
-        protected override void PreStart()
-        {
-            _ = ProcessIncommingFrames();
-        }
-
+        
         protected override void PostStop()
         {
-            _stream.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                _stream.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                
+            }
         }
 
         protected override void Unhandled(object message)
@@ -159,7 +183,7 @@ namespace SharpPulsar.Akka.Network
                         case BaseCommand.Type.Connected:
                             var c = cmd.Connected;
                             _parent.Tell(new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion, RemoteHostName), _self);
-                            Log.Info($"Now connected: ServerVersion = {c.ServerVersion}, ProtocolVersion = {c.ProtocolVersion}");
+                            Log.Info($"Now connected: Host = {RemoteHostName}, ProtocolVersion = {c.ProtocolVersion}");
                             break;
                         case BaseCommand.Type.GetTopicsOfNamespaceResponse:
                             var ns = cmd.getTopicsOfNamespaceResponse;
@@ -193,7 +217,6 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.Error:
                             var er = cmd.Error;
-                            Console.WriteLine($"{er.Error} >>>>> {er.Message}");
                             _requests[(long) er.RequestId].Key.Tell(new PulsarError(er.Message));
                             _requests.Remove((long)er.RequestId);
                             break;
@@ -219,16 +242,15 @@ namespace SharpPulsar.Akka.Network
                             break;
                         case BaseCommand.Type.SendError:
                             var e = cmd.SendError;
-                            Console.WriteLine($"Send Error {e.Message}>>>>>{e.Error}");
                             break;
                         case BaseCommand.Type.Ping:
                             HandlePing(cmd.Ping);
                             break;
                         case BaseCommand.Type.CloseProducer:
-                            Console.WriteLine($"<<<<<<<<<<<<<{cmd.CloseProducer.ProducerId} closed>>>>>>>>>>");
+                            _manager.Tell(new ProducerClosed((long)cmd.CloseProducer.ProducerId));
                             break;
                         default:
-                            Console.WriteLine($"{cmd.type} Received");
+                            _manager.Tell(new ConsumerClosed((long)cmd.CloseConsumer.ConsumerId));
                             break;
                     }
                 }
@@ -242,6 +264,12 @@ namespace SharpPulsar.Akka.Network
 			set => _remoteHostName = value;
 		}
 
+        
         public IStash Stash { get; set; }
     }
+    public sealed class OpenConnection
+    {
+
+    }
+
 }

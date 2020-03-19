@@ -564,6 +564,20 @@ namespace SharpPulsar.Akka.Consumer
             {
                 LastMessageId();
             });
+            Receive<ConsumerClosed>(_ =>
+            {
+                ReceiveAny(c => Stash.Stash());
+                Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateConsumer(), ActorRefs.NoSender);
+            });
+            Receive<RecreateConsumer>(_ =>
+            {
+                BecomeLookUp();
+            });
+            Receive<ConsumerClosed>(_ =>
+            {
+                ReceiveAny(c => Stash.Stash());
+                BecomeLookUp();
+            });
             Receive<LastMessageIdResponse>(x =>
             {
                 _consumerEventListener.LastMessageId(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
@@ -678,6 +692,10 @@ namespace SharpPulsar.Akka.Consumer
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
             _pendingLookupRequests.Add(requestid, load);
+        }
+        public class RecreateConsumer
+        {
+
         }
         public IStash Stash { get; set; }
     }

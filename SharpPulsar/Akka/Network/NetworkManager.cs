@@ -47,11 +47,14 @@ namespace SharpPulsar.Akka.Network
             Receive<Payload>(x =>
             {
                 var u = _randomHost.Next(0, _hosts.Count);
-                _hosts.ToList()[u].Value.Forward(x);
+                var host = _hosts.ToList()[u].Value;
+                host.Forward(x);
             });
             Receive<ConnectedServerInfo>(x =>
             {
                 Context.Parent.Forward(x);
+                if(!_hosts.ContainsKey(x.Name))
+                    _hosts.Add(x.Name, Sender);
             });
             try
             {
@@ -71,9 +74,8 @@ namespace SharpPulsar.Akka.Network
                 var service = s;
                 if (!dnsResolver.IsResolved(s))
                     service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
-                var host = Dns.GetHostEntry(service.Address).HostName;
-                var h = Context.ActorOf(HostManager.Prop(service, _configuration, _manager), Regex.Replace(host, @"[^\w\d]", ""));
-                _hosts.Add(host, h);
+                //var host = Dns.GetHostEntry(service.Address).HostName;
+                Context.ActorOf(HostManager.Prop(service, _configuration, _manager), Regex.Replace("kubernetes", @"[^\w\d]", ""));
             }
             Become(CreateConnections);
         }
@@ -82,6 +84,8 @@ namespace SharpPulsar.Akka.Network
             Receive<ConnectedServerInfo>(x =>
             {
                 Context.Parent.Forward(x);
+                if (!_hosts.ContainsKey(x.Name))
+                    _hosts.Add(x.Name, Sender);
                 Become(Ready);
             });
             ReceiveAny(x =>

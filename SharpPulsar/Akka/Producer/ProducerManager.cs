@@ -131,7 +131,6 @@ namespace SharpPulsar.Akka.Producer
             var producerConfig = producer.ProducerConfiguration;
             _producerConfiguration = producerConfig;
             _listener = _producerConfiguration.ProducerEventListener;
-            _listener.Log($"creating producer for topic: {producerConfig.TopicName}");
             if (clientConfig == null)
             {
                 Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined")));

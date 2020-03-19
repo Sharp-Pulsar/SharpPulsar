@@ -62,10 +62,10 @@ namespace SharpPulsar.Akka.Network
                 tcpClient.Connect(endPoint);
                 return tcpClient.GetStream();
             }
-            catch
+            catch(Exception ex)
             {
                 tcpClient.Dispose();
-                throw;
+                throw ex;
             }
         }
 

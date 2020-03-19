@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
@@ -8,61 +6,58 @@ using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class HostManager:ReceiveActor
+    public class HostManager:ReceiveActor, IWithUnboundedStash
     {
         private ClientConfigurationData _configuration;
         private EndPoint _endPoint;
-        private Dictionary<string, IActorRef> connections = new Dictionary<string, IActorRef>();
-        private readonly Random _randomNumber;
+        private IActorRef _tcpActor;
         private IActorRef _manager;
         public HostManager(EndPoint endPoint, ClientConfigurationData con, IActorRef manager)
         {
             _manager= manager;
             _configuration = con;
             _endPoint = endPoint;
-            _randomNumber = new Random();
-            Receive<TcpFailed>(f =>
-            {
-                connections.Remove(f.Name);
-                Console.WriteLine($"TCP connection failure from {f.Name}");
-            });
+            ReceiveAny(_=> Stash.Stash());
+            Become(Awaiting);
+        }
+
+        private void Awaiting()
+        {
+            Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration, _manager), "hostConnection");
             Receive<ConnectedServerInfo>(f =>
             {
                 try
                 {
-                    if(!connections.ContainsKey(f.Name))
-                        connections.Add(f.Name, Sender);
-                    Context.Parent.Forward(f);
+                    _tcpActor = Sender;
+                    Context.Parent.Tell(f);
+                    Become(Open);
+                    Stash.UnstashAll();
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
                 }
             });
-            Receive<Payload>(pay =>
-            {
-                var n = _randomNumber.Next(0, _configuration.ConnectionsPerBroker - 1);
-                var actor = connections.Values.ToList()[n];
-                actor.Forward(pay);
-            });
         }
 
+        private void Open()
+        {
+            Receive<Payload>(pay =>
+            {
+                _tcpActor.Forward(pay);
+            });
+        }
         protected override void Unhandled(object message)
         {
             Console.WriteLine($"Unhandled {message.GetType()} in {Self.Path}");
         }
 
-        protected override void PreStart()
-        {
-            for (var i = 0; i < _configuration.ConnectionsPerBroker; i++)
-            {
-                Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration,_manager), $"{i}");
-            }
-        }
 
         public static Props Prop(IPEndPoint endPoint, ClientConfigurationData con, IActorRef manager)
         {
             return Props.Create(()=> new HostManager(endPoint, con, manager));
         }
+
+        public IStash Stash { get; set; }
     }
 }

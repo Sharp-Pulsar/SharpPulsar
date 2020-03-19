@@ -45,6 +45,7 @@ namespace SharpPulsar.Akka.Producer
         private BatchMessageKeyBasedContainer _batchMessageContainer;
         private Dictionary<string, ISchema> _schemas;
         private ClientConfigurationData _clientConfiguration;
+        private Dictionary<long, (long time, byte[] cmd)> _pendingReceipt = new Dictionary<long, (long time, byte[] cmd)>();
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
@@ -140,7 +141,6 @@ namespace SharpPulsar.Akka.Producer
 
                 // Regenerate data key cipher at fixed interval
                 Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(0), TimeSpan.FromHours(4), Self, new AddPublicKeyCipher(), ActorRefs.NoSender);
-
             }
             Become(Receive);
             Context.Watch(_broker);
@@ -148,19 +148,37 @@ namespace SharpPulsar.Akka.Producer
         }
         public void Receive()
         {
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), Self, new ResendMessages(), ActorRefs.NoSender);
             Receive<Terminated>(t => t.ActorRef.Equals(_broker), b => BecomeLookUp());
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
             });
-            Receive<TcpClosed>(_ =>
+            Receive<ResendMessages>(a =>
             {
-                SendBrokerLookUpCommand();
+                var d = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var ms = _pendingReceipt.Where(x => (d - x.Value.time) > _configuration.SendTimeoutMs).Select(x => new {x.Key, x.Value.cmd}).ToList();
+                foreach (var m in ms)
+                {
+                    var requestId = m.Key;
+                    var pay = new Payload(m.cmd, requestId, "CommandMessage");
+                    _broker.Tell(pay);
+                }
+            });
+            Receive<ProducerClosed>(_ =>
+            {
+                ReceiveAny(c => Stash.Stash());
+                Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateProducer(), ActorRefs.NoSender);
+            });
+            Receive<RecreateProducer>(_ =>
+            {
+                BecomeLookUp();
             });
             Receive<Send>(ProcessSend);
             Receive<SentReceipt>(s =>
             {
                 var ns = new SentReceipt(s.ProducerId, s.SequenceId, s.EntryId, s.LedgerId, s.BatchIndex, _partitionIndex);
+                _pendingReceipt.Remove(s.SequenceId);
                 _listener.MessageSent(ns);
             });
             Receive<GetOrCreateSchemaServerResponse>(r =>
@@ -318,7 +336,14 @@ namespace SharpPulsar.Akka.Producer
         {
 
         }
-        
+        public class ResendMessages
+        {
+
+        }
+        public class RecreateProducer
+        {
+
+        }
         private IMessage BeforeSend(IMessage message)
         {
             if (_producerInterceptor != null && _producerInterceptor.Count > 0)
@@ -543,6 +568,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
+            _pendingReceipt.Add(requestId, (DateTimeOffset.Now.ToUnixTimeMilliseconds(), op.Cmd));
             _broker.Tell(pay);
         }
         private bool PopulateMessageSchema(Message msg)

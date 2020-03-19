@@ -90,6 +90,7 @@ namespace Samples
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Schema(jsonSchema)
                 .AddEncryptionKey("Crypto3")
+                .SendTimeout(10000)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
