@@ -22,7 +22,7 @@ using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
-{
+{//https://medium.com/capital-one-tech/apache-pulsar-one-cluster-for-the-entire-enterprise-using-multi-tenancy-ac0bd925fbdf
     class Program
     {
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
@@ -78,7 +78,9 @@ namespace Samples
 
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
+                //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
+                .ServiceUrl("pulsar://localhost:6650")
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://localhost:6650"))
                 .ConnectionsPerBroker(1)
                 .ClientConfigurationData;
 
@@ -89,6 +91,7 @@ namespace Samples
                 .Topic("persistent://public/default/partitioned-topic")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Schema(jsonSchema)
+                
                 .AddEncryptionKey("Crypto3")
                 .SendTimeout(10000)
                 .EventListener(producerListener)
@@ -114,6 +117,7 @@ namespace Samples
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 //.TopicsPattern(new Regex("persistent://public/default/.*"))
                 .Topic(topic)
+                
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Shared)
                 .Schema(jsonSchema)

@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Net;
+using System.Linq;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network
 {
-    public class HostManager:ReceiveActor, IWithUnboundedStash
+    public class HostManager:ReceiveActor
     {
         private ClientConfigurationData _configuration;
         private Uri _endPoint;
@@ -17,47 +17,32 @@ namespace SharpPulsar.Akka.Network
             _manager= manager;
             _configuration = con;
             _endPoint = endPoint;
-            ReceiveAny(_=> Stash.Stash());
-            Become(Awaiting);
-        }
-
-        private void Awaiting()
-        {
-            Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration, _manager), "hostConnection");
             Receive<ConnectedServerInfo>(f =>
             {
-                try
-                {
-                    _tcpActor = Sender;
-                    Context.Parent.Tell(f);
-                    Become(Open);
-                    Stash.UnstashAll();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
+                _tcpActor = Sender;
+                Context.Parent.Tell(f);
             });
-        }
-
-        private void Open()
-        {
             Receive<Payload>(pay =>
             {
                 _tcpActor.Forward(pay);
             });
         }
+
         protected override void Unhandled(object message)
         {
             Console.WriteLine($"Unhandled {message.GetType()} in {Self.Path}");
         }
 
+        protected override void PreStart()
+        {
+
+            Context.ActorOf(ClientConnection.Prop(_endPoint, _configuration, _manager));
+        }
 
         public static Props Prop(Uri endPoint, ClientConfigurationData con, IActorRef manager)
         {
             return Props.Create(()=> new HostManager(endPoint, con, manager));
         }
 
-        public IStash Stash { get; set; }
     }
 }

@@ -109,7 +109,7 @@ namespace SharpPulsar.Protocol
 		{
             var connect = new CommandConnect {ClientVersion = libVersion, AuthMethodName = authMethodName};
 
-            if (!ReferenceEquals(targetBroker, null))
+            if (!string.IsNullOrWhiteSpace(targetBroker))
 			{
 				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
 				connect.ProxyToBrokerUrl = targetBroker;
@@ -120,7 +120,7 @@ namespace SharpPulsar.Protocol
 				connect.AuthData = authData.auth_data;
 			}
 
-			if (!ReferenceEquals(originalPrincipal, null))
+			if (!string.IsNullOrWhiteSpace(originalPrincipal))
 			{
 				connect.OriginalPrincipal = originalPrincipal;
 			}
@@ -130,7 +130,7 @@ namespace SharpPulsar.Protocol
 				connect.OriginalAuthData = Encoding.UTF8.GetString(originalAuthData.auth_data);
 			}
 
-			if (!ReferenceEquals(originalAuthMethod, null))
+			if (!string.IsNullOrWhiteSpace(originalAuthMethod))
 			{
 				connect.OriginalAuthMethod = originalAuthMethod;
 			}

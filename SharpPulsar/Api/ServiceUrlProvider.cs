@@ -25,7 +25,7 @@ namespace SharpPulsar.Api
 	/// more importantly, to force the Pulsar client to reconnect if the service URL has been changed.
 	/// 
 	/// </para>
-	/// <para>It can be passed with <seealso cref="IPulsarClientBuilder.serviceUrlProvider(ServiceUrlProvider)"/>
+	/// <para>It can be passed with <seealso cref="ServiceUrlProvider"/>
 	/// </para>
 	/// </summary>
 	public interface ServiceUrlProvider
@@ -35,7 +35,7 @@ namespace SharpPulsar.Api
 		/// Initialize the service url provider with Pulsar client instance.
 		/// 
 		/// <para>This can be used by the provider to force the Pulsar client to reconnect whenever the service url might have
-		/// changed. See <seealso cref="IPulsarClient.updateServiceUrl(string)"/>.
+		/// changed. See <seealso cref="UpdateServiceUrl(string)"/>.
 		/// 
 		/// </para>
 		/// </summary>

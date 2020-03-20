@@ -45,33 +45,17 @@ namespace SharpPulsar.Akka.Network
         public async Task Send(ReadOnlySequence<byte> sequence)
         {
             ThrowIfDisposed();
-
-#if NETSTANDARD2_0
-            foreach (var segment in sequence)
-            {
-                var data = segment.ToArray();
-                await _stream.WriteAsync(data, 0, data.Length);
-            }
-#else
             foreach (var segment in sequence)
             {
                 await _stream.WriteAsync(segment);
             }
-#endif
         }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async ValueTask DisposeAsync()
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             if (Interlocked.Exchange(ref _isDisposed, 1) != 0)
                 return;
-
-#if NETSTANDARD2_0
-            _stream.Dispose();
-#else
             await _stream.DisposeAsync();
-#endif
         }
 
         private async Task FillPipe(CancellationToken cancellationToken)
@@ -80,18 +64,12 @@ namespace SharpPulsar.Akka.Network
 
             try
             {
-#if NETSTANDARD2_0
-                var buffer = new byte[84999];
-#endif
                 while (true)
                 {
                     var memory = _writer.GetMemory(84999); // LOH - 1 byte
-#if NETSTANDARD2_0
-                    var bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
-                    new Memory<byte>(buffer, 0, bytesRead).CopyTo(memory);
-#else
+
                     var bytesRead = await _stream.ReadAsync(memory, cancellationToken);
-#endif
+
                     if (bytesRead == 0)
                         break;
 
@@ -102,7 +80,10 @@ namespace SharpPulsar.Akka.Network
                         break;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
             finally
             {
                 _writer.Complete();

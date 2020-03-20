@@ -17,7 +17,6 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using Akka.Routing;
 using SharpPulsar.Akka.Configuration;
@@ -97,7 +96,10 @@ namespace SharpPulsar.Akka.Producer
             {
                 _metadata = new SortedDictionary<string, string>(configuration.Properties);
             }
-
+            if (_isPartitioned)
+            {
+                ProducerName = _topic;
+            }
             Receive<BrokerLookUp>(l =>
             {
                 _pendingLookupRequests.Remove(l.RequestId);
@@ -108,11 +110,37 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<ConnectedServerInfo>(s =>
             {
-                _listener.Log($"Connected to Pulsar Server[{s.Version}]. Negotiating producer(s)");
                 _serverInfo = s;
-                BecomeCreateProducer();
+                SendNewProducerCommand();
             });
-            ReceiveAny(_ => Stash.Stash());
+            Receive<PulsarError>(e =>
+            {
+                if (e.ShouldRetry)
+                    SendNewProducerCommand();
+            });
+            Receive<ProducerCreated>(p =>
+            {
+                _pendingLookupRequests.Remove(p.RequestId);
+                if (string.IsNullOrWhiteSpace(ProducerName))
+                    ProducerName = p.Name;
+                IdGenerators.SequenceId = p.LastSequenceId;
+                var schemaVersion = p.SchemaVersion;
+                if (schemaVersion != null)
+                {
+                    _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
+                }
+
+                if (_isPartitioned)
+                {
+                    _parent.Tell(new RegisteredProducer(_producerId, ProducerName, _topic));
+                }
+                else
+                {
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic));
+                }
+                BecomeReceive();
+            });
+            ReceiveAny(x => Stash.Stash());
             SendBrokerLookUpCommand();
         }
 
@@ -172,6 +200,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<GetOrCreateSchemaServerResponse>(r =>
             {
+                _pendingLookupRequests.Remove(r.RequestId);
                 var msg = _pendingSchemaMessages[r.RequestId];
                 _pendingSchemaMessages.Remove(r.RequestId);
                 var schemaHash = SchemaHash.Of(msg.Schema);
@@ -254,43 +283,12 @@ namespace SharpPulsar.Akka.Producer
 
         private void BecomeCreateProducer()
         {
-            if (_isPartitioned)
-            {
-                ProducerName = _topic;
-            }
-            SendNewProducerCommand();
+           
             Become(CreateProducer);
         }
         private void CreateProducer()
         {
-            Receive<PulsarError>(e =>
-            {
-                if(e.ShouldRetry)
-                    SendNewProducerCommand();
-            });
-            Receive<ProducerCreated>(p =>
-            {
-                _pendingLookupRequests.Remove(p.RequestId);
-                if (string.IsNullOrWhiteSpace(ProducerName))
-                    ProducerName = p.Name;
-                IdGenerators.SequenceId = p.LastSequenceId;
-                var schemaVersion = p.SchemaVersion;
-                if (schemaVersion != null)
-                {
-                    _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
-                }
-
-                if (_isPartitioned)
-                {
-                    _parent.Tell(new RegisteredProducer(_producerId, ProducerName, _topic));
-                }
-                else
-                {
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic));
-                }
-                BecomeReceive();
-            });
-            ReceiveAny(x => Stash.Stash());
+            
         }
         private void SendNewProducerCommand()
         {
@@ -376,7 +374,6 @@ namespace SharpPulsar.Akka.Producer
         private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId)
         {
             var request = Commands.NewGetOrCreateSchema(requestId, _topic, schemaInfo);
-            Context.System.Log.Info($"[{_topic}] [{ProducerName}] GetOrCreateSchema request");
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
             _broker.Tell(payload);
             _pendingLookupRequests.Add(requestId, payload);
