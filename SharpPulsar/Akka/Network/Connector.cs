@@ -11,7 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+//https://docs.microsoft.com/en-us/azure/aks/ingress-basic
+//https://docs.microsoft.com/en-us/azure/aks/ingress-static-ip
+//https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-powershell
+//https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-cli
 using System;
 using System.IO;
 using System.Net;
@@ -42,9 +45,9 @@ namespace SharpPulsar.Akka.Network
             _encrypt = conf.UseTls;
         }
 
-        public Stream Connect(IPEndPoint endPoint)
+        public Stream Connect(Uri endPoint)
         {
-            var host = Dns.GetHostEntry(endPoint.Address).HostName;
+            var host = endPoint.Host;
             var stream = GetStream(endPoint);
 
             if (_encrypt)
@@ -53,19 +56,19 @@ namespace SharpPulsar.Akka.Network
             return stream;
         }
 
-        private Stream GetStream(IPEndPoint endPoint)
+        private Stream GetStream(Uri endPoint)
         {
             var tcpClient = new TcpClient();
 
             try
             {
-                tcpClient.Connect(endPoint);
+                tcpClient.Connect(endPoint.Host, endPoint.Port);
                 return tcpClient.GetStream();
             }
             catch(Exception ex)
             {
                 tcpClient.Dispose();
-                throw ex;
+                throw;
             }
         }
 

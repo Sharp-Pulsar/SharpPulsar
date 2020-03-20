@@ -31,15 +31,15 @@ namespace SharpPulsar.Impl
 	public class PulsarServiceNameResolver : ServiceNameResolver
     {
 		private  int _currentIndex;
-		private volatile IList<IPEndPoint> _addressList;
+		private volatile IList<Uri> _addressList;
         private ServiceUri _serviceUri;
 
-        public IList<IPEndPoint> AddressList()
+        public IList<Uri> AddressList()
         {
             return _addressList;
         }
 
-		public  IPEndPoint ResolveHost()
+		public  Uri ResolveHost()
 		{
 			var list = _addressList;
 			if(list == null)
@@ -58,7 +58,7 @@ namespace SharpPulsar.Impl
 		public Uri ResolveHostUri()
 		{
 			var host = ResolveHost();
-			var hostUrl = ServiceUri.ServiceScheme + "://" + Dns.GetHostEntry(host.Address).HostName + ":" + host.Port;
+			var hostUrl = ServiceUri.ServiceScheme + "://" + host.Host + ":" + host.Port;
 			return new Uri(hostUrl);
 		}
 
@@ -84,14 +84,14 @@ namespace SharpPulsar.Impl
 			}
 
 			var hosts = uri.ServiceHosts;
-			IList<IPEndPoint> addresses = new List<IPEndPoint>(hosts.Length);
+			IList<Uri> addresses = new List<Uri>(hosts.Length);
 			foreach (var host in hosts)
 			{
 				var hostUrl = uri.ServiceScheme + "://" + host;
 				try
 				{
 					var hostUri = new Uri(hostUrl);
-					addresses.Add(new IPEndPoint(Dns.GetHostAddresses(hostUri.Host)[0], hostUri.Port));
+					addresses.Add(hostUri);
 				}
 				catch (UriFormatException e)
 				{

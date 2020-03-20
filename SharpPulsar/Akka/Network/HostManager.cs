@@ -9,10 +9,10 @@ namespace SharpPulsar.Akka.Network
     public class HostManager:ReceiveActor, IWithUnboundedStash
     {
         private ClientConfigurationData _configuration;
-        private EndPoint _endPoint;
+        private Uri _endPoint;
         private IActorRef _tcpActor;
         private IActorRef _manager;
-        public HostManager(EndPoint endPoint, ClientConfigurationData con, IActorRef manager)
+        public HostManager(Uri endPoint, ClientConfigurationData con, IActorRef manager)
         {
             _manager= manager;
             _configuration = con;
@@ -53,7 +53,7 @@ namespace SharpPulsar.Akka.Network
         }
 
 
-        public static Props Prop(IPEndPoint endPoint, ClientConfigurationData con, IActorRef manager)
+        public static Props Prop(Uri endPoint, ClientConfigurationData con, IActorRef manager)
         {
             return Props.Create(()=> new HostManager(endPoint, con, manager));
         }

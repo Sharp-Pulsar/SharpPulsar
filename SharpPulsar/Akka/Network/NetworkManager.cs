@@ -68,14 +68,12 @@ namespace SharpPulsar.Akka.Network
 
         private void BecomeCreateConnections()
         {
-            var dnsResolver = new DefaultNameResolver();
             foreach (var s in _serviceNameResolver.AddressList())
             {
-                var service = s;
-                if (!dnsResolver.IsResolved(s))
-                    service = (IPEndPoint)dnsResolver.ResolveAsync(s).GetAwaiter().GetResult();
-                //var host = Dns.GetHostEntry(service.Address).HostName;
-                Context.ActorOf(HostManager.Prop(service, _configuration, _manager), Regex.Replace("kubernetes", @"[^\w\d]", ""));
+                
+                var host = s.Host;
+                var hn = s.DnsSafeHost;
+                Context.ActorOf(HostManager.Prop(s, _configuration, _manager), Regex.Replace(host, @"[^\w\d]", ""));
             }
             Become(CreateConnections);
         }

@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl
 		/// Resolve pulsar service url.
 		/// </summary>
 		/// <returns> resolve the service url to return a socket address </returns>
-		IPEndPoint ResolveHost();
+		Uri ResolveHost();
 
 		/// <summary>
 		/// Resolve pulsar service url
@@ -61,7 +61,7 @@ namespace SharpPulsar.Impl
 		/// <param name="serviceUrl"> service url </param>
 		void UpdateServiceUrl(string ServiceUrl);
 
-        IList<IPEndPoint> AddressList();
+        IList<Uri> AddressList();
 
     }
 

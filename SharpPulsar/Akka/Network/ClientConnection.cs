@@ -27,7 +27,7 @@ namespace SharpPulsar.Akka.Network
         private IActorRef _parent;
         private ReadOnlySequence<byte> _pong = new ReadOnlySequence<byte>(Commands.NewPong());
         private State _state;
-        internal EndPoint RemoteAddress;
+        internal Uri RemoteAddress;
         internal int _remoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
         public IActorRef Connection;
         private Dictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new Dictionary<long, KeyValuePair<IActorRef, Payload>>();
@@ -49,10 +49,10 @@ namespace SharpPulsar.Akka.Network
             Failed,
             Connecting
         }
-        public ClientConnection(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
+        public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager)
         {
             _self = Self;
-            RemoteHostName = "kubernetes";//Dns.GetHostEntry(((IPEndPoint) endPoint).Address).HostName;
+            RemoteHostName = endPoint.Host;
             _conf = conf;
             _manager = manager;
             Connection = Self;
@@ -63,20 +63,14 @@ namespace SharpPulsar.Akka.Network
             Authentication = conf.Authentication;
             
             _parent = Context.Parent;
-            Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new OpenConnection(), ActorRefs.NoSender);
+            //Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(1), Self, new OpenConnection(), ActorRefs.NoSender);
             var connector = new Connector(_conf);
             Receive<OpenConnection>(e =>
             {
                 try
                 {
                    
-                    Context.System.Log.Info($"Opening Connection to: {RemoteAddress}");
-                    _stream = new PulsarStream(connector.Connect((IPEndPoint)RemoteAddress));
-                    _ = ProcessIncommingFrames();
-                    var c = new ConnectionCommand(NewConnectCommand());
-                    //if we got here, lets assume connection was successful
-                    Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
-                    _ = _stream.Send(new ReadOnlySequence<byte>(c.Command));
+                    
                 }
                 catch(Exception ex)
                 {
@@ -94,6 +88,15 @@ namespace SharpPulsar.Akka.Network
                 _ = _stream.Send(new ReadOnlySequence<byte>(p.Command));
             });
             ReceiveAny(_ => { Stash.Stash(); });
+
+            Context.System.Log.Info($"Opening Connection to: {RemoteAddress}");
+            var connect = connector.Connect(RemoteAddress);
+            _stream = new PulsarStream(connect);
+
+            var c = new ConnectionCommand(NewConnectCommand());
+            _ = _stream.Send(new ReadOnlySequence<byte>(c.Command));
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(30), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
+           
         }
 
         private void Open()
@@ -101,12 +104,16 @@ namespace SharpPulsar.Akka.Network
            
         }
 
-        public static Props Prop(EndPoint endPoint, ClientConfigurationData conf, IActorRef manager)
+        public static Props Prop(Uri endPoint, ClientConfigurationData conf, IActorRef manager)
         {
             return Props.Create(() => new ClientConnection(endPoint, conf, manager));
         }
 
-        
+        protected override void PreStart()
+        {
+            _ = ProcessIncommingFrames();
+        }
+
         protected override void PostStop()
         {
             try

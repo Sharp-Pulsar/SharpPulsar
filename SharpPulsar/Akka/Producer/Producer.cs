@@ -97,27 +97,14 @@ namespace SharpPulsar.Akka.Producer
             {
                 _metadata = new SortedDictionary<string, string>(configuration.Properties);
             }
-            
-            ReceiveAny(c => Stash.Stash());
-            BecomeLookUp();
-        }
 
-        private void BecomeLookUp()
-        {
-            SendBrokerLookUpCommand();
-            Become(LookUp);
-        }
-
-        private void LookUp()
-        {
             Receive<BrokerLookUp>(l =>
             {
                 _pendingLookupRequests.Remove(l.RequestId);
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
-                var address = new IPEndPoint(Dns.GetHostAddresses(uri.Host)[0], uri.Port);
-                _broker = Context.ActorOf(ClientConnection.Prop(address, _clientConfiguration, Self));
-                
+                _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
+
             });
             Receive<ConnectedServerInfo>(s =>
             {
@@ -125,8 +112,10 @@ namespace SharpPulsar.Akka.Producer
                 _serverInfo = s;
                 BecomeCreateProducer();
             });
-            ReceiveAny(_=> Stash.Stash());
+            ReceiveAny(_ => Stash.Stash());
+            SendBrokerLookUpCommand();
         }
+
         public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
             return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, parent));
@@ -149,7 +138,7 @@ namespace SharpPulsar.Akka.Producer
         public void Receive()
         {
             Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), Self, new ResendMessages(), ActorRefs.NoSender);
-            Receive<Terminated>(t => t.ActorRef.Equals(_broker), b => BecomeLookUp());
+            //Receive<Terminated>(t => t.ActorRef.Equals(_broker), b => BecomeLookUp());
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -172,7 +161,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<RecreateProducer>(_ =>
             {
-                BecomeLookUp();
+                //BecomeLookUp();
             });
             Receive<Send>(ProcessSend);
             Receive<SentReceipt>(s =>

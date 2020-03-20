@@ -78,7 +78,7 @@ namespace Samples
 
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl("pulsar://localhost:6650")
+                .ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
                 .ConnectionsPerBroker(1)
                 .ClientConfigurationData;
 
