@@ -22,7 +22,16 @@ using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
-{//https://medium.com/capital-one-tech/apache-pulsar-one-cluster-for-the-entire-enterprise-using-multi-tenancy-ac0bd925fbdf
+{
+    //https://pulsar.apache.org/docs/en/deploy-bare-metal-multi-cluster/
+    //https://linuxize.com/post/install-java-on-ubuntu-18-04/
+    //https://vitux.com/how-to-install-notepad-on-ubuntu/
+    //https://blog.alexellis.io/kubernetes-in-10-minutes/
+    //https://docs.microsoft.com/en-us/azure/virtual-machines/linux/use-remote-desktop
+    //https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ssh-from-windows
+    //https://pulsar.apache.org/docs/ja/next/administration-upgrade/
+    //https://jack-vanlightly.com/blog/2018/10/21/how-to-not-lose-messages-on-an-apache-pulsar-cluster
+    //https://medium.com/capital-one-tech/apache-pulsar-one-cluster-for-the-entire-enterprise-using-multi-tenancy-ac0bd925fbdf
     class Program
     {
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
@@ -79,16 +88,16 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://localhost:6650")
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://localhost:6650"))
+                .ServiceUrl("pulsar://***********.eastus2.cloudapp.azure.com:6650")
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://*************.cloudapp.azure.com:6650"))
                 .ConnectionsPerBroker(1)
                 .ClientConfigurationData;
 
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("partitioned-topic")
-                .Topic("persistent://public/default/partitioned-topic")
+                .ProducerName("partitioned")
+                .Topic("partitioned")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Schema(jsonSchema)
                 
