@@ -86,7 +86,11 @@ namespace SharpPulsar.Akka.Network
 			_conf.Authentication = authentication;
             return this;
 		}
-
+        public PulsarClientConfigBuilder UseProxy(bool useProxy)
+        {
+            _conf.UseProxy = useProxy;
+            return this;
+        }
 		public PulsarClientConfigBuilder Authentication(string authPluginClassName, string authParamsString)
 		{
 			_conf.Authentication = AuthenticationFactory.Create(authPluginClassName, authParamsString);

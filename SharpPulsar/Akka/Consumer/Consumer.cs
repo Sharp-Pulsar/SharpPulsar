@@ -624,7 +624,10 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _pendingLookupRequests.Remove(l.RequestId);
                 var uri = _conf.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
-                _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
+                if (_clientConfiguration.UseProxy)
+                    _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
+                else
+                    _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
             });
             Receive<ConnectedServerInfo>(s =>
             {

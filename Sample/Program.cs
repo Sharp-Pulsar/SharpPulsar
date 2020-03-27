@@ -17,12 +17,20 @@ using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
+using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
 {
+    //https://pixelrobots.co.uk/2019/06/use-a-static-public-ip-address-outside-of-the-node-resource-group-with-the-azure-kubernetes-service-aks-load-balancer/
+    //https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
+    //https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume?WT.mc_id=medium-blog-abhishgu
+    //https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#assign-a-public-ip-per-node-in-a-node-pool
+    //mkdir apache-pulsar && tar xvzf apache-pulsar-2.5.0-bin.tar.gz -C apache-pulsar --strip-components 1
+    //https://docs.microsoft.com/en-us/azure/virtual-machines/windows/create-portal-availability-zone
+    //https://docs.microsoft.com/en-us/azure/load-balancer/quickstart-load-balancer-standard-public-portal
     //https://pulsar.apache.org/docs/en/deploy-bare-metal-multi-cluster/
     //https://linuxize.com/post/install-java-on-ubuntu-18-04/
     //https://vitux.com/how-to-install-notepad-on-ubuntu/
@@ -88,9 +96,12 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://***********.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://*************.cloudapp.azure.com:6650"))
+                .ServiceUrl("pulsar://20.44.80.245:6650")
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://20.44.80.245:6650"))
                 .ConnectionsPerBroker(1)
+                .UseProxy(true)
+                .Authentication( new AuthenticationDisabled())
+                //.Authentication(AuthenticationFactory.Token("eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJzaGFycHB1bHNhci1jbGllbnQtNWU3NzY5OWM2M2Y5MCJ9.lbwoSdOdBoUn3yPz16j3V7zvkUx-Xbiq0_vlSvklj45Bo7zgpLOXgLDYvY34h4MX8yHB4ynBAZEKG1ySIv76DPjn6MIH2FTP_bpI4lSvJxF5KsuPlFHsj8HWTmk57TeUgZ1IOgQn0muGLK1LhrRzKOkdOU6VBV_Hu0Sas0z9jTZL7Xnj1pTmGAn1hueC-6NgkxaZ-7dKqF4BQrr7zNt63_rPZi0ev47vcTV3ga68NUYLH5PfS8XIqJ_OV7ylouw1qDrE9SVN8a5KRrz8V3AokjThcsJvsMQ8C1MhbEm88QICdNKF5nu7kPYR6SsOfJJ1HYY-QBX3wf6YO3VAF_fPpQ"))
                 .ClientConfigurationData;
 
             var pulsarSystem = new PulsarSystem(clientConfig);
@@ -110,7 +121,7 @@ namespace Samples
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("partitioned-topic")
+                .ReaderName("partitioned")
                 .Schema(jsonSchema)
                 .EventListener(consumerListener)
                 .ReaderListener(messageListener)

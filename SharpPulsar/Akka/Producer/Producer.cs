@@ -100,24 +100,52 @@ namespace SharpPulsar.Akka.Producer
             {
                 ProducerName = _topic;
             }
-            Receive<BrokerLookUp>(l =>
+
+            SendBrokerLookUpCommand();
+            Become(LookUp);
+        }
+
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
+        {
+            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, parent));
+        }
+
+        private void LookUp()
+        {
+            Receive<BrokerLookUp>(p =>
             {
+                var l = p;
+                var failed = l.Response == CommandLookupTopicResponse.LookupType.Failed;
                 _pendingLookupRequests.Remove(l.RequestId);
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
-                _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
-
+                if(_clientConfiguration.UseProxy)
+                    _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
+                else
+                    _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
+                Become(WaitingForConnection);
             });
+
+            ReceiveAny(x => Stash.Stash());
+        }
+
+        private void WaitingForConnection()
+        {
             Receive<ConnectedServerInfo>(s =>
             {
                 _serverInfo = s;
                 SendNewProducerCommand();
+                //SetReceiveTimeout(TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs));
+                Become(WaitingForProducer);
             });
             Receive<PulsarError>(e =>
             {
                 if (e.ShouldRetry)
                     SendNewProducerCommand();
             });
+        }
+        private void WaitingForProducer()
+        {
             Receive<ProducerCreated>(p =>
             {
                 _pendingLookupRequests.Remove(p.RequestId);
@@ -141,14 +169,7 @@ namespace SharpPulsar.Akka.Producer
                 BecomeReceive();
             });
             ReceiveAny(x => Stash.Stash());
-            SendBrokerLookUpCommand();
         }
-
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
-        {
-            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, parent));
-        }
-
         private void BecomeReceive()
         {
             if (_configuration.EncryptionEnabled)
@@ -281,15 +302,6 @@ namespace SharpPulsar.Akka.Producer
             }
         }
 
-        private void BecomeCreateProducer()
-        {
-           
-            Become(CreateProducer);
-        }
-        private void CreateProducer()
-        {
-            
-        }
         private void SendNewProducerCommand()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);

@@ -33,7 +33,7 @@ namespace SharpPulsar.Akka.Network
         public IActorRef Connection;
         private Dictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new Dictionary<long, KeyValuePair<IActorRef, Payload>>();
 
-        internal string ProxyToTargetBrokerAddress;
+        private string _proxyToTargetBrokerAddress;
         private string _remoteHostName;
 
         private ILoggingAdapter Log;
@@ -42,9 +42,9 @@ namespace SharpPulsar.Akka.Network
         // Added for mutual authentication.
         internal IAuthenticationDataProvider AuthenticationDataProvider;
 
-        public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager)
+        public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
-            TargetBroker = endPoint.AbsoluteUri;
+            _proxyToTargetBrokerAddress = targetBroker;
             _context = Context;
             _self = Self;
             RemoteHostName = endPoint.Host;
@@ -83,23 +83,14 @@ namespace SharpPulsar.Akka.Network
                 _stream = new PulsarStream(connect);
                 var c = new ConnectionCommand(NewConnectCommand());
                 Send(new ReadOnlySequence<byte>(c.Command));
-                //Become(Open);
-                //Stash.UnstashAll();
-                //if we got here, lets assume connection was successful
                 Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100),
                     TimeSpan.FromSeconds(10), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
 
             }
             catch (Exception ex)
             {
-                var serviceUrl = _conf.ServiceUrlProvider.ServiceUrl;
-                var ne = new Uri(serviceUrl);
-                if (!ne.Equals(RemoteAddress))
-                {
-                    RemoteAddress = ne;
-                    RemoteHostName = ne.Host;
-                }
                 _context.System.Log.Error(ex.Message);
+                Thread.Sleep(5000);
                 Connect();
                 //Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new OpenConnection(),ActorRefs.NoSender);
             }
@@ -116,9 +107,9 @@ namespace SharpPulsar.Akka.Network
                 _context.System.Log.Error(e.ToString());
             }
         }
-        public static Props Prop(Uri endPoint, ClientConfigurationData conf, IActorRef manager)
+        public static Props Prop(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
-            return Props.Create(() => new ClientConnection(endPoint, conf, manager));
+            return Props.Create(() => new ClientConnection(endPoint, conf, manager, targetBroker));
         }
         
         protected override void PostStop()
@@ -149,7 +140,7 @@ namespace SharpPulsar.Akka.Network
             var auth = new AuthData {auth_data = ((byte[]) (object) authData.Bytes)};
             var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-            return Commands.NewConnect(Authentication.AuthMethodName, auth, 15, clientVersion, /*ProxyToTargetBrokerAddress*/ string.Empty, string.Empty, null, string.Empty);
+            return Commands.NewConnect(Authentication.AuthMethodName, auth, 15, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
         private sealed class ConnectionCommand
         {
@@ -170,10 +161,6 @@ namespace SharpPulsar.Akka.Network
             _ = _stream.Send(_pong);
 		}
         
-        public string TargetBroker
-		{
-			set => ProxyToTargetBrokerAddress = value;
-		}
         public async Task ProcessIncommingFrames()
         {
             await Task.Yield();
@@ -286,7 +273,7 @@ namespace SharpPulsar.Akka.Network
                             _manager.Tell(new ConsumerClosed((long)cmd.CloseConsumer.ConsumerId));
                             break;
                         default:
-                            _context.System.Log.Info($"Received '{cmd.type}' Message");
+                            _context.System.Log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
                             break;
                     }
                 }
