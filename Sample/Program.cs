@@ -96,8 +96,8 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://20.44.80.245:6650")
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://20.44.80.245:6650"))
+                .ServiceUrl("pulsar://20.44.80.245:6650")//testing purposes only
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://20.44.80.245:6650"))//testing purposes only
                 .ConnectionsPerBroker(1)
                 .UseProxy(true)
                 .Authentication( new AuthenticationDisabled())
