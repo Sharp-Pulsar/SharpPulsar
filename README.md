@@ -20,7 +20,7 @@ If not configured properly, `Look up` will return endpoints that you can not con
 You can first create the services for Zookeeper, BookKeeper and Broker so that you can have the IP addresses to `initialize-cluster-metadata` etc!
 
 ### Getting Started
-Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar/0.4.0) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
+Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 
 ## Usage
 1 - Ready your Schema:
