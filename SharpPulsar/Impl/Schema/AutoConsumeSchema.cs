@@ -123,6 +123,7 @@ namespace SharpPulsar.Impl.Schema
 			{ 
 				case -1:
 					return BytesSchema.Of();
+				case 4:
 				case 2:
 					return GenericSchemaImpl.Of(schemaInfo);
 				default:

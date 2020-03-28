@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl.Schema.Generic
             var ty = schemaInfo.Type;
 			switch (ty.Value)
 			{
-				
+				case 4:
 				case 2:
 					return new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				default:

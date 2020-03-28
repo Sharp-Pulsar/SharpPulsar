@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -43,9 +44,9 @@ namespace Samples
     class Program
     {
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
-        public static readonly Dictionary<string, IActorRef> Producers = new Dictionary<string, IActorRef>();
-        public static readonly HashSet<string> Receipts = new HashSet<string>();
-        public static readonly HashSet<string> Messages = new HashSet<string>();
+        public static readonly ConcurrentDictionary<string, IActorRef> Producers = new ConcurrentDictionary<string, IActorRef>();
+        public static readonly ConcurrentBag<string> Receipts = new ConcurrentBag<string>();
+        public static readonly ConcurrentBag<string> Messages = new ConcurrentBag<string>();
         
         public static readonly Dictionary<string, IActorRef> Consumers = new Dictionary<string, IActorRef>();
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
@@ -55,7 +56,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.Add(s, p), s =>
+            }, (s, p) => Producers.TryAdd(s, p), s =>
             {
                 Receipts.Add(s);
             });
@@ -107,12 +108,13 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("partitioned")
-                .Topic("partitioned")
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
+                .ProducerName("presto_avro")
+                .Topic("prestoavro")
+                //presto cannot parse encrypted messages
+                //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .Schema(jsonSchema)
                 
-                .AddEncryptionKey("Crypto3")
+                //.AddEncryptionKey("Crypto3")
                 .SendTimeout(10000)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
@@ -121,20 +123,20 @@ namespace Samples
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("partitioned")
+                .ReaderName("presto-avro")
                 .Schema(jsonSchema)
                 .EventListener(consumerListener)
                 .ReaderListener(messageListener)
                 .Topic(topic)
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
+                //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("pattern")
+                .ConsumerName("presto")
                 .ForceTopicCreation(true)
-                .SubscriptionName("pattern-Subscription")
-                .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
+                .SubscriptionName("presto-avro-Subscription")
+                //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 //.TopicsPattern(new Regex("persistent://public/default/.*"))
                 .Topic(topic)
                 
@@ -168,7 +170,7 @@ namespace Samples
                     {
                         var student = new Students
                         {
-                            Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - Decrypted {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                            Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
                             Age = 2019+i,
                             School = "Akka-Pulsar university"
                         }; sends.Add(new Send(student, topic, ImmutableDictionary<string, object>.Empty, $"{DateTime.Now.Millisecond}"));

@@ -57,7 +57,7 @@ namespace SharpPulsar.Impl.Schema
 
         public static JsonSchema Of(ISchemaDefinition schemaDefinition)
 		{
-			return new JsonSchema(ParseSchemaInfo(schemaDefinition, SchemaType.Json));
+			return new JsonSchema(ParseSchemaInfo(schemaDefinition, SchemaType.Avro));
 		}
 
 		public static JsonSchema Of(Type pojo)
