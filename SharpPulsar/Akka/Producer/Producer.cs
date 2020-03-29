@@ -427,18 +427,17 @@ namespace SharpPulsar.Akka.Producer
                 }
                 if (metadata.PublishTime < 1)
                 {
-                    metadata.PublishTime = (ulong)DateTime.Now.Millisecond;
-
-                    if (string.IsNullOrWhiteSpace(metadata.ProducerName))
-                        metadata.ProducerName = ProducerName;
-
-                    if (_configuration.CompressionType != ICompressionType.None)
-                    {
-                        metadata.Compression = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>().ToList()[(int)_configuration.CompressionType];
-                    }
-                    metadata.UncompressedSize = (uint)uncompressedSize;
+                    metadata.PublishTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 }
+                if (string.IsNullOrWhiteSpace(metadata.ProducerName))
+                    metadata.ProducerName = ProducerName;
 
+                if (_configuration.CompressionType != ICompressionType.None)
+                {
+                    metadata.Compression = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>().ToList()[(int)_configuration.CompressionType];
+                }
+                metadata.UncompressedSize = (uint)uncompressedSize;
+                metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 SendMessage(msg);
             }
             catch (Exception e)

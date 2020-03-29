@@ -25,6 +25,9 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
 {
+    //https://developer.ibm.com/articles/kubernetes-networking-what-you-need-to-know/
+    //https://streamnative.io/docs/v1.0.0/get-started/helm/
+    //https://streamnative.io/docs/v1.0.0/install-and-upgrade/helm/install/deployment/
     //https://pixelrobots.co.uk/2019/06/use-a-static-public-ip-address-outside-of-the-node-resource-group-with-the-azure-kubernetes-service-aks-load-balancer/
     //https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
     //https://docs.microsoft.com/en-us/azure/aks/azure-disk-volume?WT.mc_id=medium-blog-abhishgu
@@ -97,8 +100,8 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://20.44.80.245:6650")//testing purposes only
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://20.44.80.245:6650"))//testing purposes only
+                .ServiceUrl("pulsar://52.138.118.247:6650")//testing purposes only
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://52.138.118.247:6650"))//testing purposes only
                 .ConnectionsPerBroker(1)
                 .UseProxy(true)
                 .Authentication( new AuthenticationDisabled())
