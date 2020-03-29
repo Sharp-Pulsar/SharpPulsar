@@ -14,11 +14,6 @@ JsonSchema is basically AvroSchema underneath!
 
 Supported pulsar cluster versions: 2.5+
 
-## Tips
-Deploying to Kubernetes is a bit tricky if you are going to use proxy.
-If not configured properly, `Look up` will return endpoints that you can not connect to - helm does not help!
-You can first create the services for Zookeeper, BookKeeper and Broker so that you can have the IP addresses to `initialize-cluster-metadata` etc!
-
 ### Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 
