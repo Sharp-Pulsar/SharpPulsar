@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -55,7 +56,8 @@ namespace Samples
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
         static Task Main(string[] args)
         {
-            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+            //var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+            var bytSchema = BytesSchema.Of();
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -75,8 +77,8 @@ namespace Samples
 
             var messageListener = new DefaultMessageListener((a, m) =>
             {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
+                var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
+                var students = JsonSerializer.Deserialize<Students>(s);
                 Messages.Add(s);
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
@@ -93,7 +95,8 @@ namespace Samples
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, message =>
             {
-                var students = message.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(message.Data);
+                var students = JsonSerializer.Deserialize<Students>(s); //message.ToTypeOf<Students>();
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
 
@@ -111,41 +114,40 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("presto_avro")
-                .Topic("prestoavro")
+                .ProducerName("bytes")
+                .Topic("bytes")
                 //presto cannot parse encrypted messages
                 //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
-                .Schema(jsonSchema)
+                .Schema(bytSchema)
                 
                 //.AddEncryptionKey("Crypto3")
                 .SendTimeout(10000)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+            var topic = pulsarSystem.CreateProducer(new CreateProducer(bytSchema, producerConfig));
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("presto-avro")
-                .Schema(jsonSchema)
+                .ReaderName("bytes")
+                .Schema(bytSchema)
                 .EventListener(consumerListener)
                 .ReaderListener(messageListener)
                 .Topic(topic)
-                //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("presto")
+                .ConsumerName("bytes")
                 .ForceTopicCreation(true)
-                .SubscriptionName("presto-avro-Subscription")
+                .SubscriptionName("bytes-Subscription")
                 //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 //.TopicsPattern(new Regex("persistent://public/default/.*"))
                 .Topic(topic)
                 
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Shared)
-                .Schema(jsonSchema)
+                .Schema(bytSchema)
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
@@ -159,7 +161,7 @@ namespace Samples
                 Thread.Sleep(100);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
-            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Multi));
+            pulsarSystem.CreateConsumer(new CreateConsumer(bytSchema, consumerConfig, ConsumerType.Single));
 
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
 
@@ -169,14 +171,16 @@ namespace Samples
                 if (read == "s")
                 {
                     var sends = new List<Send>();
-                    for (var i = 0; i < 26; i++)
+                    for (var i = 0; i < 25; i++)
                     {
                         var student = new Students
                         {
                             Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
                             Age = 2019+i,
                             School = "Akka-Pulsar university"
-                        }; sends.Add(new Send(student, topic, ImmutableDictionary<string, object>.Empty, $"{DateTime.Now.Millisecond}"));
+                        };
+                        var s = JsonSerializer.Serialize(student);
+                        sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, ImmutableDictionary<string, object>.Empty, $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
                     }
                     var bulk = new BulkSend(sends, topic);
                     pulsarSystem.BulkSend(bulk, produce);

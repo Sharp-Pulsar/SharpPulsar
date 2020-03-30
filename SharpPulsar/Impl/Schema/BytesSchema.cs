@@ -51,18 +51,18 @@ namespace SharpPulsar.Impl.Schema
 
         public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
         {
-            throw new System.NotImplementedException();
+            
         }
 
         public override bool RequireFetchingSchemaInfo()
         {
-            throw new System.NotImplementedException();
+            return false;
         }
         
         public override ISchemaInfo SchemaInfo {get;}
         public override bool SupportSchemaVersioning()
         {
-            throw new System.NotImplementedException();
+            return false;
         }
 
         public override ISchemaInfoProvider SchemaInfoProvider

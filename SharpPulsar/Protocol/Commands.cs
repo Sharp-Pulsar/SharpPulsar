@@ -10,8 +10,6 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
-using DotNetty.Buffers;
-using SharpPulsar.Protocol.Circe;
 using SharpPulsar.Protocol.Extension;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
 

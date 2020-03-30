@@ -73,17 +73,14 @@ namespace SharpPulsar.Impl
             {
                 if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
-					var authClass = Type.GetType(authPluginClassName);
+					var authClass = Type.GetType(authPluginClassName);//https://stackoverflow.com/questions/1825147/type-gettypenamespace-a-b-classname-returns-null
 					var auth = (IAuthentication) Activator.CreateInstance(authClass);
-					if (auth is IEncodedAuthenticationParameterSupport)
+					if (auth is IEncodedAuthenticationParameterSupport support)
 					{
-						// Parse parameters on plugin side.
-						((IEncodedAuthenticationParameterSupport) auth).Configure(authParamsString);
+						support.Configure(authParamsString);
 					}
 					else
 					{
-						// Parse parameters by default parse logic.
-						//auth.Configure(ConfigureFromPulsar1AuthParamString(authParamsString));[Deprecated]
 						auth.Configure(authParamsString);
 					}
 					return auth;

@@ -272,6 +272,9 @@ namespace SharpPulsar.Akka.Producer
                 {
                     switch (c.Key.ToLower())
                     {
+                        case "producer":
+                            builder.ProducerName(c.Value.ToString());
+                            break;
                         case "keybytes":
                             builder.KeyBytes((sbyte[])c.Value);
                             break;
@@ -437,7 +440,8 @@ namespace SharpPulsar.Akka.Producer
                     metadata.Compression = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>().ToList()[(int)_configuration.CompressionType];
                 }
                 metadata.UncompressedSize = (uint)uncompressedSize;
-                metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                if(metadata.EventTime < 1)
+                    metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 SendMessage(msg);
             }
             catch (Exception e)

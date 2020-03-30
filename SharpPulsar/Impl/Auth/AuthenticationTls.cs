@@ -39,17 +39,7 @@ namespace SharpPulsar.Impl.Auth
 
 		private string _certFilePath;
 		private string _keyFilePath;
-
-		// Load Bouncy Castle
-		static AuthenticationTls()
-		{
-			//Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-		}
-
-		public AuthenticationTls()
-		{
-		}
-
+		
 		public AuthenticationTls(string certFilePath, string keyFilePath)
 		{
 			this._certFilePath = certFilePath;
@@ -80,17 +70,13 @@ namespace SharpPulsar.Impl.Auth
 
 		public void Configure(string encodedAuthParamString)
 		{
-			IDictionary<string, string> authParamsMap = null;
-			try
-			{
-				authParamsMap = AuthenticationUtil.ConfigureFromJsonString(encodedAuthParamString);
-			}
-			catch (System.Exception)
-			{
-				// auth-param is not in json format
-			}
-			authParamsMap = (authParamsMap == null || authParamsMap.Count == 0) ? AuthenticationUtil.ConfigureFromPulsar1AuthParamString(encodedAuthParamString) : authParamsMap;
-			AuthParams = authParamsMap;
+			//format = tlsCertFile,tlsKeyFile
+			if (!string.IsNullOrWhiteSpace(encodedAuthParamString))
+            {
+                var @params = encodedAuthParamString.Split(',');
+                _certFilePath = @params[0];
+                _keyFilePath = @params[1];
+            }
 		}
 
 		public void Start()
@@ -111,15 +97,6 @@ namespace SharpPulsar.Impl.Auth
 		public void Dispose()
 		{
 			throw new NotImplementedException();
-		}
-
-		private IDictionary<string, string> AuthParams
-		{
-			set
-			{
-				_certFilePath = value["tlsCertFile"];
-				_keyFilePath = value["tlsKeyFile"];
-			}
 		}
 
 		public virtual string CertFilePath => _certFilePath;

@@ -148,7 +148,11 @@ namespace SharpPulsar.Impl
 			_metadata.EventTime = (ulong)timestamp;
 			return this;
 		}
-
+        public ITypedMessageBuilder ProducerName(string producer)
+        {
+            _metadata.ProducerName = producer;
+            return this;
+        }
 		public ITypedMessageBuilder SequenceId(long sequenceId)
 		{
 			if(sequenceId < 0)
@@ -222,7 +226,8 @@ namespace SharpPulsar.Impl
 			{
 				DeliverAt((long)d.Value);
 			}
-			else
+            
+            else
 			{
 				throw new Exception("Invalid message config key '" + d.Key + "'");
 			}

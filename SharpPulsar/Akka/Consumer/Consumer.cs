@@ -558,6 +558,13 @@ namespace SharpPulsar.Akka.Consumer
 
         private void Active()
         {
+            Receive<CloseConsumer>(c =>
+            {
+                var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                var request = Commands.NewCloseConsumer(_consumerid, requestid);
+                var payload = new Payload(request, requestid, "NewCloseConsumer");
+                _broker.Tell(payload);
+            });
             Receive<Terminated>(t => t.ActorRef.Equals(_broker), l => BecomeLookUp());
             
             Receive<LastMessageId>(x =>
