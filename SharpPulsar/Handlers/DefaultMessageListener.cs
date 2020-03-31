@@ -16,12 +16,12 @@ namespace SharpPulsar.Handlers
         }
         public void Received(IActorRef consumer, IMessage msg)
         {
-            Consumer.Invoke(consumer, msg);
+            Consumer?.Invoke(consumer, msg);
         }
 
         public void Received(IMessage msg)
         {
-            Reader.Invoke(msg);
+            Reader?.Invoke(msg);
         }
     }
 }

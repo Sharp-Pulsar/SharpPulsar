@@ -26,6 +26,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
 {
+    //bin/pulsar sql-worker run -D "java.vendor"="Oracle Corporation"
     //https://developer.ibm.com/articles/kubernetes-networking-what-you-need-to-know/
     //https://streamnative.io/docs/v1.0.0/get-started/helm/
     //https://streamnative.io/docs/v1.0.0/install-and-upgrade/helm/install/deployment/
