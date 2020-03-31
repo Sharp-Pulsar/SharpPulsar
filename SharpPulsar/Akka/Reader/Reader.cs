@@ -61,6 +61,7 @@ namespace SharpPulsar.Akka.Reader
                 // it will specify the subscription position anyway
                 m.Consumer.Tell(new AckMessages(m.Message.ReceivedId));
             });
+            Receive<CloseConsumer>(c => { Context.Parent.Tell(c);});
             ReceiveAny(x =>
             {
 

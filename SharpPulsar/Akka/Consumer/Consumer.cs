@@ -88,7 +88,6 @@ namespace SharpPulsar.Akka.Consumer
         protected override void PostStop()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            //var unsubscribe = Commands.NewUnsubscribe(_consumerid, requestid);
             var cmd = Commands.NewCloseConsumer(_consumerid, requestid);
             var payload = new Payload(cmd, requestid, "CloseConsumer");
             _broker.Tell(payload);
@@ -560,10 +559,7 @@ namespace SharpPulsar.Akka.Consumer
         {
             Receive<CloseConsumer>(c =>
             {
-                var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-                var request = Commands.NewCloseConsumer(_consumerid, requestid);
-                var payload = new Payload(request, requestid, "NewCloseConsumer");
-                _broker.Tell(payload);
+                Context.Parent.Tell(c);
             });
             Receive<Terminated>(t => t.ActorRef.Equals(_broker), l => BecomeLookUp());
             

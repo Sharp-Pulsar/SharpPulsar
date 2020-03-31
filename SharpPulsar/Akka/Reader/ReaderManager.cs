@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Reader
@@ -13,6 +14,10 @@ namespace SharpPulsar.Akka.Reader
             _network = network;
             _config = configuration;
             Receive<NewReader>(NewReader);
+            Receive<CloseConsumer>(c =>
+            {
+                Context.Stop(Sender);//stop the reader and it child 
+            });
             ReceiveAny(x =>
             {
                 Context.System.Log.Info($"{x.GetType().Name} not supported");

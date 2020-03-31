@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.5.1</Version>
+    <Version>0.5.2</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
@@ -17,7 +17,9 @@ MultiTopics Consumer
 Pattern Multi-Topics Consumer
 Bulk Publishing - for simplicity sake!
 Proxy
-Set JsonSchema type to Avro(That is what it is underneath)</PackageReleaseNotes>
+
+Set JsonSchema type to Avro(That is what it is underneath)
+Addition and fixes!</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
