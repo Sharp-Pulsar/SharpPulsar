@@ -33,6 +33,7 @@ Addition and fixes!</PackageReleaseNotes>
 
   <ItemGroup>
     <Compile Remove="Common\Compression\CompressionCodecZLib.cs" />
+    <Compile Remove="Impl\Schema\GenerateSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
   </ItemGroup>
@@ -50,6 +51,7 @@ Addition and fixes!</PackageReleaseNotes>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.2" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6" />
     <PackageReference Include="protobuf-net" Version="2.4.4" />
+    <PackageReference Include="SharpPulsar.SchemaGenerator" Version="0.0.2" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />

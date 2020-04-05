@@ -26,6 +26,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
 {
+    //curl -H "Content-Type: application/json" -X PUT http://{IP_ADDRESS}:7750/pulsar-manager/users/superuser -d '{"name": "platform", "password": "platform", "description": "test1", "email": "username1@test.org"}
     //bin/pulsar sql-worker run -D "java.vendor"="Oracle Corporation"
     //https://developer.ibm.com/articles/kubernetes-networking-what-you-need-to-know/
     //https://streamnative.io/docs/v1.0.0/get-started/helm/
@@ -58,7 +59,7 @@ namespace Samples
         static Task Main(string[] args)
         {
             //var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
-            var bytSchema = BytesSchema.Of();
+            //var bytSchema = BytesSchema.Of();
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -72,14 +73,14 @@ namespace Samples
                     Consumers.Add(s, c);
                 //c.Tell(new TimestampSeek(DateTimeOffset.Now.AddDays(-2).ToUnixTimeMilliseconds()));
             }, (s, response) => LastMessageId.Add(s, response));
-            //var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = JsonSchema.Of(typeof(Students));
 
             #region messageListener
 
             var messageListener = new DefaultMessageListener((a, m) =>
             {
-                var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
-                var students = JsonSerializer.Deserialize<Students>(s);
+                var students = m.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(students);
                 Messages.Add(s);
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
@@ -104,8 +105,8 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://52.138.118.247:6650")//testing purposes only
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://52.138.118.247:6650"))//testing purposes only
+                .ServiceUrl("pulsar://40.65.213.73:6650")//testing purposes only
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://40.65.213.73:6650"))//testing purposes only
                 .ConnectionsPerBroker(1)
                 .UseProxy(true)
                 .Authentication( new AuthenticationDisabled())
@@ -115,23 +116,23 @@ namespace Samples
             var pulsarSystem = new PulsarSystem(clientConfig);
 
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName("bytes")
-                .Topic("bytes")
+                .ProducerName("students")
+                .Topic("students")
                 //presto cannot parse encrypted messages
                 //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
-                .Schema(bytSchema)
+                .Schema(jsonSchem)
                 
                 //.AddEncryptionKey("Crypto3")
                 .SendTimeout(10000)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var topic = pulsarSystem.CreateProducer(new CreateProducer(bytSchema, producerConfig));
+            var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
 
 
             var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("bytes")
-                .Schema(bytSchema)
+                .ReaderName("student")
+                .Schema(jsonSchem)
                 .EventListener(consumerListener)
                 .ReaderListener(messageListener)
                 .Topic(topic)
@@ -139,21 +140,21 @@ namespace Samples
                 .ReaderConfigurationData;
 
             var consumerConfig = new ConsumerConfigBuilder()
-                .ConsumerName("bytes")
+                .ConsumerName("student")
                 .ForceTopicCreation(true)
-                .SubscriptionName("bytes-Subscription")
+                .SubscriptionName("students-Subscription")
                 //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
                 //.TopicsPattern(new Regex("persistent://public/default/.*"))
                 .Topic(topic)
                 
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Shared)
-                .Schema(bytSchema)
+                .Schema(jsonSchem)
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
 
-            //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
+           
 
             IActorRef produce = null;
             while (produce == null)
@@ -162,8 +163,8 @@ namespace Samples
                 Thread.Sleep(100);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
-            pulsarSystem.CreateConsumer(new CreateConsumer(bytSchema, consumerConfig, ConsumerType.Single));
-
+            pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            //pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
             //pulsarSystem.BatchSend(new BatchSend(new List<object>{ new Foo() }, "Test"));
 
             while (true)
@@ -180,8 +181,8 @@ namespace Samples
                             Age = 2019+i,
                             School = "Akka-Pulsar university"
                         };
-                        var s = JsonSerializer.Serialize(student);
-                        sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, ImmutableDictionary<string, object>.Empty, $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                        //var s = JsonSerializer.Serialize(student);
+                        sends.Add(new Send(student, topic, ImmutableDictionary<string, object>.Empty, $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
                     }
                     var bulk = new BulkSend(sends, topic);
                     pulsarSystem.BulkSend(bulk, produce);

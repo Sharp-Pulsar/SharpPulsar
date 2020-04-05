@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Impl.Schema;
+using SharpPulsar.SchemaGenerator;
 using Xunit;
 using Xunit.Abstractions;
 
