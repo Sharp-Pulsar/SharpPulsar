@@ -16,8 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using DotNetty.Buffers;
+/// 
 
 namespace SharpPulsar.Common.Compression
 {
@@ -34,15 +33,15 @@ namespace SharpPulsar.Common.Compression
 	{
 		public byte[] Encode(byte[] source)
 		{
-			int uncompressedLength = source.Length;
-			int maxLength = SnappyCodec.GetMaxCompressedLength(uncompressedLength);
+			var uncompressedLength = source.Length;
+			var maxLength = SnappyCodec.GetMaxCompressedLength(uncompressedLength);
 
 			var sourceNio = source;
 
-			var target = PooledByteBufferAllocator.Default.Buffer(maxLength, maxLength).Array;
+			var target = new byte[maxLength];
 			var targetNio = target;
 
-			int compressedLength = 0;
+			var compressedLength = 0;
 			try
 			{
 				compressedLength = SnappyCodec.Compress(sourceNio, 0, sourceNio.Length, targetNio, 0);
@@ -57,7 +56,7 @@ namespace SharpPulsar.Common.Compression
 
 		public byte[] Decode(byte[] encoded, int uncompressedLength)
 		{
-			byte[] uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength).Array;
+			byte[] uncompressed = new byte[uncompressedLength];
 			var uncompressedNio = uncompressed;
 
 			var encodedNio = encoded;

@@ -17,7 +17,6 @@
 /// under the License.
 /// </summary>
 
-using DotNetty.Buffers;
 using ZstdNet;
 
 namespace SharpPulsar.Common.Compression

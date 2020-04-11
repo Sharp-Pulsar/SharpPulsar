@@ -1,6 +1,5 @@
 ﻿using System;
 using SharpPulsar.Api.Schema;
-using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 

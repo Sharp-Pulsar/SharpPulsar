@@ -1,7 +1,5 @@
 ﻿using BAMCIS.Util.Concurrent;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using SharpPulsar.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

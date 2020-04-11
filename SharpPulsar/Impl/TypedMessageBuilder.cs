@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DotNetty.Buffers;
-using Google.Protobuf;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;

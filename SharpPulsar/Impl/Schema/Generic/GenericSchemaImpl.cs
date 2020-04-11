@@ -27,8 +27,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
 
 	using Field = Api.Schema.Field;
-	using IGenericRecord = Api.Schema.IGenericRecord;
-	using SharpPulsar.Api.Schema;
+    using SharpPulsar.Api.Schema;
 	using Schema;
 
 	/// <summary>

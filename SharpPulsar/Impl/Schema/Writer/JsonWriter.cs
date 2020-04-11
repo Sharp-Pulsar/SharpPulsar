@@ -18,12 +18,7 @@
 /// </summary>
 
 using System;
-using System.IO;
-using System.Linq;
-using Avro.IO;
 using SharpPulsar.Api.Schema;
-
-using Avro.Reflect;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 

@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Api;
+﻿using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

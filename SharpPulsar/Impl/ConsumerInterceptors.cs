@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Akka.Actor;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;

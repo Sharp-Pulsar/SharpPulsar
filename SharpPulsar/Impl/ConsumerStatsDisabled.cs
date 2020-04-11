@@ -1,5 +1,4 @@
-﻿using System;
-using DotNetty.Common.Utilities;
+﻿using DotNetty.Common.Utilities;
 using SharpPulsar.Api;
 
 /// <summary>

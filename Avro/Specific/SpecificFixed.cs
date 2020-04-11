@@ -17,10 +17,6 @@
  */
 namespace Avro.Specific
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using Avro.Generic;
 
     /// <summary>

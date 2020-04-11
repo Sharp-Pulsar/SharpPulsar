@@ -18,8 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using DotNetty.Buffers;
+/// 
 using K4os.Compression.LZ4;
 
 namespace SharpPulsar.Common.Compression
@@ -58,7 +57,7 @@ namespace SharpPulsar.Common.Compression
 
 		public byte[] Decode(byte[] encoded, int uncompressedLength)
 		{
-			byte[] uncompressed = PooledByteBufferAllocator.Default.Buffer(uncompressedLength, uncompressedLength).Array;
+			byte[] uncompressed = new byte[uncompressedLength];
 			var uncompressedNio = uncompressed;
 
 			var encodedNio = encoded;

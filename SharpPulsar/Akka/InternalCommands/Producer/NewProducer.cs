@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Akka.Handlers;
-using SharpPulsar.Api;
+﻿using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.InternalCommands.Producer

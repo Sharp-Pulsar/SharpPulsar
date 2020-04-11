@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using SharpPulsar.Api;
 
 namespace SharpPulsar.Akka.InternalCommands
 {

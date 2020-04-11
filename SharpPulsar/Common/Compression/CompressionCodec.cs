@@ -19,7 +19,6 @@
 /// </summary>
 
 using System.IO;
-using DotNetty.Buffers;
 
 namespace SharpPulsar.Common.Compression
 {

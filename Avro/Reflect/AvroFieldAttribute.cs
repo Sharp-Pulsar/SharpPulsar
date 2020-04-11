@@ -19,7 +19,6 @@
 namespace Avro.Reflect
 {
     using System;
-    using System.Reflection;
 
     /// <summary>
     /// Attribute that specifies the mapping between an Avro field and C# class property.

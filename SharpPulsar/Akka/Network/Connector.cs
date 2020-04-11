@@ -17,7 +17,6 @@
 //https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-cli
 using System;
 using System.IO;
-using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;

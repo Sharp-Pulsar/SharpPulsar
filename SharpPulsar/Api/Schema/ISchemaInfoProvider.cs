@@ -18,9 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Api.Schema
 {
-    using System.Threading.Tasks;
-
-	/// <summary>
+    /// <summary>
 	/// Schema Provider.
 	/// </summary>
 	public interface ISchemaInfoProvider

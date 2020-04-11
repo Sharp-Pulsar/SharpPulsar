@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Api;
+﻿using SharpPulsar.Api;
 
 namespace Samples
 {

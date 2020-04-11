@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Impl.Conf;

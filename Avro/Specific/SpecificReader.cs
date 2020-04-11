@@ -18,10 +18,7 @@
 namespace Avro.Specific
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Reflection;
     using Avro;
     using Avro.Generic;
     using Avro.IO;

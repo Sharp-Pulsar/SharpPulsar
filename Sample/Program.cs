@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -16,7 +15,6 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Api.Schema;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
@@ -26,7 +24,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Samples
 {
-    //curl -H "Content-Type: application/json" -X PUT http://{IP_ADDRESS}:7750/pulsar-manager/users/superuser -d '{"name": "platform", "password": "platform", "description": "test1", "email": "username1@test.org"}
+    //curl -H "Content-Type: application/json" -X PUT http://10.240.0.79:7750/pulsar-manager/users/superuser -d '{"name": "platform", "password": "platform", "description": "test1", "email": "username1@test.org"}
     //bin/pulsar sql-worker run -D "java.vendor"="Oracle Corporation"
     //https://developer.ibm.com/articles/kubernetes-networking-what-you-need-to-know/
     //https://streamnative.io/docs/v1.0.0/get-started/helm/
@@ -105,8 +103,8 @@ namespace Samples
             #endregion
             var clientConfig = new PulsarClientConfigBuilder()
                 //.ServiceUrl("pulsar://pulsar-proxy.eastus2.cloudapp.azure.com:6650")
-                .ServiceUrl("pulsar://40.65.213.73:6650")//testing purposes only
-                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://40.65.213.73:6650"))//testing purposes only
+                .ServiceUrl("pulsar://40.70.228.154:6650")//testing purposes only
+                .ServiceUrlProvider(new ServiceUrlProviderImpl("pulsar://40.70.228.154:6650"))//testing purposes only
                 .ConnectionsPerBroker(1)
                 .UseProxy(true)
                 .Authentication( new AuthenticationDisabled())

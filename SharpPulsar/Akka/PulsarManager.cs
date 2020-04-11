@@ -6,6 +6,7 @@ using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Akka.Reader;
+using SharpPulsar.Akka.Sql;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
@@ -51,6 +52,7 @@ namespace SharpPulsar.Akka
                 Context.ActorOf(ProducerManager.Prop(_config, _network), "ProducerManager");
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
                 Context.ActorOf(ReaderManager.Prop(_config, _network), "ReaderManager");
+                Context.ActorOf(SqlManager.Prop(), "SqlManager");
                 Become(Ready);
                 Stash.UnstashAll();
             });

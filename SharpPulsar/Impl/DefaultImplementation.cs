@@ -6,9 +6,6 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using SharpPulsar.Common.Enum;
-using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

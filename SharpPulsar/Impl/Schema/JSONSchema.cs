@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Avro.IO;
 using Avro.Reflect;
-using Newtonsoft.Json.Schema;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
@@ -30,13 +28,10 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Impl.Schema
 {
-	using DotNetty.Buffers;
-	using Api;
+    using Api;
 	using SharpPulsar.Api.Schema;
-	using Reader;
-	using Writer;
 
-	/// <summary>
+    /// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>
 	public class JsonSchema : StructSchema

@@ -26,8 +26,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Impl.Schema.Generic
 {
 	using Field = Api.Schema.Field;
-	using IGenericRecord = Api.Schema.IGenericRecord;
-	using SharpPulsar.Api.Schema;
+    using SharpPulsar.Api.Schema;
 
 
 	public class GenericJsonReader : ISchemaReader

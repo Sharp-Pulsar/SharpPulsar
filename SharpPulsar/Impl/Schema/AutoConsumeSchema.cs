@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Shared;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Akka.Routing;
 using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
 
@@ -205,8 +204,8 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<ProducerClosed>(_ =>
             {
-                ReceiveAny(c => Stash.Stash());
-                Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateProducer(), ActorRefs.NoSender);
+                //ReceiveAny(c => Stash.Stash());
+                //Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateProducer(), ActorRefs.NoSender);
             });
             Receive<RecreateProducer>(_ =>
             {

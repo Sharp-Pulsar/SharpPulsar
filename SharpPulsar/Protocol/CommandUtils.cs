@@ -1,9 +1,7 @@
 ﻿using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Protocol.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SharpPulsar.Common;
 using SharpPulsar.Extension;
 
 /// <summary>

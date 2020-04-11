@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace SharpPulsar.Extension
+﻿namespace SharpPulsar.Extension
 {
     public static class EnumValue
     {

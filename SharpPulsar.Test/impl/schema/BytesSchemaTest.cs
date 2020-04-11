@@ -18,7 +18,6 @@
 /// </summary>
 
 using System.Text;
-using DotNetty.Buffers;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Schema;
 using Xunit;

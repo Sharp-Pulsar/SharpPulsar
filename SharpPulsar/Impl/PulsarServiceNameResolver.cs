@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Common;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using DotNetty.Common.Internal;
 using Microsoft.Extensions.Logging;
 

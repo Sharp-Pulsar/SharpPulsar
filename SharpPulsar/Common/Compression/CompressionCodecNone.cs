@@ -18,8 +18,6 @@
 /// under the License.
 /// </summary>
 
-using DotNetty.Buffers;
-
 namespace SharpPulsar.Common.Compression
 {
 

@@ -23,9 +23,8 @@ namespace SharpPulsar.Impl
 {
     using SharpPulsar.Common;
     using System;
-    using System.Net;
 
-	/// <summary>
+    /// <summary>
 	/// A service name resolver to resolve real socket address.
 	/// </summary>
 	public interface ServiceNameResolver

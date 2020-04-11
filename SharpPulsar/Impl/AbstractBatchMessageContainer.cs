@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using System;
-using System.Collections.Generic;
 using SharpPulsar.Protocol;
 
 /// <summary>

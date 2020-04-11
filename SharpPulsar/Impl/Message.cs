@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Json;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Utility;

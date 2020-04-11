@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Impl;
-
-namespace SharpPulsar.Akka.Handlers
+﻿namespace SharpPulsar.Akka.Handlers
 {
     public interface IHandler
     {

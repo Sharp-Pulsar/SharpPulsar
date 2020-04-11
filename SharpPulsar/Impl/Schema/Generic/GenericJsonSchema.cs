@@ -18,8 +18,6 @@
 /// </summary>
 
 using System;
-using System.Linq;
-using Avro;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
@@ -27,9 +25,7 @@ using SharpPulsar.Protocol.Schema;
 
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-	using IGenericRecord = Api.Schema.IGenericRecord;
-	using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
+    using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Api.Schema;
 
 	/// <summary>

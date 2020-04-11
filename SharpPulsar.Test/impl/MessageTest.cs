@@ -17,7 +17,6 @@
 /// under the License.
 /// </summary>
 
-using DotNetty.Buffers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;

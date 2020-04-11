@@ -18,8 +18,6 @@
 namespace Avro
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using Newtonsoft.Json;
 
     /// <summary>

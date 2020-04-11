@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Shared;
-
-namespace SharpPulsar.Akka.InternalCommands
+﻿namespace SharpPulsar.Akka.InternalCommands
 {
     public class Payload
     {

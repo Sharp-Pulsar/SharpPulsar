@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Protocol;
+﻿using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

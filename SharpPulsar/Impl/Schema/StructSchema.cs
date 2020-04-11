@@ -11,7 +11,6 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.SchemaGenerator;
 using SharpPulsar.Shared;
 
 /// <summary>

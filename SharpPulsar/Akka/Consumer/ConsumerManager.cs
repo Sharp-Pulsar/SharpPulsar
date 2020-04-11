@@ -3,7 +3,6 @@ using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;

@@ -1,12 +1,10 @@
-﻿using DotNetty.Buffers;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
-using SharpPulsar.Protocol.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
