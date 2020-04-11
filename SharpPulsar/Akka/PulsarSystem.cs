@@ -63,10 +63,24 @@ namespace SharpPulsar.Akka
         }
         public void CreateReader(CreateReader reader)
         {
-            var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration);
+            if (reader.Seek != null && (reader.Seek.Type == null || reader.Seek.Input == null))
+                throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+            var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
             _pulsarManager.Tell(p);
         }
 
+        public void QueryData(QueryData data)
+        {
+            if(string.IsNullOrWhiteSpace(data.DestinationServer) || data.ExceptionHandler == null || data.Handler == null || string.IsNullOrWhiteSpace(data.Query))
+                throw new ArgumentException("QueryData is in an invalid state: null field not allowed");
+            _pulsarManager.Tell(data);
+        }
+        public void SetupSqlServers(SqlServers servers)
+        {
+            if (servers.Servers.Count < 1)
+                throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
+            _pulsarManager.Tell(servers);
+        }
         public void CreateConsumer(CreateConsumer consumer)
         {
             if (consumer.ConsumerType == ConsumerType.Multi)
@@ -84,7 +98,9 @@ namespace SharpPulsar.Akka
 
             if (!consumer.ConsumerConfiguration.TopicNames.Any() && consumer.ConsumerConfiguration.TopicsPattern == null)
                 throw new ArgumentException("Please set topic(s) or topic pattern");
-            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType);
+            if(consumer.Seek != null && (consumer.Seek.Type == null || consumer.Seek.Input == null))
+                throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
             _pulsarManager.Tell(c);
         }
 

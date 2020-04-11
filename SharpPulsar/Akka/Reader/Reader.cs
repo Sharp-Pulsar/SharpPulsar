@@ -14,7 +14,7 @@ namespace SharpPulsar.Akka.Reader
     public class Reader: ReceiveActor
     {
         private readonly IReaderListener _readerListener;
-        public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network)
+        public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek)
         {
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
             if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
@@ -53,7 +53,7 @@ namespace SharpPulsar.Akka.Reader
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName,
-                consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable));
+                consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek));
             Receive<ConsumedMessage>(m =>
             {
                 _readerListener.Received(m.Message);
@@ -68,9 +68,9 @@ namespace SharpPulsar.Akka.Reader
             });
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek)
         {
-            return Props.Create(()=> new Reader(clientConfiguration, readerConfiguration, network));
+            return Props.Create(()=> new Reader(clientConfiguration, readerConfiguration, network, seek));
         }
     }
 }

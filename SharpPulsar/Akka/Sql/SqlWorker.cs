@@ -34,7 +34,6 @@ namespace SharpPulsar.Akka.Sql
                 var payload = new Dictionary<string, object>();
                 var message = new Dictionary<string, object>();
                 var metadata = new Dictionary<string, object>();
-                var row = new List<string>();
                 for (var i = 0; i < reader.FieldCount; i++)
                 {
                     try
@@ -61,6 +60,8 @@ namespace SharpPulsar.Akka.Sql
                     }
                 }
             }
+
+            q.Handler(new Dictionary<string,object>{{"Finished", true}});
         }
         public static Props Prop(string server)
         {

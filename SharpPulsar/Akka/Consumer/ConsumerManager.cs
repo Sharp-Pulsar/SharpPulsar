@@ -45,14 +45,14 @@ namespace SharpPulsar.Akka.Consumer
             switch (consumer.ConsumerType)
             {
                 case ConsumerType.Pattern:
-                    Context.ActorOf(PatternMultiTopicsManager.Prop(clientConfig, consumerConfig, _network), "PatternMultiTopics");
+                    Context.ActorOf(PatternMultiTopicsManager.Prop(clientConfig, consumerConfig, _network, consumer.Seek), "PatternMultiTopics");
                     break;
                 case ConsumerType.Multi:
-                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false), "MultiTopics");
+                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false, consumer.Seek), "MultiTopics");
                     break;
                 case ConsumerType.Single:
                     var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);
-                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable), "SingleTopic");
+                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable, consumer.Seek), "SingleTopic");
                     break;
                 default:
                     Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Are you high? How am I suppose to know the consumer type you want to create? ;)!")));

@@ -43,7 +43,7 @@ namespace SharpPulsar.Akka.Consumer
         private IActorRef _network;
         private int _requestedFlowPermits;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
-
+        private Seek _seek;
         private readonly DeadLetterPolicy _deadLetterPolicy;
         private readonly bool _createTopicIfDoesNotExist;
         private readonly SubscriptionMode _subscriptionMode;
@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         private bool _firstSuccess = true;
-        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode)
+        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
         {
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
             _listener = configuration.MessageListener;
@@ -77,6 +77,7 @@ namespace SharpPulsar.Akka.Consumer
             _network = network;
             _topicName = TopicName.Get(topic);
             _schema = configuration.Schema;
+            _seek = seek;
             // Create msgCrypto if not created already
             _msgCrypto = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
             
@@ -126,29 +127,14 @@ namespace SharpPulsar.Akka.Consumer
            return false;
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
         {
-            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode));
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek));
         }
         
         private bool HasReachedEndOfTopic()
         {
             return false;
-        }
-        
-        private void Seek(SeekForMessageId m)
-        {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewSeek(_consumerid, requestid, m.LedgerId, m.EntryId);
-            var payload = new Payload(request, requestid, "NewSeek");
-            _broker.Tell(payload);
-        }
-        private void Seek(TimestampSeek s)
-        {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewSeek(_consumerid, requestid, s.Timestamp);
-            var payload = new Payload(request, requestid, "NewSeek");
-            _broker.Tell(payload);
         }
         private void LastMessageId()
         {
@@ -601,8 +587,6 @@ namespace SharpPulsar.Akka.Consumer
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
             Receive<AckMultiMessage>(AckMultiMessage);
-            Receive<SeekForMessageId>(Seek);
-            Receive<TimestampSeek>(Seek);
             Receive<SubscribeSuccess>(s =>
             {
                 if (s.HasSchema)
@@ -680,6 +664,26 @@ namespace SharpPulsar.Akka.Consumer
                         Schema = (sbyte[])(object)s.Schema.SchemaData
                     };
                     _schema = ISchema.GetSchema(schemaInfo);
+                }
+
+                if (_seek != null)
+                {
+                    switch (_seek.Type)
+                    {
+                        case SeekType.Timestamp:
+                            var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
+                            var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
+                            var pay = new Payload(req, reqtid, "NewSeek");
+                            _broker.Tell(pay);
+                            break;
+                        default:
+                            var v = _seek.Input.ToString().Trim().Split(",");//format l,e
+                            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                            var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
+                            var payload = new Payload(request, requestid, "NewSeek");
+                            _broker.Tell(payload);
+                            break;
+                    }
                 }
                 SendFlow(_requestedFlowPermits);
                 _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));

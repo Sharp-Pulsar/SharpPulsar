@@ -35,6 +35,14 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("ReaderManager").Tell(cmd);
             });
+            Receive<SqlServers>(cmd =>
+            {
+                Context.Child("SqlManager").Tell(cmd);
+            });
+            Receive<QueryData>(cmd =>
+            {
+                Context.Child("SqlManager").Tell(cmd);
+            });
             Receive<UpdateService>(u =>
             {
                 foreach (var c in Context.GetChildren())

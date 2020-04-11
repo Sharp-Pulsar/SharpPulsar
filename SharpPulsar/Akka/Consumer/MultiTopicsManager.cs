@@ -21,9 +21,11 @@ namespace SharpPulsar.Akka.Consumer
         private IMessageListener _listener;
         private IConsumerEventListener _event;
         private bool _hasParentConsumer;
+        private Seek _seek;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        public MultiTopicsManager(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer)
+        public MultiTopicsManager(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek)
         {
+            _seek = seek;
             _consumerConfiguration = configuration;
             _clientConfiguration = clientConfiguration;
             _network = network;
@@ -42,12 +44,12 @@ namespace SharpPulsar.Akka.Consumer
                     for (var i = 0; i < p.Partition; i++)
                     {
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable));
+                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek));
                     }
                 }
                 else
                 {
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable));
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek));
                 }
 
                 _pendingLookupRequests.Remove(p.RequestId);
@@ -74,9 +76,9 @@ namespace SharpPulsar.Akka.Consumer
            
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek)
         {
-            return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer));
+            return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer, seek));
         }
 
         public IStash Stash { get; set; }
