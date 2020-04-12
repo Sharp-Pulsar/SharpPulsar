@@ -246,7 +246,7 @@ namespace Samples
             {
                 var student = new Students
                 {
-                    Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
                     Age = 2019 + i,
                     School = "Akka-Pulsar university"
                 };
@@ -730,7 +730,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.MessageId, "58,1")));
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "58,1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddHours(-15).ToUnixTimeMilliseconds())));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1143,6 +1143,12 @@ namespace Samples
         }
     }
     public class Students
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public string School { get; set; }
+    }
+    public class Churches
     {
         public string Name { get; set; }
         public int Age { get; set; }

@@ -46,7 +46,7 @@ namespace SharpPulsar.Akka.Producer
                 _producerConfiguration.Partitions = x.Partition;
                _producerConfiguration.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
-                if (x.Partition > 1)
+                if (x.Partition > 0)
                     Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), $"partitioned{DateTimeHelper.CurrentUnixTimeMillis()}");
                 else
                     Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), $"producer{DateTimeHelper.CurrentUnixTimeMillis()}");
