@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using Akka.Actor;
 using PrestoSharp;
 using SharpPulsar.Akka.InternalCommands;
@@ -25,43 +26,52 @@ namespace SharpPulsar.Akka.Sql
 
         private void Query(QueryData query)
         {
-            var q = query;
-            using var cmd = _connection.CreateCommand();
-            cmd.CommandText = q.Query;
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            try
             {
-                var payload = new Dictionary<string, object>();
-                var message = new Dictionary<string, object>();
-                var metadata = new Dictionary<string, object>();
-                for (var i = 0; i < reader.FieldCount; i++)
+                var q = query;
+                using var cmd = _connection.CreateCommand();
+                cmd.CommandText = q.Query;
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    try
+                    var payload = new Dictionary<string, string>();
+                    var message = new Dictionary<string, object>();
+                    var metadata = new Dictionary<string, object>();
+                    for (var i = 0; i < reader.FieldCount; i++)
                     {
-                        var col = reader.GetName(i);
-                        var value = reader.GetValue(i);
-                        if (col.StartsWith("__") && col.EndsWith("__"))
+                        try
                         {
-                            metadata[col.Trim('_')] = value;
-                        }
-                        else
-                        {
-                            message[col] = value;
-                        }
+                            var col = reader.GetName(i);
+                            var value = reader.GetValue(i);
+                            if (col.StartsWith("__") && col.EndsWith("__"))
+                            {
+                                metadata[col.Trim('_')] = value;
+                            }
+                            else
+                            {
+                                message[col] = value;
+                            }
 
-                        payload["Message"] = message;
-                        if (q.IncludeMetadata)
-                            payload["Metadata"] = metadata;
-                        q.Handler(payload);
-                    }
-                    catch (Exception e)
-                    {
-                        q.ExceptionHandler(e);
+                            payload["Message"] = JsonSerializer.Serialize(message,
+                                new JsonSerializerOptions {WriteIndented = true});
+                            if (q.IncludeMetadata)
+                                payload["Metadata"] = JsonSerializer.Serialize(metadata,
+                                    new JsonSerializerOptions {WriteIndented = true});
+                            q.Handler(payload);
+                        }
+                        catch (Exception e)
+                        {
+                            q.ExceptionHandler(e);
+                        }
                     }
                 }
-            }
 
-            q.Handler(new Dictionary<string,object>{{"Finished", true}});
+                q.Handler(new Dictionary<string, string> {{"Finished", "true"}});
+            }
+            catch (Exception ex)
+            {
+                query.ExceptionHandler(ex);
+            }
         }
         public static Props Prop(string server)
         {

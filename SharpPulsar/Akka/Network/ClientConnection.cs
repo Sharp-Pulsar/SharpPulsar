@@ -165,10 +165,7 @@ namespace SharpPulsar.Akka.Network
             await Task.Yield();
             try
             {
-                while (_stream == null)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-                }
+                
                 await foreach (var frame in _stream.Frames())
                 {
                     try

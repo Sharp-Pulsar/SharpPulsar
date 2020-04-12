@@ -42,6 +42,7 @@ Addition and fixes!
 
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.4" />
+    <PackageReference Include="Akka.Logger.NLog" Version="1.3.5" />
     <PackageReference Include="AvroSchemaGenerator" Version="0.1.0" />
     <PackageReference Include="DotNetty.Buffers" Version="0.6.0" />
     <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
@@ -73,6 +74,12 @@ Addition and fixes!
 
   <ItemGroup>
     <Folder Include="Akka\InternalCommands\Reader\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -26,6 +26,7 @@ namespace SharpPulsar.Akka
             {
                 loglevel = DEBUG
 			    log-config-on-start = on 
+                loggers=[""Akka.Logger.NLog.NLogLogger, Akka.Logger.NLog""]
 			    actor 
                 {              
 				      debug 
