@@ -14,6 +14,23 @@ JsonSchema is basically AvroSchema underneath!
 
 Supported pulsar cluster versions: 2.5+
 
+## Supported features
+- [X] Service discovery
+- [X] Automatic reconnect
+- [X] Producer
+- [X] Consumer
+- [X] Reader
+- [X] Schema Registration
+- [X] End-To-End Message Encryption
+- [X] Partitioned Producer
+- [X] MultiTopics Consumer
+- [x] Pattern Multi-Topics Consumer
+- [x] Bulk Publishing - for simplicity sake!
+- [x] Proxy
+- [x] Seek (MessageId, Timestamp)
+- [x] Pulsar SQL (Presto)[How to use cmd 20 and 21 in [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample)]
+
+
 ### Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample).
 
@@ -121,21 +138,3 @@ var consumerConfig = new ConsumerConfigBuilder()
   pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
 ````
 7 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
-
-
-## Supported features
-- [X] Service discovery
-- [X] Automatic reconnect
-- [X] Producer
-- [X] Consumer
-- [X] Reader
-- [X] Schema Registration
-- [X] End-To-End Message Encryption
-- [X] Partitioned Producer
-- [X] MultiTopics Consumer
-- [x] Pattern Multi-Topics Consumer
-- [x] Bulk Publishing - for simplicity sake!
-- [x] Proxy
-- [x] Seek (MessageId, Timestamp)
-- [x] Pulsar SQL (Presto)
-
