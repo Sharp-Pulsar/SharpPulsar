@@ -28,7 +28,7 @@ Supported pulsar cluster versions: 2.5+
 - [x] Bulk Publishing - for simplicity sake!
 - [x] Proxy
 - [x] Seek (MessageId, Timestamp)
-- [x] Pulsar SQL (Presto)[How to use cmd 20 and 21 in [Sample](https://github.com/eaba/SharpPulsar/tree/master/Sample)]
+- [x] Pulsar SQL (Presto)[How to use cmd 20 and 21 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 
 
 ### Getting Started
