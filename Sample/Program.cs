@@ -53,7 +53,8 @@ namespace Samples
 
             Console.WriteLine("Enter last message sequence_id:");
             var seq = Console.ReadLine();
-            IdGenerators.SequenceId = long.Parse(seq);
+            IdGenerators.SequenceId += long.Parse(seq);
+            Console.WriteLine(IdGenerators.SequenceId);
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(endPoint)
                 .ConnectionsPerBroker(1)

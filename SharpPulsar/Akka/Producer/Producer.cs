@@ -67,7 +67,7 @@ namespace SharpPulsar.Akka.Producer
             if (isPartitioned)
             {
                 var n = Self.Path.Name;
-                _partitionIndex = int.Parse(n.Substring(n.Length - 1));
+                _partitionIndex = int.Parse(n.Substring(n.Length - configuration.Partitions.ToString().Length));
             }
 
             ProducerName = configuration.ProducerName;
