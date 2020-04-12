@@ -50,6 +50,10 @@ namespace Samples
             Console.WriteLine("Is Broker behind a pulsar proxy(Y/N)");
             var proxy = Console.ReadLine();
             var useProxy = proxy.ToLower() == "y";
+
+            Console.WriteLine("Enter last message sequence_id:");
+            var seq = Console.ReadLine();
+            IdGenerators.SequenceId = long.Parse(seq);
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(endPoint)
                 .ConnectionsPerBroker(1)
