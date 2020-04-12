@@ -135,5 +135,7 @@ var consumerConfig = new ConsumerConfigBuilder()
 - [X] MultiTopics Consumer
 - [x] Pattern Multi-Topics Consumer
 - [x] Bulk Publishing - for simplicity sake!
-- [x] Proxy-ing
+- [x] Proxy
+- [x] Seek (MessageId, Timestamp)
+- [x] Pulsar SQL (Presto)
 
