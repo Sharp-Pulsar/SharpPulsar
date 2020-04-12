@@ -44,12 +44,12 @@ namespace SharpPulsar.Akka.Consumer
                     for (var i = 0; i < p.Partition; i++)
                     {
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek));
+                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                     }
                 }
                 else
                 {
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek));
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                 }
 
                 _pendingLookupRequests.Remove(p.RequestId);

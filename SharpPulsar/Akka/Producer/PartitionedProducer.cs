@@ -26,14 +26,14 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), i.ToString());
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"routee{DateTimeHelper.CurrentUnixTimeMillis()}");
                 routees.Add(c.Path.ToString());
             }
             //Surely this is pulsar's custom routing policy ;)
             if(configuration.MessageRoutingMode == MessageRoutingMode.RoundRobinPartition)
-                 _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), "Partition");
+                 _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
             else
-                _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), "Partition");
+                _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
             Receive<RegisteredProducer>(p =>
             {
                 _partitions += 1;

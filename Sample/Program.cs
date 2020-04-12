@@ -642,7 +642,7 @@ namespace Samples
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
                 .Schema(jsonSchem)
                 .MessageListener(messageListener)
-                .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
             system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
 
@@ -730,7 +730,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.MessageId, "58,1")));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {

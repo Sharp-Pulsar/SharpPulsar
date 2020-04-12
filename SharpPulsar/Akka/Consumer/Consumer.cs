@@ -536,6 +536,25 @@ namespace SharpPulsar.Akka.Consumer
 
         private void BecomeActive()
         {
+            if (_seek != null)
+            {
+                switch (_seek.Type)
+                {
+                    case SeekType.Timestamp:
+                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
+                        var pay = new Payload(req, reqtid, "NewSeek");
+                        _broker.Tell(pay);
+                        break;
+                    default:
+                        var v = _seek.Input.ToString().Trim().Split(",");//format l,e
+                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
+                        var payload = new Payload(request, requestid, "NewSeek");
+                        _broker.Tell(payload);
+                        break;
+                }
+            }
             Context.Watch(_broker);
             Become(Active);
         }
@@ -604,6 +623,13 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
         }
+
+        protected override void PostRestart(Exception reason)
+        {
+            //base.PostRestart(reason);
+            _seek = null;//seek seems to crash consumer, set it to null to avoid restarting more than once
+        }
+
         private void LookUp()
         {
             Receive<BrokerLookUp>(l =>
@@ -666,25 +692,6 @@ namespace SharpPulsar.Akka.Consumer
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
 
-                if (_seek != null)
-                {
-                    switch (_seek.Type)
-                    {
-                        case SeekType.Timestamp:
-                            var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
-                            var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
-                            var pay = new Payload(req, reqtid, "NewSeek");
-                            _broker.Tell(pay);
-                            break;
-                        default:
-                            var v = _seek.Input.ToString().Trim().Split(",");//format l,e
-                            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-                            var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
-                            var payload = new Payload(request, requestid, "NewSeek");
-                            _broker.Tell(payload);
-                            break;
-                    }
-                }
                 SendFlow(_requestedFlowPermits);
                 _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
                 BecomeActive();

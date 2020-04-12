@@ -47,9 +47,9 @@ namespace SharpPulsar.Akka.Producer
                _producerConfiguration.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
                 if (x.Partition > 1)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), "partitionedproducer");
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), $"partitioned{DateTimeHelper.CurrentUnixTimeMillis()}");
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), "producer");
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), $"producer{DateTimeHelper.CurrentUnixTimeMillis()}");
             });
             Receive<RegisteredProducer>(p =>
             {
@@ -133,13 +133,14 @@ namespace SharpPulsar.Akka.Producer
             _listener = _producerConfiguration.ProducerEventListener;
             if (clientConfig == null)
             {
-                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined")));
+                _listener.Log("Producer configuration undefined");
                 return;
             }
 
             if (schema is AutoConsumeSchema)
             {
-                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically")));
+                _listener.Log("AutoConsumeSchema is only used by consumers to detect schemas automatically");
+                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("")));
                 return;
             }
 

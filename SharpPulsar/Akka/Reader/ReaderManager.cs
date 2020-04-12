@@ -33,7 +33,7 @@ namespace SharpPulsar.Akka.Reader
             var schema = reader.ReaderConfiguration.Schema;
             var clientConfig = reader.Configuration;
             var readerConfig = reader.ReaderConfiguration;
-            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek));
+            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek), $"reader{DateTimeHelper.CurrentUnixTimeMillis()}");
         }
         
         public IStash Stash { get; set; }
