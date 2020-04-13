@@ -30,6 +30,7 @@ namespace Samples
 {
     public class Program
     {
+        //https://www.splunk.com/en_us/blog/it/effectively-once-semantics-in-apache-pulsar.html
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
         public static readonly ConcurrentDictionary<string, IActorRef> Producers = new ConcurrentDictionary<string, IActorRef>();
         public static readonly ConcurrentBag<string> Receipts = new ConcurrentBag<string>();
@@ -51,10 +52,6 @@ namespace Samples
             var proxy = Console.ReadLine();
             var useProxy = proxy.ToLower() == "y";
 
-            Console.WriteLine("Enter last message sequence_id:");
-            var seq = Console.ReadLine();
-            IdGenerators.SequenceId += long.Parse(seq);
-            Console.WriteLine(IdGenerators.SequenceId);
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(endPoint)
                 .ConnectionsPerBroker(1)
@@ -230,10 +227,9 @@ namespace Samples
                 Receipts.Add(s);
             });
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName(topic.Split("/").Last())
+                .ProducerName(topic)
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .SendTimeout(10000)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
@@ -247,7 +243,7 @@ namespace Samples
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 25; i++)
             {
                 var student = new Students
                 {

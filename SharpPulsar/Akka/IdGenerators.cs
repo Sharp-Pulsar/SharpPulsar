@@ -7,7 +7,6 @@ namespace SharpPulsar.Akka
         public static long ProducerId;
         public static long ConsumerId;
         public static long ReaderId;
-        public static long SequenceId;
         public static int PartitionIndex;
     }
 }

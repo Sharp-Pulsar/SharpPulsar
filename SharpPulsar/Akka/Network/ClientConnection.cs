@@ -211,11 +211,22 @@ namespace SharpPulsar.Akka.Network
                                 _requests.TryRemove((long)s.RequestId, out var rt);
                                 break;
                             case BaseCommand.Type.SendReceipt:
-                                var send = cmd.SendReceipt;
-                                _requests[(long)send.SequenceId].Key.Tell(new SentReceipt((long)send.ProducerId,
-                                    (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
-                                    send.MessageId.BatchIndex, send.MessageId.Partition));
-                                _requests.TryRemove((long)send.SequenceId, out var ou);
+                                try
+                                {
+                                    var send = cmd.SendReceipt;
+                                    _requests[(long)send.SequenceId].Key.Tell(new SentReceipt((long)send.ProducerId,
+                                        (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                        send.MessageId.BatchIndex, send.MessageId.Partition));
+                                    _requests.TryRemove((long)send.SequenceId, out var ou);
+                                }
+                                catch (Exception exception)
+                                {
+                                    var send = cmd.SendReceipt;
+                                    _manager.Tell(new SentReceipt((long)send.ProducerId,
+                                        (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                        send.MessageId.BatchIndex, send.MessageId.Partition));
+                                    _context.System.Log.Error(exception.ToString());
+                                }
                                 break;
                             case BaseCommand.Type.GetOrCreateSchemaResponse:
                                 var res = cmd.getOrCreateSchemaResponse;

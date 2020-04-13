@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
@@ -26,7 +27,8 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"routee{DateTimeHelper.CurrentUnixTimeMillis()}{i}");
+                var topc = Regex.Replace(partitionName, @"[^\w\d]", "");
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"{topc}{i}");
                 routees.Add(c.Path.ToString());
             }
             //Surely this is pulsar's custom routing policy ;)

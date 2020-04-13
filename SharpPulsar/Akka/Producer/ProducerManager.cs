@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.Configuration;
@@ -41,15 +42,15 @@ namespace SharpPulsar.Akka.Producer
             Receive<NewProducer>(NewProducer);
             Receive<Partitions>(x =>
             {
-
+                var topic = Regex.Replace(_producerConfiguration.TopicName, @"[^\w\d]", "");
                 _listener.Log($"Found {x.Partition} partition for Topic: {_producerConfiguration.TopicName}");
                 _producerConfiguration.Partitions = x.Partition;
                _producerConfiguration.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), $"partitioned{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), topic);
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), $"producer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), topic);
             });
             Receive<RegisteredProducer>(p =>
             {
@@ -126,6 +127,13 @@ namespace SharpPulsar.Akka.Producer
 
         private void NewProducer(NewProducer producer)
         {
+            var topic = Regex.Replace(producer.ProducerConfiguration.TopicName, @"[^\w\d]", "");
+            if (!Context.Child(topic).IsNobody())
+            {
+                _listener.Log($"Producer for topic '{producer.ProducerConfiguration.TopicName}' already exist");
+                return;
+            }
+
             var schema = producer.ProducerConfiguration.Schema;
             var clientConfig = producer.Configuration;
             var producerConfig = producer.ProducerConfiguration;

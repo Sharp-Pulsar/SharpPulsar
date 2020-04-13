@@ -36,6 +36,7 @@ namespace SharpPulsar.Akka.Producer
         private MessageCrypto _msgCrypto;
         private ConnectedServerInfo _serverInfo;
         private string _topic;
+        private long _sequenceId = 0;
         private int _partitionIndex = -1;
 
         private readonly IDictionary<string, string> _metadata;
@@ -84,11 +85,11 @@ namespace SharpPulsar.Akka.Producer
             if (configuration.InitialSequenceId != null)
             {
                 var initialSequenceId = (long)configuration.InitialSequenceId;
-                IdGenerators.SequenceId = initialSequenceId;
+                _sequenceId = initialSequenceId;
             }
             else
             {
-                IdGenerators.SequenceId = -1L;
+                _sequenceId = -1L;
             }
 
             if (configuration.Properties == null)
@@ -154,7 +155,7 @@ namespace SharpPulsar.Akka.Producer
                 _pendingLookupRequests.Remove(p.RequestId);
                 if (string.IsNullOrWhiteSpace(ProducerName))
                     ProducerName = p.Name;
-                IdGenerators.SequenceId = p.LastSequenceId;
+                _sequenceId = p.LastSequenceId  == -1 ? 0 : p.LastSequenceId; //brokerDeduplicationEnabled must be enabled
                 var schemaVersion = p.SchemaVersion;
                 if (schemaVersion != null)
                 {
@@ -426,10 +427,10 @@ namespace SharpPulsar.Akka.Producer
                     return;
                 }
 
-                if (metadata.SequenceId < 1)
+                if (metadata.SequenceId < 1 || metadata.SequenceId < (ulong)_sequenceId)
                 {
-                    var sequenceId = Interlocked.Increment(ref IdGenerators.SequenceId);
-                    metadata.SequenceId = (ulong)sequenceId;
+                     _sequenceId += 1;
+                    metadata.SequenceId = (ulong)_sequenceId;
                 }
                 if (metadata.PublishTime < 1)
                 {
@@ -561,10 +562,10 @@ namespace SharpPulsar.Akka.Producer
 
             }
 
-            catch (Exception T)
+            catch (Exception ex)
             {
-                Context.System.Log.Error($"[{_topic}] [{ ProducerName}] error while closing out batch -- {T}");
-                Sender.Tell(new ErrorMessage(new PulsarClientException(T.Message)));
+                Context.System.Log.Error($"[{_topic}] [{ ProducerName}] error while closing out batch -- {ex}");
+                _listener.Log(ex.ToString());
             }
         }
 

@@ -19,7 +19,8 @@ namespace SharpPulsar.Akka.Sql
                 foreach (var s in servers.Servers)
                 {
                     var srv = Regex.Replace(s, @"[^\w\d]", "");
-                    Context.ActorOf(SqlWorker.Prop(s), srv);
+                    if(Context.Child(srv).IsNobody())
+                       Context.ActorOf(SqlWorker.Prop(s), srv);
                 }
                 Become(Ready);
                 Stash.UnstashAll();
