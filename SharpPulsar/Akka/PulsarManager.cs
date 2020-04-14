@@ -1,11 +1,10 @@
-﻿using Akka.Actor;
+﻿using System.Text.RegularExpressions;
+using Akka.Actor;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
-using SharpPulsar.Akka.Producer;
-using SharpPulsar.Akka.Reader;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Impl.Conf;
 
@@ -23,17 +22,9 @@ namespace SharpPulsar.Akka
 
         private void Ready()
         {
-            Receive<NewProducer>(cmd =>
-            {
-                Context.Child("ProducerManager").Tell(cmd);
-            });
             Receive<NewConsumer>(cmd =>
             {
                 Context.Child("ConsumerManager").Tell(cmd);
-            });
-            Receive<NewReader>(cmd =>
-            {
-                Context.Child("ReaderManager").Tell(cmd);
             });
             Receive<SqlServers>(cmd =>
             {
@@ -43,13 +34,24 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("SqlManager").Tell(cmd);
             });
-            Receive<UpdateService>(u =>
+            Receive<NewProducer>(cmd =>
             {
-                foreach (var c in Context.GetChildren())
-                {
-                    //c.Tell(u);
-                }
+                var t = Regex.Replace(cmd.ProducerConfiguration.TopicName, @"[^\w\d]", "");
+                var child = Context.Child(t);
+                if (child.IsNobody())
+                    child = Context.ActorOf(TopicManager.Prop(_config, _network), t);
+                child.Tell(cmd);
             });
+
+            Receive<NewReader>(cmd =>
+            {
+                var t = Regex.Replace(cmd.ReaderConfiguration.TopicName, @"[^\w\d]", "");
+                var child = Context.Child(t);
+                if (child.IsNobody())
+                    child = Context.ActorOf(TopicManager.Prop(_config, _network), t);
+                child.Tell(cmd);
+            });
+            
         }
         
         private void NetworkSetup()
@@ -57,9 +59,7 @@ namespace SharpPulsar.Akka
             _network = Context.ActorOf(NetworkManager.Prop(Self, _config), "NetworkManager");
             Receive<ConnectedServerInfo>(s =>
             {
-                Context.ActorOf(ProducerManager.Prop(_config, _network), "ProducerManager");
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
-                Context.ActorOf(ReaderManager.Prop(_config, _network), "ReaderManager");
                 Context.ActorOf(SqlManager.Prop(), "SqlManager");
                 Become(Ready);
                 Stash.UnstashAll();

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Api;
+﻿using System.Text.RegularExpressions;
+using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.InternalCommands.Consumer
@@ -32,6 +33,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public ISchema Schema { get; }
         public ClientConfigurationData Configuration { get; }
         public ConsumerConfigurationData ConsumerConfiguration { get; }
+        
     }
 
     public sealed class Seek

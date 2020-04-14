@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Threading;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
@@ -34,29 +31,22 @@ namespace SharpPulsar.Akka.Consumer
         
         private void NewConsumer(NewConsumer consumer)
         {
-            var schema = consumer.ConsumerConfiguration.Schema;
-            var clientConfig = consumer.Configuration;
             var consumerConfig = consumer.ConsumerConfiguration;
-            if (clientConfig == null)
-            {
-                consumerConfig.ConsumerEventListener.Log("Producer configuration undefined");
-                return;
-            }
-
+            
             switch (consumer.ConsumerType)
             {
                 case ConsumerType.Pattern:
-                    Context.ActorOf(PatternMultiTopicsManager.Prop(clientConfig, consumerConfig, _network, consumer.Seek), $"PatternMultiTopics{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(PatternMultiTopicsManager.Prop(_config, consumerConfig, _network, consumer.Seek), $"PatternMultiTopics{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 case ConsumerType.Multi:
-                    Context.ActorOf(MultiTopicsManager.Prop(clientConfig, consumerConfig, _network, false, consumer.Seek), $"MultiTopics{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(MultiTopicsManager.Prop(_config, consumerConfig, _network, false, consumer.Seek), $"MultiTopics{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 case ConsumerType.Single:
                     var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);
-                    Context.ActorOf(Consumer.Prop(clientConfig, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable, consumer.Seek), $"SingleTopic{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(Consumer.Prop(_config, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable, consumer.Seek), $"SingleTopic{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 default:
-                    Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("Are you high? How am I suppose to know the consumer type you want to create? ;)!")));
+                    consumerConfig.ConsumerEventListener.Log("Are you high? How am I suppose to know the consumer type you want to create? ;)!");
                     break;
             }
         }

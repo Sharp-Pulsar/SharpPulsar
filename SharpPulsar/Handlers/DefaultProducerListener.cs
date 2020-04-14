@@ -9,11 +9,11 @@ namespace SharpPulsar.Handlers
 {
     public class DefaultProducerListener : IProducerEventListener
     {
-        public Action<string, IActorRef> Producers;
+        public Action<string, string, IActorRef> Producers;
         public Action<string> Receipts;
         public Action<object> Logs;
 
-        public DefaultProducerListener(Action<object> log, Action<string, IActorRef> producers, Action<string> receipts)
+        public DefaultProducerListener(Action<object> log, Action<string, string, IActorRef> producers, Action<string> receipts)
         {
             Producers = producers;
             Receipts = receipts;
@@ -22,8 +22,8 @@ namespace SharpPulsar.Handlers
 
         public void ProducerCreated(CreatedProducer producer)
         {
-            Producers.Invoke(producer.Topic, producer.Producer);
-            var s = $"Producer Created [{producer.Topic}]";
+            Producers(producer.Topic, producer.Name, producer.Producer);
+            var s = $"Producer {producer.Name} Created for [{producer.Topic}]";
             Log(s);
         }
 

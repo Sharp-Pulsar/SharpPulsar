@@ -1,6 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
@@ -27,8 +26,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var topc = Regex.Replace(partitionName, @"[^\w\d]", "");
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"{topc}{i}");
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"{i}");
                 routees.Add(c.Path.ToString());
             }
             //Surely this is pulsar's custom routing policy ;)
@@ -42,7 +40,7 @@ namespace SharpPulsar.Akka.Producer
                 if (_partitions == configuration.Partitions)
                 {
                     IdGenerators.PartitionIndex = 0;//incase we want to create multiple partitioned producer
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName));
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName, _configuration.ProducerName));
                 }
             });
             Receive<Send>(s =>

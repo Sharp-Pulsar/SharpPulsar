@@ -8,7 +8,6 @@ using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
@@ -42,15 +41,15 @@ namespace SharpPulsar.Akka.Producer
             Receive<NewProducer>(NewProducer);
             Receive<Partitions>(x =>
             {
-                var topic = Regex.Replace(_producerConfiguration.TopicName, @"[^\w\d]", "");
+                var pn = Regex.Replace(_producerConfiguration.ProducerName, @"[^\w\d]", "");
                 _listener.Log($"Found {x.Partition} partition for Topic: {_producerConfiguration.TopicName}");
                 _producerConfiguration.Partitions = x.Partition;
                _producerConfiguration.UseTls = _config.UseTls;
                 _pendingLookupRequests.Remove(x.RequestId);
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), topic);
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), pn);
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), topic);
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), pn);
             });
             Receive<RegisteredProducer>(p =>
             {
@@ -127,10 +126,10 @@ namespace SharpPulsar.Akka.Producer
 
         private void NewProducer(NewProducer producer)
         {
-            var topic = Regex.Replace(producer.ProducerConfiguration.TopicName, @"[^\w\d]", "");
-            if (!Context.Child(topic).IsNobody())
+            var p = Regex.Replace(producer.ProducerConfiguration.ProducerName, @"[^\w\d]", "");
+            if (!Context.Child(p).IsNobody())
             {
-                _listener.Log($"Producer for topic '{producer.ProducerConfiguration.TopicName}' already exist");
+                _listener.Log($"Producer with name '{producer.ProducerConfiguration.ProducerName}' already exist for topic '{producer.ProducerConfiguration.TopicName}'");
                 return;
             }
 
@@ -148,7 +147,6 @@ namespace SharpPulsar.Akka.Producer
             if (schema is AutoConsumeSchema)
             {
                 _listener.Log("AutoConsumeSchema is only used by consumers to detect schemas automatically");
-                Sender.Tell(new ErrorMessage(new PulsarClientException.InvalidConfigurationException("")));
                 return;
             }
 

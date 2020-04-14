@@ -64,8 +64,18 @@ namespace SharpPulsar.Akka
         }
         public void CreateReader(CreateReader reader)
         {
-            if (reader.Seek != null && (reader.Seek.Type == null || reader.Seek.Input == null))
-                throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+            if (reader.Seek != null)
+            {
+                if (reader.Seek.Type == null || reader.Seek.Input == null)
+                    throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+                switch (reader.Seek.Type)
+                {
+                    case SeekType.MessageId when !(reader.Seek.Input is string):
+                        throw new ArgumentException("SeekType.MessageId requires a string input");
+                    case SeekType.Timestamp when !(reader.Seek.Input is long):
+                        throw new ArgumentException("SeekType.Timestamp requires a long input");
+                }
+            }
             var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
             _pulsarManager.Tell(p);
         }
@@ -99,8 +109,18 @@ namespace SharpPulsar.Akka
 
             if (!consumer.ConsumerConfiguration.TopicNames.Any() && consumer.ConsumerConfiguration.TopicsPattern == null)
                 throw new ArgumentException("Please set topic(s) or topic pattern");
-            if(consumer.Seek != null && (consumer.Seek.Type == null || consumer.Seek.Input == null))
-                throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+            if (consumer.Seek != null)
+            {
+                if (consumer.Seek.Type == null || consumer.Seek.Input == null)
+                    throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+                switch (consumer.Seek.Type)
+                {
+                    case SeekType.MessageId when !(consumer.Seek.Input is string):
+                        throw new ArgumentException("SeekType.MessageId requires a string input");
+                    case SeekType.Timestamp when !(consumer.Seek.Input is long):
+                        throw new ArgumentException("SeekType.Timestamp requires a long input");
+                }
+            }
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
             _pulsarManager.Tell(c);
         }

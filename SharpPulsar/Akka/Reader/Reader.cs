@@ -52,8 +52,7 @@ namespace SharpPulsar.Akka.Reader
             }
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-            Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName,
-                consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek));
+            Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek));
             Receive<ConsumedMessage>(m =>
             {
                 _readerListener.Received(m.Message);

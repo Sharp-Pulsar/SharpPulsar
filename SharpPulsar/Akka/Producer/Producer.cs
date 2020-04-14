@@ -67,11 +67,11 @@ namespace SharpPulsar.Akka.Producer
             _network = network;
             if (isPartitioned)
             {
-                var n = Self.Path.Name;
-                _partitionIndex = int.Parse(n.Substring(n.Length - configuration.Partitions.ToString().Length));
+                _partitionIndex = int.Parse(Self.Path.Name);
+                ProducerName = topic.Split("/").Last();
             }
-
-            ProducerName = configuration.ProducerName;
+            else
+                ProducerName = configuration.ProducerName;
             if (!configuration.MultiSchema)
             {
                 _multiSchemaMode = false;
@@ -168,7 +168,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 else
                 {
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic));
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic, ProducerName));
                 }
                 BecomeReceive();
             });

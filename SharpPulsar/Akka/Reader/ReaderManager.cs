@@ -1,4 +1,5 @@
-﻿using Akka.Actor;
+﻿using System.Text.RegularExpressions;
+using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Impl.Conf;
@@ -30,10 +31,15 @@ namespace SharpPulsar.Akka.Reader
         
         private void NewReader(NewReader reader)
         {
-            var schema = reader.ReaderConfiguration.Schema;
             var clientConfig = reader.Configuration;
             var readerConfig = reader.ReaderConfiguration;
-            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek), $"reader{DateTimeHelper.CurrentUnixTimeMillis()}");
+            var r = Regex.Replace(readerConfig.ReaderName, @"[^\w\d]", "");
+            if (!Context.Child(r).IsNobody())
+            {
+                readerConfig.EventListener.Log($"Reader with name '{r}' already exist for topic '{readerConfig.TopicName}'");
+                return;
+            }
+            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek), r);
         }
         
         public IStash Stash { get; set; }

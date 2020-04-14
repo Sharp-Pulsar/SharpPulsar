@@ -175,6 +175,7 @@ namespace SharpPulsar.Akka.Network
                         var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
                         var t = cmd.type;
 
+                        
                         switch (cmd.type)
                         {
                             case BaseCommand.Type.GetLastMessageIdResponse:

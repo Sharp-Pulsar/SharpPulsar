@@ -32,7 +32,7 @@ namespace Samples
     {
         //https://www.splunk.com/en_us/blog/it/effectively-once-semantics-in-apache-pulsar.html
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
-        public static readonly ConcurrentDictionary<string, IActorRef> Producers = new ConcurrentDictionary<string, IActorRef>();
+        public static readonly ConcurrentDictionary<string, Dictionary<string, IActorRef>> Producers = new ConcurrentDictionary<string, Dictionary<string, IActorRef>>();
         public static readonly ConcurrentBag<string> Receipts = new ConcurrentBag<string>();
         public static readonly ConcurrentBag<string> Messages = new ConcurrentBag<string>();
         
@@ -219,9 +219,14 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) =>
+            }, (to, n,p) =>
             {
-                Producers.TryAdd(s, p);
+                if(Producers.ContainsKey(to))
+                  Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> {{n, p}};
+                }
             }, s =>
             {
                 Receipts.Add(s);
@@ -238,8 +243,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x=> x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
@@ -270,7 +275,15 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to,n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
             {
                 Receipts.Add(s);
             });
@@ -287,8 +300,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
@@ -314,7 +327,15 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
             {
                 Receipts.Add(s);
             });
@@ -331,8 +352,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
@@ -363,9 +384,17 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
             {
-                Receipts.Add(s);
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, r =>
+            {
+                Receipts.Add(r);
             });
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName(topic.Split("/").Last())
@@ -380,8 +409,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
@@ -408,7 +437,15 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
             {
                 Receipts.Add(s);
             });
@@ -428,8 +465,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
@@ -460,7 +497,15 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
             {
                 Receipts.Add(s);
             });
@@ -480,8 +525,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
@@ -508,7 +553,15 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
             {
                 Receipts.Add(s);
             });
@@ -528,8 +581,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
@@ -560,9 +613,17 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.TryAdd(s, p), s =>
+            }, (to, n, p) =>
             {
-                Receipts.Add(s);
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, r =>
+            {
+                Receipts.Add(r);
             });
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName(topic.Split("/").Last())
@@ -580,8 +641,8 @@ namespace Samples
             IActorRef produce = null;
             while (produce == null)
             {
-                Producers.TryGetValue(t, out produce);
-                Thread.Sleep(100);
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
@@ -731,7 +792,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "58,1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddHours(-15).ToUnixTimeMilliseconds())));
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "58,1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1077,7 +1138,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
+            system.CreateReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-20).ToUnixTimeMilliseconds())));
         }
 
         private static void DecryptByteReader(PulsarSystem system, string topic)

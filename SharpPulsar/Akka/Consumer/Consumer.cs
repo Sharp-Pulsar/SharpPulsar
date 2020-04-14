@@ -56,7 +56,6 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        private bool _firstSuccess = true;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
         {
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
@@ -536,25 +535,6 @@ namespace SharpPulsar.Akka.Consumer
 
         private void BecomeActive()
         {
-            if (_seek != null)
-            {
-                switch (_seek.Type)
-                {
-                    case SeekType.Timestamp:
-                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
-                        var pay = new Payload(req, reqtid, "NewSeek");
-                        _broker.Tell(pay);
-                        break;
-                    default:
-                        var v = _seek.Input.ToString().Trim().Split(",");//format l,e
-                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
-                        var payload = new Payload(request, requestid, "NewSeek");
-                        _broker.Tell(payload);
-                        break;
-                }
-            }
             Context.Watch(_broker);
             Become(Active);
         }
@@ -573,12 +553,8 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<ConsumerClosed>(_ =>
             {
-                ReceiveAny(c => Stash.Stash());
-                Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateConsumer(), ActorRefs.NoSender);
-            });
-            Receive<RecreateConsumer>(_ =>
-            {
-                BecomeLookUp();
+                _seek = null;
+                Become(RecreatingConsumer);
             });
             Receive<ConsumerClosed>(_ =>
             {
@@ -622,6 +598,26 @@ namespace SharpPulsar.Akka.Consumer
                 //SendFlow(_requestedFlowPermits);
             });
             Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
+            if (_seek != null)
+            {
+                switch (_seek.Type)
+                {
+                    case SeekType.Timestamp:
+                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
+                        var pay = new Payload(req, reqtid, "NewSeek");
+                        _broker.Tell(pay);
+                        break;
+                    default:
+                        var v = _seek.Input.ToString().Trim().Split(",");//format l,e
+                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
+                        var payload = new Payload(request, requestid, "NewSeek");
+                        _broker.Tell(payload);
+                        break;
+                }
+            }
+
         }
 
         protected override void PostRestart(Exception reason)
@@ -630,6 +626,15 @@ namespace SharpPulsar.Akka.Consumer
             _seek = null;//seek seems to crash consumer, set it to null to avoid restarting more than once
         }
 
+        private void RecreatingConsumer()
+        {
+            Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateConsumer(), ActorRefs.NoSender);
+            Receive<RecreateConsumer>(_ =>
+            {
+                BecomeLookUp();
+            });
+            ReceiveAny(c => Stash.Stash());
+        }
         private void LookUp()
         {
             Receive<BrokerLookUp>(l =>
@@ -691,7 +696,6 @@ namespace SharpPulsar.Akka.Consumer
                     };
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
-
                 SendFlow(_requestedFlowPermits);
                 _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
                 BecomeActive();
