@@ -15,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System;
-    using Newtonsoft.Json;
 
+using System;
+using Newtonsoft.Json;
+
+namespace Avro.Schemas
+{
     /// <summary>
     /// Class for schemas of primitive types.
     /// </summary>

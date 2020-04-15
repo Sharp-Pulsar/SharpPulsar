@@ -15,11 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+using Encoder = Avro.IO.Encoder;
+
 namespace Avro.Generic
 {
     using System;
     using System.Collections.Generic;
-    using Encoder = Avro.IO.Encoder;
+    using Avro.IO;
+    using Encoder = Encoder;
 
     /// <summary>
     /// PreresolvingDatumWriter for writing data from GenericRecords or primitive types.
@@ -100,7 +105,7 @@ namespace Avro.Generic
         /// <returns>True if the two parameters are compatible, false otherwise.</returns>
         protected override bool UnionBranchMatches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            if (obj == null && sc.Tag != Schema.Type.Null)
             {
                 return false;
             }

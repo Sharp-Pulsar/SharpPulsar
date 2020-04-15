@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-namespace Avro
-{
-    using System;
-    using Avro.Util;
-    using Newtonsoft.Json.Linq;
+using System;
+using Avro.Util;
+using Newtonsoft.Json.Linq;
 
+namespace Avro.Schemas
+{
     /// <summary>
     /// Class for logical type schemas.
     /// </summary>

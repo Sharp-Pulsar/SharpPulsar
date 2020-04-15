@@ -15,7 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
+
+using Avro.Schemas;
+
+namespace Avro.Protocol
 {
     using System;
     using Newtonsoft.Json.Linq;

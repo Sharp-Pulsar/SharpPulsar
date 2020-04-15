@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Avro;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

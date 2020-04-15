@@ -26,7 +26,7 @@ namespace Avro.Specific
         /// <summary>
         /// Gets protocol for this instance.
         /// </summary>
-        Protocol Protocol { get; }
+        Protocol.Protocol Protocol { get; }
 
         /// <summary>
         /// Execute a request.

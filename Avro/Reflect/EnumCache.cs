@@ -15,11 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using System;
     using System.Collections.Concurrent;
-    using Avro;
 
     /// <summary>
     /// Cache of enum types. Cache key is the schema fullname.

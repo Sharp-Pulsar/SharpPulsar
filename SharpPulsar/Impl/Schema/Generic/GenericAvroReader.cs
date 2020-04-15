@@ -24,13 +24,12 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-
     public class GenericAvroReader
 	{
-        private readonly Avro.Schema _schema;
+        private readonly Avro.Schemas.Schema _schema;
 		private readonly sbyte[] _schemaVersion;
 		
-		public GenericAvroReader(Avro.Schema schema, sbyte[] schemaVersion)
+		public GenericAvroReader(Avro.Schemas.Schema schema, sbyte[] schemaVersion)
         {
             _schema = schema;
             _schemaVersion = schemaVersion;

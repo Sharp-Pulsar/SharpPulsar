@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System;
-    using System.Text.RegularExpressions;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
+using System;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+namespace Avro.Schemas
+{
     class JsonHelper
     {
         /// <summary>

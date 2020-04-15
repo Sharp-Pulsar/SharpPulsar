@@ -19,7 +19,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Avro;
 using BAMCIS.Util.Concurrent;
 
 namespace SharpPulsar.Api

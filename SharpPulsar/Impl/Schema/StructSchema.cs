@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Schema
 
 		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema));
 
-		protected internal readonly Avro.Schema Schema;
+		protected internal readonly Avro.Schemas.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;
         private GenericAvroReader _reader;
         private GenericAvroWriter _writer;
@@ -64,7 +64,7 @@ namespace SharpPulsar.Impl.Schema
 			_schemaInfo = schemaInfo;
 		}
 
-		public virtual Avro.Schema AvroSchema => Schema;
+		public virtual Avro.Schemas.Schema AvroSchema => Schema;
 
         public override sbyte[] Encode(object message)
 		{
@@ -102,7 +102,7 @@ namespace SharpPulsar.Impl.Schema
 
 		public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        protected internal static Avro.Schema CreateAvroSchema(ISchemaDefinition schemaDefinition)
+        protected internal static Avro.Schemas.Schema CreateAvroSchema(ISchemaDefinition schemaDefinition)
 		{
 			var pojo = schemaDefinition.Pojo;
 
@@ -116,9 +116,9 @@ namespace SharpPulsar.Impl.Schema
 
         }
 
-		protected internal static Avro.Schema ParseAvroSchema(string schemaJson)
+		protected internal static Avro.Schemas.Schema ParseAvroSchema(string schemaJson)
 		{
-            return Avro.Schema.Parse(schemaJson);
+            return Avro.Schemas.Schema.Parse(schemaJson);
 		}
 
 		protected internal static SchemaInfo ParseSchemaInfo(ISchemaDefinition schemaDefinition, SchemaType schemaType)

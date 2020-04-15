@@ -15,11 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.Specific
 {
     using System;
     using System.IO;
-    using Avro;
     using Avro.Generic;
     using Avro.IO;
 
@@ -270,7 +272,7 @@ namespace Avro.Specific
         protected virtual string getTargetType(Schema schema)
         {
             bool nEnum = false;
-            string type = Avro.CodeGen.getType(schema, false, ref nEnum);
+            string type = CodeGen.CodeGen.getType(schema, false, ref nEnum);
             if (schema.Tag == Schema.Type.Array)
             {
                 type = type.Remove(0, 6);              // remove IList<

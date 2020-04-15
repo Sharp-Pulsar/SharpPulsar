@@ -15,10 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.File
 {
     using System;
     using System.Collections.Generic;
+    using Avro.CodeGen;
 
     /// <summary>
     /// Defines the interface for an object that reads data from a file.

@@ -25,9 +25,9 @@ namespace SharpPulsar.Impl.Schema.Generic
 
     public class GenericAvroWriter
 	{
-        private Avro.Schema _schema;
+        private Avro.Schemas.Schema _schema;
 
-		public GenericAvroWriter(Avro.Schema schema)
+		public GenericAvroWriter(Avro.Schemas.Schema schema)
 		{
             _schema = schema;
         }

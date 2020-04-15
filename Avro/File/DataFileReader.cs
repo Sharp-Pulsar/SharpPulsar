@@ -15,6 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.File
 {
     using System;
@@ -22,6 +25,7 @@ namespace Avro.File
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using Avro.CodeGen;
     using Avro.Generic;
     using Avro.IO;
     using Avro.Specific;

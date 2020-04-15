@@ -54,10 +54,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Akka\" />
     <Folder Include="Impl\conf\" />
   </ItemGroup>

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using Avro.Generic;

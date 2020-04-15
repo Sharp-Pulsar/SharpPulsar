@@ -15,12 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+using Encoder = Avro.IO.Encoder;
+
 namespace Avro.Specific
 {
     using System;
     using System.Collections;
     using Avro.Generic;
-    using Encoder = Avro.IO.Encoder;
+    using Avro.IO;
+    using Encoder = Encoder;
 
     /// <summary>
     /// PreresolvingDatumWriter for writing data from ISpecificRecord classes.
@@ -122,7 +127,7 @@ namespace Avro.Specific
         /// <inheritdoc/>
         protected override bool UnionBranchMatches( Schema sc, object obj )
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            if (obj == null && sc.Tag != Schema.Type.Null)
             {
                 return false;
             }

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using System;
@@ -176,7 +178,7 @@ namespace Avro.Reflect
                         throw new Exception("Unable to cast schema into a union schema");
                     }
 
-                    Schema nullibleType = CodeGen.getNullableType(unionSchema);
+                    Schema nullibleType = CodeGen.CodeGen.getNullableType(unionSchema);
                     if (nullibleType == null)
                     {
                         return typeof(object);

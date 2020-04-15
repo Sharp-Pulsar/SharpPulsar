@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System;
-    using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
+using System;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+namespace Avro.Schemas
+{
     /// <summary>
     /// Provides access to custom properties (those not defined in the Avro spec) in a JSON object.
     /// </summary>

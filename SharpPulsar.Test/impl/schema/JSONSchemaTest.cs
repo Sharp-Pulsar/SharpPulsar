@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 using Avro;
+using Avro.Schemas;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Shared;
@@ -26,8 +27,8 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.Impl.schema
 {
-    using Bar = SchemaTestUtils.Bar;
-    using Foo = SchemaTestUtils.Foo;
+	using Bar = SchemaTestUtils.Bar;
+	using Foo = SchemaTestUtils.Foo;
 	using NestedBar = SchemaTestUtils.NestedBar;
 	using NestedBarList = SchemaTestUtils.NestedBarList;
 
@@ -37,7 +38,7 @@ namespace SharpPulsar.Test.Impl.schema
 		public void TestNotAllowNullSchema()
 		{
 			var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
-			Assert.Equal(SchemaType.Json,jsonSchema.SchemaInfo.Type);
+			Assert.Equal(SchemaType.Avro,jsonSchema.SchemaInfo.Type);
 			
 			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
             Assert.Contains("SharpPulsar.Test.Impl.schema", schemaJson);

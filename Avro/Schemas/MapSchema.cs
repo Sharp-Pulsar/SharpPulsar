@@ -15,66 +15,83 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System;
-    using Newtonsoft.Json.Linq;
 
+using System;
+using Newtonsoft.Json.Linq;
+
+namespace Avro.Schemas
+{
     /// <summary>
-    /// Class for array type schemas.
+    /// Class for map schemas.
     /// </summary>
-    public class ArraySchema : UnnamedSchema
+    public class MapSchema : UnnamedSchema
     {
         /// <summary>
-        /// Gets or sets schema for the array 'type' attribute.
+        /// Gets or sets schema for map values type.
         /// </summary>
-        public Schema ItemSchema { get; set;  }
+        public Schema ValueSchema { get; set; }
 
         /// <summary>
-        /// Static class to return a new instance of ArraySchema.
+        /// Creates a new <see cref="MapSchema"/> from the given schema.
         /// </summary>
-        /// <param name="jtok">JSON object for the array schema.</param>
+        /// <param name="type">Schema to create the map schema from.</param>
+        /// <returns>A new <see cref="MapSchema"/>.</returns>
+        public static MapSchema CreateMap(Schema type)
+        {
+            return new MapSchema(type,null);
+        }
+
+        /// <summary>
+        /// Static function to return new instance of map schema.
+        /// </summary>
+        /// <param name="jtok">JSON object for the map schema.</param>
         /// <param name="props">dictionary that provides access to custom properties.</param>
-        /// <param name="names">list of named schemas already parsed.</param>
-        /// <param name="encspace">enclosing namespace for the array schema.</param>
+        /// <param name="names">list of named schemas already read.</param>
+        /// <param name="encspace">enclosing namespace of the map schema.</param>
         /// <returns></returns>
-        internal static ArraySchema NewInstance(JToken jtok, PropertyMap props, SchemaNames names, string encspace)
+        internal static MapSchema NewInstance(JToken jtok, PropertyMap props, SchemaNames names, string encspace)
         {
-            JToken jitem = jtok["items"];
-            if (null == jitem)
+            JToken jvalue = jtok["values"];
+            if (null == jvalue)
             {
-                throw new AvroTypeException($"Array does not have 'items' at '{jtok.Path}'");
+                throw new AvroTypeException($"Map does not have 'values' at '{jtok.Path}'");
             }
 
-            var schema = Schema.ParseJson(jitem, names, encspace);
-            return new ArraySchema(schema, props);
+            try
+            {
+                return new MapSchema(ParseJson(jvalue, names, encspace), props);
+            }
+            catch (Exception e)
+            {
+                throw new SchemaParseException($"Error creating MapSchema at '{jtok.Path}'", e);
+            }
         }
 
         /// <summary>
-        /// Constructor.
+        /// Constructor for map schema class.
         /// </summary>
-        /// <param name="items">schema for the array items type.</param>
+        /// <param name="valueSchema">schema for map values type.</param>
         /// <param name="props">dictionary that provides access to custom properties.</param>
-        private ArraySchema(Schema items, PropertyMap props) : base(Type.Array, props)
+        private MapSchema(Schema valueSchema, PropertyMap props) : base(Type.Map, props)
         {
-            if (null == items)
+            if (null == valueSchema)
             {
-                throw new ArgumentNullException(nameof(items));
+                throw new ArgumentNullException(nameof(valueSchema), "valueSchema cannot be null.");
             }
 
-            this.ItemSchema = items;
+            this.ValueSchema = valueSchema;
         }
 
         /// <summary>
-        /// Writes the array schema in JSON format.
+        /// Writes map schema in JSON format.
         /// </summary>
         /// <param name="writer">JSON writer.</param>
         /// <param name="names">list of named schemas already written.</param>
-        /// <param name="encspace">enclosing namespace.</param>
+        /// <param name="encspace">enclosing namespace of the map schema.</param>
         protected internal override void WriteJsonFields(Newtonsoft.Json.JsonTextWriter writer, SchemaNames names, string encspace)
         {
-            writer.WritePropertyName("items");
-            this.ItemSchema.WriteJson(writer, names, encspace);
+            writer.WritePropertyName("values");
+            this.ValueSchema.WriteJson(writer, names, encspace);
         }
 
         /// <summary>
@@ -89,15 +106,15 @@ namespace Avro
                 return false;
             }
 
-            ArraySchema that = writerSchema as ArraySchema;
-            return this.ItemSchema.CanRead(that.ItemSchema);
+            MapSchema that = writerSchema as MapSchema;
+            return this.ValueSchema.CanRead(that.ValueSchema);
         }
 
         /// <summary>
-        /// Function to compare equality of two array schemas.
+        /// Compares equality of two map schemas.
         /// </summary>
-        /// <param name="obj">other array schema.</param>
-        /// <returns>true two schemas are equal, false otherwise.</returns>
+        /// <param name="obj">map schema to compare against this schema.</param>
+        /// <returns>true if two schemas are equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (this == obj)
@@ -105,10 +122,10 @@ namespace Avro
                 return true;
             }
 
-            if (obj != null && obj is ArraySchema)
+            if (obj != null && obj is MapSchema)
             {
-                ArraySchema that = obj as ArraySchema;
-                if (this.ItemSchema.Equals(that.ItemSchema))
+                MapSchema that = obj as MapSchema;
+                if (this.ValueSchema.Equals(that.ValueSchema))
                 {
                     return areEqual(that.Props, this.Props);
                 }
@@ -122,7 +139,7 @@ namespace Avro
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return 29 * this.ItemSchema.GetHashCode() + getHashCode(this.Props);
+            return 29 * this.ValueSchema.GetHashCode() + getHashCode(this.Props);
         }
     }
 }

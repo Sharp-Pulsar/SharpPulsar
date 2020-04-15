@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using System;
@@ -28,7 +30,7 @@ namespace Avro.Reflect
 
         public IAvroFieldConverter Converter { get; set; }
 
-        private bool IsPropertyCompatible(Avro.Schema.Type schemaTag)
+        private bool IsPropertyCompatible(Schema.Type schemaTag)
         {
             Type propType;
 
@@ -43,43 +45,43 @@ namespace Avro.Reflect
 
             switch (schemaTag)
             {
-                case Avro.Schema.Type.Null:
+                case Schema.Type.Null:
                     return (Nullable.GetUnderlyingType(propType) != null) || (!propType.IsValueType);
-                case Avro.Schema.Type.Boolean:
+                case Schema.Type.Boolean:
                     return propType == typeof(bool);
-                case Avro.Schema.Type.Int:
+                case Schema.Type.Int:
                     return propType == typeof(int);
-                case Avro.Schema.Type.Long:
+                case Schema.Type.Long:
                     return propType == typeof(long);
-                case Avro.Schema.Type.Float:
+                case Schema.Type.Float:
                     return propType == typeof(float);
-                case Avro.Schema.Type.Double:
+                case Schema.Type.Double:
                     return propType == typeof(double);
-                case Avro.Schema.Type.Bytes:
+                case Schema.Type.Bytes:
                     return propType == typeof(byte[]);
-                case Avro.Schema.Type.String:
+                case Schema.Type.String:
                     return typeof(string).IsAssignableFrom(propType);
-                case Avro.Schema.Type.Record:
+                case Schema.Type.Record:
                     //TODO: this probably should work for struct too
                     return propType.IsClass;
-                case Avro.Schema.Type.Enumeration:
+                case Schema.Type.Enumeration:
                     return propType.IsEnum;
-                case Avro.Schema.Type.Array:
+                case Schema.Type.Array:
                     return typeof(IEnumerable).IsAssignableFrom(propType);
-                case Avro.Schema.Type.Map:
+                case Schema.Type.Map:
                     return typeof(IDictionary).IsAssignableFrom(propType);
-                case Avro.Schema.Type.Union:
+                case Schema.Type.Union:
                     return true;
-                case Avro.Schema.Type.Fixed:
+                case Schema.Type.Fixed:
                     return propType == typeof(byte[]);
-                case Avro.Schema.Type.Error:
+                case Schema.Type.Error:
                     return propType.IsClass;
             }
 
             return false;
         }
 
-        public DotnetProperty(PropertyInfo property, Avro.Schema.Type schemaTag,  IAvroFieldConverter converter, ClassCache cache)
+        public DotnetProperty(PropertyInfo property, Schema.Type schemaTag,  IAvroFieldConverter converter, ClassCache cache)
         {
             this._property = property;
             this.Converter = converter;
@@ -100,7 +102,7 @@ namespace Avro.Reflect
             }
         }
 
-        public DotnetProperty(PropertyInfo property, Avro.Schema.Type schemaTag, ClassCache cache)
+        public DotnetProperty(PropertyInfo property, Schema.Type schemaTag, ClassCache cache)
             : this(property, schemaTag, null, cache)
         {
         }

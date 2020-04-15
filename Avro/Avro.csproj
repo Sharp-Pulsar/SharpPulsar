@@ -19,6 +19,12 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <AssemblyName>Avro</AssemblyName>
+    <RootNamespace>Avro</RootNamespace>
+    <Version>1.0.0</Version>
+    <PackageId>Avro.Unofficial</PackageId>
+    <Authors>Ebere Abanonu</Authors>
+    <Product>Avro.Unofficial</Product>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

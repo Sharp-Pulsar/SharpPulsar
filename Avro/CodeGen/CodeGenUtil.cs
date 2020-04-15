@@ -15,7 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
+
+namespace Avro.CodeGen
 {
     using System.CodeDom;
     using System.Collections.Generic;

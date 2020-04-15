@@ -15,6 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.Generic
 {
     using System;
@@ -486,7 +489,7 @@ namespace Avro.Generic
         /// <returns>True if the two parameters are compatible, false otherwise.</returns>
         protected virtual bool Matches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            if (obj == null && sc.Tag != Schema.Type.Null)
             {
                 return false;
             }

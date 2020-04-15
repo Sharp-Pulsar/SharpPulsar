@@ -15,13 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+using Encoder = Avro.IO.Encoder;
+
 namespace Avro.Generic
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using Encoder = Avro.IO.Encoder;
+    using Avro.IO;
+    using Encoder = Encoder;
 
     /// <summary>
     /// A general purpose writer of data from avro streams. This writer analyzes the writer schema

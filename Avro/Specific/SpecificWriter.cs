@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using Avro.Schemas;
+
 namespace Avro.Specific
 {
     using System;
-    using Avro;
     using Avro.Generic;
     using Avro.IO;
 
@@ -193,7 +195,7 @@ namespace Avro.Specific
         /// <inheritdoc/>
         protected override bool Matches(Schema sc, object obj)
         {
-            if (obj == null && sc.Tag != Avro.Schema.Type.Null)
+            if (obj == null && sc.Tag != Schema.Type.Null)
             {
                 return false;
             }

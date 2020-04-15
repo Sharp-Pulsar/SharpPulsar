@@ -15,7 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
+
+using Avro.Schemas;
+
+namespace Avro.CodeGen
 {
     using System;
     using System.CodeDom;
@@ -25,6 +28,7 @@ namespace Avro
     using System.IO;
     using System.Reflection;
     using System.Text;
+    using Avro.Specific;
     using Microsoft.CSharp;
 
     /// <summary>
@@ -45,7 +49,7 @@ namespace Avro
         /// <summary>
         /// Gets list of protocols to generate code for.
         /// </summary>
-        public IList<Protocol> Protocols { get; private set; }
+        public IList<Protocol.Protocol> Protocols { get; private set; }
 
         /// <summary>
         /// Gets mapping of Avro namespaces to C# namespaces.
@@ -75,7 +79,7 @@ namespace Avro
         public CodeGen()
         {
             this.Schemas = new List<Schema>();
-            this.Protocols = new List<Protocol>();
+            this.Protocols = new List<Protocol.Protocol>();
             this.NamespaceMapping = new Dictionary<string, string>();
         }
 
@@ -83,7 +87,7 @@ namespace Avro
         /// Adds a protocol object to generate code for.
         /// </summary>
         /// <param name="protocol">protocol object.</param>
-        public virtual void AddProtocol(Protocol protocol)
+        public virtual void AddProtocol(Protocol.Protocol protocol)
         {
             this.Protocols.Add(protocol);
         }
@@ -171,7 +175,7 @@ namespace Avro
         /// </summary>
         protected virtual void processProtocols()
         {
-            foreach (Protocol protocol in this.Protocols)
+            foreach (Protocol.Protocol protocol in this.Protocols)
             {
                 SchemaNames names = this.generateNames(protocol);
                 foreach (KeyValuePair<SchemaName, NamedSchema> sn in names)
@@ -196,7 +200,7 @@ namespace Avro
         /// </summary>
         /// <param name="protocol">protocol to process.</param>
         /// <returns></returns>
-        protected virtual SchemaNames generateNames(Protocol protocol)
+        protected virtual SchemaNames generateNames(Protocol.Protocol protocol)
         {
             var names = new SchemaNames();
             foreach (Schema schema in protocol.Types)
@@ -394,7 +398,7 @@ namespace Avro
         /// Generates code for an individual protocol.
         /// </summary>
         /// <param name="protocol">Protocol to generate code for.</param>
-        protected virtual void processInterface(Protocol protocol)
+        protected virtual void processInterface(Protocol.Protocol protocol)
         {
             // Create abstract class
             string protocolNameMangled = CodeGenUtil.Instance.Mangle(protocol.Name);
@@ -414,7 +418,7 @@ namespace Avro
 
             var cpe = new CodePrimitiveExpression(protocol.ToString());
             var cmie = new CodeMethodInvokeExpression(
-                new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Protocol)), "Parse"),
+                new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Protocol.Protocol)), "Parse"),
                 new CodeExpression[] { cpe });
 
             protocolField.InitExpression = cmie;
@@ -500,7 +504,7 @@ namespace Avro
             requestMethod.Name = "Request";
             requestMethod.ReturnType = new CodeTypeReference(typeof (void));
             {
-                var requestor = new CodeParameterDeclarationExpression(typeof (Avro.Specific.ICallbackRequestor),
+                var requestor = new CodeParameterDeclarationExpression(typeof (ICallbackRequestor),
                                                                        "requestor");
                 requestMethod.Parameters.Add(requestor);
 
@@ -516,7 +520,7 @@ namespace Avro
             return requestMethod;
         }
 
-        private static void AddMethods(Protocol protocol, bool generateCallback, CodeTypeDeclaration ctd)
+        private static void AddMethods(Protocol.Protocol protocol, bool generateCallback, CodeTypeDeclaration ctd)
         {
             foreach (var e in protocol.Messages)
             {
@@ -574,7 +578,7 @@ namespace Avro
             }
         }
 
-        private void AddProtocolDocumentation(Protocol protocol, CodeTypeDeclaration ctd)
+        private void AddProtocolDocumentation(Protocol.Protocol protocol, CodeTypeDeclaration ctd)
         {
             // Add interface documentation
             if (protocol.Doc != null && protocol.Doc.Trim() != string.Empty)

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Util
 {
     using System.Collections.Generic;

@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using System;
     using System.Collections.Concurrent;
     using System.Reflection;
-    using Avro;
 
     /// <summary>
     /// Collection of DotNetProperty objects to repre.

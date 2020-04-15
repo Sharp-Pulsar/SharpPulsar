@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Avro.IO;
+using Avro.Schemas;
 using Avro.Reflect;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
@@ -64,34 +65,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			return Of(ISchemaDefinition.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
-        private static TS Deserialize<TS>(Stream ms, Avro.Schema ws, Avro.Schema rs) where TS : class
-        {
-            long initialPos = ms.Position;
-            var r = new ReflectReader<TS>(ws, rs);
-            Decoder d = new BinaryDecoder(ms);
-            TS output = r.Read(null, d);
-            //Assert.AreEqual(ms.Length, ms.Position); // Ensure we have read everything.
-            CheckAlternateDeserializers(output, ms, initialPos, ws, rs);
-            return output;
-        }
-        private static void CheckAlternateSerializers(object value, Avro.Schema ws)
-        {
-            var ms = new MemoryStream();
-            var writer = new ReflectDefaultWriter(value.GetType(), ws, new ClassCache());
-            var e = new BinaryEncoder(ms);
-            writer.Write(value, e);
-            //var output = ms.ToArray();
-        }
-        private static void CheckAlternateDeserializers<TS>(TS expected, Stream input, long startPos, Avro.Schema ws, Avro.Schema rs) where TS : class
-        {
-            input.Position = startPos;
-            var reader = new ReflectReader<TS>(ws, rs);
-            Decoder d = new BinaryDecoder(input);
-            TS output = reader.Read(null, d);
-            //Assert.AreEqual(input.Length, input.Position); // Ensure we have read everything.
-            //AssertReflectRecordEqual(rs, expected, ws, output, reader.Reader.ClassCache);
-        }
-
+        
 		public override ISchema Auto()
 		{
 			throw new NotImplementedException();

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using Avro.Schemas;
+
 namespace Avro.Reflect
 {
     using System;
@@ -76,48 +78,48 @@ namespace Avro.Reflect
         /// <param name="tag"></param>
         /// <param name="propType"></param>
         /// <returns>The first matching converter - null if there isnt one.</returns>
-        public IAvroFieldConverter GetDefaultConverter(Avro.Schema.Type tag, Type propType)
+        public IAvroFieldConverter GetDefaultConverter(Schema.Type tag, Type propType)
         {
             Type avroType;
             switch (tag)
             {
-                case Avro.Schema.Type.Null:
+                case Schema.Type.Null:
                     return null;
-                case Avro.Schema.Type.Boolean:
+                case Schema.Type.Boolean:
                     avroType = typeof(bool);
                     break;
-                case Avro.Schema.Type.Int:
+                case Schema.Type.Int:
                     avroType = typeof(int);
                     break;
-                case Avro.Schema.Type.Long:
+                case Schema.Type.Long:
                     avroType = typeof(long);
                     break;
-                case Avro.Schema.Type.Float:
+                case Schema.Type.Float:
                     avroType = typeof(float);
                     break;
-                case Avro.Schema.Type.Double:
+                case Schema.Type.Double:
                     avroType = typeof(double);
                     break;
-                case Avro.Schema.Type.Bytes:
+                case Schema.Type.Bytes:
                     avroType = typeof(byte[]);
                     break;
-                case Avro.Schema.Type.String:
+                case Schema.Type.String:
                     avroType = typeof(string);
                     break;
-                case Avro.Schema.Type.Record:
+                case Schema.Type.Record:
                     return null;
-                case Avro.Schema.Type.Enumeration:
+                case Schema.Type.Enumeration:
                     return null;
-                case Avro.Schema.Type.Array:
+                case Schema.Type.Array:
                     return null;
-                case Avro.Schema.Type.Map:
+                case Schema.Type.Map:
                     return null;
-                case Avro.Schema.Type.Union:
+                case Schema.Type.Union:
                     return null;
-                case Avro.Schema.Type.Fixed:
+                case Schema.Type.Fixed:
                     avroType = typeof(byte[]);
                     break;
-                case Avro.Schema.Type.Error:
+                case Schema.Type.Error:
                     return null;
                 default:
                     return null;

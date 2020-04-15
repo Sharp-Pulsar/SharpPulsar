@@ -15,41 +15,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System;
 
+using System;
+
+namespace Avro.Schemas
+{
     /// <summary>
-    /// A generic Avro exception.
+    /// Used to communicate an exception associated with Avro typing.
     /// </summary>
-    public class AvroException : Exception
+    public class AvroTypeException : AvroException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroException"/> class.
+        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
         /// </summary>
-        public AvroException()
+        public AvroTypeException()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroException"/> class.
+        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
         /// </summary>
-        /// <param name="s">The message that describes the error.</param>
-        public AvroException(string s)
+        /// <param name="s"></param>
+        public AvroTypeException(string s)
             : base(s)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroException"/> class.
+        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
         /// </summary>
-        /// <param name="s">The message that describes the error.</param>
-        /// <param name="inner">
-        /// The exception that is the cause of the current exception, or a null reference
-        /// if no inner exception is specified.
+        /// <param name="message">
+        /// The error message that explains the reason for the exception.
         /// </param>
-        public AvroException(string s, Exception inner)
-            : base(s, inner)
+        /// <param name="innerException">
+        /// The exception that is the cause of the current exception, or a null reference if no
+        /// inner exception is specified.
+        /// </param>
+        public AvroTypeException(string message, Exception innerException)
+            : base(message, innerException)
         {
         }
     }

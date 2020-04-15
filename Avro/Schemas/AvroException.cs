@@ -16,43 +16,41 @@
  * limitations under the License.
  */
 
-namespace Avro
-{
-    using System;
+using System;
 
+namespace Avro.Schemas
+{
     /// <summary>
-    /// Used to communicate an exception associated with Avro typing.
+    /// A generic Avro exception.
     /// </summary>
-    public class AvroTypeException : AvroException
+    public class AvroException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
+        /// Initializes a new instance of the <see cref="AvroException"/> class.
         /// </summary>
-        public AvroTypeException()
+        public AvroException()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
+        /// Initializes a new instance of the <see cref="AvroException"/> class.
         /// </summary>
-        /// <param name="s"></param>
-        public AvroTypeException(string s)
+        /// <param name="s">The message that describes the error.</param>
+        public AvroException(string s)
             : base(s)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvroTypeException"/> class.
+        /// Initializes a new instance of the <see cref="AvroException"/> class.
         /// </summary>
-        /// <param name="message">
-        /// The error message that explains the reason for the exception.
+        /// <param name="s">The message that describes the error.</param>
+        /// <param name="inner">
+        /// The exception that is the cause of the current exception, or a null reference
+        /// if no inner exception is specified.
         /// </param>
-        /// <param name="innerException">
-        /// The exception that is the cause of the current exception, or a null reference if no
-        /// inner exception is specified.
-        /// </param>
-        public AvroTypeException(string message, Exception innerException)
-            : base(message, innerException)
+        public AvroException(string s, Exception inner)
+            : base(s, inner)
         {
         }
     }

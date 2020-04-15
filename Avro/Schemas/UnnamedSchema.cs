@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Avro
-{
-    using System.Globalization;
 
+using System.Globalization;
+
+namespace Avro.Schemas
+{
     /// <summary>
     /// Base class for all unnamed schemas.
     /// </summary>

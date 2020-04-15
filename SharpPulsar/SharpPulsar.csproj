@@ -2,11 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.6.2</Version>
+    <Version>0.6.4</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>This should be considered a test release! Feedbacks will be appreciated
+    <PackageReleaseNotes>Please your feedback will be appreciated as we work to make SharpPulsar better!
+What has your experience been like using SharpPulsar?
+ 
+Thanks
 With this release, Pulsar's:
 Simple Producer
 Simple Consumer
@@ -26,12 +29,13 @@ Addition and fixes!
 Moved GenerateSchema to a different repo/nuget
 
 Improvement and fixes
-Fixes</PackageReleaseNotes>
+Fixes
+Bump AvroSchemaGenerator  to Version 0.1.2</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Protocol\Proto\Partial\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
@@ -74,11 +78,14 @@ Fixes</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="E:\Devs\avro-release-1.9.2\lang\csharp\src\apache\main\Avro.main.csproj" />
+    <Folder Include="Akka\InternalCommands\Reader\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Akka\InternalCommands\Reader\" />
+    <ProjectReference Include="..\Avro\Avro.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <IncludeAssets>Avro.dll</IncludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -86,5 +93,9 @@ Fixes</PackageReleaseNotes>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
+  <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>
+    </ItemGroup>
+  </Target>
 </Project>
