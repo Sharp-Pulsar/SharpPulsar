@@ -29,6 +29,7 @@ namespace SharpPulsar.Akka.Sql
             try
             {
                 var q = query;
+                Context.System.Log.Debug($"Executing: {q.Query}");
                 using var cmd = _connection.CreateCommand();
                 cmd.CommandText = q.Query;
                 using var reader = cmd.ExecuteReader();
