@@ -6,9 +6,10 @@
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>Please your feedback will be appreciated as we work to make SharpPulsar better!
-What has your experience been like using SharpPulsar?
- 
+    <PackageReleaseNotes>AVRO NOW PACKAGED INTO SharpPulsar (Was a major issue as the official Apache.Avro did not include ReflectDefaultWriter and ReflectDefaultReader)
+
+Please your feedback will be appreciated as we work to make SharpPulsar better!
+What has your experience been like using SharpPulsar? 
 Thanks
 With this release, Pulsar's:
 Simple Producer
@@ -95,7 +96,7 @@ Bump AvroSchemaGenerator  to Version 0.1.2</PackageReleaseNotes>
   </ItemGroup>
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
     <ItemGroup>
-      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
     </ItemGroup>
   </Target>
 </Project>
