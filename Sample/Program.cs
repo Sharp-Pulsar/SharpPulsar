@@ -39,6 +39,7 @@ namespace Samples
         public static readonly Dictionary<string, IActorRef> Consumers = new Dictionary<string, IActorRef>();
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
         private static bool _queryRunning = true;
+        private static long _sequencee = 0;
         static void Main(string[] args)
         {
             Console.WriteLine("Welcome. Enter Pulsar server endpoint");
@@ -271,7 +272,7 @@ namespace Samples
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = JsonSchema.Of(typeof(JournalEntry));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -307,19 +308,30 @@ namespace Samples
             var student = new Students
             {
                 Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
-                Age = DateTime.Now.Millisecond,
+                Age = 2020,
                 School = "Akka-Pulsar university"
+            };
+            var journal = new JournalEntry
+            {
+                Id = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}",
+                PersistenceId = "sampleActor",
+                IsDeleted = false,
+                Ordering =  0,
+                Payload = JsonSerializer.Serialize(student),
+                SequenceNr = _sequencee,
+                Tags = "root"
             };
             var metadata = new Dictionary<string, object>
             {
                 ["Key"] = "Single",
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
-            var send = new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(journal, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
             system.Send(send, produce);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
+            _sequencee++;
         }
         private static void PlainByteBulkSendProducer(PulsarSystem system, string topic)
         {
@@ -675,24 +687,24 @@ namespace Samples
             }, (s, response) => LastMessageId.Add(s, response));
             var messageListener = new DefaultMessageListener((a, m) =>
             {
-                var students = m.ToTypeOf<Students>();
+                var students = m.ToTypeOf<JournalEntry>();
                 var s = JsonSerializer.Serialize(students);
                 Messages.Add(s);
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
                     a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
+                    Console.WriteLine($"Consumer >> {students.Id}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
                     a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
+                    Console.WriteLine($"Consumer >> {students.Id}- partition: {b.PartitionIndex}");
                 }
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = JsonSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1215,6 +1227,20 @@ namespace Samples
         public string Name { get; set; }
         public int Age { get; set; }
         public string School { get; set; }
+    }
+    public class JournalEntry
+    {
+        public string Id { get; set; }
+
+        public string PersistenceId { get; set; }
+
+        public long SequenceNr { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public string Payload { get; set; }
+        public long Ordering { get; set; }
+        public string Tags { get; set; }
     }
     /*pulsar://52.177.109.178:6650
 http://40.65.210.106:8081

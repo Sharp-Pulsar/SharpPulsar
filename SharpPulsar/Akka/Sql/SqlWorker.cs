@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Akka.Actor;
+using Akka.Event;
 using PrestoSharp;
 using SharpPulsar.Akka.InternalCommands;
 
@@ -10,6 +11,7 @@ namespace SharpPulsar.Akka.Sql
     public class SqlWorker: ReceiveActor
     {
         private PrestoSqlDbConnection _connection;
+        private readonly ILoggingAdapter _log = Context.GetLogger();
         public SqlWorker(string server)
         {
             _connection = new PrestoSqlDbConnection(server);
@@ -29,7 +31,7 @@ namespace SharpPulsar.Akka.Sql
             try
             {
                 var q = query;
-                Context.System.Log.Debug($"Executing: {q.Query}");
+                q.Log($"Executing: {q.Query}");
                 using var cmd = _connection.CreateCommand();
                 cmd.CommandText = q.Query;
                 using var reader = cmd.ExecuteReader();
