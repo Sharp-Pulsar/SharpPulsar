@@ -5647,73 +5647,73 @@ namespace PulsarAdmin
                 (await operations.SkipAllMessagesWithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, authoritative, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
-            /// <summary>
-            /// Reset subscription to message position closest to given position.
-            /// </summary>
-            /// <remarks>
-            /// Creates a subscription on the topic at the specified message id
-            /// </remarks>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='tenant'>
-            /// Specify the tenant
-            /// </param>
-            /// <param name='namespaceParameter'>
-            /// Specify the namespace
-            /// </param>
-            /// <param name='topic'>
-            /// Specify topic name
-            /// </param>
-            /// <param name='subscriptionName'>
-            /// Subscription to create position on
-            /// </param>
-            /// <param name='authoritative'>
-            /// messageId where to create the subscription. It can be 'latest', 'earliest'
-            /// or (ledgerId:entryId)
-            /// </param>
-            /// <param name='replicated'>
-            /// Is authentication required to perform this operation
-            /// </param>
-            public static void CreateSubscription(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?))
+        /// <summary>
+        /// Reset subscription to message position closest to given position.
+        /// </summary>
+        /// <remarks>
+        /// Creates a subscription on the topic at the specified message id
+        /// </remarks>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// Specify the tenant
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// Specify the namespace
+        /// </param>
+        /// <param name='topic'>
+        /// Specify topic name
+        /// </param>
+        /// <param name='subscriptionName'>
+        /// Subscription to create position on
+        /// </param>
+        /// <param name='messageId'>
+        /// messageId where to create the subscription. It can be 'latest', 'earliest'
+        /// or (ledgerId:entryId)
+        /// </param>
+        /// <param name='replicated'>
+        /// Is authentication required to perform this operation
+        /// </param>
+        public static void CreateSubscription(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?))
             {
-                operations.CreateSubscriptionAsync(tenant, namespaceParameter, topic, subscriptionName, authoritative, replicated).GetAwaiter().GetResult();
+                operations.CreateSubscriptionAsync(tenant, namespaceParameter, topic, subscriptionName, messageId, replicated).GetAwaiter().GetResult();
             }
 
-            /// <summary>
-            /// Reset subscription to message position closest to given position.
-            /// </summary>
-            /// <remarks>
-            /// Creates a subscription on the topic at the specified message id
-            /// </remarks>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='tenant'>
-            /// Specify the tenant
-            /// </param>
-            /// <param name='namespaceParameter'>
-            /// Specify the namespace
-            /// </param>
-            /// <param name='topic'>
-            /// Specify topic name
-            /// </param>
-            /// <param name='subscriptionName'>
-            /// Subscription to create position on
-            /// </param>
-            /// <param name='authoritative'>
-            /// messageId where to create the subscription. It can be 'latest', 'earliest'
-            /// or (ledgerId:entryId)
-            /// </param>
-            /// <param name='replicated'>
-            /// Is authentication required to perform this operation
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task CreateSubscriptionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Reset subscription to message position closest to given position.
+        /// </summary>
+        /// <remarks>
+        /// Creates a subscription on the topic at the specified message id
+        /// </remarks>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// Specify the tenant
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// Specify the namespace
+        /// </param>
+        /// <param name='topic'>
+        /// Specify topic name
+        /// </param>
+        /// <param name='subscriptionName'>
+        /// Subscription to create position on
+        /// </param>
+        /// <param name='messageId'>
+        /// messageId where to create the subscription. It can be 'latest', 'earliest'
+        /// or (ledgerId:entryId)
+        /// </param>
+        /// <param name='replicated'>
+        /// Is authentication required to perform this operation
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        public static async Task CreateSubscriptionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.CreateSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, subscriptionName, authoritative, replicated, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.CreateSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, subscriptionName, messageId, replicated, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -7485,73 +7485,73 @@ namespace PulsarAdmin
                 (await operations.SkipAllMessages1WithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, authoritative, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
-            /// <summary>
-            /// Reset subscription to message position closest to given position.
-            /// </summary>
-            /// <remarks>
-            /// Creates a subscription on the topic at the specified message id
-            /// </remarks>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='tenant'>
-            /// Specify the tenant
-            /// </param>
-            /// <param name='namespaceParameter'>
-            /// Specify the namespace
-            /// </param>
-            /// <param name='topic'>
-            /// Specify topic name
-            /// </param>
-            /// <param name='subscriptionName'>
-            /// Subscription to create position on
-            /// </param>
-            /// <param name='authoritative'>
-            /// messageId where to create the subscription. It can be 'latest', 'earliest'
-            /// or (ledgerId:entryId)
-            /// </param>
-            /// <param name='replicated'>
-            /// Is authentication required to perform this operation
-            /// </param>
-            public static void CreateSubscription1(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?))
+        /// <summary>
+        /// Reset subscription to message position closest to given position.
+        /// </summary>
+        /// <remarks>
+        /// Creates a subscription on the topic at the specified message id
+        /// </remarks>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// Specify the tenant
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// Specify the namespace
+        /// </param>
+        /// <param name='topic'>
+        /// Specify topic name
+        /// </param>
+        /// <param name='subscriptionName'>
+        /// Subscription to create position on
+        /// </param>
+        /// <param name='messageId'>
+        /// messageId where to create the subscription. It can be 'latest', 'earliest'
+        /// or (ledgerId:entryId)
+        /// </param>
+        /// <param name='replicated'>
+        /// Is authentication required to perform this operation
+        /// </param>
+        public static void CreateSubscription1(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?))
             {
-                operations.CreateSubscription1Async(tenant, namespaceParameter, topic, subscriptionName, authoritative, replicated).GetAwaiter().GetResult();
+                operations.CreateSubscription1Async(tenant, namespaceParameter, topic, subscriptionName, messageId, replicated).GetAwaiter().GetResult();
             }
 
-            /// <summary>
-            /// Reset subscription to message position closest to given position.
-            /// </summary>
-            /// <remarks>
-            /// Creates a subscription on the topic at the specified message id
-            /// </remarks>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='tenant'>
-            /// Specify the tenant
-            /// </param>
-            /// <param name='namespaceParameter'>
-            /// Specify the namespace
-            /// </param>
-            /// <param name='topic'>
-            /// Specify topic name
-            /// </param>
-            /// <param name='subscriptionName'>
-            /// Subscription to create position on
-            /// </param>
-            /// <param name='authoritative'>
-            /// messageId where to create the subscription. It can be 'latest', 'earliest'
-            /// or (ledgerId:entryId)
-            /// </param>
-            /// <param name='replicated'>
-            /// Is authentication required to perform this operation
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task CreateSubscription1Async(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Reset subscription to message position closest to given position.
+        /// </summary>
+        /// <remarks>
+        /// Creates a subscription on the topic at the specified message id
+        /// </remarks>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// Specify the tenant
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// Specify the namespace
+        /// </param>
+        /// <param name='topic'>
+        /// Specify topic name
+        /// </param>
+        /// <param name='subscriptionName'>
+        /// Subscription to create position on
+        /// </param>
+        /// <param name='messageId'>
+        /// messageId where to create the subscription. It can be 'latest', 'earliest'
+        /// or (ledgerId:entryId)
+        /// </param>
+        /// <param name='replicated'>
+        /// Is authentication required to perform this operation
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        public static async Task CreateSubscription1Async(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.CreateSubscription1WithHttpMessagesAsync(tenant, namespaceParameter, topic, subscriptionName, authoritative, replicated, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.CreateSubscription1WithHttpMessagesAsync(tenant, namespaceParameter, topic, subscriptionName, messageId, replicated, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>

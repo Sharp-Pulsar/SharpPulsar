@@ -18887,7 +18887,7 @@ namespace PulsarAdmin
         /// <param name='subscriptionName'>
         /// Subscription to create position on
         /// </param>
-        /// <param name='authoritative'>
+        /// <param name='messageId'>
         /// messageId where to create the subscription. It can be 'latest', 'earliest'
         /// or (ledgerId:entryId)
         /// </param>
@@ -18912,7 +18912,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> CreateSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> CreateSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -18941,7 +18941,7 @@ namespace PulsarAdmin
                 tracingParameters.Add("namespaceParameter", namespaceParameter);
                 tracingParameters.Add("topic", topic);
                 tracingParameters.Add("subscriptionName", subscriptionName);
-                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("messageId", messageId);
                 tracingParameters.Add("replicated", replicated);
                 tracingParameters.Add("cancellationToken", cancellationToken);
                 ServiceClientTracing.Enter(_invocationId, this, "CreateSubscription", tracingParameters);
@@ -18954,9 +18954,9 @@ namespace PulsarAdmin
             _url = _url.Replace("{topic}", System.Uri.EscapeDataString(topic));
             _url = _url.Replace("{subscriptionName}", System.Uri.EscapeDataString(subscriptionName));
             List<string> _queryParameters = new List<string>();
-            if (authoritative != null)
+            if (!string.IsNullOrWhiteSpace(messageId))
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(SafeJsonConvert.SerializeObject(authoritative, SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("messageId={0}", System.Uri.EscapeDataString(SafeJsonConvert.SerializeObject(messageId, SerializationSettings).Trim('"'))));
             }
             if (replicated != null)
             {
@@ -24032,7 +24032,7 @@ namespace PulsarAdmin
         /// <param name='subscriptionName'>
         /// Subscription to create position on
         /// </param>
-        /// <param name='authoritative'>
+        /// <param name='messageId'>
         /// messageId where to create the subscription. It can be 'latest', 'earliest'
         /// or (ledgerId:entryId)
         /// </param>
@@ -24057,7 +24057,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> CreateSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> CreateSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -24086,7 +24086,7 @@ namespace PulsarAdmin
                 tracingParameters.Add("namespaceParameter", namespaceParameter);
                 tracingParameters.Add("topic", topic);
                 tracingParameters.Add("subscriptionName", subscriptionName);
-                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("messageId", messageId);
                 tracingParameters.Add("replicated", replicated);
                 tracingParameters.Add("cancellationToken", cancellationToken);
                 ServiceClientTracing.Enter(_invocationId, this, "CreateSubscription1", tracingParameters);
@@ -24099,9 +24099,9 @@ namespace PulsarAdmin
             _url = _url.Replace("{topic}", System.Uri.EscapeDataString(topic));
             _url = _url.Replace("{subscriptionName}", System.Uri.EscapeDataString(subscriptionName));
             List<string> _queryParameters = new List<string>();
-            if (authoritative != null)
+            if (!string.IsNullOrWhiteSpace(messageId))
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(SafeJsonConvert.SerializeObject(authoritative, SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("messageId={0}", System.Uri.EscapeDataString(SafeJsonConvert.SerializeObject(messageId, SerializationSettings).Trim('"'))));
             }
             if (replicated != null)
             {

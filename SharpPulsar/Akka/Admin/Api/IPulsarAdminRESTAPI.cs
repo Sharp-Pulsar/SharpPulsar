@@ -2591,7 +2591,7 @@ namespace PulsarAdmin
         /// <param name='subscriptionName'>
         /// Subscription to create position on
         /// </param>
-        /// <param name='authoritative'>
+        /// <param name='messageId'>
         /// messageId where to create the subscription. It can be 'latest',
         /// 'earliest' or (ledgerId:entryId)
         /// </param>
@@ -2604,7 +2604,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> CreateSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> CreateSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get the list of persistent subscriptions for a given topic.
@@ -3460,7 +3460,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> CreateSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, bool? authoritative = false, bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> CreateSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subscriptionName, string messageId = "latest", bool? replicated = default(bool?), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get the list of persistent subscriptions for a given topic.
