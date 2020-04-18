@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
+using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -61,6 +62,7 @@ namespace SharpPulsar.Akka
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
                 Context.ActorOf(SqlManager.Prop(), "SqlManager");
+                Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = _config.ServiceUrl}), "AdminManager");
                 Become(Ready);
                 Stash.UnstashAll();
             });

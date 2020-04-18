@@ -39,8 +39,11 @@ Little Addition</PackageReleaseNotes>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Akka\InternalCommands\Reader\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
+    <EmbeddedResource Remove="Akka\InternalCommands\Reader\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
+    <None Remove="Akka\InternalCommands\Reader\**" />
     <None Remove="Protocol\Proto\Partial\**" />
   </ItemGroup>
 
@@ -83,7 +86,6 @@ Little Addition</PackageReleaseNotes>
   <ItemGroup>
     <Folder Include="Akka\Admin\Api\" />
     <Folder Include="Akka\Function\Api\" />
-    <Folder Include="Akka\InternalCommands\Reader\" />
   </ItemGroup>
 
   <ItemGroup>

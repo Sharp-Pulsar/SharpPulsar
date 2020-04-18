@@ -45,9 +45,9 @@ namespace PulsarAdmin
         /// </param>
         /// <param name='disposeHttpClient'>
         /// True: will dispose the provided httpClient on calling PulsarAdminRESTAPI.Dispose(). False: will not dispose provided httpClient</param>
-        public PulsarAdminRESTAPI(HttpClient httpClient, bool disposeHttpClient) : base(httpClient, disposeHttpClient)
+        public PulsarAdminRESTAPI(string brokerwebserviceurl, HttpClient httpClient, bool disposeHttpClient) : base(httpClient, disposeHttpClient)
         {
-            Initialize();
+            Initialize(brokerwebserviceurl);
         }
 
         /// <summary>
@@ -56,9 +56,9 @@ namespace PulsarAdmin
         /// <param name='handlers'>
         /// Optional. The delegating handlers to add to the http client pipeline.
         /// </param>
-        public PulsarAdminRESTAPI(params DelegatingHandler[] handlers) : base(handlers)
+        public PulsarAdminRESTAPI(string brokerwebserviceurl, params DelegatingHandler[] handlers) : base(handlers)
         {
-            Initialize();
+            Initialize(brokerwebserviceurl);
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace PulsarAdmin
         /// <param name='handlers'>
         /// Optional. The delegating handlers to add to the http client pipeline.
         /// </param>
-        public PulsarAdminRESTAPI(HttpClientHandler rootHandler, params DelegatingHandler[] handlers) : base(rootHandler, handlers)
+        public PulsarAdminRESTAPI(string brokerwebserviceurl, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) : base(rootHandler, handlers)
         {
-            Initialize();
+            Initialize(brokerwebserviceurl);
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace PulsarAdmin
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when a required parameter is null
         /// </exception>
-        public PulsarAdminRESTAPI(System.Uri baseUri, params DelegatingHandler[] handlers) : this(handlers)
+        public PulsarAdminRESTAPI(System.Uri baseUri, params DelegatingHandler[] handlers) : this(baseUri.AbsoluteUri, handlers)
         {
             if (baseUri == null)
             {
@@ -111,7 +111,7 @@ namespace PulsarAdmin
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when a required parameter is null
         /// </exception>
-        public PulsarAdminRESTAPI(System.Uri baseUri, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) : this(rootHandler, handlers)
+        public PulsarAdminRESTAPI(System.Uri baseUri, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) : this(baseUri.AbsoluteUri, rootHandler, handlers)
         {
             if (baseUri == null)
             {
@@ -127,9 +127,9 @@ namespace PulsarAdmin
         /// <summary>
         /// Initializes client properties.
         /// </summary>
-        private void Initialize()
+        private void Initialize(string url)
         {
-            BaseUri = new System.Uri("/admin/v2");
+            BaseUri = new System.Uri($"{url.TrimEnd('/')}/admin/v2");
             SerializationSettings = new JsonSerializerSettings
             {
                 Formatting = Newtonsoft.Json.Formatting.Indented,
