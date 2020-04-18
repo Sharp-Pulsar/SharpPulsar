@@ -13,6 +13,23 @@ namespace SharpPulsar.Akka.Admin
         GetBrokerResourceAvailability,
         GetLoadReport,
         GetMBeans,
-        GetMetrics
+        GetMetrics,
+        GetTopics2,
+        GetDynamicConfigurationName,
+        GetRuntimeConfiguration,
+        GetAllDynamicConfigurations,
+        DeleteDynamicConfiguration,
+        UpdateDynamicConfiguration,
+        Healthcheck,
+        GetInternalConfigurationData,
+        GetOwnedNamespaces,
+        GetActiveBrokers,
+        GetClusters,
+        GetCluster,
+        UpdateCluster,
+        CreateCluster,
+        DeleteCluster,
+        GetFailureDomains,
+        GetDomain
     }
 }
