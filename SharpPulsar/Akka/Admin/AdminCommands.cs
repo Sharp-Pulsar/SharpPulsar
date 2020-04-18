@@ -70,6 +70,23 @@ namespace SharpPulsar.Akka.Admin
         GetMaxConsumersPerTopic,
         SetMaxConsumersPerTopic,
         GetMaxProducersPerTopic,
-        SetMaxProducersPerTopic
+        SetMaxProducersPerTopic,
+        GetNamespaceMessageTTL,
+        SetNamespaceMessageTTL,
+        GetOffloadDeletionLag,
+        SetOffloadDeletionLag,
+        ClearOffloadDeletionLag,
+        GetOffloadThreshold,
+        SetOffloadThreshold,
+        GetPermissions,
+        GrantPermissionOnNamespace,
+        RevokePermissionsOnNamespace,
+        GetPersistence,
+        SetPersistence,
+        SetBookieAffinityGroup,
+        GetNamespaceReplicationClusters,
+        SetNamespaceReplicationClusters,
+        GetReplicatorDispatchRate,
+        SetReplicatorDispatchRate
     }
 }

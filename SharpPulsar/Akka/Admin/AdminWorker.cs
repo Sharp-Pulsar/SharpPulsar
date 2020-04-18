@@ -365,6 +365,104 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.SetMaxProducersPerTopic(tenant19, nspace19);
                         admin.Handler("SetMaxProducersPerTopic");
                         break;
+                    case AdminCommands.GetNamespaceMessageTTL:
+                        var tenant20 = admin.Arguments[0].ToString();
+                        var nspace20 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetNamespaceMessageTTL(tenant20, nspace20));
+                        break;
+                    case AdminCommands.SetNamespaceMessageTTL:
+                        var tenant21 = admin.Arguments[0].ToString();
+                        var nspace21 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetNamespaceMessageTTL(tenant21, nspace21);
+                        admin.Handler("SetNamespaceMessageTTL");
+                        break;
+                    case AdminCommands.GetOffloadDeletionLag:
+                        var tenant22 = admin.Arguments[0].ToString();
+                        var nspace22 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetOffloadDeletionLag(tenant22, nspace22));
+                        break;
+                    case AdminCommands.SetOffloadDeletionLag:
+                        var tenant23 = admin.Arguments[0].ToString();
+                        var nspace23 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetOffloadDeletionLag(tenant23, nspace23);
+                        admin.Handler("SetOffloadDeletionLag");
+                        break;
+                    case AdminCommands.ClearOffloadDeletionLag:
+                        var tenant24 = admin.Arguments[0].ToString();
+                        var nspace24 = admin.Arguments[1].ToString();
+                        _adminRestapi.ClearOffloadDeletionLag(tenant24, nspace24);
+                        admin.Handler("ClearOffloadDeletionLag");
+                        break;
+                    case AdminCommands.GetOffloadThreshold:
+                        var tenant25 = admin.Arguments[0].ToString();
+                        var nspace25 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetOffloadThreshold(tenant25, nspace25));
+                        break;
+                    case AdminCommands.SetOffloadThreshold:
+                        var tenant26 = admin.Arguments[0].ToString();
+                        var nspace26 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetOffloadThreshold(tenant26, nspace26);
+                        admin.Handler("SetOffloadThreshold");
+                        break;
+                    case AdminCommands.GetPermissions:
+                        var tenant27 = admin.Arguments[0].ToString();
+                        var cluster1 = admin.Arguments[1].ToString();
+                        var nspace27 = admin.Arguments[2].ToString();
+                        admin.Handler(_adminRestapi.GetPermissions(tenant27, cluster1, nspace27));
+                        break;
+                    case AdminCommands.GrantPermissionOnNamespace:
+                        var tenant28 = admin.Arguments[0].ToString();
+                        var nspace28 = admin.Arguments[1].ToString();
+                        var role = admin.Arguments[2].ToString();
+                        _adminRestapi.GrantPermissionOnNamespace(tenant28, nspace28, role);
+                        admin.Handler("GrantPermissionOnNamespace");
+                        break;
+                    case AdminCommands.RevokePermissionsOnNamespace:
+                        var tenant29 = admin.Arguments[0].ToString();
+                        var nspace29 = admin.Arguments[1].ToString();
+                        var role1 = admin.Arguments[2].ToString();
+                        _adminRestapi.RevokePermissionsOnNamespace(tenant29, nspace29, role1);
+                        admin.Handler("RevokePermissionsOnNamespace");
+                        break;
+                    case AdminCommands.GetPersistence:
+                        var tenant30 = admin.Arguments[0].ToString();
+                        var nspace30 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetPersistence(tenant30, nspace30));
+                        break;
+                    case AdminCommands.SetPersistence:
+                        var tenant31 = admin.Arguments[0].ToString();
+                        var nspace31 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetPersistence(tenant31, nspace31);
+                        admin.Handler("SetPersistence");
+                        break;
+                    case AdminCommands.SetBookieAffinityGroup:
+                        var tenant32 = admin.Arguments[0].ToString();
+                        var nspace32 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetBookieAffinityGroup(tenant32, nspace32);
+                        admin.Handler("SetBookieAffinityGroup");
+                        break;
+                    case AdminCommands.GetNamespaceReplicationClusters:
+                        var tenant33 = admin.Arguments[0].ToString();
+                        var nspace33 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetNamespaceReplicationClusters(tenant33, nspace33));
+                        break;
+                    case AdminCommands.SetNamespaceReplicationClusters:
+                        var tenant34 = admin.Arguments[0].ToString();
+                        var nspace34 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetNamespaceReplicationClusters(tenant34, nspace34);
+                        admin.Handler("SetNamespaceReplicationClusters");
+                        break;
+                    case AdminCommands.GetReplicatorDispatchRate:
+                        var tenant35 = admin.Arguments[0].ToString();
+                        var nspace35 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetReplicatorDispatchRate(tenant35, nspace35));
+                        break;
+                    case AdminCommands.SetReplicatorDispatchRate:
+                        var tenant36 = admin.Arguments[0].ToString();
+                        var nspace36 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetNamespaceReplicationClusters(tenant36, nspace36);
+                        admin.Handler("SetReplicatorDispatchRate");
+                        break;
                 }
             }
             catch (Exception e)
@@ -444,6 +542,22 @@ namespace SharpPulsar.Akka.Admin
                 ["SetMaxConsumersPerTopic"] = "void\nArguments[string tenant, string namespace]",
                 ["GetMaxProducersPerTopic"] = "return int\nArguments[string tenant, string namespace]",
                 ["SetMaxProducersPerTopic"] = "void\nArguments[string tenant, string namespace]",
+                ["GetNamespaceMessageTTL"] = "return int\nArguments[string tenant, string namespace]",
+                ["SetNamespaceMessageTTL"] = "void\nArguments[string tenant, string namespace]",
+                ["GetOffloadDeletionLag"] = "return long\nArguments[string tenant, string namespace]",
+                ["SetOffloadDeletionLag"] = "void\nArguments[string tenant, string namespace]",
+                ["ClearOffloadDeletionLag"] = "void\nArguments[string tenant, string namespace]",
+                ["GetOffloadThreshold"] = "return long\nArguments[string tenant, string namespace]",
+                ["SetOffloadThreshold"] = "void\nArguments[string tenant, string namespace]",
+                ["GetPermissions"] = "return IDictionary<string, object>\nArguments[string tenant, string cluster, string namespace]",
+                ["GrantPermissionOnNamespace"] = "void\nArguments[string tenant, string namespace, string role]",
+                ["RevokePermissionsOnNamespace"] = "void\nArguments[string tenant, string namespace, string role]",
+                ["GetPersistence"] = "return PersistencePolicies\nArguments[string tenant, string namespace]",
+                ["SetPersistence"] = "void\nArguments[string tenant, string namespace]",
+                ["GetNamespaceReplicationClusters"] = "return IList<string>\nArguments[string tenant, string namespace]",
+                ["SetNamespaceReplicationClusters"] = "void\nArguments[string tenant, string namespace]",
+                ["GetReplicatorDispatchRate"] = "return DispatchRate\nArguments[string tenant, string namespace]",
+                ["SetReplicatorDispatchRate"] = "void\nArguments[string tenant, string namespace]",
             };
             return help;
         }
