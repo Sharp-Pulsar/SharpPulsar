@@ -218,7 +218,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.CreateNamespace:
                         var tena = admin.Arguments[0].ToString();
                         var nsp = admin.Arguments[1].ToString();
-                        _adminRestapi.GetPolicies(tena, nsp);
+                        _adminRestapi.CreateNamespace(tena, nsp);
                         admin.Handler("CreateNamespace");
                         break;
                     case AdminCommands.DeleteNamespace:
@@ -609,10 +609,20 @@ namespace SharpPulsar.Akka.Admin
                         var nspace59 = admin.Arguments[1].ToString();
                         admin.Handler(_adminRestapi.GetList(tenant59, nspace59));
                         break;
+                    case AdminCommands.GetListPersistence:
+                        var tenant59_ = admin.Arguments[0].ToString();
+                        var nspace59_ = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetList1(tenant59_, nspace59_));
+                        break;
                     case AdminCommands.GetPartitionedTopicList:
                         var tenant60 = admin.Arguments[0].ToString();
                         var nspace60 = admin.Arguments[1].ToString();
                         admin.Handler(_adminRestapi.GetPartitionedTopicList(tenant60, nspace60));
+                        break;
+                    case AdminCommands.GetPartitionedTopicListPersistence:
+                        var tenant60_ = admin.Arguments[0].ToString();
+                        var nspace60_ = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetPartitionedTopicList1(tenant60_, nspace60_));
                         break;
                     case AdminCommands.GetListFromBundle:
                         var tenant61 = admin.Arguments[0].ToString();
@@ -628,6 +638,14 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.CreateNonPartitionedTopic(tenant62, nspace62, topic, auth11);
                         admin.Handler("CreateNonPartitionedTopic");
                         break;
+                    case AdminCommands.CreateNonPartitionedPersistentTopic:
+                        var tenant62p = admin.Arguments[0].ToString();
+                        var nspace62p = admin.Arguments[1].ToString();
+                        var topicp = admin.Arguments[2].ToString();
+                        var auth11p = (bool)admin.Arguments[3];
+                        _adminRestapi.CreateNonPartitionedTopic1(tenant62p, nspace62p, topicp, auth11p);
+                        admin.Handler("CreateNonPartitionedPersistentTopic");
+                        break;
                     case AdminCommands.DeleteTopic:
                         var tenant63 = admin.Arguments[0].ToString();
                         var nspace63 = admin.Arguments[1].ToString();
@@ -636,6 +654,15 @@ namespace SharpPulsar.Akka.Admin
                         var auth12 = (bool)admin.Arguments[4];
                         _adminRestapi.DeleteTopic(tenant63, nspace63, topic1, force, auth12);
                         admin.Handler("DeleteTopic");
+                        break;
+                    case AdminCommands.DeletePersistentTopic:
+                        var tenant63p = admin.Arguments[0].ToString();
+                        var nspace63p = admin.Arguments[1].ToString();
+                        var topic1p = admin.Arguments[2].ToString();
+                        var forcep = (bool)admin.Arguments[3];
+                        var auth12p = (bool)admin.Arguments[4];
+                        _adminRestapi.DeleteTopic1(tenant63p, nspace63p, topic1p, forcep, auth12p);
+                        admin.Handler("DeletePersistentTopic");
                         break;
                     case AdminCommands.ExpireMessagesForAllSubscriptions:
                         var tenant64 = admin.Arguments[0].ToString();
@@ -646,6 +673,15 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.ExpireMessagesForAllSubscriptions(tenant64, nspace64, topic2, expires, auth13);
                         admin.Handler("ExpireMessagesForAllSubscriptions");
                         break;
+                    case AdminCommands.ExpireMessagesForAllSubscriptionsPersistent:
+                        var tenant64p = admin.Arguments[0].ToString();
+                        var nspace64p = admin.Arguments[1].ToString();
+                        var topic2p = admin.Arguments[2].ToString();
+                        var expiresp = (int)admin.Arguments[3];
+                        var auth13p = (bool)admin.Arguments[4];
+                        _adminRestapi.ExpireMessagesForAllSubscriptions1(tenant64p, nspace64p, topic2p, expiresp, auth13p);
+                        admin.Handler("ExpireMessagesForAllSubscriptionsPersistent");
+                        break;
                     case AdminCommands.GetBacklog:
                         var tenant65 = admin.Arguments[0].ToString();
                         var nspace65 = admin.Arguments[1].ToString();
@@ -653,12 +689,26 @@ namespace SharpPulsar.Akka.Admin
                         var auth14 = (bool)admin.Arguments[3];
                         admin.Handler(_adminRestapi.GetBacklog(tenant65, nspace65, topic3, auth14));
                         break;
+                    case AdminCommands.GetBacklogPersistent:
+                        var tenant65p = admin.Arguments[0].ToString();
+                        var nspace65p = admin.Arguments[1].ToString();
+                        var topic3p = admin.Arguments[2].ToString();
+                        var auth14p = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetBacklog1(tenant65p, nspace65p, topic3p, auth14p));
+                        break;
                     case AdminCommands.CompactionStatus:
                         var tenant66 = admin.Arguments[0].ToString();
                         var nspace66 = admin.Arguments[1].ToString();
                         var topic4 = admin.Arguments[2].ToString();
                         var auth15 = (bool)admin.Arguments[3];
                         admin.Handler(_adminRestapi.CompactionStatus(tenant66, nspace66, topic4, auth15));
+                        break;
+                    case AdminCommands.CompactionStatusPersistent:
+                        var tenant66p = admin.Arguments[0].ToString();
+                        var nspace66p = admin.Arguments[1].ToString();
+                        var topic4p = admin.Arguments[2].ToString();
+                        var auth15p = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.CompactionStatus1(tenant66p, nspace66p, topic4p, auth15p));
                         break;
                     case AdminCommands.Compact:
                         var tenant67 = admin.Arguments[0].ToString();
@@ -668,12 +718,27 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.Compact(tenant67, nspace67, topic5, auth16);
                         admin.Handler("Compact");
                         break;
+                    case AdminCommands.CompactPersistent:
+                        var tenant67p = admin.Arguments[0].ToString();
+                        var nspace67p = admin.Arguments[1].ToString();
+                        var topic5p = admin.Arguments[2].ToString();
+                        var auth16p = (bool)admin.Arguments[3];
+                        _adminRestapi.Compact1(tenant67p, nspace67p, topic5p, auth16p);
+                        admin.Handler("CompactPersistent");
+                        break;
                     case AdminCommands.GetManagedLedgerInfo:
                         var tenant68 = admin.Arguments[0].ToString();
                         var nspace68 = admin.Arguments[1].ToString();
                         var topic6 = admin.Arguments[2].ToString();
                         _adminRestapi.GetManagedLedgerInfo(tenant68, nspace68, topic6);
                         admin.Handler("GetManagedLedgerInfo");
+                        break;
+                    case AdminCommands.GetManagedLedgerInfoPersistent:
+                        var tenant68p = admin.Arguments[0].ToString();
+                        var nspace68p = admin.Arguments[1].ToString();
+                        var topic6p = admin.Arguments[2].ToString();
+                        _adminRestapi.GetManagedLedgerInfo1(tenant68p, nspace68p, topic6p);
+                        admin.Handler("GetManagedLedgerInfoPersistent");
                         break;
                     case AdminCommands.GetInternalStats:
                         var tenant69 = admin.Arguments[0].ToString();
@@ -682,6 +747,13 @@ namespace SharpPulsar.Akka.Admin
                         var auth17 = (bool)admin.Arguments[3];
                         admin.Handler(_adminRestapi.GetInternalStats(tenant69, nspace69, topic7, auth17));
                         break;
+                    case AdminCommands.GetInternalStatsPersistent:
+                        var tenant69p = admin.Arguments[0].ToString();
+                        var nspace69p = admin.Arguments[1].ToString();
+                        var topic7p = admin.Arguments[2].ToString();
+                        var auth17p = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetInternalStats1(tenant69p, nspace69p, topic7p, auth17p));
+                        break;
                     case AdminCommands.GetLastMessageId:
                         var tenant70 = admin.Arguments[0].ToString();
                         var nspace70 = admin.Arguments[1].ToString();
@@ -689,12 +761,26 @@ namespace SharpPulsar.Akka.Admin
                         var auth18 = (bool)admin.Arguments[3];
                         admin.Handler(_adminRestapi.GetLastMessageId(tenant70, nspace70, topic8, auth18));
                         break;
+                    case AdminCommands.GetLastMessageIdPersistent:
+                        var tenant70p = admin.Arguments[0].ToString();
+                        var nspace70p = admin.Arguments[1].ToString();
+                        var topic8p = admin.Arguments[2].ToString();
+                        var auth18p = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetLastMessageId1(tenant70p, nspace70p, topic8p, auth18p));
+                        break;
                     case AdminCommands.OffloadStatus:
                         var tenant71 = admin.Arguments[0].ToString();
                         var nspace71 = admin.Arguments[1].ToString();
                         var topic9 = admin.Arguments[2].ToString();
                         var auth19 = (bool)admin.Arguments[3];
                         admin.Handler(_adminRestapi.OffloadStatus(tenant71, nspace71, topic9, auth19));
+                        break;
+                    case AdminCommands.OffloadStatusPersistent:
+                        var tenant71p = admin.Arguments[0].ToString();
+                        var nspace71p = admin.Arguments[1].ToString();
+                        var topic9p = admin.Arguments[2].ToString();
+                        var auth19p = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.OffloadStatus1(tenant71p, nspace71p, topic9p, auth19p));
                         break;
                     case AdminCommands.TriggerOffload:
                         var tenant72 = admin.Arguments[0].ToString();
@@ -704,6 +790,14 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.TriggerOffload(tenant72, nspace72, topic10, auth20);
                         admin.Handler("TriggerOffload");
                         break;
+                    case AdminCommands.TriggerOffloadPersistent:
+                        var tenant72p = admin.Arguments[0].ToString();
+                        var nspace72p = admin.Arguments[1].ToString();
+                        var topic10p = admin.Arguments[2].ToString();
+                        var auth20p = (bool)admin.Arguments[3];
+                        _adminRestapi.TriggerOffload1(tenant72p, nspace72p, topic10p, auth20p);
+                        admin.Handler("TriggerOffloadPersistent");
+                        break;
                     case AdminCommands.GetPartitionedStats:
                         var tenant73 = admin.Arguments[0].ToString();
                         var nspace73 = admin.Arguments[1].ToString();
@@ -712,6 +806,15 @@ namespace SharpPulsar.Akka.Admin
                         var auth21 = (bool)admin.Arguments[4];
                         _adminRestapi.GetPartitionedStats(tenant73, nspace73, topic11, auth21);
                         admin.Handler("GetPartitionedStats");
+                        break;
+                    case AdminCommands.GetPartitionedStatsPersistent:
+                        var tenant73p = admin.Arguments[0].ToString();
+                        var nspace73p = admin.Arguments[1].ToString();
+                        var topic11p = admin.Arguments[2].ToString();
+                        var perp = (bool)admin.Arguments[3];
+                        var auth21p = (bool)admin.Arguments[4];
+                        _adminRestapi.GetPartitionedStats1(tenant73p, nspace73p, topic11p, auth21p);
+                        admin.Handler("GetPartitionedStatsPersistent");
                         break;
                     case AdminCommands.GetPartitionedMetadata:
                         var tenant74 = admin.Arguments[0].ToString();

@@ -218,6 +218,10 @@ namespace Samples
                         Console.WriteLine("[CreateTenant] Enter destination server: ");
                         CreateTenant(pulsarSystem, Console.ReadLine());
                         break;
+                    case "39":
+                        Console.WriteLine("[UpdateTenant] Enter destination server: ");
+                        UpdateTenant(pulsarSystem, Console.ReadLine());
+                        break;
                     case "26":
                         Console.WriteLine("[GetTenants] Enter destination server: ");
                         GetTenants(pulsarSystem, Console.ReadLine());
@@ -253,6 +257,22 @@ namespace Samples
                     case "34":
                         Console.WriteLine("[GetRetention] Enter destination server: ");
                         GetRetention(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "35":
+                        Console.WriteLine("[SetPersistence] Enter destination server: ");
+                        SetPersistence(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "36":
+                        Console.WriteLine("[GetPersistence] Enter destination server: ");
+                        GetPersistence(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "37":
+                        Console.WriteLine("[GetList] Enter destination server: ");
+                        GetList(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "38":
+                        Console.WriteLine("[GetTenantNamespace] Enter destination server: ");
+                        GetTenantNamespace(pulsarSystem, Console.ReadLine());
                         break;
                     #endregion
                     case "exit":
@@ -1281,6 +1301,14 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
+        private static void UpdateTenant(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.UpdateTenant, new object[] { "events", new TenantInfo{AdminRoles = new List<string>{"Journal", "Query", "Create"}, AllowedClusters = new List<string>{"pulsar"}} }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
         private static void GetTenants(PulsarSystem system, string server)
         {
             system.QueryAdmin(new QueryAdmin(AdminCommands.GetTenants, new object[] { }, e =>
@@ -1316,6 +1344,38 @@ namespace Samples
         private static void GetTopics(PulsarSystem system, string server)
         {
             system.QueryAdmin(new QueryAdmin(AdminCommands.GetTopics, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void SetPersistence(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.SetPersistence, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetPersistence(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetPersistence, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetList(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetList, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetTenantNamespace(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetTenantNamespaces, new object[] { "events", "akka", "ALL"}, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);

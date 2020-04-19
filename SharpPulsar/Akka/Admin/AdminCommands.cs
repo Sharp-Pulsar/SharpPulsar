@@ -541,8 +541,20 @@ namespace SharpPulsar.Akka.Admin
 
         /// <summary>
         /// Arguments[string tenant, string namespace]
+        /// Persistent Topic
+        /// </summary>
+        GetListPersistence,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace]
         /// </summary>
         GetPartitionedTopicList,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace]
+        /// Persistent Topic
+        /// </summary>
+        GetPartitionedTopicListPersistence,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string bundle]
@@ -555,14 +567,29 @@ namespace SharpPulsar.Akka.Admin
         CreateNonPartitionedTopic,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        CreateNonPartitionedPersistentTopic,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool force, bool authoritative]
         /// </summary>
         DeleteTopic,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool force, bool authoritative]
+        /// </summary>
+        DeletePersistentTopic,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, int expireTimeInSeconds, bool authoritative]
         /// </summary>
         ExpireMessagesForAllSubscriptions,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, int expireTimeInSeconds, bool authoritative]
+        /// </summary>
+        ExpireMessagesForAllSubscriptionsPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -572,7 +599,17 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
+        GetBacklogPersistent,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
         CompactionStatus,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        CompactionStatusPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -580,14 +617,28 @@ namespace SharpPulsar.Akka.Admin
         Compact,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        CompactPersistent,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic]
         /// </summary>
         GetManagedLedgerInfo,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic]
+        /// </summary>
+        GetManagedLedgerInfoPersistent,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
         GetInternalStats,
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        GetInternalStatsPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -597,7 +648,17 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
+        GetLastMessageIdPersistent,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
         OffloadStatus,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        OffloadStatusPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -605,9 +666,19 @@ namespace SharpPulsar.Akka.Admin
         TriggerOffload,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        TriggerOffloadPersistent,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool perPartition, bool authoritative]
         /// </summary>
         GetPartitionedStats,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool perPartition, bool authoritative]
+        /// </summary>
+        GetPartitionedStatsPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative, bool checkAllowAutoCreation]
