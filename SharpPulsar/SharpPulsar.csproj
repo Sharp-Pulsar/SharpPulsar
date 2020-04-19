@@ -96,6 +96,9 @@ Little Addition</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Akka\Admin\Api\code-model-v1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

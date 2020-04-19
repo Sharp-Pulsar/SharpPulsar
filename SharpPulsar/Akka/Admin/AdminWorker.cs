@@ -28,9 +28,6 @@ namespace SharpPulsar.Akka.Admin
             {
                 switch (admin.Command)
                 {
-                    case AdminCommands.Help:
-                        admin.Handler(Help());
-                        break;
                     case AdminCommands.GetBookiesRackInfo:
                         var response = _adminRestapi.GetBookiesRackInfo();
                         admin.Handler(response);
@@ -460,8 +457,269 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetReplicatorDispatchRate:
                         var tenant36 = admin.Arguments[0].ToString();
                         var nspace36 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetNamespaceReplicationClusters(tenant36, nspace36);
+                        _adminRestapi.SetReplicatorDispatchRate(tenant36, nspace36);
                         admin.Handler("SetReplicatorDispatchRate");
+                        break;
+                    case AdminCommands.GetRetention:
+                        var tenant37 = admin.Arguments[0].ToString();
+                        var nspace37 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetRetention(tenant37, nspace37));
+                        break;
+                    case AdminCommands.SetRetention:
+                        var tenant38 = admin.Arguments[0].ToString();
+                        var nspace38 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetRetention(tenant38, nspace38);
+                        admin.Handler("SetRetention");
+                        break;
+                    case AdminCommands.GetSchemaAutoUpdateCompatibilityStrategy:
+                        var tenant39 = admin.Arguments[0].ToString();
+                        var nspace39 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetSchemaAutoUpdateCompatibilityStrategy(tenant39, nspace39));
+                        break;
+                    case AdminCommands.SetSchemaAutoUpdateCompatibilityStrategy:
+                        var tenant40 = admin.Arguments[0].ToString();
+                        var nspace40 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSchemaAutoUpdateCompatibilityStrategy(tenant40, nspace40);
+                        admin.Handler("SetSchemaAutoUpdateCompatibilityStrategy");
+                        break;
+                    case AdminCommands.GetSchemaCompatibilityStrategy:
+                        var tenant41 = admin.Arguments[0].ToString();
+                        var nspace41 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetSchemaCompatibilityStrategy(tenant41, nspace41));
+                        break;
+                    case AdminCommands.SetSchemaCompatibilityStrategy:
+                        var tenant42 = admin.Arguments[0].ToString();
+                        var nspace42 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42);
+                        admin.Handler("SetSchemaCompatibilityStrategy");
+                        break;
+                    case AdminCommands.GetSchemaValidtionEnforced:
+                        var tenant43 = admin.Arguments[0].ToString();
+                        var nspace43 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetSchemaValidtionEnforced(tenant43, nspace43));
+                        break;
+                    case AdminCommands.SetSchemaValidtionEnforced:
+                        var tenant44 = admin.Arguments[0].ToString();
+                        var nspace44 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSchemaValidtionEnforced(tenant44, nspace44);
+                        admin.Handler("SetSchemaValidtionEnforced");
+                        break;
+                    case AdminCommands.GetSubscribeRate:
+                        var tenant45 = admin.Arguments[0].ToString();
+                        var nspace45 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetSubscribeRate(tenant45, nspace45));
+                        break;
+                    case AdminCommands.SetSubscribeRate:
+                        var tenant46 = admin.Arguments[0].ToString();
+                        var nspace46 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSubscribeRate(tenant46, nspace46);
+                        admin.Handler("SetSubscribeRate");
+                        break;
+                    case AdminCommands.SetSubscriptionAuthMode:
+                        var tenant47 = admin.Arguments[0].ToString();
+                        var nspace47 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSubscribeRate(tenant47, nspace47);
+                        admin.Handler("SetSubscriptionAuthMode");
+                        break;
+                    case AdminCommands.GetSubscriptionDispatchRate:
+                        var tenant48 = admin.Arguments[0].ToString();
+                        var nspace48 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetSubscriptionDispatchRate(tenant48, nspace48));
+                        break;
+                    case AdminCommands.SetSubscriptionDispatchRate:
+                        var tenant49 = admin.Arguments[0].ToString();
+                        var nspace49 = admin.Arguments[1].ToString();
+                        _adminRestapi.SetSubscriptionDispatchRate(tenant49, nspace49);
+                        admin.Handler("SetSubscriptionDispatchRate");
+                        break;
+                    case AdminCommands.GetTopics:
+                        var tenant50 = admin.Arguments[0].ToString();
+                        var nspace50 = admin.Arguments[1].ToString();
+                        var mode = admin.Arguments[2].ToString();
+                        admin.Handler(_adminRestapi.GetTopics(tenant50, nspace50, mode));
+                        break;
+                    case AdminCommands.UnloadNamespace:
+                        var tenant51 = admin.Arguments[0].ToString();
+                        var nspace51 = admin.Arguments[1].ToString();
+                        _adminRestapi.UnloadNamespace(tenant51, nspace51);
+                        admin.Handler("UnloadNamespace");
+                        break;
+                    case AdminCommands.UnsubscribeNamespace:
+                        var tenant52 = admin.Arguments[0].ToString();
+                        var cluster3 = admin.Arguments[1].ToString();
+                        var nspace52 = admin.Arguments[2].ToString();
+                        var sub2 = admin.Arguments[3].ToString();
+                        var auth4 = (bool)admin.Arguments[4];
+                        _adminRestapi.UnsubscribeNamespace(tenant52, cluster3, nspace52, sub2, auth4);
+                        admin.Handler("UnsubscribeNamespace");
+                        break;
+                    case AdminCommands.DeleteNamespaceBundle:
+                        var tenant53 = admin.Arguments[0].ToString();
+                        var nspace53 = admin.Arguments[1].ToString();
+                        var bndle = admin.Arguments[2].ToString();
+                        var auth5 = (bool)admin.Arguments[3];
+                        _adminRestapi.DeleteNamespaceBundle(tenant53, nspace53, bndle, auth5);
+                        admin.Handler("DeleteNamespaceBundle");
+                        break;
+                    case AdminCommands.ClearNamespaceBundleBacklog:
+                        var tenant54 = admin.Arguments[0].ToString();
+                        var nspace54 = admin.Arguments[1].ToString();
+                        var bndle1 = admin.Arguments[2].ToString();
+                        var auth6 = (bool)admin.Arguments[3];
+                        _adminRestapi.ClearNamespaceBundleBacklog(tenant54, nspace54, bndle1, auth6);
+                        admin.Handler("ClearNamespaceBundleBacklog");
+                        break;
+                    case AdminCommands.ClearNamespaceBundleBacklogForSubscription:
+                        var tenant55 = admin.Arguments[0].ToString();
+                        var nspace55 = admin.Arguments[1].ToString();
+                        var sub3 = admin.Arguments[2].ToString();
+                        var bndle2 = admin.Arguments[3].ToString();
+                        var auth7 = (bool)admin.Arguments[4];
+                        _adminRestapi.ClearNamespaceBundleBacklogForSubscription(tenant55, nspace55, sub3, bndle2, auth7);
+                        admin.Handler("ClearNamespaceBundleBacklogForSubscription");
+                        break;
+                    case AdminCommands.SplitNamespaceBundle:
+                        var tenant56 = admin.Arguments[0].ToString();
+                        var nspace56 = admin.Arguments[1].ToString();
+                        var bndle4 = admin.Arguments[2].ToString();
+                        var auth8 = (bool)admin.Arguments[3];
+                        var unload = (bool)admin.Arguments[4];
+                        _adminRestapi.SplitNamespaceBundle(tenant56, nspace56, bndle4, auth8, unload);
+                        admin.Handler("SplitNamespaceBundle");
+                        break;
+                    case AdminCommands.UnloadNamespaceBundle:
+                        var tenant57 = admin.Arguments[0].ToString();
+                        var nspace57 = admin.Arguments[1].ToString();
+                        var bndle5 = admin.Arguments[2].ToString();
+                        var auth9 = (bool)admin.Arguments[3];
+                        _adminRestapi.UnloadNamespaceBundle(tenant57, nspace57, bndle5, auth9);
+                        admin.Handler("UnloadNamespaceBundle");
+                        break;
+                    case AdminCommands.UnsubscribeNamespaceBundle:
+                        var tenant58 = admin.Arguments[0].ToString();
+                        var nspace58 = admin.Arguments[1].ToString();
+                        var sub4 = admin.Arguments[2].ToString();
+                        var bndle6 = admin.Arguments[3].ToString();
+                        var auth10 = (bool)admin.Arguments[4];
+                        _adminRestapi.UnsubscribeNamespaceBundle(tenant58, nspace58,sub4, bndle6, auth10);
+                        admin.Handler("UnsubscribeNamespaceBundle");
+                        break;
+                    case AdminCommands.GetList:
+                        var tenant59 = admin.Arguments[0].ToString();
+                        var nspace59 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetList(tenant59, nspace59));
+                        break;
+                    case AdminCommands.GetPartitionedTopicList:
+                        var tenant60 = admin.Arguments[0].ToString();
+                        var nspace60 = admin.Arguments[1].ToString();
+                        admin.Handler(_adminRestapi.GetPartitionedTopicList(tenant60, nspace60));
+                        break;
+                    case AdminCommands.GetListFromBundle:
+                        var tenant61 = admin.Arguments[0].ToString();
+                        var nspace61 = admin.Arguments[1].ToString();
+                        var bndle7 = admin.Arguments[2].ToString();
+                        admin.Handler(_adminRestapi.GetListFromBundle(tenant61, nspace61, bndle7));
+                        break;
+                    case AdminCommands.CreateNonPartitionedTopic:
+                        var tenant62 = admin.Arguments[0].ToString();
+                        var nspace62 = admin.Arguments[1].ToString();
+                        var topic = admin.Arguments[2].ToString();
+                        var auth11 = (bool)admin.Arguments[3];
+                        _adminRestapi.CreateNonPartitionedTopic(tenant62, nspace62, topic, auth11);
+                        admin.Handler("CreateNonPartitionedTopic");
+                        break;
+                    case AdminCommands.DeleteTopic:
+                        var tenant63 = admin.Arguments[0].ToString();
+                        var nspace63 = admin.Arguments[1].ToString();
+                        var topic1 = admin.Arguments[2].ToString();
+                        var force = (bool)admin.Arguments[3];
+                        var auth12 = (bool)admin.Arguments[4];
+                        _adminRestapi.DeleteTopic(tenant63, nspace63, topic1, force, auth12);
+                        admin.Handler("DeleteTopic");
+                        break;
+                    case AdminCommands.ExpireMessagesForAllSubscriptions:
+                        var tenant64 = admin.Arguments[0].ToString();
+                        var nspace64 = admin.Arguments[1].ToString();
+                        var topic2 = admin.Arguments[2].ToString();
+                        var expires = (int)admin.Arguments[3];
+                        var auth13 = (bool)admin.Arguments[4];
+                        _adminRestapi.ExpireMessagesForAllSubscriptions(tenant64, nspace64, topic2, expires, auth13);
+                        admin.Handler("ExpireMessagesForAllSubscriptions");
+                        break;
+                    case AdminCommands.GetBacklog:
+                        var tenant65 = admin.Arguments[0].ToString();
+                        var nspace65 = admin.Arguments[1].ToString();
+                        var topic3 = admin.Arguments[2].ToString();
+                        var auth14 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetBacklog(tenant65, nspace65, topic3, auth14));
+                        break;
+                    case AdminCommands.CompactionStatus:
+                        var tenant66 = admin.Arguments[0].ToString();
+                        var nspace66 = admin.Arguments[1].ToString();
+                        var topic4 = admin.Arguments[2].ToString();
+                        var auth15 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.CompactionStatus(tenant66, nspace66, topic4, auth15));
+                        break;
+                    case AdminCommands.Compact:
+                        var tenant67 = admin.Arguments[0].ToString();
+                        var nspace67 = admin.Arguments[1].ToString();
+                        var topic5 = admin.Arguments[2].ToString();
+                        var auth16 = (bool)admin.Arguments[3];
+                        _adminRestapi.Compact(tenant67, nspace67, topic5, auth16);
+                        admin.Handler("Compact");
+                        break;
+                    case AdminCommands.GetManagedLedgerInfo:
+                        var tenant68 = admin.Arguments[0].ToString();
+                        var nspace68 = admin.Arguments[1].ToString();
+                        var topic6 = admin.Arguments[2].ToString();
+                        _adminRestapi.GetManagedLedgerInfo(tenant68, nspace68, topic6);
+                        admin.Handler("GetManagedLedgerInfo");
+                        break;
+                    case AdminCommands.GetInternalStats:
+                        var tenant69 = admin.Arguments[0].ToString();
+                        var nspace69 = admin.Arguments[1].ToString();
+                        var topic7 = admin.Arguments[2].ToString();
+                        var auth17 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetInternalStats(tenant69, nspace69, topic7, auth17));
+                        break;
+                    case AdminCommands.GetLastMessageId:
+                        var tenant70 = admin.Arguments[0].ToString();
+                        var nspace70 = admin.Arguments[1].ToString();
+                        var topic8 = admin.Arguments[2].ToString();
+                        var auth18 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetLastMessageId(tenant70, nspace70, topic8, auth18));
+                        break;
+                    case AdminCommands.OffloadStatus:
+                        var tenant71 = admin.Arguments[0].ToString();
+                        var nspace71 = admin.Arguments[1].ToString();
+                        var topic9 = admin.Arguments[2].ToString();
+                        var auth19 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.OffloadStatus(tenant71, nspace71, topic9, auth19));
+                        break;
+                    case AdminCommands.TriggerOffload:
+                        var tenant72 = admin.Arguments[0].ToString();
+                        var nspace72 = admin.Arguments[1].ToString();
+                        var topic10 = admin.Arguments[2].ToString();
+                        var auth20 = (bool)admin.Arguments[3];
+                        _adminRestapi.TriggerOffload(tenant72, nspace72, topic10, auth20);
+                        admin.Handler("TriggerOffload");
+                        break;
+                    case AdminCommands.GetPartitionedStats:
+                        var tenant73 = admin.Arguments[0].ToString();
+                        var nspace73 = admin.Arguments[1].ToString();
+                        var topic11 = admin.Arguments[2].ToString();
+                        var per = (bool)admin.Arguments[3];
+                        var auth21 = (bool)admin.Arguments[4];
+                        _adminRestapi.GetPartitionedStats(tenant73, nspace73, topic11, auth21);
+                        admin.Handler("GetPartitionedStats");
+                        break;
+                    case AdminCommands.GetPartitionedMetadata:
+                        var tenant74 = admin.Arguments[0].ToString();
+                        var nspace74 = admin.Arguments[1].ToString();
+                        var topic12 = admin.Arguments[2].ToString();
+                        var auth22 = (bool)admin.Arguments[3];
+                        var check = (bool)admin.Arguments[4];
+                        admin.Handler(_adminRestapi.GetPartitionedMetadata(tenant74, nspace74, topic12, auth22, check));
                         break;
                 }
             }
@@ -471,96 +729,6 @@ namespace SharpPulsar.Akka.Admin
             }
         }
 
-        private Dictionary<string, string> Help()
-        {
-            var help = new Dictionary<string, string>
-            {
-                ["GetBookiesRackInfo"] = "return IDictionary<string, IDictionary<string, BookieInfo>>\nArguments[]",
-                ["GetBookieRackInfo"] = "return BookieInfo\nArguments[string bookie]",
-                ["UpdateBookieRackInfo"] = "void\nArguments[string bookie, string group]",
-                ["DeleteBookieRackInfo"] = "void\nArguments[string bookie]",
-                ["GetAllocatorStats"] = "return AllocatorStats\nArguments[string allocator]",
-                ["GetPendingBookieOpsStats"] = "return IDictionary<string, PendingBookieOpsStats>\nArguments[]",
-                ["GetBrokerResourceAvailability"] = "return IDictionary<string, ResourceUnit>\nArguments[string tenant, string namespace]",
-                ["GetLoadReport"] = "return LoadReport\nArguments[]",
-                ["GetMBeans"] = "return IList<Metrics>\nArguments[]",
-                ["GetMetrics"] = "return IList<Metrics>\nArguments[]",
-                ["GetTopics2"] = "return object\nArguments[]",
-                ["GetDynamicConfigurationName"] = "return IList<object>\nArguments[]",
-                ["GetRuntimeConfiguration"] = "return IDictionary<string, object>\nArguments[]",
-                ["GetAllDynamicConfigurations"] = "return IDictionary<string, object>\nArguments[]",
-                ["Healthcheck"] = "void\nArguments[]",
-                ["DeleteDynamicConfiguration"] = "void\nArguments[string configName]",
-                ["UpdateDynamicConfiguration"] = "void\nArguments[string configName, string configValue]",
-                ["GetInternalConfigurationData"] = "return InternalConfigurationData\nArguments[]",
-                ["GetOwnedNamespaces"] = "return IDictionary<string, NamespaceOwnershipStatus>\nArguments[string clusterName, string brokerWebserviceurl]",
-                ["GetActiveBrokers"] = "return IList<string>\nArguments[string cluster]",
-                ["GetCluster"] = "return ClusterData\nArguments[string cluster]",
-                ["GetClusters"] = "return IList<string>\nArguments[]",
-                ["UpdateCluster"] = "void\nArguments[string cluster, ClusterData body]",
-                ["CreateCluster"] = "void\nArguments[string cluster, ClusterData body]",
-                ["DeleteCluster"] = "void\nArguments[string cluster]",
-                ["GetFailureDomains"] = "return IDictionary<string, FailureDomain>\nArguments[string cluster]",
-                ["GetDomain"] = "return FailureDomain\nArguments[string cluster, string domainName]",
-                ["SetFailureDomain"] = "void\nArguments[string cluster, string domainName, FailureDomain body]",
-                ["DeleteFailureDomain"] = "void\nArguments[string cluster, string domainName]",
-                ["GetNamespaceIsolationPolicies"] = "return IDictionary<string, NamespaceIsolationData>\nArguments[string cluster]",
-                ["GetBrokersWithNamespaceIsolationPolicy"] = "return IList<BrokerNamespaceIsolationData>\nArguments[string cluster]",
-                ["GetBrokerWithNamespaceIsolationPolicy"] = "return BrokerNamespaceIsolationData\nArguments[string cluster, string broker]",
-                ["GetNamespaceIsolationPolicy"] = "return NamespaceIsolationData\nArguments[string cluster, string policyName]",
-                ["SetNamespaceIsolationPolicy"] = "void\nArguments[string cluster, string policyName, NamespaceIsolationData body]",
-                ["DeleteNamespaceIsolationPolicy"] = "void\nArguments[string cluster, string policyName]",
-                ["GetPeerCluster"] = "return IList<string>\nArguments[string cluster]",
-                ["SetPeerClusterNames"] = "void\nArguments[string cluster, IList<string> body]",
-                ["GetAntiAffinityNamespaces"] = "return IList<object>\nArguments[string cluster, string group, string tenant]",
-                ["GetBookieAffinityGroup"] = "return BookieAffinityGroupData\nArguments[string property, string namespace]",
-                ["DeleteBookieAffinityGroup"] = "void\nArguments[string property, string namespace]",
-                ["GetTenantNamespaces"] = "return IList<string>\nArguments[string tenant]",
-                ["GetPolicies"] = "return Policies\nArguments[string tenant, string namespace]",
-                ["CreateNamespace"] = "void\nArguments[string tenant, string namespace]",
-                ["DeleteNamespace"] = "void\nArguments[string tenant, string namespace, bool authoritative]",
-                ["GetNamespaceAntiAffinityGroup"] = "return string\nArguments[string tenant, string namespace]",
-                ["SetNamespaceAntiAffinityGroup"] = "void\nArguments[string tenant, string namespace]",
-                ["RemoveNamespaceAntiAffinityGroup"] = "void\nArguments[string tenant, string namespace]",
-                ["SetBacklogQuota"] = "void\nArguments[string tenant, string namespace, string backlogQuotaType]",
-                ["RemoveBacklogQuota"] = "void\nArguments[string tenant, string namespace, string backlogQuotaType]",
-                ["GetBacklogQuotaMap"] = "return IDictionary<string, object>\nArguments[string tenant, string namespace]",
-                ["GetBundlesData"] = "return BundlesData\nArguments[string tenant, string namespace]",
-                ["ClearNamespaceBacklog"] = "void\nArguments[string tenant, string namespace, bool authoritative]",
-                ["ClearNamespaceBacklogForSubscription"] = "void\nArguments[string tenant, string namespace, string subscription, bool authoritative]",
-                ["GetCompactionThreshold"] = "return long\nArguments[string tenant, string namespace]",
-                ["SetCompactionThreshold"] = "void\nArguments[string tenant, string namespace]",
-                ["ModifyDeduplication"] = "void\nArguments[string tenant, string namespace]",
-                ["GetDispatchRate"] = "return DispatchRate\nArguments[string tenant, string namespace]",
-                ["SetDispatchRate"] = "void\nArguments[string tenant, string namespace]",
-                ["ModifyEncryptionRequired"] = "void\nArguments[string tenant, string namespace]",
-                ["GetIsAllowAutoUpdateSchema"] = "return bool\nArguments[string tenant, string namespace]",
-                ["SetIsAllowAutoUpdateSchema"] = "void\nArguments[string tenant, string namespace]",
-                ["GetMaxConsumersPerSubscription"] = "return int\nArguments[string tenant, string namespace]",
-                ["SetMaxConsumersPerSubscription"] = "void\nArguments[string tenant, string namespace]",
-                ["GetMaxConsumersPerTopic"] = "return int\nArguments[string tenant, string namespace]",
-                ["SetMaxConsumersPerTopic"] = "void\nArguments[string tenant, string namespace]",
-                ["GetMaxProducersPerTopic"] = "return int\nArguments[string tenant, string namespace]",
-                ["SetMaxProducersPerTopic"] = "void\nArguments[string tenant, string namespace]",
-                ["GetNamespaceMessageTTL"] = "return int\nArguments[string tenant, string namespace]",
-                ["SetNamespaceMessageTTL"] = "void\nArguments[string tenant, string namespace]",
-                ["GetOffloadDeletionLag"] = "return long\nArguments[string tenant, string namespace]",
-                ["SetOffloadDeletionLag"] = "void\nArguments[string tenant, string namespace]",
-                ["ClearOffloadDeletionLag"] = "void\nArguments[string tenant, string namespace]",
-                ["GetOffloadThreshold"] = "return long\nArguments[string tenant, string namespace]",
-                ["SetOffloadThreshold"] = "void\nArguments[string tenant, string namespace]",
-                ["GetPermissions"] = "return IDictionary<string, object>\nArguments[string tenant, string cluster, string namespace]",
-                ["GrantPermissionOnNamespace"] = "void\nArguments[string tenant, string namespace, string role]",
-                ["RevokePermissionsOnNamespace"] = "void\nArguments[string tenant, string namespace, string role]",
-                ["GetPersistence"] = "return PersistencePolicies\nArguments[string tenant, string namespace]",
-                ["SetPersistence"] = "void\nArguments[string tenant, string namespace]",
-                ["GetNamespaceReplicationClusters"] = "return IList<string>\nArguments[string tenant, string namespace]",
-                ["SetNamespaceReplicationClusters"] = "void\nArguments[string tenant, string namespace]",
-                ["GetReplicatorDispatchRate"] = "return DispatchRate\nArguments[string tenant, string namespace]",
-                ["SetReplicatorDispatchRate"] = "void\nArguments[string tenant, string namespace]",
-            };
-            return help;
-        }
         public static Props Prop(AdminConfiguration configuration)
         {
             return Props.Create(() => new AdminWorker(configuration));
