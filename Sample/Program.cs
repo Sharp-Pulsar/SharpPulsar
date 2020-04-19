@@ -11,7 +11,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Newtonsoft.Json;
+using PulsarAdmin.Models;
 using SharpPulsar.Akka;
+using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
@@ -203,6 +206,53 @@ namespace Samples
                         Console.WriteLine("[SqlQuery] Enter query statement: ");
                         var query = Console.ReadLine();
                         SqlQuery(pulsarSystem, query, server);
+                        break;
+                    #endregion
+                    #region Admin
+                    case "24":
+                        Console.WriteLine("[GetAllSchemas] Enter destination server: ");
+                        var adminserver = Console.ReadLine();
+                        GetAllSchemas(pulsarSystem, adminserver);
+                        break;
+                    case "25":
+                        Console.WriteLine("[CreateTenant] Enter destination server: ");
+                        CreateTenant(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "26":
+                        Console.WriteLine("[GetTenants] Enter destination server: ");
+                        GetTenants(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "27":
+                        Console.WriteLine("[CreateNamespace] Enter destination server: ");
+                        CreateNamespace(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "28":
+                        Console.WriteLine("[CreateNonPartitionedTopic] Enter destination server: ");
+                        CreateNonPartitionedTopic(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "29":
+                        Console.WriteLine("[CreatePartitionedTopic] Enter destination server: ");
+                        CreatePartitionedTopic(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "30":
+                        Console.WriteLine("[GetTopics] Enter destination server: ");
+                        GetTopics(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "31":
+                        Console.WriteLine("[GetTopics2] Enter destination server: ");
+                        GetTopics2(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "32":
+                        Console.WriteLine("[GetPartitionedTopics] Enter destination server: ");
+                        GetPartitionedTopics(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "33":
+                        Console.WriteLine("[SetRetention] Enter destination server: ");
+                        SetRetention(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "34":
+                        Console.WriteLine("[GetRetention] Enter destination server: ");
+                        GetRetention(pulsarSystem, Console.ReadLine());
                         break;
                     #endregion
                     case "exit":
@@ -1208,12 +1258,100 @@ namespace Samples
             {
                 Console.WriteLine(e.ToString());
                 _queryRunning = false;
-            }, server, true));
+            }, server, Console.WriteLine, true));
             while (_queryRunning)
             {
                 Thread.Sleep(500);
             }
             Console.WriteLine("FINISHED!!!!!!!");
+        }
+        private static void GetAllSchemas(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetAllSchemas, new object[]{ "public", "default", "journal", false}, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
+                Console.WriteLine(data);
+            }, e=> Console.WriteLine(e.ToString()), server, l=> Console.WriteLine(l)));
+        }
+        private static void CreateTenant(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.CreateTenant, new object[] { "events", new TenantInfo{AdminRoles = new List<string>{"Journal", "Query", "Create"}} }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetTenants(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetTenants, new object[] { }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void CreateNamespace(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.CreateNamespace, new object[] {"events","akka" }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void CreateNonPartitionedTopic(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.CreateNonPartitionedTopic, new object[] { "events", "akka", "journal", false}, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void CreatePartitionedTopic(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.CreatePartitionedTopic, new object[] { "events", "akka", "iots", 4 }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetTopics(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetTopics, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetPartitionedTopics(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetPartitionedTopicList, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void SetRetention(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.SetRetention, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetRetention(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetRetention, new object[] { "events", "akka", "ALL"}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetTopics2(PulsarSystem system, string server)
+        {
+            system.QueryAdmin(new QueryAdmin(AdminCommands.GetTopics2, new object[] { "events", "akka", "ALL" }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
     }
     public class Students

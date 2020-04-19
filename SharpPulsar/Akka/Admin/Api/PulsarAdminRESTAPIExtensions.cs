@@ -8086,9 +8086,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='authoritative'>
             /// </param>
-            public static GetSchemaResponse GetSchema1(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false)
+            public static GetSchemaResponse GetSchemaVersion(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false)
             {
-                return operations.GetSchema1Async(tenant, namespaceParameter, topic, version, authoritative).GetAwaiter().GetResult();
+                return operations.GetSchemaVersionAsync(tenant, namespaceParameter, topic, version, authoritative).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -8110,7 +8110,7 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<GetSchemaResponse> GetSchema1Async(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<GetSchemaResponse> GetSchemaVersionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, CancellationToken cancellationToken = default(CancellationToken))
             {
                 using (var _result = await operations.GetSchema1WithHttpMessagesAsync(tenant, namespaceParameter, topic, version, authoritative, null, cancellationToken).ConfigureAwait(false))
                 {

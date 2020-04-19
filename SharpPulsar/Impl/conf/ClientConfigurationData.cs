@@ -31,7 +31,9 @@ namespace SharpPulsar.Impl.Conf
 	public sealed class ClientConfigurationData
 	{
 		public long OperationTimeoutMs { get; set; } = 30000;
-        public bool UseProxy { get; set; } = false;
+        public int WebServicePort { get; set; } = 8080;
+        public string WebServiceScheme { get; set; } = "http";
+		public bool UseProxy { get; set; } = false;
 		public long StatsIntervalSeconds { get; set; } = 60;
 		public int ConnectionsPerBroker { get; set; } = 1;
 		public X509Certificate2 TrustedCertificateAuthority { get; set; }

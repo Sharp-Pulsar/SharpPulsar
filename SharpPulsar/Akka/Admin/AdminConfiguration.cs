@@ -6,6 +6,6 @@ namespace SharpPulsar.Akka.Admin
 {
     public class AdminConfiguration
     {
-        public string BrokerWebServiceUrl { get; set; }
+        public string[] BrokerWebServiceUrl { get; set; }
     }
 }

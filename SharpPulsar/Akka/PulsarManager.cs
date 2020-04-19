@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Linq;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
@@ -7,6 +8,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Sql;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
@@ -15,9 +17,11 @@ namespace SharpPulsar.Akka
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
+        private PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
         public PulsarManager(ClientConfigurationData conf)
         {
             _config = conf;
+            _serviceNameResolver.UpdateServiceUrl(conf.ServiceUrl);
             Become(NetworkSetup);
         }
 
@@ -34,6 +38,10 @@ namespace SharpPulsar.Akka
             Receive<QueryData>(cmd =>
             {
                 Context.Child("SqlManager").Tell(cmd);
+            });
+            Receive<QueryAdmin>(cmd =>
+            {
+                Context.Child("AdminManager").Tell(cmd);
             });
             Receive<NewProducer>(cmd =>
             {
@@ -62,7 +70,8 @@ namespace SharpPulsar.Akka
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
                 Context.ActorOf(SqlManager.Prop(), "SqlManager");
-                Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = _config.ServiceUrl}), "AdminManager");
+                var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
+                Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
                 Become(Ready);
                 Stash.UnstashAll();
             });

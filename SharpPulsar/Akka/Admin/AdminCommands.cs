@@ -615,69 +615,180 @@ namespace SharpPulsar.Akka.Admin
         GetPartitionedMetadata,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, int body, bool updateLocalTopicOnly]
+        /// Arguments[string tenant, string namespace, string topic, int body, bool updateLocalTopicOnly]
         /// </summary>
         UpdatePartitionedTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, int body]
+        /// Arguments[string tenant, string namespace, string topic, int body]
         /// </summary>
         CreatePartitionedTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, bool force, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, bool force, bool authoritative]
         /// </summary>
         DeletePartitionedTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic]
+        /// Arguments[string tenant, string namespace, string topic]
         /// </summary>
         GetPermissionsOnTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string role, IList<string> action]
+        /// Arguments[string tenant, string namespace, string topic, string role, IList<string> action]
         /// action = Actions to be granted (produce,functions,consume) 
         /// </summary>
         GrantPermissionsOnTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string role]
+        /// Arguments[string tenant, string namespace, string topic, string role]
         /// </summary>
         RevokePermissionsOnTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
         GetStats,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
         /// </summary>
         DeleteSubscription,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, int expireTimeInSeconds, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, string subName, int expireTimeInSeconds, bool authoritative]
         /// </summary>
         ExpireTopicMessages,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, int messagePosition, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, string subName, int messagePosition, bool authoritative]
         /// </summary>
         PeekNthMessage,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, bool authoritative, MessageIdImpl messageId]
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageIdImpl messageId]
         /// </summary>
         ResetCursorOnPosition,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, long Timestamp, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, string subName, long Timestamp, bool authoritative]
         /// </summary>
         ResetCursor,
 
         /// <summary>
-        /// Arguments[string tenant, string namespaceParameter, string topic, string subName, int numMessages, bool authoritative]
+        /// Arguments[string tenant, string namespace, string topic, string subName, int numMessages, bool authoritative]
         /// </summary>
-        SkipMessages
+        SkipMessages,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
+        /// </summary>
+        SkipAllMessages,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subscriptionName, string messageId, bool replicated]
+        /// messageId where to create the subscription. It can be 'latest', 'earliest' or (ledgerId:entryId)
+        /// </summary>
+        CreateSubscription,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        GetSubscriptions,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        Terminate,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        UnloadTopic,
+
+        /// <summary>
+        /// Arguments[]
+        /// </summary>
+        GetDefaultResourceQuota,
+
+        /// <summary>
+        /// Arguments[]
+        /// </summary>
+        SetDefaultResourceQuota,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string bundle]
+        /// </summary>
+        GetNamespaceBundleResourceQuota,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string bundle]
+        /// </summary>
+        SetNamespaceBundleResourceQuota,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string bundle]
+        /// </summary>
+        RemoveNamespaceBundleResourceQuota,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, PostSchemaPayload body, bool authoritative]
+        /// </summary>
+        TestCompatibility,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, PostSchemaPayload body, bool authoritative]
+        /// </summary>
+        PostSchema,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, PostSchemaPayload body, bool authoritative]
+        /// </summary>
+        GetVersionBySchema,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        DeleteSchema,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        GetSchema,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string version, bool authoritative]
+        /// </summary>
+        GetSchemaVersion,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        GetAllSchemas,
+
+        /// <summary>
+        /// Arguments[]
+        /// </summary>
+        GetTenants,
+
+        /// <summary>
+        /// Arguments[string tenant]
+        /// </summary>
+        GetTenantAdmin,
+
+        /// <summary>
+        /// Arguments[string tenant, TenantInfo body]
+        /// </summary>
+        UpdateTenant,
+
+        /// <summary>
+        /// Arguments[string tenant, TenantInfo body]
+        /// </summary>
+        CreateTenant,
+
+        /// <summary>
+        /// Arguments[string tenant]
+        /// </summary>
+        DeleteTenant
     }
 }

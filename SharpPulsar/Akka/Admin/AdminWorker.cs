@@ -11,9 +11,9 @@ namespace SharpPulsar.Akka.Admin
     public class AdminWorker:ReceiveActor
     {
         private readonly PulsarAdminRESTAPI _adminRestapi;
-        public AdminWorker(AdminConfiguration configuration)
+        public AdminWorker(string server)
         {
-            _adminRestapi = new PulsarAdminRESTAPI(configuration.BrokerWebServiceUrl, new HttpClient(), true);
+            _adminRestapi = new PulsarAdminRESTAPI(server, new HttpClient(), true);
             Receive<QueryAdmin>(Handle);
         }
 
@@ -836,6 +836,151 @@ namespace SharpPulsar.Akka.Admin
                         _adminRestapi.SkipMessages(tenant87, nspace87, topic25, subName5, num, auth30);
                         admin.Handler("SkipMessages");
                         break;
+                    case AdminCommands.SkipAllMessages:
+                        var tenant88 = admin.Arguments[0].ToString();
+                        var nspace88 = admin.Arguments[1].ToString();
+                        var topic26 = admin.Arguments[2].ToString();
+                        var subName6 = admin.Arguments[3].ToString();
+                        var auth31 = (bool)admin.Arguments[4];
+                        _adminRestapi.SkipAllMessages(tenant88, nspace88, topic26, subName6, auth31);
+                        admin.Handler("SkipAllMessages");
+                        break;
+                    case AdminCommands.CreateSubscription:
+                        var tenant89 = admin.Arguments[0].ToString();
+                        var nspace89 = admin.Arguments[1].ToString();
+                        var topic27 = admin.Arguments[2].ToString();
+                        var subName7 = admin.Arguments[3].ToString();
+                        var mId = admin.Arguments[4].ToString();
+                        var auth32 = (bool)admin.Arguments[5];
+                        _adminRestapi.CreateSubscription(tenant89, nspace89, topic27, subName7, mId, auth32);
+                        admin.Handler("CreateSubscription");
+                        break;
+                    case AdminCommands.GetSubscriptions:
+                        var tenant90 = admin.Arguments[0].ToString();
+                        var nspace90 = admin.Arguments[1].ToString();
+                        var topic28 = admin.Arguments[2].ToString();
+                        var auth33 = (bool)admin.Arguments[3];
+                        _adminRestapi.GetSubscriptions(tenant90, nspace90, topic28, auth33);
+                        admin.Handler("GetSubscriptions");
+                        break;
+                    case AdminCommands.Terminate:
+                        var tenant91 = admin.Arguments[0].ToString();
+                        var nspace91 = admin.Arguments[1].ToString();
+                        var topic29 = admin.Arguments[2].ToString();
+                        var auth34 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.Terminate(tenant91, nspace91, topic29, auth34));
+                        break;
+                    case AdminCommands.UnloadTopic:
+                        var tenant92 = admin.Arguments[0].ToString();
+                        var nspace92 = admin.Arguments[1].ToString();
+                        var topic30 = admin.Arguments[2].ToString();
+                        var auth35 = (bool)admin.Arguments[3];
+                        _adminRestapi.UnloadTopic(tenant92, nspace92, topic30, auth35);
+                        admin.Handler("UnloadTopic");
+                        break;
+                    case AdminCommands.GetDefaultResourceQuota:
+                        admin.Handler(_adminRestapi.GetDefaultResourceQuota());
+                        break;
+                    case AdminCommands.SetDefaultResourceQuota:
+                        admin.Handler(_adminRestapi.SetDefaultResourceQuota());
+                        break;
+                    case AdminCommands.GetNamespaceBundleResourceQuota:
+                        var tenant93 = admin.Arguments[0].ToString();
+                        var nspace93 = admin.Arguments[1].ToString();
+                        var bndle8 = admin.Arguments[2].ToString();
+                        admin.Handler(_adminRestapi.GetNamespaceBundleResourceQuota(tenant93, nspace93, bndle8));
+                        break;
+                    case AdminCommands.SetNamespaceBundleResourceQuota:
+                        var tenant94 = admin.Arguments[0].ToString();
+                        var nspace94 = admin.Arguments[1].ToString();
+                        var bndle9 = admin.Arguments[2].ToString();
+                        _adminRestapi.SetNamespaceBundleResourceQuota(tenant94, nspace94, bndle9);
+                        admin.Handler("SetNamespaceBundleResourceQuota");
+                        break;
+                    case AdminCommands.RemoveNamespaceBundleResourceQuota:
+                        var tenant95 = admin.Arguments[0].ToString();
+                        var nspace95 = admin.Arguments[1].ToString();
+                        var bndle10 = admin.Arguments[2].ToString();
+                        _adminRestapi.RemoveNamespaceBundleResourceQuota(tenant95, nspace95, bndle10);
+                        admin.Handler("RemoveNamespaceBundleResourceQuota");
+                        break;
+                    case AdminCommands.TestCompatibility:
+                        var tenant96 = admin.Arguments[0].ToString();
+                        var nspace96 = admin.Arguments[1].ToString();
+                        var topic31 = admin.Arguments[2].ToString();
+                        var body6 = (PostSchemaPayload)admin.Arguments[3];
+                        var auth36 = (bool)admin.Arguments[4];
+                        admin.Handler(_adminRestapi.TestCompatibility(tenant96, nspace96, topic31, body6, auth36));
+                        break;
+                    case AdminCommands.GetSchema:
+                        var tenant97 = admin.Arguments[0].ToString();
+                        var nspace97 = admin.Arguments[1].ToString();
+                        var topic32 = admin.Arguments[2].ToString();
+                        var auth37 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetSchema(tenant97, nspace97, topic32, auth37));
+                        break;
+                    case AdminCommands.PostSchema:
+                        var tenant98 = admin.Arguments[0].ToString();
+                        var nspace98 = admin.Arguments[1].ToString();
+                        var topic33 = admin.Arguments[2].ToString();
+                        var body7 = (PostSchemaPayload)admin.Arguments[3];
+                        var auth38 = (bool)admin.Arguments[4];
+                        admin.Handler(_adminRestapi.PostSchema(tenant98, nspace98, topic33, body7, auth38));
+                        break;
+                    case AdminCommands.DeleteSchema:
+                        var tenant99 = admin.Arguments[0].ToString();
+                        var nspace99 = admin.Arguments[1].ToString();
+                        var topic34 = admin.Arguments[2].ToString();
+                        var auth39 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.DeleteSchema(tenant99, nspace99, topic34, auth39));
+                        break;
+                    case AdminCommands.GetSchemaVersion:
+                        var tenant100 = admin.Arguments[0].ToString();
+                        var nspace100 = admin.Arguments[1].ToString();
+                        var topic35 = admin.Arguments[2].ToString();
+                        var version = admin.Arguments[3].ToString();
+                        var auth40 = (bool)admin.Arguments[4];
+                        admin.Handler(_adminRestapi.GetSchemaVersion(tenant100, nspace100, topic35, version, auth40));
+                        break;
+                    case AdminCommands.GetAllSchemas:
+                        var tenant101 = admin.Arguments[0].ToString();
+                        var nspace101 = admin.Arguments[1].ToString();
+                        var topic36 = admin.Arguments[2].ToString();
+                        var auth41 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetAllSchemas(tenant101, nspace101, topic36, auth41));
+                        break;
+                    case AdminCommands.GetVersionBySchema:
+                        var tenant102 = admin.Arguments[0].ToString();
+                        var nspace102 = admin.Arguments[1].ToString();
+                        var topic37 = admin.Arguments[2].ToString();
+                        var body8 = (PostSchemaPayload)admin.Arguments[3];
+                        var auth42 = (bool)admin.Arguments[4];
+                        admin.Handler(_adminRestapi.GetVersionBySchema(tenant102, nspace102, topic37, body8, auth42));
+                        break;
+                    case AdminCommands.GetTenants:
+                        admin.Handler(_adminRestapi.GetTenants());
+                        break;
+                    case AdminCommands.GetTenantAdmin:
+                        var tenant103 = admin.Arguments[0].ToString();
+                        admin.Handler(_adminRestapi.GetTenantAdmin(tenant103));
+                        break;
+                    case AdminCommands.UpdateTenant:
+                        var tenant104 = admin.Arguments[0].ToString();
+                        var bdy = (TenantInfo)admin.Arguments[1];
+                        _adminRestapi.UpdateTenant(tenant104, bdy);
+                        admin.Handler("UpdateTenant");
+                        break;
+                    case AdminCommands.CreateTenant:
+                        var tenant105 = admin.Arguments[0].ToString();
+                        var bdy1 = (TenantInfo)admin.Arguments[1];
+                        _adminRestapi.CreateTenant(tenant105, bdy1);
+                        admin.Handler("CreateTenant");
+                        break;
+                    case AdminCommands.DeleteTenant:
+                        var tenant106 = admin.Arguments[0].ToString();
+                        _adminRestapi.DeleteTenant(tenant106);
+                        admin.Handler("DeleteTenant");
+                        break;
                 }
             }
             catch (Exception e)
@@ -844,9 +989,9 @@ namespace SharpPulsar.Akka.Admin
             }
         }
 
-        public static Props Prop(AdminConfiguration configuration)
+        public static Props Prop(string server)
         {
-            return Props.Create(() => new AdminWorker(configuration));
+            return Props.Create(() => new AdminWorker(server));
         }
     }
 }
