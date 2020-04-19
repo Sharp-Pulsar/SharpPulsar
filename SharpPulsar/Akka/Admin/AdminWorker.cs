@@ -721,6 +721,121 @@ namespace SharpPulsar.Akka.Admin
                         var check = (bool)admin.Arguments[4];
                         admin.Handler(_adminRestapi.GetPartitionedMetadata(tenant74, nspace74, topic12, auth22, check));
                         break;
+                    case AdminCommands.UpdatePartitionedTopic:
+                        var tenant75 = admin.Arguments[0].ToString();
+                        var nspace75 = admin.Arguments[1].ToString();
+                        var topic13 = admin.Arguments[2].ToString();
+                        var body1 = (int)admin.Arguments[3];
+                        var local = (bool)admin.Arguments[4];
+                        _adminRestapi.UpdatePartitionedTopic(tenant75, nspace75, topic13, body1, local);
+                        admin.Handler("UpdatePartitionedTopic");
+                        break;
+                    case AdminCommands.CreatePartitionedTopic:
+                        var tenant76 = admin.Arguments[0].ToString();
+                        var nspace76 = admin.Arguments[1].ToString();
+                        var topic14 = admin.Arguments[2].ToString();
+                        var body2 = (int)admin.Arguments[3];
+                        _adminRestapi.CreatePartitionedTopic(tenant76, nspace76, topic14, body2);
+                        admin.Handler("CreatePartitionedTopic");
+                        break;
+                    case AdminCommands.DeletePartitionedTopic:
+                        var tenant77 = admin.Arguments[0].ToString();
+                        var nspace77 = admin.Arguments[1].ToString();
+                        var topic15 = admin.Arguments[2].ToString();
+                        var force2 = (bool)admin.Arguments[3];
+                        var auth23 = (bool)admin.Arguments[4];
+                        _adminRestapi.DeletePartitionedTopic(tenant77, nspace77, topic15, force2, auth23);
+                        admin.Handler("DeletePartitionedTopic");
+                        break;
+                    case AdminCommands.GetPermissionsOnTopic:
+                        var tenant78 = admin.Arguments[0].ToString();
+                        var nspace78 = admin.Arguments[1].ToString();
+                        var topic16 = admin.Arguments[2].ToString();
+                        admin.Handler(_adminRestapi.GetPermissionsOnTopic(tenant78, nspace78, topic16));
+                        break;
+                    case AdminCommands.GrantPermissionsOnTopic:
+                        var tenant79 = admin.Arguments[0].ToString();
+                        var nspace79 = admin.Arguments[1].ToString();
+                        var topic17 = admin.Arguments[2].ToString();
+                        var role3 = admin.Arguments[3].ToString();
+                        var actions = (IList<string>)admin.Arguments[4];
+                        _adminRestapi.GrantPermissionsOnTopic(tenant79, nspace79, topic17, role3, actions);
+                        admin.Handler("GrantPermissionsOnTopic");
+                        break;
+                    case AdminCommands.RevokePermissionsOnTopic:
+                        var tenant80 = admin.Arguments[0].ToString();
+                        var nspace80 = admin.Arguments[1].ToString();
+                        var topic18 = admin.Arguments[2].ToString();
+                        var role4 = admin.Arguments[3].ToString();
+                        _adminRestapi.RevokePermissionsOnTopic(tenant80, nspace80, topic18, role4);
+                        admin.Handler("RevokePermissionsOnTopic");
+                        break;
+                    case AdminCommands.GetStats:
+                        var tenant81 = admin.Arguments[0].ToString();
+                        var nspace81 = admin.Arguments[1].ToString();
+                        var topic19 = admin.Arguments[2].ToString();
+                        var auth24 = (bool)admin.Arguments[3];
+                        admin.Handler(_adminRestapi.GetStats(tenant81, nspace81, topic19, auth24));
+                        break;
+                    case AdminCommands.DeleteSubscription:
+                        var tenant82 = admin.Arguments[0].ToString();
+                        var nspace82 = admin.Arguments[1].ToString();
+                        var topic20 = admin.Arguments[2].ToString();
+                        var subName = admin.Arguments[3].ToString();
+                        var auth25 = (bool)admin.Arguments[4];
+                        _adminRestapi.DeleteSubscription(tenant82, nspace82, topic20, subName, auth25);
+                        admin.Handler("DeleteSubscription");
+                        break;
+                    case AdminCommands.ExpireTopicMessages:
+                        var tenant83 = admin.Arguments[0].ToString();
+                        var nspace83 = admin.Arguments[1].ToString();
+                        var topic21 = admin.Arguments[2].ToString();
+                        var subName1 = admin.Arguments[3].ToString();
+                        var expireSec = (int)admin.Arguments[4];
+                        var auth26 = (bool)admin.Arguments[5];
+                        _adminRestapi.ExpireTopicMessages(tenant83, nspace83, topic21, subName1, expireSec, auth26);
+                        admin.Handler("ExpireTopicMessages");
+                        break;
+                    case AdminCommands.PeekNthMessage:
+                        var tenant84 = admin.Arguments[0].ToString();
+                        var nspace84 = admin.Arguments[1].ToString();
+                        var topic22 = admin.Arguments[2].ToString();
+                        var subName2 = admin.Arguments[3].ToString();
+                        var position = (int)admin.Arguments[4];
+                        var auth27 = (bool)admin.Arguments[5];
+                        _adminRestapi.PeekNthMessage(tenant84, nspace84, topic22, subName2, position, auth27);
+                        admin.Handler("PeekNthMessage");
+                        break;
+                    case AdminCommands.ResetCursorOnPosition:
+                        var tenant85 = admin.Arguments[0].ToString();
+                        var nspace85 = admin.Arguments[1].ToString();
+                        var topic23 = admin.Arguments[2].ToString();
+                        var subName3 = admin.Arguments[3].ToString();
+                        var auth28 = (bool)admin.Arguments[4];
+                        var id = (MessageIdImpl)admin.Arguments[5];
+                        _adminRestapi.ResetCursorOnPosition(tenant85, nspace85, topic23, subName3, auth28, id);
+                        admin.Handler("ResetCursorOnPosition");
+                        break;
+                    case AdminCommands.ResetCursor:
+                        var tenant86 = admin.Arguments[0].ToString();
+                        var nspace86 = admin.Arguments[1].ToString();
+                        var topic24 = admin.Arguments[2].ToString();
+                        var subName4 = admin.Arguments[3].ToString();
+                        var time = (long)admin.Arguments[4];
+                        var auth29 = (bool)admin.Arguments[5];
+                        _adminRestapi.ResetCursor(tenant86, nspace86, topic24, subName4, time, auth29);
+                        admin.Handler("ResetCursor");
+                        break;
+                    case AdminCommands.SkipMessages:
+                        var tenant87 = admin.Arguments[0].ToString();
+                        var nspace87 = admin.Arguments[1].ToString();
+                        var topic25 = admin.Arguments[2].ToString();
+                        var subName5 = admin.Arguments[3].ToString();
+                        var num = (int)admin.Arguments[4];
+                        var auth30 = (bool)admin.Arguments[5];
+                        _adminRestapi.SkipMessages(tenant87, nspace87, topic25, subName5, num, auth30);
+                        admin.Handler("SkipMessages");
+                        break;
                 }
             }
             catch (Exception e)
