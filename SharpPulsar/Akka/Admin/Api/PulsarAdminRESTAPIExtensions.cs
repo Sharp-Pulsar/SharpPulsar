@@ -4,6 +4,8 @@
 // regenerated.
 // </auto-generated>
 
+using SharpPulsar.Akka.Admin.Api.Models;
+
 namespace PulsarAdmin
 {
     using Models;
@@ -2048,9 +2050,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void ModifyDeduplication(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void ModifyDeduplication(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool enableDeduplication)
             {
-                operations.ModifyDeduplicationAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.ModifyDeduplicationAsync(tenant, namespaceParameter, enableDeduplication).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2066,9 +2068,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task ModifyDeduplicationAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task ModifyDeduplicationAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool enableDeduplication, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.ModifyDeduplicationWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.ModifyDeduplicationWithHttpMessagesAsync(tenant, namespaceParameter, enableDeduplication, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2119,9 +2121,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate dispatchRate)
             {
-                operations.SetDispatchRateAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetDispatchRateAsync(tenant, namespaceParameter, dispatchRate).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2137,9 +2139,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate dispatchRate, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, dispatchRate, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2152,9 +2154,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void ModifyEncryptionRequired(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void ModifyEncryptionRequired(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool encryptionRequired)
             {
-                operations.ModifyEncryptionRequiredAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.ModifyEncryptionRequiredAsync(tenant, namespaceParameter, encryptionRequired).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2170,9 +2172,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task ModifyEncryptionRequiredAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task ModifyEncryptionRequiredAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool encryptionRequired, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.ModifyEncryptionRequiredWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.ModifyEncryptionRequiredWithHttpMessagesAsync(tenant, namespaceParameter, encryptionRequired, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2290,9 +2292,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetMaxConsumersPerSubscription(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetMaxConsumersPerSubscription(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxConsumersPerSubscription)
             {
-                operations.SetMaxConsumersPerSubscriptionAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetMaxConsumersPerSubscriptionAsync(tenant, namespaceParameter, maxConsumersPerSubscription).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2308,9 +2310,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetMaxConsumersPerSubscriptionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetMaxConsumersPerSubscriptionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxConsumersPerSubscription, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetMaxConsumersPerSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetMaxConsumersPerSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, maxConsumersPerSubscription, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2359,9 +2361,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetMaxConsumersPerTopic(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetMaxConsumersPerTopic(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxConsumersPerTopic)
             {
-                operations.SetMaxConsumersPerTopicAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetMaxConsumersPerTopicAsync(tenant, namespaceParameter, maxConsumersPerTopic).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2377,9 +2379,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetMaxConsumersPerTopicAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetMaxConsumersPerTopicAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxConsumersPerTopic, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetMaxConsumersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetMaxConsumersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, maxConsumersPerTopic, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2428,9 +2430,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetMaxProducersPerTopic(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetMaxProducersPerTopic(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxProducersPerTopic)
             {
-                operations.SetMaxProducersPerTopicAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetMaxProducersPerTopicAsync(tenant, namespaceParameter, maxProducersPerTopic).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2446,9 +2448,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetMaxProducersPerTopicAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetMaxProducersPerTopicAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int maxProducersPerTopic, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetMaxProducersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetMaxProducersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, maxProducersPerTopic, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2497,9 +2499,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetNamespaceMessageTTL(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetNamespaceMessageTTL(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int messageTTL)
             {
-                operations.SetNamespaceMessageTTLAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetNamespaceMessageTTLAsync(tenant, namespaceParameter, messageTTL).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2515,9 +2517,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetNamespaceMessageTTLAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetNamespaceMessageTTLAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, int messageTTL, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetNamespaceMessageTTLWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetNamespaceMessageTTLWithHttpMessagesAsync(tenant, namespaceParameter, messageTTL, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2895,9 +2897,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetPersistence(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetPersistence(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, PersistencePolicies persistence)
             {
-                operations.SetPersistenceAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetPersistenceAsync(tenant, namespaceParameter, persistence).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2913,9 +2915,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetPersistenceAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetPersistenceAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, PersistencePolicies persistence, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetPersistenceWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetPersistenceWithHttpMessagesAsync(tenant, namespaceParameter, persistence, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -2928,9 +2930,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetBookieAffinityGroup(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetBookieAffinityGroup(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, BookieAffinityGroupData bookieAffinity)
             {
-                operations.SetBookieAffinityGroupAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetBookieAffinityGroupAsync(tenant, namespaceParameter, bookieAffinity).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -2946,9 +2948,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetBookieAffinityGroupAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetBookieAffinityGroupAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, BookieAffinityGroupData bookieAffinity, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetBookieAffinityGroupWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetBookieAffinityGroupWithHttpMessagesAsync(tenant, namespaceParameter, bookieAffinity, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3068,9 +3070,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetReplicatorDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetReplicatorDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate dispatchRate)
             {
-                operations.SetReplicatorDispatchRateAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetReplicatorDispatchRateAsync(tenant, namespaceParameter, dispatchRate).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3086,9 +3088,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetReplicatorDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetReplicatorDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate dispatchRate, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetReplicatorDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetReplicatorDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, dispatchRate, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3137,9 +3139,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetRetention(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetRetention(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, RetentionPolicies retention)
             {
-                operations.SetRetentionAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetRetentionAsync(tenant, namespaceParameter, retention).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3155,9 +3157,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetRetentionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetRetentionAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, RetentionPolicies retention, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetRetentionWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetRetentionWithHttpMessagesAsync(tenant, namespaceParameter, retention, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3461,9 +3463,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetSubscribeRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetSubscribeRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SubscribeRate rate)
             {
-                operations.SetSubscribeRateAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetSubscribeRateAsync(tenant, namespaceParameter, rate).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3479,9 +3481,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetSubscribeRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetSubscribeRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SubscribeRate rate, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetSubscribeRateWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetSubscribeRateWithHttpMessagesAsync(tenant, namespaceParameter, rate, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3494,9 +3496,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetSubscriptionAuthMode(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetSubscriptionAuthMode(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SubscriptionAuthMode subscriptionAuthMode)
             {
-                operations.SetSubscriptionAuthModeAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetSubscriptionAuthModeAsync(tenant, namespaceParameter, subscriptionAuthMode).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3512,9 +3514,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetSubscriptionAuthModeAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetSubscriptionAuthModeAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SubscriptionAuthMode subscriptionAuthMode, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetSubscriptionAuthModeWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetSubscriptionAuthModeWithHttpMessagesAsync(tenant, namespaceParameter, subscriptionAuthMode, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3565,9 +3567,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetSubscriptionDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetSubscriptionDispatchRate(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate rate)
             {
-                operations.SetSubscriptionDispatchRateAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetSubscriptionDispatchRateAsync(tenant, namespaceParameter, rate).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3583,9 +3585,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetSubscriptionDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetSubscriptionDispatchRateAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, DispatchRate rate, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetSubscriptionDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetSubscriptionDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, rate, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>

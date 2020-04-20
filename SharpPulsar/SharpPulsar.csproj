@@ -85,7 +85,6 @@ Little Addition</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Akka\Admin\Api\" />
     <Folder Include="Akka\Function\Api\" />
   </ItemGroup>
 

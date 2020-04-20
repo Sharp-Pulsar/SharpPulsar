@@ -279,7 +279,7 @@ namespace SharpPulsar.Akka.Admin
         SetCompactionThreshold,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, bool enableDeduplication]
         /// </summary>
         ModifyDeduplication,
 
@@ -294,7 +294,7 @@ namespace SharpPulsar.Akka.Admin
         SetDispatchRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, bool encryptionRequired]
         /// </summary>
         ModifyEncryptionRequired,
 
@@ -314,7 +314,7 @@ namespace SharpPulsar.Akka.Admin
         GetMaxConsumersPerSubscription,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, int maxConsumersPerSubscription]
         /// </summary>
         SetMaxConsumersPerSubscription,
 
@@ -324,7 +324,7 @@ namespace SharpPulsar.Akka.Admin
         GetMaxConsumersPerTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, int maxConsumersPerTopic]
         /// </summary>
         SetMaxConsumersPerTopic,
 
@@ -334,7 +334,7 @@ namespace SharpPulsar.Akka.Admin
         GetMaxProducersPerTopic,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, int maxProducersPerTopic]
         /// </summary>
         SetMaxProducersPerTopic,
 
@@ -344,7 +344,7 @@ namespace SharpPulsar.Akka.Admin
         GetNamespaceMessageTTL,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, int messageTTL]
         /// </summary>
         SetNamespaceMessageTTL,
 
@@ -394,12 +394,12 @@ namespace SharpPulsar.Akka.Admin
         GetPersistence,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, PersistencePolicies persistence]
         /// </summary>
         SetPersistence,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, BookieAffinityGroupData bookieAffinity]
         /// </summary>
         SetBookieAffinityGroup,
 
@@ -419,7 +419,7 @@ namespace SharpPulsar.Akka.Admin
         GetReplicatorDispatchRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, DispatchRate dispatchRate]
         /// </summary>
         SetReplicatorDispatchRate,
 
@@ -429,7 +429,7 @@ namespace SharpPulsar.Akka.Admin
         GetRetention,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, RetentionPolicies retention]
         /// </summary>
         SetRetention,
 
@@ -469,12 +469,12 @@ namespace SharpPulsar.Akka.Admin
         GetSubscribeRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, SubscribeRate rate]
         /// </summary>
         SetSubscribeRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, SubscriptionAuthMode subscriptionAuthMode]
         /// </summary>
         SetSubscriptionAuthMode,
 
@@ -484,7 +484,7 @@ namespace SharpPulsar.Akka.Admin
         GetSubscriptionDispatchRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, DispatchRate rate]
         /// </summary>
         SetSubscriptionDispatchRate,
 
@@ -686,9 +686,19 @@ namespace SharpPulsar.Akka.Admin
         GetPartitionedMetadata,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative, bool checkAllowAutoCreation]
+        /// </summary>
+        GetPartitionedMetadataPersistence,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, int body, bool updateLocalTopicOnly]
         /// </summary>
         UpdatePartitionedTopic,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, int body, bool updateLocalTopicOnly]
+        /// </summary>
+        UpdatePartitionedPersistentTopic,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, int body]
@@ -696,14 +706,29 @@ namespace SharpPulsar.Akka.Admin
         CreatePartitionedTopic,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, int body]
+        /// </summary>
+        CreatePartitionedPersistentTopic,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool force, bool authoritative]
         /// </summary>
         DeletePartitionedTopic,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool force, bool authoritative]
+        /// </summary>
+        DeletePartitionedPersistentTopic,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic]
         /// </summary>
         GetPermissionsOnTopic,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic]
+        /// </summary>
+        GetPermissionsOnPersistentTopic,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string role, IList<string> action]
@@ -712,9 +737,20 @@ namespace SharpPulsar.Akka.Admin
         GrantPermissionsOnTopic,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string role, IList<string> action]
+        /// action = Actions to be granted (produce,functions,consume) 
+        /// </summary>
+        GrantPermissionsOnPersistentTopic,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string role]
         /// </summary>
         RevokePermissionsOnTopic,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string role]
+        /// </summary>
+        RevokePermissionsOnPersistentTopic,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -722,9 +758,19 @@ namespace SharpPulsar.Akka.Admin
         GetStats,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        GetPersistentStats,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
         /// </summary>
         DeleteSubscription,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
+        /// </summary>
+        DeleteSubscriptionPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, int expireTimeInSeconds, bool authoritative]
@@ -732,9 +778,19 @@ namespace SharpPulsar.Akka.Admin
         ExpireTopicMessages,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, int expireTimeInSeconds, bool authoritative]
+        /// </summary>
+        ExpirePersistentTopicMessages,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, int messagePosition, bool authoritative]
         /// </summary>
         PeekNthMessage,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, int messagePosition, bool authoritative]
+        /// </summary>
+        PeekNthPersistentMessage,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageIdImpl messageId]
@@ -742,9 +798,19 @@ namespace SharpPulsar.Akka.Admin
         ResetCursorOnPosition,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageIdImpl messageId]
+        /// </summary>
+        ResetCursorOnPersistentPosition,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, long Timestamp, bool authoritative]
         /// </summary>
         ResetCursor,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, long Timestamp, bool authoritative]
+        /// </summary>
+        ResetPersistentCursor,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, int numMessages, bool authoritative]
@@ -752,15 +818,31 @@ namespace SharpPulsar.Akka.Admin
         SkipMessages,
 
         /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, int numMessages, bool authoritative]
+        /// </summary>
+        SkipPersistentMessages,
+
+        /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
         /// </summary>
         SkipAllMessages,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative]
+        /// </summary>
+        SkipAllPersistentMessages,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, string subscriptionName, string messageId, bool replicated]
         /// messageId where to create the subscription. It can be 'latest', 'earliest' or (ledgerId:entryId)
         /// </summary>
         CreateSubscription,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, string subscriptionName, string messageId, bool replicated]
+        /// messageId where to create the subscription. It can be 'latest', 'earliest' or (ledgerId:entryId)
+        /// </summary>
+        CreateSubscriptionPersistent,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
@@ -770,12 +852,27 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
+        GetSubscriptionsPersistent,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
         Terminate,
 
         /// <summary>
         /// Arguments[string tenant, string namespace, string topic, bool authoritative]
         /// </summary>
+        TerminatePersistent,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
         UnloadTopic,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, bool authoritative]
+        /// </summary>
+        UnloadPersistentTopic,
 
         /// <summary>
         /// Arguments[]
