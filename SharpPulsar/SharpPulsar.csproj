@@ -21,9 +21,9 @@ MultiTopics Consumer
 Pattern Multi-Topics Consumer
 Bulk Publishing - for simplicity sake!
 Proxy
-Pulsar SQL Support
+Pulsar SQL 
 Seek (MessageId and Timestamp)
-Pulsar Admin REST
+Pulsar Admin
 
 Set JsonSchema type to Avro(That is what it is underneath)
 Addition and fixes!
