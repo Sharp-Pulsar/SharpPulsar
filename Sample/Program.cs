@@ -1363,7 +1363,7 @@ namespace Samples
         }
         private static void CreateNonPartitionedPersistentTopic(PulsarSystem system, string server)
         {
-            system.PulsarAdmin(new QueryAdmin(AdminCommands.CreateNonPartitionedPersistentTopic, new object[] { "events", "akka", "journal", false}, e =>
+            system.PulsarAdmin(new QueryAdmin(AdminCommands.CreateNonPartitionedPersistentTopic, new object[] { "whitepurple", "akka", "journal", false}, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
@@ -1371,7 +1371,7 @@ namespace Samples
         }
         private static void CreatePartitionedTopic(PulsarSystem system, string server)
         {
-            system.PulsarAdmin(new QueryAdmin(AdminCommands.CreatePartitionedTopic, new object[] { "events", "akka", "iots", 4 }, e =>
+            system.PulsarAdmin(new QueryAdmin(AdminCommands.CreatePartitionedTopic, new object[] { "whitepurple", "akka", "iots", 4 }, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
@@ -1379,7 +1379,7 @@ namespace Samples
         }
         private static void GetPartitionedTopicMetadata(PulsarSystem system, string server)
         {
-            system.PulsarAdmin(new QueryAdmin(AdminCommands.GetPartitionedMetadata, new object[] { "events", "akka", "iots", false,false }, e =>
+            system.PulsarAdmin(new QueryAdmin(AdminCommands.GetPartitionedMetadata, new object[] { "whitepurple", "akka", "iots", false,false }, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
@@ -1387,7 +1387,7 @@ namespace Samples
         }
         private static void GetPartitionedPersistentTopicMetadata(PulsarSystem system, string server)
         {
-            system.PulsarAdmin(new QueryAdmin(AdminCommands.GetPartitionedMetadataPersistence, new object[] { "events", "akka", "iots", false,false }, e =>
+            system.PulsarAdmin(new QueryAdmin(AdminCommands.GetPartitionedMetadataPersistence, new object[] { "whitepurple", "akka", "iots", false,false }, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
