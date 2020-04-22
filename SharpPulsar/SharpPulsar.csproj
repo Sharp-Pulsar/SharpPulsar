@@ -75,7 +75,7 @@ Little Addition</PackageReleaseNotes>
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="prestosharp" Version="1.0.1" />
     <PackageReference Include="protobuf-net" Version="2.4.6" />
-    <PackageReference Include="RestSharp" Version="105.1.0" />
+    <PackageReference Include="RestSharp" Version="106.10.1" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
