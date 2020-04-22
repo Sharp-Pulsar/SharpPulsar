@@ -30,7 +30,7 @@ namespace SharpPulsar.Akka.Sql
 
         private void Ready()
         {
-            Receive<QueryData>(q =>
+            Receive((InternalCommands.Sql q) =>
             {
                 var srv = Regex.Replace(q.DestinationServer, @"[^\w\d]", "");
                 var dest = Context.Child(srv);

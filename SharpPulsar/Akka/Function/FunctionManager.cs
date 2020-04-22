@@ -1,17 +1,16 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
 
-namespace SharpPulsar.Akka.Admin
+namespace SharpPulsar.Akka.Function
 {
-    public class AdminManager:ReceiveActor
+    public class FunctionManager : ReceiveActor
     {
-        public AdminManager(AdminConfiguration configuration)
+        public FunctionManager(FunctionConfiguration configuration)
         {
             foreach (var s in configuration.BrokerWebServiceUrl)
             {
                 var an = Regex.Replace(s, @"[^\w\d]", "");
-                Context.ActorOf(AdminCoordinator.Prop(s), an);
+                Context.ActorOf(FunctionCoordinator.Prop(s), an);
             }
 
             Receive((InternalCommands.Admin q) =>
@@ -24,9 +23,9 @@ namespace SharpPulsar.Akka.Admin
                     actor.Tell(q);
             });
         }
-        public static Props Prop(AdminConfiguration configuration)
+        public static Props Prop(FunctionConfiguration configuration)
         {
-            return Props.Create(() => new AdminManager(configuration));
+            return Props.Create(() => new FunctionManager(configuration));
         }
     }
 }

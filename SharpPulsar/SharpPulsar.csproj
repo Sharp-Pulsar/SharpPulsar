@@ -65,27 +65,28 @@ Little Addition</PackageReleaseNotes>
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="DotNetty.Handlers" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
+    <PackageReference Include="JsonSubTypes" Version="1.2.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.3" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.21" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="prestosharp" Version="1.0.1" />
     <PackageReference Include="protobuf-net" Version="2.4.6" />
+    <PackageReference Include="RestSharp" Version="105.1.0" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
     <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
     <PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.1" />
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Text.Json" Version="4.7.1" />
     <PackageReference Include="timeunit" Version="1.0.2" />
     <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
     <PackageReference Include="ZstdNet" Version="1.3.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Akka\Function\Api\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -96,8 +97,20 @@ Little Addition</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Akka\Function\Api\Swagger.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Swagger.json</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Akka\Admin\Api\code-model-v1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Akka\Function\Api\Swagger.json">
+      <Generator>NSwagCodeGenerator</Generator>
+      <LastGenOutput>Swagger.cs</LastGenOutput>
     </None>
     <None Update="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -108,4 +121,5 @@ Little Addition</PackageReleaseNotes>
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
     </ItemGroup>
   </Target>
+  <ProjectExtensions><VisualStudio><UserProperties akka_4function_4api_4swagger_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 </Project>

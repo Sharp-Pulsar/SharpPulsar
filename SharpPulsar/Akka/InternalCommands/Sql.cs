@@ -4,9 +4,9 @@ using System.Text;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
-    public sealed class QueryData
+    public sealed class Sql
     {
-        public QueryData(string query, Action<Dictionary<string, string>> handler, Action<Exception> exceptionHandler, string destinationServer, Action<string> log, bool includeMetadata = false)
+        public Sql(string query, Action<Dictionary<string, string>> handler, Action<Exception> exceptionHandler, string destinationServer, Action<string> log, bool includeMetadata = false)
         {
             Query = query;
             Handler = handler;

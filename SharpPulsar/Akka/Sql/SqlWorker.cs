@@ -17,7 +17,7 @@ namespace SharpPulsar.Akka.Sql
             _connection = new PrestoSqlDbConnection(server);
             _connection.Open();//fake?
 
-            Receive<QueryData>(Query);
+            Receive((Action<InternalCommands.Sql>)this.Query);
 
         }
 
@@ -26,7 +26,7 @@ namespace SharpPulsar.Akka.Sql
             
         }
 
-        private void Query(QueryData query)
+        private void Query(InternalCommands.Sql query)
         {
             try
             {

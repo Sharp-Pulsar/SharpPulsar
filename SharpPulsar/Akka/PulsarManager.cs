@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
@@ -35,13 +36,17 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("SqlManager").Tell(cmd);
             });
-            Receive<QueryData>(cmd =>
+            Receive((InternalCommands.Sql cmd) =>
             {
                 Context.Child("SqlManager").Tell(cmd);
             });
-            Receive<QueryAdmin>(cmd =>
+            Receive((InternalCommands.Admin cmd) =>
             {
                 Context.Child("AdminManager").Tell(cmd);
+            });
+            Receive((InternalCommands.Function cmd) =>
+            {
+                Context.Child("FunctionManager").Tell(cmd);
             });
             Receive<NewProducer>(cmd =>
             {
@@ -72,6 +77,7 @@ namespace SharpPulsar.Akka
                 Context.ActorOf(SqlManager.Prop(), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
+                Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}), "FunctionManager");
                 Become(Ready);
                 Stash.UnstashAll();
             });

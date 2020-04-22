@@ -3,9 +3,9 @@ using SharpPulsar.Akka.Admin;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
-    public sealed class QueryAdmin
+    public sealed class Admin
     {
-        public QueryAdmin(AdminCommands command, object[] arguments, Action<object> handler, Action<Exception> exception, string brokerDestinationUrl, Action<string> log)
+        public Admin(AdminCommands command, object[] arguments, Action<object> handler, Action<Exception> exception, string brokerDestinationUrl, Action<string> log)
         {
             Command = command;
             Arguments = arguments;

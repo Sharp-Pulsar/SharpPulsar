@@ -80,16 +80,22 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(p);
         }
 
-        public void PulsarSql(QueryData data)
+        public void PulsarSql(InternalCommands.Sql data)
         {
             if(string.IsNullOrWhiteSpace(data.DestinationServer) || data.ExceptionHandler == null || data.Handler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
-                throw new ArgumentException("QueryData is in an invalid state: null field not allowed");
+                throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
-        public void PulsarAdmin(QueryAdmin data)
+        public void PulsarAdmin(InternalCommands.Admin data)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
-                throw new ArgumentException("QueryAdmin is in an invalid state: null field not allowed");
+                throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
+            _pulsarManager.Tell(data);
+        }
+        public void PulsarFunction(InternalCommands.Function data)
+        {
+            if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
+                throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
         public void SetupSqlServers(SqlServers servers)

@@ -5,7 +5,6 @@ using Akka.Actor;
 using PulsarAdmin;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka.Admin.Api.Models;
-using SharpPulsar.Akka.InternalCommands;
 
 namespace SharpPulsar.Akka.Admin
 {
@@ -15,7 +14,8 @@ namespace SharpPulsar.Akka.Admin
         public AdminWorker(string server)
         {
             _adminRestapi = new PulsarAdminRESTAPI(server, new HttpClient(), true);
-            Receive<QueryAdmin>(Handle);
+            //Receive((Action<InternalCommands.Admin>)this.Handle);
+            Receive<InternalCommands.Admin>(Handle);
         }
 
         protected override void Unhandled(object message)
@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.Admin
             
         }
 
-        private void Handle(QueryAdmin admin)
+        private void Handle(InternalCommands.Admin admin)
         {
             try
             {
