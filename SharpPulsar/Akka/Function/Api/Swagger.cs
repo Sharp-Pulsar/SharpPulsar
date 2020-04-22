@@ -4,6 +4,8 @@
 // </auto-generated>
 //----------------------
 
+using System.Text.Json;
+
 #pragma warning disable 108 // Disable "CS0108 '{derivedDto}.ToJson()' hides inherited member '{dtoBase}.ToJson()'. Use the new keyword if hiding was intended."
 #pragma warning disable 114 // Disable "CS0114 '{derivedDto}.RaisePropertyChanged(String)' hides inherited member 'dtoBase.RaisePropertyChanged(String)'. To make the current member override that implementation, add the override keyword. Otherwise add the new keyword."
 #pragma warning disable 472 // Disable "CS0472 The result of the expression is always 'false' since a value of type 'Int32' is never equal to 'null' of type 'Int32?'
@@ -17,7 +19,8 @@ namespace SharpPulsar.Akka.Function.Api
     using System.Threading.Tasks;
     using System.Threading;
     using System.Collections.Generic;
-
+    using System.Net.Http;
+    using System.Net.Http.Headers;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.3.0.0 (NJsonSchema v10.1.11.0 (Newtonsoft.Json v12.0.0.2))")]
     public partial interface IPulsarFunctionsRESTAPIClient
@@ -55,270 +58,30 @@ namespace SharpPulsar.Akka.Function.Api
         Task<FunctionConfig> GetFunctionInfoAsync(string tenant, string @namespace, string functionName, CancellationToken cancellationToken);
     
         /// <summary>Creates a new Pulsar Function in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="body">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task RegisterFunctionAsync(string tenant, string @namespace, string functionName, Stream body);
+        Task RegisterFunctionAsync(FunctionConfig config, string pkgUrl, string file);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a new Pulsar Function in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="body">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
-        /// <returns>Pulsar Function successfully created</returns>
+         /// <param name="config">The name of a Pulsar Function</param>
+         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task RegisterFunctionAsync(string tenant, string @namespace, string functionName, Stream body, CancellationToken cancellationToken);
+        Task RegisterFunctionAsync(FunctionConfig config, string pkgUrl, string file, CancellationToken cancellationToken);
     
         /// <summary>Updates a Pulsar Function currently running in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="bodyBody">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">The name of a Pulsar Function</param>
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task UpdateFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody);
+        Task UpdateFunctionAsync(FunctionConfig config, UpdateOptions options, string pkgUrl, string file);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Updates a Pulsar Function currently running in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="bodyBody">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task UpdateFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody, CancellationToken cancellationToken);
+        Task UpdateFunctionAsync(FunctionConfig config, UpdateOptions options, string pkgUrl, string file, CancellationToken cancellationToken);
     
         /// <summary>Deletes a Pulsar Function currently running in cluster mode</summary>
         /// <param name="tenant">The tenant of a Pulsar Function</param>
@@ -451,7 +214,7 @@ namespace SharpPulsar.Akka.Function.Api
         /// <param name="bodyBody">The value with which you want to trigger the Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody);
+        Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, string topic, string triggerValue, string triggerFile);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Triggers a Pulsar Function with a user-specified value or file data</summary>
@@ -461,7 +224,7 @@ namespace SharpPulsar.Akka.Function.Api
         /// <param name="bodyBody">The value with which you want to trigger the Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody, CancellationToken cancellationToken);
+        Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, string topic, string triggerValue, string triggerFile, CancellationToken cancellationToken);
     
         /// <summary>Restart an instance of a Pulsar Function</summary>
         /// <param name="tenant">The tenant of a Pulsar Function</param>
@@ -470,6 +233,12 @@ namespace SharpPulsar.Akka.Function.Api
         /// <param name="instanceId">The instanceId of a Pulsar Function (if instance-id is not provided, all instances are restarted</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
         Task RestartInstanceFunctionAsync(string tenant, string @namespace, string functionName, string instanceId);
+        
+        Task UploadFunctionAsync(string sourceFile, string path);
+        Task UploadFunctionAsync(string sourceFile, string path, CancellationToken cancellationToken);
+        Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName);
+        Task DownloadFunctionAsync(string destinationPath, string path);
+        Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName, CancellationToken cancellationToken);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Restart an instance of a Pulsar Function</summary>
@@ -788,172 +557,57 @@ namespace SharpPulsar.Akka.Function.Api
         }
     
         /// <summary>Creates a new Pulsar Function in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="body">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public Task RegisterFunctionAsync(string tenant, string @namespace, string functionName, Stream body)
+        public Task RegisterFunctionAsync(FunctionConfig config, string pkgUrl, string file)
         {
-            return RegisterFunctionAsync(tenant, @namespace, functionName, body, CancellationToken.None);
+            return RegisterFunctionAsync(config, pkgUrl, file, CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a new Pulsar Function in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="body">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async Task RegisterFunctionAsync(string tenant, string @namespace, string functionName, Stream body, CancellationToken cancellationToken)
+        public async Task RegisterFunctionAsync(FunctionConfig config, string pkgUrl, string file, CancellationToken cancellationToken)
         {
-            if (tenant == null)
+            if (string.IsNullOrWhiteSpace(config.Tenant))
                 throw new System.ArgumentNullException("tenant");
     
-            if (@namespace == null)
+            if (string.IsNullOrWhiteSpace(config.Namespace))
                 throw new System.ArgumentNullException("@namespace");
     
-            if (functionName == null)
+            if (string.IsNullOrWhiteSpace(config.Name))
                 throw new System.ArgumentNullException("functionName");
-    
+            if (string.IsNullOrWhiteSpace(pkgUrl) || string.IsNullOrWhiteSpace(file))
+                throw new System.ArgumentNullException("pkgUrl or File");
+
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("functions/{tenant}/{namespace}/{functionName}");
-            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{functionName}", System.Uri.EscapeDataString(ConvertToString(functionName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(config.Tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(config.Namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{functionName}", System.Uri.EscapeDataString(ConvertToString(config.Name, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    var content_ = new System.Net.Http.StreamContent(body);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("multipart/form-data");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-    
-                    PrepareRequest(client_, request_, urlBuilder_);
+                    using var form = new MultipartFormDataContent();
+                    form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
+                    if (!string.IsNullOrWhiteSpace(file))
+                    {
+                        using var fileContent = new ByteArrayContent(System.Convert.FromBase64String(file));
+                        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
+                        form.Add(fileContent, "data", $"{config.Tenant}-{config.Name}-{config.Namespace}.jar");
+                    }
+                    else
+                    {
+                        form.Add(new StringContent(pkgUrl), "url");
+                    }
                     var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), url_);
-                    PrepareRequest(client_, request_, url_);
-    
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.PostAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
                     try
                     {
                         var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
