@@ -237,7 +237,6 @@ namespace SharpPulsar.Akka.Function.Api
         Task UploadFunctionAsync(string sourceFile, string path);
         Task UploadFunctionAsync(string sourceFile, string path, CancellationToken cancellationToken);
         Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName);
-        Task DownloadFunctionAsync(string destinationPath, string path);
         Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName, CancellationToken cancellationToken);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -592,68 +591,70 @@ namespace SharpPulsar.Akka.Function.Api
             var client_ = _httpClient;
             try
             {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                using var form = new MultipartFormDataContent();
+                form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
+                if (!string.IsNullOrWhiteSpace(file))
                 {
-                    using var form = new MultipartFormDataContent();
-                    form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
-                    if (!string.IsNullOrWhiteSpace(file))
+                    using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
+                    fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
-                        using var fileContent = new ByteArrayContent(System.Convert.FromBase64String(file));
-                        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
-                        form.Add(fileContent, "data", $"{config.Tenant}-{config.Name}-{config.Namespace}.jar");
+                        Name = "\"data\"",
+                        FileName = $"\"{config.Tenant}-{config.Name}-{config.Namespace}.jar\""
+                    };
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                    form.Add(fileContent);
+                }
+                else
+                {
+                    form.Add(new StringContent(pkgUrl), "url");
+                }
+                var url_ = urlBuilder_.ToString();
+                var response_ = await client_.PostAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                    if (response_.Content != null && response_.Content.Headers != null)
+                    {
+                        foreach (var item_ in response_.Content.Headers)
+                            headers_[item_.Key] = item_.Value;
+                    }
+
+                    ProcessResponse(client_, response_);
+
+                    var status_ = ((int)response_.StatusCode).ToString();
+                    if (status_ == "200")
+                    {
+                        return;
                     }
                     else
+                    if (status_ == "400")
                     {
-                        form.Add(new StringContent(pkgUrl), "url");
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Invalid request (The Pulsar Function already exists, etc.)", (int)response_.StatusCode, responseText_, headers_, null);
                     }
-                    var url_ = urlBuilder_.ToString();
-                    var response_ = await client_.PostAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
-                    try
+                    else
+                    if (status_ == "403")
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-    
-                        ProcessResponse(client_, response_);
-    
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200") 
-                        {
-                            return;
-                        }
-                        else
-                        if (status_ == "400") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Invalid request (The Pulsar Function already exists, etc.)", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "403") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("The requester doesn\'t have admin permissions", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "408") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Request timeout", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
-                            throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The requester doesn\'t have admin permissions", (int)response_.StatusCode, responseText_, headers_, null);
                     }
-                    finally
+                    else
+                    if (status_ == "408")
                     {
-                        if (response_ != null)
-                            response_.Dispose();
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Request timeout", (int)response_.StatusCode, responseText_, headers_, null);
                     }
+                    else
+                    if (status_ != "200" && status_ != "204")
+                    {
+                        var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                    }
+                }
+                finally
+                {
+                    if (response_ != null)
+                        response_.Dispose();
                 }
             }
             finally
@@ -662,212 +663,102 @@ namespace SharpPulsar.Akka.Function.Api
         }
     
         /// <summary>Updates a Pulsar Function currently running in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="bodyBody">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public Task UpdateFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody)
+        /// 
+        public Task UpdateFunctionAsync(FunctionConfig config, UpdateOptions options, string pkgUrl, string file)
         {
-            return UpdateFunctionAsync(tenant, @namespace, functionName, bodyBody, CancellationToken.None);
+            return UpdateFunctionAsync(config, options,  pkgUrl, file, CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Updates a Pulsar Function currently running in cluster mode</summary>
-        /// <param name="tenant">The tenant of a Pulsar Function</param>
-        /// <param name="@namespace">The namespace of a Pulsar Function</param>
-        /// <param name="functionName">The name of a Pulsar Function</param>
-        /// <param name="bodyBody">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
-        /// - **autoAck**  
-        ///   Whether or not the framework acknowledges messages automatically.  
-        /// - **runtime**  
-        ///   What is the runtime of the Pulsar Function. Possible Values: [JAVA, PYTHON, GO]  
-        /// - **resources**  
-        ///   The size of the system resources allowed by the Pulsar Function runtime. The resources include: cpu, ram, disk.  
-        /// - **className**  
-        ///   The class name of a Pulsar Function.  
-        /// - **customSchemaInputs**  
-        ///   The map of input topics to Schema class names (specified as a JSON object).  
-        /// - **customSerdeInputs**  
-        ///   The map of input topics to SerDe class names (specified as a JSON object).  
-        /// - **deadLetterTopic**  
-        ///   Messages that are not processed successfully are sent to `deadLetterTopic`.  
-        /// - **runtimeFlags**  
-        ///   Any flags that you want to pass to the runtime. Note that in thread mode, these flags have no impact.  
-        /// - **fqfn**  
-        ///   The Fully Qualified Function Name (FQFN) for the Pulsar Function.  
-        /// - **inputSpecs**  
-        ///    The map of input topics to its consumer configuration, each configuration has schema of    {"schemaType": "type-x", "serdeClassName": "name-x", "isRegexPattern": true, "receiverQueueSize": 5}  
-        /// - **inputs**  
-        ///   The input topic or topics (multiple topics can be specified as a comma-separated list) of a Pulsar Function.  
-        /// - **jar**  
-        ///   Path to the JAR file for the Pulsar Function (if the Pulsar Function is written in Java).   It also supports URL path [http/https/file (file protocol assumes that file   already exists on worker host)] from which worker can download the package.  
-        /// - **py**  
-        ///   Path to the main Python file or Python wheel file for the Pulsar Function (if the Pulsar Function is written in Python).  
-        /// - **go**  
-        ///   Path to the main Go executable binary for the Pulsar Function (if the Pulsar Function is written in Go).  
-        /// - **logTopic**  
-        ///   The topic to which the logs of a Pulsar Function are produced.  
-        /// - **maxMessageRetries**  
-        ///   How many times should we try to process a message before giving up.  
-        /// - **output**  
-        ///   The output topic of a Pulsar Function (If none is specified, no output is written).  
-        /// - **outputSerdeClassName**  
-        ///   The SerDe class to be used for messages output by the Pulsar Function.  
-        /// - **parallelism**  
-        ///   The parallelism factor of a Pulsar Function (i.e. the number of a Pulsar Function instances to run).  
-        /// - **processingGuarantees**  
-        ///   The processing guarantees (that is, delivery semantics) applied to the Pulsar Function.  Possible Values: [ATLEAST_ONCE, ATMOST_ONCE, EFFECTIVELY_ONCE]  
-        /// - **retainOrdering**  
-        ///   Function consumes and processes messages in order.  
-        /// - **outputSchemaType**  
-        ///    Represents either a builtin schema type (for example: 'avro', 'json', ect) or the class name for a Schema implementation.- **subName**  
-        ///   Pulsar source subscription name. User can specify a subscription-name for the input-topic consumer.  
-        /// - **windowConfig**  
-        ///   The window configuration of a Pulsar Function.  
-        /// - **timeoutMs**  
-        ///   The message timeout in milliseconds.  
-        /// - **topicsPattern**  
-        ///   The topic pattern to consume from a list of topics under a namespace that match the pattern.  [input] and [topic-pattern] are mutually exclusive. Add SerDe class name for a   pattern in customSerdeInputs (supported for java fun only)  
-        /// - **userConfig**  
-        ///   A map of user-defined configurations (specified as a JSON object).  
-        /// - **secrets**  
-        ///   This is a map of secretName(that is how the secret is going to be accessed in the Pulsar Function via context) to an object that  encapsulates how the secret is fetched by the underlying secrets provider. The type of an value here can be found by the  SecretProviderConfigurator.getSecretObjectType() method. 
-        /// - **cleanupSubscription**  
-        ///   Whether the subscriptions of a Pulsar Function created or used should be deleted when the Pulsar Function is deleted.</param>
+        /// <param name="config">A JSON value presenting configuration payload of a Pulsar Function. An example of the expected Pulsar Function can be found here.  
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async Task UpdateFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody, CancellationToken cancellationToken)
+        public async Task UpdateFunctionAsync(FunctionConfig config, UpdateOptions options, string pkgUrl, string file, CancellationToken cancellationToken)
         {
-            if (tenant == null)
+            if (string.IsNullOrWhiteSpace(config.Tenant))
                 throw new System.ArgumentNullException("tenant");
-    
-            if (@namespace == null)
+
+            if (string.IsNullOrWhiteSpace(config.Namespace))
                 throw new System.ArgumentNullException("@namespace");
-    
-            if (functionName == null)
+
+            if (string.IsNullOrWhiteSpace(config.Name))
                 throw new System.ArgumentNullException("functionName");
-    
+            if (string.IsNullOrWhiteSpace(pkgUrl) || string.IsNullOrWhiteSpace(file))
+                throw new System.ArgumentNullException("pkgUrl or File");
+
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("functions/{tenant}/{namespace}/{functionName}");
-            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{functionName}", System.Uri.EscapeDataString(ConvertToString(functionName, System.Globalization.CultureInfo.InvariantCulture)));
-    
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(config.Tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(config.Namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{functionName}", System.Uri.EscapeDataString(ConvertToString(config.Name, System.Globalization.CultureInfo.InvariantCulture)));
+
             var client_ = _httpClient;
             try
             {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                using var form = new MultipartFormDataContent();
+                form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
+                if(options != null)
+                    form.Add(new StringContent(JsonSerializer.Serialize(options)), "updateOptions");
+                if (!string.IsNullOrWhiteSpace(file))
                 {
-                    var content_ = new System.Net.Http.StreamContent(bodyBody);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("multipart/form-data");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("PUT");
-    
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), url_);
-                    PrepareRequest(client_, request_, url_);
-    
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    try
+                    using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
+                    fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-    
-                        ProcessResponse(client_, response_);
-    
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200") 
-                        {
-                            return;
-                        }
-                        else
-                        if (status_ == "400") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Invalid request (The Pulsar Function doesn\'t exist, etc.)", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "403") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("The requester doesn\'t have admin permissions", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
-                            throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-                    }
-                    finally
+                        Name = "\"data\"",
+                        FileName = $"\"{config.Tenant}-{config.Name}-{config.Namespace}.jar\""
+                    };
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                    form.Add(fileContent);
+                }
+                else
+                {
+                    form.Add(new StringContent(pkgUrl), "url");
+                }
+                var url_ = urlBuilder_.ToString();
+                var response_ = await client_.PutAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                    if (response_.Content != null && response_.Content.Headers != null)
                     {
-                        if (response_ != null)
-                            response_.Dispose();
+                        foreach (var item_ in response_.Content.Headers)
+                            headers_[item_.Key] = item_.Value;
                     }
+
+                    ProcessResponse(client_, response_);
+
+                    var status_ = ((int)response_.StatusCode).ToString();
+                    if (status_ == "200")
+                    {
+                        return;
+                    }
+                    else
+                    if (status_ == "400")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Invalid request (The Pulsar Function doesn\'t exist, etc.)", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "403")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The requester doesn\'t have admin permissions", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ != "200" && status_ != "204")
+                    {
+                        var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                    }
+                }
+                finally
+                {
+                    if (response_ != null)
+                        response_.Dispose();
                 }
             }
             finally
@@ -1700,9 +1591,9 @@ namespace SharpPulsar.Akka.Function.Api
         /// <param name="bodyBody">The value with which you want to trigger the Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody)
+        public Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, string topic, string triggerValue, string triggerFile)
         {
-            return TriggerFunctionAsync(tenant, @namespace, functionName, bodyBody, CancellationToken.None);
+            return TriggerFunctionAsync(tenant, @namespace, functionName, topic, triggerValue, triggerFile, CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -1713,7 +1604,7 @@ namespace SharpPulsar.Akka.Function.Api
         /// <param name="bodyBody">The value with which you want to trigger the Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, Stream bodyBody, CancellationToken cancellationToken)
+        public async Task<Message> TriggerFunctionAsync(string tenant, string @namespace, string functionName, string topic, string triggerValue, string triggerFile, CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1733,75 +1624,77 @@ namespace SharpPulsar.Akka.Function.Api
             var client_ = _httpClient;
             try
             {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                using var form = new MultipartFormDataContent();
+                if (!string.IsNullOrWhiteSpace(triggerFile))
                 {
-                    var content_ = new System.Net.Http.StreamContent(bodyBody);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("multipart/form-data");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-    
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), url_);
-                    PrepareRequest(client_, request_, url_);
-    
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    try
+                    using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(triggerFile)));
+                    fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-    
-                        ProcessResponse(client_, response_);
-    
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200") 
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<Message>(response_, headers_).ConfigureAwait(false);
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == "400") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Invalid request", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "404") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("The Pulsar Function does not exist", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "408") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Request timeout", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ == "500") 
-                        {
-                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Internal server error", (int)response_.StatusCode, responseText_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
-                            throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-            
-                        return default(Message);
-                    }
-                    finally
+                        Name = "\"dataStream\""
+                    };
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                    form.Add(fileContent);
+                }
+                if (!string.IsNullOrWhiteSpace(triggerValue))
+                    form.Add(new StringContent(triggerValue), "data");
+                if (!string.IsNullOrWhiteSpace(topic))
+                    form.Add(new StringContent(topic), "topic");
+                var url_ = urlBuilder_.ToString();
+                var response_ = await client_.PostAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                    if (response_.Content != null && response_.Content.Headers != null)
                     {
-                        if (response_ != null)
-                            response_.Dispose();
+                        foreach (var item_ in response_.Content.Headers)
+                            headers_[item_.Key] = item_.Value;
                     }
+
+                    ProcessResponse(client_, response_);
+
+                    var status_ = ((int)response_.StatusCode).ToString();
+                    if (status_ == "200")
+                    {
+                        var objectResponse_ = await ReadObjectResponseAsync<Message>(response_, headers_).ConfigureAwait(false);
+                        return objectResponse_.Object;
+                    }
+                    else
+                    if (status_ == "400")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Invalid request", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "404")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The Pulsar Function does not exist", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "408")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Request timeout", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "500")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Internal server error", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ != "200" && status_ != "204")
+                    {
+                        var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                    }
+
+                    return default(Message);
+                }
+                finally
+                {
+                    if (response_ != null)
+                        response_.Dispose();
                 }
             }
             finally
@@ -1819,7 +1712,117 @@ namespace SharpPulsar.Akka.Function.Api
         {
             return RestartInstanceFunctionAsync(tenant, @namespace, functionName, instanceId, CancellationToken.None);
         }
-    
+
+        public Task UploadFunctionAsync(string sourceFile, string path)
+        {
+            return UploadFunctionAsync(sourceFile, path, CancellationToken.None);
+        }
+
+        public async Task UploadFunctionAsync(string sourceFile, string path, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFile))
+                throw new System.ArgumentNullException("sourceFile");
+
+            if (string.IsNullOrWhiteSpace(path))
+                throw new System.ArgumentNullException("path");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("functions/upload");
+            var client_ = _httpClient;
+            try
+            {
+                using var form = new MultipartFormDataContent();
+                using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(sourceFile)));
+                fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+                {
+                    Name = "\"data\""
+                };
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                form.Add(fileContent);
+                form.Add(new StringContent(path), "path");
+                var url_ = urlBuilder_.ToString();
+                var response_ = await client_.PostAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_, form, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                    if (response_.Content != null && response_.Content.Headers != null)
+                    {
+                        foreach (var item_ in response_.Content.Headers)
+                            headers_[item_.Key] = item_.Value;
+                    }
+
+                    ProcessResponse(client_, response_);
+
+                    var status_ = ((int)response_.StatusCode).ToString();
+                    if (status_ == "400")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Invalid request", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "404")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The Pulsar Function does not exist", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ == "500")
+                    {
+                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("Internal server error", (int)response_.StatusCode, responseText_, headers_, null);
+                    }
+                    else
+                    if (status_ != "200" && status_ != "204")
+                    {
+                        var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                    }
+                }
+                finally
+                {
+                    if (response_ != null)
+                        response_.Dispose();
+                }
+            }
+            finally
+            {
+            }
+        }
+
+        public Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName)
+        {
+            throw new System.NotImplementedException();
+        }
+
+
+        public async Task DownloadFunctionAsync(string destinationPath, string tenant, string @namespace, string functionName,
+            CancellationToken cancellationToken)
+        {
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (functionName == null)
+                throw new System.ArgumentNullException("functionName");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("functions/{tenant}/{namespace}/{functionName}/download");
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{functionName}", System.Uri.EscapeDataString(ConvertToString(functionName, System.Globalization.CultureInfo.InvariantCulture)));
+            var fileInfo = new FileInfo(destinationPath);
+            var url_ = urlBuilder_.ToString();
+
+            var response = await _httpClient.GetAsync(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/") + url_);
+            response.EnsureSuccessStatusCode();
+            await using var ms = await response.Content.ReadAsStreamAsync();
+            await using var fs = File.Create(fileInfo.FullName);
+            ms.Seek(0, SeekOrigin.Begin);
+            ms.CopyTo(fs);
+        }
+
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Restart an instance of a Pulsar Function</summary>
         /// <param name="tenant">The tenant of a Pulsar Function</param>

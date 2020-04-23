@@ -12,17 +12,11 @@ namespace SharpPulsar.Akka.Function
         /// </summary>
         GetFunctionInfo,
         /// <summary>
-        /// Arguments[string tenant, string namespace, string functionName, Dictionary<string, object> body]
-        /// body A JSON value presenting configuration payload of a Pulsar Function.
-        /// An example of the expected Pulsar Function can be found here.
-        /// https://pulsar.apache.org/functions-rest-api/?version=2.5.0#operation/registerFunction
+        /// Arguments[FunctionConfig config, string pkgUrl, string file]
         /// </summary>
         RegisterFunction,
         /// <summary>
-        /// Arguments[string tenant, string namespace, string functionName, Dictionary<string, object> body]
-        /// body A JSON value presenting configuration payload of a Pulsar Function.
-        /// An example of the expected Pulsar Function can be found here.
-        /// https://pulsar.apache.org/functions-rest-api/?version=2.5.0#operation/updateFunction
+        /// Arguments[FunctionConfig config, UpdateOptions options, string pkgUrl, string file]
         /// </summary>
         UpdateFunction,
         /// <summary>
@@ -63,7 +57,7 @@ namespace SharpPulsar.Akka.Function
         /// </summary>
         TriggerFunction,
         /// <summary>
-        /// Arguments[string tenant, string namespace, string functionName, string instanceId]
+        /// Arguments[string tenant, string @namespace, string functionName, string topic, string triggerValue, string triggerFile]
         /// </summary>
         RestartInstanceFunction,
         /// <summary>

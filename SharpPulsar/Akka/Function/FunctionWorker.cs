@@ -96,12 +96,10 @@ namespace SharpPulsar.Akka.Function
                         function.Handler("PutFunctionState");
                         break;
                     case FunctionCommand.RegisterFunction:
-                        var tenant9 = function.Arguments[0].ToString();
-                        var nspace9 = function.Arguments[1].ToString();
-                        var name8 = function.Arguments[2].ToString();
-                        var byteArray = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(function.Arguments[3]));
-                        var payload = new MemoryStream(byteArray);
-                        _client.RegisterFunctionAsync(tenant9, nspace9, name8, payload).GetAwaiter().GetResult();
+                        var config = (FunctionConfig)function.Arguments[0];
+                        var pkgUrl = function.Arguments[1].ToString();
+                        var file = function.Arguments[2].ToString();
+                        _client.RegisterFunctionAsync(config, pkgUrl, file).GetAwaiter().GetResult();
                         function.Handler("RegisterFunction");
                         break;
                     case FunctionCommand.RestartFunction:
@@ -153,18 +151,18 @@ namespace SharpPulsar.Akka.Function
                         var tenant16 = function.Arguments[0].ToString();
                         var nspace16 = function.Arguments[1].ToString();
                         var name15 = function.Arguments[2].ToString();
-                        var byteArray1 = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(function.Arguments[3]));
-                        var payload1 = new MemoryStream(byteArray1);
-                        var m =_client.TriggerFunctionAsync(tenant16, nspace16, name15, payload1).GetAwaiter().GetResult();
+                        var topic = function.Arguments[3].ToString();
+                        var value = function.Arguments[4].ToString();
+                        var file1 = function.Arguments[5].ToString();
+                        var m =_client.TriggerFunctionAsync(tenant16, nspace16, name15, topic, value, file1).GetAwaiter().GetResult();
                         function.Handler(m);
                         break;
                     case FunctionCommand.UpdateFunction:
-                        var tenant17 = function.Arguments[0].ToString();
-                        var nspace17 = function.Arguments[1].ToString();
-                        var name16 = function.Arguments[2].ToString();
-                        var byteArray2 = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(function.Arguments[3]));
-                        var payload2 = new MemoryStream(byteArray2);
-                        _client.UpdateFunctionAsync(tenant17, nspace17, name16, payload2).GetAwaiter().GetResult();
+                        var config1 = (FunctionConfig)function.Arguments[0];
+                        var option = (UpdateOptions)function.Arguments[1];
+                        var pkgUrl1 = function.Arguments[2].ToString();
+                        var file2 = function.Arguments[3].ToString();
+                        _client.UpdateFunctionAsync(config1, option, pkgUrl1, file2).GetAwaiter().GetResult();
                         function.Handler("UpdateFunction");
                         break;
                 }
