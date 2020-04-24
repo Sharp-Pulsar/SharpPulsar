@@ -1,8 +1,7 @@
-﻿using SharpPulsar.Api;
+﻿
+using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -28,22 +27,22 @@ namespace SharpPulsar.Impl.Auth
 {
 
 	/// <summary>
-	/// Token based authentication provider.
+	/// STS Token based authentication provider.
 	/// </summary>
-	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
+	public class AuthenticationSts : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private Func<string> _tokenSupplier;
 
-		public AuthenticationToken()
+		public AuthenticationSts()
 		{
 		}
 
-		public AuthenticationToken(string token) : this(() => token)
+		public AuthenticationSts(string token) : this(() => token)
 		{
 		}
 
-		public AuthenticationToken(Func<string> tokenSupplier)
+		public AuthenticationSts(Func<string> tokenSupplier)
 		{
 			this._tokenSupplier = tokenSupplier;
 		}
@@ -53,40 +52,15 @@ namespace SharpPulsar.Impl.Auth
 			// noop
 		}
 
-		public string AuthMethodName => "token";
+		public string AuthMethodName => "sts";
 
-		public IAuthenticationDataProvider AuthData => new AuthenticationDataToken(_tokenSupplier);
+		public IAuthenticationDataProvider AuthData => new AuthenticationDataSts(_tokenSupplier);
 
 		public void Configure(string encodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix
-			if (encodedAuthParamString.StartsWith("token:", StringComparison.Ordinal))
-			{
-				_tokenSupplier = () => encodedAuthParamString.Substring("token:".Length);
-			}
-			else if (encodedAuthParamString.EndsWith(".key", StringComparison.Ordinal))
-			{
-				// Read token from a file
-				var filePath = encodedAuthParamString;
-				_tokenSupplier = () =>
-				{
-					try
-					{
-						var by = File.ReadAllBytes(filePath);
-
-						return Encoding.UTF8.GetString(by).Trim();
-					}
-					catch (IOException e)
-					{
-						throw new IOException("Failed to read token from file", e);
-					}
-				};
-			}
-			else
-			{
-				this._tokenSupplier = () => encodedAuthParamString;
-			}
+			this._tokenSupplier = () => encodedAuthParamString;
 		}
 
 		public void Configure(IDictionary<string, string> authParams)

@@ -51,6 +51,14 @@ namespace SharpPulsar.Protocol.Proto
                 authChallenge = value
             };
         }
+        public static BaseCommand ToBaseCommand(this CommandAuthResponse value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.AuthResponse,
+                authResponse = value
+            };
+        }
         public static BaseCommand ToBaseCommand(this CommandCloseConsumer value)
         {
             return new BaseCommand

@@ -42,6 +42,10 @@ namespace SharpPulsar.Impl.Auth
 			return DefaultImplementation.NewAuthenticationToken(token);
 		}
 
+        public static IAuthentication Sts(string token)
+        {
+            return DefaultImplementation.NewAuthenticationSts(token);
+        }
 		/// <summary>
 		/// Create an authentication provider for token based authentication.
 		/// </summary>

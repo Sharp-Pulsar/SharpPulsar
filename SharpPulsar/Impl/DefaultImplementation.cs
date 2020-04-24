@@ -79,7 +79,10 @@ namespace SharpPulsar.Impl
 		{
 			return new AuthenticationToken(token);
 		}
-
+        public static IAuthentication NewAuthenticationSts(string token)
+        {
+            return new AuthenticationSts(token);
+        }
 		public static IAuthentication NewAuthenticationToken(Func<string> supplier)
 		{
 			return new AuthenticationToken(supplier);

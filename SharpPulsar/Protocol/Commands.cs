@@ -138,7 +138,19 @@ namespace SharpPulsar.Protocol
             var res = Serializer.Serialize(ba);
             return res.ToArray();
         }
+        public static byte[] NewAuthResponse(string authMethod, AuthData clientData, int clientProtocolVersion, string clientVersion)
+        {
+            var authData = new AuthData {auth_data = clientData.auth_data, AuthMethodName = authMethod};
 
+            var response = new CommandAuthResponse
+            {
+                Response = authData,
+                ProtocolVersion = clientProtocolVersion,
+                ClientVersion = clientVersion ?? "Pulsar Client"
+            };
+            var res = Serializer.Serialize(response.ToBaseCommand());
+            return res.ToArray();
+        }
 		public static byte[] NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
 		{
 			var challenge = new CommandAuthChallenge();
