@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-using Pulsar.Common.Auth;
+using SharpPulsar.Impl.Auth;
 
 namespace SharpPulsar.Api
 {

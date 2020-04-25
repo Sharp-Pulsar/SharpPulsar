@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
+using SharpPulsar.Impl.Auth;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -25,7 +26,6 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Impl
 {
-    using Pulsar.Common.Auth;
     using Protocol.Proto;
     using System.Linq;
     using Protocol;

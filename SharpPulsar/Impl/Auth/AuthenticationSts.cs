@@ -1,6 +1,5 @@
 ﻿
 using SharpPulsar.Api;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -32,20 +31,15 @@ namespace SharpPulsar.Impl.Auth
 	public class AuthenticationSts : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
-		private Func<string> _tokenSupplier;
-
-		public AuthenticationSts()
-		{
-		}
-
-		public AuthenticationSts(string token) : this(() => token)
-		{
-		}
-
-		public AuthenticationSts(Func<string> tokenSupplier)
-		{
-			this._tokenSupplier = tokenSupplier;
-		}
+        private string _clientId;
+        private string _clientSecret;
+        private string _authority;
+        public AuthenticationSts(string clientid, string secret, string authority)
+        {
+            _clientId = clientid;
+            _clientSecret = secret;
+            _authority = authority;
+        }
 
 		public void Close()
 		{
@@ -54,14 +48,17 @@ namespace SharpPulsar.Impl.Auth
 
 		public string AuthMethodName => "sts";
 
-		public IAuthenticationDataProvider AuthData => new AuthenticationDataSts(_tokenSupplier);
+		public IAuthenticationDataProvider AuthData => new AuthenticationDataSts(_clientId, _clientSecret, _authority);
 
 		public void Configure(string encodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix
-			this._tokenSupplier = () => encodedAuthParamString;
-		}
+            var authP = encodedAuthParamString.Split(",");
+            _clientId = authP[0];
+            _clientSecret = authP[1];
+            _authority = authP[2];
+        }
 
 		public void Configure(IDictionary<string, string> authParams)
 		{

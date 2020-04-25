@@ -65,6 +65,7 @@ Little Addition</PackageReleaseNotes>
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="DotNetty.Handlers" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
+    <PackageReference Include="IdentityModel" Version="4.2.0" />
     <PackageReference Include="JsonSubTypes" Version="1.2.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
@@ -115,6 +116,10 @@ Little Addition</PackageReleaseNotes>
     <None Update="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Shared\Auth\" />
   </ItemGroup>
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
     <ItemGroup>

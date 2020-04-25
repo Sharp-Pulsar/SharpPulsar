@@ -13,6 +13,7 @@ using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
+using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
@@ -21,7 +22,7 @@ namespace SharpPulsar.Akka.Network
 {
     public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
-        internal readonly IAuthentication Authentication;
+        private readonly IAuthentication _authentication;
         private PulsarStream _stream;
         private IActorRef _self;
         private IActorRef _parent;
@@ -39,7 +40,7 @@ namespace SharpPulsar.Akka.Network
         private ClientConfigurationData _conf;
         private IActorRef _manager;
         // Added for mutual authentication.
-        internal IAuthenticationDataProvider AuthenticationDataProvider;
+        private IAuthenticationDataProvider _authenticationDataProvider;
 
         public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
@@ -54,7 +55,7 @@ namespace SharpPulsar.Akka.Network
             Log = Context.System.Log;
             if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
-            Authentication = conf.Authentication;
+            _authentication = conf.Authentication;
 
             _parent = Context.Parent;
             //Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(3), Self, new OpenConnection(), ActorRefs.NoSender);
@@ -133,13 +134,13 @@ namespace SharpPulsar.Akka.Network
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
-			AuthenticationDataProvider = Authentication.GetAuthData(RemoteHostName);
-			var authData = AuthenticationDataProvider.Authenticate(new Shared.Auth.AuthDataShared(Shared.Auth.AuthDataShared.InitAuthData));
+			_authenticationDataProvider = _authentication.GetAuthData(RemoteHostName);
+			var authData = _authenticationDataProvider.Authenticate(new Impl.Auth.AuthData(Impl.Auth.AuthData.InitAuthData));
             var assemblyName = Assembly.GetCallingAssembly().GetName();
-            var auth = new AuthData {auth_data = ((byte[]) (object) authData.Bytes)};
+            var auth = new Protocol.Proto.AuthData { auth_data = ((byte[]) (object) authData.Bytes)};
             var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-            return Commands.NewConnect(Authentication.AuthMethodName, auth, 15, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+            return Commands.NewConnect(_authentication.AuthMethodName, auth, 15, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
         private sealed class ConnectionCommand
         {

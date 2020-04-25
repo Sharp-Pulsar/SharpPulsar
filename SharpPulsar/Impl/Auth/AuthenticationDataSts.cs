@@ -1,7 +1,8 @@
 ﻿using SharpPulsar.Api;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using IdentityModel.Client;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,26 +27,24 @@ namespace SharpPulsar.Impl.Auth
 {
 
 	public class AuthenticationDataSts : IAuthenticationDataProvider
-	{
-        private readonly Func<string> _tokenSupplier;
-        private string _token;
-
-		public AuthenticationDataSts(Func<string> tokenSupplier)
-		{
-			this._tokenSupplier = tokenSupplier;
-		}
-
-        public AuthenticationDataSts(string token)
+    {
+        private string _clientId;
+        private string _clientSecret;
+        private string _authority;
+		public AuthenticationDataSts(string clientid, string secret, string authority)
         {
-            _token = token;
+            _clientId = clientid;
+            _clientSecret = secret;
+            _authority = authority;
         }
+
 		
 		public bool HasDataFromCommand()
 		{
 			return true;
 		}
 
-		public string CommandData => string.IsNullOrWhiteSpace(_token)? Token: _token;
+		public string CommandData => Token;
 
         private string Token
 		{
@@ -53,7 +52,21 @@ namespace SharpPulsar.Impl.Auth
 			{
 				try
 				{
-					return _tokenSupplier.Invoke();
+                    var client = new HttpClient();
+
+                    var disco = client.GetDiscoveryDocumentAsync(_authority).GetAwaiter().GetResult();
+                    if (disco.IsError) throw new Exception(disco.Error);
+
+                    var response = client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+                    {
+                        Address = disco.TokenEndpoint,
+
+                        ClientId = _clientId,
+                        ClientSecret = _clientSecret,
+                    }).GetAwaiter().GetResult();
+
+                    if (response.IsError) throw new Exception(response.Error);
+                    return response.AccessToken;
 				}
 				catch (Exception t)
 				{

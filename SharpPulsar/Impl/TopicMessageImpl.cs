@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Impl.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +22,6 @@
 
 namespace SharpPulsar.Impl
 {
-    using Pulsar.Common.Auth;
     using Api;
 
 	public class TopicMessageImpl : IMessage

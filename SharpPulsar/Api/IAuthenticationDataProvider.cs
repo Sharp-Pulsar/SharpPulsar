@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using SharpPulsar.Shared.Auth;
+using SharpPulsar.Impl.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -97,10 +97,10 @@ namespace SharpPulsar.Api
 		/// <para>Mainly used for mutual authentication like sasl.
 		/// </para>
 		/// </summary>
-		virtual AuthDataShared Authenticate(AuthDataShared auth)
+		virtual AuthData Authenticate(AuthData auth)
 		{
             var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
-			return new AuthDataShared(bytes);
+			return new AuthData(bytes);
         }
 	}
 

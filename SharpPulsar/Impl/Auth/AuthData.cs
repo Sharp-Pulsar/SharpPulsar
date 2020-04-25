@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,29 +18,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Pulsar.Common.Auth
+namespace SharpPulsar.Impl.Auth
 {
 	/// <summary>
-	/// Class representing an encryption context.
+	/// Authentication data.
 	/// </summary>
-	public class EncryptionContext
+	public class AuthData
 	{
+		
+		public static sbyte[] InitAuthData = (sbyte[])(object)Encoding.UTF8.GetBytes("PulsarAuthInit");
 
-		public IDictionary<string, EncryptionKey> Keys { get; set; }
-		public sbyte[] Param { get; set; }
-		public string Algorithm;
-		public int CompressionType { get; set; }//hack
-		public int UncompressedMessageSize { get; set; }
-		public int? BatchSize { get; set; }
+		public sbyte[] Bytes;
 
-		/// <summary>
-		/// Encryption key with metadata.
-		/// </summary>
-		public class EncryptionKey
-		{
-			public sbyte[] KeyValue { get; set; }
-			public IDictionary<string, string> Metadata { get; set; }
-		}
+		public bool Complete => Bytes == null;
 
+        public AuthData(byte[] authData)
+        {
+            Bytes = (sbyte[]) (object) authData;
+        }
+        public AuthData(sbyte[] authData)
+        {
+            Bytes = authData;
+        }
 	}
+
 }
