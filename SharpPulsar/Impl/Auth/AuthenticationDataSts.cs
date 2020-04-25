@@ -2,7 +2,9 @@
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using IdentityModel.Client;
+using SharpPulsar.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,11 +33,16 @@ namespace SharpPulsar.Impl.Auth
         private string _clientId;
         private string _clientSecret;
         private string _authority;
+        private HttpClient _client;
+        private DiscoveryDocumentResponse _disco;
 		public AuthenticationDataSts(string clientid, string secret, string authority)
         {
             _clientId = clientid;
             _clientSecret = secret;
             _authority = authority;
+            _client = new HttpClient();
+            _disco = _client.GetDiscoveryDocumentAsync(_authority).GetAwaiter().GetResult();
+            if (_disco.IsError) throw new Exception(_disco.Error);
         }
 
 		
@@ -52,14 +59,9 @@ namespace SharpPulsar.Impl.Auth
 			{
 				try
 				{
-                    var client = new HttpClient();
-
-                    var disco = client.GetDiscoveryDocumentAsync(_authority).GetAwaiter().GetResult();
-                    if (disco.IsError) throw new Exception(disco.Error);
-
-                    var response = client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+                    var response = _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
                     {
-                        Address = disco.TokenEndpoint,
+                        Address = _disco.TokenEndpoint,
 
                         ClientId = _clientId,
                         ClientSecret = _clientSecret,
@@ -74,6 +76,31 @@ namespace SharpPulsar.Impl.Auth
 				}
 			}
 		}
-	}
+
+        public AuthData Authenticate(AuthData data)
+        {
+            var result = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
+            {
+                Address = _disco.IntrospectionEndpoint,
+
+                ClientId = _clientId,
+                ClientSecret = _clientSecret,
+                Token = Encoding.UTF8.GetString((byte[])(object)data.Bytes)
+            }).GetAwaiter().GetResult();
+
+            if (result.IsError)
+            {
+               throw new PulsarClientException(result.Error);
+            }
+
+            if (result.IsActive)
+            {
+                var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+                return new AuthData(bytes);
+            }
+
+            throw new PulsarClientException("token is not active");
+        }
+    }
 
 }
