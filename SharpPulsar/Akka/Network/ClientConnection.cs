@@ -17,6 +17,7 @@ using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using AuthData = SharpPulsar.Impl.Auth.AuthData;
 
 namespace SharpPulsar.Akka.Network
 {
@@ -81,8 +82,7 @@ namespace SharpPulsar.Akka.Network
                 var connect = connector.Connect(RemoteAddress);
                 Context.System.Log.Info($"Opening Connection to: {RemoteAddress}");
                 _stream = new PulsarStream(connect);
-                var c = new ConnectionCommand(NewConnectCommand());
-                Send(new ReadOnlySequence<byte>(c.Command));
+                Send(new ReadOnlySequence<byte>(NewConnectCommand()));
                 Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(100),
                     TimeSpan.FromSeconds(10), Self, new ConnectionCommand(Commands.NewPing()), ActorRefs.NoSender);
 
@@ -135,13 +135,35 @@ namespace SharpPulsar.Akka.Network
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			_authenticationDataProvider = _authentication.GetAuthData(RemoteHostName);
-			var authData = _authenticationDataProvider.Authenticate(new Impl.Auth.AuthData(Impl.Auth.AuthData.InitAuthData));
+			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts"? null: new AuthData(AuthData.InitAuthData));
             var assemblyName = Assembly.GetCallingAssembly().GetName();
             var auth = new Protocol.Proto.AuthData { auth_data = ((byte[]) (object) authData.Bytes)};
             var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
             return Commands.NewConnect(_authentication.AuthMethodName, auth, 15, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
+        private byte[] HandleAuthChallenge(CommandAuthChallenge authChallenge)
+        {
+            try
+            {
+                var assemblyName = Assembly.GetCallingAssembly().GetName();
+                AuthData authData = _authenticationDataProvider.Authenticate(new AuthData(authChallenge.Challenge.auth_data));
+                var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
+                var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
+                
+                if (_context.System.Log.IsDebugEnabled)
+                {
+                    _context.System.Log.Debug("{} Mutual auth {}", RemoteAddress, _authentication.AuthMethodName);
+                }
+                return Commands.NewAuthResponse(_authentication.AuthMethodName, auth, 15, clientVersion);
+
+            }
+            catch (Exception e)
+            {
+                _context.System.Log.Error(e.ToString());
+                return null;
+            }
+        }
         private sealed class ConnectionCommand
         {
             public ConnectionCommand(byte[] command)
@@ -179,6 +201,11 @@ namespace SharpPulsar.Akka.Network
                         
                         switch (cmd.type)
                         {
+                            case BaseCommand.Type.AuthChallenge:
+                                var auth = cmd.authChallenge;
+                                var authen = HandleAuthChallenge(auth);
+                                Send(new ReadOnlySequence<byte>(authen));
+                                break;
                             case BaseCommand.Type.GetLastMessageIdResponse:
                                 var mid = cmd.getLastMessageIdResponse.LastMessageId;
                                 var rquestid = (long)cmd.getLastMessageIdResponse.RequestId;

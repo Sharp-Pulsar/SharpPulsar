@@ -79,27 +79,32 @@ namespace SharpPulsar.Impl.Auth
 
         public AuthData Authenticate(AuthData data)
         {
-            var result = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
+            if (data != null)
             {
-                Address = _disco.IntrospectionEndpoint,
+                var result = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
+                {
+                    Address = _disco.IntrospectionEndpoint,
 
-                ClientId = _clientId,
-                ClientSecret = _clientSecret,
-                Token = Encoding.UTF8.GetString((byte[])(object)data.Bytes)
-            }).GetAwaiter().GetResult();
+                    ClientId = _clientId,
+                    ClientSecret = _clientSecret,
+                    Token = Encoding.UTF8.GetString((byte[])(object)data.Bytes)
+                }).GetAwaiter().GetResult();
 
-            if (result.IsError)
-            {
-               throw new PulsarClientException(result.Error);
+                if (result.IsError)
+                {
+                    throw new PulsarClientException(result.Error);
+                }
+
+                if (result.IsActive)
+                {
+                    var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+                    return new AuthData(bytes);
+                }
+
+                throw new PulsarClientException("token is not active");
             }
-
-            if (result.IsActive)
-            {
-                var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
-                return new AuthData(bytes);
-            }
-
-            throw new PulsarClientException("token is not active");
+            var bytesAuth = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+            return new AuthData(bytesAuth);
         }
     }
 
