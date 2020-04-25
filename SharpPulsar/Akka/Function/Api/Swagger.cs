@@ -21,6 +21,7 @@ namespace SharpPulsar.Akka.Function.Api
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using Newtonsoft.Json;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.3.0.0 (NJsonSchema v10.1.11.0 (Newtonsoft.Json v12.0.0.2))")]
     public partial interface IPulsarFunctionsRESTAPIClient
@@ -331,7 +332,7 @@ namespace SharpPulsar.Akka.Function.Api
     
         public PulsarFunctionsRESTAPIClient(string server, System.Net.Http.HttpClient httpClient)
         {
-            _baseUrl = server;
+            _baseUrl = $"{server.TrimEnd('/')}/admin/v3";
             _httpClient = httpClient; 
             _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings);
         }
@@ -579,7 +580,7 @@ namespace SharpPulsar.Akka.Function.Api
     
             if (string.IsNullOrWhiteSpace(config.Name))
                 throw new System.ArgumentNullException("functionName");
-            if (string.IsNullOrWhiteSpace(pkgUrl) || string.IsNullOrWhiteSpace(file))
+            if (string.IsNullOrWhiteSpace(pkgUrl) && string.IsNullOrWhiteSpace(file))
                 throw new System.ArgumentNullException("pkgUrl or File");
 
             var urlBuilder_ = new System.Text.StringBuilder();
@@ -592,10 +593,14 @@ namespace SharpPulsar.Akka.Function.Api
             try
             {
                 using var form = new MultipartFormDataContent();
-                form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
+                var json = JsonConvert.SerializeObject(config);
+                var configContent = new StringContent(json);
+                configContent.Headers.Add("Content-Disposition", "form-data; name=\"functionConfig\"");
+                configContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                form.Add(configContent, "functionConfig");
                 if (!string.IsNullOrWhiteSpace(file))
                 {
-                    using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
+                    var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
                     fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
                         Name = "\"data\"",
@@ -700,9 +705,19 @@ namespace SharpPulsar.Akka.Function.Api
             try
             {
                 using var form = new MultipartFormDataContent();
-                form.Add(new StringContent(JsonSerializer.Serialize(config)), "functionConfig");
-                if(options != null)
-                    form.Add(new StringContent(JsonSerializer.Serialize(options)), "updateOptions");
+                var json = JsonConvert.SerializeObject(config);
+                var configContent = new StringContent(json);
+                configContent.Headers.Add("Content-Disposition", "form-data; name=\"functionConfig\"");
+                configContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                form.Add(configContent, "functionConfig");
+                if (options != null)
+                {
+                    var json2 = JsonConvert.SerializeObject(options);
+                    var configContent2 = new StringContent(json2);
+                    configContent2.Headers.Add("Content-Disposition", "form-data; name=\"updateOptions\"");
+                    configContent2.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    form.Add(configContent2, "updateOptions");
+                }
                 if (!string.IsNullOrWhiteSpace(file))
                 {
                     using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
@@ -2349,8 +2364,8 @@ namespace SharpPulsar.Akka.Function.Api
     
             public string Text { get; }
         }
-    
-        public bool ReadResponseAsString { get; set; }
+
+        public bool ReadResponseAsString { get; set; } = true;
         
         protected virtual async Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(System.Net.Http.HttpResponseMessage response, IReadOnlyDictionary<string, IEnumerable<string>> headers)
         {
@@ -2433,16 +2448,16 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class ConsumerConfig 
     {
-        [Newtonsoft.Json.JsonProperty("schemaType", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="schemaType")]
         public string SchemaType { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("serdeClassName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="serdeClassName")]
         public string SerdeClassName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("receiverQueueSize", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="receiverQueueSize")]
         public int? ReceiverQueueSize { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("regexPattern", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="regexPattern")]
         public bool? RegexPattern { get; set; }
     
     
@@ -2451,23 +2466,23 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class EncryptionContext 
     {
-        [Newtonsoft.Json.JsonProperty("keys", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="keys")]
         public IDictionary<string, EncryptionKey> Keys { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("param", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="param")]
         public ICollection<byte[]> Param { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("algorithm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="algorithm")]
         public string Algorithm { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("compressionType", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="compressionType")]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public EncryptionContextCompressionType? CompressionType { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("uncompressedMessageSize", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="uncompressedMessageSize")]
         public int? UncompressedMessageSize { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("batchSize", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="batchSize")]
         public int? BatchSize { get; set; }
     
     
@@ -2476,10 +2491,10 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class EncryptionKey 
     {
-        [Newtonsoft.Json.JsonProperty("keyValue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="keyValue")]
         public ICollection<byte[]> KeyValue { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("metadata", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="metadata")]
         public IDictionary<string, string> Metadata { get; set; }
     
     
@@ -2488,117 +2503,115 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class ExceptionInformation 
     {
-        [Newtonsoft.Json.JsonProperty("exceptionString", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="exceptionString")]
         public string ExceptionString { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("timestampMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="timestampMs")]
         public long? TimestampMs { get; set; }
     
     
     }
-    
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
-    public partial class FunctionConfig 
+    public class FunctionConfig 
     {
-        [Newtonsoft.Json.JsonProperty("runtimeFlags", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "runtimeFlags")] 
         public string RuntimeFlags { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("tenant", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "tenant")]
         public string Tenant { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("namespace", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "namespace")]
         public string Namespace { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("name", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "name")]
         public string Name { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("className", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "className")]
         public string ClassName { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("inputs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "inputs")]
         public ICollection<string> Inputs { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("customSerdeInputs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "customSerdeInputs")]
         public IDictionary<string, string> CustomSerdeInputs { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("topicsPattern", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "topicsPattern")]
         public string TopicsPattern { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("customSchemaInputs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+
+        [JsonProperty(PropertyName = "customSchemaInputs")]
         public IDictionary<string, string> CustomSchemaInputs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("inputSpecs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="inputSpecs")]
         public IDictionary<string, ConsumerConfig> InputSpecs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("output", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="output")]
         public string Output { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("outputSchemaType", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="outputSchemaType")]
         public string OutputSchemaType { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("outputSerdeClassName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="outputSerdeClassName")]
         public string OutputSerdeClassName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("logTopic", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="logTopic")]
         public string LogTopic { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("processingGuarantees", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="processingGuarantees")]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public FunctionConfigProcessingGuarantees? ProcessingGuarantees { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("retainOrdering", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="retainOrdering")]
         public bool? RetainOrdering { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("userConfig", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="userConfig")]
         public IDictionary<string, object> UserConfig { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("secrets", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="secrets")]
         public IDictionary<string, object> Secrets { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("runtime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="runtime")]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public FunctionConfigRuntime? Runtime { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("autoAck", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="autoAck")]
         public bool? AutoAck { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("maxMessageRetries", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="maxMessageRetries")]
         public int? MaxMessageRetries { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("deadLetterTopic", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="deadLetterTopic")]
         public string DeadLetterTopic { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("subName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="subName")]
         public string SubName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("parallelism", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="parallelism")]
         public int? Parallelism { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("resources", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="resources")]
         public Resources Resources { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("fqfn", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="fqfn")]
         public string Fqfn { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("windowConfig", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="windowConfig")]
         public WindowConfig WindowConfig { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("timeoutMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="timeoutMs")]
         public long? TimeoutMs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("jar", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="jar")]
         public string Jar { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("py", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="py")]
         public string Py { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("go", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="go")]
         public string Go { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("cleanupSubscription", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="cleanupSubscription")]
         public bool? CleanupSubscription { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("customRuntimeOptions", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="customRuntimeOptions")]
         public string CustomRuntimeOptions { get; set; }
     
     
@@ -2607,10 +2620,10 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionInstanceStats 
     {
-        [Newtonsoft.Json.JsonProperty("instanceId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="instanceId")]
         public int? InstanceId { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("metrics", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="metrics")]
         public FunctionInstanceStatsData Metrics { get; set; }
     
     
@@ -2619,28 +2632,28 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionInstanceStatsData 
     {
-        [Newtonsoft.Json.JsonProperty("receivedTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="receivedTotal")]
         public long? ReceivedTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("processedSuccessfullyTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="processedSuccessfullyTotal")]
         public long? ProcessedSuccessfullyTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("systemExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="systemExceptionsTotal")]
         public long? SystemExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("userExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="userExceptionsTotal")]
         public long? UserExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("avgProcessLatency", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="avgProcessLatency")]
         public double? AvgProcessLatency { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("1min", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="1min")]
         public FunctionInstanceStatsDataBase _1min { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("lastInvocation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="lastInvocation")]
         public long? LastInvocation { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("userMetrics", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="userMetrics")]
         public IDictionary<string, double> UserMetrics { get; set; }
     
     
@@ -2649,19 +2662,19 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionInstanceStatsDataBase 
     {
-        [Newtonsoft.Json.JsonProperty("receivedTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="receivedTotal")]
         public long? ReceivedTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("processedSuccessfullyTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="processedSuccessfullyTotal")]
         public long? ProcessedSuccessfullyTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("systemExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="systemExceptionsTotal")]
         public long? SystemExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("userExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="userExceptionsTotal")]
         public long? UserExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("avgProcessLatency", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="avgProcessLatency")]
         public double? AvgProcessLatency { get; set; }
     
     
@@ -2670,10 +2683,10 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionInstanceStatus 
     {
-        [Newtonsoft.Json.JsonProperty("instanceId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="instanceId")]
         public int? InstanceId { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("status", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="status")]
         public FunctionInstanceStatusData Status { get; set; }
     
     
@@ -2682,40 +2695,40 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionInstanceStatusData 
     {
-        [Newtonsoft.Json.JsonProperty("running", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="running")]
         public bool? Running { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("error", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="error")]
         public string Error { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numRestarts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numRestarts")]
         public long? NumRestarts { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numReceived", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numReceived")]
         public long? NumReceived { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numSuccessfullyProcessed", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numSuccessfullyProcessed")]
         public long? NumSuccessfullyProcessed { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numUserExceptions", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numUserExceptions")]
         public long? NumUserExceptions { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("latestUserExceptions", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="latestUserExceptions")]
         public ICollection<ExceptionInformation> LatestUserExceptions { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numSystemExceptions", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numSystemExceptions")]
         public long? NumSystemExceptions { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("latestSystemExceptions", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="latestSystemExceptions")]
         public ICollection<ExceptionInformation> LatestSystemExceptions { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("averageLatency", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="averageLatency")]
         public double? AverageLatency { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("lastInvocationTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="lastInvocationTime")]
         public long? LastInvocationTime { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("workerId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="workerId")]
         public string WorkerId { get; set; }
     
     
@@ -2724,19 +2737,19 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionState 
     {
-        [Newtonsoft.Json.JsonProperty("key", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="key")]
         public string Key { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("stringValue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="stringValue")]
         public string StringValue { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("byteValue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="byteValue")]
         public ICollection<byte[]> ByteValue { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numberValue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numberValue")]
         public long? NumberValue { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("version", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="version")]
         public long? Version { get; set; }
     
     
@@ -2745,28 +2758,28 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionStats 
     {
-        [Newtonsoft.Json.JsonProperty("receivedTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="receivedTotal")]
         public long? ReceivedTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("processedSuccessfullyTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="processedSuccessfullyTotal")]
         public long? ProcessedSuccessfullyTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("systemExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="systemExceptionsTotal")]
         public long? SystemExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("userExceptionsTotal", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="userExceptionsTotal")]
         public long? UserExceptionsTotal { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("avgProcessLatency", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="avgProcessLatency")]
         public double? AvgProcessLatency { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("1min", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="1min")]
         public FunctionInstanceStatsDataBase _1min { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("lastInvocation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="lastInvocation")]
         public long? LastInvocation { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("instances", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="instances")]
         public ICollection<FunctionInstanceStats> Instances { get; set; }
     
     
@@ -2775,13 +2788,13 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class FunctionStatus 
     {
-        [Newtonsoft.Json.JsonProperty("numInstances", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numInstances")]
         public int? NumInstances { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("numRunning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="numRunning")]
         public int? NumRunning { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("instances", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="instances")]
         public ICollection<FunctionInstanceStatus> Instances { get; set; }
     
     
@@ -2796,55 +2809,55 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class Message 
     {
-        [Newtonsoft.Json.JsonProperty("data", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="data")]
         public ICollection<byte[]> Data { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("replicatedFrom", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="replicatedFrom")]
         public string ReplicatedFrom { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("encryptionCtx", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="encryptionCtx")]
         public EncryptionContext EncryptionCtx { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("schemaVersion", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="schemaVersion")]
         public ICollection<byte[]> SchemaVersion { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("sequenceId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="sequenceId")]
         public long? SequenceId { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("orderingKey", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="orderingKey")]
         public ICollection<byte[]> OrderingKey { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("keyBytes", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="keyBytes")]
         public ICollection<byte[]> KeyBytes { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("messageId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="messageId")]
         public MessageId MessageId { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("redeliveryCount", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="redeliveryCount")]
         public int? RedeliveryCount { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("topicName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="topicName")]
         public string TopicName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("producerName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="producerName")]
         public string ProducerName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("publishTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="publishTime")]
         public long? PublishTime { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("eventTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="eventTime")]
         public long? EventTime { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("replicated", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="replicated")]
         public bool? Replicated { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("value", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="value")]
         public object Value { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("key", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="key")]
         public string Key { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("properties", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="properties")]
         public IDictionary<string, string> Properties { get; set; }
     
     
@@ -2859,13 +2872,13 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class Resources 
     {
-        [Newtonsoft.Json.JsonProperty("cpu", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="cpu")]
         public double? Cpu { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("ram", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="ram")]
         public long? Ram { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("disk", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="disk")]
         public long? Disk { get; set; }
     
     
@@ -2876,7 +2889,7 @@ namespace SharpPulsar.Akka.Function.Api
     public partial class UpdateOptions 
     {
         /// <summary>Whether or not to update the auth data</summary>
-        [Newtonsoft.Json.JsonProperty("update-auth-data", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="update-auth-data")]
         public bool? UpdateAuthData { get; set; }
     
     
@@ -2885,31 +2898,31 @@ namespace SharpPulsar.Akka.Function.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.11.0 (Newtonsoft.Json v12.0.0.2)")]
     public partial class WindowConfig 
     {
-        [Newtonsoft.Json.JsonProperty("windowLengthCount", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="windowLengthCount")]
         public int? WindowLengthCount { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("windowLengthDurationMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="windowLengthDurationMs")]
         public long? WindowLengthDurationMs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("slidingIntervalCount", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="slidingIntervalCount")]
         public int? SlidingIntervalCount { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("slidingIntervalDurationMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="slidingIntervalDurationMs")]
         public long? SlidingIntervalDurationMs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("lateDataTopic", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="lateDataTopic")]
         public string LateDataTopic { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("maxLagMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="maxLagMs")]
         public long? MaxLagMs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("watermarkEmitIntervalMs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="watermarkEmitIntervalMs")]
         public long? WatermarkEmitIntervalMs { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("timestampExtractorClassName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="timestampExtractorClassName")]
         public string TimestampExtractorClassName { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("actualWindowFunctionClassName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName ="actualWindowFunctionClassName")]
         public string ActualWindowFunctionClassName { get; set; }
     
     

@@ -17,6 +17,8 @@ using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.Function;
+using SharpPulsar.Akka.Function.Api;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
@@ -28,6 +30,7 @@ using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using MessageId = SharpPulsar.Impl.MessageId;
 
 namespace Samples
 {
@@ -240,7 +243,14 @@ namespace Samples
                         break;
                     case "43":
                         Console.WriteLine("[CreateNonPartitionedPersistentTopic] Enter destination server: ");
-                        CreateNonPartitionedPersistentTopic(pulsarSystem, Console.ReadLine());
+                        var ds = Console.ReadLine();
+                        Console.WriteLine("[CreateNonPartitionedPersistentTopic] Tenant: ");
+                        var tn = Console.ReadLine();
+                        Console.WriteLine("[CreateNonPartitionedPersistentTopic] Namespace: ");
+                        var ns = Console.ReadLine();
+                        Console.WriteLine("[CreateNonPartitionedPersistentTopic] Topic: ");
+                        var to = Console.ReadLine();
+                        CreateNonPartitionedPersistentTopic(pulsarSystem, ds, tn, ns, to);
                         break;
                     case "29":
                         Console.WriteLine("[CreatePartitionedTopic] Enter destination server: ");
@@ -293,6 +303,24 @@ namespace Samples
                     case "40":
                         Console.WriteLine("[DeleteTenant] Enter destination server: ");
                         DeleteTenant(pulsarSystem, Console.ReadLine());
+                        break;
+                    #endregion
+                    #region Function
+                    case "45":
+                        Console.WriteLine("[RegisterFunction] Enter destination server: ");
+                        RegisterFunction(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "46":
+                        Console.WriteLine("[StartFunction] Enter destination server: ");
+                        StartFunction(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "47":
+                        Console.WriteLine("[ListFunctions] Enter destination server: ");
+                        ListFunctions(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "48":
+                        Console.WriteLine("[FunctionInfo] Enter destination server: ");
+                        FunctionInfo(pulsarSystem, Console.ReadLine());
                         break;
                     #endregion
                     case "exit":
@@ -1361,9 +1389,9 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
-        private static void CreateNonPartitionedPersistentTopic(PulsarSystem system, string server)
+        private static void CreateNonPartitionedPersistentTopic(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
-            system.PulsarAdmin(new Admin(AdminCommands.CreateNonPartitionedPersistentTopic, new object[] { "whitepurple", "akka", "journal", false}, e =>
+            system.PulsarAdmin(new Admin(AdminCommands.CreateNonPartitionedPersistentTopic, new object[] { tenant, ns, topic, false}, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
@@ -1468,6 +1496,71 @@ namespace Samples
         private static void GetTopics2(PulsarSystem system, string server)
         {
             system.PulsarAdmin(new Admin(AdminCommands.GetTopics2, new object[] { "events", "akka", "ALL" }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void RegisterFunction(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.RegisterFunction, new object[]
+            {
+                new FunctionConfig
+                {
+                    Inputs = new []{ "persistent://public/default/covid-19-mobile"},
+                    Parallelism = 1,
+                    AutoAck = true,
+                    ClassName = "Covid19Function",
+                    Jar = "Test-Function-0.0.1.jar",
+                    Tenant = "public",
+                    Namespace= "default",
+                    Name = "Covid19-function",
+                    Output = "persistent://public/default/covid-19",
+                    OutputSchemaType = "avro",
+                    SubName = "test-function-sub",
+                    CleanupSubscription = true,
+                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE
+                }, "", Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath("Test-Function-0.0.1.jar")))
+
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void StartFunction(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.StartFunction, new object[]
+            {
+                "public",
+                "default",
+                "Covid19-function",
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void FunctionInfo(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.GetFunctionInfo, new object[]
+            {
+                "public",
+                "default",
+                "Covid19-function",
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void ListFunctions(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.ListFunctions, new object[]
+            {
+                "public",
+                "default"
+            }, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);

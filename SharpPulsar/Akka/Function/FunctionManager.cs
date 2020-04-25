@@ -13,7 +13,7 @@ namespace SharpPulsar.Akka.Function
                 Context.ActorOf(FunctionCoordinator.Prop(s), an);
             }
 
-            Receive((InternalCommands.Admin q) =>
+            Receive((InternalCommands.Function q) =>
             {
                 var an = Regex.Replace(q.BrokerDestinationUrl, @"[^\w\d]", "");
                 var actor = Context.Child(an);

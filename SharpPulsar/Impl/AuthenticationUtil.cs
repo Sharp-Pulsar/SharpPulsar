@@ -110,8 +110,8 @@ namespace SharpPulsar.Impl
             {
                 if (!string.IsNullOrWhiteSpace(authPluginClassName))
 				{
-					var AuthClass = Type.GetType(authPluginClassName);
-					var auth = (IAuthentication) Activator.CreateInstance(AuthClass);
+					var authClass = Type.GetType(authPluginClassName);
+					var auth = (IAuthentication) Activator.CreateInstance(authClass);
 					auth.Configure(JsonSerializer.Serialize(authParams));
 					return auth;
 				}
