@@ -3297,9 +3297,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetSchemaCompatibilityStrategy(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetSchemaCompatibilityStrategy(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SchemaCompatibilityStrategy strategy)
             {
-                operations.SetSchemaCompatibilityStrategyAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetSchemaCompatibilityStrategyAsync(tenant, namespaceParameter, strategy).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3315,9 +3315,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetSchemaCompatibilityStrategyAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetSchemaCompatibilityStrategyAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, SchemaCompatibilityStrategy strategy, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetSchemaCompatibilityStrategyWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetSchemaCompatibilityStrategyWithHttpMessagesAsync(tenant, namespaceParameter, strategy, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -3387,9 +3387,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void SetSchemaValidtionEnforced(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void SetSchemaValidtionEnforced(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool forced)
             {
-                operations.SetSchemaValidtionEnforcedAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.SetSchemaValidtionEnforcedAsync(tenant, namespaceParameter, forced).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -3412,9 +3412,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task SetSchemaValidtionEnforcedAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task SetSchemaValidtionEnforcedAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, bool forced, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.SetSchemaValidtionEnforcedWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.SetSchemaValidtionEnforcedWithHttpMessagesAsync(tenant, namespaceParameter, forced, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>
@@ -7744,9 +7744,9 @@ namespace PulsarAdmin
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
-            public static IList<string> SetDefaultResourceQuota(this IPulsarAdminRESTAPI operations)
+            public static IList<string> SetDefaultResourceQuota(this IPulsarAdminRESTAPI operations, ResourceQuota quota)
             {
-                return operations.SetDefaultResourceQuotaAsync().GetAwaiter().GetResult();
+                return operations.SetDefaultResourceQuotaAsync(quota).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -7758,9 +7758,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<IList<string>> SetDefaultResourceQuotaAsync(this IPulsarAdminRESTAPI operations, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<IList<string>> SetDefaultResourceQuotaAsync(this IPulsarAdminRESTAPI operations, ResourceQuota quota, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.SetDefaultResourceQuotaWithHttpMessagesAsync(null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.SetDefaultResourceQuotaWithHttpMessagesAsync(quota, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }

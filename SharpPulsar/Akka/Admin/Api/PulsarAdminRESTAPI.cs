@@ -11964,7 +11964,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> SetSchemaCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> SetSchemaCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, SchemaCompatibilityStrategy body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -12013,6 +12013,13 @@ namespace PulsarAdmin
 
             // Serialize Request
             string _requestContent = null;
+            if(body != null)
+            {
+                _requestContent = SafeJsonConvert.SerializeObject(body, SerializationSettings);
+                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+
+            }
             // Send Request
             if (_shouldTrace)
             {
@@ -12241,7 +12248,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> SetSchemaValidtionEnforcedWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> SetSchemaValidtionEnforcedWithHttpMessagesAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -12290,6 +12297,10 @@ namespace PulsarAdmin
 
             // Serialize Request
             string _requestContent = null;
+            _requestContent = SafeJsonConvert.SerializeObject(body, SerializationSettings);
+            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+
             // Send Request
             if (_shouldTrace)
             {
@@ -24885,7 +24896,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse<IList<string>>> SetDefaultResourceQuotaWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse<IList<string>>> SetDefaultResourceQuotaWithHttpMessagesAsync(ResourceQuota body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
@@ -24922,6 +24933,13 @@ namespace PulsarAdmin
 
             // Serialize Request
             string _requestContent = null;
+            if (body != null)
+            {
+                _requestContent = SafeJsonConvert.SerializeObject(body, SerializationSettings);
+                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+
+            }
             // Send Request
             if (_shouldTrace)
             {

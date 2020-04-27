@@ -880,7 +880,7 @@ namespace SharpPulsar.Akka.Admin
         GetDefaultResourceQuota,
 
         /// <summary>
-        /// Arguments[]
+        /// Arguments[ResourceQuota quota]
         /// </summary>
         SetDefaultResourceQuota,
 

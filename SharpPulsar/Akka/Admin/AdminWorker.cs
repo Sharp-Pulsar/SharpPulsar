@@ -510,7 +510,7 @@ namespace SharpPulsar.Akka.Admin
                         var tenant42 = admin.Arguments[0].ToString();
                         var nspace42 = admin.Arguments[1].ToString();
                         var compact = (SchemaCompatibilityStrategy)admin.Arguments[2];
-                        _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42);
+                        _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42, compact);
                         admin.Handler("SetSchemaCompatibilityStrategy");
                         break;
                     case AdminCommands.GetSchemaValidtionEnforced:
@@ -521,7 +521,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetSchemaValidtionEnforced:
                         var tenant44 = admin.Arguments[0].ToString();
                         var nspace44 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetSchemaValidtionEnforced(tenant44, nspace44);
+                        var enfo = (bool)admin.Arguments[2];
+                        _adminRestapi.SetSchemaValidtionEnforced(tenant44, nspace44, enfo);
                         admin.Handler("SetSchemaValidtionEnforced");
                         break;
                     case AdminCommands.GetSubscribeRate:
@@ -1173,7 +1174,8 @@ namespace SharpPulsar.Akka.Admin
                         admin.Handler(_adminRestapi.GetDefaultResourceQuota());
                         break;
                     case AdminCommands.SetDefaultResourceQuota:
-                        admin.Handler(_adminRestapi.SetDefaultResourceQuota());
+                        var resource = (ResourceQuota)admin.Arguments[0];
+                        admin.Handler(_adminRestapi.SetDefaultResourceQuota(resource));
                         break;
                     case AdminCommands.GetNamespaceBundleResourceQuota:
                         var tenant93 = admin.Arguments[0].ToString();

@@ -1494,7 +1494,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetSchemaCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetSchemaCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, SchemaCompatibilityStrategy strategy, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get schema validation enforced flag for namespace.
@@ -1538,7 +1538,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetSchemaValidtionEnforcedWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetSchemaValidtionEnforcedWithHttpMessagesAsync(string tenant, string namespaceParameter, bool forced, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get subscribe-rate configured for the namespace
@@ -3555,7 +3555,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse<IList<string>>> SetDefaultResourceQuotaWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse<IList<string>>> SetDefaultResourceQuotaWithHttpMessagesAsync(ResourceQuota quota, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get resource quota of a namespace bundle.
