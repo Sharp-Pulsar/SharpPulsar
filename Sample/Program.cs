@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
+using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.Function;
@@ -24,6 +25,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
+using SharpPulsar.Api.Schema;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
@@ -228,6 +230,28 @@ namespace Samples
                         var to1 = Console.ReadLine();
                         GetAllSchemas(pulsarSystem, adminserver, tn3, ns3, to1);
                         break;
+                    case "58":
+                        Console.WriteLine("[RegisterSchema] Enter destination server: ");
+                        var ad = Console.ReadLine();
+                        Console.WriteLine("[RegisterSchema] Tenant: ");
+                        var tn7 = Console.ReadLine();
+                        Console.WriteLine("[RegisterSchema] Namespace: ");
+                        var ns7 = Console.ReadLine();
+                        Console.WriteLine("[RegisterSchema] Topic: ");
+                        var to3 = Console.ReadLine();
+                        RegisterSchema(pulsarSystem, ad, tn7, ns7, to3);
+                        break;
+                    case "59":
+                        Console.WriteLine("[DeleteTopic] Enter destination server: ");
+                        var ad1 = Console.ReadLine();
+                        Console.WriteLine("[DeleteTopic] Tenant: ");
+                        var tn8 = Console.ReadLine();
+                        Console.WriteLine("[DeleteTopic] Namespace: ");
+                        var ns8 = Console.ReadLine();
+                        Console.WriteLine("[DeleteTopic] Topic: ");
+                        var to4 = Console.ReadLine();
+                        DeleteTopic(pulsarSystem, ad1, tn8, ns8, to4);
+                        break;
                     case "55":
                         Console.WriteLine("[DeleteSchema] Enter destination server: ");
                         var adminserver1 = Console.ReadLine();
@@ -273,6 +297,24 @@ namespace Samples
                         Console.WriteLine("[CreateNonPartitionedPersistentTopic] Topic: ");
                         var to = Console.ReadLine();
                         CreateNonPartitionedPersistentTopic(pulsarSystem, ds, tn, ns, to);
+                        break;
+                    case "56":
+                        Console.WriteLine("[SetSchemaCompatibilityStrategy] Enter destination server: ");
+                        var ds1 = Console.ReadLine();
+                        Console.WriteLine("[SetSchemaCompatibilityStrategy] Tenant: ");
+                        var tn5 = Console.ReadLine();
+                        Console.WriteLine("[SetSchemaCompatibilityStrategy] Namespace: ");
+                        var ns5 = Console.ReadLine();
+                        SetSchemaCompatibilityStrategy(pulsarSystem, ds1, tn5, ns5);
+                        break;
+                    case "57":
+                        Console.WriteLine("[GetSchemaCompatibilityStrategy] Enter destination server: ");
+                        var ds2 = Console.ReadLine();
+                        Console.WriteLine("[GetSchemaCompatibilityStrategy] Tenant: ");
+                        var tn6 = Console.ReadLine();
+                        Console.WriteLine("[GetSchemaCompatibilityStrategy] Namespace: ");
+                        var ns6 = Console.ReadLine();
+                        GetSchemaCompatibilityStrategy(pulsarSystem, ds2, tn6, ns6);
                         break;
                     case "29":
                         Console.WriteLine("[CreatePartitionedTopic] Enter destination server: ");
@@ -505,7 +547,8 @@ namespace Samples
         }
         private static void PlainAvroCovidProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Covid19Mobile));
+            //var jsonSchem = JsonSchema.Of(ISchemaDefinition.Builder().WithJsonDef("{\u0022type\u0022:\u0022record\u0022,\u0022name\u0022:\u0022Covid19Mobile\u0022,\u0022fields\u0022:[{\u0022name\u0022:\u0022DeviceId\u0022,\u0022type\u0022:[\u0022null\u0022,\u0022string\u0022],\u0022default\u0022:null},{\u0022name\u0022:\u0022Latitude\u0022,\u0022type\u0022:\u0022double\u0022},{\u0022name\u0022:\u0022Longitude\u0022,\u0022type\u0022:\u0022double\u0022},{\u0022name\u0022:\u0022Time\u0022,\u0022type\u0022:\u0022long\u0022}]}").AddProperty("__jsr310ConversionEnabled", "false").WithAlwaysAllowNull(true).Build());
+            var jsonSchem = new AutoProduceBytesSchema();
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -1449,6 +1492,23 @@ namespace Samples
                 Console.WriteLine(data);
             }, e=> Console.WriteLine(e.ToString()), server, l=> Console.WriteLine(l)));
         }
+        private static void RegisterSchema(PulsarSystem system, string server, string tenant, string ns, string topic)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.PostSchema, new object[]{ tenant, ns, topic,
+                new PostSchemaPayload("avro", JsonSerializer.Serialize(JsonSchema.Of(typeof(Covid19Mobile)).SchemaInfo), new Dictionary<string, string>{{ "__alwaysAllowNull", "true" }, { "__jsr310ConversionEnabled", "false" } }), false}, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
+                Console.WriteLine(data);
+            }, e=> Console.WriteLine(e.ToString()), server, l=> Console.WriteLine(l)));
+        }
+        private static void DeleteTopic(PulsarSystem system, string server, string tenant, string ns, string topic)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.DeletePersistentTopic, new object[]{ tenant, ns, topic, true, false}, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
+                Console.WriteLine(data);
+            }, e=> Console.WriteLine(e.ToString()), server, l=> Console.WriteLine(l)));
+        }
         private static void DeleteSchema(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
             system.PulsarAdmin(new Admin(AdminCommands.DeleteSchema, new object[]{ tenant, ns, topic, false}, e =>
@@ -1626,6 +1686,23 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
+        //cmd 56
+        private static void SetSchemaCompatibilityStrategy(PulsarSystem system, string server, string tenant, string ns)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.SetSchemaCompatibilityStrategy, new object[] { tenant, ns, SchemaCompatibilityStrategy.ALWAYS_INCOMPATIBLE}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetSchemaCompatibilityStrategy(PulsarSystem system, string server, string tenant, string ns)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.GetSchemaCompatibilityStrategy, new object[] { tenant, ns}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
         private static void RegisterFunction(PulsarSystem system, string server)
         {
             system.PulsarFunction(new Function(FunctionCommand.RegisterFunction, new object[]
@@ -1641,13 +1718,13 @@ namespace Samples
                     Namespace= "default",
                     Name = "Covid19-function",
                     Output = "persistent://public/default/covid-19",
-                    OutputSchemaType = "avro",
+                    OutputSchemaType = "AVRO",
                     SubName = "test-function-sub",
                     CleanupSubscription = true,
-                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE, 
+                    //ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE, 
                     InputSpecs =  new Dictionary<string, ConsumerConfig>{{ "persistent://public/default/covid-19-mobile", new ConsumerConfig
                     {
-                        SchemaType = "avro"
+                        SchemaType = "AVRO"/*, SerdeClassName = "Covid19Mobile"*/
                     } } }
                 }, "", Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath("Test-Function-0.0.1.jar")))
 
@@ -1673,13 +1750,13 @@ namespace Samples
                     Namespace= "default",
                     Name = "Covid19-function",
                     Output = "persistent://public/default/covid-19",
-                    OutputSchemaType = "avro",
+                    OutputSchemaType = "AVRO",
                     SubName = "test-function-sub",
                     CleanupSubscription = true,
-                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE, 
+                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE,
                     InputSpecs =  new Dictionary<string, ConsumerConfig>{{ "persistent://public/default/covid-19-mobile", new ConsumerConfig
                     {
-                        SchemaType = "AVRO"
+                        SchemaType = "AUTO_CONSUME"
                     } } }
                 },
                  new UpdateOptions{UpdateAuthData = false}, 

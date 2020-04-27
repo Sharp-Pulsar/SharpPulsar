@@ -25784,7 +25784,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse<PostSchemaResponse>> PostSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload body = default(PostSchemaPayload), bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse<PostSchemaResponse>> PostSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload body, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {

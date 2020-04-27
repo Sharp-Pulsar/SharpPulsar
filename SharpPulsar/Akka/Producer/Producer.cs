@@ -17,6 +17,7 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
@@ -397,7 +398,7 @@ namespace SharpPulsar.Akka.Producer
             _broker.Tell(payload);
             _pendingLookupRequests.Add(requestId, payload);
         }
-
+        
         private void PrepareMessage(Message msg)
         {
             try

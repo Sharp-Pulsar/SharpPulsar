@@ -23,8 +23,7 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public interface SchemaVersion
 	{
-
-		sbyte[] Bytes();
+        sbyte[] Bytes();
 	}
 
 	public static class SchemaVersionFields

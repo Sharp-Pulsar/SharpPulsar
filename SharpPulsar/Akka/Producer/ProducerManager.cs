@@ -74,7 +74,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 else
                 {
-                    info.Type = SchemaType.Date;
+                    info.Type = SchemaType.Avro;
                 }
                 _producerConfiguration.Schema = ISchema.GetSchema(info);
                 _pendingLookupRequests.Remove(s.RequestId);
