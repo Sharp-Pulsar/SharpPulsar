@@ -237,7 +237,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetNamespaceAntiAffinityGroup:
                         var _tenaNt = admin.Arguments[0].ToString();
                         var _nspac = admin.Arguments[1].ToString();
-                        _adminRestapi.SetNamespaceAntiAffinityGroup(_tenaNt, _nspac);
+                        var aff = admin.Arguments[2].ToString();
+                        _adminRestapi.SetNamespaceAntiAffinityGroup(_tenaNt, _nspac, aff);
                         admin.Handler("SetNamespaceAntiAffinityGroup");
                         break;
                     case AdminCommands.RemoveNamespaceAntiAffinityGroup:
@@ -288,7 +289,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetCompactionThreshold:
                         var tenant6 = admin.Arguments[0].ToString();
                         var nspace6 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetCompactionThreshold(tenant6, nspace6);
+                        var thresh = (long)admin.Arguments[2];
+                        _adminRestapi.SetCompactionThreshold(tenant6, nspace6, thresh);
                         admin.Handler("SetCompactionThreshold");
                         break;
                     case AdminCommands.ModifyDeduplication:
@@ -311,7 +313,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetDispatchRate:
                         var tenant10 = admin.Arguments[0].ToString();
                         var nspace10 = admin.Arguments[1].ToString();
-                        _adminRestapi.GetDispatchRate(tenant10, nspace10);
+                        var rate = (DispatchRate)admin.Arguments[2];
+                        _adminRestapi.SetDispatchRate(tenant10, nspace10, rate);
                         admin.Handler("SetDispatchRate");
                         break;
                     case AdminCommands.ModifyEncryptionRequired:
@@ -329,7 +332,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetIsAllowAutoUpdateSchema:
                         var tenant13 = admin.Arguments[0].ToString();
                         var nspace13 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetIsAllowAutoUpdateSchema(tenant13, nspace13);
+                        var allow = (bool)admin.Arguments[2];
+                        _adminRestapi.SetIsAllowAutoUpdateSchema(tenant13, nspace13, allow);
                         admin.Handler("SetIsAllowAutoUpdateSchema");
                         break;
                     case AdminCommands.SetMaxConsumersPerSubscription:
@@ -388,7 +392,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetOffloadDeletionLag:
                         var tenant23 = admin.Arguments[0].ToString();
                         var nspace23 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetOffloadDeletionLag(tenant23, nspace23);
+                        var off = (long)admin.Arguments[2];
+                        _adminRestapi.SetOffloadDeletionLag(tenant23, nspace23, off);
                         admin.Handler("SetOffloadDeletionLag");
                         break;
                     case AdminCommands.ClearOffloadDeletionLag:
@@ -405,7 +410,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetOffloadThreshold:
                         var tenant26 = admin.Arguments[0].ToString();
                         var nspace26 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetOffloadThreshold(tenant26, nspace26);
+                        var offload = (long)admin.Arguments[2];
+                        _adminRestapi.SetOffloadThreshold(tenant26, nspace26, offload);
                         admin.Handler("SetOffloadThreshold");
                         break;
                     case AdminCommands.GetPermissions:
@@ -455,7 +461,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetNamespaceReplicationClusters:
                         var tenant34 = admin.Arguments[0].ToString();
                         var nspace34 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetNamespaceReplicationClusters(tenant34, nspace34);
+                        var ids = (List<string>)admin.Arguments[2];
+                        _adminRestapi.SetNamespaceReplicationClusters(tenant34, nspace34, ids);
                         admin.Handler("SetNamespaceReplicationClusters");
                         break;
                     case AdminCommands.GetReplicatorDispatchRate:
@@ -490,7 +497,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetSchemaAutoUpdateCompatibilityStrategy:
                         var tenant40 = admin.Arguments[0].ToString();
                         var nspace40 = admin.Arguments[1].ToString();
-                        _adminRestapi.SetSchemaAutoUpdateCompatibilityStrategy(tenant40, nspace40);
+                        var strat = (SchemaAutoUpdateCompatibilityStrategy)admin.Arguments[2];
+                        _adminRestapi.SetSchemaAutoUpdateCompatibilityStrategy(tenant40, nspace40, strat);
                         admin.Handler("SetSchemaAutoUpdateCompatibilityStrategy");
                         break;
                     case AdminCommands.GetSchemaCompatibilityStrategy:
@@ -501,6 +509,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetSchemaCompatibilityStrategy:
                         var tenant42 = admin.Arguments[0].ToString();
                         var nspace42 = admin.Arguments[1].ToString();
+                        var compact = (SchemaCompatibilityStrategy)admin.Arguments[2];
                         _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42);
                         admin.Handler("SetSchemaCompatibilityStrategy");
                         break;

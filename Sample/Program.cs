@@ -85,6 +85,11 @@ namespace Samples
                         var t1 = Console.ReadLine();
                         PlainAvroProducer(pulsarSystem, t1);
                         break;
+                    case "51":
+                        Console.WriteLine("[PlainAvroCovidProducer] Enter topic: ");
+                        var t51 = Console.ReadLine();
+                        PlainAvroCovidProducer(pulsarSystem, t51);
+                        break;
                     case "2":
                         Console.WriteLine("[PlainByteBulkSendProducer] Enter topic: ");
                         var t2 = Console.ReadLine();
@@ -215,7 +220,24 @@ namespace Samples
                     case "24":
                         Console.WriteLine("[GetAllSchemas] Enter destination server: ");
                         var adminserver = Console.ReadLine();
-                        GetAllSchemas(pulsarSystem, adminserver);
+                        Console.WriteLine("[GetAllSchemas] Tenant: ");
+                        var tn3 = Console.ReadLine();
+                        Console.WriteLine("[GetAllSchemas] Namespace: ");
+                        var ns3 = Console.ReadLine();
+                        Console.WriteLine("[GetAllSchemas] Topic: ");
+                        var to1 = Console.ReadLine();
+                        GetAllSchemas(pulsarSystem, adminserver, tn3, ns3, to1);
+                        break;
+                    case "55":
+                        Console.WriteLine("[DeleteSchema] Enter destination server: ");
+                        var adminserver1 = Console.ReadLine();
+                        Console.WriteLine("[DeleteSchema] Tenant: ");
+                        var tn4 = Console.ReadLine();
+                        Console.WriteLine("[DeleteSchema] Namespace: ");
+                        var ns4 = Console.ReadLine();
+                        Console.WriteLine("[DeleteSchema] Topic: ");
+                        var to2 = Console.ReadLine();
+                        DeleteSchema(pulsarSystem, adminserver1, tn4, ns4, to2);
                         break;
                     case "25":
                         Console.WriteLine("[CreateTenant] Enter destination server: ");
@@ -272,17 +294,31 @@ namespace Samples
                         Console.WriteLine("[GetTopics2] Enter destination server: ");
                         GetTopics2(pulsarSystem, Console.ReadLine());
                         break;
+                    case "52":
+                        Console.WriteLine("[GetPersistenceList] Enter destination server: ");
+                        GetPersistenceList(pulsarSystem, Console.ReadLine());
+                        break;
                     case "32":
                         Console.WriteLine("[GetPartitionedTopics] Enter destination server: ");
                         GetPartitionedTopics(pulsarSystem, Console.ReadLine());
                         break;
                     case "33":
                         Console.WriteLine("[SetRetention] Enter destination server: ");
-                        SetRetention(pulsarSystem, Console.ReadLine());
+                        var srver = Console.ReadLine();
+                        Console.WriteLine("[SetRetention] Tenant: ");
+                        var tn1 = Console.ReadLine();
+                        Console.WriteLine("[SetRetention] Namespace: ");
+                        var ns1 = Console.ReadLine();
+                        SetRetention(pulsarSystem, srver, tn1, ns1);
                         break;
                     case "34":
                         Console.WriteLine("[GetRetention] Enter destination server: ");
-                        GetRetention(pulsarSystem, Console.ReadLine());
+                        var srver1 = Console.ReadLine();
+                        Console.WriteLine("[GetRetention] Tenant: ");
+                        var tn2 = Console.ReadLine();
+                        Console.WriteLine("[GetRetention] Namespace: ");
+                        var ns2 = Console.ReadLine();
+                        GetRetention(pulsarSystem, srver1, tn2, ns2);
                         break;
                     case "35":
                         Console.WriteLine("[SetPersistence] Enter destination server: ");
@@ -321,6 +357,22 @@ namespace Samples
                     case "48":
                         Console.WriteLine("[FunctionInfo] Enter destination server: ");
                         FunctionInfo(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "49":
+                        Console.WriteLine("[GetFunctionStatus] Enter destination server: ");
+                        GetFunctionStatus(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "50":
+                        Console.WriteLine("[GetFunctionStats] Enter destination server: ");
+                        GetFunctionStats(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "53":
+                        Console.WriteLine("[UpdateFunction] Enter destination server: ");
+                        UpdateFunction(pulsarSystem, Console.ReadLine());
+                        break;
+                    case "54":
+                        Console.WriteLine("[DeleteFunction] Enter destination server: ");
+                        DeleteFunction(pulsarSystem, Console.ReadLine());
                         break;
                     #endregion
                     case "exit":
@@ -445,6 +497,62 @@ namespace Samples
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
             var send = new Send(journal, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            //var s = JsonSerializer.Serialize(student);
+            system.Send(send, produce);
+            Task.Delay(1000).Wait();
+            File.AppendAllLines("receipts.txt", Receipts);
+            _sequencee++;
+        }
+        private static void PlainAvroCovidProducer(PulsarSystem system, string topic)
+        {
+            var jsonSchem = JsonSchema.Of(typeof(Covid19Mobile));
+            var producerListener = new DefaultProducerListener((o) =>
+            {
+                Console.WriteLine(o.ToString());
+            }, (to,n, p) =>
+            {
+                if (Producers.ContainsKey(to))
+                    Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
+                }
+            }, s =>
+            {
+                Receipts.Add(s);
+            });
+            var producerConfig = new ProducerConfigBuilder()
+                .ProducerName(topic.Split("/").Last())
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(10000)
+                .EventListener(producerListener)
+                .ProducerConfigurationData;
+
+            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            Console.WriteLine(t);
+            IActorRef produce = null;
+            while (produce == null)
+            {
+                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
+            }
+
+            var rad = new Random();
+            Console.WriteLine($"Acquired producer for topic: {topic}");
+            var covid = new Covid19Mobile()
+            {
+                DeviceId = Guid.NewGuid().ToString(),
+                Latitude = rad.Next(-10,50),
+                Longitude = rad.Next(-5,20),
+                Time = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+            };
+            var metadata = new Dictionary<string, object>
+            {
+                ["Key"] = "Single",
+                ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+            };
+            var send = new Send(covid, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
             system.Send(send, produce);
             Task.Delay(1000).Wait();
@@ -1333,9 +1441,17 @@ namespace Samples
             }
             Console.WriteLine("FINISHED!!!!!!!");
         }
-        private static void GetAllSchemas(PulsarSystem system, string server)
+        private static void GetAllSchemas(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
-            system.PulsarAdmin(new Admin(AdminCommands.GetAllSchemas, new object[]{ "public", "default", "journal", false}, e =>
+            system.PulsarAdmin(new Admin(AdminCommands.GetAllSchemas, new object[]{ tenant, ns, topic, false}, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
+                Console.WriteLine(data);
+            }, e=> Console.WriteLine(e.ToString()), server, l=> Console.WriteLine(l)));
+        }
+        private static void DeleteSchema(PulsarSystem system, string server, string tenant, string ns, string topic)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.DeleteSchema, new object[]{ tenant, ns, topic, false}, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
                 Console.WriteLine(data);
@@ -1469,17 +1585,17 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
-        private static void SetRetention(PulsarSystem system, string server)
+        private static void SetRetention(PulsarSystem system, string server, string tenant, string ns)
         {
-            system.PulsarAdmin(new Admin(AdminCommands.SetRetention, new object[] { "whitepurple", "akka",  new RetentionPolicies(-1, -1)}, e =>
+            system.PulsarAdmin(new Admin(AdminCommands.SetRetention, new object[] { tenant, ns,  new RetentionPolicies(-1, -1)}, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
-        private static void GetRetention(PulsarSystem system, string server)
+        private static void GetRetention(PulsarSystem system, string server, string tenant, string ns)
         {
-            system.PulsarAdmin(new Admin(AdminCommands.GetRetention, new object[] { "whitepurple", "akka", "ALL"}, e =>
+            system.PulsarAdmin(new Admin(AdminCommands.GetRetention, new object[] { tenant, ns}, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);
@@ -1496,6 +1612,15 @@ namespace Samples
         private static void GetTopics2(PulsarSystem system, string server)
         {
             system.PulsarAdmin(new Admin(AdminCommands.GetTopics2, new object[] { "events", "akka", "ALL" }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        //cmd 52
+        private static void GetPersistenceList(PulsarSystem system, string server)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.GetListPersistence, new object[] { "public", "default", "ALL" }, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);
@@ -1519,9 +1644,58 @@ namespace Samples
                     OutputSchemaType = "avro",
                     SubName = "test-function-sub",
                     CleanupSubscription = true,
-                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE
+                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE, 
+                    InputSpecs =  new Dictionary<string, ConsumerConfig>{{ "persistent://public/default/covid-19-mobile", new ConsumerConfig
+                    {
+                        SchemaType = "avro"
+                    } } }
                 }, "", Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath("Test-Function-0.0.1.jar")))
 
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        
+        private static void UpdateFunction(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.UpdateFunction, new object[]
+            {
+                new FunctionConfig
+                {
+                    Inputs = new []{ "persistent://public/default/covid-19-mobile"},
+                    Parallelism = 1,
+                    AutoAck = true,
+                    ClassName = "Covid19Function",
+                    Jar = "Test-Function-0.0.1.jar",
+                    Tenant = "public",
+                    Namespace= "default",
+                    Name = "Covid19-function",
+                    Output = "persistent://public/default/covid-19",
+                    OutputSchemaType = "avro",
+                    SubName = "test-function-sub",
+                    CleanupSubscription = true,
+                    ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE, 
+                    InputSpecs =  new Dictionary<string, ConsumerConfig>{{ "persistent://public/default/covid-19-mobile", new ConsumerConfig
+                    {
+                        SchemaType = "AVRO"
+                    } } }
+                },
+                 new UpdateOptions{UpdateAuthData = false}, 
+                "", Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath("Test-Function-0.0.1.jar")))
+
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void DeleteFunction(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.DeregisterFunction, new object[]
+            {
+                "public", "default", "Covid19-function"
             }, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
@@ -1544,6 +1718,32 @@ namespace Samples
         private static void FunctionInfo(PulsarSystem system, string server)
         {
             system.PulsarFunction(new Function(FunctionCommand.GetFunctionInfo, new object[]
+            {
+                "public",
+                "default",
+                "Covid19-function",
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetFunctionStatus(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.GetFunctionStatus, new object[]
+            {
+                "public",
+                "default",
+                "Covid19-function",
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void GetFunctionStats(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.GetFunctionStats, new object[]
             {
                 "public",
                 "default",

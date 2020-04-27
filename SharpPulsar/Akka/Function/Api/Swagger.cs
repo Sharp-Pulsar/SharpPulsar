@@ -692,7 +692,7 @@ namespace SharpPulsar.Akka.Function.Api
 
             if (string.IsNullOrWhiteSpace(config.Name))
                 throw new System.ArgumentNullException("functionName");
-            if (string.IsNullOrWhiteSpace(pkgUrl) || string.IsNullOrWhiteSpace(file))
+            if (string.IsNullOrWhiteSpace(pkgUrl) && string.IsNullOrWhiteSpace(file))
                 throw new System.ArgumentNullException("pkgUrl or File");
 
             var urlBuilder_ = new System.Text.StringBuilder();
@@ -720,7 +720,7 @@ namespace SharpPulsar.Akka.Function.Api
                 }
                 if (!string.IsNullOrWhiteSpace(file))
                 {
-                    using var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
+                    var fileContent = new StreamContent(new MemoryStream(System.Convert.FromBase64String(file)));
                     fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
                         Name = "\"data\"",

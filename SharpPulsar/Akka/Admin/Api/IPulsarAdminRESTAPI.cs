@@ -765,7 +765,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetNamespaceAntiAffinityGroupWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetNamespaceAntiAffinityGroupWithHttpMessagesAsync(string tenant, string namespaceParameter, string affinityGroup, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Remove anti-affinity group of a namespace.
@@ -923,7 +923,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetCompactionThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetCompactionThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, long threshHold, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Enable or disable broker side deduplication for all topics in a
@@ -1015,7 +1015,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetIsAllowAutoUpdateSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetIsAllowAutoUpdateSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, bool allow, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get maxConsumersPerSubscription config on a namespace.
@@ -1177,7 +1177,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetOffloadDeletionLagWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetOffloadDeletionLagWithHttpMessagesAsync(string tenant, string namespaceParameter, long offload, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Clear the namespace configured offload deletion lag. The topics in
@@ -1233,7 +1233,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetOffloadThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetOffloadThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, long thresh, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Retrieve the permissions for a namespace.
@@ -1360,7 +1360,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetNamespaceReplicationClustersWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetNamespaceReplicationClustersWithHttpMessagesAsync(string tenant, string namespaceParameter, List<string> clusterIds, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get replicator dispatch-rate configured for the namespace, -1
@@ -1464,7 +1464,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SetSchemaAutoUpdateCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetSchemaAutoUpdateCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, SchemaAutoUpdateCompatibilityStrategy strategy, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// The strategy of the namespace schema compatibility

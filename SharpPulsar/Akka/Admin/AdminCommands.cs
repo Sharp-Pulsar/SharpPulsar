@@ -229,7 +229,7 @@ namespace SharpPulsar.Akka.Admin
         GetNamespaceAntiAffinityGroup,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, string antiAffinityGroup]
         /// </summary>
         SetNamespaceAntiAffinityGroup,
 
@@ -274,7 +274,7 @@ namespace SharpPulsar.Akka.Admin
         GetCompactionThreshold,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, long newThreshold]
         /// </summary>
         SetCompactionThreshold,
 
@@ -289,7 +289,7 @@ namespace SharpPulsar.Akka.Admin
         GetDispatchRate,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, DispatchRate dispatchRate]
         /// </summary>
         SetDispatchRate,
 
@@ -304,7 +304,7 @@ namespace SharpPulsar.Akka.Admin
         GetIsAllowAutoUpdateSchema,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, bool isAllowAutoUpdateSchema]
         /// </summary>
         SetIsAllowAutoUpdateSchema,
 
@@ -354,7 +354,7 @@ namespace SharpPulsar.Akka.Admin
         GetOffloadDeletionLag,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, long newDeletionLagMs]
         /// </summary>
         SetOffloadDeletionLag,
 
@@ -369,7 +369,7 @@ namespace SharpPulsar.Akka.Admin
         GetOffloadThreshold,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, long newThreshold]
         /// </summary>
         SetOffloadThreshold,
 
@@ -409,7 +409,7 @@ namespace SharpPulsar.Akka.Admin
         GetNamespaceReplicationClusters,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, List<string> clusterIds]
         /// </summary>
         SetNamespaceReplicationClusters,
 
@@ -439,7 +439,7 @@ namespace SharpPulsar.Akka.Admin
         GetSchemaAutoUpdateCompatibilityStrategy,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, SchemaAutoUpdateCompatibilityStrategy strategy]
         /// </summary>
         SetSchemaAutoUpdateCompatibilityStrategy,
 
@@ -449,7 +449,7 @@ namespace SharpPulsar.Akka.Admin
         GetSchemaCompatibilityStrategy,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, SchemaCompatibilityStrategy strategy]
         /// </summary>
         SetSchemaCompatibilityStrategy,
 
@@ -459,7 +459,7 @@ namespace SharpPulsar.Akka.Admin
         GetSchemaValidtionEnforced,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, bool schemaValidationEnforced]
         /// </summary>
         SetSchemaValidtionEnforced,
 
