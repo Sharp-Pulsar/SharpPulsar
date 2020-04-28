@@ -131,6 +131,11 @@ namespace Samples
                         var t8 = Console.ReadLine();
                         PlainAvroConsumer(pulsarSystem, t8);
                         break;
+                    case "60":
+                        Console.WriteLine("[PlainAvroCovidConsumer] Enter topic: ");
+                        var t60 = Console.ReadLine();
+                        PlainAvroCovidConsumer(pulsarSystem, t60);
+                        break;
                     case "9":
                         Console.WriteLine("[DecryptAvroConsumer] Enter topic: ");
                         var t9 = Console.ReadLine();
@@ -392,6 +397,10 @@ namespace Samples
                         Console.WriteLine("[StartFunction] Enter destination server: ");
                         StartFunction(pulsarSystem, Console.ReadLine());
                         break;
+                    case "61":
+                        Console.WriteLine("[StopFunction] Enter destination server: ");
+                        StopFunction(pulsarSystem, Console.ReadLine());
+                        break;
                     case "47":
                         Console.WriteLine("[ListFunctions] Enter destination server: ");
                         ListFunctions(pulsarSystem, Console.ReadLine());
@@ -547,8 +556,8 @@ namespace Samples
         }
         private static void PlainAvroCovidProducer(PulsarSystem system, string topic)
         {
-            //var jsonSchem = JsonSchema.Of(ISchemaDefinition.Builder().WithJsonDef("{\u0022type\u0022:\u0022record\u0022,\u0022name\u0022:\u0022Covid19Mobile\u0022,\u0022fields\u0022:[{\u0022name\u0022:\u0022DeviceId\u0022,\u0022type\u0022:[\u0022null\u0022,\u0022string\u0022],\u0022default\u0022:null},{\u0022name\u0022:\u0022Latitude\u0022,\u0022type\u0022:\u0022double\u0022},{\u0022name\u0022:\u0022Longitude\u0022,\u0022type\u0022:\u0022double\u0022},{\u0022name\u0022:\u0022Time\u0022,\u0022type\u0022:\u0022long\u0022}]}").AddProperty("__jsr310ConversionEnabled", "false").WithAlwaysAllowNull(true).Build());
-            var jsonSchem = new AutoProduceBytesSchema();
+            var jsonSchem = JsonSchema.Of(typeof(Covid19Mobile));
+            //var jsonSchem = new AutoProduceBytesSchema();
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -973,7 +982,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(JournalEntry));
+            var jsonSchem = new AutoConsumeSchema();//JsonSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -983,6 +992,50 @@ namespace Samples
 
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+
+        }
+        
+        private static void PlainAvroCovidConsumer(PulsarSystem system,  string topic)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
+            {
+                if (!Consumers.ContainsKey(s))
+                    Consumers.Add(s, c);
+            }, (s, response) => LastMessageId.Add(s, response));
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var students = m.ToTypeOf<Covid19Mobile>();
+                var s = JsonSerializer.Serialize(students);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {mi.PartitionIndex}");
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {b.PartitionIndex}");
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, null);
+            var jsonSchem = new AutoConsumeSchema(); //JsonSchema.Of(typeof(JournalEntry));
+            var topicLast = topic.Split("/").Last();
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName(topicLast)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"{topicLast}-Subscription")
+                .Topic(topic)
+
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Shared)
                 .Schema(jsonSchem)
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
@@ -1073,7 +1126,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "58,1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "5",1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1494,8 +1547,10 @@ namespace Samples
         }
         private static void RegisterSchema(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
+            var json = JsonSchema.Of(typeof(Covid19Mobile));
+            var schema = JsonSerializer.Serialize(json.SchemaInfo);
             system.PulsarAdmin(new Admin(AdminCommands.PostSchema, new object[]{ tenant, ns, topic,
-                new PostSchemaPayload("avro", JsonSerializer.Serialize(JsonSchema.Of(typeof(Covid19Mobile)).SchemaInfo), new Dictionary<string, string>{{ "__alwaysAllowNull", "true" }, { "__jsr310ConversionEnabled", "false" } }), false}, e =>
+                new PostSchemaPayload("avro", schema, new Dictionary<string, string>{{ "__alwaysAllowNull", "true" }, { "__jsr310ConversionEnabled", "false" } }), false}, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions {WriteIndented = true});
                 Console.WriteLine(data);
@@ -1756,7 +1811,7 @@ namespace Samples
                     ProcessingGuarantees = FunctionConfigProcessingGuarantees.EFFECTIVELY_ONCE,
                     InputSpecs =  new Dictionary<string, ConsumerConfig>{{ "persistent://public/default/covid-19-mobile", new ConsumerConfig
                     {
-                        SchemaType = "AUTO_CONSUME"
+                        SchemaType = "AUTO"
                     } } }
                 },
                  new UpdateOptions{UpdateAuthData = false}, 
@@ -1782,6 +1837,19 @@ namespace Samples
         private static void StartFunction(PulsarSystem system, string server)
         {
             system.PulsarFunction(new Function(FunctionCommand.StartFunction, new object[]
+            {
+                "public",
+                "default",
+                "Covid19-function",
+            }, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        private static void StopFunction(PulsarSystem system, string server)
+        {
+            system.PulsarFunction(new Function(FunctionCommand.StopFunction, new object[]
             {
                 "public",
                 "default",
