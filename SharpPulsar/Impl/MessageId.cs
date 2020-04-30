@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using DotNetty.Buffers;
 using Google.Protobuf;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
@@ -160,22 +159,7 @@ namespace SharpPulsar.Impl
 			{
 				builder.BatchIndex = (batchIndex);
 			}
-
-			var msgId = builder;
-			var size = msgId.ByteLength();
-			var serialized = Unpooled.Buffer(size, size);
-			var stream = new CodedOutputStream(serialized.Array);
-			try
-			{
-				//msgId.WriteTo((CodedOutputStream) stream);
-			}
-			catch (IOException e)
-			{
-				// This is in-memory serialization, should not fail
-				throw new System.Exception(e.Message);
-			}
-
-			return (sbyte[])(object)serialized.Array;
+			return (sbyte[])(object)builder.ToByteArray();
 		}
 
 		public sbyte[] ToByteArray()

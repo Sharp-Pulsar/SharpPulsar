@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using DotNetty.Buffers;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Shared;
@@ -60,7 +59,7 @@ namespace SharpPulsar.Impl.Schema
 			// string
 			SchemaTypeClasses[SchemaType.String] = new List<Type>{ typeof(string) };
 			// bytes
-			SchemaTypeClasses[SchemaType.Bytes] = new List<Type>{typeof(sbyte[]), typeof(ByteBuffer), typeof(IByteBuffer)};
+			SchemaTypeClasses[SchemaType.Bytes] = new List<Type>{typeof(sbyte[]), typeof(byte[])};
 			// build the reverse mapping
 			SchemaTypeClasses.ToList().ForEach((x => x.Value.ToList().ForEach(clz => JavaClassSchemaTypes.Add(clz, x.Key))));
 		}
@@ -177,27 +176,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : (sbyte[])(object)Encoding.UTF8.GetBytes(jsonElement.ToString());
 		}
-
-		/// <summary>
-		/// convert the key/value schema info data json bytes to key/value schema info data bytes
-		/// </summary>
-		/// <param name="keyValueSchemaInfoDataJsonBytes"> the key/value schema info data json bytes </param>
-		/// <returns> the key/value schema info data bytes </returns>
-		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] keyValueSchemaInfoDataJsonBytes)
-		{
-			var jsonObject = JsonDocument.Parse(StringHelper.NewString(keyValueSchemaInfoDataJsonBytes, CharSet.Ansi.ToString()));
-			var keyBytes = (byte[])(object)GetKeyOrValueSchemaBytes(jsonObject.RootElement.GetProperty("key"));
-			var valueBytes = (byte[])(object)GetKeyOrValueSchemaBytes(jsonObject.RootElement.GetProperty("value"));
-			var dataLength = 4 + keyBytes.Length + 4 + valueBytes.Length;
-			var schema = new sbyte[dataLength];
-			
-			//record the key value schema respective length
-			var byteBuf = PooledByteBufferAllocator.Default.HeapBuffer(dataLength);
-			byteBuf.WriteInt(keyBytes.Length).WriteBytes(keyBytes).WriteInt(valueBytes.Length).WriteBytes(valueBytes);
-			byteBuf.ReadBytes((byte[])(object)schema);
-			return schema;
-		}
-
+		
 		/// <summary>
 		/// Serialize schema properties
 		/// </summary>

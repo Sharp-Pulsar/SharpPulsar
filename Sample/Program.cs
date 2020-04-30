@@ -131,6 +131,11 @@ namespace Samples
                         var t8 = Console.ReadLine();
                         PlainAvroConsumer(pulsarSystem, t8);
                         break;
+                    case "62":
+                        Console.WriteLine("[PlainAvroStudentsConsumer] Enter topic: ");
+                        var t62 = Console.ReadLine();
+                        PlainAvroStudentsConsumer(pulsarSystem, t62);
+                        break;
                     case "60":
                         Console.WriteLine("[PlainAvroCovidConsumer] Enter topic: ");
                         var t60 = Console.ReadLine();
@@ -978,6 +983,49 @@ namespace Samples
                 {
                     a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
                     Console.WriteLine($"Consumer >> {students.Id}- partition: {b.PartitionIndex}");
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, null);
+            var jsonSchem = new AutoConsumeSchema();//JsonSchema.Of(typeof(JournalEntry));
+            var topicLast = topic.Split("/").Last();
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName(topicLast)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"{topicLast}-Subscription")
+                .Topic(topic)
+
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Exclusive)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+
+        }
+        private static void PlainAvroStudentsConsumer(PulsarSystem system,  string topic)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
+            {
+                if (!Consumers.ContainsKey(s))
+                    Consumers.Add(s, c);
+            }, (s, response) => LastMessageId.Add(s, response));
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var students = m.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(students);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");

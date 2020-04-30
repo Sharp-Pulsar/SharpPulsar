@@ -225,16 +225,6 @@ namespace SharpPulsar.Impl
 			return SchemaUtils.ConvertKeyValueSchemaInfoDataToString(kvSchemaInfo);
 		}
 
-		/// <summary>
-		/// Convert the key/value schema info data json bytes to key/value schema info data bytes.
-		/// </summary>
-		/// <param name="keyValueSchemaInfoDataJsonBytes"> the key/value schema info data json bytes </param>
-		/// <returns> the key/value schema info data bytes </returns>
-		public static sbyte[] ConvertKeyValueDataStringToSchemaInfoSchema(sbyte[] keyValueSchemaInfoDataJsonBytes)
-		{
-			return SchemaUtils.ConvertKeyValueDataStringToSchemaInfoSchema(keyValueSchemaInfoDataJsonBytes);
-		}
-
 		public static IBatcherBuilder NewDefaultBatcherBuilder()
 		{
 			return new DefaultBatcherBuilder();
