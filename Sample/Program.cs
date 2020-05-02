@@ -273,6 +273,17 @@ namespace Samples
                         var to2 = Console.ReadLine();
                         DeleteSchema(pulsarSystem, adminserver1, tn4, ns4, to2);
                         break;
+                    case "64":
+                        Console.WriteLine("[EnableBrokerDeduplication] Enter destination server: ");
+                        var adminserver3 = Console.ReadLine();
+                        Console.WriteLine("[EnableBrokerDeduplication] Tenant: ");
+                        var tn64 = Console.ReadLine();
+                        Console.WriteLine("[EnableBrokerDeduplication] Namespace: ");
+                        var ns64 = Console.ReadLine();
+                        Console.WriteLine("[EnableBrokerDeduplication] enable(y/n): ");
+                        var to64 = Console.ReadLine().ToLower() == "y";
+                        EnableBrokerDeduplication(pulsarSystem, adminserver3, tn64, ns64, to64);
+                        break;
                     case "25":
                         Console.WriteLine("[CreateTenant] Enter destination server: ");
                         CreateTenant(pulsarSystem, Console.ReadLine());
@@ -1793,6 +1804,15 @@ namespace Samples
         private static void SetSchemaCompatibilityStrategy(PulsarSystem system, string server, string tenant, string ns)
         {
             system.PulsarAdmin(new Admin(AdminCommands.SetSchemaCompatibilityStrategy, new object[] { tenant, ns, SchemaCompatibilityStrategy.ALWAYS_INCOMPATIBLE}, e =>
+            {
+                var data = JsonConvert.SerializeObject(e, Formatting.Indented);
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
+        //cmd 64
+        private static void EnableBrokerDeduplication(PulsarSystem system, string server, string tenant, string ns, bool enable)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.ModifyDeduplication, new object[] { tenant, ns, enable}, e =>
             {
                 var data = JsonConvert.SerializeObject(e, Formatting.Indented);
                 Console.WriteLine(data);
