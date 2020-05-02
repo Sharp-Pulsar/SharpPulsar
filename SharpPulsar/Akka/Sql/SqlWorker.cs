@@ -42,31 +42,23 @@ namespace SharpPulsar.Akka.Sql
                     var metadata = new Dictionary<string, object>();
                     for (var i = 0; i < reader.FieldCount; i++)
                     {
-                        try
+                        var col = reader.GetName(i);
+                        var value = reader.GetValue(i);
+                        if (col.StartsWith("__") && col.EndsWith("__"))
                         {
-                            var col = reader.GetName(i);
-                            var value = reader.GetValue(i);
-                            if (col.StartsWith("__") && col.EndsWith("__"))
-                            {
-                                metadata[col.Trim('_')] = value;
-                            }
-                            else
-                            {
-                                message[col] = value;
-                            }
-
-                            payload["Message"] = JsonSerializer.Serialize(message,
-                                new JsonSerializerOptions {WriteIndented = true});
-                            if (q.IncludeMetadata)
-                                payload["Metadata"] = JsonSerializer.Serialize(metadata,
-                                    new JsonSerializerOptions {WriteIndented = true});
-                            q.Handler(payload);
+                            metadata[col.Trim('_')] = value;
                         }
-                        catch (Exception e)
+                        else
                         {
-                            q.ExceptionHandler(e);
+                            message[col] = value;
                         }
                     }
+                    payload["Message"] = JsonSerializer.Serialize(message,
+                        new JsonSerializerOptions { WriteIndented = true });
+                    if (q.IncludeMetadata)
+                        payload["Metadata"] = JsonSerializer.Serialize(metadata,
+                            new JsonSerializerOptions { WriteIndented = true });
+                    q.Handler(payload);
                 }
 
                 q.Handler(new Dictionary<string, string> {{"Finished", "true"}});
