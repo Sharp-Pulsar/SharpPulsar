@@ -49,8 +49,10 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="producer"></param>
         /// <returns>string</returns>
-        public string CreateProducer(CreateProducer producer)
+        public string PulsarProducer(CreateProducer producer)
         {
+            if (producer == null)
+                throw new ArgumentNullException("producer", "null");
             var conf = producer.ProducerConfiguration;
 
             if (!TopicName.IsValid(conf.TopicName))
@@ -62,7 +64,7 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(p);
             return topic.ToString();
         }
-        public void CreateReader(CreateReader reader)
+        public void PulsarReader(CreateReader reader)
         {
             if (reader.Seek != null)
             {
@@ -98,14 +100,22 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
+        public void PulsarTransaction()
+        {
+            
+        }
         public void SetupSqlServers(SqlServers servers)
         {
+            if(servers == null)
+                throw new ArgumentNullException("servers", "null");
             if (servers.Servers.Count < 1)
                 throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
             _pulsarManager.Tell(servers);
         }
-        public void CreateConsumer(CreateConsumer consumer)
+        public void Consumer(CreateConsumer consumer)
         {
+            if (consumer == null)
+                throw new ArgumentNullException("consumer", "null");
             if (consumer.ConsumerType == ConsumerType.Multi)
             {
                 if (consumer.ConsumerConfiguration.TopicNames.Count < 1)
