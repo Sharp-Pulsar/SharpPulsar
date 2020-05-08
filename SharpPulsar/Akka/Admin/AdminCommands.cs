@@ -214,7 +214,8 @@ namespace SharpPulsar.Akka.Admin
         GetPolicies,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace]
+        /// Arguments[string tenant, string namespace, Policies policies]
+        /// You can create namespace without policies, default value will be used at the server-side
         /// </summary>
         CreateNamespace,
 

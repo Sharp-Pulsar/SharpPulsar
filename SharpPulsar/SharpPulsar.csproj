@@ -2,40 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.8.2</Version>
+    <Version>0.8.3</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>AVRO NOW PACKAGED INTO SharpPulsar (Was a major issue as the official Apache.Avro did not include ReflectDefaultWriter and ReflectDefaultReader)
-
-Please your feedback will be appreciated as we work to make SharpPulsar better!
-What has your experience been like using SharpPulsar? 
-Thanks
-With this release, Pulsar's:
-Simple Producer
-Simple Consumer
-Reader
-End-To-End Encryption
-Partitioned Producer
-MultiTopics Consumer
-Pattern Multi-Topics Consumer
-Bulk Publishing - for simplicity sake!
-Proxy
-Pulsar SQL 
-Seek (MessageId and Timestamp)
-Pulsar Admin
-Pulsar Function
-Early support for Security Token Service
-
-Set JsonSchema type to Avro(That is what it is underneath)
-Addition and fixes!
-
-Moved GenerateSchema to a different repo/nuget
-
-Improvement and fixes
-Fixes
-Bump AvroSchemaGenerator  to Version 0.1.2
-Little Addition</PackageReleaseNotes>
+    <PackageReleaseNotes>Added missing Policy to CreateNamespace REST API</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

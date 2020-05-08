@@ -1561,9 +1561,9 @@ namespace PulsarAdmin
             /// </param>
             /// <param name='namespaceParameter'>
             /// </param>
-            public static void CreateNamespace(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+            public static void CreateNamespace(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, Policies policies)
             {
-                operations.CreateNamespaceAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+                operations.CreateNamespaceAsync(tenant, namespaceParameter, policies).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -1579,9 +1579,9 @@ namespace PulsarAdmin
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task CreateNamespaceAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task CreateNamespaceAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, Policies policies, CancellationToken cancellationToken = default(CancellationToken))
             {
-                (await operations.CreateNamespaceWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                (await operations.CreateNamespaceWithHttpMessagesAsync(tenant, namespaceParameter, policies, null, cancellationToken).ConfigureAwait(false)).Dispose();
             }
 
             /// <summary>

@@ -219,7 +219,8 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.CreateNamespace:
                         var tena = admin.Arguments[0].ToString();
                         var nsp = admin.Arguments[1].ToString();
-                        _adminRestapi.CreateNamespace(tena, nsp);
+                        var poly = (Policies) admin.Arguments[2];
+                        _adminRestapi.CreateNamespace(tena, nsp, poly);
                         admin.Handler("CreateNamespace");
                         break;
                     case AdminCommands.DeleteNamespace:
