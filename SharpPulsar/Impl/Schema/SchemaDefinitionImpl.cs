@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,6 +46,7 @@ namespace SharpPulsar.Impl.Schema
 		/// 
 		/// </summary>
 		public virtual bool AlwaysAllowNull {get;}
+		public virtual bool Jsr310ConversionEnabled {get;}
 
 		private IDictionary<string, string> _properties;
 
@@ -53,14 +54,15 @@ namespace SharpPulsar.Impl.Schema
 
 		public virtual bool SupportSchemaVersioning {get;}
 
-		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning)
+		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning, bool jsr310ConversionEnabled)
 		{
 			AlwaysAllowNull = alwaysAllowNull;
 			_properties = properties;
 			JsonDef = jsonDef;
 			_pojo = pojo;
 			SupportSchemaVersioning = supportSchemaVersioning;
-		}
+            Jsr310ConversionEnabled = jsr310ConversionEnabled;
+        }
 		/// <summary>
 		/// get schema whether always allow null or not
 		/// </summary>
@@ -81,7 +83,7 @@ namespace SharpPulsar.Impl.Schema
 		/// Get schema class
 		/// </summary>
 		/// <returns> schema class </returns>
-		public virtual IDictionary<string, string> Properties => new ConcurrentDictionary<string, string>(_properties);
+		public virtual IDictionary<string, string> Properties => _properties.ToImmutableDictionary();
     }
 
 }

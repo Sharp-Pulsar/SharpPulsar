@@ -78,7 +78,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			{
 				case 4:
 				case 2:
-					return new GenericJsonSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
+					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				default:
 					throw new NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");
 			}

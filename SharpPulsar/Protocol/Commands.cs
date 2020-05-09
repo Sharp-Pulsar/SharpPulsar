@@ -955,7 +955,7 @@ namespace SharpPulsar.Protocol
 			return peerVersion >= (int)ProtocolVersion.V12;
 		}
 
-		public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
+		public static bool PeerSupportAvroSchemaAvroFormat(int peerVersion)
 		{
 			return peerVersion >= (int)ProtocolVersion.V13;
 		}

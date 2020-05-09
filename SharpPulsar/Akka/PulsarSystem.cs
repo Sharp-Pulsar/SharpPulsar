@@ -112,7 +112,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
             _pulsarManager.Tell(servers);
         }
-        public void Consumer(CreateConsumer consumer)
+        public void PulsarConsumer(CreateConsumer consumer)
         {
             if (consumer == null)
                 throw new ArgumentNullException("consumer", "null");

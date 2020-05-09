@@ -76,6 +76,8 @@ namespace SharpPulsar.Api.Schema
 		/// <returns> schema definition builder </returns>
 		ISchemaDefinitionBuilder WithSupportSchemaVersioning(bool supportSchemaVersioning);
 
+        ISchemaDefinitionBuilder WithJsr310ConversionEnabled(bool jsr310ConversionEnabled);
+
 		/// <summary>
 		/// Build the schema definition.
 		/// </summary>

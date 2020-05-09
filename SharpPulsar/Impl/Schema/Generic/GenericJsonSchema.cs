@@ -31,15 +31,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// <summary>
 	/// A generic json schema.
 	/// </summary>
-	public class GenericJsonSchema : GenericSchemaImpl
+	public class GenericAvroSchema : GenericSchemaImpl
 	{
-		private static readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(GenericJsonSchema));
+		private static readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroSchema));
 
-        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+        public GenericAvroSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-        public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+        public GenericAvroSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 		}
 

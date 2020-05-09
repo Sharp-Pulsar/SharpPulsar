@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.8.3</Version>
+    <Version>0.8.4</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>Added missing Policy to CreateNamespace REST API</PackageReleaseNotes>
+    <PackageReleaseNotes>Renamed JsonSchema to AvroSchema</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -94,5 +94,5 @@
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
     </ItemGroup>
   </Target>
-  <ProjectExtensions><VisualStudio><UserProperties akka_4function_4api_4swagger_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+  <ProjectExtensions><VisualStudio><UserProperties akka_4function_4api_4swagger_1json__AvroSchema="" /></VisualStudio></ProjectExtensions>
 </Project>

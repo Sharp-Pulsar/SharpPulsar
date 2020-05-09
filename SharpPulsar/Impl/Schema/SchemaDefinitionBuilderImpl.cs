@@ -32,6 +32,7 @@ namespace SharpPulsar.Impl.Schema
 	{
 
 		public const string AlwaysAllowNull = "__alwaysAllowNull";
+        public const string Jsr310ConversionEnabled = "__jsr310ConversionEnabled";
 
 		/// <summary>
 		/// the schema definition class
@@ -46,6 +47,12 @@ namespace SharpPulsar.Impl.Schema
 		/// 
 		/// </summary>
 		private bool _alwaysAllowNull = true;
+
+        /// <summary>
+		/// The flag of use JSR310 conversion or Joda time conversion.
+        ///If value is true, use JSR310 conversion in the Avro schema.Otherwise, use Joda time conversion.
+		/// </summary>
+		private bool _jsr310ConversionEnabled = false;
 
 		/// <summary>
 		/// The schema info properties
@@ -67,6 +74,13 @@ namespace SharpPulsar.Impl.Schema
 			_alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
+
+
+        public ISchemaDefinitionBuilder WithJsr310ConversionEnabled(bool jsr310ConversionEnabled)
+        {
+            _jsr310ConversionEnabled = jsr310ConversionEnabled;
+            return this;
+        }
 
 		public ISchemaDefinitionBuilder AddProperty(string key, string value)
 		{
@@ -100,8 +114,11 @@ namespace SharpPulsar.Impl.Schema
 
 		public  ISchemaDefinition Build()
 		{
+			Precondition.Condition.CheckArgument(!string.IsNullOrWhiteSpace(_jsonDef) || _clazz != null, "Must specify one of the pojo or jsonDef for the schema definition.");
+			Precondition.Condition.CheckArgument(!(!string.IsNullOrWhiteSpace(_jsonDef) && _clazz != null), "Not allowed to set pojo and jsonDef both for the schema definition.");
 			_properties[AlwaysAllowNull] = _alwaysAllowNull ? "true" : "false";
-			return new SchemaDefinitionImpl(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning);
+			_properties[Jsr310ConversionEnabled] = _jsr310ConversionEnabled ? "true" : "false";
+			return new SchemaDefinitionImpl(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning, _jsr310ConversionEnabled);
 
 		}
 	}

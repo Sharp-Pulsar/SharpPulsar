@@ -25,7 +25,6 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Api.Schema;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
@@ -453,7 +452,7 @@ namespace Samples
         #region Producers
         private static void PlainAvroBulkSendProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -476,7 +475,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -509,7 +508,7 @@ namespace Samples
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(JournalEntry));
+            var jsonSchem = AvroSchema.Of(typeof(JournalEntry));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -533,7 +532,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -572,7 +571,7 @@ namespace Samples
         }
         private static void PlainAvroCovidProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Covid19Mobile));
+            var jsonSchem = AvroSchema.Of(typeof(Covid19Mobile));
             //var jsonSchem = new AutoProduceBytesSchema();
             var producerListener = new DefaultProducerListener((o) =>
             {
@@ -597,7 +596,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -653,7 +652,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(byteSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -710,7 +709,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(byteSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -739,7 +738,7 @@ namespace Samples
 
         private static void EncryptedAvroBulkSendProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -766,7 +765,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -799,7 +798,7 @@ namespace Samples
         }
         private static void EncryptedAvroProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -826,7 +825,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(jsonSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -882,7 +881,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(byteSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -942,7 +941,7 @@ namespace Samples
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-            var t = system.CreateProducer(new CreateProducer(byteSchem, producerConfig));
+            var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
             Console.WriteLine(t);
             IActorRef produce = null;
             while (produce == null)
@@ -981,24 +980,24 @@ namespace Samples
             }, (s, response) => LastMessageId.Add(s, response));
             var messageListener = new DefaultMessageListener((a, m) =>
             {
-                var students = m.ToTypeOf<JournalEntry>();
+                var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
                 Messages.Add(s);
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
                     a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
-                    Console.WriteLine($"Consumer >> {students.Id}- partition: {mi.PartitionIndex}");
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
                     a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
-                    Console.WriteLine($"Consumer >> {students.Id}- partition: {b.PartitionIndex}");
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = new AutoConsumeSchema();//JsonSchema.Of(typeof(JournalEntry));
+            var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1012,7 +1011,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
 
         }
         private static void PlainAvroStudentsConsumer(PulsarSystem system,  string topic)
@@ -1041,7 +1040,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = new AutoConsumeSchema();//JsonSchema.Of(typeof(JournalEntry));
+            var jsonSchem = AvroSchema.Of(typeof(Students));//new AutoConsumeSchema();//
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1055,7 +1054,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
 
         }
         
@@ -1085,7 +1084,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = new AutoConsumeSchema(); //JsonSchema.Of(typeof(JournalEntry));
+            var jsonSchem = new AutoConsumeSchema(); //AvroSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1099,7 +1098,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
 
         }
         private static void DecryptAvroConsumer(PulsarSystem system, string topic)
@@ -1128,7 +1127,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1143,7 +1142,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
         }
         private static void PlainAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1171,7 +1170,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1185,7 +1184,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "5",1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "5",1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1213,7 +1212,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             },null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1228,7 +1227,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
         }
         private static void DecryptAvroPatternConsumer(PulsarSystem system, string regex)
         {
@@ -1256,7 +1255,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("pattern-consumer")
@@ -1271,7 +1270,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Pattern));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Pattern));
 
         }
         private static void DecryptAvroMultiConsumer(PulsarSystem system, string[] topics)
@@ -1300,7 +1299,7 @@ namespace Samples
                 else
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("topics-consumer")
@@ -1315,7 +1314,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
 
         }
         private static void PlainBytesConsumer(PulsarSystem system, string topic)
@@ -1358,7 +1357,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
 
         }
         private static void DecryptBytesConsumer(PulsarSystem system, string topic)
@@ -1402,7 +1401,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.CreateConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
 
         }
 
@@ -1420,7 +1419,7 @@ namespace Samples
                 var students = message.ToTypeOf<Students>();
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("avro-plain-students-reader")
                 .Schema(jsonSchem)
@@ -1429,7 +1428,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(jsonSchem, readerConfig));
+            system.PulsarReader(new CreateReader(jsonSchem, readerConfig));
         }
         private static void PlainBytesReader(PulsarSystem system, string topic)
         {
@@ -1452,7 +1451,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(byteSchem, readerConfig));
+            system.PulsarReader(new CreateReader(byteSchem, readerConfig));
         }
 
         /// <summary>
@@ -1474,7 +1473,7 @@ namespace Samples
                 var students = message.ToTypeOf<Students>();
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("avro-crypto-students-reader")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
@@ -1484,7 +1483,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(jsonSchem, readerConfig));
+            system.PulsarReader(new CreateReader(jsonSchem, readerConfig));
         }
         private static void DecryptAvroReaderSeek(PulsarSystem system, string topic)
         {
@@ -1498,7 +1497,7 @@ namespace Samples
                 var students = message.ToTypeOf<Students>();
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("avro-crypto-students-reader")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
@@ -1508,7 +1507,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
+            system.PulsarReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
         }
         private static void PlainAvroReaderSeek(PulsarSystem system, string topic)
         {
@@ -1522,7 +1521,7 @@ namespace Samples
                 var students = message.ToTypeOf<Students>();
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
-            var jsonSchem = JsonSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("avro-students-reader")
                 .Schema(jsonSchem)
@@ -1531,7 +1530,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-20).ToUnixTimeMilliseconds())));
+            system.PulsarReader(new CreateReader(jsonSchem, readerConfig, new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-20).ToUnixTimeMilliseconds())));
         }
 
         private static void DecryptByteReader(PulsarSystem system, string topic)
@@ -1556,7 +1555,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            system.CreateReader(new CreateReader(byteSchem, readerConfig));
+            system.PulsarReader(new CreateReader(byteSchem, readerConfig));
         }
 
         private static void SqlServers(PulsarSystem system, string[] servers)
@@ -1606,7 +1605,7 @@ namespace Samples
         }
         private static void RegisterSchema(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
-            var json = JsonSchema.Of(typeof(Covid19Mobile));
+            var json = AvroSchema.Of(typeof(Covid19Mobile));
             var schema = JsonSerializer.Serialize(json.SchemaInfo);
             system.PulsarAdmin(new Admin(AdminCommands.PostSchema, new object[]{ tenant, ns, topic,
                 new PostSchemaPayload("avro", schema, new Dictionary<string, string>{{ "__alwaysAllowNull", "true" }, { "__jsr310ConversionEnabled", "false" } }), false}, e =>
@@ -2006,12 +2005,4 @@ namespace Samples
         public long Ordering { get; set; }
         public string Tags { get; set; }
     }
-    /*pulsar://52.177.109.178:6650
-http://40.65.210.106:8081
-select * from pulsar."public/default".students ORDER BY __sequence_id__ ASC
-select * from pulsar."public/default"."avro-bulk-send-plain" ORDER BY __sequence_id__ ASC
-avro-bulk-send-plain
-persistent://public/default/avro-bulk-send-plain
-persistent://public/default/students
-persistent://public/default/avro-bulk*/
 }

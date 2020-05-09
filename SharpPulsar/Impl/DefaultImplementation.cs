@@ -108,9 +108,9 @@ namespace SharpPulsar.Impl
 			return new BytesSchema();
 		}
 		
-		public static ISchema NewJsonSchema(ISchemaDefinition schemaDefinition)
+		public static ISchema NewAvroSchema(ISchemaDefinition schemaDefinition)
 		{
-			return JsonSchema.Of(schemaDefinition);
+			return AvroSchema.Of(schemaDefinition);
 		}
 
 		public static ISchema NewAutoConsumeSchema()

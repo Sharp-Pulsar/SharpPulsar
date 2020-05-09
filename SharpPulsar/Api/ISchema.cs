@@ -194,7 +194,7 @@ namespace SharpPulsar.Api
 		/// <returns> a Schema instance </returns>
 		static ISchema Json(Type pojo)
 		{
-            return DefaultImplementation.NewJsonSchema(ISchemaDefinition.Builder().WithPojo(pojo).Build());
+            return DefaultImplementation.NewAvroSchema(ISchemaDefinition.Builder().WithPojo(pojo).Build());
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace SharpPulsar.Api
         /// <returns> a Schema instance </returns>
         static ISchema Json(ISchemaDefinition schemaDefinition)
         {
-            return DefaultImplementation.NewJsonSchema(schemaDefinition);
+            return DefaultImplementation.NewAvroSchema(schemaDefinition);
         }
 
 		/// <summary>
