@@ -39,15 +39,15 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
 
 ## Usage
 1 - Ready your Schema:
-````
- var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
+```csharp
+ var avroSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Students)).WithAlwaysAllowNull(false).Build());
  or
- var jsonSchem = JsonSchema.Of(typeof(Students));
-````
+ var avroSchema = AvroSchema.Of(typeof(Students));
+```
 2 - Make ready your Listeners for Producer, Consumer and Reader. Due to the async nature of Actors' `Tell`, listeners are a way 
     for you to hear what they have got to report back!:
     
-````
+```csharp
 var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -60,7 +60,6 @@ var producerListener = new DefaultProducerListener((o) =>
                 if(!Consumers.ContainsKey(s))
                     Consumers.Add(s, c);
             }, (s, response) => LastMessageId.Add(s, response));
-            //var jsonSchem = JsonSchema.Of(typeof(Students));
 
             #region messageListener
 
@@ -88,56 +87,62 @@ var producerListener = new DefaultProducerListener((o) =>
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
 
-````
+```
 3 - Instantiate `PulsarSystem` with Client Configuration:
-````
+```csharp
 var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
                 .ClientConfigurationData;
 
 var pulsarSystem = new PulsarSystem(clientConfig);
-````
+```
 3.1 - If Broker is behind proxy, set that in the Client Configuration:
-`.UseProxy(true)`
+```csharp
+var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl("pulsar://localhost:6650")
+                .ConnectionsPerBroker(1)
+                .UseProxy(true)
+                .ClientConfigurationData;
+```
 
 4 - Create a Producer with Producer Configuration:
-````
+```csharp
 var producerConfig = new ProducerConfigBuilder()
                 .ProducerName("producer")
                 .Topic("test-topic")
-                .Schema(jsonSchema)
+                .Schema(avroSchema)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-  var topic = pulsarSystem.CreateProducer(new CreateProducer(jsonSchema, producerConfig));
+  var topic = pulsarSystem.CreateProducer(new CreateProducer(avroSchema, producerConfig));
 
-````
+```
 
 5 - Create a Consumer with Consumer Configuration:
-````
+```csharp
 var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName("topic")
                 .ForceTopicCreation(true)
                 .SubscriptionName("pattern-Subscription")
                 .Topic(topic)
                 .ConsumerEventListener(consumerListener)
-                .Schema(jsonSchema)
+                .Schema(avroSchema)
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
- pulsarSystem.CreateConsumer(new CreateConsumer(jsonSchema, consumerConfig, ConsumerType.Single));
-````
+ pulsarSystem.CreateConsumer(new CreateConsumer(avroSchema, consumerConfig, ConsumerType.Single));
+```
 6 - Create a Reader with Reader Configuration:
-````
+```csharp
   var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("partitioned-topic")
-                .Schema(jsonSchema)
+                .Schema(avroSchema)
                 .EventListener(consumerListener)
                 .ReaderListener(messageListener)
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-  pulsarSystem.CreateReader(new CreateReader(jsonSchema, readerConfig));
-````
+  pulsarSystem.CreateReader(new CreateReader(avroSchema, readerConfig));
+```
 7 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
