@@ -115,7 +115,7 @@ var producerConfig = new ProducerConfigBuilder()
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
-  var topic = pulsarSystem.CreateProducer(new CreateProducer(avroSchema, producerConfig));
+  var topic = pulsarSystem.PulsarProducer(new CreateProducer(avroSchema, producerConfig));
 
 ```
 
@@ -131,7 +131,7 @@ var consumerConfig = new ConsumerConfigBuilder()
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
- pulsarSystem.CreateConsumer(new CreateConsumer(avroSchema, consumerConfig, ConsumerType.Single));
+ pulsarSystem.PulsarConsumer(new CreateConsumer(avroSchema, consumerConfig, ConsumerType.Single));
 ```
 6 - Create a Reader with Reader Configuration:
 ```csharp
@@ -143,6 +143,6 @@ var consumerConfig = new ConsumerConfigBuilder()
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-  pulsarSystem.CreateReader(new CreateReader(avroSchema, readerConfig));
+  pulsarSystem.PulsarReader(new CreateReader(avroSchema, readerConfig));
 ```
 7 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
