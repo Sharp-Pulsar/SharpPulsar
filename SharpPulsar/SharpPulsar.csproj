@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.8.4</Version>
+    <Version>0.8.5</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>Renamed JsonSchema to AvroSchema</PackageReleaseNotes>
+    <PackageReleaseNotes>Update dependencies</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -33,8 +33,8 @@
 
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.5" />
-    <PackageReference Include="Akka.Logger.NLog" Version="1.3.5" />
-    <PackageReference Include="AvroSchemaGenerator" Version="1.3.0" />
+    <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
+    <PackageReference Include="AvroSchemaGenerator" Version="1.4.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
     <PackageReference Include="IdentityModel" Version="4.2.0" />
@@ -48,7 +48,7 @@
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="prestosharp" Version="1.0.1" />
     <PackageReference Include="protobuf-net" Version="2.4.6" />
-    <PackageReference Include="RestSharp" Version="106.10.1" />
+    <PackageReference Include="RestSharp" Version="106.11.2" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
