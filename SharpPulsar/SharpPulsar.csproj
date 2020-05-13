@@ -34,7 +34,7 @@
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.6" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
-    <PackageReference Include="AvroSchemaGenerator" Version="1.5.0" />
+    <PackageReference Include="AvroSchemaGenerator" Version="1.5.1" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.11.4" />
     <PackageReference Include="IdentityModel" Version="4.2.0" />
