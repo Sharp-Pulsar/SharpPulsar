@@ -609,7 +609,8 @@ namespace SharpPulsar.Akka.Admin
                         var bndle4 = admin.Arguments[2].ToString();
                         var auth8 = (bool)admin.Arguments[3];
                         var unload = (bool)admin.Arguments[4];
-                        _adminRestapi.SplitNamespaceBundle(tenant56, nspace56, bndle4, auth8, unload);
+                        var algo = admin.Arguments[5].ToString();
+                        _adminRestapi.SplitNamespaceBundle(tenant56, nspace56, bndle4, algo, auth8, unload);
                         admin.Handler("SplitNamespaceBundle");
                         break;
                     case AdminCommands.UnloadNamespaceBundle:
@@ -1274,6 +1275,19 @@ namespace SharpPulsar.Akka.Admin
                         var tenant106 = admin.Arguments[0].ToString();
                         _adminRestapi.DeleteTenant(tenant106);
                         admin.Handler("DeleteTenant");
+                        break;
+                    case AdminCommands.SetDelayedDeliveryPolicies:
+                        var tenant107_ = admin.Arguments[0].ToString();
+                        var ns107 = admin.Arguments[1].ToString();
+                        var pol = (DelayedDeliveryPolicies)admin.Arguments[2];
+                        _adminRestapi.SetDelayedDeliveryPolicies(tenant107_, ns107, pol);
+                        admin.Handler("SetDelayedDeliveryPolicies");
+                        break;
+                    case AdminCommands.GetDelayedDeliveryPolicies:
+                        var tenant108_ = admin.Arguments[0].ToString();
+                        var ns108 = admin.Arguments[1].ToString();
+                        var re = _adminRestapi.GetDelayedDeliveryPolicies(tenant108_, ns108);
+                        admin.Handler(re);
                         break;
                 }
             }

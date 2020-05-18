@@ -28,41 +28,6 @@ namespace SharpPulsar.Protocol.Extension
             ms.Seek(0, SeekOrigin.Begin);
             return Serializer.Deserialize<T>(ms);
         }
-
-        public static (MessageMetadata metadata, byte[] payload, BaseCommand command, long consumed) TryParse(ReadOnlySequence<byte> buffer)
-        {
-            var array = buffer.ToArray();
-            if (array.Length >= 8)
-            {
-                using var stream = new MemoryStream(array);
-                using var reader = new BinaryReader(stream);
-                var totalength = Int32FromBigEndian(reader.ReadInt32());
-                var frameLength = totalength + 4;
-                if (array.Length >= frameLength)
-                {
-                    var readerIndex = reader.ReadInt16();
-
-                     if(Int16FromBigEndian(reader.ReadInt16()) != MagicNumber)
-                         throw  new ArgumentException("Invalid magicNumber");
-                     var messageCheckSum = Int32FromBigEndian(reader.ReadInt32());
-                     var metadataPointer = stream.Position;
-                     var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                     var payloadPointer = stream.Position;
-                     var metadataLength = (int)(payloadPointer - metadataPointer);
-                    var payloadLength = frameLength - ((int)payloadPointer);
-                    var payload = reader.ReadBytes(payloadLength);
-                    stream.Seek(metadataPointer, SeekOrigin.Begin);
-                    var checkSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                    if(checkSum != messageCheckSum)
-                        throw new ArgumentException("Invalid checksum");
-                    var command =
-                        Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                    var consumed = buffer.GetPosition(frameLength);
-                    return (metadata, payload, command, consumed.ByteLength());
-                }
-            }
-            throw new InvalidDataException("Incomplete Command");
-        }
         public static short MagicNumber => 0x0e01;
         public static int Int32ToBigEndian(int num) => IPAddress.HostToNetworkOrder(num);
 

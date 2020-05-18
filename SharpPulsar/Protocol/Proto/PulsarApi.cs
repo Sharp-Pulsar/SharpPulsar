@@ -522,6 +522,29 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetOriginalAuthMethod() => __pbn__OriginalAuthMethod = null;
         private string __pbn__OriginalAuthMethod;
 
+        [global::ProtoBuf.ProtoMember(10, Name = @"feature_flags")]
+        public FeatureFlags FeatureFlags { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public partial class FeatureFlags : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"supports_auth_refresh")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool SupportsAuthRefresh
+        {
+            get { return __pbn__SupportsAuthRefresh ?? false; }
+            set { __pbn__SupportsAuthRefresh = value; }
+        }
+        public bool ShouldSerializeSupportsAuthRefresh() => __pbn__SupportsAuthRefresh != null;
+        public void ResetSupportsAuthRefresh() => __pbn__SupportsAuthRefresh = null;
+        private bool? __pbn__SupportsAuthRefresh;
+
     }
 
     [global::ProtoBuf.ProtoContract()]

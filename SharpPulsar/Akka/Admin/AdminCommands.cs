@@ -521,7 +521,7 @@ namespace SharpPulsar.Akka.Admin
         ClearNamespaceBundleBacklogForSubscription,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace, string bundle, bool authoritative, bool unload]
+        /// Arguments[string tenant, string namespace, string bundle, bool authoritative, bool unload, string splitAlgorithmName]
         /// </summary>
         SplitNamespaceBundle,
 
@@ -958,6 +958,16 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[string tenant]
         /// </summary>
-        DeleteTenant
+        DeleteTenant,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, DelayedDeliveryPolicies deliveryPolicies]
+        /// </summary>
+        SetDelayedDeliveryPolicies,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace]
+        /// </summary>
+        GetDelayedDeliveryPolicies
     }
 }

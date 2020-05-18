@@ -1760,7 +1760,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> SplitNamespaceBundleWithHttpMessagesAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, bool? unload = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SplitNamespaceBundleWithHttpMessagesAsync(string tenant, string namespaceParameter, string bundle, string algo, bool? authoritative = false, bool? unload = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Unload a namespace bundle
@@ -3833,6 +3833,8 @@ namespace PulsarAdmin
         /// The cancellation token.
         /// </param>
         Task<HttpOperationResponse> DeleteTenantWithHttpMessagesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> SetDelayedDeliveryPoliciesWithHttpMessagesAsync(string tenant, string @namespace, DelayedDeliveryPolicies body = default(DelayedDeliveryPolicies), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse<DelayedDeliveryPolicies>> GetDelayedDeliveryPoliciesWithHttpMessagesAsync(string tenant, string @namespace, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
     }
 }

@@ -7,7 +7,7 @@
 namespace PulsarAdmin.Models
 {
     using Newtonsoft.Json;
-    using System.Collections;
+    using SharpPulsar.Akka.Admin.Api.Models;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -156,6 +156,11 @@ namespace PulsarAdmin.Models
         /// </summary>
         [JsonProperty(PropertyName = "encryption_required")]
         public bool? EncryptionRequired { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "delayed_delivery_policies")]
+        public DelayedDeliveryPolicies DelayedDeliveryPolicies { get; set; } = null;
 
         /// <summary>
         /// Gets or sets possible values include: 'None', 'Prefix'

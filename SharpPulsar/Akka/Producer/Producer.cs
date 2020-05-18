@@ -17,7 +17,6 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using SharpPulsar.Akka.Configuration;
 using IMessage = SharpPulsar.Api.IMessage;
@@ -52,6 +51,7 @@ namespace SharpPulsar.Akka.Producer
         private Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
         private bool _isPartitioned;
         private IActorRef _parent;
+        private ICancelable _producerRecreator;
 
         public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
         {
@@ -140,7 +140,6 @@ namespace SharpPulsar.Akka.Producer
             {
                 _serverInfo = s;
                 SendNewProducerCommand();
-                //SetReceiveTimeout(TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs));
                 Become(WaitingForProducer);
             });
             Receive<PulsarError>(e =>
@@ -153,6 +152,11 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<ProducerCreated>(p =>
             {
+                if(_producerRecreator != null) 
+                {
+                    _producerRecreator.Cancel();
+                    _producerRecreator = null;
+                }
                 _pendingLookupRequests.Remove(p.RequestId);
                 if (string.IsNullOrWhiteSpace(ProducerName))
                     ProducerName = p.Name;
@@ -171,6 +175,8 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic, ProducerName));
                 }
+                var receiptActor = Context.ActorOf(ReceiptActor.Prop(_listener, _partitionIndex));
+                _broker.Tell(receiptActor);
                 BecomeReceive();
             });
             ReceiveAny(x => Stash.Stash());
@@ -191,39 +197,19 @@ namespace SharpPulsar.Akka.Producer
         }
         public void Receive()
         {
-            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), TimeSpan.FromMilliseconds(_configuration.SendTimeoutMs), Self, new ResendMessages(), ActorRefs.NoSender);
-            //Receive<Terminated>(t => t.ActorRef.Equals(_broker), b => BecomeLookUp());
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
             });
-            Receive<ResendMessages>(a =>
+            Receive<ProducerClosed>(p =>
             {
-                var d = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                var ms = _pendingReceipt.Where(x => (d - x.Value.time) > _configuration.SendTimeoutMs).Select(x => new {x.Key, x.Value.cmd}).ToList();
-                foreach (var m in ms)
+                foreach (var c in Context.GetChildren())
                 {
-                    var requestId = m.Key;
-                    var pay = new Payload(m.cmd, requestId, "CommandMessage");
-                    _broker.Tell(pay);
+                    Context.Stop(c);
                 }
-            });
-            Receive<ProducerClosed>(_ =>
-            {
-                //ReceiveAny(c => Stash.Stash());
-                //Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateProducer(), ActorRefs.NoSender);
-            });
-            Receive<RecreateProducer>(_ =>
-            {
-                //BecomeLookUp();
+                Become(RecreatingProducer);
             });
             Receive<Send>(ProcessSend);
-            Receive<SentReceipt>(s =>
-            {
-                var ns = new SentReceipt(s.ProducerId, s.SequenceId, s.EntryId, s.LedgerId, s.BatchIndex, _partitionIndex);
-                _pendingReceipt.Remove(s.SequenceId);
-                _listener.MessageSent(ns);
-            });
             Receive<GetOrCreateSchemaServerResponse>(r =>
             {
                 _pendingLookupRequests.Remove(r.RequestId);
@@ -246,9 +232,27 @@ namespace SharpPulsar.Akka.Producer
                     ProcessSend(m);
                 }
             });
-            
+            Receive<Terminated>(_ =>
+            {
+                foreach (var c in Context.GetChildren())
+                {
+                    Context.Stop(c);
+                }
+
+                Become(RecreatingProducer);
+            });
         }
 
+        private void RecreatingProducer()
+        {
+            _producerRecreator = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), Self, new RecreateProducer(), ActorRefs.NoSender);
+            Receive<RecreateProducer>(_ =>
+            {
+                SendBrokerLookUpCommand();
+                Become(LookUp);
+            });
+            ReceiveAny(any => Stash.Stash());
+        }
         private void ProcessSend(Send s)
         {
             try
@@ -574,7 +578,6 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            _pendingReceipt.Add(requestId, (DateTimeOffset.Now.ToUnixTimeMilliseconds(), op.Cmd));
             _broker.Tell(pay);
         }
         private bool PopulateMessageSchema(Message msg)

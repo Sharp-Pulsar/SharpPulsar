@@ -54,6 +54,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly MessageCrypto _msgCrypto;
         private bool _hasParentConsumer;
         private readonly long _consumerid;
+        private ICancelable _consumerRecreator;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
@@ -541,25 +542,23 @@ namespace SharpPulsar.Akka.Consumer
 
         private void Active()
         {
-            Receive<CloseConsumer>(c =>
+            Receive<Terminated>(_ =>
             {
-                Context.Parent.Tell(c);
+                foreach (var c in Context.GetChildren())
+                {
+                    Context.Stop(c);
+                }
+
+                Become(RecreatingConsumer);
             });
-            Receive<Terminated>(t => t.ActorRef.Equals(_broker), l => BecomeLookUp());
-            
+
             Receive<LastMessageId>(x =>
             {
                 LastMessageId();
             });
             Receive<ConsumerClosed>(_ =>
             {
-                _seek = null;
                 Become(RecreatingConsumer);
-            });
-            Receive<ConsumerClosed>(_ =>
-            {
-                ReceiveAny(c => Stash.Stash());
-                BecomeLookUp();
             });
             Receive<LastMessageIdResponse>(x =>
             {
@@ -584,6 +583,11 @@ namespace SharpPulsar.Akka.Consumer
             Receive<AckMultiMessage>(AckMultiMessage);
             Receive<SubscribeSuccess>(s =>
             {
+                if (_consumerRecreator != null)
+                {
+                    _consumerRecreator.Cancel();
+                    _consumerRecreator = null;
+                }
                 if (s.HasSchema)
                 {
                     var schemaInfo = new SchemaInfo
@@ -628,12 +632,13 @@ namespace SharpPulsar.Akka.Consumer
 
         private void RecreatingConsumer()
         {
-            Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(10), Self, new RecreateConsumer(), ActorRefs.NoSender);
+            _seek = null;
+            _consumerRecreator = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), Self, new RecreateConsumer(), ActorRefs.NoSender);
             Receive<RecreateConsumer>(_ =>
             {
                 BecomeLookUp();
             });
-            ReceiveAny(c => Stash.Stash());
+            ReceiveAny(any => Stash.Stash());
         }
         private void LookUp()
         {
