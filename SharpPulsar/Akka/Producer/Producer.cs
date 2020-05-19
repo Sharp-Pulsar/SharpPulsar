@@ -406,19 +406,20 @@ namespace SharpPulsar.Akka.Producer
                 var uncompressedSize = payload.Length;
                 // Batch will be compressed when closed
                 // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
-                if (metadata.DeliverAtTime > 0)
+                if (_configuration.CompressionType != ICompressionType.None)
                 {
                     var compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
                     var compressedSize = compressedPayload.Length;
                     if (compressedSize > _serverInfo.MaxMessageSize)
                     {
-                        var compressedStr = !_configuration.BatchingEnabled && _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
+                        var compressedStr = _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
                         Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_topic}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
                         return;
                     }
 
                     msg.Payload = compressedPayload;
+                    metadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(_configuration.CompressionType);
                 }
                 if (!PopulateMessageSchema(msg))
                 {
@@ -437,10 +438,6 @@ namespace SharpPulsar.Akka.Producer
                 if (string.IsNullOrWhiteSpace(metadata.ProducerName))
                     metadata.ProducerName = ProducerName;
 
-                if (_configuration.CompressionType != ICompressionType.None)
-                {
-                    metadata.Compression = Enum.GetValues(typeof(CompressionType)).Cast<CompressionType>().ToList()[(int)_configuration.CompressionType];
-                }
                 metadata.UncompressedSize = (uint)uncompressedSize;
                 if(metadata.EventTime < 1)
                     metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();

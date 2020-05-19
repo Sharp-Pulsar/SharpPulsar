@@ -37,7 +37,11 @@ namespace SharpPulsar.Akka
 					      event-stream = on
 					      unhandled = on
 				      }  
-			      }
+			    }
+                coordinated-shutdown
+                {
+                    exit-clr = on
+                }
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);

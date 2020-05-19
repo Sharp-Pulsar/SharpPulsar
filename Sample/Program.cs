@@ -81,6 +81,11 @@ namespace Samples
                         var t = Console.ReadLine();
                         PlainAvroBulkSendProducer(pulsarSystem, t);
                         break;
+                    case "63":
+                        Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter topic: ");
+                        var t63 = Console.ReadLine();
+                        PlainAvroBulkSendCompressionProducer(pulsarSystem, t63);
+                        break;
                     case "1":
                         Console.WriteLine("[PlainAvroProducer] Enter topic: ");
                         var t1 = Console.ReadLine();
@@ -472,6 +477,63 @@ namespace Samples
                 .ProducerName(topic)
                 .Topic(topic)
                 .Schema(jsonSchem)
+                .EventListener(producerListener)
+                .ProducerConfigurationData;
+
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
+            Console.WriteLine(t);
+            IActorRef produce = null;
+            while (produce == null)
+            {
+                produce = Producers.FirstOrDefault(x=> x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
+                Thread.Sleep(1000);
+            }
+            Console.WriteLine($"Acquired producer for topic: {topic}");
+            var sends = new List<Send>();
+            for (var i = 0; i < 5; i++)
+            {
+                var student = new Students
+                {
+                    Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Age = 2019 + i,
+                    School = "Akka-Pulsar university"
+                };
+                var metadata = new Dictionary<string, object>
+                {
+                    ["Key"] = "Bulk",
+                    ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+                };
+                //var s = JsonSerializer.Serialize(student);
+                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+            }
+            var bulk = new BulkSend(sends, topic);
+            system.BulkSend(bulk, produce);
+            Task.Delay(5000).Wait();
+            File.AppendAllLines("receipts-bulk.txt", Receipts);
+        }
+        private static void PlainAvroBulkSendCompressionProducer(PulsarSystem system, string topic)
+        {
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var producerListener = new DefaultProducerListener((o) =>
+            {
+                Console.WriteLine(o.ToString());
+            }, (to, n,p) =>
+            {
+                if(Producers.ContainsKey(to))
+                  Producers[to].Add(n, p);
+                else
+                {
+                    Producers[to] = new Dictionary<string, IActorRef> {{n, p}};
+                }
+            }, s =>
+            {
+                Receipts.Add(s);
+            });
+            var producerConfig = new ProducerConfigBuilder()
+                .ProducerName(topic)
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .CompressionType(ICompressionType.Zstd)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 
