@@ -45,6 +45,9 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         }
 
         public SeekType? Type { get; }
+        /// <summary>
+        /// if SeekType is MessageId, Input format is  LedgerId,EntryId (e.g 213,7) where 213 is LedgerId and 7 is EntryId
+        /// </summary>
         public object Input { get; }
     }
     public enum SeekType

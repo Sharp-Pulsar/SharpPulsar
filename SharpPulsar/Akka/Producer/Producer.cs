@@ -26,31 +26,28 @@ namespace SharpPulsar.Akka.Producer
     public class Producer : ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _broker;
-        private IActorRef _network;
-        private ProducerConfigurationData _configuration;
-        private IProducerEventListener _listener;
+        private readonly IActorRef _network;
+        private readonly ProducerConfigurationData _configuration;
+        private readonly IProducerEventListener _listener;
         private readonly long _producerId;
         public string ProducerName;
         private readonly bool _userProvidedProducerName;
         private readonly CompressionCodec _compressor;
         private MessageCrypto _msgCrypto;
         private ConnectedServerInfo _serverInfo;
-        private string _topic;
+        private readonly string _topic;
         private long _sequenceId = 0;
-        private int _partitionIndex = -1;
+        private readonly int _partitionIndex = -1;
 
         private readonly IDictionary<string, string> _metadata;
-        private bool _multiSchemaMode;
-        private BatchMessageKeyBasedContainer _batchMessageContainer;
-        private Dictionary<string, ISchema> _schemas;
-        private ClientConfigurationData _clientConfiguration;
-        private Dictionary<long, (long time, byte[] cmd)> _pendingReceipt = new Dictionary<long, (long time, byte[] cmd)>();
+        private readonly Dictionary<string, ISchema> _schemas;
+        private readonly ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        private Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
-        private Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
-        private bool _isPartitioned;
-        private IActorRef _parent;
+        private readonly Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
+        private readonly Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
+        private readonly bool _isPartitioned;
+        private readonly IActorRef _parent;
         private ICancelable _producerRecreator;
 
         public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, IActorRef parent = null)
@@ -73,10 +70,6 @@ namespace SharpPulsar.Akka.Producer
             }
             else
                 ProducerName = configuration.ProducerName;
-            if (!configuration.MultiSchema)
-            {
-                _multiSchemaMode = false;
-            }
             if (!string.IsNullOrWhiteSpace(ProducerName) || isPartitioned)
             {
                 _userProvidedProducerName = true;

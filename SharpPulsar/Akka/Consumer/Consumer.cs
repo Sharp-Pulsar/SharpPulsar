@@ -602,6 +602,25 @@ namespace SharpPulsar.Akka.Consumer
                 //SendFlow(_requestedFlowPermits);
             });
             Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
+            Receive<Seek>(s =>
+            {
+                switch (s.Type)
+                {
+                    case SeekType.Timestamp:
+                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(s.Input.ToString()));
+                        var pay = new Payload(req, reqtid, "NewSeek");
+                        _broker.Tell(pay);
+                        break;
+                    default:
+                        var v = s.Input.ToString().Trim().Split(",");//format l,e
+                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
+                        var payload = new Payload(request, requestid, "NewSeek");
+                        _broker.Tell(payload);
+                        break;
+                }
+            });
             if (_seek != null)
             {
                 switch (_seek.Type)

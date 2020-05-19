@@ -146,7 +146,38 @@ namespace SharpPulsar.Akka
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
             _pulsarManager.Tell(c);
         }
-
+        public void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
+        {
+            if (consumer == null)
+                throw new ArgumentNullException("consumer", "null");
+            if (messages == null)
+                throw new ArgumentException("RedeliverMessages is null");
+            consumer.Tell(messages);
+        }
+        public void PulsarConsumer(Seek seek, IActorRef consumer)
+        {
+            if (consumer == null)
+                throw new ArgumentNullException("consumer", "null");
+            if (seek == null)
+                throw new ArgumentException("Seek is null");
+            consumer.Tell(seek);
+        }
+        public void PulsarReader(RedeliverMessages messages, IActorRef reader)
+        {
+            if (reader == null)
+                throw new ArgumentNullException("consumer", "null");
+            if (messages == null)
+                throw new ArgumentException("RedeliverMessages is null");
+            reader.Tell(messages);
+        }
+        public void PulsarReader(Seek seek, IActorRef reader)
+        {
+            if (reader == null)
+                throw new ArgumentNullException("consumer", "null");
+            if (seek == null)
+                throw new ArgumentException("Seek is null");
+            reader.Tell(seek);
+        }
         public void Send(Send send, IActorRef producer)
         {
            producer.Tell(send);
