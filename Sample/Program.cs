@@ -485,7 +485,7 @@ namespace Samples
             }
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
-            for (var i = 0; i < 25; i++)
+            for (var i = 0; i < 5; i++)
             {
                 var student = new Students
                 {

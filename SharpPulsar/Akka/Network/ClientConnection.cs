@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Dispatch;
 using Akka.Event;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
@@ -26,16 +27,16 @@ namespace SharpPulsar.Akka.Network
         private PulsarStream _stream;
         private readonly IActorRef _self;
         private readonly IActorRef _parent;
-        private readonly IActorContext _context;
+        private readonly ActorSystem _system;
         private readonly ReadOnlySequence<byte> _pong = new ReadOnlySequence<byte>(Commands.NewPong());
         internal Uri RemoteAddress;
-        internal int RemoteEndpointProtocolVersion = (int)ProtocolVersion.V15;
+        internal int RemoteEndpointProtocolVersion = Enum.GetValues(typeof(ProtocolVersion)).Cast<int>().Max();
         public IActorRef Connection;
         private readonly ConcurrentDictionary<long, KeyValuePair<IActorRef, Payload>> _requests = new ConcurrentDictionary<long, KeyValuePair<IActorRef, Payload>>();
 
         private readonly string _proxyToTargetBrokerAddress;
 
-        private readonly ILoggingAdapter Log;
+        private readonly ILoggingAdapter _log;
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _manager;
         private readonly Dictionary<long, (long time, byte[] cmd)> _pendingReceipt = new Dictionary<long, (long time, byte[] cmd)>();
@@ -46,14 +47,14 @@ namespace SharpPulsar.Akka.Network
         public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
             _proxyToTargetBrokerAddress = targetBroker;
-            _context = Context;
+            _system = Context.System;
             _self = Self;
             RemoteHostName = endPoint.Host;
             _conf = conf;
             _manager = manager;
             Connection = Self;
             RemoteAddress = endPoint;
-            Log = Context.System.Log;
+            _log = Context.System.Log;
             if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
             _authentication = conf.Authentication;
@@ -71,11 +72,12 @@ namespace SharpPulsar.Akka.Network
            Receive<Producer.Producer.ResendMessages>(a =>
            {
                var d = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-               var ms = _pendingReceipt.Where(x => (d - x.Value.time) > 7000).Select(x => new { x.Key, x.Value.cmd }).ToList();
+               var ms = _pendingReceipt.Where(x => (d - x.Value.time) > 30000).Select(x => new { x.Key, x.Value.cmd }).ToList();
                foreach (var m in ms)
                {
                    var requestId = m.Key;
                    var pay = new Payload(m.cmd, requestId, "CommandMessage");
+                   _log.Info($"resending message with seq. '{pay.RequestId}'. Receipt ack. not received in 30 secs");
                    _self.Tell(pay);
                }
            });
@@ -102,7 +104,7 @@ namespace SharpPulsar.Akka.Network
             }
             catch (Exception ex)
             {
-                _context.System.Log.Error(ex.Message);
+                _log.Error(ex.Message);
                 Thread.Sleep(5000);
                 Connect();
             }
@@ -116,7 +118,7 @@ namespace SharpPulsar.Akka.Network
             }
             catch (Exception e)
             {
-                _context.System.Log.Error(e.ToString());
+                _log.Error(e.ToString());
             }
         }
         public static Props Prop(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
@@ -163,16 +165,16 @@ namespace SharpPulsar.Akka.Network
                 var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
                 var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
                 
-                if (_context.System.Log.IsDebugEnabled)
+                if (_log.IsDebugEnabled)
                 {
-                    _context.System.Log.Debug("{} Mutual auth {}", RemoteAddress, _authentication.AuthMethodName);
+                    _log.Debug("{} Mutual auth {}", RemoteAddress, _authentication.AuthMethodName);
                 }
                 return Commands.NewAuthResponse(_authentication.AuthMethodName, auth, 15, clientVersion);
 
             }
             catch (Exception e)
             {
-                _context.System.Log.Error(e.ToString());
+                _log.Error(e.ToString());
                 return null;
             }
         }
@@ -188,7 +190,7 @@ namespace SharpPulsar.Akka.Network
 		public void HandlePing(CommandPing ping)
 		{
 			// Immediately reply success to ping requests
-			if (Log.IsEnabled(LogLevel.DebugLevel))
+			if (_log.IsEnabled(LogLevel.DebugLevel))
 			{
 				//Log.Debug($"[{RemoteAddress}] Replying back to ping message");
 			}
@@ -230,7 +232,7 @@ namespace SharpPulsar.Akka.Network
                                 _parent.Tell(
                                     new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion,
                                         RemoteHostName), _self);
-                                Log.Info($"Now connected: Host = {RemoteHostName}, ProtocolVersion = {c.ProtocolVersion}");
+                                _log.Info($"Now connected: Host = {RemoteHostName}, ProtocolVersion = {c.ProtocolVersion}");
                                 break;
                             case BaseCommand.Type.GetTopicsOfNamespaceResponse:
                                 var ns = cmd.getTopicsOfNamespaceResponse;
@@ -267,7 +269,7 @@ namespace SharpPulsar.Akka.Network
                                     _receiptActor.Tell(new SentReceipt((long)send.ProducerId,
                                         (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
                                         send.MessageId.BatchIndex, send.MessageId.Partition));
-                                    _context.System.Log.Error(exception.ToString());
+                                    _log.Error(exception.ToString());
                                     _pendingReceipt.Remove((long)send.SequenceId);
                                 }
                                 break;
@@ -279,7 +281,7 @@ namespace SharpPulsar.Akka.Network
                                 _requests.TryRemove((long)res.RequestId, out var g);
                                 break;
                             case BaseCommand.Type.ProducerSuccess:
-                                Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000), Self, new Producer.Producer.ResendMessages(), ActorRefs.NoSender);
+                                _system.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000), _self, new Producer.Producer.ResendMessages(), ActorRefs.NoSender);
                                 var p = cmd.ProducerSuccess;
                                 _requests[(long)p.RequestId].Key.Tell(new ProducerCreated(p.ProducerName,
                                     (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
@@ -327,19 +329,19 @@ namespace SharpPulsar.Akka.Network
                                 _parent.Tell(new ConsumerClosed((long)cmd.CloseConsumer.ConsumerId));
                                 break;
                             default:
-                                _context.System.Log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
+                                _log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
                                 break;
                         }
                     }
                     catch (Exception ex)
                     {
-                        _context.System.Log.Error(ex.ToString());
+                        _log.Error(ex.ToString());
                     }
                 }
             }
             catch (Exception ex)
             {
-                _context.System.Log.Error(ex.ToString());
+                _log.Error(ex.ToString());
             }
         }
         

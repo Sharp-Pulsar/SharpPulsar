@@ -43,17 +43,7 @@ namespace SharpPulsar.Impl
             };
             return op;
         }
-
-        public void Recycle()
-        {
-            Msg = null;
-            Msgs = null;
-            Cmd = null;
-            SequenceId = -1L;
-            CreatedAt = -1L;
-            HighestSequenceId = -1L;
-        }
-
+        
         public int NumMessagesInBatch { get; set; } = 1;
 
         public long BatchSizeByte { get; set; } = 0;

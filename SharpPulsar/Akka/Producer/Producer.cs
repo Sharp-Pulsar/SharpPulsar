@@ -413,7 +413,7 @@ namespace SharpPulsar.Akka.Producer
                 var uncompressedSize = payload.Length;
                 // Batch will be compressed when closed
                 // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
-                if (!_configuration.BatchingEnabled || metadata.DeliverAtTime > 0)
+                if (metadata.DeliverAtTime > 0)
                 {
                     var compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
@@ -432,7 +432,7 @@ namespace SharpPulsar.Akka.Producer
                     return;
                 }
 
-                if (metadata.SequenceId < 1 || metadata.SequenceId < (ulong)_sequenceId)
+                if (metadata.SequenceId < 1)
                 {
                      _sequenceId += 1;
                     metadata.SequenceId = (ulong)_sequenceId;
@@ -481,61 +481,17 @@ namespace SharpPulsar.Akka.Producer
             }
             else
             {
-                op = OpSendMsg.Create(msg, null, sequenceid);
-                op.RePopulate = () =>
-                {
-                    var msgMetadata = metadata;
-                    op.Cmd = SendMessage(_producerId, sequenceid, numMessages, msgMetadata, encryptedPayload);
-
-                };
+                op = OpSendMsg.Create(msg, null, sequenceid); 
+                var msgMetadata = metadata;
+                op.Cmd = SendMessage(_producerId, sequenceid, numMessages, msgMetadata, encryptedPayload);
             }
             op.NumMessagesInBatch = numMessages;
             op.BatchSizeByte = encryptedPayload.Length;
             ProcessOpSendMsg(op);
         }
-        private void DoBatchSendAndAdd(Message msg)
-        {
-            var log = Context.System.Log;
-            if (log.IsDebugEnabled)
-            {
-                log.Debug($"[{_topic}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.Payload.Length}");
-            }
-            try
-            {
-                BatchMessageAndSend();
-                _batchMessageContainer.Add(msg);
-            }
-            finally
-            {
-                //payload.Release();
-            }
-        }
         private long GetHighestSequenceId(OpSendMsg op)
         {
             return Math.Max(op.HighestSequenceId, op.SequenceId);
-        }
-        private void BatchMessageAndSend()
-        {
-            var log = Context.System.Log;
-            
-            if (!_batchMessageContainer.Empty)
-            {
-                try
-                {
-                    IList<OpSendMsg> opSendMsgs;
-
-                    opSendMsgs = CreateOpSendMsgs();
-                    _batchMessageContainer.Clear();
-                    foreach (var opSendMsg in opSendMsgs)
-                    {
-                        ProcessOpSendMsg(opSendMsg);
-                    }
-                }
-                catch (Exception T)
-                {
-                    log.Error($"[{_topic}] [{ProducerName}] error while create opSendMsg by batch message container: {T}");
-                }
-            }
         }
         public byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
@@ -637,16 +593,6 @@ namespace SharpPulsar.Akka.Producer
             }
             return encryptedPayload;
         }
-        private bool CanAddToBatch(Message msg)
-        {
-            return msg.GetSchemaState() == Message.SchemaState.Ready && _configuration.BatchingEnabled && msg.Metadata.DeliverAtTime < 1;
-        }
-
-        private bool CanAddToCurrentBatch(Message msg)
-        {
-            return _batchMessageContainer.HaveEnoughSpace(msg) || _batchMessageContainer.HasSameSchema(msg);
-        }
-
         private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
 
         public override string ToString()
@@ -654,44 +600,5 @@ namespace SharpPulsar.Akka.Producer
             return "Producer{" + "topic='" + _topic + '\'' + '}';
         }
         public IStash Stash { get; set; }
-        private IList<OpSendMsg> CreateOpSendMsgs()
-        {
-            var result = new List<OpSendMsg>();
-            var list = new List<BatchMessageKeyBasedContainer.KeyedBatch>(_batchMessageContainer.Batches.Values);
-            list.Sort();
-            foreach (var keyedBatch in list)
-            {
-                var op = CreateOpSendMsg(keyedBatch);
-                if (op != null)
-                {
-                    result.Add(op);
-                }
-            }
-            return result;
-        }
-        private OpSendMsg CreateOpSendMsg(BatchMessageKeyBasedContainer.KeyedBatch keyedBatch)
-        {
-            var encryptedPayload = EncryptMessage(keyedBatch.MessageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-            if (encryptedPayload.Length > _serverInfo.MaxMessageSize)
-            {
-                keyedBatch.Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + _serverInfo.MaxMessageSize + " bytes"));
-                return null;
-            }
-
-            var numMessagesInBatch = keyedBatch.Messages.Count;
-            long currentBatchSizeBytes = 0;
-            foreach (var message in keyedBatch.Messages)
-            {
-                currentBatchSizeBytes += message.Payload.Length;
-            }
-            keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
-            var cmd = SendMessage(_producerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
-
-            var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId);
-
-            op.NumMessagesInBatch = numMessagesInBatch;
-            op.BatchSizeByte = currentBatchSizeBytes;
-            return op;
-        }
     }
 }
