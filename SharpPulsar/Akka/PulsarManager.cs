@@ -17,6 +17,7 @@ namespace SharpPulsar.Akka
     public class PulsarManager:ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _network;
+        private IActorRef _topicManager;
         private ClientConfigurationData _config;
         private PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
         public PulsarManager(ClientConfigurationData conf)

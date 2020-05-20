@@ -13,12 +13,13 @@ namespace SharpPulsar.Akka.Producer
 {
     public class PartitionedProducer: ReceiveActor
     {
-        private IActorRef _router;
         private int _partitions;
-        private ProducerConfigurationData _configuration;
-        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
+        private readonly bool _hasParent;
+        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, bool hasParent)
         {
-            _configuration = configuration;
+            IActorRef router;
+            _hasParent = hasParent;
+            var configuration1 = configuration;
             var routees = new List<string>();
             var topic = configuration.TopicName;
             //var path = Context.Parent.Path;
@@ -26,23 +27,23 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"{i}");
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true), $"{i}");
                 routees.Add(c.Path.ToString());
             }
 
             switch (configuration.MessageRoutingMode)
             {
                 case MessageRoutingMode.ConsistentHashingMode:
-                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 case MessageRoutingMode.BroadcastMode:
-                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 case MessageRoutingMode.RandomMode:
-                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RandomGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    router = Context.System.ActorOf(Props.Empty.WithRouter(new RandomGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
                 default:
-                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
             }
             Receive<RegisteredProducer>(p =>
@@ -51,28 +52,53 @@ namespace SharpPulsar.Akka.Producer
                 if (_partitions == configuration.Partitions)
                 {
                     IdGenerators.PartitionIndex = 0;//incase we want to create multiple partitioned producer
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _configuration.TopicName, _configuration.ProducerName));
+                    if (hasParent)
+                        Context.Parent.Tell(p);
+                    else
+                    {
+                        configuration1.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, configuration1.TopicName, configuration1.ProducerName));
+                    }
+                    
                 }
+
             });
             Receive<Send>(s =>
             {
-                var msg = new ConsistentHashableEnvelope(s, s.RoutingKey);
-                _router.Tell(msg);
+                if (configuration1.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+                {
+                    var msg = new ConsistentHashableEnvelope(s, s.RoutingKey);
+                    router.Tell(msg);
+                }
+                else
+                {
+                    router.Tell(s);
+                }
             });
             
             Receive<BulkSend>(s =>
             {
-                foreach (var m in s.Messages)
+                if (configuration1.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
                 {
-                    var msg = new ConsistentHashableEnvelope(m, m.RoutingKey);
-                    _router.Tell(msg);
+                    foreach (var m in s.Messages)
+                    {
+                        var msg = new ConsistentHashableEnvelope(m, m.RoutingKey);
+                        router.Tell(msg);
+                    }
                 }
+                else
+                {
+                    foreach (var m in s.Messages)
+                    {
+                        router.Tell(m);
+                    }
+                }
+                
             });
             
         }
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, bool hasParent = false)
         {
-            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, network));
+            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, network, hasParent));
         }
     }
 }

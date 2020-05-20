@@ -23,8 +23,6 @@ namespace SharpPulsar.Akka.Producer
         private ClientConfigurationData _config;
         private ProducerConfigurationData _producerConfiguration;
         private IProducerEventListener _listener;
-        private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        private readonly Dictionary<string, IActorRef> _producers = new Dictionary<string, IActorRef>();
         public ProducerManager(ClientConfigurationData configuration, IActorRef network)
         {
             _network = network;
@@ -38,24 +36,52 @@ namespace SharpPulsar.Akka.Producer
 
         private void Init()
         {
-            Receive<NewProducer>(NewProducer);
+            Receive<NewProducer>(n =>
+            {
+                Become(()=>CreatingProducer(n));
+            });
+            Receive<NewProducerGroupMember>(n =>
+            {
+                Become(() => CreatingGroupMember(n));
+            });
+        }
+
+        private void CreatingProducer(NewProducer np)
+        {
+            Common();
+            Receive<RegisteredProducer>(p =>
+            {
+                //_producers.Add(p.Topic, Sender);
+                Become(Init);
+            });
+            NewProducer(np);
+        }
+        private void CreatingGroupMember(NewProducerGroupMember member)
+        {
+            var gm = new NewProducer(member.Schema, member.Configuration, member.ProducerConfiguration); 
+            Common(true);
+            Receive<RegisteredProducer>(p =>
+            {
+                Context.Parent.Forward(p);
+                Become(Init);
+            });
+            NewProducer(gm);
+        }
+
+        private void Common(bool parent = false)
+        {
             Receive<Partitions>(x =>
             {
                 var pn = Regex.Replace(_producerConfiguration.ProducerName, @"[^\w\d]", "");
                 _listener.Log($"Found {x.Partition} partition for Topic: {_producerConfiguration.TopicName}");
                 _producerConfiguration.Partitions = x.Partition;
-               _producerConfiguration.UseTls = _config.UseTls;
-                _pendingLookupRequests.Remove(x.RequestId);
+                _producerConfiguration.UseTls = _config.UseTls;
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration,  _network), pn);
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network), pn);
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network), pn);
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, parent), pn);
             });
-            Receive<RegisteredProducer>(p =>
-            {
-                _producers.Add(p.Topic, Sender);
-                Become(Open);
-            });
+
             Receive<SchemaResponse>(s =>
             {
                 var info = new SchemaInfo
@@ -77,7 +103,6 @@ namespace SharpPulsar.Akka.Producer
                     info.Type = SchemaType.Avro;
                 }
                 _producerConfiguration.Schema = ISchema.GetSchema(info);
-                _pendingLookupRequests.Remove(s.RequestId);
                 SendPartitionMetadataRequestCommand(_producerConfiguration);
             });
             ReceiveAny(x =>
@@ -85,24 +110,6 @@ namespace SharpPulsar.Akka.Producer
                 Console.WriteLine($"Stashing message of type {x.GetType()}: producer not created!");
                 Stash.Stash();
             });
-        }
-        private void Open()
-        {
-            Receive<Send>(s =>
-            {
-                if(_producers.ContainsKey(s.Topic))
-                    _producers[s.Topic]?.Tell(s);
-                else
-                    _listener.Log($"{s.Topic} producer not created");
-            });
-            Receive<BulkSend>(s =>
-            {
-                if (_producers.ContainsKey(s.Topic))
-                    _producers[s.Topic]?.Tell(s);
-                else
-                    _listener.Log($"{s.Topic} producer not created");
-            });
-            Stash.UnstashAll();
         }
         
         protected override void Unhandled(object message)
@@ -115,7 +122,6 @@ namespace SharpPulsar.Akka.Producer
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewPartitionMetadataRequest(conf.TopicName, requestId);
             var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata");
-            _pendingLookupRequests.Add(requestId, pay);
             _network.Tell(pay);
         }
         
@@ -163,7 +169,6 @@ namespace SharpPulsar.Akka.Producer
                     var request = Commands.NewGetSchema(requestId, producerConfig.TopicName, BytesSchemaVersion.Of(null));
                     var payload = new Payload(request, requestId, "CommandGetSchema");
                     _network.Tell(payload);
-                    _pendingLookupRequests.Add(requestId, payload);
                 }
             }
             else

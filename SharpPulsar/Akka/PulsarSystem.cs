@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -67,6 +68,22 @@ namespace SharpPulsar.Akka
             var p = new NewProducer(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);
             return topic.ToString();
+        } 
+        public void PulsarProducer(CreateProducerBroadcastGroup producer)
+        {
+            if (producer == null)
+                throw new ArgumentNullException("producer", "null");
+            var topics = new List<string>();
+            
+            foreach (var t in producer.Topics)
+            {
+                if (!TopicName.IsValid(t))
+                    throw new ArgumentException($"Topic '{t}' is invalid");
+                topics.Add(TopicName.Get(t).ToString());
+            }
+            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfiguration,
+                topics.ToImmutableHashSet());
+            _pulsarManager.Tell(group);
         }
         public void PulsarReader(CreateReader reader)
         {

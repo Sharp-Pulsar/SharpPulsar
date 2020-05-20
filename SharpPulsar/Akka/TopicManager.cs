@@ -11,13 +11,18 @@ namespace SharpPulsar.Akka
     {
         public TopicManager(ClientConfigurationData configuration, IActorRef network)
         {
-            Context.ActorOf(ProducerManager.Prop(configuration, network), "ProducerManager");
+            var producer = Context.ActorOf(ProducerManager.Prop(configuration, network), "ProducerManager");
             Context.ActorOf(ReaderManager.Prop(configuration, network), "ReaderManager");
+            Context.ActorOf(ProducerBroadcastGroup.Prop(producer), "ProducerBroadcastManager");
+            
             Receive<NewProducer>(cmd =>
             {
                 Context.Child("ProducerManager").Tell(cmd);
             });
-            
+            Receive<NewProducerBroadcastGroup>(cmd =>
+            {
+                Context.Child("ProducerBroadcastManager").Tell(cmd);
+            });
             Receive<NewReader>(cmd =>
             {
                 Context.Child("ReaderManager").Tell(cmd);
