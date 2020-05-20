@@ -32,40 +32,16 @@ namespace SharpPulsar.Common.Compression
     public class CompressionCodecSnappy : CompressionCodec
 	{
 		public byte[] Encode(byte[] source)
-		{
-			var uncompressedLength = source.Length;
-			var maxLength = SnappyCodec.GetMaxCompressedLength(uncompressedLength);
-
-			var sourceNio = source;
-
-			var target = new byte[maxLength];
-			var targetNio = target;
-
-			var compressedLength = 0;
-			try
-			{
-				compressedLength = SnappyCodec.Compress(sourceNio, 0, sourceNio.Length, targetNio, 0);
-			}
-			catch (IOException e)
-			{
-				Log.LogError("Failed to compress to Snappy: {}", e.Message);
-			}
-			//target.SetWriterIndex(compressedLength);
-			return target;
-		}
+        {
+            return SnappyCodec.Compress(source);
+        }
 
 		public byte[] Decode(byte[] encoded, int uncompressedLength)
-		{
-			byte[] uncompressed = new byte[uncompressedLength];
-			var uncompressedNio = uncompressed;
-
-			var encodedNio = encoded;
-			SnappyCodec.Uncompress(encodedNio, 0, encodedNio.Length, uncompressedNio, 0);
-
-			//uncompressed.SetWriterIndex(uncompressedLength);
-			return uncompressed;
-		}
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(CompressionCodecSnappy));
+        {
+            var target = new byte[uncompressedLength];
+            SnappyCodec.Uncompress(encoded, 0, encoded.Length, target, 0);
+            return target;
+        }
 	}
 	
 }

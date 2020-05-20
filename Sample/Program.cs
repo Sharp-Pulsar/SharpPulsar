@@ -84,7 +84,9 @@ namespace Samples
                     case "63":
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter topic: ");
                         var t63 = Console.ReadLine();
-                        PlainAvroBulkSendCompressionProducer(pulsarSystem, t63);
+                        Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter Compression Type number: ");
+                        var ct = Convert.ToInt32(Console.ReadLine());
+                        PlainAvroBulkSendCompressionProducer(pulsarSystem, t63, ct);
                         break;
                     case "1":
                         Console.WriteLine("[PlainAvroProducer] Enter topic: ");
@@ -511,7 +513,7 @@ namespace Samples
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
-        private static void PlainAvroBulkSendCompressionProducer(PulsarSystem system, string topic)
+        private static void PlainAvroBulkSendCompressionProducer(PulsarSystem system, string topic, int comp)
         {
             var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
@@ -529,11 +531,12 @@ namespace Samples
             {
                 Receipts.Add(s);
             });
+            var compression = (ICompressionType)Enum.GetValues(typeof(ICompressionType)).GetValue(comp);
             var producerConfig = new ProducerConfigBuilder()
                 .ProducerName(topic)
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .CompressionType(ICompressionType.Zstd)
+                .CompressionType(compression)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 

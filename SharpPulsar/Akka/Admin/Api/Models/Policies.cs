@@ -9,9 +9,7 @@ using SharpPulsar.Akka.Admin.Api.Models;
 namespace PulsarAdmin.Models
 {
     using Newtonsoft.Json;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
 
     public partial class Policies
     {

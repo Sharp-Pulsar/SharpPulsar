@@ -406,7 +406,7 @@ namespace SharpPulsar.Akka.Producer
                 var uncompressedSize = payload.Length;
                 // Batch will be compressed when closed
                 // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
-                if (_configuration.CompressionType != ICompressionType.None)
+                if (_configuration.CompressionType != ICompressionType.None && metadata.UncompressedSize == 0)
                 {
                     var compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
@@ -437,8 +437,8 @@ namespace SharpPulsar.Akka.Producer
                 }
                 if (string.IsNullOrWhiteSpace(metadata.ProducerName))
                     metadata.ProducerName = ProducerName;
-
-                metadata.UncompressedSize = (uint)uncompressedSize;
+                if(metadata.UncompressedSize == 0)
+                    metadata.UncompressedSize = (uint)uncompressedSize;
                 if(metadata.EventTime < 1)
                     metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 SendMessage(msg);

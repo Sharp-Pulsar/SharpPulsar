@@ -33,7 +33,7 @@ namespace SharpPulsar.Common.Enum
 
 		/// <summary>
 		/// Compress with ZLib. </summary>
-		//ZLIB,
+		ZLIB,
 
 		/// <summary>
 		/// Compress with Zstandard codec. </summary>

@@ -33,7 +33,7 @@ namespace SharpPulsar.Api
 
 		/// <summary>
 		/// Compress with ZLib. </summary>
-		//Zlib,
+		Zlib,
 
 		/// <summary>
 		/// Compress with Zstandard codec. </summary>

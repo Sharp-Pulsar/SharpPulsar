@@ -19,6 +19,8 @@
 /// under the License.
 /// </summary>
 /// 
+
+using System.Linq;
 using K4os.Compression.LZ4;
 
 namespace SharpPulsar.Common.Compression
@@ -34,37 +36,23 @@ namespace SharpPulsar.Common.Compression
 		{
 			
 		}
-
-		//private static readonly LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
-		//private static readonly LZ4Compressor compressor = lz4Factory.fastCompressor();
-		//private static readonly LZ4FastDecompressor decompressor = lz4Factory.fastDecompressor();
-
+		
 		public byte[] Encode(byte[] source)
 		{
-			var lz4 = new CompressionCodecLz4();
-			int uncompressedLength = source.Length;
-			int maxLength = LZ4Codec.MaximumOutputSize(uncompressedLength);
+			var maxLength = LZ4Codec.MaximumOutputSize(source.Length);
 
-			var sourceNio = source;
+            var target = new byte[maxLength];
 
-            byte[] target = new byte[maxLength];
-			var targetNio = target;
-
-			int compressedLength = LZ4Codec.Encode(sourceNio, 0, uncompressedLength, targetNio, 0, maxLength);
-			//target.SetWriterIndex(compressedLength);
-			return target;
+			var count = LZ4Codec.Encode(source, 0, source.Length, target, 0, target.Length);
+			
+			return target.Take(count).ToArray();
 		}
 
 		public byte[] Decode(byte[] encoded, int uncompressedLength)
-		{
-			byte[] uncompressed = new byte[uncompressedLength];
-			var uncompressedNio = uncompressed;
-
-			var encodedNio = encoded;
-			LZ4Codec.Decode(encodedNio, 0,  encodedNio.Length, uncompressedNio, 0, uncompressedLength);
-
-			//uncompressed.SetWriterIndex(uncompressedLength);
-			return uncompressed;
+        {
+            var target = new byte[uncompressedLength];
+			LZ4Codec.Decode(encoded, 0,  encoded.Length, target, 0, target.Length);
+			return target;
 		}
 	}
 
