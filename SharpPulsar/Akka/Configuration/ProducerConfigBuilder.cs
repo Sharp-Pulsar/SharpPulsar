@@ -243,20 +243,8 @@ namespace SharpPulsar.Akka.Configuration
 
 		private ProducerConfigBuilder SetMessageRoutingMode()
 		{
-            if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter == null)
-			{
-				MessageRoutingMode(Api.MessageRoutingMode.RoundRobinPartition);
-			}
-			else if (_conf.MessageRoutingMode == null && _conf.CustomMessageRouter != null)
-			{
-				MessageRoutingMode(Api.MessageRoutingMode.CustomPartition);
-			}
-			else 
-			if ((_conf.MessageRoutingMode == Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter == null) || (_conf.MessageRoutingMode != Api.MessageRoutingMode.CustomPartition && _conf.CustomMessageRouter != null))
-			{
-				throw new PulsarClientException("When 'messageRouter' is set, 'messageRoutingMode' " + "should be set as " + Api.MessageRoutingMode.CustomPartition);
-			}
-            return this;
+			MessageRoutingMode(_conf.MessageRoutingMode);
+			return this;
 		}
 
 		public override string ToString()

@@ -968,6 +968,16 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[string tenant, string namespace]
         /// </summary>
-        GetDelayedDeliveryPolicies
+        GetDelayedDeliveryPolicies,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, OffloadPolicies offload]
+        /// </summary>
+        SetOffloadPolicies,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace]
+        /// </summary>
+        GetOffloadPolicies
     }
 }

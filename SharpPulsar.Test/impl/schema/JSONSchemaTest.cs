@@ -37,7 +37,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullSchema()
 		{
-			var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+			var jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 			Assert.Equal(SchemaType.Avro,jsonSchema.SchemaInfo.Type);
 			
 			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
@@ -63,7 +63,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullSchema()
 		{
-            var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
+            var jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
 			Assert.Equal(SchemaType.Json, jsonSchema.SchemaInfo.Type);
 			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
 			Assert.Contains("SharpPulsar.Test.Impl.schema", schemaJson);
@@ -79,7 +79,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullEncodeAndDecode()
 		{
-			var jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
+			var jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
 
 			var bar = new Bar {Field1 = true};
 
@@ -105,7 +105,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullEncodeAndDecode()
 		{
-			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+			AvroSchema jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 
 			var foo1 = new Foo
 			{
@@ -138,7 +138,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullNestedClasses()
 		{
-			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).Build());
+			AvroSchema jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).Build());
 			//JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(typeof(NestedBarList)).Build());
 
             var bar = new Bar {Field1 = true};
@@ -160,7 +160,7 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestNotAllowNullNestedClasses()
 		{
-			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).WithAlwaysAllowNull(false).Build());
+			AvroSchema jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(NestedBar)).WithAlwaysAllowNull(false).Build());
 			//JsonSchema<NestedBarList> listJsonSchema = JsonSchema<NestedBarList>.Of(ISchemaDefinition<NestedBarList>.Builder().WithPojo(typeof(NestedBarList)).WithAlwaysAllowNull(false).Build());
 
             var bar = new Bar {Field1 = true};
@@ -183,14 +183,14 @@ namespace SharpPulsar.Test.Impl.schema
 		[Fact]
 		public void TestAllowNullDecodeWithInvalidContentWithPojo()
 		{
-		    JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
+            AvroSchema jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
 			Assert.Throws<AvroException>(()=>jsonSchema.Decode(new sbyte[0], typeof(Foo)));
 		}
         
 		[Fact]
 		public void TestDecodeByteBuf()
 		{
-			JsonSchema jsonSchema = JsonSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            AvroSchema jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 
             var foo1 = new Foo {Field1 = "foo1", Field2 = "bar1", Field4 = new Bar(), FieldUnableNull = "notNull"};
 

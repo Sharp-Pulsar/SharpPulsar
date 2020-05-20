@@ -28,29 +28,28 @@ namespace SharpPulsar.Api
 	public enum MessageRoutingMode
 	{
 		/// <summary>
-		/// If no key is provided, The partitioned producer will randomly pick one single partition
-		/// and publish all the messages into that partition.
-		/// If a key is provided on the message, the partitioned producer will hash the key
-		/// and assign message to a particular partition.
+		//RoundRobinMode is a router that sends messages to routees(Producers) in round-robin order.
+		//It's the simplest way to distribute messages to multiple worker actors, on a best-effort basis
 		/// </summary>
-		SinglePartition,
+		RoundRobinMode,
 
 		/// <summary>
-		/// If no key is provided, the producer will publish messages across all partitions in round-robin fashion
-		/// to achieve maximum throughput. Please note that round-robin is not done per individual message but rather
-		/// it's set to the same boundary of batching delay, to ensure batching is effective.
-		/// 
-		/// <para>While if a key is specified on the message, the partitioned producer will hash the key
-		/// and assign message to a particular partition.
-		/// </para>
+		/// BroadcastMode router will, as the name implies,
+		/// broadcast any message to all of its routees(Producers).
 		/// </summary>
-		RoundRobinPartition,
+		BroadcastMode,
 
 		/// <summary>
-		/// Use custom message router implementation that will be called to determine the partition
-		/// for a particular message.
+		/// The RandomMode router will forward messages to routees(Producers) in random order.
 		/// </summary>
-		CustomPartition
+		RandomMode,
+
+		/// <summary>
+		/// The ConsistentHashingMode is router that use a consistent hashing algorithm to select a routee(Producer) to forward the message.
+		/// The idea is that messages with the same key are forwarded to the same routee(Producer).
+		/// Any .NET object can be used as a key, although it's usually a number, string or Guid.
+		/// </summary>
+		ConsistentHashingMode
 	}
 
 }

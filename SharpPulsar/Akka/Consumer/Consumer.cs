@@ -176,8 +176,6 @@ namespace SharpPulsar.Akka.Consumer
 
             var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
-
-
             if (decryptedPayload == null)
             {
                 // Message was discarded or CryptoKeyReader isn't implemented

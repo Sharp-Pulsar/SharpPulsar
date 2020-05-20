@@ -58,4 +58,9 @@
     <Folder Include="Impl\conf\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Avro\Avro.csproj" />
+    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+  </ItemGroup>
+
 </Project>

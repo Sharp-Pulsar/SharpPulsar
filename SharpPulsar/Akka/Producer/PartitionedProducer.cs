@@ -29,11 +29,22 @@ namespace SharpPulsar.Akka.Producer
                 var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true, Self), $"{i}");
                 routees.Add(c.Path.ToString());
             }
-            //Surely this is pulsar's custom routing policy ;)
-            if(configuration.MessageRoutingMode == MessageRoutingMode.RoundRobinPartition)
-                 _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
-            else
-                _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+
+            switch (configuration.MessageRoutingMode)
+            {
+                case MessageRoutingMode.ConsistentHashingMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                case MessageRoutingMode.BroadcastMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                case MessageRoutingMode.RandomMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RandomGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                default:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(routees)), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+            }
             Receive<RegisteredProducer>(p =>
             {
                 _partitions += 1;

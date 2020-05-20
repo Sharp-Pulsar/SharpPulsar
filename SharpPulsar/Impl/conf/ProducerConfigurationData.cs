@@ -39,7 +39,7 @@ namespace SharpPulsar.Impl.Conf
         public bool UseTls { get; set; } = false;
 		public long SendTimeoutMs { get; set; } = 30000;
 		public bool BlockIfQueueFull { get; set; } = false;
-        public MessageRoutingMode? MessageRoutingMode { get; set; }
+        public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
 		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
 
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;

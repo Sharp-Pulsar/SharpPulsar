@@ -3833,8 +3833,65 @@ namespace PulsarAdmin
         /// The cancellation token.
         /// </param>
         Task<HttpOperationResponse> DeleteTenantWithHttpMessagesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Set delayed delivery messages config on a namespace.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
         Task<HttpOperationResponse> SetDelayedDeliveryPoliciesWithHttpMessagesAsync(string tenant, string @namespace, DelayedDeliveryPolicies body = default(DelayedDeliveryPolicies), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Get delayed delivery messages config on a namespace.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
         Task<HttpOperationResponse<DelayedDeliveryPolicies>> GetDelayedDeliveryPoliciesWithHttpMessagesAsync(string tenant, string @namespace, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        /// <summary>
+        /// Get offload configuration on a namespace.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        Task<HttpOperationResponse<OffloadPolicies>> GetOffloadPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Set offload configuration on a namespace.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        Task<HttpOperationResponse> SetOffloadPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, OffloadPolicies offloadPolicies, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
     }
 }

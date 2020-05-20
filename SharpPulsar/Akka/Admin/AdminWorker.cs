@@ -1289,6 +1289,19 @@ namespace SharpPulsar.Akka.Admin
                         var re = _adminRestapi.GetDelayedDeliveryPolicies(tenant108_, ns108);
                         admin.Handler(re);
                         break;
+                    case AdminCommands.SetOffloadPolicies:
+                        var tenant109 = admin.Arguments[0].ToString();
+                        var ns109 = admin.Arguments[1].ToString();
+                        var poli = (OffloadPolicies)admin.Arguments[2];
+                        _adminRestapi.SetOffloadPolicies(tenant109, ns109, poli);
+                        admin.Handler("SetOffloadPolicies");
+                        break;
+                    case AdminCommands.GetOffloadPolicies:
+                        var tenant110 = admin.Arguments[0].ToString();
+                        var ns110 = admin.Arguments[1].ToString();
+                        var offloadp = _adminRestapi.GetOffloadPolicies(tenant110, ns110);
+                        admin.Handler(offloadp);
+                        break;
                 }
             }
             catch (Exception e)

@@ -9266,6 +9266,16 @@ namespace PulsarAdmin
                 .Dispose();
         }
 
+        /// <summary>
+        /// Set delayed delivery messages config on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
         public static void SetDelayedDeliveryPolicies(this IPulsarAdminRESTAPI operations, string tenant,
             string namespaceParameter, DelayedDeliveryPolicies policies)
         {
@@ -9280,16 +9290,94 @@ namespace PulsarAdmin
                 .SetDelayedDeliveryPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, policies, null,
                     cancellationToken).ConfigureAwait(false)).Dispose();
         }
+        /// <summary>
+        /// Set delayed delivery messages config on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
         public static DelayedDeliveryPolicies GetDelayedDeliveryPolicies(
             this IPulsarAdminRESTAPI operations, string tenant, string @namespace)
         {
             return operations.GetDelayedDeliveryPoliciesAsync(tenant, @namespace).GetAwaiter().GetResult();
         }
+
         public static async Task<DelayedDeliveryPolicies> GetDelayedDeliveryPoliciesAsync(
             this IPulsarAdminRESTAPI operations, string tenant, string @namespace, CancellationToken cancellationToken = default(CancellationToken))
         {
             using (var _result = await operations.GetDelayedDeliveryPoliciesWithHttpMessagesAsync(tenant, @namespace, null, cancellationToken)
                 .ConfigureAwait(false))
+            {
+                return _result.Body;
+            }
+        }
+        /// <summary>
+        /// Set offload configuration on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        public static void SetOffloadPolicies(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, OffloadPolicies offloadPolicies)
+        {
+            operations.SetOffloadPoliciesAsync(tenant, namespaceParameter, offloadPolicies).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Set offload configuration on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        public static async Task SetOffloadPoliciesAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, OffloadPolicies offloadPolicies, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            (await operations.SetOffloadPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, offloadPolicies, null, cancellationToken).ConfigureAwait(false)).Dispose();
+        }
+        /// <summary>
+        /// Get offload configuration on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        public static OffloadPolicies GetOffloadPolicies(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter)
+        {
+            return operations.GetOffloadPoliciesAsync(tenant, namespaceParameter).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Get offload configuration on a namespace.
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        public static async Task<OffloadPolicies> GetOffloadPoliciesAsync(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            using (var _result = await operations.GetOffloadPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, null, cancellationToken).ConfigureAwait(false))
             {
                 return _result.Body;
             }

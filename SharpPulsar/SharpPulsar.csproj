@@ -81,9 +81,6 @@
     <None Update="Akka\Admin\Api\code-model-v1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Akka\Admin\Api\Models\OffLoadPoliciesJava.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Akka\Function\Api\Swagger.json">
       <Generator>NSwagCodeGenerator</Generator>
       <LastGenOutput>Swagger.cs</LastGenOutput>
