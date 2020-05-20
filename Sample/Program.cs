@@ -84,7 +84,8 @@ namespace Samples
                     case "63":
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter topic: ");
                         var t63 = Console.ReadLine();
-                        Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter Compression Type number: ");
+                        Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter Compression Type number ");
+                        Console.WriteLine("None:0, Lz4:1, Zstd:3, Snappy:4");
                         var ct = Convert.ToInt32(Console.ReadLine());
                         PlainAvroBulkSendCompressionProducer(pulsarSystem, t63, ct);
                         break;

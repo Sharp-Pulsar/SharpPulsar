@@ -5,8 +5,18 @@
     <Version>0.8.5</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
-    <PackageTags>Beta</PackageTags>
-    <PackageReleaseNotes>Update dependencies</PackageReleaseNotes>
+    <PackageTags>Pulsar, Akka.Net</PackageTags>
+    <PackageReleaseNotes>This release comes with a number of additions and fixes.
+  Fixes:
+    SequenceId
+    Compression
+
+  Additions:
+    Routers - BroadcastMode, RandomMode
+    Separate Producer Actor to handle SendReceipt  
+    Updated Admin REST API to 2.5.1
+  
+</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
