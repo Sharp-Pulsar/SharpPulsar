@@ -29,6 +29,7 @@ Supported pulsar cluster versions: 2.5+
 - [x] Proxy
 - [x] Seek (MessageId, Timestamp)
 - [x] Compression (Lz4, Zstd, Snappy, [WIP] ZLib)
+- [x] Producer Broadcast Group - broadcast single message to multiple topics including partitioned topics[How to use? cmd 65 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Routing (RoundRobin, ConsistentHashing, Broadcast, Random)
 - [x] Pulsar SQL (Presto)[How to use cmd 20 and 21 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Pulsar Admin [How to use? cmd 24-44 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
