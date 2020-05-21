@@ -46,14 +46,16 @@ namespace SharpPulsar.Akka.Producer
         private readonly Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
         private readonly Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
         private readonly bool _isPartitioned;
+        private readonly bool _isGroup;
         private ICancelable _producerRecreator;
 
-        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
+        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned, bool isgroup)
         {
             _topic = topic;
             _listener = configuration.ProducerEventListener;
             _schemas = new Dictionary<string, ISchema>();
             _isPartitioned = isPartitioned;
+            _isGroup = isgroup;
             _clientConfiguration = clientConfiguration;
             _producerInterceptor = configuration.Interceptors;
             _schemas.Add("default", configuration.Schema);
@@ -100,9 +102,9 @@ namespace SharpPulsar.Akka.Producer
             Become(LookUp);
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, bool isgroup = false)
         {
-            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned));
+            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, isgroup));
         }
 
         private void LookUp()
@@ -156,6 +158,10 @@ namespace SharpPulsar.Akka.Producer
                 }
 
                 if (_isPartitioned)
+                {
+                    Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _topic));
+                }
+                else if (_isGroup)
                 {
                     Context.Parent.Tell(new RegisteredProducer(_producerId, ProducerName, _topic));
                 }

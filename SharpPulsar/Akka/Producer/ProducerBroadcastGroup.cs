@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
@@ -24,15 +25,15 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<NewProducerBroadcastGroup>(cmd =>
             {
-                _expectedRouteeCount = cmd.Topics.Count;
-                _configuration = cmd.ProducerConfiguration;
+                _expectedRouteeCount = cmd.ProducerConfigurations.Count;
+                _configuration = cmd.ProducerConfigurations.First();
                 Become(() => CreatingProducers(cmd));
             });
-            Stash.UnstashAll();
         }
 
         private void CreatingProducers(NewProducerBroadcastGroup cmd)
         {
+            var m = cmd;
             Receive<RegisteredProducer>(p =>
             {
                 _routees.Add(Sender.Path.ToString());
@@ -40,17 +41,17 @@ namespace SharpPulsar.Akka.Producer
                 { 
                     var router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"Broadcast{DateTimeHelper.CurrentUnixTimeMillis()}");
                     var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router));
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(broadcaster, _configuration.TopicName, _configuration.ProducerName));
+                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(broadcaster, _configuration.TopicName, _configuration.ProducerName, true));
                     _routees.Clear();
                     Become(Waiting);
+                    Stash.UnstashAll();
                 }
 
             });
             ReceiveAny(_=> Stash.Stash());
-            var topics = cmd.Topics;
-            foreach (var t in topics)
+            foreach (var t in cmd.ProducerConfigurations)
             {
-                var p = new NewProducerGroupMember(cmd.Schema, cmd.Configuration, cmd.ProducerConfiguration);
+                var p = new NewProducerGroupMember(t.Schema, cmd.Configuration, t);
                 _producerManager.Tell(p);
             }
         }

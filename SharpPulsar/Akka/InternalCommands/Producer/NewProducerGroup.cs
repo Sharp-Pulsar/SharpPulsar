@@ -7,15 +7,13 @@ namespace SharpPulsar.Akka.InternalCommands.Producer
 {
     public sealed class CreateProducerBroadcastGroup
     {
-        public CreateProducerBroadcastGroup(ISchema schema, ProducerConfigurationData producerConfiguration, HashSet<string> topics)
+        public CreateProducerBroadcastGroup(ISchema schema, HashSet<ProducerConfigurationData> producerConfigurations)
         {
             Schema = schema;
-            ProducerConfiguration = producerConfiguration;
-            Topics = topics;
+            ProducerConfigurations = producerConfigurations;
         }
         public ISchema Schema { get; }
-        public ProducerConfigurationData ProducerConfiguration { get; }
-        public HashSet<string> Topics { get; }
+        public HashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }
     public sealed class NewProducerBroadcastGroup
     {
@@ -27,17 +25,15 @@ namespace SharpPulsar.Akka.InternalCommands.Producer
     /// <param name="configuration"></param>
     /// <param name="producerConfiguration"></param>
     /// <param name="topics"></param>
-        public NewProducerBroadcastGroup(ISchema schema, ClientConfigurationData configuration, ProducerConfigurationData producerConfiguration, ImmutableHashSet<string> topics)
+        public NewProducerBroadcastGroup(ISchema schema, ClientConfigurationData configuration, ImmutableHashSet<ProducerConfigurationData> producerConfigurations)
         {
             Schema = schema;
             Configuration = configuration;
-            ProducerConfiguration = producerConfiguration;
-            Topics = topics;
+            ProducerConfigurations = producerConfigurations;
         }
 
         public ISchema Schema { get; }
         public ClientConfigurationData Configuration { get; }
-        public ProducerConfigurationData ProducerConfiguration { get; }
-        public ImmutableHashSet<string> Topics { get; }
+        public ImmutableHashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }
 }

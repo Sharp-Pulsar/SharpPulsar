@@ -2,6 +2,7 @@
 using System.IO;
 using DotNetty.Common;
 using ICSharpCode.SharpZipLib.Zip.Compression;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -38,7 +39,12 @@ namespace SharpPulsar.Common.Compression
 
         public byte[] Decode(byte[] encoded, int uncompressedSize)
         {
-            throw new NotImplementedException();
+            var outputStream = new MemoryStream();
+            using var compressedStream = new MemoryStream(encoded);
+            using var inputStream = new InflaterInputStream(compressedStream);
+            inputStream.CopyTo(outputStream);
+            outputStream.Position = 0;
+            return outputStream.ToArray();
         }
     }
 

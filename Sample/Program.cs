@@ -28,6 +28,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -85,9 +86,14 @@ namespace Samples
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter topic: ");
                         var t63 = Console.ReadLine();
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter Compression Type number ");
-                        Console.WriteLine("None:0, Lz4:1, Zstd:3, Snappy:4");
+                        Console.WriteLine("None:0, Lz4:1, Zlib:2, Zstd:3, Snappy:4");
                         var ct = Convert.ToInt32(Console.ReadLine());
                         PlainAvroBulkSendCompressionProducer(pulsarSystem, t63, ct);
+                        break;
+                    case "65":
+                        Console.WriteLine("[PlainAvroBulkSendBroadcastProducer] Enter topic: ");
+                        var t65 = Console.ReadLine();
+                        PlainAvroBulkSendBroadcastProducer(pulsarSystem, t65);
                         break;
                     case "1":
                         Console.WriteLine("[PlainAvroProducer] Enter topic: ");
@@ -168,6 +174,12 @@ namespace Samples
                         var topics = Console.ReadLine();
                         var t12 = topics.Split(",");
                         DecryptAvroMultiConsumer(pulsarSystem, t12);
+                        break;
+                    case "66":
+                        Console.WriteLine("[AvroMultiConsumer] Enter comm delimited topics: ");
+                        var tops = Console.ReadLine();
+                        var t66 = tops.Split(",");
+                        AvroMultiConsumer(pulsarSystem, t66);
                         break;
                     case "13":
                         Console.WriteLine("[PlainBytesConsumer] Enter topic: ");
@@ -571,6 +583,58 @@ namespace Samples
             system.BulkSend(bulk, produce);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
+        }
+        
+        private static void PlainAvroBulkSendBroadcastProducer(PulsarSystem system, string topic)
+        {
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var producerListener = new DefaultProducerListener((o) =>
+            {
+                Console.WriteLine(o.ToString());
+            }, (to, n,p) =>
+            {
+                Console.WriteLine($"Acquired producer for topic: {topic}");
+                var sends = new List<Send>();
+                for (var i = 0; i < 5; i++)
+                {
+                    var student = new Students
+                    {
+                        Name = $"#Broadcast Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - broadcast-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                        Age = 2019 + i,
+                        School = "Akka-Pulsar university"
+                    };
+                    var metadata = new Dictionary<string, object>
+                    {
+                        ["Key"] = "Broadcast",
+                        ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+                    };
+                    sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                }
+                var bulk = new BulkSend(sends, topic);
+                system.BulkSend(bulk, p);
+                Task.Delay(5000).Wait();
+                File.AppendAllLines("receipts-broadcast.txt", Receipts);
+            }, s =>
+            {
+                Receipts.Add(s);
+            });
+            //var compression = (ICompressionType)Enum.GetValues(typeof(ICompressionType)).GetValue(comp);
+            
+            var topics = topic.Split(",");
+            var producers = new List<ProducerConfigurationData>();
+            foreach (var t in topics)
+            {
+                var producerConfig = new ProducerConfigBuilder()
+                    .ProducerName(t)
+                    .Topic(t)
+                    .Schema(jsonSchem)
+                    //.CompressionType(compression)
+                    .EventListener(producerListener)
+                    .ProducerConfigurationData;
+                producers.Add(producerConfig);
+            }
+            system.PulsarProducer(new CreateProducerBroadcastGroup(jsonSchem, producers.ToHashSet()));
+            
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
         {
@@ -1379,6 +1443,51 @@ namespace Samples
                 .Schema(jsonSchem)
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
+                .ConsumerConfigurationData;
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
+
+        }
+        
+        private static void AvroMultiConsumer(PulsarSystem system, string[] topics)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
+            {
+                if (!Consumers.ContainsKey(s))
+                    Consumers.Add(s, c);
+            }, (s, response) => LastMessageId.Add(s, response));
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var students = m.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(students);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName("topics-consumer")
+                .ForceTopicCreation(true)
+                .SubscriptionName("topics-consumer-Subscription")
+                //.CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
+                .Topic(topics)
+
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Shared)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
             system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
 

@@ -23,6 +23,7 @@ namespace SharpPulsar.Akka.Producer
         private ClientConfigurationData _config;
         private ProducerConfigurationData _producerConfiguration;
         private IProducerEventListener _listener;
+        private IActorRef _group;
         public ProducerManager(ClientConfigurationData configuration, IActorRef network)
         {
             _network = network;
@@ -42,6 +43,7 @@ namespace SharpPulsar.Akka.Producer
             });
             Receive<NewProducerGroupMember>(n =>
             {
+                _group = Sender;
                 Become(() => CreatingGroupMember(n));
             });
         }
@@ -53,6 +55,11 @@ namespace SharpPulsar.Akka.Producer
             {
                 //_producers.Add(p.Topic, Sender);
                 Become(Init);
+                Stash.UnstashAll();
+            });
+            ReceiveAny(x =>
+            {
+                Stash.Stash();
             });
             NewProducer(np);
         }
@@ -62,8 +69,13 @@ namespace SharpPulsar.Akka.Producer
             Common(true);
             Receive<RegisteredProducer>(p =>
             {
-                Context.Parent.Forward(p);
+                _group.Forward(p);
                 Become(Init);
+                Stash.UnstashAll();
+            });
+            ReceiveAny(x =>
+            {
+                Stash.Stash();
             });
             NewProducer(gm);
         }
@@ -77,9 +89,9 @@ namespace SharpPulsar.Akka.Producer
                 _producerConfiguration.Partitions = x.Partition;
                 _producerConfiguration.UseTls = _config.UseTls;
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network), pn);
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network, parent), pn);
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, parent), pn);
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, isgroup: parent), pn);
             });
 
             Receive<SchemaResponse>(s =>
@@ -104,11 +116,6 @@ namespace SharpPulsar.Akka.Producer
                 }
                 _producerConfiguration.Schema = ISchema.GetSchema(info);
                 SendPartitionMetadataRequestCommand(_producerConfiguration);
-            });
-            ReceiveAny(x =>
-            {
-                Console.WriteLine($"Stashing message of type {x.GetType()}: producer not created!");
-                Stash.Stash();
             });
         }
         
@@ -136,6 +143,8 @@ namespace SharpPulsar.Akka.Producer
             if (!Context.Child(p).IsNobody())
             {
                 _listener.Log($"Producer with name '{producer.ProducerConfiguration.ProducerName}' already exist for topic '{producer.ProducerConfiguration.TopicName}'");
+                Become(Init);
+                Stash.UnstashAll();
                 return;
             }
 

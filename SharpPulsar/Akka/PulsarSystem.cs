@@ -73,16 +73,15 @@ namespace SharpPulsar.Akka
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
-            var topics = new List<string>();
-            
-            foreach (var t in producer.Topics)
+            if(producer.ProducerConfigurations.Count < 2)
+                throw new ArgumentNullException("producer", "numbers of producers must be greater than 1");
+            foreach (var t in producer.ProducerConfigurations)
             {
-                if (!TopicName.IsValid(t))
-                    throw new ArgumentException($"Topic '{t}' is invalid");
-                topics.Add(TopicName.Get(t).ToString());
+                if (!TopicName.IsValid(t.TopicName))
+                    throw new ArgumentException($"Topic '{t.TopicName}' is invalid");
+                t.TopicName = TopicName.Get(t.TopicName).ToString();
             }
-            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfiguration,
-                topics.ToImmutableHashSet());
+            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet());
             _pulsarManager.Tell(group);
         }
         public void PulsarReader(CreateReader reader)

@@ -51,20 +51,17 @@ namespace SharpPulsar.Akka
             });
             Receive<NewProducer>(cmd =>
             {
-                var t = Regex.Replace(cmd.ProducerConfiguration.TopicName, @"[^\w\d]", "");
-                var child = Context.Child(t);
-                if (child.IsNobody())
-                    child = Context.ActorOf(TopicManager.Prop(_config, _network), t);
-                child.Tell(cmd);
+                _topicManager.Tell(cmd);
             });
 
             Receive<NewReader>(cmd =>
             {
-                var t = Regex.Replace(cmd.ReaderConfiguration.TopicName, @"[^\w\d]", "");
-                var child = Context.Child(t);
-                if (child.IsNobody())
-                    child = Context.ActorOf(TopicManager.Prop(_config, _network), t);
-                child.Tell(cmd);
+                _topicManager.Tell(cmd);
+            });
+
+            Receive<NewProducerBroadcastGroup>(cmd =>
+            {
+                _topicManager.Tell(cmd);
             });
             
         }
@@ -79,6 +76,8 @@ namespace SharpPulsar.Akka
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
                 Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}), "FunctionManager");
+
+                _topicManager = Context.ActorOf(TopicManager.Prop(_config, _network), "TopicManager"); 
                 Become(Ready);
                 Stash.UnstashAll();
             });
