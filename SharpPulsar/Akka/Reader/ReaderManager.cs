@@ -10,8 +10,10 @@ namespace SharpPulsar.Akka.Reader
     {
         private IActorRef _network;
         private ClientConfigurationData _config;
-        public ReaderManager(ClientConfigurationData configuration, IActorRef network)
+        private IActorRef _pulsarManager;
+        public ReaderManager(ClientConfigurationData configuration, IActorRef network, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _network = network;
             _config = configuration;
             Receive<NewReader>(NewReader);
@@ -24,9 +26,9 @@ namespace SharpPulsar.Akka.Reader
                 Context.System.Log.Info($"{x.GetType().Name} not supported");
             });
         }
-        public static Props Prop(ClientConfigurationData clientConfiguration, IActorRef network)
+        public static Props Prop(ClientConfigurationData clientConfiguration, IActorRef network, IActorRef pulsarManager)
         {
-            return Props.Create(() => new ReaderManager(clientConfiguration, network));
+            return Props.Create(() => new ReaderManager(clientConfiguration, network, pulsarManager));
         }
         
         private void NewReader(NewReader reader)
@@ -39,7 +41,7 @@ namespace SharpPulsar.Akka.Reader
                 readerConfig.EventListener.Log($"Reader with name '{r}' already exist for topic '{readerConfig.TopicName}'");
                 return;
             }
-            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek), r);
+            Context.ActorOf(Reader.Prop(clientConfig, readerConfig, _network, reader.Seek, _pulsarManager), r);
         }
         
         public IStash Stash { get; set; }

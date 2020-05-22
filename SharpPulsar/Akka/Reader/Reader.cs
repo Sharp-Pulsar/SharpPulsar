@@ -2,7 +2,6 @@
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -13,16 +12,15 @@ namespace SharpPulsar.Akka.Reader
 {
     public class Reader: ReceiveActor
     {
-        private readonly IReaderListener _readerListener;
-        public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek)
+        public Reader(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
-			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+            var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
             if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
             {
                 subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
             }
 
-            _readerListener = readerConfiguration.ReaderListener;
+            var readerListener = readerConfiguration.ReaderListener;
             var consumerConfiguration = new ConsumerConfigurationData();
             consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
             consumerConfiguration.SubscriptionName = subscription;
@@ -52,10 +50,10 @@ namespace SharpPulsar.Akka.Reader
             }
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-            Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek));
+            Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek, pulsarManager));
             Receive<ConsumedMessage>(m =>
             {
-                _readerListener.Received(m.Message);
+                readerListener.Received(m.Message);
                 // Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
                 // it will specify the subscription position anyway
                 m.Consumer.Tell(new AckMessages(m.Message.ReceivedId));
@@ -67,9 +65,9 @@ namespace SharpPulsar.Akka.Reader
             });
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new Reader(clientConfiguration, readerConfiguration, network, seek));
+            return Props.Create(()=> new Reader(clientConfiguration, readerConfiguration, network, seek, pulsarManager));
         }
     }
 }

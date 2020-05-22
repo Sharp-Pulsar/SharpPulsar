@@ -50,12 +50,16 @@ namespace SharpPulsar.Akka
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
         }
 
+        public (IActorRef Producer, string Topic, string Name) PulsarProducer(CreateProducer producer)
+        {
+            return PulsarProducerAsync(producer, default).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Create a producer Actor. Topic is returned for uniformity purposes!
         /// </summary>
         /// <param name="producer"></param>
         /// <returns>string</returns>
-        public string PulsarProducer(CreateProducer producer, CancellationTokenSource cancellationTokenSource = default)
+        public async Task<(IActorRef Producer, string Topic, string Name)> PulsarProducerAsync(CreateProducer producer, CancellationTokenSource cancellationTokenSource)
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
@@ -68,7 +72,14 @@ namespace SharpPulsar.Akka
             conf.TopicName = topic.ToString();
             var p = new NewProducer(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);//producer created should be handled internally
-            return topic.ToString();
+            (IActorRef Producer, string Topic, string Name) topicTroducer = (default, string.Empty, string.Empty);
+            while (topicTroducer.Producer == null && !cancellationTokenSource.IsCancellationRequested)
+            {
+                var pro = PulsarManager.Producers.First();
+                topicTroducer = (pro.Producer,pro.Topic, pro.Name);
+                await Task.Delay(100);
+            }
+            return topicTroducer;
         } 
         public void PulsarProducer(CreateProducerBroadcastGroup producer)
         {

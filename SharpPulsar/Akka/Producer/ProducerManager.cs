@@ -24,8 +24,10 @@ namespace SharpPulsar.Akka.Producer
         private ProducerConfigurationData _producerConfiguration;
         private IProducerEventListener _listener;
         private IActorRef _group;
-        public ProducerManager(ClientConfigurationData configuration, IActorRef network)
+        private IActorRef _pulsarManager;
+        public ProducerManager(ClientConfigurationData configuration, IActorRef network, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _network = network;
             _config = configuration;
         }
@@ -91,9 +93,9 @@ namespace SharpPulsar.Akka.Producer
                 _producerConfiguration.Partitions = x.Partition;
                 _producerConfiguration.UseTls = _config.UseTls;
                 if (x.Partition > 0)
-                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network, parent), pn);
+                    Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network, _pulsarManager, parent), pn);
                 else
-                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, isgroup: parent), pn);
+                    Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, _pulsarManager, isgroup: parent), pn);
             });
 
             Receive<SchemaResponse>(s =>
@@ -134,9 +136,9 @@ namespace SharpPulsar.Akka.Producer
             _network.Tell(pay);
         }
         
-        public static Props Prop(ClientConfigurationData configuration, IActorRef network)
+        public static Props Prop(ClientConfigurationData configuration, IActorRef network, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new ProducerManager(configuration, network));
+            return Props.Create(()=> new ProducerManager(configuration, network, pulsarManager));
         }
 
         private void NewProducer(NewProducer producer, string title = "")

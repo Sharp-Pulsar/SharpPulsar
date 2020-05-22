@@ -38,6 +38,7 @@ namespace SharpPulsar.Akka.Producer
         private readonly string _topic;
         private long _sequenceId = 0;
         private readonly int _partitionIndex = -1;
+        private IActorRef _pulsarManager;
 
         private readonly IDictionary<string, string> _metadata;
         private readonly Dictionary<string, ISchema> _schemas;
@@ -49,8 +50,9 @@ namespace SharpPulsar.Akka.Producer
         private readonly bool _isGroup;
         private ICancelable _producerRecreator;
 
-        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned, bool isgroup)
+        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, IActorRef pulsarManager, bool isPartitioned, bool isgroup)
         {
+            _pulsarManager = pulsarManager;
             _topic = topic;
             _listener = configuration.ProducerEventListener;
             _schemas = new Dictionary<string, ISchema>();
@@ -102,9 +104,9 @@ namespace SharpPulsar.Akka.Producer
             Become(LookUp);
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, bool isPartitioned = false, bool isgroup = false)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, IActorRef pulsarManager, bool isPartitioned = false, bool isgroup = false)
         {
-            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, isPartitioned, isgroup));
+            return Props.Create(()=> new Producer(clientConfiguration, topic, configuration, producerid, network, pulsarManager, isPartitioned, isgroup));
         }
 
         private void LookUp()
@@ -163,7 +165,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 else
                 {
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, _topic, ProducerName));
+                    _pulsarManager.Tell(new CreatedProducer(Self, _topic, ProducerName));
                 }
                 var receiptActor = Context.ActorOf(ReceiptActor.Prop(_listener, _partitionIndex));
                 _broker.Tell(receiptActor);
@@ -193,7 +195,7 @@ namespace SharpPulsar.Akka.Producer
                     else
                     {
                         _configuration.ProducerEventListener.Log($"{e.Error}: {e.Message}");
-                        _configuration.ProducerEventListener.ProducerCreated(null);
+                        _pulsarManager.Tell(new CreatedProducer(null, string.Empty, string.Empty));
                     }
                     Context.System.Stop(Self);
                 }

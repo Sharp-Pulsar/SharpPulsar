@@ -256,7 +256,6 @@ namespace SharpPulsar.Akka.Configuration
 
     public interface IProducerEventListener
     {
-        public void ProducerCreated(CreatedProducer producer);
         public void MessageSent(SentReceipt receipt);
         public void Log(object log);
     }

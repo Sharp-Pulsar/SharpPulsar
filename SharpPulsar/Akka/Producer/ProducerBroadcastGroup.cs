@@ -16,8 +16,10 @@ namespace SharpPulsar.Akka.Producer
         private int _expectedRouteeCount;
         private int _currentRouteeCount;
         private bool _canCreate;
-        public ProducerBroadcastGroup(IActorRef producerManager)
+        private IActorRef _pulsarManager;
+        public ProducerBroadcastGroup(IActorRef producerManager, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _routees = new List<string>();
             _producerManager = producerManager;
             Become(Waiting);
@@ -47,7 +49,7 @@ namespace SharpPulsar.Akka.Producer
                     {
                         var router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"Broadcast{DateTimeHelper.CurrentUnixTimeMillis()}");
                         var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router));
-                        _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(broadcaster, cmd.Title, _configuration.ProducerName, true));
+                        _pulsarManager.Tell(new CreatedProducer(broadcaster, cmd.Title, _configuration.ProducerName, true));
                         _routees.Clear();
                         _currentRouteeCount = 0;
                         Become(Waiting);
@@ -59,7 +61,7 @@ namespace SharpPulsar.Akka.Producer
                     _canCreate = false;
                     if (_currentRouteeCount == _expectedRouteeCount)
                     {
-                        _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(null, cmd.Title, _configuration.ProducerName, true));
+                        _pulsarManager.Tell(new CreatedProducer(null, cmd.Title, _configuration.ProducerName, true));
                         _currentRouteeCount = 0;
                         _routees.Clear();
                         Become(Waiting);
@@ -82,9 +84,9 @@ namespace SharpPulsar.Akka.Producer
                 _producerManager.Tell(p);
             }
         }
-        public static Props Prop(IActorRef producerManager)
+        public static Props Prop(IActorRef producerManager, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new ProducerBroadcastGroup(producerManager));
+            return Props.Create(()=> new ProducerBroadcastGroup(producerManager, pulsarManager));
         }
         public IStash Stash { get ; set ; }
     }

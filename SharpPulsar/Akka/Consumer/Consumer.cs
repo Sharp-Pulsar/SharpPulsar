@@ -718,7 +718,7 @@ namespace SharpPulsar.Akka.Consumer
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
                 SendFlow(_requestedFlowPermits);
-                _conf.ConsumerEventListener.ConsumerCreated(new CreatedConsumer(Self, _topicName.ToString()));
+                _pulsarManager.Tell(new CreatedConsumer(Self, _topicName.ToString()));
                 BecomeActive();
                 Stash.UnstashAll();
             });

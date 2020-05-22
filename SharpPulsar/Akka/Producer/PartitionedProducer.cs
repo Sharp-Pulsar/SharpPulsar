@@ -15,8 +15,10 @@ namespace SharpPulsar.Akka.Producer
     {
         private int _partitions;
         private readonly bool _hasParent;
-        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, bool hasParent)
+        private IActorRef _pulsarManager;
+        public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, IActorRef pulsarManager, bool hasParent)
         {
+            _pulsarManager = pulsarManager;
             IActorRef router;
             _hasParent = hasParent;
             var configuration1 = configuration;
@@ -27,7 +29,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 var partitionName = TopicName.Get(topic).GetPartition(i).ToString();
                 var produceid = Interlocked.Increment(ref IdGenerators.ProducerId);
-                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, true), $"{i}");
+                var c = Context.ActorOf(Producer.Prop(clientConfiguration, partitionName, configuration, produceid, network, pulsarManager, true), $"{i}");
                 routees.Add(c.Path.ToString());
             }
 
@@ -56,7 +58,7 @@ namespace SharpPulsar.Akka.Producer
                         Context.Parent.Tell(new RegisteredProducer(-1, configuration.ProducerName, configuration.TopicName, p.IsNew));
                     else
                     {
-                        configuration1.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, configuration1.TopicName, configuration1.ProducerName));
+                        _pulsarManager.Tell(new CreatedProducer(Self, configuration1.TopicName, configuration1.ProducerName));
                     }
                     
                 }
@@ -102,9 +104,9 @@ namespace SharpPulsar.Akka.Producer
             });
             
         }
-        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, bool hasParent = false)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, IActorRef pulsarManager, bool hasParent = false)
         {
-            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, network, hasParent));
+            return Props.Create(() => new PartitionedProducer(clientConfiguration, configuration, network, pulsarManager, hasParent));
         }
     }
 }

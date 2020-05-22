@@ -49,7 +49,6 @@ namespace SharpPulsar.Api
 
         void Error(Exception ex);
         void Log(string log);
-        void ConsumerCreated(CreatedConsumer consumer);
         void LastMessageId(LastMessageIdReceived received);
     }
 

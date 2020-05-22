@@ -22,7 +22,7 @@ namespace SharpPulsar.Handlers
             _logs = log;
         }
 
-        public void ProducerCreated(CreatedProducer producer)
+        /*public void ProducerCreated(CreatedProducer producer)
         {
             if(producer == null)
                 return;
@@ -39,7 +39,7 @@ namespace SharpPulsar.Handlers
                 var s = $"Producer {producer.Name} exists for [{producer.Topic}]";
                 Log(s);
             }
-        }
+        }*/
 
         public void MessageSent(SentReceipt receipt)
         {
