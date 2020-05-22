@@ -19,8 +19,8 @@ namespace SharpPulsar.Akka.Producer
 {
     public class ProducerManager:ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _network;
-        private ClientConfigurationData _config;
+        private readonly IActorRef _network;
+        private readonly ClientConfigurationData _config;
         private ProducerConfigurationData _producerConfiguration;
         private IProducerEventListener _listener;
         private IActorRef _group;
@@ -44,8 +44,10 @@ namespace SharpPulsar.Akka.Producer
             Receive<NewProducerGroupMember>(n =>
             {
                 _group = Sender;
-                Become(() => CreatingGroupMember(n));
+                Become(() => CreatingGroupMember(n, n.Title));
             });
+
+            Stash.UnstashAll();
         }
 
         private void CreatingProducer(NewProducer np)
@@ -63,7 +65,7 @@ namespace SharpPulsar.Akka.Producer
             });
             NewProducer(np);
         }
-        private void CreatingGroupMember(NewProducerGroupMember member)
+        private void CreatingGroupMember(NewProducerGroupMember member, string title)
         {
             var gm = new NewProducer(member.Schema, member.Configuration, member.ProducerConfiguration); 
             Common(true);
@@ -77,7 +79,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 Stash.Stash();
             });
-            NewProducer(gm);
+            NewProducer(gm, title);
         }
 
         private void Common(bool parent = false)
@@ -137,14 +139,15 @@ namespace SharpPulsar.Akka.Producer
             return Props.Create(()=> new ProducerManager(configuration, network));
         }
 
-        private void NewProducer(NewProducer producer)
+        private void NewProducer(NewProducer producer, string title = "")
         {
             var p = Regex.Replace(producer.ProducerConfiguration.ProducerName, @"[^\w\d]", "");
-            if (!Context.Child(p).IsNobody())
+            var child = Context.Child(p);
+            if (!child.IsNobody())
             {
                 _listener.Log($"Producer with name '{producer.ProducerConfiguration.ProducerName}' already exist for topic '{producer.ProducerConfiguration.TopicName}'");
-                Become(Init);
-                Stash.UnstashAll();
+                if(!string.IsNullOrWhiteSpace(title))
+                   Self.Tell(new RegisteredProducer(-1, producer.ProducerConfiguration.ProducerName, string.IsNullOrWhiteSpace(title) ? producer.ProducerConfiguration.TopicName: title, false), child);
                 return;
             }
 

@@ -11,9 +11,11 @@ namespace SharpPulsar.Akka.Producer
     public class ProducerBroadcastGroup : ReceiveActor, IWithUnboundedStash
     {
         private ProducerConfigurationData _configuration;
-        private IActorRef _producerManager;
-        private List<string> _routees;
+        private readonly IActorRef _producerManager;
+        private readonly List<string> _routees;
         private int _expectedRouteeCount;
+        private int _currentRouteeCount;
+        private bool _canCreate;
         public ProducerBroadcastGroup(IActorRef producerManager)
         {
             _routees = new List<string>();
@@ -25,6 +27,7 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<NewProducerBroadcastGroup>(cmd =>
             {
+                _canCreate = true;
                 _expectedRouteeCount = cmd.ProducerConfigurations.Count;
                 _configuration = cmd.ProducerConfigurations.First();
                 Become(() => CreatingProducers(cmd));
@@ -36,22 +39,46 @@ namespace SharpPulsar.Akka.Producer
             var m = cmd;
             Receive<RegisteredProducer>(p =>
             {
-                _routees.Add(Sender.Path.ToString());
-                if (_routees.Count == _expectedRouteeCount)
-                { 
-                    var router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"Broadcast{DateTimeHelper.CurrentUnixTimeMillis()}");
-                    var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router));
-                    _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(broadcaster, _configuration.TopicName, _configuration.ProducerName, true));
-                    _routees.Clear();
-                    Become(Waiting);
-                    Stash.UnstashAll();
+                _currentRouteeCount++;
+                if (p.IsNew && _canCreate)
+                {
+                    _routees.Add(Sender.Path.ToString());
+                    if (_currentRouteeCount == _expectedRouteeCount)
+                    {
+                        var router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"Broadcast{DateTimeHelper.CurrentUnixTimeMillis()}");
+                        var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router));
+                        _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(broadcaster, cmd.Title, _configuration.ProducerName, true));
+                        _routees.Clear();
+                        _currentRouteeCount = 0;
+                        Become(Waiting);
+                        Stash.UnstashAll();
+                    }
+                }
+                else
+                {
+                    _canCreate = false;
+                    if (_currentRouteeCount == _expectedRouteeCount)
+                    {
+                        _configuration.ProducerEventListener.ProducerCreated(new CreatedProducer(null, cmd.Title, _configuration.ProducerName, true));
+                        _currentRouteeCount = 0;
+                        _routees.Clear();
+                        Become(Waiting);
+                        Stash.UnstashAll();
+                    }
                 }
 
+            });
+            Receive<PulsarError>(e =>
+            {
+                _currentRouteeCount++;
+                _configuration.ProducerEventListener.Log($"{e.Error}: {e.Message}");
+                Become(Waiting);
+                Stash.UnstashAll();
             });
             ReceiveAny(_=> Stash.Stash());
             foreach (var t in cmd.ProducerConfigurations)
             {
-                var p = new NewProducerGroupMember(t.Schema, cmd.Configuration, t);
+                var p = new NewProducerGroupMember(t.Schema, cmd.Configuration, t, cmd.Title);
                 _producerManager.Tell(p);
             }
         }

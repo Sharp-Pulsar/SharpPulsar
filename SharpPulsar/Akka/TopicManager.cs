@@ -17,7 +17,7 @@ namespace SharpPulsar.Akka
             
             Receive<NewProducer>(cmd =>
             {
-                Context.Child("ProducerManager").Tell(cmd);
+                Context.Child("ProducerManager").Forward(cmd);
             });
             Receive<NewProducerBroadcastGroup>(cmd =>
             {
@@ -25,7 +25,7 @@ namespace SharpPulsar.Akka
             });
             Receive<NewReader>(cmd =>
             {
-                Context.Child("ReaderManager").Tell(cmd);
+                Context.Child("ReaderManager").Forward(cmd);
             });
         }
 

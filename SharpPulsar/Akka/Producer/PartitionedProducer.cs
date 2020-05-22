@@ -48,12 +48,12 @@ namespace SharpPulsar.Akka.Producer
             }
             Receive<RegisteredProducer>(p =>
             {
-                _partitions += 1;
+                _partitions++;
                 if (_partitions == configuration.Partitions)
                 {
                     IdGenerators.PartitionIndex = 0;//incase we want to create multiple partitioned producer
                     if (hasParent)
-                        Context.Parent.Tell(p);
+                        Context.Parent.Tell(new RegisteredProducer(-1, configuration.ProducerName, configuration.TopicName, p.IsNew));
                     else
                     {
                         configuration1.ProducerEventListener.ProducerCreated(new CreatedProducer(Self, configuration1.TopicName, configuration1.ProducerName));
@@ -61,6 +61,12 @@ namespace SharpPulsar.Akka.Producer
                     
                 }
 
+            });
+
+            Receive<PulsarError>(e =>
+            {
+                _partitions++;
+                configuration.ProducerEventListener.Log($"{e.Error}: {e.Message}");
             });
             Receive<Send>(s =>
             {

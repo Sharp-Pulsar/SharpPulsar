@@ -20,9 +20,11 @@ namespace SharpPulsar.Akka.Consumer
         private IMessageListener _messageListener;
         private ConsumerConfigurationData _configuration;
         private ClientConfigurationData _clientConfiguration;
+        private IActorRef _pulsarManager;
         private Seek _seek;
-        public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek)
+        public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _seek = seek;
             _network = network;
             _clientConfiguration = client;
@@ -43,7 +45,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 var topics = TopicsPatternFilter(t.Topics, _topicsPattern);
                 _configuration.TopicNames = new HashSet<string>(topics);
-                Context.ActorOf(MultiTopicsManager.Prop(_clientConfiguration, _configuration, _network, true, _seek));
+                Context.ActorOf(MultiTopicsManager.Prop(_clientConfiguration, _configuration, _network, true, _seek, _pulsarManager));
             });
             Receive<ConsumedMessage>(m =>
             {
@@ -63,9 +65,9 @@ namespace SharpPulsar.Akka.Consumer
             return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic,@"\:\/\/")[1]).Success).ToList();
         }
 
-        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek)
+        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new PatternMultiTopicsManager(client, consumer,network, seek));
+            return Props.Create(()=> new PatternMultiTopicsManager(client, consumer,network, seek, pulsarManager));
         }
         
         public IStash Stash { get; set; }

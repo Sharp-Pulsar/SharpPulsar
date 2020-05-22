@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
@@ -54,7 +55,7 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="producer"></param>
         /// <returns>string</returns>
-        public string PulsarProducer(CreateProducer producer)
+        public string PulsarProducer(CreateProducer producer, CancellationTokenSource cancellationTokenSource = default)
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
@@ -66,7 +67,7 @@ namespace SharpPulsar.Akka
             var topic = TopicName.Get(conf.TopicName);
             conf.TopicName = topic.ToString();
             var p = new NewProducer(producer.Schema, _conf, conf);
-            _pulsarManager.Tell(p);
+            _pulsarManager.Tell(p);//producer created should be handled internally
             return topic.ToString();
         } 
         public void PulsarProducer(CreateProducerBroadcastGroup producer)
@@ -81,7 +82,7 @@ namespace SharpPulsar.Akka
                     throw new ArgumentException($"Topic '{t.TopicName}' is invalid");
                 t.TopicName = TopicName.Get(t.TopicName).ToString();
             }
-            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet());
+            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), "testgroup");
             _pulsarManager.Tell(group);
         }
         public void PulsarReader(CreateReader reader)

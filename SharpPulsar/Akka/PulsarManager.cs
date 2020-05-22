@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.Admin;
@@ -17,18 +19,21 @@ namespace SharpPulsar.Akka
     public class PulsarManager:ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _network;
-        private IActorRef _topicManager;
-        private ClientConfigurationData _config;
-        private PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
-        public PulsarManager(ClientConfigurationData conf)
+        private readonly ClientConfigurationData _config;
+        private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
+        public static readonly HashSet<CreatedProducer> Producers = new HashSet<CreatedProducer>();
+        public static readonly HashSet<CreatedConsumer> Consumers = new HashSet<CreatedConsumer>();
+        public PulsarManager(ClientConfigurationData clientConfigurationData)
         {
-            _config = conf;
-            _serviceNameResolver.UpdateServiceUrl(conf.ServiceUrl);
+            _config = clientConfigurationData ?? throw new ArgumentNullException(nameof(clientConfigurationData));
+            _serviceNameResolver.UpdateServiceUrl(clientConfigurationData.ServiceUrl);
             Become(NetworkSetup);
         }
 
         private void Ready()
         {
+            Receive<CreatedConsumer>(c => { Consumers.Add(c); });
+            Receive<CreatedProducer>(p => { Producers.Add(p); });
             Receive<NewConsumer>(cmd =>
             {
                 Context.Child("ConsumerManager").Tell(cmd);
@@ -51,17 +56,29 @@ namespace SharpPulsar.Akka
             });
             Receive<NewProducer>(cmd =>
             {
-                _topicManager.Tell(cmd);
+                var t = Regex.Replace(cmd.ProducerConfiguration.TopicName, @"[^\w\d]", "");
+                var child = Context.Child(t);
+                if (child.IsNobody())
+                    child = Context.ActorOf(TopicManager.Prop(_config, _network, Self), t);
+                child.Tell(cmd);
             });
 
             Receive<NewReader>(cmd =>
             {
-                _topicManager.Tell(cmd);
+                var t = Regex.Replace(cmd.ReaderConfiguration.TopicName, @"[^\w\d]", "");
+                var child = Context.Child(t);
+                if (child.IsNobody())
+                    child = Context.ActorOf(TopicManager.Prop(_config, _network, Self), t);
+                child.Tell(cmd);
             });
 
             Receive<NewProducerBroadcastGroup>(cmd =>
             {
-                _topicManager.Tell(cmd);
+                var t = Regex.Replace(cmd.Title, @"[^\w\d]", "");
+                var child = Context.Child(t);
+                if (child.IsNobody())
+                    child = Context.ActorOf(TopicManager.Prop(_config, _network, Self), t);
+                child.Tell(cmd);
             });
             
         }
@@ -71,13 +88,11 @@ namespace SharpPulsar.Akka
             _network = Context.ActorOf(NetworkManager.Prop(Self, _config), "NetworkManager");
             Receive<ConnectedServerInfo>(s =>
             {
-                Context.ActorOf(ConsumerManager.Prop(_config, _network), "ConsumerManager");
+                Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
                 Context.ActorOf(SqlManager.Prop(), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
                 Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}), "FunctionManager");
-
-                _topicManager = Context.ActorOf(TopicManager.Prop(_config, _network), "TopicManager"); 
                 Become(Ready);
                 Stash.UnstashAll();
             });

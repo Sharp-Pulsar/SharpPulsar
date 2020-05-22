@@ -13,6 +13,7 @@ using Akka.Event;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Akka.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
@@ -69,7 +70,7 @@ namespace SharpPulsar.Akka.Network
                Send(new ReadOnlySequence<byte>(p.Bytes));
            });
            Receive<IActorRef>(a => _receiptActor = a);
-           Receive<Producer.Producer.ResendMessages>(a =>
+           Receive<ResendMessages>(a =>
            {
                var d = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                var ms = _pendingReceipt.Where(x => (d - x.Value.time) > 30000).Select(x => new { x.Key, x.Value.cmd }).ToList();
@@ -281,7 +282,7 @@ namespace SharpPulsar.Akka.Network
                                 _requests.TryRemove((long)res.RequestId, out var g);
                                 break;
                             case BaseCommand.Type.ProducerSuccess:
-                                _system.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000), _self, new Producer.Producer.ResendMessages(), ActorRefs.NoSender);
+                                _system.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000), _self, new ResendMessages(), ActorRefs.NoSender);
                                 var p = cmd.ProducerSuccess;
                                 _requests[(long)p.RequestId].Key.Tell(new ProducerCreated(p.ProducerName,
                                     (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
@@ -289,7 +290,7 @@ namespace SharpPulsar.Akka.Network
                                 break;
                             case BaseCommand.Type.Error:
                                 var er = cmd.Error;
-                                _requests[(long)er.RequestId].Key.Tell(new PulsarError(er.Message));
+                                _requests[(long)er.RequestId].Key.Tell(new PulsarError(er.Message, er.Error.ToString()));
                                 _requests.TryRemove((long)er.RequestId, out var err);
                                 break;
                             case BaseCommand.Type.GetSchemaResponse:

@@ -23,15 +23,16 @@ namespace SharpPulsar.Akka.InternalCommands.Producer
     /// </summary>
     /// <param name="schema"></param>
     /// <param name="configuration"></param>
-    /// <param name="producerConfiguration"></param>
-    /// <param name="topics"></param>
-        public NewProducerBroadcastGroup(ISchema schema, ClientConfigurationData configuration, ImmutableHashSet<ProducerConfigurationData> producerConfigurations)
+    /// <param name="producerConfigurations"></param>
+    /// <param name="title">Internally used by PulsarSharp to prevent duplication</param>
+        public NewProducerBroadcastGroup(ISchema schema, ClientConfigurationData configuration, ImmutableHashSet<ProducerConfigurationData> producerConfigurations, string title)
         {
             Schema = schema;
             Configuration = configuration;
             ProducerConfigurations = producerConfigurations;
+            Title = title;
         }
-
+        public string Title { get; }
         public ISchema Schema { get; }
         public ClientConfigurationData Configuration { get; }
         public ImmutableHashSet<ProducerConfigurationData> ProducerConfigurations { get; }

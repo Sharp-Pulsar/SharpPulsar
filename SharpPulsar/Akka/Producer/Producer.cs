@@ -133,11 +133,7 @@ namespace SharpPulsar.Akka.Producer
                 SendNewProducerCommand();
                 Become(WaitingForProducer);
             });
-            Receive<PulsarError>(e =>
-            {
-                if (e.ShouldRetry)
-                    SendNewProducerCommand();
-            });
+            PulsarError();
         }
         private void WaitingForProducer()
         {
@@ -173,7 +169,35 @@ namespace SharpPulsar.Akka.Producer
                 _broker.Tell(receiptActor);
                 BecomeReceive();
             });
+            PulsarError();
             ReceiveAny(x => Stash.Stash());
+        }
+
+        private void PulsarError()
+        {
+
+            Receive<PulsarError>(e =>
+            {
+                if (e.ShouldRetry)
+                    SendNewProducerCommand();
+                else
+                {
+                    if (_isPartitioned)
+                    {
+                        Context.Parent.Tell(e);
+                    }
+                    else if (_isGroup)
+                    {
+                        Context.Parent.Tell(e);
+                    }
+                    else
+                    {
+                        _configuration.ProducerEventListener.Log($"{e.Error}: {e.Message}");
+                        _configuration.ProducerEventListener.ProducerCreated(null);
+                    }
+                    Context.System.Stop(Self);
+                }
+            });
         }
         private void BecomeReceive()
         {
@@ -334,18 +358,7 @@ namespace SharpPulsar.Akka.Producer
                 Context.System.Log.Error(e.ToString());
             }
         }
-        public class AddPublicKeyCipher
-        {
-
-        }
-        public class ResendMessages
-        {
-
-        }
-        public class RecreateProducer
-        {
-
-        }
+        
         private IMessage BeforeSend(IMessage message)
         {
             if (_producerInterceptor != null && _producerInterceptor.Count > 0)
@@ -587,5 +600,17 @@ namespace SharpPulsar.Akka.Producer
             return "Producer{" + "topic='" + _topic + '\'' + '}';
         }
         public IStash Stash { get; set; }
+    }
+    public class AddPublicKeyCipher
+    {
+
+    }
+    public class ResendMessages
+    {
+
+    }
+    public class RecreateProducer
+    {
+
     }
 }

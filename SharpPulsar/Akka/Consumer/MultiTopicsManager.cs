@@ -22,9 +22,10 @@ namespace SharpPulsar.Akka.Consumer
         private IConsumerEventListener _event;
         private bool _hasParentConsumer;
         private Seek _seek;
-        private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        public MultiTopicsManager(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek)
+        private IActorRef _pulsarManager;
+        public MultiTopicsManager(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _seek = seek;
             _consumerConfiguration = configuration;
             _clientConfiguration = clientConfiguration;
@@ -44,15 +45,13 @@ namespace SharpPulsar.Akka.Consumer
                     for (var i = 0; i < p.Partition; i++)
                     {
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek, _pulsarManager), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                     }
                 }
                 else
                 {
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek, _pulsarManager), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                 }
-
-                _pendingLookupRequests.Remove(p.RequestId);
             });
             Receive<ConsumedMessage>(m =>
             {
@@ -70,15 +69,14 @@ namespace SharpPulsar.Akka.Consumer
                 var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
                 var request = Commands.NewPartitionMetadataRequest(topic, requestId);
                 var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-                _pendingLookupRequests.Add(requestId, pay);
                 _network.Tell(pay);
             }
            
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek)
+        public static Props Prop(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer, seek));
+            return Props.Create(()=> new MultiTopicsManager(clientConfiguration, configuration, network, hasParentConsumer, seek, pulsarManager));
         }
 
         public IStash Stash { get; set; }

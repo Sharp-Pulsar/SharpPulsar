@@ -56,9 +56,10 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
-        private readonly Dictionary<long, Payload> _pendingLookupRequests = new Dictionary<long, Payload>();
-        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
+        private IActorRef _pulsarManager;
+        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
             _listener = configuration.MessageListener;
             _createTopicIfDoesNotExist = configuration.ForceTopicCreation;
@@ -127,9 +128,9 @@ namespace SharpPulsar.Akka.Consumer
            return false;
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek));
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager));
         }
         
         private bool HasReachedEndOfTopic()
@@ -476,7 +477,6 @@ namespace SharpPulsar.Akka.Consumer
             var request = Commands.NewGetSchema(requestId, _topicName.ToString(), BytesSchemaVersion.Of(version));
             var payload = new Payload(request, requestId, "GetSchema");
             _broker.Tell(payload);
-            _pendingLookupRequests.Add(requestId, payload);
         }
         
         public void NewSubscribe()
@@ -661,7 +661,6 @@ namespace SharpPulsar.Akka.Consumer
         {
             Receive<BrokerLookUp>(l =>
             {
-                _pendingLookupRequests.Remove(l.RequestId);
                 var uri = _conf.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
                 if (_clientConfiguration.UseProxy)
                     _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
@@ -731,7 +730,6 @@ namespace SharpPulsar.Akka.Consumer
             var request = Commands.NewLookup(_topicName.ToString(), false, requestid);
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
-            _pendingLookupRequests.Add(requestid, load);
         }
         public class RecreateConsumer
         {

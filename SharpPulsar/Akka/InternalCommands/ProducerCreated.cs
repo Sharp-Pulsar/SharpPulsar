@@ -15,4 +15,5 @@
         public long LastSequenceId { get; }
         public byte[] SchemaVersion { get; }
     }
+
 }

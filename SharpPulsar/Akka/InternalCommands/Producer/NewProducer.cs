@@ -28,15 +28,17 @@ namespace SharpPulsar.Akka.InternalCommands.Producer
     }
     internal sealed class NewProducerGroupMember
     {
-        public NewProducerGroupMember(ISchema schema, ClientConfigurationData configuration, ProducerConfigurationData producerConfiguration)
+        public NewProducerGroupMember(ISchema schema, ClientConfigurationData configuration, ProducerConfigurationData producerConfiguration, string title)
         {
             Schema = schema;
             Configuration = configuration;
             ProducerConfiguration = producerConfiguration;
+            Title = title;
         }
 
         public ISchema Schema { get; }
         public ClientConfigurationData Configuration { get; }
         public ProducerConfigurationData ProducerConfiguration { get; }
+        public string Title { get; }
     }
 }
