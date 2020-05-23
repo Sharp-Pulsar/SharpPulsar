@@ -37,10 +37,10 @@ Sample updated</PackageReleaseNotes>
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.6" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
-    <PackageReference Include="AvroSchemaGenerator" Version="1.5.1" />
+    <PackageReference Include="AvroSchemaGenerator" Version="1.5.2" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.11.4" />
-    <PackageReference Include="IdentityModel" Version="4.2.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.12.1" />
+    <PackageReference Include="IdentityModel" Version="4.3.0" />
     <PackageReference Include="JsonSubTypes" Version="1.7.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -51,7 +51,7 @@ Sample updated</PackageReleaseNotes>
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="prestosharp" Version="1.0.1" />
     <PackageReference Include="protobuf-net" Version="2.4.6" />
-    <PackageReference Include="RestSharp" Version="106.11.3" />
+    <PackageReference Include="RestSharp" Version="106.11.4" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
