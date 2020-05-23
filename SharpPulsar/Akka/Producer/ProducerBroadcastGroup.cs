@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Akka.InternalCommands;
@@ -32,38 +33,55 @@ namespace SharpPulsar.Akka.Producer
                 _canCreate = true;
                 _expectedRouteeCount = cmd.ProducerConfigurations.Count;
                 _configuration = cmd.ProducerConfigurations.First();
-                Become(() => CreatingProducers(cmd));
+                var name = $"broadcaster{Regex.Replace(cmd.Title, @"[^\w\d]", "")}".ToLower();
+                var child = Context.Child(name);
+                Become(() => CreatingProducers(cmd, child, name));
             });
         }
 
-        private void CreatingProducers(NewProducerBroadcastGroup cmd)
+        private void CreatingProducers(NewProducerBroadcastGroup cmd, IActorRef child, string name)
         {
-            var m = cmd;
             Receive<RegisteredProducer>(p =>
             {
+                
                 _currentRouteeCount++;
-                if (p.IsNew && _canCreate)
+                if (p.IsNew)
                 {
-                    _routees.Add(Sender.Path.ToString());
-                    if (_currentRouteeCount == _expectedRouteeCount)
+                    if (child.IsNobody())
                     {
-                        var router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"Broadcast{DateTimeHelper.CurrentUnixTimeMillis()}");
-                        var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router));
-                        _pulsarManager.Tell(new CreatedProducer(broadcaster, cmd.Title, _configuration.ProducerName, true));
-                        _routees.Clear();
-                        _currentRouteeCount = 0;
-                        Become(Waiting);
-                        Stash.UnstashAll();
+                        _routees.Add(Sender.Path.ToString());
+                        if (_currentRouteeCount == _expectedRouteeCount)
+                        {
+                            var router = Context.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), $"BroadcastRouter{cmd.Title}".ToLower());
+                            var broadcaster = Context.ActorOf(BroadcastRouter.Prop(router), name);
+                            _pulsarManager.Tell(new CreatedProducer(broadcaster, cmd.Title, _configuration.ProducerName, true));
+                            _routees.Clear();
+                            _currentRouteeCount = 0;
+                            Become(Waiting);
+                            Stash.UnstashAll();
+                        }
                     }
+                    else
+                    {
+                        var router = Context.Child($"BroadcastRouter{cmd.Title}".ToLower());
+                        var routee = Routee.FromActorRef(Sender);
+                        router.Tell(new AddRoutee(routee));
+                        if (_currentRouteeCount == _expectedRouteeCount)
+                        {
+                            _pulsarManager.Tell(new CreatedProducer(child, cmd.Title, _configuration.ProducerName, true));
+                            _currentRouteeCount = 0;
+                            Become(Waiting);
+                            Stash.UnstashAll();
+                        }
+                    }
+                    
                 }
                 else
                 {
-                    _canCreate = false;
                     if (_currentRouteeCount == _expectedRouteeCount)
                     {
-                        _pulsarManager.Tell(new CreatedProducer(null, cmd.Title, _configuration.ProducerName, true));
+                        _pulsarManager.Tell(new CreatedProducer(child, cmd.Title, _configuration.ProducerName, true));
                         _currentRouteeCount = 0;
-                        _routees.Clear();
                         Become(Waiting);
                         Stash.UnstashAll();
                     }

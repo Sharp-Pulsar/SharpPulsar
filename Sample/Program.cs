@@ -502,14 +502,6 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n,p) =>
-            {
-                if(Producers.ContainsKey(to))
-                  Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> {{n, p}};
-                }
             }, s =>
             {
                 Receipts.Add(s);
@@ -522,14 +514,8 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x=> x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
-            Console.WriteLine($"Acquired producer for topic: {topic}");
+            
+            Console.WriteLine($"Acquired producer for topic: {t.Topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 5; i++)
             {
@@ -548,7 +534,7 @@ namespace Samples
                 sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, produce);
+            system.BulkSend(bulk, t.Producer);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -558,14 +544,6 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n,p) =>
-            {
-                if(Producers.ContainsKey(to))
-                  Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> {{n, p}};
-                }
             }, s =>
             {
                 Receipts.Add(s);
@@ -580,14 +558,8 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x=> x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
-            Console.WriteLine($"Acquired producer for topic: {topic}");
+            
+            Console.WriteLine($"Acquired producer for topic: {t.Topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 5; i++)
             {
@@ -606,7 +578,7 @@ namespace Samples
                 sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, produce);
+            system.BulkSend(bulk, t.Producer);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -617,30 +589,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n,p) =>
-            {
-                Console.WriteLine($"Acquired producer for topic: {topic}");
-                var sends = new List<Send>();
-                for (var i = 0; i < 5; i++)
-                {
-                    var student = new Students
-                    {
-                        Name = $"#Broadcast Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - broadcast-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
-                        Age = 2019 + i,
-                        School = "Akka-Pulsar university"
-                    };
-                    var metadata = new Dictionary<string, object>
-                    {
-                        ["Key"] = "Broadcast",
-                        ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
-                    };
-                    sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
-                }
-                var bulk = new BulkSend(sends, topic);
-                system.BulkSend(bulk, p);
-                Task.Delay(5000).Wait();
-                File.AppendAllLines("receipts-broadcast.txt", Receipts);
-            }, s =>
+            },  s =>
             {
                 Receipts.Add(s);
             });
@@ -659,8 +608,29 @@ namespace Samples
                     .ProducerConfigurationData;
                 producers.Add(producerConfig);
             }
-            system.PulsarProducer(new CreateProducerBroadcastGroup(jsonSchem, producers.ToHashSet()));
-            
+            var result = system.PulsarProducer(new CreateProducerBroadcastGroup(jsonSchem, producers.ToHashSet()));
+            Console.WriteLine($"Acquired producer for topic: {result.Topic}");
+            var sends = new List<Send>();
+            for (var i = 0; i < 5; i++)
+            {
+                var student = new Students
+                {
+                    Name = $"#Broadcast Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - broadcast-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Age = 2019 + i,
+                    School = "Akka-Pulsar university"
+                };
+                var metadata = new Dictionary<string, object>
+                {
+                    ["Key"] = "Broadcast",
+                    ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+                };
+                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+            }
+            var bulk = new BulkSend(sends, topic);
+            system.BulkSend(bulk, result.Producer);
+            Task.Delay(10000).Wait();
+            File.AppendAllLines("receipts-broadcast.txt", Receipts);
+            Receipts.Clear();
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
         {
@@ -668,15 +638,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to,n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
-            }, s =>
+            },  s =>
             {
                 Receipts.Add(s);
             });
@@ -689,14 +651,8 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
-            Console.WriteLine($"Acquired producer for topic: {topic}");
+            
+            Console.WriteLine($"Acquired producer for topic: {t.Topic}");
             var student = new Students
             {
                 Name = $"Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
@@ -720,7 +676,7 @@ namespace Samples
             };
             var send = new Send(journal, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
-            system.Send(send, produce);
+            system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
             _sequencee++;
@@ -732,15 +688,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to,n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
-            }, s =>
+            },  s =>
             {
                 Receipts.Add(s);
             });
@@ -753,14 +701,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
-
+            
             var rad = new Random();
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var covid = new Covid19Mobile()
@@ -777,7 +718,7 @@ namespace Samples
             };
             var send = new Send(covid, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
-            system.Send(send, produce);
+            system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
             _sequencee++;
@@ -788,14 +729,6 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
             }, s =>
             {
                 Receipts.Add(s);
@@ -809,13 +742,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 50; i++)
@@ -835,7 +762,7 @@ namespace Samples
                 sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, produce);
+            system.BulkSend(bulk, t.Producer);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -845,15 +772,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
-            }, r =>
+            },  r =>
             {
                 Receipts.Add(r);
             });
@@ -866,13 +785,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
             {
@@ -887,7 +800,7 @@ namespace Samples
             };
             var s = JsonSerializer.Serialize(student);
             var send = new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
-            system.Send(send, produce);
+            system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
         }
@@ -898,15 +811,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
-            }, s =>
+            },  s =>
             {
                 Receipts.Add(s);
             });
@@ -922,13 +827,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 50; i++)
@@ -948,7 +847,7 @@ namespace Samples
                 sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, produce);
+            system.BulkSend(bulk, t.Producer);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -958,15 +857,7 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
-            }, s =>
+            },  s =>
             {
                 Receipts.Add(s);
             });
@@ -982,13 +873,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
             {
@@ -1003,7 +888,7 @@ namespace Samples
             };
             var send = new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
-            system.Send(send, produce);
+            system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
         }
@@ -1014,14 +899,6 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
             }, s =>
             {
                 Receipts.Add(s);
@@ -1038,13 +915,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 50; i++)
@@ -1064,7 +935,7 @@ namespace Samples
                 sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, produce);
+            system.BulkSend(bulk, t.Producer);
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -1074,14 +945,6 @@ namespace Samples
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (to, n, p) =>
-            {
-                if (Producers.ContainsKey(to))
-                    Producers[to].Add(n, p);
-                else
-                {
-                    Producers[to] = new Dictionary<string, IActorRef> { { n, p } };
-                }
             }, r =>
             {
                 Receipts.Add(r);
@@ -1098,13 +961,7 @@ namespace Samples
                 .ProducerConfigurationData;
 
             var t = system.PulsarProducer(new CreateProducer(byteSchem, producerConfig));
-            Console.WriteLine(t);
-            IActorRef produce = null;
-            while (produce == null)
-            {
-                produce = Producers.FirstOrDefault(x => x.Key == t && x.Value.ContainsKey(producerConfig.ProducerName)).Value?.Values.FirstOrDefault();
-                Thread.Sleep(1000);
-            }
+            
             Console.WriteLine($"Acquired producer for topic: {topic}");
             var student = new Students
             {
@@ -1119,7 +976,7 @@ namespace Samples
             };
             var s = JsonSerializer.Serialize(student);
             var send = new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
-            system.Send(send, produce);
+            system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
         }

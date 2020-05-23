@@ -21,10 +21,10 @@ namespace SharpPulsar.Akka
         private IActorRef _network;
         private readonly ClientConfigurationData _config;
         private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
-        public static readonly HashSet<CreatedProducer> Producers = new HashSet<CreatedProducer>();
-        public static readonly HashSet<CreatedConsumer> Consumers = new HashSet<CreatedConsumer>();
-        public PulsarManager(ClientConfigurationData clientConfigurationData)
+        private PulsarManagerState _pulsarManagerState;
+        public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state)
         {
+            _pulsarManagerState = state;
             _config = clientConfigurationData ?? throw new ArgumentNullException(nameof(clientConfigurationData));
             _serviceNameResolver.UpdateServiceUrl(clientConfigurationData.ServiceUrl);
             Become(NetworkSetup);
@@ -32,8 +32,16 @@ namespace SharpPulsar.Akka
 
         private void Ready()
         {
-            Receive<CreatedConsumer>(c => { Consumers.Add(c); });
-            Receive<CreatedProducer>(p => { Producers.Add(p); });
+            Receive<CreatedConsumer>(c =>
+            {
+                _pulsarManagerState.ConsumerQueue.Enqueue(c);
+
+            });
+            Receive<CreatedProducer>(p =>
+            {
+                _pulsarManagerState.ProducerQueue.Enqueue(p);
+
+            });
             Receive<NewConsumer>(cmd =>
             {
                 Context.Child("ConsumerManager").Tell(cmd);
@@ -98,9 +106,9 @@ namespace SharpPulsar.Akka
             });
             ReceiveAny(c=> Stash.Stash());
         }
-        public static Props Prop(ClientConfigurationData conf)
+        public static Props Prop(ClientConfigurationData conf, PulsarManagerState state)
         {
-            return Props.Create(()=> new PulsarManager(conf));
+            return Props.Create(()=> new PulsarManager(conf, state));
         }
 
         public IStash Stash { get; set; }

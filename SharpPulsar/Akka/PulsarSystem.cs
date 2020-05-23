@@ -19,9 +19,15 @@ namespace SharpPulsar.Akka
         private ActorSystem _actorSystem;
         private IActorRef _pulsarManager;
         private ClientConfigurationData _conf;
+        private PulsarManagerState _managerState;
 
         public PulsarSystem(ClientConfigurationData conf)
         {
+            _managerState = new PulsarManagerState
+            {
+                ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
+                ProducerQueue = new BlockingQueue<CreatedProducer>()
+            };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
             akka
@@ -47,19 +53,10 @@ namespace SharpPulsar.Akka
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
-            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf), "PulsarManager");
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
 
-        public (IActorRef Producer, string Topic, string Name) PulsarProducer(CreateProducer producer)
-        {
-            return PulsarProducerAsync(producer, default).GetAwaiter().GetResult();
-        }
-        /// <summary>
-        /// Create a producer Actor. Topic is returned for uniformity purposes!
-        /// </summary>
-        /// <param name="producer"></param>
-        /// <returns>string</returns>
-        public async Task<(IActorRef Producer, string Topic, string Name)> PulsarProducerAsync(CreateProducer producer, CancellationTokenSource cancellationTokenSource)
+        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
@@ -71,17 +68,15 @@ namespace SharpPulsar.Akka
             var topic = TopicName.Get(conf.TopicName);
             conf.TopicName = topic.ToString();
             var p = new NewProducer(producer.Schema, _conf, conf);
-            _pulsarManager.Tell(p);//producer created should be handled internally
-            (IActorRef Producer, string Topic, string Name) topicTroducer = (default, string.Empty, string.Empty);
-            while (topicTroducer.Producer == null && !cancellationTokenSource.IsCancellationRequested)
+            _pulsarManager.Tell(p);
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, 30000, CancellationToken.None))
             {
-                var pro = PulsarManager.Producers.First();
-                topicTroducer = (pro.Producer,pro.Topic, pro.Name);
-                await Task.Delay(100);
+                return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
-            return topicTroducer;
-        } 
-        public void PulsarProducer(CreateProducerBroadcastGroup producer)
+            return (null, string.Empty, string.Empty);
+        }
+        
+        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducerBroadcastGroup producer)
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
@@ -95,8 +90,13 @@ namespace SharpPulsar.Akka
             }
             var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), "testgroup");
             _pulsarManager.Tell(group);
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, 30000, CancellationToken.None))
+            {
+                return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
+            }
+            return (null, string.Empty, string.Empty);
         }
-        public void PulsarReader(CreateReader reader)
+        public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader)
         {
             if (reader.Seek != null)
             {
@@ -112,6 +112,11 @@ namespace SharpPulsar.Akka
             }
             var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
             _pulsarManager.Tell(p);
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, 30000, CancellationToken.None))
+            {
+                return (createdConsumer.Consumer, createdConsumer.Topic);
+            }
+            return (null, string.Empty);
         }
 
         public void PulsarSql(InternalCommands.Sql data)
@@ -144,7 +149,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
             _pulsarManager.Tell(servers);
         }
-        public void PulsarConsumer(CreateConsumer consumer)
+        public (IActorRef Consumer, string Topic) PulsarConsumer(CreateConsumer consumer)
         {
             if (consumer == null)
                 throw new ArgumentNullException("consumer", "null");
@@ -177,6 +182,11 @@ namespace SharpPulsar.Akka
             }
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
             _pulsarManager.Tell(c);
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, 30000, CancellationToken.None))
+            {
+                return (createdConsumer.Consumer, createdConsumer.Topic);
+            }
+            return (null, string.Empty);
         }
         public void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
         {
