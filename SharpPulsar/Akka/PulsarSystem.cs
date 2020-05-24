@@ -61,7 +61,7 @@ namespace SharpPulsar.Akka
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
         {
             if (producer == null)
-                throw new ArgumentNullException("producer", "null");
+                throw new ArgumentNullException(nameof(producer), "null");
             var conf = producer.ProducerConfiguration;
 
             if (!TopicName.IsValid(conf.TopicName))
@@ -81,11 +81,11 @@ namespace SharpPulsar.Akka
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducerBroadcastGroup producer)
         {
             if (producer == null)
-                throw new ArgumentNullException("producer", "null");
+                throw new ArgumentNullException(nameof(producer), "null");
             if(string.IsNullOrWhiteSpace(producer.Title))
                 throw new ArgumentException("Title not supplied");
             if(producer.ProducerConfigurations.Count < 2)
-                throw new ArgumentNullException("producer", "numbers of producers must be greater than 1");
+                throw new ArgumentNullException(nameof(producer), "numbers of producers must be greater than 1");
             foreach (var t in producer.ProducerConfigurations)
             {
                 if (!TopicName.IsValid(t.TopicName))
@@ -98,7 +98,7 @@ namespace SharpPulsar.Akka
             {
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
-            return (null, string.Empty, string.Empty);
+            throw new TimeoutException($"Timeout waiting for producer creation!");
         }
         public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader)
         {
@@ -112,6 +112,8 @@ namespace SharpPulsar.Akka
                         throw new ArgumentException("SeekType.MessageId requires a string input");
                     case SeekType.Timestamp when !(reader.Seek.Input is long):
                         throw new ArgumentException("SeekType.Timestamp requires a long input");
+                    default:
+                        throw new ArgumentException($"Seek type '{reader.Seek.Type}' is not supported");
                 }
             }
             var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
@@ -120,7 +122,7 @@ namespace SharpPulsar.Akka
             {
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
-            return (null, string.Empty);
+            throw new TimeoutException($"Timeout waiting for reader creation!");
         }
 
         public IEnumerable<SqlData> PulsarSql(InternalCommands.Sql data)
@@ -161,7 +163,7 @@ namespace SharpPulsar.Akka
         public void SetupSqlServers(SqlServers servers)
         {
             if(servers == null)
-                throw new ArgumentNullException("servers", "null");
+                throw new ArgumentNullException(nameof(servers), "null");
             if (servers.Servers.Count < 1)
                 throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
             _pulsarManager.Tell(servers);
@@ -169,7 +171,7 @@ namespace SharpPulsar.Akka
         public (IActorRef Consumer, string Topic) PulsarConsumer(CreateConsumer consumer)
         {
             if (consumer == null)
-                throw new ArgumentNullException("consumer", "null");
+                throw new ArgumentNullException(nameof(consumer), "null");
             if (consumer.ConsumerType == ConsumerType.Multi)
             {
                 if (consumer.ConsumerConfiguration.TopicNames.Count < 1)
@@ -203,12 +205,12 @@ namespace SharpPulsar.Akka
             {
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
-            return (null, string.Empty);
+            throw new TimeoutException($"Timeout waiting for consumer creation!");
         }
         public void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
         {
             if (consumer == null)
-                throw new ArgumentNullException("consumer", "null");
+                throw new ArgumentNullException(nameof(consumer), "null");
             if (messages == null)
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
@@ -216,7 +218,7 @@ namespace SharpPulsar.Akka
         public void PulsarConsumer(Seek seek, IActorRef consumer)
         {
             if (consumer == null)
-                throw new ArgumentNullException("consumer", "null");
+                throw new ArgumentNullException(nameof(consumer), "null");
             if (seek == null)
                 throw new ArgumentException("Seek is null");
             consumer.Tell(seek);
@@ -224,7 +226,7 @@ namespace SharpPulsar.Akka
         public void PulsarReader(RedeliverMessages messages, IActorRef reader)
         {
             if (reader == null)
-                throw new ArgumentNullException("consumer", "null");
+                throw new ArgumentNullException(nameof(reader), "Null");
             if (messages == null)
                 throw new ArgumentException("RedeliverMessages is null");
             reader.Tell(messages);
@@ -232,7 +234,7 @@ namespace SharpPulsar.Akka
         public void PulsarReader(Seek seek, IActorRef reader)
         {
             if (reader == null)
-                throw new ArgumentNullException("consumer", "null");
+                throw new ArgumentNullException(nameof(reader), "Null");
             if (seek == null)
                 throw new ArgumentException("Seek is null");
             reader.Tell(seek);

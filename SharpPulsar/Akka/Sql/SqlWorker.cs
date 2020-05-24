@@ -54,14 +54,14 @@ namespace SharpPulsar.Akka.Sql
                     }
 
                     rows--;
-                    errorRow = rows;
+                    errorRow++;
                     var hasRows = rows > 0;
                     _pulsarManager.Tell(new SqlData(hasRows, rows, data, metadata));
                 }
             }
             catch (Exception ex)
             {
-                _pulsarManager.Tell(new SqlData(true, errorRow, null, null, true, ex));
+                _pulsarManager.Tell(new SqlData(false, errorRow + 1, null, null, true, ex));
                 query.ExceptionHandler(ex);
             }
         }
