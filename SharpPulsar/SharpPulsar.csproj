@@ -12,6 +12,8 @@ Query Handler internalized!</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+    <PackageIcon>SharpPulsar.jpg</PackageIcon>
+    <PackageIconUrl />
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Akka\InternalCommands\Reader\**" />
@@ -23,6 +25,10 @@ Query Handler internalized!</PackageReleaseNotes>
     <None Remove="Akka\InternalCommands\Reader\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
+    <None Include="SharpPulsar.jpg">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -86,6 +92,9 @@ Query Handler internalized!</PackageReleaseNotes>
       <LastGenOutput>Swagger.cs</LastGenOutput>
     </None>
     <None Update="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
