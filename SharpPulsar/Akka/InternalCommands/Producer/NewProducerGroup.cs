@@ -7,11 +7,16 @@ namespace SharpPulsar.Akka.InternalCommands.Producer
 {
     public sealed class CreateProducerBroadcastGroup
     {
-        public CreateProducerBroadcastGroup(ISchema schema, HashSet<ProducerConfigurationData> producerConfigurations)
+        public CreateProducerBroadcastGroup(ISchema schema, HashSet<ProducerConfigurationData> producerConfigurations, string title)
         {
             Schema = schema;
             ProducerConfigurations = producerConfigurations;
+            Title = title;
         }
+        /// <summary>
+        /// Group name/title
+        /// </summary>
+        public string Title { get; }
         public ISchema Schema { get; }
         public HashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }

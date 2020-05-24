@@ -16,8 +16,7 @@ namespace SharpPulsar.Akka.Producer
         private readonly List<string> _routees;
         private int _expectedRouteeCount;
         private int _currentRouteeCount;
-        private bool _canCreate;
-        private IActorRef _pulsarManager;
+        private readonly IActorRef _pulsarManager;
         public ProducerBroadcastGroup(IActorRef producerManager, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;
@@ -30,7 +29,6 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<NewProducerBroadcastGroup>(cmd =>
             {
-                _canCreate = true;
                 _expectedRouteeCount = cmd.ProducerConfigurations.Count;
                 _configuration = cmd.ProducerConfigurations.First();
                 var name = $"broadcaster{Regex.Replace(cmd.Title, @"[^\w\d]", "")}".ToLower();

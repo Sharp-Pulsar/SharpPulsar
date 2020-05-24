@@ -608,7 +608,7 @@ namespace Samples
                     .ProducerConfigurationData;
                 producers.Add(producerConfig);
             }
-            var result = system.PulsarProducer(new CreateProducerBroadcastGroup(jsonSchem, producers.ToHashSet()));
+            var result = system.PulsarProducer(new CreateProducerBroadcastGroup(jsonSchem, producers.ToHashSet(), "TestBroadcast"));
             Console.WriteLine($"Acquired producer for topic: {result.Topic}");
             var sends = new List<Send>();
             for (var i = 0; i < 5; i++)
@@ -1626,32 +1626,15 @@ namespace Samples
         {
             //then we can begin querying
             _queryRunning = true;
-            system.PulsarSql(new Sql(query, d =>
-            {
-                if (d.ContainsKey("Finished"))
-                {
-                    _queryRunning = false;
-                    return;
-                }
-                Console.WriteLine(d["Message"]);
-                var metadata = JsonSerializer.Deserialize<Dictionary<string, object>>(d["Metadata"]);
-                //Console.WriteLine(d["Metadata"]);
-                foreach (var m in metadata)
-                {
-                    //Convert.ChangeType(m.Value, m.Value.GetType())
-                    if(m.Value != null)
-                      Console.WriteLine($"{m.Key} : {JsonSerializer.Serialize(m.Value, new JsonSerializerOptions{WriteIndented = true})}");
-                }
-            }, e =>
+            var data = system.PulsarSql(new Sql(query, e =>
             {
                 Console.WriteLine(e.ToString());
                 _queryRunning = false;
-            }, server, Console.WriteLine, true));
-            while (_queryRunning)
+            }, server, Console.WriteLine));
+            foreach (var d in data)
             {
-                Thread.Sleep(500);
+                Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
             }
-            Console.WriteLine("FINISHED!!!!!!!");
         }
         private static void GetAllSchemas(PulsarSystem system, string server, string tenant, string ns, string topic)
         {

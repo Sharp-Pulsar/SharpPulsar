@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
@@ -21,7 +20,7 @@ namespace SharpPulsar.Akka
         private IActorRef _network;
         private readonly ClientConfigurationData _config;
         private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
-        private PulsarManagerState _pulsarManagerState;
+        private readonly PulsarManagerState _pulsarManagerState;
         public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state)
         {
             _pulsarManagerState = state;
@@ -35,6 +34,11 @@ namespace SharpPulsar.Akka
             Receive<CreatedConsumer>(c =>
             {
                 _pulsarManagerState.ConsumerQueue.Enqueue(c);
+
+            });
+            Receive<SqlData>(d =>
+            {
+                _pulsarManagerState.DataQueue.Enqueue(d);
 
             });
             Receive<CreatedProducer>(p =>
@@ -97,7 +101,7 @@ namespace SharpPulsar.Akka
             Receive<ConnectedServerInfo>(s =>
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
-                Context.ActorOf(SqlManager.Prop(), "SqlManager");
+                Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
                 Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}), "FunctionManager");

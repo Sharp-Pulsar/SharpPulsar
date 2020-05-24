@@ -7,12 +7,12 @@ namespace SharpPulsar.Akka.Sql
 {
     public class SqlManager : ReceiveActor, IWithUnboundedStash
     {
-        public SqlManager()
+        public SqlManager(IActorRef pulsarManager)
         {
-               Become(Init); 
+               Become(()=>Init(pulsarManager)); 
         }
 
-        private void Init()
+        private void Init(IActorRef pulsarManager)
         {
             Receive<SqlServers>(servers =>
             {
@@ -20,7 +20,7 @@ namespace SharpPulsar.Akka.Sql
                 {
                     var srv = Regex.Replace(s, @"[^\w\d]", "");
                     if(Context.Child(srv).IsNobody())
-                       Context.ActorOf(SqlWorker.Prop(s), srv);
+                       Context.ActorOf(SqlWorker.Prop(s, pulsarManager), srv);
                 }
                 Become(Ready);
                 Stash.UnstashAll();
@@ -47,9 +47,9 @@ namespace SharpPulsar.Akka.Sql
             
         }
 
-        public static Props Prop()
+        public static Props Prop(IActorRef pulsarManager)
         {
-            return Props.Create(() => new SqlManager());
+            return Props.Create(() => new SqlManager(pulsarManager));
         }
         public IStash Stash { get; set; }
     }

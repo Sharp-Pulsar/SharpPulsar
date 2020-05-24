@@ -9,6 +9,7 @@ using Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Sql;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 
@@ -16,17 +17,18 @@ namespace SharpPulsar.Akka
 {
     public class PulsarSystem: IAsyncDisposable
     {
-        private ActorSystem _actorSystem;
-        private IActorRef _pulsarManager;
-        private ClientConfigurationData _conf;
-        private PulsarManagerState _managerState;
+        private readonly ActorSystem _actorSystem;
+        private readonly IActorRef _pulsarManager;
+        private readonly ClientConfigurationData _conf;
+        private readonly PulsarManagerState _managerState;
 
         public PulsarSystem(ClientConfigurationData conf)
         {
             _managerState = new PulsarManagerState
             {
                 ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
-                ProducerQueue = new BlockingQueue<CreatedProducer>()
+                ProducerQueue = new BlockingQueue<CreatedProducer>(),
+                DataQueue = new BlockingQueue<SqlData>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -80,6 +82,8 @@ namespace SharpPulsar.Akka
         {
             if (producer == null)
                 throw new ArgumentNullException("producer", "null");
+            if(string.IsNullOrWhiteSpace(producer.Title))
+                throw new ArgumentException("Title not supplied");
             if(producer.ProducerConfigurations.Count < 2)
                 throw new ArgumentNullException("producer", "numbers of producers must be greater than 1");
             foreach (var t in producer.ProducerConfigurations)
@@ -88,7 +92,7 @@ namespace SharpPulsar.Akka
                     throw new ArgumentException($"Topic '{t.TopicName}' is invalid");
                 t.TopicName = TopicName.Get(t.TopicName).ToString();
             }
-            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), "testgroup");
+            var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), producer.Title);
             _pulsarManager.Tell(group);
             if (_managerState.ProducerQueue.TryTake(out var createdProducer, 30000, CancellationToken.None))
             {
@@ -119,11 +123,20 @@ namespace SharpPulsar.Akka
             return (null, string.Empty);
         }
 
-        public void PulsarSql(InternalCommands.Sql data)
+        public IEnumerable<SqlData> PulsarSql(InternalCommands.Sql data)
         {
-            if(string.IsNullOrWhiteSpace(data.DestinationServer) || data.ExceptionHandler == null || data.Handler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
+            if(string.IsNullOrWhiteSpace(data.DestinationServer) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
+            var hasRow = true;
+            while (hasRow)
+            {
+                if (_managerState.DataQueue.TryTake(out var sqlData, 10000, CancellationToken.None))
+                {
+                    hasRow = sqlData.HasRow;
+                    yield return sqlData;
+                }
+            }
         }
         public void PulsarAdmin(InternalCommands.Admin data)
         {

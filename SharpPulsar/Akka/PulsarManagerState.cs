@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Sql;
 
 namespace SharpPulsar.Akka
 {
@@ -11,5 +12,6 @@ namespace SharpPulsar.Akka
 
         public BlockingQueue<CreatedConsumer> ConsumerQueue { get; set; }
         public BlockingQueue<CreatedProducer> ProducerQueue { get; set; }
+        public BlockingQueue<SqlData> DataQueue { get; set; }
     }
 }
