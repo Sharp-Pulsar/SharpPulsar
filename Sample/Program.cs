@@ -46,8 +46,7 @@ namespace Samples
         
         public static readonly Dictionary<string, IActorRef> Consumers = new Dictionary<string, IActorRef>();
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
-        private static bool _queryRunning = true;
-        private static long _sequencee = 0;
+        
         static void Main(string[] args)
         {
             Console.WriteLine("Welcome. Enter Pulsar server endpoint");
@@ -666,7 +665,7 @@ namespace Samples
                 IsDeleted = false,
                 Ordering =  0,
                 Payload = JsonSerializer.Serialize(student),
-                SequenceNr = _sequencee,
+                SequenceNr = 0,
                 Tags = "root"
             };
             var metadata = new Dictionary<string, object>
@@ -679,7 +678,7 @@ namespace Samples
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
-            _sequencee++;
+            Receipts.Clear();
         }
         private static void PlainAvroCovidProducer(PulsarSystem system, string topic)
         {
@@ -721,7 +720,6 @@ namespace Samples
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
-            _sequencee++;
         }
         private static void PlainByteBulkSendProducer(PulsarSystem system, string topic)
         {
@@ -1624,12 +1622,9 @@ namespace Samples
         }
         private static void SqlQuery(PulsarSystem system, string query, string server)
         {
-            //then we can begin querying
-            _queryRunning = true;
             var data = system.PulsarSql(new Sql(query, e =>
             {
                 Console.WriteLine(e.ToString());
-                _queryRunning = false;
             }, server, Console.WriteLine));
             foreach (var d in data)
             {

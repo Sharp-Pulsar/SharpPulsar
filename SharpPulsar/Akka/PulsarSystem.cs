@@ -136,6 +136,10 @@ namespace SharpPulsar.Akka
                     hasRow = sqlData.HasRow;
                     yield return sqlData;
                 }
+                else
+                {
+                    break;
+                }
             }
         }
         public void PulsarAdmin(InternalCommands.Admin data)

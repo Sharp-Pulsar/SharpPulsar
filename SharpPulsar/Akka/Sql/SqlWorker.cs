@@ -26,6 +26,7 @@ namespace SharpPulsar.Akka.Sql
 
         private void Query(InternalCommands.Sql query)
         {
+            var errorRow = 0;
             try
             {
                 var q = query;
@@ -53,14 +54,14 @@ namespace SharpPulsar.Akka.Sql
                     }
 
                     rows--;
+                    errorRow = rows;
                     var hasRows = rows > 0;
                     _pulsarManager.Tell(new SqlData(hasRows, rows, data, metadata));
                 }
-                _pulsarManager.Tell(new SqlData(false, -1, null, null));
             }
             catch (Exception ex)
             {
-                _pulsarManager.Tell(new SqlData(false, -1, null, null, true, ex));
+                _pulsarManager.Tell(new SqlData(true, errorRow, null, null, true, ex));
                 query.ExceptionHandler(ex);
             }
         }
