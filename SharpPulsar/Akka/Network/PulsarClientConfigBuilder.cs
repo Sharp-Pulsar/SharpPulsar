@@ -108,9 +108,9 @@ namespace SharpPulsar.Akka.Network
             return this;
 		}
 
-		public PulsarClientConfigBuilder OperationTimeout(int operationTimeout, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder OperationTimeout(int operationTimeout)
 		{
-			_conf.OperationTimeoutMs = unit.ToMillis(operationTimeout);
+			_conf.OperationTimeoutMs = operationTimeout;
             return this;
 		}
 

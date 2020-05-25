@@ -88,7 +88,11 @@ namespace SharpPulsar.Akka
                 throw new ArgumentNullException(nameof(schema.Schema), "null");
             if (string.IsNullOrWhiteSpace(schema.Topic))
                 throw new ArgumentNullException(nameof(schema.Topic), "null");
-            producer.Tell(schema);
+            if (!TopicName.IsValid(schema.Topic))
+                throw new ArgumentException("Topic is invalid");
+
+            var topic = TopicName.Get(schema.Topic);
+            producer.Tell(new RegisterSchema(schema.Schema, topic.ToString()));
             if (_managerState.SchemaQueue.TryTake(out var register, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return (register.SchemaVersion, register.ErrorCode.ToString(), register.ErrorMessage);
