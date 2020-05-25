@@ -7,7 +7,9 @@
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
     <PackageReleaseNotes>#Breaking changes - Pulsar SQL
-Query Handler internalized!</PackageReleaseNotes>
+Query Handler internalized!
+RegisterSchema
+GetLastMessageId</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
