@@ -31,6 +31,10 @@ namespace SharpPulsar.Akka
 
         private void Ready()
         {
+            Receive<LastMessageIdReceived>(r =>
+            {
+                _pulsarManagerState.MessageIdQueue.Enqueue(r);
+            });
             Receive<CreatedConsumer>(c =>
             {
                 _pulsarManagerState.ConsumerQueue.Enqueue(c);
@@ -39,6 +43,11 @@ namespace SharpPulsar.Akka
             Receive<SqlData>(d =>
             {
                 _pulsarManagerState.DataQueue.Enqueue(d);
+
+            });
+            Receive<GetOrCreateSchemaServerResponse>(s =>
+            {
+                _pulsarManagerState.SchemaQueue.Enqueue(s);
 
             });
             Receive<CreatedProducer>(p =>

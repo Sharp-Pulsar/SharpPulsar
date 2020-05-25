@@ -28,7 +28,9 @@ namespace SharpPulsar.Akka
             {
                 ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
                 ProducerQueue = new BlockingQueue<CreatedProducer>(),
-                DataQueue = new BlockingQueue<SqlData>()
+                DataQueue = new BlockingQueue<SqlData>(),
+                SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
+                MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -71,13 +73,28 @@ namespace SharpPulsar.Akka
             conf.TopicName = topic.ToString();
             var p = new NewProducer(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);
-            if (_managerState.ProducerQueue.TryTake(out var createdProducer, 30000, CancellationToken.None))
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
-            return (null, string.Empty, string.Empty);
+            throw new TimeoutException($"Timeout waiting for producer creation!");
         }
         
+        public (byte[] SchemaVersion, string ErrorCode, string ErrorMessage) PulsarProducer(RegisterSchema schema, IActorRef producer)
+        {
+            if (schema == null)
+                throw new ArgumentNullException(nameof(schema), "null");
+            if(schema.Schema == null)
+                throw new ArgumentNullException(nameof(schema.Schema), "null");
+            if (string.IsNullOrWhiteSpace(schema.Topic))
+                throw new ArgumentNullException(nameof(schema.Topic), "null");
+            producer.Tell(schema);
+            if (_managerState.SchemaQueue.TryTake(out var register, _conf.OperationTimeoutMs, CancellationToken.None))
+            {
+                return (register.SchemaVersion, register.ErrorCode.ToString(), register.ErrorMessage);
+            }
+            throw new TimeoutException($"Timeout waiting for schema registration!");
+        }
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducerBroadcastGroup producer)
         {
             if (producer == null)
@@ -94,7 +111,7 @@ namespace SharpPulsar.Akka
             }
             var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), producer.Title);
             _pulsarManager.Tell(group);
-            if (_managerState.ProducerQueue.TryTake(out var createdProducer, 30000, CancellationToken.None))
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
@@ -118,7 +135,7 @@ namespace SharpPulsar.Akka
             }
             var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
             _pulsarManager.Tell(p);
-            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, 30000, CancellationToken.None))
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
@@ -133,7 +150,7 @@ namespace SharpPulsar.Akka
             var hasRow = true;
             while (hasRow)
             {
-                if (_managerState.DataQueue.TryTake(out var sqlData, 10000, CancellationToken.None))
+                if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
                     hasRow = sqlData.HasRow;
                     yield return sqlData;
@@ -201,7 +218,7 @@ namespace SharpPulsar.Akka
             }
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
             _pulsarManager.Tell(c);
-            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, 30000, CancellationToken.None))
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
@@ -214,6 +231,17 @@ namespace SharpPulsar.Akka
             if (messages == null)
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
+        }
+        public (string Topic, long LedgerId, long EntryId, int Partition, int BatchIndex) PulsarConsumer(LastMessageId last, IActorRef consumer)
+        {
+            if (consumer == null)
+                throw new ArgumentNullException(nameof(consumer), "null");
+            consumer.Tell(last);
+            if (_managerState.MessageIdQueue.TryTake(out var messageId, _conf.OperationTimeoutMs, CancellationToken.None))
+            {
+                return (messageId.Topic, messageId.Response.LedgerId, messageId.Response.EntryId, messageId.Response.Partition, messageId.Response.BatchIndex);
+            }
+            throw new TimeoutException($"Timeout waiting for last message id!");
         }
         public void PulsarConsumer(Seek seek, IActorRef consumer)
         {

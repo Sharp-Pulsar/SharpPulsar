@@ -49,6 +49,7 @@ namespace SharpPulsar.Akka.Producer
         private readonly bool _isPartitioned;
         private readonly bool _isGroup;
         private ICancelable _producerRecreator;
+        private bool _external;
 
         public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, IActorRef pulsarManager, bool isPartitioned, bool isgroup)
         {
@@ -217,6 +218,21 @@ namespace SharpPulsar.Akka.Producer
         }
         public void Receive()
         {
+            Receive<RegisterSchema>(s =>
+            {
+                _external = true;
+                var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                SchemaInfo schemaInfo;
+                if (s.Schema != null && s.Schema.SchemaInfo.Type.Value > 0)
+                {
+                    schemaInfo = (SchemaInfo)s.Schema.SchemaInfo;
+                }
+                else
+                {
+                    schemaInfo = (SchemaInfo)SchemaFields.Bytes.SchemaInfo;
+                }
+                SendGetOrCreateSchemaCommand(schemaInfo, requestid, s.Topic);
+            });
             Receive<AddPublicKeyCipher>(a =>
             {
                 AddKey();
@@ -232,17 +248,25 @@ namespace SharpPulsar.Akka.Producer
             Receive<Send>(ProcessSend);
             Receive<GetOrCreateSchemaServerResponse>(r =>
             {
-                var msg = _pendingSchemaMessages[r.RequestId];
-                _pendingSchemaMessages.Remove(r.RequestId);
-                var schemaHash = SchemaHash.Of(msg.Schema);
-                if (!_schemaCache.ContainsKey(schemaHash))
+                if (_external)
                 {
-                    _schemaCache[schemaHash] = r.SchemaVersion;
+                    _pulsarManager.Tell(r);
+                    _external = false;
                 }
-                msg.Metadata.SchemaVersion = r.SchemaVersion;
-                msg.SetSchemaState(Message.SchemaState.Ready);
-                _schemas[msg.TopicName] = msg.Schema;
-                PrepareMessage(msg);
+                else
+                {
+                    var msg = _pendingSchemaMessages[r.RequestId];
+                    _pendingSchemaMessages.Remove(r.RequestId);
+                    var schemaHash = SchemaHash.Of(msg.Schema);
+                    if (!_schemaCache.ContainsKey(schemaHash))
+                    {
+                        _schemaCache[schemaHash] = r.SchemaVersion;
+                    }
+                    msg.Metadata.SchemaVersion = r.SchemaVersion;
+                    msg.SetSchemaState(Message.SchemaState.Ready);
+                    _schemas[msg.TopicName] = msg.Schema;
+                    PrepareMessage(msg);
+                }
             });
             Receive<BulkSend>(s =>
             {
@@ -335,7 +359,7 @@ namespace SharpPulsar.Akka.Producer
 
         private void SendNewProducerCommand()
         {
-            var requestid = Interlocked.Increment(ref IdGenerators.ReaderId);
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var schemaInfo = (SchemaInfo)_configuration.Schema.SchemaInfo;
             var request = Commands.NewProducer(_topic, _producerId, requestid, ProducerName, _configuration.EncryptionEnabled, _metadata, schemaInfo, DateTime.Now.Millisecond, _userProvidedProducerName);
             var payload = new Payload(request, requestid, "CommandProducer");
@@ -399,11 +423,11 @@ namespace SharpPulsar.Akka.Producer
 
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             _pendingSchemaMessages.Add(requestId, msg);
-            SendGetOrCreateSchemaCommand(schemaInfo, requestId);
+            SendGetOrCreateSchemaCommand(schemaInfo, requestId, _topic);
         }
-        private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId)
+        private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId, string topic)
         {
-            var request = Commands.NewGetOrCreateSchema(requestId, _topic, schemaInfo);
+            var request = Commands.NewGetOrCreateSchema(requestId, topic, schemaInfo);
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
             _broker.Tell(payload);
         }

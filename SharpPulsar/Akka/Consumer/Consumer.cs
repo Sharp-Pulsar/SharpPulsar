@@ -560,7 +560,7 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<LastMessageIdResponse>(x =>
             {
-                _consumerEventListener.LastMessageId(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
+                _pulsarManager.Tell(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
             });
             Receive<MessageReceived>(m =>
             {
