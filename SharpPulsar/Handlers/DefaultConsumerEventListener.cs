@@ -8,14 +8,10 @@ namespace SharpPulsar.Handlers
     public class DefaultConsumerEventListener : IConsumerEventListener
     {
         public Action<object> Logs;
-        public Action<string, IActorRef> Consumers;
-        public Action<string, LastMessageIdResponse> LastMessageIds;
 
-        public DefaultConsumerEventListener(Action<object> log, Action<string, IActorRef> consumers, Action<string, LastMessageIdResponse> lastMessageIds)
+        public DefaultConsumerEventListener(Action<object> log)
         {
             Logs = log;
-            Consumers = consumers;
-            LastMessageIds  = lastMessageIds;
         }
         public void BecameActive(string consumer, int partitionId)
         {
@@ -36,16 +32,6 @@ namespace SharpPulsar.Handlers
         {
            Logs.Invoke(log);
         }
-
-        public void ConsumerCreated(CreatedConsumer consumer)
-        {
-            Logs.Invoke($"Consumer for topic: {consumer.Topic}");
-            Consumers.Invoke(consumer.Topic, consumer.Consumer);
-        }
-
-        public void LastMessageId(LastMessageIdReceived received)
-        {
-            LastMessageIds.Invoke(received.Topic, received.Response);
-        }
+        
     }
 }

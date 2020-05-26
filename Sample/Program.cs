@@ -1026,11 +1026,7 @@ namespace Samples
 
         private static void PlainAvroConsumer(PulsarSystem system,  string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1069,11 +1065,7 @@ namespace Samples
         }
         private static void GetLastMessageId(PulsarSystem system,  string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1113,11 +1105,7 @@ namespace Samples
         }
         private static void PlainAvroStudentsConsumer(PulsarSystem system,  string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1157,11 +1145,7 @@ namespace Samples
         
         private static void PlainAvroCovidConsumer(PulsarSystem system,  string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Covid19Mobile>();
@@ -1200,11 +1184,7 @@ namespace Samples
         }
         private static void DecryptAvroConsumer(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1243,11 +1223,7 @@ namespace Samples
         }
         private static void PlainAvroConsumerSeek(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1285,11 +1261,7 @@ namespace Samples
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1328,11 +1300,7 @@ namespace Samples
         }
         private static void DecryptAvroPatternConsumer(PulsarSystem system, string regex)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1372,11 +1340,7 @@ namespace Samples
         }
         private static void DecryptAvroMultiConsumer(PulsarSystem system, string[] topics)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1417,11 +1381,7 @@ namespace Samples
         
         private static void AvroMultiConsumer(PulsarSystem system, string[] topics)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var students = m.ToTypeOf<Students>();
@@ -1461,11 +1421,7 @@ namespace Samples
         }
         private static void PlainBytesConsumer(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
@@ -1504,11 +1460,7 @@ namespace Samples
         }
         private static void DecryptBytesConsumer(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var messageListener = new DefaultMessageListener((a, m) =>
             {
                 var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
@@ -1551,11 +1503,7 @@ namespace Samples
 
         private static void PlainAvroReader(PulsarSystem system,  string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
@@ -1574,11 +1522,7 @@ namespace Samples
         }
         private static void PlainBytesReader(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
@@ -1605,11 +1549,7 @@ namespace Samples
         /// <param name="readerListener"></param>
         private static void DecryptAvroReader(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
@@ -1629,11 +1569,7 @@ namespace Samples
         }
         private static void DecryptAvroReaderSeek(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
@@ -1653,11 +1589,7 @@ namespace Samples
         }
         private static void PlainAvroReaderSeek(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
@@ -1677,11 +1609,7 @@ namespace Samples
 
         private static void DecryptByteReader(PulsarSystem system, string topic)
         {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine, (s, c) =>
-            {
-                if (!Consumers.ContainsKey(s))
-                    Consumers.Add(s, c);
-            }, (s, response) => LastMessageId.Add(s, response));
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, message =>
             {
                 var students = message.ToTypeOf<Students>();
