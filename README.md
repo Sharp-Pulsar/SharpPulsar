@@ -27,7 +27,7 @@ Supported pulsar cluster versions: 2.5+
 - [x] Compression (Lz4, Zstd, Snappy, [WIP] ZLib)
 - [x] Producer Broadcast Group - broadcast single message to multiple topics including partitioned topics[How to use? cmd 65 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Routing (RoundRobin, ConsistentHashing, Broadcast, Random)
-- [x] Pulsar SQL (Presto)[How to use cmd 20 and 21 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
+- [x] Pulsar SQL (Presto)[How to use cmd 20 and 21(Live Query) in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Pulsar Admin [How to use? cmd 24-44 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Pulsar Function [How to use? cmd 45-50,53,54 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Early support for Security Token Service. Server side is [here](https://github.com/eaba/PulsarStsProvider)
