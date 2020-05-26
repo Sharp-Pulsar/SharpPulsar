@@ -8,10 +8,6 @@ The goal is to match java client features so that .Net developers lack nothing!
 
 # What Is Apache Pulsar?
 Pulsar is a distributed pub-sub messaging platform with a very flexible messaging model and an intuitive client API.
-
-## Note
-JsonSchema is basically AvroSchema underneath!
-
 Supported pulsar cluster versions: 2.5+
 
 ## Supported features
@@ -51,10 +47,10 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
     for you to hear what they have got to report back!:
     
 ```csharp
-var producerListener = new DefaultProducerListener((o) =>
+           var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
-            }, (s, p) => Producers.Add(s, p), s =>
+            }, s =>
             {
                 Receipts.Add(s);
             });
