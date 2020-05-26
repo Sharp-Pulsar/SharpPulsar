@@ -20,13 +20,15 @@ namespace SharpPulsar.Akka.Sql.Live
             _connection.Open();//fake?
             _pulsarManager = pulsar;
             _sql = sql;
-            _lastPublishTime = sql.StartAtPublishTime.ToShortDateString();
+            var p = sql.StartAtPublishTime;
+            _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
             Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(0), TimeSpan.FromMilliseconds(_sql.Frequency), Self, new RunQuery(), Nobody.Instance );
             Receive<RunQuery>(r => { Execute(); });
             Receive<LiveSql>(l =>
             {
                 _sql = l;
-                _lastPublishTime = l.StartAtPublishTime.ToShortDateString();
+                var pd = l.StartAtPublishTime;
+                _lastPublishTime = $"{pd.Year}-{pd.Month}-{pd.Day} {pd.Hour}:{pd.Minute}:{pd.Second}.{pd.Millisecond}";
             });
         }
 
@@ -34,7 +36,7 @@ namespace SharpPulsar.Akka.Sql.Live
         {
             try
             {
-                var text = _sql.Command.Replace("{time}", $"date '2020-5-24 05:8:34'");
+                var text = _sql.Command.Replace("{time}", $"timestamp '{_lastPublishTime}'");
                 _sql.Log($"{_runCount} => Executing: {text}");
                 using var cmd = _connection.CreateCommand();
                 //check for __publish_time__ > {time} when submitting query
@@ -52,7 +54,12 @@ namespace SharpPulsar.Akka.Sql.Live
                         {
                             metadata[col.Trim('_')] = value;
                             if (col == "__publish_time__")
-                                _lastPublishTime = value.ToString();
+                            {
+                                var pd = (DateTime)value;
+                                var current = DateTime.Parse(_lastPublishTime);
+                                if(pd > current)
+                                   _lastPublishTime = $"{pd.Year}-{pd.Month}-{pd.Day} {pd.Hour}:{pd.Minute}:{pd.Second}.{pd.Millisecond}";
+                            }
                         }
                         else
                         {

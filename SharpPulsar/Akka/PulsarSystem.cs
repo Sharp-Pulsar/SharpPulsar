@@ -171,8 +171,14 @@ namespace SharpPulsar.Akka
         {
             if (string.IsNullOrWhiteSpace(data.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Command) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
-            if(!data.Command.Contains("__publish_time__ > {time}"))
-                throw new ArgumentException("Command does not contain '__publish_time__ > {time}'");
+            if (!data.Command.Contains("__publish_time__ > {time}"))
+            {
+                if (data.Command.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException("add '__publish_time__ > {time}' to where clause");
+                }
+                throw new ArgumentException("add 'where __publish_time__ > {time}' to '"+data.Command+"'");
+            }
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
             _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
