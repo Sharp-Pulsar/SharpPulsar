@@ -39,6 +39,7 @@ namespace Samples
     public class Program
     {
         //https://www.splunk.com/en_us/blog/it/effectively-once-semantics-in-apache-pulsar.html
+        ////bin/pulsar sql-worker run -D "java.vendor"="Oracle Corporation"
         //I think, the substitution of Linux command $(pwd) in Windows is "%cd%".
         public static readonly ConcurrentDictionary<string, Dictionary<string, IActorRef>> Producers = new ConcurrentDictionary<string, Dictionary<string, IActorRef>>();
         public static readonly ConcurrentBag<string> Receipts = new ConcurrentBag<string>();
