@@ -252,17 +252,24 @@ namespace Samples
                     #region Sql
 
                     case "20":
-                        Console.WriteLine("[SqlServers] Enter comma delimited servers: ");
-                        var servers = Console.ReadLine();
-                        var t20 = servers.Split(",");
-                        SqlServers(pulsarSystem, t20);
-                        break;
-                    case "21":
                         Console.WriteLine("[SqlQuery] Enter destination server: ");
                         var server = Console.ReadLine();
                         Console.WriteLine("[SqlQuery] Enter query statement: ");
                         var query = Console.ReadLine();
                         SqlQuery(pulsarSystem, query, server);
+                        break;
+                    case "21":
+                        Console.WriteLine("[LiveSqlQuery] Enter destination server: ");
+                        var lserver = Console.ReadLine();
+                        Console.WriteLine("[LiveSqlQuery] Enter query statement: ");
+                        var lquery = Console.ReadLine();
+                        Console.WriteLine("[LiveSqlQuery] Enter refresh frequency MS: ");
+                        var lfreq = Convert.ToInt32(Console.ReadLine());
+                        Console.WriteLine("[LiveSqlQuery] Enter start time epoch: ");
+                        var lepoch = string.IsNullOrWhiteSpace(Console.ReadLine())? DateTime.Now.AddHours(-24) :DateTime.Parse(Console.ReadLine());
+                        Console.WriteLine("[LiveSqlQuery] Enter topic: ");
+                        var ltopic = Console.ReadLine();
+                        LiveSqlQuery(pulsarSystem, lquery, lfreq, lepoch, ltopic, lserver);
                         break;
                     #endregion
                     #region Admin
@@ -1628,18 +1635,23 @@ namespace Samples
             system.PulsarReader(new CreateReader(byteSchem, readerConfig));
         }
 
-        private static void SqlServers(PulsarSystem system, string[] servers)
-        {
-            //First, we need to setup connection to presto server(s)
-            system.SetupSqlServers(new SqlServers(servers.ToImmutableList()));
-            
-        }
         private static void SqlQuery(PulsarSystem system, string query, string server)
         {
             var data = system.PulsarSql(new Sql(query, e =>
             {
                 Console.WriteLine(e.ToString());
             }, server, Console.WriteLine));
+            foreach (var d in data)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
+            }
+        }
+        private static void LiveSqlQuery(PulsarSystem system, string query, int frequency, DateTime startAt, string topic , string server)
+        {
+            var data = system.PulsarSql(new LiveSql(query, frequency, startAt, topic, server, e =>
+            {
+                Console.WriteLine(e.ToString());
+            }, Console.WriteLine));
             foreach (var d in data)
             {
                 Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));

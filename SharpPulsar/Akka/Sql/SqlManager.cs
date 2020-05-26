@@ -1,7 +1,7 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.Sql.Live;
 
 namespace SharpPulsar.Akka.Sql
 {
@@ -9,39 +9,26 @@ namespace SharpPulsar.Akka.Sql
     {
         public SqlManager(IActorRef pulsarManager)
         {
-               Become(()=>Init(pulsarManager)); 
-        }
-
-        private void Init(IActorRef pulsarManager)
-        {
-            Receive<SqlServers>(servers =>
-            {
-                foreach (var s in servers.Servers)
-                {
-                    var srv = Regex.Replace(s, @"[^\w\d]", "");
-                    if(Context.Child(srv).IsNobody())
-                       Context.ActorOf(SqlWorker.Prop(s, pulsarManager), srv);
-                }
-                Become(Ready);
-                Stash.UnstashAll();
-            });
-            ReceiveAny(_=> Stash.Stash());
-        }
-
-        private void Ready()
-        {
             Receive((InternalCommands.Sql q) =>
             {
-                var srv = Regex.Replace(q.DestinationServer, @"[^\w\d]", "");
+                var srv = Regex.Replace(q.Server, @"[^\w\d]", "");
                 var dest = Context.Child(srv);
-                if(dest.IsNobody())
-                    q.ExceptionHandler(new Exception($"unknown destination server: {q.DestinationServer}"));
-                else
-                    dest.Tell(q);
+                if (dest.IsNobody())
+                    dest = Context.ActorOf(SqlWorker.Prop(q.Server, pulsarManager), srv);
+                dest.Tell(q);
+            });
+
+            Receive((LiveSql q) =>
+            {
+                var srv = Regex.Replace(q.Server, @"[^\w\d]", "");
+                var dest = Context.Child(srv);
+                if (dest.IsNobody())
+                    dest = Context.ActorOf(LiveQueryCoordinator.Prop(pulsarManager));
+                dest.Tell(q);
 
             });
         }
-
+        
         protected override void Unhandled(object message)
         {
             

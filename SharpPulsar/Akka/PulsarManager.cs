@@ -10,6 +10,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Sql;
+using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
@@ -45,6 +46,11 @@ namespace SharpPulsar.Akka
                 _pulsarManagerState.DataQueue.Enqueue(d);
 
             });
+            Receive<LiveSqlData>(d =>
+            {
+                _pulsarManagerState.LiveDataQueue.Enqueue(d);
+
+            });
             Receive<GetOrCreateSchemaServerResponse>(s =>
             {
                 _pulsarManagerState.SchemaQueue.Enqueue(s);
@@ -59,7 +65,7 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("ConsumerManager").Tell(cmd);
             });
-            Receive<SqlServers>(cmd =>
+            Receive<LiveSql>(cmd =>
             {
                 Context.Child("SqlManager").Tell(cmd);
             });

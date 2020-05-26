@@ -10,12 +10,13 @@ using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
+using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
 {
-    public class PulsarSystem: IAsyncDisposable
+    public class PulsarSystem
     {
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _pulsarManager;
@@ -30,7 +31,8 @@ namespace SharpPulsar.Akka
                 ProducerQueue = new BlockingQueue<CreatedProducer>(),
                 DataQueue = new BlockingQueue<SqlData>(),
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
-                MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>()
+                MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
+                LiveDataQueue = new BlockingQueue<LiveSqlData>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -148,7 +150,7 @@ namespace SharpPulsar.Akka
 
         public IEnumerable<SqlData> PulsarSql(InternalCommands.Sql data)
         {
-            if(string.IsNullOrWhiteSpace(data.DestinationServer) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
+            if(string.IsNullOrWhiteSpace(data.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
             var hasRow = true;
@@ -163,6 +165,21 @@ namespace SharpPulsar.Akka
                 {
                     break;
                 }
+            }
+        }
+        public IEnumerable<LiveSqlData> PulsarSql(LiveSql data)
+        {
+            if (string.IsNullOrWhiteSpace(data.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Command) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
+                throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
+            if(!data.Command.Contains("__publish_time__ > {time}"))
+                throw new ArgumentException("Command does not contain '__publish_time__ > {time}'");
+            if(!TopicName.IsValid(data.Topic))
+                throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+            _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
+            while (true)
+            {
+                var liveData = _managerState.LiveDataQueue.Take(CancellationToken.None);
+                yield return liveData;
             }
         }
         public void PulsarAdmin(InternalCommands.Admin data)
@@ -180,14 +197,6 @@ namespace SharpPulsar.Akka
         public void PulsarTransaction()
         {
             
-        }
-        public void SetupSqlServers(SqlServers servers)
-        {
-            if(servers == null)
-                throw new ArgumentNullException(nameof(servers), "null");
-            if (servers.Servers.Count < 1)
-                throw new ArgumentException("SqlServers is in an invalid state: Servers must be greater than 1");
-            _pulsarManager.Tell(servers);
         }
         public (IActorRef Consumer, string Topic) PulsarConsumer(CreateConsumer consumer)
         {
@@ -279,9 +288,9 @@ namespace SharpPulsar.Akka
         {
             producer.Tell(send);
         }
-        public async ValueTask DisposeAsync()
+        public void Stop()
         {
-           await _actorSystem.Terminate();
+           _actorSystem.Terminate();
         }
         // Check topics are valid.
         // - each topic is valid,
