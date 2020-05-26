@@ -42,6 +42,7 @@ namespace Samples
         //https://linuxize.com/post/how-to-save-file-in-vim-quit-editor/
         //https://stackoverflow.com/questions/9612941/how-to-set-java-environment-path-in-ubuntu
         //https://askubuntu.com/questions/175514/how-to-set-java-home-for-java
+
         //$ pwd
         //$ cd /
         ////bin/pulsar sql-worker run -D "java.vendor"="Oracle Corporation"
