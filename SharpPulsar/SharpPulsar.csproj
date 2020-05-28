@@ -38,11 +38,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.6" />
+    <PackageReference Include="akka" Version="1.4.7" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
     <PackageReference Include="AvroSchemaGenerator" Version="1.5.3" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.12.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.12.2" />
     <PackageReference Include="IdentityModel" Version="4.3.0" />
     <PackageReference Include="JsonSubTypes" Version="1.7.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />

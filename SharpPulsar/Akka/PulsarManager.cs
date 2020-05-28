@@ -46,6 +46,11 @@ namespace SharpPulsar.Akka
                 _pulsarManagerState.DataQueue.Enqueue(d);
 
             });
+            Receive<ConsumedMessage>(d =>
+            {
+                _pulsarManagerState.MessageQueue[d.Message.TopicName].Add(d);
+
+            });
             Receive<LiveSqlData>(d =>
             {
                 _pulsarManagerState.LiveDataQueue.Enqueue(d);

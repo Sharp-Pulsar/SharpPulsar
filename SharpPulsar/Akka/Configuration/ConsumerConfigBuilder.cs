@@ -41,7 +41,9 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
-				if(string.IsNullOrWhiteSpace(_conf.SubscriptionName))
+				if(_conf.ConsumptionType == null)
+                    throw new ArgumentException("ConsumptionType not set");
+				if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
 					throw new ArgumentException("Subscription Name is required!");
 				if(_conf.Schema == null)
 					throw new ArgumentException("Hey, we need the schema!");
@@ -55,6 +57,11 @@ namespace SharpPulsar.Akka.Configuration
 		public ConsumerConfigBuilder LoadConf(IDictionary<string, object> config)
 		{
 			_conf = (ConsumerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
+            return this;
+        }
+		public ConsumerConfigBuilder SetConsumptionType(ConsumptionType type)
+        {
+            _conf.ConsumptionType = type;
             return this;
         }
 		public ConsumerConfigBuilder ForceTopicCreation(bool force)

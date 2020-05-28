@@ -49,7 +49,9 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<ConsumedMessage>(m =>
             {
-                _messageListener.Received(m.Consumer, m.Message);
+                if (_configuration.ConsumptionType is ConsumptionType.Listener)
+                    _messageListener.Received(m.Consumer, m.Message);
+                else if (_configuration.ConsumptionType is ConsumptionType.Queue) _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
             });
         }
         private NamespaceName GetNameSpaceFromPattern(Regex pattern)

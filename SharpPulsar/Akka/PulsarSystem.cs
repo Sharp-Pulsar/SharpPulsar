@@ -1,17 +1,20 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
+using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
@@ -32,7 +35,8 @@ namespace SharpPulsar.Akka
                 DataQueue = new BlockingQueue<SqlData>(),
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
-                LiveDataQueue = new BlockingQueue<LiveSqlData>()
+                LiveDataQueue = new BlockingQueue<LiveSqlData>(),
+                MessageQueue =  new ConcurrentDictionary<string, List<ConsumedMessage>>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -193,6 +197,32 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
                 throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
+        }
+
+        public IEnumerable<T> Messages<T>(string topic, bool autoAck = true, int takeCount = 0, Action<IMessage> customProcess = null)
+        {
+            var takes = 0;
+            while (takes > takeCount)
+            {
+                var message = _managerState.MessageQueue.First(x=> x.Key == topic );
+                var m = message.Value.First();
+                var received = m.Message.ToTypeOf<T>();
+                if (autoAck)
+                {
+                    if (m.Message.MessageId is MessageId mi)
+                    {
+                        m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    }
+                    else if (m.Message.MessageId is BatchMessageId b)
+                    {
+                        m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    }
+                }
+                customProcess.Invoke(m.Message);
+                takes++;
+                _managerState.MessageQueue[topic].Remove(m);
+                yield return received;
+            }
         }
         public void PulsarFunction(InternalCommands.Function data)
         {

@@ -58,7 +58,12 @@ namespace SharpPulsar.Akka.Consumer
                 if (_hasParentConsumer)
                     Context.Parent.Tell(m);
                 else
-                    _listener.Received(m.Consumer, m.Message);
+                {
+                    if (_consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
+                        _listener.Received(m.Consumer, m.Message);
+                    else if (_consumerConfiguration.ConsumptionType == ConsumptionType.Queue)
+                        _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
+                }
             });
             ReceiveAny(a =>
             {

@@ -211,8 +211,13 @@ namespace SharpPulsar.Akka.Consumer
                 var message = new Message(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                if (_hasParentConsumer)
                     Context.Parent.Tell(new ConsumedMessage(Self, message));
-                else
-                    _listener.Received(Self, message);
+               else
+               {
+                   if(_conf.ConsumptionType == ConsumptionType.Listener)
+                        _listener.Received(Self, message);
+                   else if(_conf.ConsumptionType == ConsumptionType.Queue)
+                       _pulsarManager.Tell(new ConsumedMessage(Self, message));
+                }
             }
             else
             {
@@ -272,7 +277,12 @@ namespace SharpPulsar.Akka.Consumer
                     if(_hasParentConsumer) 
                         Context.Parent.Tell(new ConsumedMessage(Self, message));
                     else
-                        _listener.Received(Self, message);
+                    {
+                        if (_conf.ConsumptionType == ConsumptionType.Listener)
+                            _listener.Received(Self, message);
+                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
+                            _pulsarManager.Tell(new ConsumedMessage(Self, message));
+                    }
 
                     possibleToDeadLetter?.Add(message);
                     index += (uint)singleMetadata.PayloadSize;
