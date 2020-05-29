@@ -1,12 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using Akka.Actor;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka.Admin;
-using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Protocol;
+using SharpPulsar.Impl;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -17,21 +17,18 @@ namespace SharpPulsar.Akka.EventSource
         private ReplayState _replayState;
         private readonly IActorRef _pulsarManager;
         private readonly IActorRef _network;
-        private readonly IActorRef _brokerk;
         private TopicName _topicName;
-        private bool _external;
-        private long _from;
-        private long _to;
-        private long _max;
         private IActorRef _consumer;
-        public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
+        private readonly Filter _filter;
+        public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network, string tag)
         {
+            _filter = replayTopic.Filter;
             _topicName = TopicName.Get(replayTopic.ConsumerConfigurationData.SingleTopic);
             _pulsarSystem = pulsarSystem;
             _replayTopic = replayTopic;
             _pulsarManager = pulsarManager;
             _network = network;
-            Become(GetStats);
+            Become(Setup);
             ReceiveAny(a=> Stash.Stash());
 
         }
@@ -39,54 +36,87 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<ReplayState>(r =>
             {
-                _replayState = r;
-
-                if (_external)
-                {
-                    _pulsarManager.Tell(new NumberOfEntries(_topicName.ToString(), r.Max));
-                    _external = false;
-                }
+                _replayState = r; 
+                _pulsarManager.Tell(new NumberOfEntries(_topicName.ToString(), r.Max));
+                Become(Active);
+                Stash.UnstashAll();
+            });
+            Receive<NullStats>(r =>
+            {
                 Become(Active);
                 Stash.UnstashAll();
             });
             ReceiveAny(_=> Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _tenant, _namespace, _topic, false }, e =>
+            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.Tenant, _topicName.Namespace, _topicName.ToString().Split("/").Last(), false }, e =>
             {
+                var self = Self;
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    if (_external)
+                    var replayState = new ReplayState
                     {
-                        var replayState = new ReplayState
-                        {
-                            LedgerId = 0,
-                            EntryId = 0,
-                            To = 0,
-                            Max = data.NumberOfEntries
-                        };
-                        Self.Tell(replayState);
-                    }
-                    else
-                    {
-                        var compute = new ComputeMessageId(data, _from, _to, _max);
-                        var result = compute.GetFrom();
-                        var replayState = new ReplayState
-                        {
-                            LedgerId = result.Ledger,
-                            EntryId = result.Entry,
-                            To = data.NumberOfEntries,
-                            Max = result.NumberOfEntries
-                        };
-                        Self.Tell(replayState);
-                    }
-                    
-                   
+                        LedgerId = 0,
+                        EntryId = 0,
+                        To = 0,
+                        Max = data.NumberOfEntries
+                    };
+                    self.Tell(replayState);
                 }
+                else
+                    self.Tell(NullStats.Instance);
             }, e =>
             {
                 var context = Context;
                 context.System.Log.Error(e.ToString());
-            }, _replayTopic.Server, l =>
+            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
+            {
+                var context = Context;
+                context.System.Log.Info(l);
+            }));
+        }
+        private void Setup()
+        {
+            Receive<ReplayState>(r =>
+            {
+                _replayState = r;
+                var config = _replayTopic.ConsumerConfigurationData;
+                config.StartMessageId = new BatchMessageId(r.LedgerId.Value, r.EntryId.Value, -1, -1);
+                _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
+                    _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
+                    -1, SubscriptionMode.NonDurable, null, _pulsarManager, true));
+                Become(Active);
+                Stash.UnstashAll();
+            });
+            Receive<NullStats>(r =>
+            {
+                Become(Active);
+                Stash.UnstashAll();
+            });
+            ReceiveAny(_ => Stash.Stash());
+            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.Tenant, _topicName.Namespace, _topicName.ToString().Split("/").Last(), false }, e =>
+            {
+                var self = Self;
+                if (e != null)
+                {
+                    var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
+                    var result = compute.GetFrom();
+                    var replayState = new ReplayState
+                    {
+                        LedgerId = result.Ledger,
+                        EntryId = result.Entry,
+                        To = data.NumberOfEntries,
+                        Max = result.NumberOfEntries
+                    };
+                    self.Tell(replayState);
+                }
+                else
+                    self.Tell(NullStats.Instance);
+            }, e =>
+            {
+                var context = Context;
+                context.System.Log.Error(e.ToString());
+            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
             {
                 var context = Context;
                 context.System.Log.Info(l);
@@ -95,13 +125,80 @@ namespace SharpPulsar.Akka.EventSource
 
         private void Active()
         {
-            Receive<NextPlay>(n => { }); ;
+            Receive<ConsumedMessage>(c =>
+            {
+                if (_replayTopic.Filtered)
+                {
+                    _pulsarManager.Tell(c);
+                }
+                else
+                {
+                    var props = c.Message.Properties;
+                    if (props.ContainsKey(_filter.Key))
+                    {
+                        var value = props[_filter.Key];
+                        if (value.Equals(_filter.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _pulsarManager.Tell(c);
+                        }
+                    }
+                }
+            });
+            Receive<NextPlay>(n =>
+            {
+                Become(() => NextPlayStats(n));
+            });
             Receive<GetNumberOfEntries>(g =>
             {
                 _topicName = g.TopicName;
-                _external = true;
-
+                Become(GetStats);
             });
+
+        }
+
+        private void NextPlayStats(NextPlay play)
+        {
+            Receive<ReplayState>(r =>
+            {
+                _replayState = r;
+                _consumer.Tell(new SendFlow(r.Max));
+                Become(Active);
+                Stash.UnstashAll();
+            });
+            Receive<NullStats>(r =>
+            {
+                Become(Active);
+                Stash.UnstashAll();
+            });
+            ReceiveAny(_ => Stash.Stash());
+            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.Tenant, _topicName.Namespace, _topicName.ToString().Split("/").Last(), false }, e =>
+            {
+                var self = Self;
+                if (e != null)
+                {
+                    var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, play.From, play.To, play.Max);
+                    var result = compute.GetFrom();
+                    var replayState = new ReplayState
+                    {
+                        LedgerId = result.Ledger,
+                        EntryId = result.Entry,
+                        To = data.NumberOfEntries,
+                        Max = result.NumberOfEntries
+                    };
+                    self.Tell(replayState);
+                }
+                else
+                    self.Tell(NullStats.Instance);
+            }, e =>
+            {
+                var context = Context;
+                context.System.Log.Error(e.ToString());
+            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
+            {
+                var context = Context;
+                context.System.Log.Info(l);
+            }));
         }
         
         public IStash Stash { get; set; }
@@ -113,5 +210,10 @@ namespace SharpPulsar.Akka.EventSource
         public long? EntryId { get; set; }
         public long? Max { get; set; }
         public long? To { get; set; }
+    }
+
+    public sealed class NullStats
+    {
+        public static NullStats Instance = new NullStats();
     }
 }

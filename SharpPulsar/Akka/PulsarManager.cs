@@ -53,7 +53,7 @@ namespace SharpPulsar.Akka
             });
             Receive<LiveSqlData>(d =>
             {
-                _pulsarManagerState.LiveDataQueue.Enqueue(d);
+                _pulsarManagerState.LiveDataQueue.Add(d);
 
             });
             Receive<GetOrCreateSchemaServerResponse>(s =>

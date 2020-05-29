@@ -6,11 +6,11 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public sealed class SendFlow
     {
-        public SendFlow(int size)
+        public SendFlow(long? size)
         {
             Size = size;
         }
 
-        public int Size { get; }
+        public long? Size { get; }
     }
 }

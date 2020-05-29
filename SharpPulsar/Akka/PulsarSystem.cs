@@ -35,7 +35,7 @@ namespace SharpPulsar.Akka
                 DataQueue = new BlockingQueue<SqlData>(),
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
-                LiveDataQueue = new BlockingQueue<LiveSqlData>(),
+                LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new ConcurrentDictionary<string, List<ConsumedMessage>>()
             };
             _conf = conf;
@@ -186,9 +186,8 @@ namespace SharpPulsar.Akka
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
             _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
-            while (true)
+            foreach (var liveData in _managerState.LiveDataQueue.GetConsumingEnumerable())
             {
-                var liveData = _managerState.LiveDataQueue.Take(CancellationToken.None);
                 yield return liveData;
             }
         }
