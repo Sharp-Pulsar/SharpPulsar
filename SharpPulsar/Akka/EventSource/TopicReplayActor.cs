@@ -78,7 +78,7 @@ namespace SharpPulsar.Akka.EventSource
             {
                 var context = Context;
                 context.System.Log.Error(e.ToString());
-            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
+            }, _replayTopic.AdminUrl, l =>
             {
                 var context = Context;
                 context.System.Log.Info(l);
@@ -190,7 +190,7 @@ namespace SharpPulsar.Akka.EventSource
             {
                 var context = Context;
                 context.System.Log.Error(e.ToString());
-            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
+            }, _replayTopic.AdminUrl, l =>
             {
                 var context = Context;
                 context.System.Log.Info(l);

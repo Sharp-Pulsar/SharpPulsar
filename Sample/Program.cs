@@ -216,6 +216,65 @@ namespace Samples
                         var t22 = Console.ReadLine();
                         PlainAvroConsumerSeek(pulsarSystem, t22);
                         break;
+                    case "71":
+                        Console.WriteLine("[QueueConsumer] Enter topic: ");
+                        var q1 = Console.ReadLine();
+                        Console.WriteLine("[QueueConsumer] Enter Take: ");
+                        var q2 = Convert.ToInt32(Console.ReadLine());
+                        QueueConsumer(pulsarSystem, q1, q2);
+                        break;
+                    #endregion
+
+                    #region EventSource
+                    case "72":
+                        Console.WriteLine("[GetNumberOfEntries] Enter server: ");
+                        var e1 = Console.ReadLine();
+                        Console.WriteLine("[GetNumberOfEntries] Enter Topic: ");
+                        var e2 = Console.ReadLine();
+                        GetNumberOfEntries(pulsarSystem, e1, e2);
+                        break;
+                    case "73":
+                        Console.WriteLine("[ReplayTopic] Enter server: ");
+                        var e3 = Console.ReadLine();
+                        Console.WriteLine("[ReplayTopic] Enter Topic: ");
+                        var e4 = Console.ReadLine();
+                        Console.WriteLine("[ReplayTopic] Enter From: ");
+                        var e5 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[ReplayTopic] Enter To: ");
+                        var e6 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[ReplayTopic] Enter Max: ");
+                        var e7 = long.Parse(Console.ReadLine());
+                        ReplayTopic(pulsarSystem, e3, e4, e5, e6, e7);
+                        break;
+                    case "74":
+                        Console.WriteLine("[ReplayTaggedTopic] Enter server: ");
+                        var e8 = Console.ReadLine();
+                        Console.WriteLine("[ReplayTaggedTopic] Enter Topic: ");
+                        var e9 = Console.ReadLine();
+                        Console.WriteLine("[ReplayTaggedTopic] Enter From: ");
+                        var e10 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[ReplayTaggedTopic] Enter To: ");
+                        var e11 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[ReplayTaggedTopic] Enter Max: ");
+                        var e12 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[ReplayTaggedTopic] Enter Tag key: ");
+                        var e13 = Console.ReadLine();
+                        Console.WriteLine("[ReplayTaggedTopic] Enter Tag value: ");
+                        var e14 = Console.ReadLine();
+                        ReplayTaggedTopic(pulsarSystem, e8, e9, e10, e11, e12, e13, e14);
+                        break;
+                    case "75":
+                        Console.WriteLine("[NextPlay] Enter Topic: ");
+                        var e16 = Console.ReadLine();
+                        Console.WriteLine("[NextPlay] Enter From: ");
+                        var e17 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[NextPlay] Enter To: ");
+                        var e18 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[NextPlay] Enter Max: ");
+                        var e19 = long.Parse(Console.ReadLine());
+                        NextPlay(pulsarSystem, e16, e17, e18, e19);
+                        break;
+
                     #endregion
                     #region Readers
 
@@ -1100,6 +1159,31 @@ namespace Samples
             system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
 
         }
+        private static void QueueConsumer(PulsarSystem system, string topic, int take)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var messageListener = new DefaultMessageListener(null, null);
+            var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
+            var topicLast = topic.Split("/").Last();
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName(topicLast)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"{topicLast}-Subscription")
+                .Topic(topic)
+                .SetConsumptionType(ConsumptionType.Queue)
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Exclusive)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            foreach (var msg in system.Messages<Students>(true, take))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented=true}));
+            }
+        }
+        
         private static void GetLastMessageId(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
@@ -1538,6 +1622,58 @@ namespace Samples
 
         #endregion
 
+        #region EventSource
+        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic)
+        {
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
+            Console.WriteLine($"NumberOfEntries: {numb}");
+        }
+        private static void NextPlay(PulsarSystem system, string topic, long fro, long to, long max)
+        {
+            foreach (var msg in system.EventSource(new NextPlay(topic, max, fro, to)))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
+            }
+        }
+        private static void ReplayTopic(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var replay = new ReplayTopic(readerConfig, server, fro, to, max, null, false);
+            foreach (var msg in system.EventSource(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void ReplayTaggedTopic(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var replay = new ReplayTopic(readerConfig, server, fro, to, max, new Tag(key, value), true);
+            foreach (var msg in system.EventSource(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        #endregion
         private static void PlainAvroReader(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);

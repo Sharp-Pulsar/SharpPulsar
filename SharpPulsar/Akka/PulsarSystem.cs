@@ -352,17 +352,27 @@ namespace SharpPulsar.Akka
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
+            
             if(replay.ReaderConfigurationData == null)
                 throw new ArgumentException($"ReaderConfigurationData is null");
+            
+            if(string.IsNullOrWhiteSpace(replay.AdminUrl))
+                throw new ArgumentException($"AdminUrl cannot be empty");
 
             var topic = replay.ReaderConfigurationData.TopicName;
+
             if (!TopicName.IsValid(replay.ReaderConfigurationData.TopicName))
                 throw new ArgumentException($"Topic '{topic}' is invalid");
+
             replay.ReaderConfigurationData.TopicName = TopicName.Get(topic).ToString();
+
             if(replay.Tagged && replay.Tag == null)
                 throw new ArgumentException($"Tag is null");
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.From, replay.To, replay.Max, replay.Tag, replay.Tagged);
+
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, replay.Max, replay.Tag, replay.Tagged);
+            
             _pulsarManager.Tell(start);
+
             var count = replay.Max;
             while (count > 0)
             {

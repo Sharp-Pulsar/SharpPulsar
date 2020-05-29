@@ -48,7 +48,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly bool _createTopicIfDoesNotExist;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
-        private readonly BatchMessageId _initialStartMessageId;
+        private readonly BatchMessageId _initialStartMessageId = (BatchMessageId)MessageIdFields.Earliest;
         private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly MessageCrypto _msgCrypto;

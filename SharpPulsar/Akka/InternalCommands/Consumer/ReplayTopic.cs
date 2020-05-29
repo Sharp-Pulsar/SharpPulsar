@@ -5,7 +5,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public sealed class StartReplayTopic
     {
-        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Tag tag, bool tagged)
+        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged)
         {
             ClientConfigurationData = clientConfigurationData;
             ReaderConfigurationData = readerConfigurationData;
@@ -14,6 +14,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
             Max = max;
             Tag = tag;
             Tagged = tagged;
+            AdminUrl = adminUrl;
         }
         public ClientConfigurationData ClientConfigurationData {get;}
         public ReaderConfigurationData ReaderConfigurationData { get; }
@@ -22,10 +23,11 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public long Max { get; }
         public Tag Tag { get; }
         public bool Tagged { get; }
+        public string AdminUrl { get; }
     }
     public sealed class ReplayTopic
     {
-        public ReplayTopic(ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Tag tag, bool tagged)
+        public ReplayTopic(ReaderConfigurationData readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged)
         {
             ReaderConfigurationData = readerConfigurationData;
             From = @from;
@@ -33,6 +35,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
             Max = max;
             Tag = tag;
             Tagged = tagged;
+            AdminUrl = adminUrl;
         }
         public ReaderConfigurationData ReaderConfigurationData { get; }
         public long From { get; }
@@ -40,6 +43,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public long Max { get; }
         public Tag Tag { get; }
         public bool Tagged { get; }
+        public string AdminUrl { get; }
     }
     public sealed class GetNumberOfEntries 
     {
