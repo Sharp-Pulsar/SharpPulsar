@@ -21,12 +21,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly IActorRef _network;
         private TopicName _topicName;
         private IActorRef _consumer;
-        private readonly Filter _filter;
+        private readonly Tag _tag;
         private long _sequenceId;
-        public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network, string tag)
+        public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
             _sequenceId = replayTopic.From;
-            _filter = replayTopic.Filter;
+            _tag = replayTopic.Tag;
             _topicName = TopicName.Get(replayTopic.ReaderConfigurationData.TopicName);
             _pulsarSystem = pulsarSystem;
             _replayTopic = replayTopic;
@@ -87,13 +87,11 @@ namespace SharpPulsar.Akka.EventSource
 
         private ConsumerConfigurationData PrepareConsumerConfiguration(ReaderConfigurationData readerConfiguration)
         {
-            var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+            var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
             if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
             {
                 subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
             }
-
-            var readerListener = readerConfiguration.ReaderListener;
             var consumerConfiguration = new ConsumerConfigurationData();
             consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
             consumerConfiguration.SubscriptionName = subscription;
@@ -121,54 +119,13 @@ namespace SharpPulsar.Akka.EventSource
 
             return consumerConfiguration;
         }
-        private void GetStats()
-        {
-            Receive<ReplayState>(r =>
-            {
-                _pulsarManager.Tell(new NumberOfEntries(_topicName.ToString(), r.Max));
-                Become(Active);
-                Stash.UnstashAll();
-            });
-            Receive<NullStats>(r =>
-            {
-                Become(Active);
-                Stash.UnstashAll();
-            });
-            ReceiveAny(_=> Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.Tenant, _topicName.Namespace, _topicName.ToString().Split("/").Last(), false }, e =>
-            {
-                var self = Self;
-                if (e != null)
-                {
-                    var data = (PersistentTopicInternalStats)e;
-                    var replayState = new ReplayState
-                    {
-                        LedgerId = 0,
-                        EntryId = 0,
-                        To = 0,
-                        Max = data.NumberOfEntries
-                    };
-                    self.Tell(replayState);
-                }
-                else
-                    self.Tell(NullStats.Instance);
-            }, e =>
-            {
-                var context = Context;
-                context.System.Log.Error(e.ToString());
-            }, _replayTopic.ClientConfigurationData.ServiceUrl, l =>
-            {
-                var context = Context;
-                context.System.Log.Info(l);
-            }));
-        }
         
         private void Active()
         {
             Receive<ConsumedMessage>(c =>
             {
                 var messageId = (MessageId)c.Message.MessageId;
-                if (!_replayTopic.Filtered)
+                if (!_replayTopic.Tagged)
                 {
                     var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
                     _pulsarManager.Tell(eventMessage);
@@ -176,10 +133,10 @@ namespace SharpPulsar.Akka.EventSource
                 else
                 {
                     var props = c.Message.Properties;
-                    if (props.ContainsKey(_filter.Key))
+                    if (props.ContainsKey(_tag.Key))
                     {
-                        var value = props[_filter.Key];
-                        if (value.Equals(_filter.Value, StringComparison.OrdinalIgnoreCase))
+                        var value = props[_tag.Key];
+                        if (value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase))
                         {
                             var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
                             _pulsarManager.Tell(eventMessage);
@@ -191,11 +148,6 @@ namespace SharpPulsar.Akka.EventSource
             Receive<NextPlay>(n =>
             {
                 Become(() => NextPlayStats(n));
-            });
-            Receive<GetNumberOfEntries>(g =>
-            {
-                _topicName = g.TopicName;
-                Become(GetStats);
             });
 
         }
@@ -227,8 +179,8 @@ namespace SharpPulsar.Akka.EventSource
                     {
                         LedgerId = result.Ledger,
                         EntryId = result.Entry,
-                        To = data.NumberOfEntries,
-                        Max = result.NumberOfEntries
+                        To = result.Max,
+                        Max = result.Max
                     };
                     self.Tell(replayState);
                 }
@@ -244,7 +196,11 @@ namespace SharpPulsar.Akka.EventSource
                 context.System.Log.Info(l);
             }));
         }
-        
+
+        public static Props Prop(PulsarSystem pulsarSystem, StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
+        {
+            return Props.Create(()=> new TopicReplayActor(pulsarSystem, startReplayTopic, pulsarManager, network));
+        }
         public IStash Stash { get; set; }
     }
     

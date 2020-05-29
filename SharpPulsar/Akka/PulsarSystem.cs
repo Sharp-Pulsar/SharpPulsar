@@ -36,7 +36,9 @@ namespace SharpPulsar.Akka
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
-                MessageQueue =  new ConcurrentDictionary<string, List<ConsumedMessage>>()
+                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                EventQueue = new BlockingQueue<EventMessage>(),
+                MaxQueue = new BlockingQueue<NumberOfEntries>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -63,7 +65,7 @@ namespace SharpPulsar.Akka
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
-            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
@@ -206,29 +208,52 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(string topic, bool autoAck = true, int takeCount = 0, Action<IMessage> customProcess = null)
+        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Action<IMessage> customProcess = null)
         {
-            var takes = 0;
-            while (takes > takeCount)
+            if (takeCount == -1)
             {
-                var message = _managerState.MessageQueue.First(x=> x.Key == topic );
-                var m = message.Value.First();
-                var received = m.Message.ToTypeOf<T>();
-                if (autoAck)
+                foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
                 {
-                    if (m.Message.MessageId is MessageId mi)
+                    var received = m.Message.ToTypeOf<T>();
+                    if (autoAck)
                     {
-                        m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                        if (m.Message.MessageId is MessageId mi)
+                        {
+                            m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                        }
+                        else if (m.Message.MessageId is BatchMessageId b)
+                        {
+                            m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                        }
                     }
-                    else if (m.Message.MessageId is BatchMessageId b)
+                    customProcess?.Invoke(m.Message);
+                    yield return received;
+                }
+            }
+            else
+            {
+                var takes = 0;
+                while (takes <= takeCount)
+                {
+                    if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                        var received = m.Message.ToTypeOf<T>();
+                        if (autoAck)
+                        {
+                            if (m.Message.MessageId is MessageId mi)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                            }
+                            else if (m.Message.MessageId is BatchMessageId b)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                            }
+                        }
+                        customProcess?.Invoke(m.Message);
+                        yield return received;
+                        takes++;
                     }
                 }
-                customProcess.Invoke(m.Message);
-                takes++;
-                _managerState.MessageQueue[topic].Remove(m);
-                yield return received;
             }
         }
         public void PulsarFunction(InternalCommands.Function data)
@@ -287,6 +312,66 @@ namespace SharpPulsar.Akka
             if (messages == null)
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
+        }
+        public long EventSource(GetNumberOfEntries entries)
+        {
+            if(entries == null)
+                throw new ArgumentException($"ReplayTopic is null");
+            if (!TopicName.IsValid(entries.Topic))
+                throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
+            var topic = TopicName.Get(entries.Topic).ToString();
+
+            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server));
+            if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+            {
+                return msg.Max.Value;
+            }
+
+            return 0L;
+        }
+        public IEnumerable<EventMessage> EventSource(NextPlay replay)
+        {
+            if(replay == null)
+                throw new ArgumentException($"ReplayTopic is null");
+            if (!TopicName.IsValid(replay.Topic))
+                throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
+            var topic = TopicName.Get(replay.Topic).ToString();
+
+            _pulsarManager.Tell(new NextPlay(topic, replay.Max, replay.From, replay.To));
+            var count = replay.Max;
+            while (count > 0)
+            {
+                if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                {
+                    count--;
+                    yield return msg;
+                }
+            }
+        }
+        public IEnumerable<EventMessage> EventSource(ReplayTopic replay)
+        {
+            if(replay == null)
+                throw new ArgumentException($"ReplayTopic is null");
+            if(replay.ReaderConfigurationData == null)
+                throw new ArgumentException($"ReaderConfigurationData is null");
+
+            var topic = replay.ReaderConfigurationData.TopicName;
+            if (!TopicName.IsValid(replay.ReaderConfigurationData.TopicName))
+                throw new ArgumentException($"Topic '{topic}' is invalid");
+            replay.ReaderConfigurationData.TopicName = TopicName.Get(topic).ToString();
+            if(replay.Tagged && replay.Tag == null)
+                throw new ArgumentException($"Tag is null");
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.From, replay.To, replay.Max, replay.Tag, replay.Tagged);
+            _pulsarManager.Tell(start);
+            var count = replay.Max;
+            while (count > 0)
+            {
+                if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                {
+                    count--;
+                    yield return msg;
+                }
+            }
         }
         public (string Topic, long LedgerId, long EntryId, int Partition, int BatchIndex) PulsarConsumer(LastMessageId last, IActorRef consumer)
         {

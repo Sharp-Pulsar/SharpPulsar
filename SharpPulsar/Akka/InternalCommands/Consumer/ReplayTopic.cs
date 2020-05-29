@@ -5,44 +5,56 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public sealed class StartReplayTopic
     {
-        public StartReplayTopic(ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
-        {
-            ReaderConfigurationData = readerConfigurationData;
-            From = @from;
-            To = to;
-            Max = max;
-            Filter = filter;
-            Filtered = filtered;
-        }
-        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
+        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Tag tag, bool tagged)
         {
             ClientConfigurationData = clientConfigurationData;
             ReaderConfigurationData = readerConfigurationData;
             From = @from;
             To = to;
             Max = max;
-            Filter = filter;
-            Filtered = filtered;
+            Tag = tag;
+            Tagged = tagged;
         }
         public ClientConfigurationData ClientConfigurationData {get;}
         public ReaderConfigurationData ReaderConfigurationData { get; }
         public long From { get; }
         public long To { get; }
         public long Max { get; }
-        public Filter Filter { get; }
-        public bool Filtered { get; }
+        public Tag Tag { get; }
+        public bool Tagged { get; }
+    }
+    public sealed class ReplayTopic
+    {
+        public ReplayTopic(ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Tag tag, bool tagged)
+        {
+            ReaderConfigurationData = readerConfigurationData;
+            From = @from;
+            To = to;
+            Max = max;
+            Tag = tag;
+            Tagged = tagged;
+        }
+        public ReaderConfigurationData ReaderConfigurationData { get; }
+        public long From { get; }
+        public long To { get; }
+        public long Max { get; }
+        public Tag Tag { get; }
+        public bool Tagged { get; }
     }
     public sealed class GetNumberOfEntries 
     {
-        public GetNumberOfEntries(string topic)
+        public GetNumberOfEntries(string topic, string server)
         {
             Topic = topic;
+            Server = server;
         }
-        internal GetNumberOfEntries(TopicName topic)
+        internal GetNumberOfEntries(TopicName topic, string server)
         {
             TopicName = topic;
+            Server = server;
         }
         public string Topic { get; }
+        public string Server { get; }
         public TopicName TopicName { get; }
     }
     public sealed class NumberOfEntries 
@@ -70,9 +82,9 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public long To { get; }
     }
 
-    public sealed class Filter
+    public sealed class Tag
     {
-        public Filter(string key, string value)
+        public Tag(string key, string value)
         {
             Key = key;
             Value = value;

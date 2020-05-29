@@ -294,12 +294,14 @@ namespace Samples
                         Console.WriteLine("[GetPersistentTopicStats] Namespace: ");
                         var n69 = Console.ReadLine();
                         Console.WriteLine("[GetPersistentTopicStats] Topic: ");
-                        var to69 = Console.ReadLine();
+                        var top69 = Console.ReadLine();
                         Console.WriteLine("[GetPersistentTopicStats] From: ");
                         var fro69 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[GetPersistentTopicStats] To: ");
+                        var to69 = long.Parse(Console.ReadLine());
                         Console.WriteLine("[GetPersistentTopicStats] Max: ");
                         var mx69 = long.Parse(Console.ReadLine());
-                        GetPersistentTopicStats(pulsarSystem, s, t69, n69, to69, fro69, mx69);
+                        GetPersistentTopicStats(pulsarSystem, s, t69, n69, top69, fro69, to69, mx69);
                         break;
                     case "70":
                         Console.WriteLine("[GetManagedLedgerInfoPersistent] Enter destination server: ");
@@ -1693,14 +1695,14 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, l => Console.WriteLine(l)));
         }
-        private static void GetPersistentTopicStats(PulsarSystem system, string server, string tenant, string ns, string topic, long fro, long max)
+        private static void GetPersistentTopicStats(PulsarSystem system, string server, string tenant, string ns, string topic, long fro, long to, long max)
         {
             system.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { tenant, ns, topic, false }, e =>
             {
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, fro, max);
+                    var compute = new ComputeMessageId(data, fro, to, max);
                     var result = compute.GetFrom();
                     Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.NumberOfEntries}");
                 }
