@@ -224,92 +224,10 @@ namespace SharpPulsar.Akka.Consumer
             else
             {
                 // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, uncompressedPayload, messageId);
-
+                //ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, uncompressedPayload, messageId);
+                _consumerEventListener.Log("Batching is not supported");
             }
 
-        }
-        private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, byte[] uncompressedPayload, MessageIdData messageId)
-        {
-            var batchSize = msgMetadata.NumMessagesInBatch;
-            var data = new ReadOnlySequence<byte>(uncompressedPayload);
-            // create ack tracker for entry aka batch
-            var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-            var acker = BatchMessageAcker.NewAcker(batchSize);
-            IList<Message> possibleToDeadLetter = null;
-            if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
-            {
-                possibleToDeadLetter = new List<Message>();
-            }
-            try
-            {
-                long index = 0;
-                for (var i = 0; i < batchSize; ++i)
-                {
-                    if (Context.System.Log.IsDebugEnabled)
-                    {
-                        Context.System.Log.Debug($"[{_subscriptionName}] [{_consumerName}] processing message num - {i} in batch");
-                    }
-                    var singleMetadataSize = data.ReadUInt32(index, true);
-                    index += 4;
-                    var singleMetadata = Serializer.Deserialize<SingleMessageMetadata>(data.Slice(index, singleMetadataSize));
-                    index += singleMetadataSize;
-
-                    var singleMessagePayload = data.Slice(index, singleMetadata.PayloadSize);
-
-                    if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorBatchIndex(i))
-                    {
-                        // If we are receiving a batch message, we need to discard messages that were prior
-                        // to the startMessageId
-                        if (Context.System.Log.IsDebugEnabled)
-                        {
-                            Context.System.Log.Debug($"[{_subscriptionName}] [{_consumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-                        }
-                        continue;
-                    }
-
-                    if (singleMetadata.CompactedOut)
-                    {
-                        continue;
-                    }
-
-                    var batchMessageIdImpl = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, i, acker);
-
-                    var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
-                    if(_hasParentConsumer) 
-                        Context.Parent.Tell(new ConsumedMessage(Self, message));
-                    else
-                    {
-                        if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, message);
-                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                            _pulsarManager.Tell(new ConsumedMessage(Self, message));
-                    }
-
-                    possibleToDeadLetter?.Add(message);
-                    index += (uint)singleMetadata.PayloadSize;
-                }
-            }
-            catch (IOException)
-            {
-                Context.System.Log.Warning($"[{_subscriptionName}] [{_consumerName}] unable to obtain message in batch");
-                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.BatchDeSerializeError);
-            }
-
-            if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
-            {
-                _possibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
-            }
-
-            if (Context.System.Log.IsDebugEnabled)
-            {
-                //Context.System.Log.Debug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", _subscriptionName, _consumerName, IncomingMessages.size(), IncomingMessages.RemainingCapacity());
-            }
-
-        }
-        private bool IsPriorBatchIndex(long idx)
-        {
-            return _conf.ResetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
         }
         private EncryptionContext CreateEncryptionContext(MessageMetadata msgMetadata)
         {
@@ -564,7 +482,7 @@ namespace SharpPulsar.Akka.Consumer
 
             Receive<SendFlow>(f =>
             {
-                SendFlow(f.Size);
+                SendFlow(Convert.ToInt32(f.Size));
             });
 
             Receive<LastMessageId>(x =>

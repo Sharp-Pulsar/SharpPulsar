@@ -5,19 +5,19 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public sealed class StartReplayTopic
     {
-        public StartReplayTopic(ConsumerConfigurationData consumerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
+        public StartReplayTopic(ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
         {
-            ConsumerConfigurationData = consumerConfigurationData;
+            ReaderConfigurationData = readerConfigurationData;
             From = @from;
             To = to;
             Max = max;
             Filter = filter;
             Filtered = filtered;
         }
-        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ConsumerConfigurationData consumerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
+        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, long @from, long to, long max, Filter filter, bool filtered)
         {
             ClientConfigurationData = clientConfigurationData;
-            ConsumerConfigurationData = consumerConfigurationData;
+            ReaderConfigurationData = readerConfigurationData;
             From = @from;
             To = to;
             Max = max;
@@ -25,7 +25,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
             Filtered = filtered;
         }
         public ClientConfigurationData ClientConfigurationData {get;}
-        public ConsumerConfigurationData ConsumerConfigurationData { get; }
+        public ReaderConfigurationData ReaderConfigurationData { get; }
         public long From { get; }
         public long To { get; }
         public long Max { get; }
