@@ -28,19 +28,19 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class Consumer:ReceiveActor, IWithUnboundedStash
     {
-        private int _partitionIndex;
+        private readonly int _partitionIndex;
         private const int MaxRedeliverUnacknowledged = 1000;
         private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
-        private ConsumerConfigurationData _conf;
+        private readonly ConsumerConfigurationData _conf;
         private string _consumerName;
         private string _subscriptionName;
         private ISchema _schema;
         private List<IConsumerInterceptor> _interceptors;
-        private IMessageListener _listener;
-        private IConsumerEventListener _consumerEventListener;
-        private TopicName _topicName;
-        private IActorRef _network;
+        private readonly IMessageListener _listener;
+        private readonly IConsumerEventListener _consumerEventListener;
+        private readonly TopicName _topicName;
+        private readonly IActorRef _network;
         private int _requestedFlowPermits;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
@@ -52,14 +52,16 @@ namespace SharpPulsar.Akka.Consumer
         private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly MessageCrypto _msgCrypto;
-        private bool _hasParentConsumer;
+        private readonly bool _hasParentConsumer;
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
+        private bool _eventSourced;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
-        private IActorRef _pulsarManager;
-        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
+        private readonly IActorRef _pulsarManager;
+        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
             _pulsarManager = pulsarManager;
+            _eventSourced = eventSourced;
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
             _listener = configuration.MessageListener;
             _createTopicIfDoesNotExist = configuration.ForceTopicCreation;
@@ -128,9 +130,9 @@ namespace SharpPulsar.Akka.Consumer
            return false;
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
-            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager));
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager, eventSourced));
         }
         
         private bool HasReachedEndOfTopic()
@@ -560,6 +562,11 @@ namespace SharpPulsar.Akka.Consumer
                 Become(RecreatingConsumer);
             });
 
+            Receive<SendFlow>(f =>
+            {
+                SendFlow(f.Size);
+            });
+
             Receive<LastMessageId>(x =>
             {
                 LastMessageId();
@@ -583,7 +590,7 @@ namespace SharpPulsar.Akka.Consumer
                     BatchIndex = m.MessageId.BatchIndex
                 };
                 HandleMessage(msgId, m.RedeliveryCount, m.Data);
-                if (_requestedFlowPermits == 0)
+                if (_requestedFlowPermits == 0 && !_eventSourced)
                     SendFlow(_conf.ReceiverQueueSize);
             });
             Receive<AckMessage>(AckMessage);

@@ -18,6 +18,7 @@ using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.EventSource;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.Function.Api;
 using SharpPulsar.Akka.InternalCommands;
@@ -284,6 +285,32 @@ namespace Samples
                         Console.WriteLine("[GetAllSchemas] Topic: ");
                         var to1 = Console.ReadLine();
                         GetAllSchemas(pulsarSystem, adminserver, tn3, ns3, to1);
+                        break;
+                    case "69":
+                        Console.WriteLine("[GetPersistentTopicStats] Enter destination server: ");
+                        var s = Console.ReadLine();
+                        Console.WriteLine("[GetPersistentTopicStats] Tenant: ");
+                        var t69 = Console.ReadLine();
+                        Console.WriteLine("[GetPersistentTopicStats] Namespace: ");
+                        var n69 = Console.ReadLine();
+                        Console.WriteLine("[GetPersistentTopicStats] Topic: ");
+                        var to69 = Console.ReadLine();
+                        Console.WriteLine("[GetPersistentTopicStats] From: ");
+                        var fro69 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[GetPersistentTopicStats] Max: ");
+                        var mx69 = long.Parse(Console.ReadLine());
+                        GetPersistentTopicStats(pulsarSystem, s, t69, n69, to69, fro69, mx69);
+                        break;
+                    case "70":
+                        Console.WriteLine("[GetManagedLedgerInfoPersistent] Enter destination server: ");
+                        var s70 = Console.ReadLine();
+                        Console.WriteLine("[GetManagedLedgerInfoPersistent] Tenant: ");
+                        var t70 = Console.ReadLine();
+                        Console.WriteLine("[GetManagedLedgerInfoPersistent] Namespace: ");
+                        var n70 = Console.ReadLine();
+                        Console.WriteLine("[GetManagedLedgerInfoPersistent] Topic: ");
+                        var to70 = Console.ReadLine();
+                        GetManagedLedgerInfoPersistent(pulsarSystem, s70, t70, n70, to70);
                         break;
                     case "58":
                         Console.WriteLine("[RegisterSchema] Enter destination server: ");
@@ -1657,6 +1684,31 @@ namespace Samples
             {
                 Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
             }
+        }
+        private static void GetManagedLedgerInfoPersistent(PulsarSystem system, string server, string tenant, string ns, string topic)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.GetManagedLedgerInfoPersistent, new object[] { tenant, ns, topic, true }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, l => Console.WriteLine(l)));
+        }
+        private static void GetPersistentTopicStats(PulsarSystem system, string server, string tenant, string ns, string topic, long fro, long max)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { tenant, ns, topic, false }, e =>
+            {
+                if (e != null)
+                {
+                    var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, fro, max);
+                    var result = compute.GetFrom();
+                    Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.NumberOfEntries}");
+                }
+                else
+                {
+                    Console.WriteLine("null");
+                }
+            }, e => Console.WriteLine(e.ToString()), server, l => Console.WriteLine(l)));
         }
         private static void GetAllSchemas(PulsarSystem system, string server, string tenant, string ns, string topic)
         {

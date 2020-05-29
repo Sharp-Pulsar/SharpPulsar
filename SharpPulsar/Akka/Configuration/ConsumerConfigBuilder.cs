@@ -41,8 +41,6 @@ namespace SharpPulsar.Akka.Configuration
         {
             get
             {
-				if(_conf.ConsumptionType == null)
-                    throw new ArgumentException("ConsumptionType not set");
 				if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
 					throw new ArgumentException("Subscription Name is required!");
 				if(_conf.Schema == null)

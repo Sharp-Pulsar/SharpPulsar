@@ -8,9 +8,9 @@ namespace SharpPulsar.Akka.Reader
 {
     public class ReaderManager:ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _network;
+        private readonly IActorRef _network;
         private ClientConfigurationData _config;
-        private IActorRef _pulsarManager;
+        private readonly IActorRef _pulsarManager;
         public ReaderManager(ClientConfigurationData configuration, IActorRef network, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;

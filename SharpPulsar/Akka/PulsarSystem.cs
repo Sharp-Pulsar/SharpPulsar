@@ -198,7 +198,15 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
-
+        /// <summary>
+        /// Consume messages from queue. ConsumptionType has to be set to Queue.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="topic"></param>
+        /// <param name="autoAck"></param>
+        /// <param name="takeCount"></param>
+        /// <param name="customProcess"></param>
+        /// <returns></returns>
         public IEnumerable<T> Messages<T>(string topic, bool autoAck = true, int takeCount = 0, Action<IMessage> customProcess = null)
         {
             var takes = 0;

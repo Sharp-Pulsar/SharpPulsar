@@ -15,14 +15,14 @@ namespace SharpPulsar.Akka.Consumer
     /// </summary>
     public class MultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
-        private ClientConfigurationData _clientConfiguration;
-        private ConsumerConfigurationData _consumerConfiguration;
-        private IActorRef _network;
-        private IMessageListener _listener;
-        private IConsumerEventListener _event;
-        private bool _hasParentConsumer;
-        private Seek _seek;
-        private IActorRef _pulsarManager;
+        private readonly ClientConfigurationData _clientConfiguration;
+        private readonly ConsumerConfigurationData _consumerConfiguration;
+        private readonly IActorRef _network;
+        private readonly IMessageListener _listener;
+        private readonly IConsumerEventListener _event;
+        private readonly bool _hasParentConsumer;
+        private readonly Seek _seek;
+        private readonly IActorRef _pulsarManager;
         public MultiTopicsManager(ClientConfigurationData clientConfiguration, ConsumerConfigurationData configuration, IActorRef network, bool hasParentConsumer, Seek seek, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;

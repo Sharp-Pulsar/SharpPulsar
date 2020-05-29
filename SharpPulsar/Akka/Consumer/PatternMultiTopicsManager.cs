@@ -15,13 +15,13 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class PatternMultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _network;
-        private Regex _topicsPattern;
-        private IMessageListener _messageListener;
-        private ConsumerConfigurationData _configuration;
-        private ClientConfigurationData _clientConfiguration;
-        private IActorRef _pulsarManager;
-        private Seek _seek;
+        private readonly IActorRef _network;
+        private readonly Regex _topicsPattern;
+        private readonly IMessageListener _messageListener;
+        private readonly ConsumerConfigurationData _configuration;
+        private readonly ClientConfigurationData _clientConfiguration;
+        private readonly IActorRef _pulsarManager;
+        private readonly Seek _seek;
         public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;
