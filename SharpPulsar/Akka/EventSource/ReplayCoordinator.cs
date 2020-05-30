@@ -24,10 +24,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly List<string> _routees;
         private int _expectedRoutees;
         private int _currentRoutees;
+        private readonly IActorRef _self;
         
 
         public ReplayCoordinator(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
         {
+            _self = Self;
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
@@ -162,9 +164,10 @@ namespace SharpPulsar.Akka.EventSource
         }
         private void GetStats(GetNumberOfEntries numberOfEntries)
         {
+            var topicName = TopicName.Get(numberOfEntries.Topic);
             Receive<ReplayState>(r =>
             {
-                _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.TopicName.ToString(), r.Max));
+                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Max));
                 Become(Listening);
                 Stash.UnstashAll();
             });
@@ -174,9 +177,8 @@ namespace SharpPulsar.Akka.EventSource
                 Stash.UnstashAll();
             });
             ReceiveAny(_ => Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { numberOfEntries.TopicName.Tenant, numberOfEntries.TopicName.Namespace, numberOfEntries.TopicName.ToString().Split("/").Last(), false }, e =>
+            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { topicName.NamespaceObject.Tenant, topicName.NamespaceObject.LocalName, topicName.LocalName, false }, e =>
             {
-                var self = Self;
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
@@ -187,10 +189,10 @@ namespace SharpPulsar.Akka.EventSource
                         To = 0,
                         Max = data.NumberOfEntries
                     };
-                    self.Tell(replayState);
+                    _self.Tell(replayState);
                 }
                 else
-                    self.Tell(NullStats.Instance);
+                    _self.Tell(NullStats.Instance);
             }, e =>
             {
                 var context = Context;

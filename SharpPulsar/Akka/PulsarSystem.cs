@@ -329,7 +329,7 @@ namespace SharpPulsar.Akka
 
             return 0L;
         }
-        public IEnumerable<EventMessage> EventSource(NextPlay replay)
+        public IEnumerable<T> EventSource<T>(NextPlay replay, Action<EventMessage> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -344,11 +344,12 @@ namespace SharpPulsar.Akka
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
                     count--;
-                    yield return msg;
+                    yield return msg.Message.ToTypeOf<T>();
+                    customHandler?.Invoke(msg);
                 }
             }
         }
-        public IEnumerable<EventMessage> EventSource(ReplayTopic replay)
+        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Action<EventMessage> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -379,7 +380,8 @@ namespace SharpPulsar.Akka
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
                     count--;
-                    yield return msg;
+                    yield return msg.Message.ToTypeOf<T>();
+                    customHandler?.Invoke(msg);
                 }
             }
         }

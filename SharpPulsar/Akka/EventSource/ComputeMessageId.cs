@@ -62,9 +62,9 @@ namespace SharpPulsar.Akka.EventSource
             }
 
             var max = numberOfEntries - track;
-            var frotodiff = _to - _from;
+            var frotodiff = (_to - _from) + 1;
             if (_max > max) 
-                if(frotodiff > _max) 
+                if(frotodiff < _max) 
                     _max = max;
             return (ledgerId,entryId, _max, numberOfEntries);
         }

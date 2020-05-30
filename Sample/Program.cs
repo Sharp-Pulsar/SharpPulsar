@@ -1630,7 +1630,7 @@ namespace Samples
         }
         private static void NextPlay(PulsarSystem system, string topic, long fro, long to, long max)
         {
-            foreach (var msg in system.EventSource(new NextPlay(topic, max, fro, to)))
+            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, max, fro, to)))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
             }
@@ -1649,7 +1649,7 @@ namespace Samples
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var replay = new ReplayTopic(readerConfig, server, fro, to, max, null, false);
-            foreach (var msg in system.EventSource(replay))
+            foreach (var msg in system.EventSource<Students>(replay))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -1668,7 +1668,7 @@ namespace Samples
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var replay = new ReplayTopic(readerConfig, server, fro, to, max, new Tag(key, value), true);
-            foreach (var msg in system.EventSource(replay))
+            foreach (var msg in system.EventSource<Students>(replay))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }

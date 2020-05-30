@@ -52,14 +52,8 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
             Topic = topic;
             Server = server;
         }
-        internal GetNumberOfEntries(TopicName topic, string server)
-        {
-            TopicName = topic;
-            Server = server;
-        }
         public string Topic { get; }
         public string Server { get; }
-        public TopicName TopicName { get; }
     }
     public sealed class NumberOfEntries 
     {
