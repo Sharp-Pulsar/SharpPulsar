@@ -509,7 +509,7 @@ namespace SharpPulsar.Akka.Consumer
                 };
                 HandleMessage(msgId, m.RedeliveryCount, m.Data);
                 if (_requestedFlowPermits == 0 && !_eventSourced)
-                    SendFlow(_conf.ReceiverQueueSize);
+                    SendFlow(_requestedFlowPermits);
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);

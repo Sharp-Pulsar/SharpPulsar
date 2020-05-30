@@ -24,10 +24,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly Tag _tag;
         private long _sequenceId;
         private readonly IActorRef _self;
+        private long _expectedReplayMax;
+        private long _currentReplayCount;
         public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
             _self = Self;
-            _sequenceId = 1;
+            _sequenceId = replayTopic.From;
             _tag = replayTopic.Tag;
             _topicName = TopicName.Get(replayTopic.ReaderConfigurationData.TopicName);
             _pulsarSystem = pulsarSystem;
@@ -35,20 +37,21 @@ namespace SharpPulsar.Akka.EventSource
             _pulsarManager = pulsarManager;
             _network = network;
             Become(Setup);
-            ReceiveAny(a=> Stash.Stash());
 
         }
         private void Setup()
         {
             Receive<ReplayState>(r =>
             {
+                Become(Active);
+                _expectedReplayMax = r.Max.Value;
                 var partition = _topicName.PartitionIndex;
                 var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
                 config.StartMessageId = new BatchMessageId(r.LedgerId.Value, r.EntryId.Value, partition, -1);
+                config.ReceiverQueueSize = (int)(r.Max + 1) ;
                 _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
                     _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
                     partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
-                Become(Active);
                 Stash.UnstashAll();
             });
             Receive<NullStats>(r =>
@@ -68,7 +71,7 @@ namespace SharpPulsar.Akka.EventSource
                     {
                         LedgerId = result.Ledger,
                         EntryId = result.Entry,
-                        To = (_replayTopic.From + result.Max),
+                        To = result.To,
                         Max = result.Max
                     };
                     _self.Tell(replayState);
@@ -125,6 +128,7 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<ConsumedMessage>(c =>
             {
+                _currentReplayCount++;
                 var messageId = (MessageId)c.Message.MessageId;
                 if (!_replayTopic.Tagged)
                 {
@@ -157,9 +161,8 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<ReplayState>(r =>
             {
-                _consumer.Tell(new SendFlow(r.Max));
                 Become(Active);
-                Stash.UnstashAll();
+                _consumer.Tell(new SendFlow(r.Max));
             });
             Receive<NullStats>(r =>
             {
@@ -178,7 +181,7 @@ namespace SharpPulsar.Akka.EventSource
                     {
                         LedgerId = result.Ledger,
                         EntryId = result.Entry,
-                        To = (_replayTopic.From + result.Max),
+                        To = result.To,
                         Max = result.Max
                     };
                     _self.Tell(replayState);

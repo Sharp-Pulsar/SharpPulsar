@@ -18,7 +18,7 @@ namespace SharpPulsar.Akka.EventSource
             _to = to;
         }
 
-        public (long? Ledger, long? Entry, long? Max, long? NumberOfEntries) GetFrom()
+        public (long? Ledger, long? Entry, long? Max, long? To) GetFrom()
         {
             var numberOfEntries = _stats.NumberOfEntries;
             var ledgers = _stats.Ledgers.Where(x => x.Entries > 0);
@@ -63,10 +63,11 @@ namespace SharpPulsar.Akka.EventSource
 
             var max = numberOfEntries - track;
             var frotodiff = (_to - _from) + 1;
-            if (_max > max) 
-                if(frotodiff < _max) 
-                    _max = max;
-            return (ledgerId,entryId, _max, numberOfEntries);
+            if (_max > max)
+                _max = (frotodiff > 0 && frotodiff < max) ? frotodiff : max;
+            else if (frotodiff < _max)
+                _max = frotodiff;
+            return (ledgerId,entryId, _max, (_from + _max));
         }
     }
 }

@@ -56,14 +56,18 @@ namespace SharpPulsar.Akka.EventSource
 
             Receive<StartReplayTopic>(s =>
             {
-                if (s.Tagged)
+                var regexTopic = Regex.Replace(s.ReaderConfigurationData.TopicName, @"[^\w\d]", "");
+                if (Context.Child(regexTopic).IsNobody())
                 {
-                    _topicRegex = new Regex(s.ReaderConfigurationData.TopicName);
-                    Become(() => StartTags(s));
-                }
-                else
-                {
-                    Become(()=>Start(s));
+                    if (s.Tagged)
+                    {
+                        _topicRegex = new Regex(s.ReaderConfigurationData.TopicName);
+                        Become(() => StartTags(s));
+                    }
+                    else
+                    {
+                        Become(() => Start(s));
+                    }
                 }
             });
         }
@@ -72,7 +76,7 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<Partitions>(p =>
             {
-                
+                var regexTopic = Regex.Replace(replayTopic.ReaderConfigurationData.TopicName, @"[^\w\d]", "");
                 if (p.Partition > 0)
                 {
                     for (var i = 0; i < p.Partition; i++)
@@ -91,7 +95,6 @@ namespace SharpPulsar.Akka.EventSource
                     var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network));
                     _routees.Add(routee.Path.ToString());
                 }
-                var regexTopic = Regex.Replace(replayTopic.ReaderConfigurationData.TopicName, @"[^\w\d]", "");
                 Context.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), regexTopic);
                 _routees.Clear();
                 Become(Listening);
@@ -182,12 +185,14 @@ namespace SharpPulsar.Akka.EventSource
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, numberOfEntries.From, numberOfEntries.To, numberOfEntries.Max);
+                    var result = compute.GetFrom();
                     var replayState = new ReplayState
                     {
-                        LedgerId = 0,
-                        EntryId = 0,
-                        To = 0,
-                        Max = data.NumberOfEntries
+                        LedgerId = result.Ledger,
+                        EntryId = result.Entry,
+                        To = result.To,
+                        Max = result.Max
                     };
                     _self.Tell(replayState);
                 }

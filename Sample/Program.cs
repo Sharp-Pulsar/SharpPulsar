@@ -231,7 +231,13 @@ namespace Samples
                         var e1 = Console.ReadLine();
                         Console.WriteLine("[GetNumberOfEntries] Enter Topic: ");
                         var e2 = Console.ReadLine();
-                        GetNumberOfEntries(pulsarSystem, e1, e2);
+                        Console.WriteLine("GetNumberOfEntries] Enter From: ");
+                        var e20 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[GetNumberOfEntries] Enter To: ");
+                        var e21 = long.Parse(Console.ReadLine());
+                        Console.WriteLine("[GetNumberOfEntries] Enter Max: ");
+                        var e22 = long.Parse(Console.ReadLine());
+                        GetNumberOfEntries(pulsarSystem, e1, e2, e20, e21, e22);
                         break;
                     case "73":
                         Console.WriteLine("[ReplayTopic] Enter server: ");
@@ -264,6 +270,8 @@ namespace Samples
                         ReplayTaggedTopic(pulsarSystem, e8, e9, e10, e11, e12, e13, e14);
                         break;
                     case "75":
+                        Console.WriteLine("[NextPlay] Enter server: ");
+                        var e23 = Console.ReadLine();
                         Console.WriteLine("[NextPlay] Enter Topic: ");
                         var e16 = Console.ReadLine();
                         Console.WriteLine("[NextPlay] Enter From: ");
@@ -272,7 +280,7 @@ namespace Samples
                         var e18 = long.Parse(Console.ReadLine());
                         Console.WriteLine("[NextPlay] Enter Max: ");
                         var e19 = long.Parse(Console.ReadLine());
-                        NextPlay(pulsarSystem, e16, e17, e18, e19);
+                        NextPlay(pulsarSystem, e23, e16, e17, e18, e19);
                         break;
 
                     #endregion
@@ -642,7 +650,11 @@ namespace Samples
                 var metadata = new Dictionary<string, object>
                 {
                     ["Key"] = "Bulk",
-                    ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+                    ["Properties"] = new Dictionary<string, string>
+                    {
+                        { "Tick", DateTime.Now.Ticks.ToString() },
+                        {"Week-Day", "Saturday" }
+                    }
                 };
                 //var s = JsonSerializer.Serialize(student);
                 sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
@@ -1623,14 +1635,18 @@ namespace Samples
         #endregion
 
         #region EventSource
-        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic)
+        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic, long from, long to, long max)
         {
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            Console.WriteLine($"NumberOfEntries: {numb}");
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server, from, max, to));
+            Console.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
         }
-        private static void NextPlay(PulsarSystem system, string topic, long fro, long to, long max)
+        private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max)
         {
-            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, max, fro, to)))
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to), e =>
+            {
+                Console.WriteLine($"Sequence Id:{e.SequenceId}");
+            }))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
             }
@@ -1648,8 +1664,12 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var replay = new ReplayTopic(readerConfig, server, fro, to, max, null, false);
-            foreach (var msg in system.EventSource<Students>(replay))
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
+            foreach (var msg in system.EventSource<Students>(replay, e =>
+            {
+                Console.WriteLine($"Sequence Id:{e.SequenceId}");
+            }))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -1667,8 +1687,12 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var replay = new ReplayTopic(readerConfig, server, fro, to, max, new Tag(key, value), true);
-            foreach (var msg in system.EventSource<Students>(replay))
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
+            foreach (var msg in system.EventSource<Students>(replay, e =>
+            {
+                Console.WriteLine($"Sequence Id:{e.SequenceId}");
+            }))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -1840,7 +1864,7 @@ namespace Samples
                     var data = (PersistentTopicInternalStats)e;
                     var compute = new ComputeMessageId(data, fro, to, max);
                     var result = compute.GetFrom();
-                    Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.NumberOfEntries}");
+                    Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.To}");
                 }
                 else
                 {

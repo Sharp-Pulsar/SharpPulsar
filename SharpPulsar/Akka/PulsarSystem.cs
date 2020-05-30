@@ -313,7 +313,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
         }
-        public long EventSource(GetNumberOfEntries entries)
+        public NumberOfEntries EventSource(GetNumberOfEntries entries)
         {
             if(entries == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -321,13 +321,13 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
             var topic = TopicName.Get(entries.Topic).ToString();
 
-            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server));
+            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server, entries.From, entries.Max, entries.To));
             if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
             {
-                return msg.Max.Value;
+                return msg;
             }
 
-            return 0L;
+            throw new NullReferenceException();
         }
         public IEnumerable<T> EventSource<T>(NextPlay replay, Action<EventMessage> customHandler = null)
         {
@@ -338,12 +338,13 @@ namespace SharpPulsar.Akka
             var topic = TopicName.Get(replay.Topic).ToString();
 
             _pulsarManager.Tell(new NextPlay(topic, replay.Max, replay.From, replay.To));
-            var count = replay.Max;
-            while (count > 0)
+            var max = replay.Max;
+            var count = 0;
+            while (max > count)
             {
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
-                    count--;
+                    count++;
                     yield return msg.Message.ToTypeOf<T>();
                     customHandler?.Invoke(msg);
                 }
@@ -374,12 +375,13 @@ namespace SharpPulsar.Akka
             
             _pulsarManager.Tell(start);
 
-            var count = replay.Max;
-            while (count > 0)
+            var max = replay.Max;
+            var count = 0;
+            while (max > count)
             {
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
-                    count--;
+                    count++;
                     yield return msg.Message.ToTypeOf<T>();
                     customHandler?.Invoke(msg);
                 }
