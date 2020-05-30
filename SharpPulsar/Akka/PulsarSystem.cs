@@ -316,7 +316,7 @@ namespace SharpPulsar.Akka
         public NumberOfEntries EventSource(GetNumberOfEntries entries)
         {
             if(entries == null)
-                throw new ArgumentException($"ReplayTopic is null");
+                throw new ArgumentException($"GetNumberOfEntries is null");
             if (!TopicName.IsValid(entries.Topic))
                 throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
             var topic = TopicName.Get(entries.Topic).ToString();
@@ -337,8 +337,9 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            _pulsarManager.Tell(new NextPlay(topic, replay.Max, replay.From, replay.To));
-            var max = replay.Max;
+            //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
+            var max = replay.Max - 2;
+            _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To));
             var count = 0;
             while (max > count)
             {
@@ -371,11 +372,13 @@ namespace SharpPulsar.Akka
             if(replay.Tagged && replay.Tag == null)
                 throw new ArgumentException($"Tag is null");
 
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, replay.Max, replay.Tag, replay.Tagged);
+            //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
+            var max = replay.Max - 2;
+
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, max, replay.Tag, replay.Tagged);
             
             _pulsarManager.Tell(start);
 
-            var max = replay.Max;
             var count = 0;
             while (max > count)
             {
