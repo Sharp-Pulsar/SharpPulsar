@@ -375,6 +375,9 @@ namespace SharpPulsar.Akka
             if(replay.Tagged && replay.Tag == null)
                 throw new ArgumentException($"Tag is null");
 
+            if(replay.Tagged && !replay.ReaderConfigurationData.TopicName.EndsWith("*"))
+                throw new ArgumentException($"Topic should end with *");
+
             //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
             var max = replay.Max - 2;
 

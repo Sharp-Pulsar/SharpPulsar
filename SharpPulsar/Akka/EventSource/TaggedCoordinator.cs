@@ -13,8 +13,10 @@ using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Utility;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -127,28 +129,31 @@ namespace SharpPulsar.Akka.EventSource
             });
             Receive<Partitions>(p =>
             {
-                var replay = replayTopic;
                 _currentRoutees++;
                 if (p.Partition > 0)
                 {
                     for (var i = 0; i < p.Partition; i++)
                     {
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                        replay.ReaderConfigurationData.TopicName = partitionName;
-                        var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network));
+
+                        var name = Regex.Replace(partitionName, @"[^\w\d]", "");
+                        var replay = new StartReplayTopic(replayTopic.ClientConfigurationData, PrepareReaderConfigurationData(replayTopic.ReaderConfigurationData, partitionName), replayTopic.AdminUrl, replayTopic.From, replayTopic.To, replayTopic.Max, replayTopic.Tag, replayTopic.Tagged);
+                        var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network), name);
                         _routees.Add(routee.Path.ToString());
                     }
                 }
                 else
                 {
-                    replay.ReaderConfigurationData.TopicName = p.Topic;
-                    var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network));
+                    var replay = new StartReplayTopic(replayTopic.ClientConfigurationData, PrepareReaderConfigurationData(replayTopic.ReaderConfigurationData, p.Topic), replayTopic.AdminUrl, replayTopic.From, replayTopic.To, replayTopic.Max, replayTopic.Tag, replayTopic.Tagged);
+
+                    var name = Regex.Replace(p.Topic, @"[^\w\d]", "");
+                    var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network), name);
                     _routees.Add(routee.Path.ToString());
                 }
 
                 if (_currentRoutees == _expectedRoutees)
                 {
-                    var regexTopic = Regex.Replace(replayTopic.ReaderConfigurationData.TopicName, @"[^\w\d]", "");
+                    var regexTopic = $"tagged-{Regex.Replace(replayTopic.ReaderConfigurationData.TopicName, @"[^\w\d]", "")}";
                     Context.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), regexTopic);
                     _routees.Clear();
                     _expectedRoutees = 0;
@@ -159,6 +164,25 @@ namespace SharpPulsar.Akka.EventSource
             });
             NewGetTopicsOfNamespaceRequest(new Regex(replayTopic.ReaderConfigurationData.TopicName));
         }
+        private ReaderConfigurationData PrepareReaderConfigurationData(ReaderConfigurationData readerConfiguration, string topic)
+        {
+            return new ReaderConfigurationData
+            {
+                TopicName = topic,
+                ReaderName = readerConfiguration.ReaderName,
+                ReceiverQueueSize = readerConfiguration.ReceiverQueueSize,
+                ReadCompacted = readerConfiguration.ReadCompacted,
+                Schema = readerConfiguration.Schema,
+                EventListener = readerConfiguration.EventListener,
+                ResetIncludeHead = readerConfiguration.ResetIncludeHead,
+                CryptoFailureAction = readerConfiguration.CryptoFailureAction,
+                CryptoKeyReader = readerConfiguration.CryptoKeyReader,
+                SubscriptionRolePrefix = readerConfiguration.SubscriptionRolePrefix,
+                StartMessageId = readerConfiguration.StartMessageId,
+                StartMessageFromRollbackDurationInSec = readerConfiguration.StartMessageFromRollbackDurationInSec
+            };
+        }
+
         private void Listening()
         {
             Receive<IEventMessage>(c =>
@@ -181,7 +205,7 @@ namespace SharpPulsar.Akka.EventSource
 
             Receive<StartReplayTopic>(s =>
             {
-                var regexTopic = Regex.Replace(s.ReaderConfigurationData.TopicName, @"[^\w\d]", "");
+                var regexTopic = $"tagged-{Regex.Replace(s.ReaderConfigurationData.TopicName, @"[^\w\d]", "")}";
                 if (Context.Child(regexTopic).IsNobody())
                 {
                     Become(() => Start(s));
@@ -218,7 +242,7 @@ namespace SharpPulsar.Akka.EventSource
         }
         public static Props Prop(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
         {
-            return Props.Create(() => new ReplayCoordinator(network, pulsarManager, pulsarSystem));
+            return Props.Create(() => new TaggedCoordinator(network, pulsarManager, pulsarSystem));
         }
         public IStash Stash { get; set; }
     }

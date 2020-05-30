@@ -30,7 +30,8 @@ namespace SharpPulsar.Akka.EventSource
             _pulsarManager = pulsarManager;
             _pulsarSystem = pulsarSystem;
             Context.ActorOf(TaggedCoordinator.Prop(network, pulsarManager, pulsarSystem), "Tagged");
-           Become(Listening);
+           
+            Become(Listening);
         }
 
         private void Listening()

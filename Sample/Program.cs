@@ -280,7 +280,9 @@ namespace Samples
                         var e18 = long.Parse(Console.ReadLine());
                         Console.WriteLine("[NextPlay] Enter Max: ");
                         var e19 = long.Parse(Console.ReadLine());
-                        NextPlay(pulsarSystem, e23, e16, e17, e18, e19);
+                        Console.WriteLine("[NextPlay] Is Tagged(y/n): ");
+                        var e199 = Console.ReadLine().ToLower() == "y";
+                        NextPlay(pulsarSystem, e23, e16, e17, e18, e19, e199);
                         break;
 
                     #endregion
@@ -1640,10 +1642,10 @@ namespace Samples
             var numb = system.EventSource(new GetNumberOfEntries(topic, server, from, max, to));
             Console.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
         }
-        private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max, bool istagged )
         {
             var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
-            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to), e =>
+            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to, istagged), e =>
             {
                 Console.WriteLine($"Sequence Id:{e.SequenceId}");
             }))

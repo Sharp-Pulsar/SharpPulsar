@@ -61,7 +61,7 @@ namespace SharpPulsar.Akka.EventSource
                 }
             }
 
-            var max = numberOfEntries - track;
+            var max = (numberOfEntries - track) + 1;
             var frotodiff = (_to - _from) + 1;
             if (_max > max)
                 _max = (frotodiff > 0 && frotodiff < max) ? frotodiff : max;

@@ -33,12 +33,14 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     /// </summary>
     public sealed class NotTagged:IEventMessage
     {
-        public NotTagged(long sequenceId)
+        public NotTagged(long sequenceId, string topic)
         {
             SequenceId = sequenceId;
+            Topic = topic;
         }
 
         public long SequenceId { get; }
+        public string Topic { get; }
     }
     public interface IEventMessage
     {

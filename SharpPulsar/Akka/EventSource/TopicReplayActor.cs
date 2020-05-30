@@ -155,7 +155,7 @@ namespace SharpPulsar.Akka.EventSource
                     }
                     else
                     {
-                        Context.Parent.Tell(new NotTagged(_sequenceId));
+                        Context.Parent.Tell(new NotTagged(_sequenceId, c.Message.TopicName));
                     }
                 }
                 _sequenceId++;
