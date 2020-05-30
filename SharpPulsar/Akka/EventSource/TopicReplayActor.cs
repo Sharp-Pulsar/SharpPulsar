@@ -43,7 +43,7 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<ReplayState>(r =>
             {
-                Become(Active);
+                Become(Replaying);
                 _expectedReplayMax = r.Max.Value;
                 var partition = _topicName.PartitionIndex;
                 var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
@@ -52,7 +52,6 @@ namespace SharpPulsar.Akka.EventSource
                 _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
                     _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
                     partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
-                Stash.UnstashAll();
             });
             Receive<NullStats>(r =>
             {
@@ -126,6 +125,15 @@ namespace SharpPulsar.Akka.EventSource
         
         private void Active()
         {
+            Receive<NextPlay>(n =>
+            {
+                Become(() => NextPlayStats(n));
+            });
+
+        }
+
+        private void Replaying()
+        {
             Receive<ConsumedMessage>(c =>
             {
                 _currentReplayCount++;
@@ -138,30 +146,36 @@ namespace SharpPulsar.Akka.EventSource
                 else
                 {
                     var props = c.Message.Properties;
-                    if (props.ContainsKey(_tag.Key))
+                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) 
+                                                && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
+                    if (tagged)
                     {
-                        var value = props[_tag.Key];
-                        if (value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
-                            _pulsarManager.Tell(eventMessage);
-                        }
+                        var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
+                        Context.Parent.Tell(eventMessage);
+                    }
+                    else
+                    {
+                        Context.Parent.Tell(new NotTagged(_sequenceId));
                     }
                 }
                 _sequenceId++;
-            });
-            Receive<NextPlay>(n =>
-            {
-                Become(() => NextPlayStats(n));
+                if (_currentReplayCount == _expectedReplayMax)
+                {
+                    _currentReplayCount = 0;
+                    _expectedReplayMax = 0;
+                    Become(Active);
+                    Stash.UnstashAll();
+                }
             });
 
+            ReceiveAny(_ => Stash.Stash());
         }
-
         private void NextPlayStats(NextPlay play)
         {
             Receive<ReplayState>(r =>
             {
-                Become(Active);
+                Become(Replaying);
+                _expectedReplayMax = r.Max.Value;
                 _consumer.Tell(new SendFlow(r.Max));
             });
             Receive<NullStats>(r =>

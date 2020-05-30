@@ -37,7 +37,7 @@ namespace SharpPulsar.Akka
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new BlockingCollection<ConsumedMessage>(),
-                EventQueue = new BlockingQueue<EventMessage>(),
+                EventQueue = new BlockingQueue<IEventMessage>(),
                 MaxQueue = new BlockingQueue<NumberOfEntries>()
             };
             _conf = conf;
@@ -346,8 +346,11 @@ namespace SharpPulsar.Akka
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
                     count++;
-                    yield return msg.Message.ToTypeOf<T>();
-                    customHandler?.Invoke(msg);
+                    if (msg is EventMessage evt)
+                    {
+                        yield return evt.Message.ToTypeOf<T>();
+                        customHandler?.Invoke(evt);
+                    }
                 }
             }
         }
@@ -385,8 +388,12 @@ namespace SharpPulsar.Akka
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
                     count++;
-                    yield return msg.Message.ToTypeOf<T>();
-                    customHandler?.Invoke(msg);
+
+                    if (msg is EventMessage evt)
+                    {
+                        yield return evt.Message.ToTypeOf<T>();
+                        customHandler?.Invoke(evt);
+                    }
                 }
             }
         }

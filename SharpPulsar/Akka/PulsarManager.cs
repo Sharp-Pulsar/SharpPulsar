@@ -39,7 +39,7 @@ namespace SharpPulsar.Akka
             {
                 _pulsarManagerState.MessageIdQueue.Enqueue(r);
             });
-            Receive<EventMessage>(e =>
+            Receive<IEventMessage>(e =>
             {
                 _pulsarManagerState.EventQueue.Enqueue(e);
             });

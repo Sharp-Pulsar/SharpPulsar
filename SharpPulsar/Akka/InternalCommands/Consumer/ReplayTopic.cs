@@ -74,17 +74,19 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     }
     public sealed class NextPlay 
     {
-        public NextPlay(string topic, long max, long @from, long to)
+        public NextPlay(string topic, long max, long @from, long to, bool tagged = false)
         {
             Topic = topic;
             Max = max;
             From = @from;
             To = to;
+            Tagged = tagged;
         }
         public string Topic { get; }
         public long Max { get; }
         public long From { get; }
         public long To { get; }
+        public bool Tagged { get; }
     }
 
     public sealed class Tag

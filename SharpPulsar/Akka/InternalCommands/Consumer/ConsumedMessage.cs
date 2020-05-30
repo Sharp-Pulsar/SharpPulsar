@@ -14,7 +14,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public IActorRef Consumer { get; }
         public Message Message { get; }
     }
-    public class EventMessage
+    public class EventMessage:IEventMessage
     {
         public EventMessage(Message message, long sequenceId, long ledgerId, long entry)
         {
@@ -27,5 +27,21 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public long LedgerId { get; }
         public long Entry { get; }
         public Message Message { get; }
+    }
+    /// <summary>
+    /// We use this to move the cursor/count forward at the client
+    /// </summary>
+    public sealed class NotTagged:IEventMessage
+    {
+        public NotTagged(long sequenceId)
+        {
+            SequenceId = sequenceId;
+        }
+
+        public long SequenceId { get; }
+    }
+    public interface IEventMessage
+    {
+
     }
 }
