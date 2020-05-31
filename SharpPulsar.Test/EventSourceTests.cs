@@ -50,11 +50,11 @@ namespace SharpPulsar.Test
         [Fact]
         private void Get_Number_Of_Entries()
         {
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 1,100, 50));
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0,100, 49));
             _output.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions { WriteIndented = true })}");
             Assert.Equal(50, numb.Max);
             
-            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 51,100, 100));
+            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 50,100, 99));
             _output.WriteLine($"NumOfEntries: {JsonSerializer.Serialize(num, new JsonSerializerOptions { WriteIndented = true })}");
             Assert.Equal(50, num.Max);
         }
@@ -64,7 +64,7 @@ namespace SharpPulsar.Test
             _amount = 30;
             _topic = Guid.NewGuid().ToString();
             ProduceMessages();
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 1,100, 50));
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0,100, 49));
             Assert.Equal(30, numb.Max);
             _output.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions { WriteIndented = true })}");
         }
@@ -86,8 +86,8 @@ namespace SharpPulsar.Test
                 .Topic(_topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 1, 100, 100));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 100, numb.Max.Value, null, false);
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 99));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
             {
                 _output.WriteLine($"Sequence Id:{e.SequenceId}");
@@ -96,8 +96,37 @@ namespace SharpPulsar.Test
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            //SharpPulsar deducts 2 from the max. 
-            Assert.Equal(98, replayed);
+            Assert.Equal(99, replayed);
+        }
+        [Fact]
+        private  void Replay_Topic_To_Greater()
+        {
+            _amount = 100;
+            var replayed = 0;
+            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            ProduceMessages();
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(_topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 101));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 101, numb.Max.Value, null, false);
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
+            {
+                _output.WriteLine($"Sequence Id:{e.SequenceId}");
+            }))
+            {
+                replayed++;
+                _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            Assert.Equal(99, replayed);
         }
         [Fact]
         private  void Next_Topic()
@@ -117,8 +146,8 @@ namespace SharpPulsar.Test
                 .Topic(_topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 1, 100, 50));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 50, numb.Max.Value, null, false);
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 49));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 49, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
             {
                 _output.WriteLine($"Sequence Id:{e.SequenceId}");
@@ -128,10 +157,10 @@ namespace SharpPulsar.Test
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
             //SharpPulsar deducts 2 from the max.
-            Assert.Equal(48, replayed);
+            Assert.Equal(49, replayed);
             replayed = 0;
-            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 51, 100, 100));
-            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 51, 100, false), e =>
+            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 50, 100, 99));
+            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 50, 99, false), e =>
             {
                 _output.WriteLine($"Sequence Id:{e.SequenceId}");
             }))
@@ -139,8 +168,38 @@ namespace SharpPulsar.Test
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            //SharpPulsar deducts 2 from the max.
-            Assert.Equal(48, replayed);
+            Assert.Equal(49, replayed);
+        }
+        [Fact]
+        private void Replay_Tagged_Topic_To_Greater()
+        {
+            _amount = 100;
+            var replayed = 0;
+            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            var topic= $"{_topic}*";
+            ProduceMessages();
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080", 0, 100, 101));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 101, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
+            {
+                _output.WriteLine($"Sequence Id:{e.SequenceId}");
+            }))
+            {
+                replayed++;
+                _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            Assert.Equal(100, replayed);
         }
         [Fact]
         private void Replay_Tagged_Topic()
@@ -161,8 +220,8 @@ namespace SharpPulsar.Test
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080", 1, 100, 100));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 100, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080", 0, 100, 99));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
             foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
             {
                 _output.WriteLine($"Sequence Id:{e.SequenceId}");
@@ -171,8 +230,7 @@ namespace SharpPulsar.Test
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            //SharpPulsar deducts 2 from the max.
-            Assert.Equal(98, replayed);
+            Assert.Equal(99, replayed);
         }
 
         private void ProduceMessages()

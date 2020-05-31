@@ -72,7 +72,6 @@ namespace SharpPulsar.Test
                 Thread.Sleep(100);
             }
             Assert.Equal(1, entry);
-            Assert.Equal(100, highest);
         }
         [Fact]
         private void Message_Id_For_50()
@@ -100,7 +99,6 @@ namespace SharpPulsar.Test
                 Thread.Sleep(100);
             }
             Assert.Equal(51, entry);
-            Assert.Equal(50, highest);
         }
         private void ProduceMessages()
         {

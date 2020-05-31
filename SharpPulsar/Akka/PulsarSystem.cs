@@ -339,21 +339,23 @@ namespace SharpPulsar.Akka
             var topic = TopicName.Get(replay.Topic).ToString();
 
             //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
-            var max = replay.Max - 2;
-            if (max < 3)
-               yield break;
+            var max = replay.Max;
             _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
             var count = 0;
             while (max > count)
             {
+                count++;
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
-                    count++;
                     if (msg is EventMessage evt)
                     {
                         yield return evt.Message.ToTypeOf<T>();
                         customHandler?.Invoke(evt);
                     }
+                }
+                else
+                {
+                    yield break;
                 }
             }
         }
@@ -382,7 +384,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic should end with *");
 
             //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
-            var max = replay.Max - 2;
+            var max = replay.Max;
 
             var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, max, replay.Tag, replay.Tagged);
             
@@ -391,14 +393,17 @@ namespace SharpPulsar.Akka
             var count = 0;
             while (max > count)
             {
+                count++;
                 if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
-                    count++;
-
                     if (msg is EventMessage evt)
                     {
                         yield return evt.Message.ToTypeOf<T>();
                         customHandler?.Invoke(evt);
+                    }
+                    else
+                    {
+                        yield break;
                     }
                 }
             }

@@ -44,7 +44,7 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     track += _stats.CurrentLedgerEntries;
                     var diff = track - _from;
-                    var entry = (_stats.CurrentLedgerEntries - diff);
+                    var entry = (_stats.CurrentLedgerEntries - diff);//entry starts from zero
                     ledgerId = long.Parse(_stats.LastConfirmedEntry.Split(":")[0]);
                     entryId = entry;
                     track -= diff;
@@ -61,8 +61,8 @@ namespace SharpPulsar.Akka.EventSource
                 }
             }
 
-            var max = (numberOfEntries - track) + 1;
-            var frotodiff = (_to - _from) + 1;
+            var max = (numberOfEntries - track);
+            var frotodiff = (_to - _from);
             if (_max > max)
                 _max = (frotodiff > 0 && frotodiff < max) ? frotodiff : max;
             else if (frotodiff < _max)
