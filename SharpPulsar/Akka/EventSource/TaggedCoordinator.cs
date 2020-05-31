@@ -174,7 +174,7 @@ namespace SharpPulsar.Akka.EventSource
                 ReadCompacted = readerConfiguration.ReadCompacted,
                 Schema = readerConfiguration.Schema,
                 EventListener = readerConfiguration.EventListener,
-                ResetIncludeHead = readerConfiguration.ResetIncludeHead,
+                ResetIncludeHead = true,//readerConfiguration.ResetIncludeHead,
                 CryptoFailureAction = readerConfiguration.CryptoFailureAction,
                 CryptoKeyReader = readerConfiguration.CryptoKeyReader,
                 SubscriptionRolePrefix = readerConfiguration.SubscriptionRolePrefix,
@@ -195,7 +195,7 @@ namespace SharpPulsar.Akka.EventSource
             });
             Receive<NextPlay>(n =>
             {
-                var topic = Regex.Replace(n.Topic, @"[^\w\d]", "");
+                var topic = $"tagged-{Regex.Replace(n.Topic, @"[^\w\d]", "")}"; ;
                 var child = Context.Child(topic);
                 if (!child.IsNobody())
                     child.Tell(n);

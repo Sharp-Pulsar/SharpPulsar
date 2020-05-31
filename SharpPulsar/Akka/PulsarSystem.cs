@@ -339,7 +339,9 @@ namespace SharpPulsar.Akka
 
             //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
             var max = replay.Max - 2;
-            _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To));
+            if (max < 3)
+               yield break;
+            _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
             var count = 0;
             while (max > count)
             {
