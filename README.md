@@ -31,6 +31,8 @@ Supported pulsar cluster versions: 2.5+
 - [x] Pulsar Admin [How to use? cmd 24-44 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Pulsar Function [How to use? cmd 45-50,53,54 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Early support for Security Token Service. Server side is [here](https://github.com/eaba/PulsarStsProvider)
+- [x] EventSource - experimental! [Tutorial - cmd 72-75 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
+
 
 
 ### Getting Started
@@ -86,6 +88,31 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
                 Console.WriteLine(JsonSerializer.Serialize(students));
             });
 
+```
+2.1 - You can Consume messages in one of two ways(Listener or Queue). `ConsumptionType.Queue` let you pull messages forever or with limit by supplying a `takeCount` of -1 or `{number of messages}` to pull, respectively:
+```csharp
+var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var messageListener = new DefaultMessageListener(null, null);
+            var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
+            var topicLast = topic.Split("/").Last();
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName(topicLast)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"{topicLast}-Subscription")
+                .Topic(topic)
+                **.SetConsumptionType(ConsumptionType.Queue)**
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Exclusive)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            //foreach (var msg in system.Messages<Students>(true, -1))//pull forever
+            foreach (var msg in system.Messages<Students>(true, 50))//consume only 50 messages
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented=true}));
+            }
 ```
 3 - Instantiate `PulsarSystem` with Client Configuration:
 ```csharp
