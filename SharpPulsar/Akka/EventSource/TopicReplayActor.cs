@@ -147,7 +147,7 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     var props = c.Message.Properties;
                     var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) 
-                                                && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
+                                                && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (tagged)
                     {
                         var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
