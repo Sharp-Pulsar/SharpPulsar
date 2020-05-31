@@ -60,6 +60,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Avro\Avro.csproj" />
+    <ProjectReference Include="..\Sample\Samples.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>
 

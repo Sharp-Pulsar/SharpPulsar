@@ -14,6 +14,7 @@ using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
@@ -327,7 +328,7 @@ namespace SharpPulsar.Akka
                 return msg;
             }
 
-            throw new NullReferenceException();
+            throw new TimeoutException("Timeout waiting for Entries");
         }
         public IEnumerable<T> EventSource<T>(NextPlay replay, Action<EventMessage> customHandler = null)
         {
