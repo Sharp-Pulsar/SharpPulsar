@@ -69,6 +69,38 @@ namespace SharpPulsar.Test
             _output.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions { WriteIndented = true })}");
         }
         [Fact]
+        private  void Replay_Topic_Custom_Handler()
+        {
+            _amount = 100;
+            var replayed = 0;
+            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            ProduceMessages();
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(_topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 99));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, null, false);
+            foreach (var msg in _pulsarSystem.EventSource(replay, message =>
+            {
+                var m = message.Message.ToTypeOf<Students>();
+                _output.WriteLine($"Sequence Id: {message.SequenceId}");
+                return m;
+            }))
+            {
+                replayed++;
+                _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            Assert.Equal(99, replayed);
+        }
+        [Fact]
         private  void Replay_Topic()
         {
             _amount = 100;
@@ -88,10 +120,7 @@ namespace SharpPulsar.Test
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 99));
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, null, false);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -118,10 +147,7 @@ namespace SharpPulsar.Test
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 101));
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 101, numb.Max.Value, null, false);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -148,10 +174,7 @@ namespace SharpPulsar.Test
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 0, 100, 49));
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 49, numb.Max.Value, null, false);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -160,10 +183,7 @@ namespace SharpPulsar.Test
             Assert.Equal(49, replayed);
             replayed = 0;
             var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080", 50, 100, 99));
-            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 50, 99, false), e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 50, 99)))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -191,10 +211,7 @@ namespace SharpPulsar.Test
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080", 0, 100, 101));
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 101, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -222,10 +239,7 @@ namespace SharpPulsar.Test
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080", 0, 100, 99));
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay, e =>
-            {
-                _output.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));

@@ -209,34 +209,13 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Action<IMessage> customProcess = null)
+        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Func<Message, T> customHander = null)
         {
-            if (takeCount == -1)
+            if (customHander == null)
             {
-                foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                if (takeCount == -1)
                 {
-                    var received = m.Message.ToTypeOf<T>();
-                    if (autoAck)
-                    {
-                        if (m.Message.MessageId is MessageId mi)
-                        {
-                            m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
-                        }
-                        else if (m.Message.MessageId is BatchMessageId b)
-                        {
-                            m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
-                        }
-                    }
-                    customProcess?.Invoke(m.Message);
-                    yield return received;
-                }
-            }
-            else
-            {
-                var takes = 0;
-                while (takes <= takeCount)
-                {
-                    if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
                     {
                         var received = m.Message.ToTypeOf<T>();
                         if (autoAck)
@@ -250,9 +229,75 @@ namespace SharpPulsar.Akka
                                 m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
                             }
                         }
-                        customProcess?.Invoke(m.Message);
                         yield return received;
-                        takes++;
+                    }
+                }
+                else if(takeCount > 0)
+                {
+                    var takes = 0;
+                    while (takes < takeCount)
+                    {
+                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        {
+                            var received = m.Message.ToTypeOf<T>();
+                            if (autoAck)
+                            {
+                                if (m.Message.MessageId is MessageId mi)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                }
+                                else if (m.Message.MessageId is BatchMessageId b)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                }
+                            }
+                            yield return received;
+                            takes++;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (takeCount == -1)
+                {
+                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                    {
+                        if (autoAck)
+                        {
+                            if (m.Message.MessageId is MessageId mi)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                            }
+                            else if (m.Message.MessageId is BatchMessageId b)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                            }
+                        }
+                        yield return customHander(m.Message);
+                    }
+                }
+                else if(takeCount > 0)
+                {
+                    var takes = 0;
+                    while (takes < takeCount)
+                    {
+                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        {
+                            if (autoAck)
+                            {
+                                if (m.Message.MessageId is MessageId mi)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                }
+                                else if (m.Message.MessageId is BatchMessageId b)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                }
+                            }
+                            yield return customHander(m.Message);
+                            takes++;
+                        }
                     }
                 }
             }
@@ -330,7 +375,7 @@ namespace SharpPulsar.Akka
 
             throw new TimeoutException("Timeout waiting for Entries");
         }
-        public IEnumerable<T> EventSource<T>(NextPlay replay, Action<EventMessage> customHandler = null)
+        public IEnumerable<T> EventSource<T>(NextPlay replay, Func<EventMessage, T> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -342,24 +387,46 @@ namespace SharpPulsar.Akka
             var max = replay.Max;
             _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
             var count = 0;
-            while (max > count)
+            if (customHandler == null)
             {
-                count++;
-                if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+
+                while (max > count)
                 {
-                    if (msg is EventMessage evt)
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        yield return evt.Message.ToTypeOf<T>();
-                        customHandler?.Invoke(evt);
+                        if (msg is EventMessage evt)
+                        {
+                            yield return evt.Message.ToTypeOf<T>();
+                        }
+                    }
+                    else
+                    {
+                        yield break;
                     }
                 }
-                else
+            }
+            else
+            {
+
+                while (max > count)
                 {
-                    yield break;
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                    {
+                        if (msg is EventMessage evt)
+                        {
+                            yield return customHandler(evt);
+                        }
+                    }
+                    else
+                    {
+                        yield break;
+                    }
                 }
             }
         }
-        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Action<EventMessage> customHandler = null)
+        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Func<EventMessage, T> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -391,19 +458,40 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(start);
 
             var count = 0;
-            while (max > count)
+            if (customHandler == null)
             {
-                count++;
-                if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+
+                while (max > count)
                 {
-                    if (msg is EventMessage evt)
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        yield return evt.Message.ToTypeOf<T>();
-                        customHandler?.Invoke(evt);
+                        if (msg is EventMessage evt)
+                        {
+                            yield return evt.Message.ToTypeOf<T>();
+                        }
+                        else
+                        {
+                            yield break;
+                        }
                     }
-                    else
+                }
+            }
+            else
+            {
+                while (max > count)
+                {
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        yield break;
+                        if (msg is EventMessage evt)
+                        {
+                            yield return customHandler(evt);
+                        }
+                        else
+                        {
+                            yield break;
+                        }
                     }
                 }
             }

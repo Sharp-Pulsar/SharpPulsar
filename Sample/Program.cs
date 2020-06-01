@@ -1645,10 +1645,7 @@ namespace Samples
         private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max, bool istagged )
         {
             var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
-            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to, istagged), e =>
-            {
-                Console.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to, istagged)))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
             }
@@ -1668,10 +1665,7 @@ namespace Samples
                 .ReaderConfigurationData;
             var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
             var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
-            foreach (var msg in system.EventSource<Students>(replay, e =>
-            {
-                Console.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in system.EventSource<Students>(replay))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -1691,10 +1685,7 @@ namespace Samples
                 .ReaderConfigurationData;
             var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
             var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
-            foreach (var msg in system.EventSource<Students>(replay, e =>
-            {
-                Console.WriteLine($"Sequence Id:{e.SequenceId}");
-            }))
+            foreach (var msg in system.EventSource<Students>(replay))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }

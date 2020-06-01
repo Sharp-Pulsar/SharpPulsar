@@ -508,7 +508,7 @@ namespace SharpPulsar.Akka.Consumer
                     BatchIndex = m.MessageId.BatchIndex
                 };
                 HandleMessage(msgId, m.RedeliveryCount, m.Data);
-                if (_requestedFlowPermits == 0 && !_eventSourced)
+                if (_requestedFlowPermits == 50 && !_eventSourced)
                     SendFlow(_requestedFlowPermits);
             });
             Receive<AckMessage>(AckMessage);
