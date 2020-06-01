@@ -47,46 +47,42 @@ namespace SharpPulsar.Test
             ProduceMessages();
         }
         [Fact]
-        private void Message_Id_For_100()
+        private void To_Should_Be_Set_To_100()
         {
-            var entry = 0L;
-            var highest = 0L;
+            var to = 0L;
             _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { "public", "default", _topic, false }, e =>
             {
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 100, 100);
+                    var compute = new ComputeMessageId(data, 1, 200, 100);
                     var result = compute.GetFrom();
-                    entry = result.Entry.Value;
-                    highest = result.To.Value;
-                    _output.WriteLine(result.Entry.Value.ToString());
+                   to = result.To.Value;
+                    _output.WriteLine(result.To.Value.ToString());
                 }
                 else
                 {
                     Assert.Null(e);
                 }
             }, e => _output.WriteLine(e.ToString()), "http://localhost:8080", l => _output.WriteLine(l)));
-            while (entry == 0)
+            while (to == 0)
             {
                 Thread.Sleep(100);
             }
-            Assert.Equal(1, entry);
+            Assert.Equal(100, to);
         }
         [Fact]
-        private void Message_Id_For_50()
+        private void Negative_Max()
         {
-            var entry = 0L;
-            var highest = 0L;
+            var max = 0L;
             _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { "public", "default", _topic, false }, e =>
             {
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 51, 100, 100);
+                    var compute = new ComputeMessageId(data, 1, 100, -2);
                     var result = compute.GetFrom();
-                    entry = result.Entry.Value;
-                    highest = result.To.Value;
+                    max = result.Max.Value;
                     _output.WriteLine(result.Entry.Value.ToString());
                 }
                 else
@@ -94,11 +90,36 @@ namespace SharpPulsar.Test
                     Assert.Null(e);
                 }
             }, e => _output.WriteLine(e.ToString()), "http://localhost:8080", l => _output.WriteLine(l)));
-            while (entry == 0)
+            while (max == 0)
             {
                 Thread.Sleep(100);
             }
-            Assert.Equal(51, entry);
+            Assert.Equal(99, max);
+        }
+        [Fact]
+        private void Max_Should_Be_Set_To_The_Difference_Between_To_From_If_Greater()
+        {
+            var max = 0L;
+            _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { "public", "default", _topic, false }, e =>
+            {
+                if (e != null)
+                {
+                    var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, 1, 100, 150);
+                    var result = compute.GetFrom();
+                    max = result.Max.Value;
+                    _output.WriteLine(result.Entry.Value.ToString());
+                }
+                else
+                {
+                    Assert.Null(e);
+                }
+            }, e => _output.WriteLine(e.ToString()), "http://localhost:8080", l => _output.WriteLine(l)));
+            while (max == 0)
+            {
+                Thread.Sleep(100);
+            }
+            Assert.Equal(99, max);
         }
         private void ProduceMessages()
         {
