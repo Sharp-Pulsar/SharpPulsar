@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -57,7 +58,7 @@ namespace SharpPulsar.Akka.EventSource
                     if (!child.IsNobody())
                         child.Tell(n);
                     else
-                        Context.System.Log.Info($"[NextPlay] '{n.Topic}' does not have a DJ - request for one first with 'StartReplayTopic' and a DJ will be yours! ;)");
+                        Console.WriteLine($"[NextPlay] '{n.Topic}' does not have a DJ - request for one first with 'StartReplayTopic' and a DJ will be yours! ;)");
                 }
             });
 
@@ -121,9 +122,9 @@ namespace SharpPulsar.Akka.EventSource
         private void GetStats(GetNumberOfEntries numberOfEntries)
         {
             var topicName = TopicName.Get(numberOfEntries.Topic);
-            Receive<ReplayState>(r =>
+            Receive<TopicEntries>(r =>
             {
-                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Max));
+                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Entries));
                 Become(Listening);
                 Stash.UnstashAll();
             });
@@ -138,16 +139,7 @@ namespace SharpPulsar.Akka.EventSource
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, numberOfEntries.From, numberOfEntries.To, numberOfEntries.Max);
-                    var result = compute.GetFrom();
-                    var replayState = new ReplayState
-                    {
-                        LedgerId = result.Ledger,
-                        EntryId = result.Entry,
-                        To = result.To,
-                        Max = result.Max
-                    };
-                    _self.Tell(replayState);
+                    _self.Tell(new TopicEntries(data.NumberOfEntries));
                 }
                 else
                     _self.Tell(NullStats.Instance);
@@ -168,4 +160,5 @@ namespace SharpPulsar.Akka.EventSource
         }
         public IStash Stash { get; set; }
     }
+
 }

@@ -58,16 +58,7 @@ namespace SharpPulsar.Akka.EventSource
                         if (e != null)
                         {
                             var data = (PersistentTopicInternalStats)e;
-                            var compute = new ComputeMessageId(data, numberOfEntries.From, numberOfEntries.To, numberOfEntries.Max);
-                            var result = compute.GetFrom();
-                            var replayState = new ReplayState
-                            {
-                                LedgerId = result.Ledger,
-                                EntryId = result.Entry,
-                                To = result.To,
-                                Max = result.Max
-                            };
-                            _self.Tell(replayState);
+                            _self.Tell(new TopicEntries(data.NumberOfEntries));
                         }
                         else
                             _self.Tell(NullStats.Instance);
@@ -83,11 +74,11 @@ namespace SharpPulsar.Akka.EventSource
                 }
 
             });
-            Receive<ReplayState>(r =>
+            Receive<TopicEntries>(r =>
             {
                 _currentStatsCounts++;
-                if (r.Max > _maxPatternEntries)
-                    _maxPatternEntries = r.Max;
+                if (r.Entries > _maxPatternEntries)
+                    _maxPatternEntries = r.Entries;
                 if (_currentStatsCounts == _expectedStatsCount)
                 {
                     _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.Topic, _maxPatternEntries.Value));

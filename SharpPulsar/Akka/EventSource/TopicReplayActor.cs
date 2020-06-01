@@ -43,12 +43,12 @@ namespace SharpPulsar.Akka.EventSource
         {
             Receive<ReplayState>(r =>
             {
-                Become(Replaying);
+                Become(Active);
                 _expectedReplayMax = r.Max.Value;
                 var partition = _topicName.PartitionIndex;
                 var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
                 config.StartMessageId = new BatchMessageId(r.LedgerId.Value, r.EntryId.Value, partition, -1);
-                config.ReceiverQueueSize = (int)(r.Max + 5) ;
+                config.ReceiverQueueSize = (int)(r.Max) ;
                 _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
                     _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
                     partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
@@ -125,18 +125,8 @@ namespace SharpPulsar.Akka.EventSource
         
         private void Active()
         {
-            Receive<NextPlay>(n =>
-            {
-                Become(() => NextPlayStats(n));
-            });
-
-        }
-
-        private void Replaying()
-        {
             Receive<ConsumedMessage>(c =>
             {
-                _currentReplayCount++;
                 var messageId = (MessageId)c.Message.MessageId;
                 if (!_replayTopic.Tagged)
                 {
@@ -146,7 +136,7 @@ namespace SharpPulsar.Akka.EventSource
                 else
                 {
                     var props = c.Message.Properties;
-                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) 
+                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
                                                 && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (tagged)
                     {
@@ -159,24 +149,22 @@ namespace SharpPulsar.Akka.EventSource
                     }
                 }
                 _sequenceId++;
-                if (_currentReplayCount == _expectedReplayMax)
-                {
-                    _currentReplayCount = 0;
-                    _expectedReplayMax = 0;
-                    Become(Active);
-                    Stash.UnstashAll();
-                }
+            });
+            Receive<NextPlay>(n =>
+            {
+                Become(() => NextPlayStats(n));
             });
 
-            ReceiveAny(_ => Stash.Stash());
         }
+
         private void NextPlayStats(NextPlay play)
         {
+            
             Receive<ReplayState>(r =>
             {
-                Become(Replaying);
+                Become(Active);
                 _expectedReplayMax = r.Max.Value;
-                _consumer.Tell(new SendFlow(r.Max + 5));
+                _consumer.Tell(new SendFlow(r.Max));
             });
             Receive<NullStats>(r =>
             {
