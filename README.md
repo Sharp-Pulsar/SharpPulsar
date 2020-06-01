@@ -172,3 +172,7 @@ var consumerConfig = new ConsumerConfigBuilder()
   pulsarSystem.PulsarReader(new CreateReader(avroSchema, readerConfig));
 ```
 7 - Publish your messages either with `pulsarSystem.BulkSend` or `pulsarSystem.Send`
+
+## License
+
+This project is licensed under the Apache License Version 2.0 - see the [LICENSE](LICENSE) file for details.
