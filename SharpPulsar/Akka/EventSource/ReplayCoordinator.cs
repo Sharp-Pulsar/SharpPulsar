@@ -124,7 +124,7 @@ namespace SharpPulsar.Akka.EventSource
             var topicName = TopicName.Get(numberOfEntries.Topic);
             Receive<TopicEntries>(r =>
             {
-                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Entries));
+                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Entries - 1));
                 Become(Listening);
                 Stash.UnstashAll();
             });

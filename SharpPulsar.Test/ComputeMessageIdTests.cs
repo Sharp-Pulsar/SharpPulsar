@@ -47,6 +47,32 @@ namespace SharpPulsar.Test
             ProduceMessages();
         }
         [Fact]
+        private void Test_High_Max()
+        {
+            var to = 0L;
+            _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { "public", "default", _topic, false }, e =>
+            {
+                if (e != null)
+                {
+                    var data = (PersistentTopicInternalStats)e;
+                    var compute = new ComputeMessageId(data, 1, 9, 9223372036854775807);
+                    var result = compute.GetFrom();
+                   to = result.To.Value;
+                    _output.WriteLine(result.To.Value.ToString());
+                    _output.WriteLine($"{result.Ledger}:{result.Entry}");
+                }
+                else
+                {
+                    Assert.Null(e);
+                }
+            }, e => _output.WriteLine(e.ToString()), "http://localhost:8080", l => _output.WriteLine(l)));
+            while (to == 0)
+            {
+                Thread.Sleep(100);
+            }
+            Assert.Equal(9, to);
+        }
+        [Fact]
         private void To_Should_Be_Set_To_100()
         {
             var to = 0L;

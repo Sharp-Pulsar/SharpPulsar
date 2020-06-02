@@ -272,7 +272,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 foreach (var m in s.Messages)
                 {
-                    ProcessSend(m);
+                    Self.Tell(m);
                 }
             });
             Receive<Terminated>(_ =>
@@ -462,21 +462,25 @@ namespace SharpPulsar.Akka.Producer
                     return;
                 }
 
-                if (metadata.SequenceId < 1)
+                if (!HasSequenceId(metadata.SequenceId) || ((long)metadata.SequenceId) < _sequenceId)
                 {
                      _sequenceId += 1;
                     metadata.SequenceId = (ulong)_sequenceId;
                 }
-                if (metadata.PublishTime < 1)
+                if (!HasPublishTime(metadata.PublishTime))
                 {
                     metadata.PublishTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 }
+
                 if (string.IsNullOrWhiteSpace(metadata.ProducerName))
                     metadata.ProducerName = ProducerName;
+
                 if(metadata.UncompressedSize == 0)
                     metadata.UncompressedSize = (uint)uncompressedSize;
-                if(metadata.EventTime < 1)
+
+                if(!HasEventTime(metadata.EventTime))
                     metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
                 SendMessage(msg);
             }
             catch (Exception e)
@@ -621,6 +625,24 @@ namespace SharpPulsar.Akka.Producer
         }
         private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
 
+        private bool HasSequenceId(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
+        private bool HasPublishTime(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
+        private bool HasEventTime(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
         public override string ToString()
         {
             return "Producer{" + "topic='" + _topic + '\'' + '}';

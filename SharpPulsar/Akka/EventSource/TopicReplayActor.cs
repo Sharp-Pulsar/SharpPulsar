@@ -24,8 +24,6 @@ namespace SharpPulsar.Akka.EventSource
         private readonly Tag _tag;
         private long _sequenceId;
         private readonly IActorRef _self;
-        private long _expectedReplayMax;
-        private long _currentReplayCount;
         public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
             _self = Self;
@@ -44,7 +42,6 @@ namespace SharpPulsar.Akka.EventSource
             Receive<ReplayState>(r =>
             {
                 Become(Active);
-                _expectedReplayMax = r.Max.Value;
                 var partition = _topicName.PartitionIndex;
                 var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
                 config.StartMessageId = new BatchMessageId(r.LedgerId.Value, r.EntryId.Value, partition, -1);
@@ -163,7 +160,6 @@ namespace SharpPulsar.Akka.EventSource
             Receive<ReplayState>(r =>
             {
                 Become(Active);
-                _expectedReplayMax = r.Max.Value;
                 _consumer.Tell(new SendFlow(r.Max));
             });
             Receive<NullStats>(r =>

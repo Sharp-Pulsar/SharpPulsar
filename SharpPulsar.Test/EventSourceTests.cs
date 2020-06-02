@@ -93,7 +93,7 @@ namespace SharpPulsar.Test
         [Fact]
         private  void Replay_Topic()
         {
-            _amount = 100;
+            _amount = 10;
             var replayed = 0;
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
             ProduceMessages();
@@ -109,13 +109,19 @@ namespace SharpPulsar.Test
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, null, false);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 9, numb.Max.Value, null, false);
+            foreach (var msg in _pulsarSystem.EventSource(replay, e =>
+            {
+                var m = e.Message.ToTypeOf<Students>();
+                _output.WriteLine(e.Message.SequenceId.ToString());
+                return m;
+
+            }))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            Assert.True(replayed > 95);
+            Assert.True(replayed > 5);
         }
         [Fact]
         private  void Replay_Topic_To_Greater()
@@ -293,16 +299,17 @@ namespace SharpPulsar.Test
             var t = _producer ?? _pulsarSystem.PulsarProducer(new CreateProducer(jsonSchem, producerConfig)).Producer;
 
             var sends = new List<Send>();
-            for (var i = 0; i < _amount; i++)
+            for (var i = 1L; i <= _amount; i++)
             {
                 var student = new Students
                 {
                     Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - test {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
-                    Age = 2019 + i,
+                    Age = 2020 + (int)i,
                     School = "Akka-Pulsar university"
                 };
                 var metadata = new Dictionary<string, object>
                 {
+                    ["SequenceId"] = i,
                     ["Key"] = "Bulk",
                     ["Properties"] = new Dictionary<string, string>
                     {

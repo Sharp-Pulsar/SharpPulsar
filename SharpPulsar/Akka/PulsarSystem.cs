@@ -12,9 +12,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
-using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
@@ -188,7 +186,9 @@ namespace SharpPulsar.Akka
             }
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+
             _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
+            
             foreach (var liveData in _managerState.LiveDataQueue.GetConsumingEnumerable())
             {
                 yield return liveData;
@@ -383,12 +383,14 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            var max = replay.Max;
-            var diff = replay.To - replay.From;
-            if (diff < 1)
+            var max = replay.Max; var diff = replay.To - replay.From;
+            if (diff < 0)
                 yield break;
+            if (diff == 0)
+                max = 0;
             if (diff < max)
                 max = diff;
+
             _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
             var count = 0;
             if (customHandler == null)
@@ -457,8 +459,10 @@ namespace SharpPulsar.Akka
 
             var max = replay.Max;
             var diff = replay.To - replay.From;
-            if(diff < 1)
+            if(diff < 0 || max < 0)
                 yield break;
+            if (diff == 0)
+                max = 0;
             if (diff < max)
                 max = diff;
 

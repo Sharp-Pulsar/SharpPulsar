@@ -616,7 +616,7 @@ namespace Samples
         #region Producers
         private static void PlainAvroBulkSendProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(Seqquence));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -625,7 +625,7 @@ namespace Samples
                 Receipts.Add(s);
             });
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName(topic)
+                .ProducerName($"Test-{topic}")
                 .Topic(topic)
                 .Schema(jsonSchem)
                 .EventListener(producerListener)
@@ -635,16 +635,17 @@ namespace Samples
             
             Console.WriteLine($"Acquired producer for topic: {t.Topic}");
             var sends = new List<Send>();
-            for (var i = 0; i < 5; i++)
+            for (var i = 1L; i <= 5; i++)
             {
-                var student = new Students
+                var student = new Seqquence()
                 {
-                    Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
-                    Age = 2019 + i,
-                    School = "Akka-Pulsar university"
+                    SeqName = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    SeqAge = 2019 + i,
+                    SeqSchool = "Akka-Pulsar university"
                 };
                 var metadata = new Dictionary<string, object>
                 {
+                    ["SequenceId"] = i,
                     ["Key"] = "Bulk",
                     ["Properties"] = new Dictionary<string, string>
                     {
@@ -2248,6 +2249,12 @@ namespace Samples
         public string Name { get; set; }
         public int Age { get; set; }
         public string School { get; set; }
+    }
+    public class Seqquence
+    {
+        public string SeqName { get; set; }
+        public long SeqAge { get; set; }
+        public string SeqSchool { get; set; }
     }
     public class Churches
     {

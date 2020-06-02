@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
@@ -12,11 +10,9 @@ using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utility;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -32,10 +28,8 @@ namespace SharpPulsar.Akka.EventSource
         private int _expectedStatsCount;
         private int _currentStatsCounts;
         private long? _maxPatternEntries = 0;
-        private readonly Dictionary<string, long> _sequenceIds;
         public TaggedCoordinator(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
         {
-            _sequenceIds = new Dictionary<string, long>();
             _self = Self;
             _routees = new List<string>();
             _network = network;
@@ -81,7 +75,7 @@ namespace SharpPulsar.Akka.EventSource
                     _maxPatternEntries = r.Entries;
                 if (_currentStatsCounts == _expectedStatsCount)
                 {
-                    _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.Topic, _maxPatternEntries.Value));
+                    _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.Topic, _maxPatternEntries.Value - 1));
                     _currentStatsCounts = 0;
                     _expectedStatsCount = 0;
                     _maxPatternEntries = 0;
