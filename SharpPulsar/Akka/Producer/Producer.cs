@@ -78,14 +78,14 @@ namespace SharpPulsar.Akka.Producer
             }
 
             _compressor = CompressionCodecProvider.GetCompressionCodec(configuration.CompressionType);
-            if (configuration.InitialSequenceId != null)
+            if (configuration.InitialSequenceId.HasValue && configuration.InitialSequenceId > 0)
             {
                 var initialSequenceId = (long)configuration.InitialSequenceId;
                 _sequenceId = initialSequenceId;
             }
             else
             {
-                _sequenceId = -1L;
+                _sequenceId = 0L;
             }
 
             if (configuration.Properties == null)
