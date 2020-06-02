@@ -383,8 +383,9 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            var max = replay.Max; var diff = replay.To - replay.From;
-            if (diff < 0)
+            var max = replay.Max; 
+            var diff = replay.To - replay.From;
+            if (diff < 0 || max < 0)
                 yield break;
             if (diff == 0)
                 max = 0;
