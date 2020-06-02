@@ -367,7 +367,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
             var topic = TopicName.Get(entries.Topic).ToString();
 
-            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server, entries.From, entries.Max, entries.To));
+            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server));
             if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return msg;
@@ -383,8 +383,12 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
             var max = replay.Max;
+            var diff = replay.To - replay.From;
+            if (diff < 1)
+                yield break;
+            if (diff < max)
+                max = diff;
             _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
             var count = 0;
             if (customHandler == null)
@@ -450,8 +454,13 @@ namespace SharpPulsar.Akka
             if(replay.Tagged && !replay.ReaderConfigurationData.TopicName.EndsWith("*"))
                 throw new ArgumentException($"Topic should end with *");
 
-            //why this? if a topic had, for instance 115 entries, pulsar delivers up to 113
+
             var max = replay.Max;
+            var diff = replay.To - replay.From;
+            if(diff < 1)
+                yield break;
+            if (diff < max)
+                max = diff;
 
             var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, max, replay.Tag, replay.Tagged);
             

@@ -231,13 +231,7 @@ namespace Samples
                         var e1 = Console.ReadLine();
                         Console.WriteLine("[GetNumberOfEntries] Enter Topic: ");
                         var e2 = Console.ReadLine();
-                        Console.WriteLine("GetNumberOfEntries] Enter From: ");
-                        var e20 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[GetNumberOfEntries] Enter To: ");
-                        var e21 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[GetNumberOfEntries] Enter Max: ");
-                        var e22 = long.Parse(Console.ReadLine());
-                        GetNumberOfEntries(pulsarSystem, e1, e2, e20, e21, e22);
+                        GetNumberOfEntries(pulsarSystem, e1, e2);
                         break;
                     case "73":
                         Console.WriteLine("[ReplayTopic] Enter server: ");
@@ -1637,14 +1631,14 @@ namespace Samples
         #endregion
 
         #region EventSource
-        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic, long from, long to, long max)
+        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic)
         {
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server, from, max, to));
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
             Console.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
         }
         private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max, bool istagged )
         {
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
             foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to, istagged)))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
@@ -1663,7 +1657,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
             var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
             foreach (var msg in system.EventSource<Students>(replay))
             {
@@ -1683,7 +1677,7 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server, fro, max, to));
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
             var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
             foreach (var msg in system.EventSource<Students>(replay))
             {

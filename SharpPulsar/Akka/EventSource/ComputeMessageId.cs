@@ -20,7 +20,6 @@ namespace SharpPulsar.Akka.EventSource
 
         public (long? Ledger, long? Entry, long? Max, long? To) GetFrom()
         {
-            var numberOfEntries = _stats.NumberOfEntries;
             var ledgers = _stats.Ledgers.Where(x => x.Entries > 0);
             long? entries = 0L;
             long? ledgerId = 0L;
@@ -57,22 +56,6 @@ namespace SharpPulsar.Akka.EventSource
                     entryId = entry;
                 }
             }
-
-            if (_to > numberOfEntries)
-            {
-                _to = numberOfEntries.Value;
-            }
-
-            var differenceBetweenToFrom = _to - _from;
-
-            if (_max > differenceBetweenToFrom)
-                _max = differenceBetweenToFrom;
-
-            if (_max < 1 && differenceBetweenToFrom >= 0)
-                _max = differenceBetweenToFrom;
-
-            if (_max < 1 && differenceBetweenToFrom < 1)
-                _max = 0;
 
             return (ledgerId,entryId, _max, _to);
         }

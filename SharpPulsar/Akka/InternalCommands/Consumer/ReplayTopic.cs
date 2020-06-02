@@ -47,19 +47,13 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     }
     public sealed class GetNumberOfEntries 
     {
-        public GetNumberOfEntries(string topic, string server, long @from, long max, long to)
+        public GetNumberOfEntries(string topic, string server)
         {
             Topic = topic;
             Server = server;
-            From = @from;
-            Max = max;
-            To = to;
         }
         public string Topic { get; }
         public string Server { get; }
-        public long From { get; }
-        public long Max { get; }
-        public long To { get; }
 
     }
     public sealed class NumberOfEntries 
