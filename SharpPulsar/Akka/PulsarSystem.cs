@@ -437,7 +437,7 @@ namespace SharpPulsar.Akka
 
             var max = replay.Max; 
 
-            var diff = replay.To - fro;
+            var diff = (replay.To - fro) + 1;
 
             if (diff < 0 || max < 0)
                 yield break;
@@ -516,7 +516,7 @@ namespace SharpPulsar.Akka
 
             var max = replay.Max;
 
-            var diff = replay.To - fro;
+            var diff = (replay.To - fro) + 1;
 
             if (diff < 0 || max < 0)
                 yield break;

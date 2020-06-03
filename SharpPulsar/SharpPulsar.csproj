@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>1.2.9.16</Version>
+    <Version>1.3.0</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
-    <PackageReleaseNotes>EventSource and bunch of additions and fixes!
+    <PackageReleaseNotes>Consume message via Listener or Queue
+EventSource
 </PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
