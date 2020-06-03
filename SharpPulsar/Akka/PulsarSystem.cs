@@ -18,14 +18,61 @@ using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
 {
-    public class PulsarSystem
+    public sealed class PulsarSystem
     {
+        private static PulsarSystem _instance;
+        private static readonly object _lock = new object();
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _pulsarManager;
         private readonly ClientConfigurationData _conf;
         private readonly PulsarManagerState _managerState;
-
-        public PulsarSystem(ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
+        {
+            if (_instance == null)
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new PulsarSystem(actorSystem, conf);
+                    }
+                }
+            }
+            return _instance;
+        }
+        public static PulsarSystem GetInstance(ClientConfigurationData conf)
+        {
+            if (_instance == null)
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new PulsarSystem(conf);
+                    }
+                }
+            }
+            return _instance;
+        }
+        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
+        {
+            _actorSystem = actorSystem;
+            _managerState = new PulsarManagerState
+            {
+                ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
+                ProducerQueue = new BlockingQueue<CreatedProducer>(),
+                DataQueue = new BlockingQueue<SqlData>(),
+                SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
+                MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
+                LiveDataQueue = new BlockingCollection<LiveSqlData>(),
+                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                EventQueue = new BlockingQueue<IEventMessage>(),
+                MaxQueue = new BlockingQueue<NumberOfEntries>()
+            };
+            _conf = conf;
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
+        }
+        private PulsarSystem(ClientConfigurationData conf)
         {
             _managerState = new PulsarManagerState
             {
