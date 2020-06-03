@@ -14,10 +14,8 @@ namespace SharpPulsar.Akka.InternalCommands
         /// When using PartitionedProducer, messages with same RoutingKey will be sent to the same partition
         /// </summary>
         public string RoutingKey { get; }
-        public MessageSchema Schema { get; }
-        public Send(object message, string topic, ImmutableDictionary<string, object> config, string routingKey = "default", MessageSchema schema = null)
+        public Send(object message, string topic, ImmutableDictionary<string, object> config, string routingKey = "default")
         {
-            Schema = schema;
             RoutingKey = routingKey;
             Message = message;
             Topic = topic;
@@ -43,15 +41,4 @@ namespace SharpPulsar.Akka.InternalCommands
         }
     }
 
-    public sealed class MessageSchema
-    {
-        public MessageSchema(string name, ISchema schema)
-        {
-            Name = name;
-            Schema = schema;
-        }
-
-        public string Name { get; }
-        public ISchema Schema { get; }
-    }
 }

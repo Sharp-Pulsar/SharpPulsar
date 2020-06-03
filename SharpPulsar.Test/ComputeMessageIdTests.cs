@@ -81,7 +81,7 @@ namespace SharpPulsar.Test
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 200, 100);
+                    var compute = new ComputeMessageId(data, 1, 6, 6);
                     var result = compute.GetFrom();
                    to = result.To.Value;
                     _output.WriteLine(result.To.Value.ToString());

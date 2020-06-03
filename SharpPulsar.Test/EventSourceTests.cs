@@ -109,7 +109,7 @@ namespace SharpPulsar.Test
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 9, numb.Max.Value, null, false);
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 6, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource(replay, e =>
             {
                 var m = e.Message.ToTypeOf<Students>();
@@ -121,7 +121,7 @@ namespace SharpPulsar.Test
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            Assert.True(replayed > 5);
+            Assert.True(replayed > 4);
         }
         [Fact]
         private  void Replay_Topic_To_Greater()

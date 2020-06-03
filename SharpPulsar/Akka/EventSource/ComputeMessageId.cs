@@ -30,7 +30,7 @@ namespace SharpPulsar.Akka.EventSource
                 if (_from > entries)
                     continue;
                 var diff = entries - _from;
-                var entry = (ledger.Entries - diff);
+                var entry = (ledger.Entries - diff) - 1;
                 ledgerId = ledger.LedgerId;
                 entryId = entry;
                 break;
@@ -42,7 +42,7 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     entries += _stats.CurrentLedgerEntries;
                     var diff = entries - _from;
-                    var entry = (_stats.CurrentLedgerEntries - diff);//entry starts from zero
+                    var entry = (_stats.CurrentLedgerEntries - diff) - 1;//entry starts from zero
                     ledgerId = long.Parse(_stats.LastConfirmedEntry.Split(":")[0]);
                     entryId = entry;
                 }
@@ -51,7 +51,7 @@ namespace SharpPulsar.Akka.EventSource
                     var lac = _stats.LastConfirmedEntry.Split(":");
                     entries += long.Parse(lac[1]);
                     var diff = entries - _from;
-                    var entry = (_stats.CurrentLedgerEntries - diff);
+                    var entry = (_stats.CurrentLedgerEntries - diff) - 1;
                     ledgerId = long.Parse(lac[0]);
                     entryId = entry;
                 }

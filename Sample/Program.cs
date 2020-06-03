@@ -616,7 +616,7 @@ namespace Samples
         #region Producers
         private static void PlainAvroBulkSendProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = AvroSchema.Of(typeof(Seqquence));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -637,11 +637,11 @@ namespace Samples
             var sends = new List<Send>();
             for (var i = 1L; i <= 5; i++)
             {
-                var student = new Seqquence()
+                var student = new Students()
                 {
-                    SeqName = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
-                    SeqAge = 2019 + i,
-                    SeqSchool = "Akka-Pulsar university"
+                    Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Age = 2019 + (int)i,
+                    School = "Akka-Pulsar university"
                 };
                 var metadata = new Dictionary<string, object>
                 {

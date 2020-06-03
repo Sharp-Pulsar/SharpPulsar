@@ -127,7 +127,7 @@ namespace SharpPulsar.Akka.EventSource
                 var messageId = (MessageId)c.Message.MessageId;
                 if (!_replayTopic.Tagged)
                 {
-                    var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
+                    var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
                     _pulsarManager.Tell(eventMessage);
                 }
                 else
