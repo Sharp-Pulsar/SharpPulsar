@@ -462,7 +462,7 @@ namespace SharpPulsar.Akka.Producer
                     return;
                 }
 
-                if (!HasSequenceId(metadata.SequenceId) || ((long)metadata.SequenceId) < _sequenceId)
+                if (!HasSequenceId(metadata.SequenceId))
                 {
                      _sequenceId += 1;
                     metadata.SequenceId = (ulong)_sequenceId;

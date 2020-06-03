@@ -383,25 +383,27 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            #region max
+            #region MyRegion
+            var fro = replay.From;
+            if (replay.From < 1)
+                fro = 0;
 
             var max = replay.Max; 
 
-            var diff = replay.To - replay.From;
+            var diff = replay.To - fro;
 
             if (diff < 0 || max < 0)
                 yield break;
 
             if (diff ==  0 && max > 0)
                 max = 1;
-            else yield break;
 
             if (diff < max)
                 max = diff;
 
             #endregion
 
-            _pulsarManager.Tell(new NextPlay(topic, max, replay.From, replay.To, replay.Tagged));
+            _pulsarManager.Tell(new NextPlay(topic, max, fro, replay.To, replay.Tagged));
             var count = 0;
             if (customHandler == null)
             {
@@ -415,10 +417,6 @@ namespace SharpPulsar.Akka
                         {
                             yield return evt.Message.ToTypeOf<T>();
                         }
-                    }
-                    else
-                    {
-                        yield break;
                     }
                 }
             }
@@ -434,10 +432,6 @@ namespace SharpPulsar.Akka
                         {
                             yield return customHandler(evt);
                         }
-                    }
-                    else
-                    {
-                        yield break;
                     }
                 }
             }
@@ -469,23 +463,26 @@ namespace SharpPulsar.Akka
 
             #region max
 
+            var fro = replay.From;
+            if (replay.From < 1)
+                fro = 0;
+
             var max = replay.Max;
 
-            var diff = replay.To - replay.From;
+            var diff = replay.To - fro;
 
             if (diff < 0 || max < 0)
                 yield break;
 
             if (diff == 0 && max > 0)
                 max = 1;
-            else yield break;
 
             if (diff < max)
                 max = diff;
 
             #endregion
 
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, replay.From, replay.To, max, replay.Tag, replay.Tagged);
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, fro, replay.To, max, replay.Tag, replay.Tagged);
             
             _pulsarManager.Tell(start);
 
@@ -502,10 +499,6 @@ namespace SharpPulsar.Akka
                         {
                             yield return evt.Message.ToTypeOf<T>();
                         }
-                        else
-                        {
-                            yield break;
-                        }
                     }
                 }
             }
@@ -519,10 +512,6 @@ namespace SharpPulsar.Akka
                         if (msg is EventMessage evt)
                         {
                             yield return customHandler(evt);
-                        }
-                        else
-                        {
-                            yield break;
                         }
                     }
                 }
