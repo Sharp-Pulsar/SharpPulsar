@@ -31,7 +31,7 @@ Supported pulsar cluster versions: 2.5+
 - [x] Pulsar Admin [How to use? cmd 24-44 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Pulsar Function [How to use? cmd 45-50,53,54 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 - [x] Early support for Security Token Service. Server side is [here](https://github.com/eaba/PulsarStsProvider)
-- [x] EventSource - experimental! [Tutorial - cmd 72-75 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
+- [x] EventSource [Tutorial - cmd 72-75 in [Sample](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)]
 
 
 
