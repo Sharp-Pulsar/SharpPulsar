@@ -1,29 +1,78 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
+using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka
 {
-    public class PulsarSystem
+    public sealed class PulsarSystem
     {
+        private static PulsarSystem _instance;
+        private static readonly object _lock = new object();
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _pulsarManager;
         private readonly ClientConfigurationData _conf;
         private readonly PulsarManagerState _managerState;
-
-        public PulsarSystem(ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
+        {
+            if (_instance == null)
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new PulsarSystem(actorSystem, conf);
+                    }
+                }
+            }
+            return _instance;
+        }
+        public static PulsarSystem GetInstance(ClientConfigurationData conf)
+        {
+            if (_instance == null)
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new PulsarSystem(conf);
+                    }
+                }
+            }
+            return _instance;
+        }
+        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
+        {
+            _actorSystem = actorSystem;
+            _managerState = new PulsarManagerState
+            {
+                ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
+                ProducerQueue = new BlockingQueue<CreatedProducer>(),
+                DataQueue = new BlockingQueue<SqlData>(),
+                SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
+                MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
+                LiveDataQueue = new BlockingCollection<LiveSqlData>(),
+                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                EventQueue = new BlockingQueue<IEventMessage>(),
+                MaxQueue = new BlockingQueue<NumberOfEntries>()
+            };
+            _conf = conf;
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
+        }
+        private PulsarSystem(ClientConfigurationData conf)
         {
             _managerState = new PulsarManagerState
             {
@@ -32,7 +81,10 @@ namespace SharpPulsar.Akka
                 DataQueue = new BlockingQueue<SqlData>(),
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
-                LiveDataQueue = new BlockingQueue<LiveSqlData>()
+                LiveDataQueue = new BlockingCollection<LiveSqlData>(),
+                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                EventQueue = new BlockingQueue<IEventMessage>(),
+                MaxQueue = new BlockingQueue<NumberOfEntries>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -59,7 +111,7 @@ namespace SharpPulsar.Akka
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
-            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
@@ -181,10 +233,11 @@ namespace SharpPulsar.Akka
             }
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+
             _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
-            while (true)
+            
+            foreach (var liveData in _managerState.LiveDataQueue.GetConsumingEnumerable())
             {
-                var liveData = _managerState.LiveDataQueue.Take(CancellationToken.None);
                 yield return liveData;
             }
         }
@@ -193,6 +246,108 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
                 throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
+        }
+        /// <summary>
+        /// Consume messages from queue. ConsumptionType has to be set to Queue.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="topic"></param>
+        /// <param name="autoAck"></param>
+        /// <param name="takeCount"></param>
+        /// <param name="customProcess"></param>
+        /// <returns></returns>
+        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Func<Message, T> customHander = null)
+        {
+            if (customHander == null)
+            {
+                if (takeCount == -1)
+                {
+                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                    {
+                        var received = m.Message.ToTypeOf<T>();
+                        if (autoAck)
+                        {
+                            if (m.Message.MessageId is MessageId mi)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                            }
+                            else if (m.Message.MessageId is BatchMessageId b)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                            }
+                        }
+                        yield return received;
+                    }
+                }
+                else if(takeCount > 0)
+                {
+                    var takes = 0;
+                    while (takes < takeCount)
+                    {
+                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        {
+                            var received = m.Message.ToTypeOf<T>();
+                            if (autoAck)
+                            {
+                                if (m.Message.MessageId is MessageId mi)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                }
+                                else if (m.Message.MessageId is BatchMessageId b)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                }
+                            }
+                            yield return received;
+                            takes++;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (takeCount == -1)
+                {
+                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                    {
+                        if (autoAck)
+                        {
+                            if (m.Message.MessageId is MessageId mi)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                            }
+                            else if (m.Message.MessageId is BatchMessageId b)
+                            {
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                            }
+                        }
+                        yield return customHander(m.Message);
+                    }
+                }
+                else if(takeCount > 0)
+                {
+                    var takes = 0;
+                    while (takes < takeCount)
+                    {
+                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        {
+                            if (autoAck)
+                            {
+                                if (m.Message.MessageId is MessageId mi)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                }
+                                else if (m.Message.MessageId is BatchMessageId b)
+                                {
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                }
+                            }
+                            yield return customHander(m.Message);
+                            takes++;
+                        }
+                    }
+                }
+            }
         }
         public void PulsarFunction(InternalCommands.Function data)
         {
@@ -250,6 +405,164 @@ namespace SharpPulsar.Akka
             if (messages == null)
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
+        }
+        public NumberOfEntries EventSource(GetNumberOfEntries entries)
+        {
+            if(entries == null)
+                throw new ArgumentException($"GetNumberOfEntries is null");
+            if (!TopicName.IsValid(entries.Topic))
+                throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
+            var topic = TopicName.Get(entries.Topic).ToString();
+
+            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server));
+            if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+            {
+                return msg;
+            }
+
+            throw new TimeoutException("Timeout waiting for Entries");
+        }
+        public IEnumerable<T> EventSource<T>(NextPlay replay, Func<EventMessage, T> customHandler = null)
+        {
+            if(replay == null)
+                throw new ArgumentException($"ReplayTopic is null");
+            if (!TopicName.IsValid(replay.Topic))
+                throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
+            var topic = TopicName.Get(replay.Topic).ToString();
+
+            #region MyRegion
+            var fro = replay.From;
+            if (replay.From < 1)
+                fro = 0;
+
+            var max = replay.Max; 
+
+            var diff = (replay.To - fro) + 1;
+
+            if (diff < 0 || max < 0)
+                yield break;
+
+            if (diff ==  0 && max > 0)
+                max = 1;
+
+            if (diff < max)
+                max = diff;
+
+            #endregion
+
+            _pulsarManager.Tell(new NextPlay(topic, max, fro, replay.To, replay.Tagged));
+            var count = 0;
+            if (customHandler == null)
+            {
+
+                while (max > count)
+                {
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                    {
+                        if (msg is EventMessage evt)
+                        {
+                            yield return evt.Message.ToTypeOf<T>();
+                        }
+                    }
+                }
+            }
+            else
+            {
+
+                while (max > count)
+                {
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                    {
+                        if (msg is EventMessage evt)
+                        {
+                            yield return customHandler(evt);
+                        }
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Func<EventMessage, T> customHandler = null)
+        {
+            if(replay == null)
+                throw new ArgumentException($"ReplayTopic is null");
+            
+            if(replay.ReaderConfigurationData == null)
+                throw new ArgumentException($"ReaderConfigurationData is null");
+            
+            if(string.IsNullOrWhiteSpace(replay.AdminUrl))
+                throw new ArgumentException($"AdminUrl cannot be empty");
+
+            var topic = replay.ReaderConfigurationData.TopicName;
+
+            if (!TopicName.IsValid(replay.ReaderConfigurationData.TopicName))
+                throw new ArgumentException($"Topic '{topic}' is invalid");
+
+            replay.ReaderConfigurationData.TopicName = TopicName.Get(topic).ToString();
+
+            if(replay.Tagged && replay.Tag == null)
+                throw new ArgumentException($"Tag is null");
+
+            if(replay.Tagged && !replay.ReaderConfigurationData.TopicName.EndsWith("*"))
+                throw new ArgumentException($"Topic should end with *");
+
+
+            #region max
+
+            var fro = replay.From;
+            if (replay.From < 1)
+                fro = 0;
+
+            var max = replay.Max;
+
+            var diff = (replay.To - fro) + 1;
+
+            if (diff < 0 || max < 0)
+                yield break;
+
+            if (diff == 0 && max > 0)
+                max = 1;
+
+            if (diff < max)
+                max = diff;
+
+            #endregion
+
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, fro, replay.To, max, replay.Tag, replay.Tagged);
+            
+            _pulsarManager.Tell(start);
+
+            var count = 0;
+            if (customHandler == null)
+            {
+
+                while (max > count)
+                {
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                    {
+                        if (msg is EventMessage evt)
+                        {
+                            yield return evt.Message.ToTypeOf<T>();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                while (max > count)
+                {
+                    count++;
+                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+                    {
+                        if (msg is EventMessage evt)
+                        {
+                            yield return customHandler(evt);
+                        }
+                    }
+                }
+            }
         }
         public (string Topic, long LedgerId, long EntryId, int Partition, int BatchIndex) PulsarConsumer(LastMessageId last, IActorRef consumer)
         {

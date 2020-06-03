@@ -53,16 +53,15 @@ namespace SharpPulsar.Akka.Reader
             Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek, pulsarManager));
             Receive<ConsumedMessage>(m =>
             {
-                readerListener.Received(m.Message);
+                if(consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
+                    readerListener.Received(m.Message);
+                else 
+                    pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
                 // Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
                 // it will specify the subscription position anyway
                 m.Consumer.Tell(new AckMessages(m.Message.ReceivedId));
             });
             Receive<CloseConsumer>(c => { Context.Parent.Tell(c);});
-            ReceiveAny(x =>
-            {
-
-            });
         }
 
         public static Props Prop(ClientConfigurationData clientConfiguration, ReaderConfigurationData readerConfiguration, IActorRef network, Seek seek, IActorRef pulsarManager)

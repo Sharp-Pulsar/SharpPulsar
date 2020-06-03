@@ -28,19 +28,19 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class Consumer:ReceiveActor, IWithUnboundedStash
     {
-        private int _partitionIndex;
+        private readonly int _partitionIndex;
         private const int MaxRedeliverUnacknowledged = 1000;
         private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
-        private ConsumerConfigurationData _conf;
+        private readonly ConsumerConfigurationData _conf;
         private string _consumerName;
         private string _subscriptionName;
         private ISchema _schema;
         private List<IConsumerInterceptor> _interceptors;
-        private IMessageListener _listener;
-        private IConsumerEventListener _consumerEventListener;
-        private TopicName _topicName;
-        private IActorRef _network;
+        private readonly IMessageListener _listener;
+        private readonly IConsumerEventListener _consumerEventListener;
+        private readonly TopicName _topicName;
+        private readonly IActorRef _network;
         private int _requestedFlowPermits;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
@@ -48,18 +48,20 @@ namespace SharpPulsar.Akka.Consumer
         private readonly bool _createTopicIfDoesNotExist;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
-        private readonly BatchMessageId _initialStartMessageId;
+        private readonly BatchMessageId _initialStartMessageId = (BatchMessageId)MessageIdFields.Earliest;
         private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly MessageCrypto _msgCrypto;
-        private bool _hasParentConsumer;
+        private readonly bool _hasParentConsumer;
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
+        private bool _eventSourced;
         private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
-        private IActorRef _pulsarManager;
-        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
+        private readonly IActorRef _pulsarManager;
+        public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
             _pulsarManager = pulsarManager;
+            _eventSourced = eventSourced;
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
             _listener = configuration.MessageListener;
             _createTopicIfDoesNotExist = configuration.ForceTopicCreation;
@@ -128,9 +130,9 @@ namespace SharpPulsar.Akka.Consumer
            return false;
         }
 
-        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager)
+        public static Props Prop(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
-            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager));
+            return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager, eventSourced));
         }
         
         private bool HasReachedEndOfTopic()
@@ -211,93 +213,21 @@ namespace SharpPulsar.Akka.Consumer
                 var message = new Message(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
                if (_hasParentConsumer)
                     Context.Parent.Tell(new ConsumedMessage(Self, message));
-                else
-                    _listener.Received(Self, message);
+               else
+               {
+                   if(_conf.ConsumptionType == ConsumptionType.Listener)
+                        _listener.Received(Self, message);
+                   else if(_conf.ConsumptionType == ConsumptionType.Queue)
+                       _pulsarManager.Tell(new ConsumedMessage(Self, message));
+                }
             }
             else
             {
                 // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, uncompressedPayload, messageId);
-
+                //ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, uncompressedPayload, messageId);
+                _consumerEventListener.Log("Batching is not supported");
             }
 
-        }
-        private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, byte[] uncompressedPayload, MessageIdData messageId)
-        {
-            var batchSize = msgMetadata.NumMessagesInBatch;
-            var data = new ReadOnlySequence<byte>(uncompressedPayload);
-            // create ack tracker for entry aka batch
-            var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-            var acker = BatchMessageAcker.NewAcker(batchSize);
-            IList<Message> possibleToDeadLetter = null;
-            if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
-            {
-                possibleToDeadLetter = new List<Message>();
-            }
-            try
-            {
-                long index = 0;
-                for (var i = 0; i < batchSize; ++i)
-                {
-                    if (Context.System.Log.IsDebugEnabled)
-                    {
-                        Context.System.Log.Debug($"[{_subscriptionName}] [{_consumerName}] processing message num - {i} in batch");
-                    }
-                    var singleMetadataSize = data.ReadUInt32(index, true);
-                    index += 4;
-                    var singleMetadata = Serializer.Deserialize<SingleMessageMetadata>(data.Slice(index, singleMetadataSize));
-                    index += singleMetadataSize;
-
-                    var singleMessagePayload = data.Slice(index, singleMetadata.PayloadSize);
-
-                    if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorBatchIndex(i))
-                    {
-                        // If we are receiving a batch message, we need to discard messages that were prior
-                        // to the startMessageId
-                        if (Context.System.Log.IsDebugEnabled)
-                        {
-                            Context.System.Log.Debug($"[{_subscriptionName}] [{_consumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-                        }
-                        continue;
-                    }
-
-                    if (singleMetadata.CompactedOut)
-                    {
-                        continue;
-                    }
-
-                    var batchMessageIdImpl = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, i, acker);
-
-                    var message = new Message(_topicName.ToString(), batchMessageIdImpl, msgMetadata, singleMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
-                    if(_hasParentConsumer) 
-                        Context.Parent.Tell(new ConsumedMessage(Self, message));
-                    else
-                        _listener.Received(Self, message);
-
-                    possibleToDeadLetter?.Add(message);
-                    index += (uint)singleMetadata.PayloadSize;
-                }
-            }
-            catch (IOException)
-            {
-                Context.System.Log.Warning($"[{_subscriptionName}] [{_consumerName}] unable to obtain message in batch");
-                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.BatchDeSerializeError);
-            }
-
-            if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
-            {
-                _possibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
-            }
-
-            if (Context.System.Log.IsDebugEnabled)
-            {
-                //Context.System.Log.Debug("[{}] [{}] enqueued messages in batch. queue size - {}, available queue size - {}", _subscriptionName, _consumerName, IncomingMessages.size(), IncomingMessages.RemainingCapacity());
-            }
-
-        }
-        private bool IsPriorBatchIndex(long idx)
-        {
-            return _conf.ResetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
         }
         private EncryptionContext CreateEncryptionContext(MessageMetadata msgMetadata)
         {
@@ -550,6 +480,11 @@ namespace SharpPulsar.Akka.Consumer
                 Become(RecreatingConsumer);
             });
 
+            Receive<SendFlow>(f =>
+            {
+                SendFlow(Convert.ToInt32(f.Size));
+            });
+
             Receive<LastMessageId>(x =>
             {
                 LastMessageId();
@@ -573,8 +508,8 @@ namespace SharpPulsar.Akka.Consumer
                     BatchIndex = m.MessageId.BatchIndex
                 };
                 HandleMessage(msgId, m.RedeliveryCount, m.Data);
-                if (_requestedFlowPermits == 0)
-                    SendFlow(_conf.ReceiverQueueSize);
+                if (_requestedFlowPermits == 50 && !_eventSourced)
+                    SendFlow(_requestedFlowPermits);
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);

@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl
 	{
 		public MessageMetadata Metadata { get; }
 		public byte[] Payload { get; set; }
-		private ISchema _schema;
+		private readonly ISchema _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 
@@ -93,62 +93,7 @@ namespace SharpPulsar.Impl
 			}
 			_schema = schema;
 		}
-
-
-		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
-		{
-			Metadata = msgMetadata;
-			MessageId = batchMessageIdImpl;
-			TopicName = topic;
-			RedeliveryCount = redeliveryCount;
-
-			Payload = payload;
-			EncryptionCtx = encryptionCtx;
-
-			if (singleMessageMetadata.Properties.Count > 0)
-			{
-				foreach (var entry in singleMessageMetadata.Properties)
-				{
-					Properties[entry.Key] = entry.Value;
-				}
-			}
-			else
-			{
-				Properties.Clear();
-			}
-
-			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
-			{
-				Metadata.PartitionKeyB64Encoded = (singleMessageMetadata.PartitionKeyB64Encoded);
-				Metadata.PartitionKey = (singleMessageMetadata.PartitionKey);
-			}
-
-			if (singleMessageMetadata.EventTime > 0)
-			{
-				Metadata.EventTime = (singleMessageMetadata.EventTime);
-			}
-
-			if (singleMessageMetadata.SequenceId > 0)
-			{
-				Metadata.SequenceId = (singleMessageMetadata.SequenceId);
-			}
-
-			_schema = schema;
-		}
-
-		public Message(string topic, string msgId, IDictionary<string, string> properties, byte[] payload, ISchema schema)
-		{
-			var data = msgId.Split(":", true);
-			var ledgerId = long.Parse(data[0]);
-			var entryId = long.Parse(data[1]);
-			MessageId = data.Length == 3 ? new BatchMessageId(ledgerId, entryId, -1, int.Parse(data[2])) : new MessageId(ledgerId, entryId, -1);
-			TopicName = topic;
-			Payload = payload;
-			properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
-			_schema = schema;
-			RedeliveryCount = 0;
-		}
-
+		
 		public static Message Deserialize(byte[] headersAndPayload)
 		{
             var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);

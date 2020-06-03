@@ -10,9 +10,9 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class ConsumerManager:ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _network;
-        private IActorRef _pulsarManager;
-        private ClientConfigurationData _config;
+        private readonly IActorRef _network;
+        private readonly IActorRef _pulsarManager;
+        private readonly ClientConfigurationData _config;
         public ConsumerManager(ClientConfigurationData configuration, IActorRef network, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;

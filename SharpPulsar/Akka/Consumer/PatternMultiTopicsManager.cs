@@ -15,13 +15,13 @@ namespace SharpPulsar.Akka.Consumer
 {
     public class PatternMultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _network;
-        private Regex _topicsPattern;
-        private IMessageListener _messageListener;
-        private ConsumerConfigurationData _configuration;
-        private ClientConfigurationData _clientConfiguration;
-        private IActorRef _pulsarManager;
-        private Seek _seek;
+        private readonly IActorRef _network;
+        private readonly Regex _topicsPattern;
+        private readonly IMessageListener _messageListener;
+        private readonly ConsumerConfigurationData _configuration;
+        private readonly ClientConfigurationData _clientConfiguration;
+        private readonly IActorRef _pulsarManager;
+        private readonly Seek _seek;
         public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;
@@ -49,7 +49,9 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<ConsumedMessage>(m =>
             {
-                _messageListener.Received(m.Consumer, m.Message);
+                if (_configuration.ConsumptionType is ConsumptionType.Listener)
+                    _messageListener.Received(m.Consumer, m.Message);
+                else if (_configuration.ConsumptionType is ConsumptionType.Queue) _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
             });
         }
         private NamespaceName GetNameSpaceFromPattern(Regex pattern)

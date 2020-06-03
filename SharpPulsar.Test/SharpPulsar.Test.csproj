@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Akka\**" />
     <Compile Remove="Impl\auth\**" />
+    <EmbeddedResource Remove="Akka\**" />
     <EmbeddedResource Remove="Impl\auth\**" />
+    <None Remove="Akka\**" />
     <None Remove="Impl\auth\**" />
   </ItemGroup>
 
@@ -54,12 +57,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Akka\" />
     <Folder Include="Impl\conf\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Avro\Avro.csproj" />
+    <ProjectReference Include="..\Sample\Samples.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>
 

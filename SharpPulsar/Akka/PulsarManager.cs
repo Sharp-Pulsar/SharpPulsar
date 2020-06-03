@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.EventSource;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -22,9 +23,11 @@ namespace SharpPulsar.Akka
         private readonly ClientConfigurationData _config;
         private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
         private readonly PulsarManagerState _pulsarManagerState;
-        public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state)
+        private readonly PulsarSystem _pulsarSystem;
+        public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state, PulsarSystem pulsarSystem)
         {
             _pulsarManagerState = state;
+            _pulsarSystem = pulsarSystem;
             _config = clientConfigurationData ?? throw new ArgumentNullException(nameof(clientConfigurationData));
             _serviceNameResolver.UpdateServiceUrl(clientConfigurationData.ServiceUrl);
             Become(NetworkSetup);
@@ -36,6 +39,14 @@ namespace SharpPulsar.Akka
             {
                 _pulsarManagerState.MessageIdQueue.Enqueue(r);
             });
+            Receive<IEventMessage>(e =>
+            {
+                _pulsarManagerState.EventQueue.Enqueue(e);
+            });
+            Receive<NumberOfEntries>(e =>
+            {
+                _pulsarManagerState.MaxQueue.Enqueue(e);
+            });
             Receive<CreatedConsumer>(c =>
             {
                 _pulsarManagerState.ConsumerQueue.Enqueue(c);
@@ -46,9 +57,14 @@ namespace SharpPulsar.Akka
                 _pulsarManagerState.DataQueue.Enqueue(d);
 
             });
+            Receive<ConsumedMessage>(d =>
+            {
+                _pulsarManagerState.MessageQueue.Add(d);
+
+            });
             Receive<LiveSqlData>(d =>
             {
-                _pulsarManagerState.LiveDataQueue.Enqueue(d);
+                _pulsarManagerState.LiveDataQueue.Add(d);
 
             });
             Receive<GetOrCreateSchemaServerResponse>(s =>
@@ -64,6 +80,18 @@ namespace SharpPulsar.Akka
             Receive<NewConsumer>(cmd =>
             {
                 Context.Child("ConsumerManager").Tell(cmd);
+            });
+            Receive<GetNumberOfEntries>(cmd =>
+            {
+                Context.Child("ReplayManager").Tell(cmd);
+            });
+            Receive<StartReplayTopic>(cmd =>
+            {
+                Context.Child("ReplayManager").Tell(cmd);
+            });
+            Receive<NextPlay>(cmd =>
+            {
+                Context.Child("ReplayManager").Tell(cmd);
             });
             Receive<LiveSql>(cmd =>
             {
@@ -116,6 +144,7 @@ namespace SharpPulsar.Akka
             Receive<ConnectedServerInfo>(s =>
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
+                Context.ActorOf(ReplayCoordinator.Prop( _network, Self, _pulsarSystem), "ReplayManager");
                 Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
@@ -125,9 +154,9 @@ namespace SharpPulsar.Akka
             });
             ReceiveAny(c=> Stash.Stash());
         }
-        public static Props Prop(ClientConfigurationData conf, PulsarManagerState state)
+        public static Props Prop(ClientConfigurationData conf, PulsarManagerState state, PulsarSystem pulsarSystem)
         {
-            return Props.Create(()=> new PulsarManager(conf, state));
+            return Props.Create(()=> new PulsarManager(conf, state, pulsarSystem));
         }
 
         public IStash Stash { get; set; }

@@ -39,6 +39,12 @@ namespace SharpPulsar.Akka.Producer
 
         private void Init()
         {
+
+            Receive<RegisteredProducer>(p =>
+            {
+                if(!_group.IsNobody())
+                    _group.Forward(p);
+            });
             Receive<NewProducer>(n =>
             {
                 Become(()=>CreatingProducer(n));
@@ -55,12 +61,6 @@ namespace SharpPulsar.Akka.Producer
         private void CreatingProducer(NewProducer np)
         {
             Common();
-            Receive<RegisteredProducer>(p =>
-            {
-                //_producers.Add(p.Topic, Sender);
-                Become(Init);
-                Stash.UnstashAll();
-            });
             ReceiveAny(x =>
             {
                 Stash.Stash();
@@ -71,12 +71,6 @@ namespace SharpPulsar.Akka.Producer
         {
             var gm = new NewProducer(member.Schema, member.Configuration, member.ProducerConfiguration); 
             Common(true);
-            Receive<RegisteredProducer>(p =>
-            {
-                _group.Forward(p);
-                Become(Init);
-                Stash.UnstashAll();
-            });
             ReceiveAny(x =>
             {
                 Stash.Stash();
@@ -96,6 +90,8 @@ namespace SharpPulsar.Akka.Producer
                     Context.ActorOf(PartitionedProducer.Prop(_config, _producerConfiguration, _network, _pulsarManager, parent), pn);
                 else
                     Context.ActorOf(Producer.Prop(_config, _producerConfiguration.TopicName, _producerConfiguration, Interlocked.Increment(ref IdGenerators.ProducerId), _network, _pulsarManager, isgroup: parent), pn);
+                Become(Init);
+                Stash.UnstashAll();
             });
 
             Receive<SchemaResponse>(s =>
@@ -150,6 +146,13 @@ namespace SharpPulsar.Akka.Producer
                 _listener.Log($"Producer with name '{producer.ProducerConfiguration.ProducerName}' already exist for topic '{producer.ProducerConfiguration.TopicName}'");
                 if(!string.IsNullOrWhiteSpace(title))
                    Self.Tell(new RegisteredProducer(-1, producer.ProducerConfiguration.ProducerName, string.IsNullOrWhiteSpace(title) ? producer.ProducerConfiguration.TopicName: title, false), child);
+                else
+                {
+                    //if producer does exists we need to do this tp prevent TimeOutException at the client
+                    _pulsarManager.Tell(new CreatedProducer(child, producer.ProducerConfiguration.TopicName, producer.ProducerConfiguration.ProducerName));
+                    Become(Init);
+                    Stash.UnstashAll();
+                }
                 return;
             }
 

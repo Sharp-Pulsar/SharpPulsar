@@ -1,13 +1,11 @@
 ﻿using System;
-using System.IO;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using Akka.Actor;
 using SharpPulsar.Akka.Function.Api;
 
 namespace SharpPulsar.Akka.Function
 {
+    //https://www.splunk.com/en_us/blog/it/event-processing-design-patterns-with-pulsar-functions.html
     public class FunctionWorker : ReceiveActor
     {
         private readonly PulsarFunctionsRESTAPIClient _client;

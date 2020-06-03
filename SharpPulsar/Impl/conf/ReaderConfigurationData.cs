@@ -34,7 +34,7 @@ namespace SharpPulsar.Impl.Conf
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
 		public bool ReadCompacted { get; set; } = false;
-		public bool ResetIncludeHead { get; set; } = false;
+		public bool ResetIncludeHead { get; set; } = true;
 		
         public string SubscriptionRolePrefix { get; set; }
 

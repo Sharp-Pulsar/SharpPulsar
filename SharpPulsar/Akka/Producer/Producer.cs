@@ -50,9 +50,16 @@ namespace SharpPulsar.Akka.Producer
         private readonly bool _isGroup;
         private ICancelable _producerRecreator;
         private bool _external;
+        private TopicSchema _topicSchema;
 
         public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, IActorRef pulsarManager, bool isPartitioned, bool isgroup)
         {
+            _topicSchema = new TopicSchema
+            {
+                Schema = configuration.Schema,
+                Ready = false,
+                Version = new byte[0]
+            };
             _pulsarManager = pulsarManager;
             _topic = topic;
             _listener = configuration.ProducerEventListener;
@@ -78,14 +85,14 @@ namespace SharpPulsar.Akka.Producer
             }
 
             _compressor = CompressionCodecProvider.GetCompressionCodec(configuration.CompressionType);
-            if (configuration.InitialSequenceId != null)
+            if (configuration.InitialSequenceId.HasValue && configuration.InitialSequenceId > 0)
             {
                 var initialSequenceId = (long)configuration.InitialSequenceId;
                 _sequenceId = initialSequenceId;
             }
             else
             {
-                _sequenceId = -1L;
+                _sequenceId = 0L;
             }
 
             if (configuration.Properties == null)
@@ -153,7 +160,8 @@ namespace SharpPulsar.Akka.Producer
                 var schemaVersion = p.SchemaVersion;
                 if (schemaVersion != null)
                 {
-                    _schemaCache.TryAdd(SchemaHash.Of(_configuration.Schema), schemaVersion);
+                    _topicSchema.Ready = true;
+                    _topicSchema.Version = schemaVersion;
                 }
 
                 if (_isPartitioned)
@@ -272,7 +280,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 foreach (var m in s.Messages)
                 {
-                    ProcessSend(m);
+                    Self.Tell(m);
                 }
             });
             Receive<Terminated>(_ =>
@@ -300,23 +308,7 @@ namespace SharpPulsar.Akka.Producer
         {
             try
             {
-                var schemaName = s.Topic;
-                ISchema schema;
-                if (_schemas.ContainsKey(schemaName))
-                    schema = _schemas[schemaName];
-                else
-                {
-                    schema = s.Schema?.Schema;
-                    if (schema != null)
-                    {
-                        _schemas.Add(schemaName, s.Schema?.Schema);
-                    }
-                    else
-                    {
-                        schema = _schemas["default"];
-                    }
-                }
-                var builder = new TypedMessageBuilder(ProducerName, schema);
+                var builder = new TypedMessageBuilder(ProducerName, _topicSchema.Schema);
                 builder.Value(s.Message);
                 builder.LoadConf(s.Config);
                 builder.Topic(s.Topic);
@@ -462,21 +454,25 @@ namespace SharpPulsar.Akka.Producer
                     return;
                 }
 
-                if (metadata.SequenceId < 1)
+                if (!HasSequenceId(metadata.SequenceId))
                 {
                      _sequenceId += 1;
                     metadata.SequenceId = (ulong)_sequenceId;
                 }
-                if (metadata.PublishTime < 1)
+                if (!HasPublishTime(metadata.PublishTime))
                 {
                     metadata.PublishTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 }
+
                 if (string.IsNullOrWhiteSpace(metadata.ProducerName))
                     metadata.ProducerName = ProducerName;
+
                 if(metadata.UncompressedSize == 0)
                     metadata.UncompressedSize = (uint)uncompressedSize;
-                if(metadata.EventTime < 1)
+
+                if(!HasEventTime(metadata.EventTime))
                     metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
                 SendMessage(msg);
             }
             catch (Exception e)
@@ -536,7 +532,7 @@ namespace SharpPulsar.Akka.Producer
             }
             try
             {
-                if (op.Msg.GetSchemaState() == 0)
+                /*if (op.Msg.GetSchemaState() == 0)
                 {
                     TryRegisterSchema(op.Msg);
                 }
@@ -545,7 +541,8 @@ namespace SharpPulsar.Akka.Producer
                     // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
                     // connection is established
                    SendCommand(op);
-                }
+                }*/
+                SendCommand(op);
 
             }
 
@@ -621,6 +618,24 @@ namespace SharpPulsar.Akka.Producer
         }
         private Commands.ChecksumType ChecksumType => Commands.ChecksumType.Crc32C;
 
+        private bool HasSequenceId(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
+        private bool HasPublishTime(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
+        private bool HasEventTime(ulong seq)
+        {
+            if (seq > 0)
+                return true;
+            return false;
+        }
         public override string ToString()
         {
             return "Producer{" + "topic='" + _topic + '\'' + '}';
@@ -638,5 +653,12 @@ namespace SharpPulsar.Akka.Producer
     public class RecreateProducer
     {
 
+    }
+
+    public sealed class TopicSchema
+    {
+        public byte[] Version { get; set; }
+        public ISchema Schema { get; set; }
+        public bool Ready { get; set; }
     }
 }
