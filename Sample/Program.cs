@@ -189,6 +189,11 @@ namespace Samples
                         var t11 = Console.ReadLine();
                         DecryptAvroPatternConsumer(pulsarSystem, t11);
                         break;
+                    case "76":
+                        Console.WriteLine("[AvroPatternConsumer] Enter topic: ");
+                        var t76 = Console.ReadLine();
+                        AvroPatternConsumer(pulsarSystem, t76);
+                        break;
                     case "12":
                         Console.WriteLine("[DecryptAvroMultiConsumer] Enter comm delimited topics: ");
                         var topics = Console.ReadLine();
@@ -1457,6 +1462,45 @@ namespace Samples
                 .ForceTopicCreation(true)
                 .SubscriptionName("pattern-consumer-Subscription")
                 .CryptoKeyReader(new RawFileKeyReader("pulsar_client.pem", "pulsar_client_priv.pem"))
+                .TopicsPattern(new Regex(/*"persistent://public/default/.*"*/ regex))
+
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Shared)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
+                .ConsumerConfigurationData;
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Pattern));
+
+        }
+        private static void AvroPatternConsumer(PulsarSystem system, string regex)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var students = m.ToTypeOf<Students>();
+                var s = JsonSerializer.Serialize(students);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName("pattern-consumer")
+                .ForceTopicCreation(true)
+                .SubscriptionName("pattern-consumer-Subscription")
                 .TopicsPattern(new Regex(/*"persistent://public/default/.*"*/ regex))
 
                 .ConsumerEventListener(consumerListener)

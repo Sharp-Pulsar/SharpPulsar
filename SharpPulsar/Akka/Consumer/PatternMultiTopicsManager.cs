@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Api;
+using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
@@ -16,43 +18,52 @@ namespace SharpPulsar.Akka.Consumer
     public class PatternMultiTopicsManager:ReceiveActor, IWithUnboundedStash
     {
         private readonly IActorRef _network;
-        private readonly Regex _topicsPattern;
-        private readonly IMessageListener _messageListener;
         private readonly ConsumerConfigurationData _configuration;
-        private readonly ClientConfigurationData _clientConfiguration;
-        private readonly IActorRef _pulsarManager;
-        private readonly Seek _seek;
+        private IActorRef _multiTopicActor;
+        private bool _initialized;
         public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
-            _pulsarManager = pulsarManager;
-            _seek = seek;
+            var pulsarManager1 = pulsarManager;
             _network = network;
-            _clientConfiguration = client;
             _configuration = consumer;
-            _messageListener = consumer.MessageListener;
-            _topicsPattern = consumer.TopicsPattern;
-            BecomeStart();
+            var messageListener = consumer.MessageListener;
+            var topicsPattern = consumer.TopicsPattern;
+
+            Receive<NamespaceTopics>(t =>
+            {
+                var topics = TopicsPatternFilter(t.Topics, topicsPattern);
+                if (!_initialized)
+                { 
+                    _configuration.TopicNames = new HashSet<string>(topics);
+                   _multiTopicActor = Context.ActorOf(MultiTopicsManager.Prop(client, _configuration, _network, true, seek, pulsarManager1));
+                   _initialized = true;
+                }
+                else
+                {
+                    _multiTopicActor.Tell(new UpdatePatternTopicsSubscription(topics.ToImmutableHashSet()));
+                }
+            });
+            Receive<ConsumedMessage>(m =>
+            {
+                if (_configuration.ConsumptionType is ConsumptionType.Listener)
+                    messageListener.Received(m.Consumer, m.Message);
+                else if (_configuration.ConsumptionType is ConsumptionType.Queue) pulsarManager1.Tell(new ConsumedMessage(m.Consumer, m.Message));
+            });
+            Receive<RefreshPatternTopics>(m =>
+            {
+                PatternTopics();
+            });
+            PatternTopics();
+            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(_configuration.PatternAutoDiscoveryPeriod), TimeSpan.FromMilliseconds(_configuration.PatternAutoDiscoveryPeriod), Self, RefreshPatternTopics.Instance, Nobody.Instance);
         }
 
-        private void BecomeStart()
+        private void PatternTopics()
         {
             var nameSpace = GetNameSpaceFromPattern(_configuration.TopicsPattern);
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
             var payload = new Payload(request, requestId, "GetTopicsOfNamespace");
             _network.Tell(payload);
-            Receive<NamespaceTopics>(t =>
-            {
-                var topics = TopicsPatternFilter(t.Topics, _topicsPattern);
-                _configuration.TopicNames = new HashSet<string>(topics);
-                Context.ActorOf(MultiTopicsManager.Prop(_clientConfiguration, _configuration, _network, true, _seek, _pulsarManager));
-            });
-            Receive<ConsumedMessage>(m =>
-            {
-                if (_configuration.ConsumptionType is ConsumptionType.Listener)
-                    _messageListener.Received(m.Consumer, m.Message);
-                else if (_configuration.ConsumptionType is ConsumptionType.Queue) _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
-            });
         }
         private NamespaceName GetNameSpaceFromPattern(Regex pattern)
         {
@@ -73,5 +84,10 @@ namespace SharpPulsar.Akka.Consumer
         }
         
         public IStash Stash { get; set; }
+    }
+
+    public sealed class RefreshPatternTopics
+    {
+        public static RefreshPatternTopics Instance = new RefreshPatternTopics();
     }
 }

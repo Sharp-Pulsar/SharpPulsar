@@ -254,11 +254,11 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder PatternAutoDiscoveryPeriod(int periodInMinutes)
+		public ConsumerConfigBuilder PatternAutoDiscoveryPeriod(int periodInSeconds)
 		{
-			if(periodInMinutes < 0)
+			if(periodInSeconds< 0)
                 throw new ArgumentException("periodInMinutes needs to be >= 0");
-			_conf.PatternAutoDiscoveryPeriod = periodInMinutes;
+			_conf.PatternAutoDiscoveryPeriod = periodInSeconds;
             return this;
 		}
 

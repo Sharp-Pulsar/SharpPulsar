@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
@@ -38,6 +40,30 @@ namespace SharpPulsar.Akka.Consumer
 
         private void BecomeReady()
         {
+            Receive<UpdatePatternTopicsSubscription>(s =>
+            {
+                var oldConsumers = Context.GetChildren().Select(x=> x.Path.Name).ToList();
+
+                var newConsumer = s.Topics.Select(x => new {Regexed = Regex.Replace(x, @"[^\w\d]", ""), Raw = x }).ToList();
+                foreach (var stop in oldConsumers)
+                {
+                    var alive = newConsumer.Select(x=> x.Regexed).Contains(stop);
+                    if (!alive)
+                    {
+                        Context.Stop(Context.Child(stop));
+                        oldConsumers.Remove(stop);
+                    }
+                }
+
+                var news = newConsumer.Where(x => !oldConsumers.Contains(x.Regexed));
+                foreach (var topic in news)
+                {
+                    var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+                    var request = Commands.NewPartitionMetadataRequest(topic.Raw, requestId);
+                    var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic.Raw);
+                    _network.Tell(pay);
+                }
+            });
             Receive<Partitions>(p =>
             {
                 if (p.Partition > 0)
@@ -45,12 +71,12 @@ namespace SharpPulsar.Akka.Consumer
                     for (var i = 0; i < p.Partition; i++)
                     {
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
-                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek, _pulsarManager), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                        Context.ActorOf(Consumer.Prop(_clientConfiguration, partitionName, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, i, SubscriptionMode.Durable, _seek, _pulsarManager), $"{Regex.Replace(partitionName, @"[^\w\d]", "")}");
                     }
                 }
                 else
                 {
-                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek, _pulsarManager), $"Consumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(Consumer.Prop(_clientConfiguration, p.Topic, _consumerConfiguration, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, 0, SubscriptionMode.Durable, _seek, _pulsarManager), $"{Regex.Replace(p.Topic, @"[^\w\d]", "")}");
                 }
             });
             Receive<ConsumedMessage>(m =>
