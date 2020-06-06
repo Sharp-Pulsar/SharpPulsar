@@ -139,6 +139,7 @@ namespace SharpPulsar.Akka.EventSource
                     {
                         var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
                         Context.Parent.Tell(eventMessage);
+                        Context.System.Log.Info($"Tag '{_tag.Key}':'{_tag.Value}' matched");
                     }
                     else
                     {

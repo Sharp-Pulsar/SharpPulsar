@@ -205,7 +205,7 @@ namespace SharpPulsar.Test
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 49, numb.Max.Value, null, false);
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 49, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
             {
                 replayed++;
@@ -215,7 +215,7 @@ namespace SharpPulsar.Test
             Assert.True(replayed > 45);
             replayed = 0;
             var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 50, 99)))
+            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 51, 99)))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));

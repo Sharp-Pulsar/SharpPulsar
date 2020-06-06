@@ -430,32 +430,16 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
             var topic = TopicName.Get(replay.Topic).ToString();
 
-            #region MyRegion
-            var fro = replay.From;
-            if (replay.From < 1)
-                fro = 0;
+            var @from = replay.From > 0 ? replay.From : 1;
+            var max = Math.Min(replay.To, replay.Max);
+            var takeCount = max - replay.From;
 
-            var max = replay.Max; 
-
-            var diff = (replay.To - fro) + 1;
-
-            if (diff < 0 || max < 0)
-                yield break;
-
-            if (diff ==  0 && max > 0)
-                max = 1;
-
-            if (diff < max)
-                max = diff;
-
-            #endregion
-
-            _pulsarManager.Tell(new NextPlay(topic, max, fro, replay.To, replay.Tagged));
-            var count = 0;
+            _pulsarManager.Tell(new NextPlay(topic, max, @from, replay.To, replay.Tagged));
+            var count = 1;
             if (customHandler == null)
             {
 
-                while (max > count)
+                while (takeCount >= count)
                 {
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
@@ -470,7 +454,7 @@ namespace SharpPulsar.Akka
             else
             {
 
-                while (max > count)
+                while (takeCount >= count)
                 {
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
@@ -507,37 +491,21 @@ namespace SharpPulsar.Akka
             if(replay.Tagged && !replay.ReaderConfigurationData.TopicName.EndsWith("*"))
                 throw new ArgumentException($"Topic should end with *");
 
+            var @from = replay.From > 0 ? replay.From : 1;
 
-            #region max
 
-            var fro = replay.From;
-            if (replay.From < 1)
-                fro = 0;
+            var max = Math.Min(replay.To, replay.Max);
+            var takeCount = max - replay.From;
 
-            var max = replay.Max;
-
-            var diff = (replay.To - fro) + 1;
-
-            if (diff < 0 || max < 0)
-                yield break;
-
-            if (diff == 0 && max > 0)
-                max = 1;
-
-            if (diff < max)
-                max = diff;
-
-            #endregion
-
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, fro, replay.To, max, replay.Tag, replay.Tagged);
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, @from, replay.To, max, replay.Tag, replay.Tagged);
             
             _pulsarManager.Tell(start);
 
-            var count = 0;
+            var count = 1;
             if (customHandler == null)
             {
 
-                while (max > count)
+                while (takeCount >= count)
                 {
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
@@ -551,7 +519,7 @@ namespace SharpPulsar.Akka
             }
             else
             {
-                while (max > count)
+                while (takeCount >= count)
                 {
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
