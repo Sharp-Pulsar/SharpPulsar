@@ -75,7 +75,7 @@ namespace SharpPulsar.Akka
                 FunctionQueue = new BlockingQueue<FunctionResponse>()
             };
             _conf = conf;
-            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
         private PulsarSystem(ClientConfigurationData conf)
         {
@@ -116,7 +116,7 @@ namespace SharpPulsar.Akka
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
-            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
+            _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)

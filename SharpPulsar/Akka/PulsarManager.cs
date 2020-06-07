@@ -24,11 +24,9 @@ namespace SharpPulsar.Akka
         private readonly ClientConfigurationData _config;
         private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
         private readonly PulsarManagerState _pulsarManagerState;
-        private readonly PulsarSystem _pulsarSystem;
-        public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state, PulsarSystem pulsarSystem)
+        public PulsarManager(ClientConfigurationData clientConfigurationData, PulsarManagerState state)
         {
             _pulsarManagerState = state;
-            _pulsarSystem = pulsarSystem;
             _config = clientConfigurationData ?? throw new ArgumentNullException(nameof(clientConfigurationData));
             _serviceNameResolver.UpdateServiceUrl(clientConfigurationData.ServiceUrl);
             Become(NetworkSetup);
@@ -153,7 +151,7 @@ namespace SharpPulsar.Akka
             Receive<ConnectedServerInfo>(s =>
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
-                Context.ActorOf(ReplayCoordinator.Prop( _network, Self, _pulsarSystem), "ReplayManager");
+                Context.ActorOf(ReplayCoordinator.Prop( _network, Self), "ReplayManager");
                 Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}, Self), "AdminManager");
@@ -163,9 +161,9 @@ namespace SharpPulsar.Akka
             });
             ReceiveAny(c=> Stash.Stash());
         }
-        public static Props Prop(ClientConfigurationData conf, PulsarManagerState state, PulsarSystem pulsarSystem)
+        public static Props Prop(ClientConfigurationData conf, PulsarManagerState state)
         {
-            return Props.Create(()=> new PulsarManager(conf, state, pulsarSystem));
+            return Props.Create(()=> new PulsarManager(conf, state));
         }
 
         public IStash Stash { get; set; }

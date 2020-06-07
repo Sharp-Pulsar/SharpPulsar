@@ -21,19 +21,17 @@ namespace SharpPulsar.Akka.EventSource
     {
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
-        private readonly PulsarSystem _pulsarSystem;
         private readonly List<string> _routees;
         private readonly IActorRef _self;
         
 
-        public ReplayCoordinator(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
+        public ReplayCoordinator(IActorRef network, IActorRef pulsarManager)
         {
             _self = Self;
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
-            _pulsarSystem = pulsarSystem;
-            Context.ActorOf(TaggedCoordinator.Prop(network, pulsarManager, pulsarSystem), "Tagged");
+            Context.ActorOf(TaggedCoordinator.Prop(network, pulsarManager), "Tagged");
            
             Become(Listening);
         }
@@ -103,7 +101,7 @@ namespace SharpPulsar.Akka.EventSource
                         var replay = replayTopic;
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
                         replay.ReaderConfigurationData.TopicName = partitionName;
-                        var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network));
+                        var routee = Context.ActorOf(TopicReplayActor.Prop(replay, _pulsarManager, _network));
                         _routees.Add(routee.Path.ToString());
                     }
                 }
@@ -111,7 +109,7 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     var replay = replayTopic;
                     replay.ReaderConfigurationData.TopicName = p.Topic;
-                    var routee = Context.ActorOf(TopicReplayActor.Prop(_pulsarSystem, replay, _pulsarManager, _network));
+                    var routee = Context.ActorOf(TopicReplayActor.Prop(replay, _pulsarManager, _network));
                     _routees.Add(routee.Path.ToString());
                 }
                 Context.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), regexTopic);
@@ -130,9 +128,9 @@ namespace SharpPulsar.Akka.EventSource
             _network.Tell(pay);
         }
         
-        public static Props Prop(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
+        public static Props Prop(IActorRef network, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new ReplayCoordinator(network, pulsarManager, pulsarSystem));
+            return Props.Create(()=> new ReplayCoordinator(network, pulsarManager));
         }
         public IStash Stash { get; set; }
     }

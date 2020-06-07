@@ -4,8 +4,6 @@ using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
 using PulsarAdmin;
-using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
@@ -18,7 +16,6 @@ namespace SharpPulsar.Akka.EventSource
 {
     public class TopicReplayActor : ReceiveActor, IWithUnboundedStash
     {
-        private readonly PulsarSystem _pulsarSystem;
         private readonly StartReplayTopic _replayTopic;
         private readonly IActorRef _pulsarManager;
         private readonly IActorRef _network;
@@ -27,13 +24,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly Tag _tag;
         private long _sequenceId;
         private readonly IActorRef _self;
-        public TopicReplayActor(PulsarSystem pulsarSystem, StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
+        public TopicReplayActor(StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
             _self = Self;
             _sequenceId = replayTopic.From;
             _tag = replayTopic.Tag;
             _topicName = TopicName.Get(replayTopic.ReaderConfigurationData.TopicName);
-            _pulsarSystem = pulsarSystem;
             _replayTopic = replayTopic;
             _pulsarManager = pulsarManager;
             _network = network;
@@ -133,9 +129,9 @@ namespace SharpPulsar.Akka.EventSource
                 _consumer.Tell(new SendFlow(max));
         }
 
-        public static Props Prop(PulsarSystem pulsarSystem, StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
+        public static Props Prop(StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
         {
-            return Props.Create(()=> new TopicReplayActor(pulsarSystem, startReplayTopic, pulsarManager, network));
+            return Props.Create(()=> new TopicReplayActor(startReplayTopic, pulsarManager, network));
         }
         public IStash Stash { get; set; }
     }
