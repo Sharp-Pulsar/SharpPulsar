@@ -5,12 +5,12 @@ namespace SharpPulsar.Akka.Function
 {
     public class FunctionManager : ReceiveActor
     {
-        public FunctionManager(FunctionConfiguration configuration)
+        public FunctionManager(FunctionConfiguration configuration, IActorRef pulsarManager)
         {
             foreach (var s in configuration.BrokerWebServiceUrl)
             {
                 var an = Regex.Replace(s, @"[^\w\d]", "");
-                Context.ActorOf(FunctionCoordinator.Prop(s), an);
+                Context.ActorOf(FunctionCoordinator.Prop(s, pulsarManager), an);
             }
 
             Receive((InternalCommands.Function q) =>
@@ -23,9 +23,9 @@ namespace SharpPulsar.Akka.Function
                     actor.Tell(q);
             });
         }
-        public static Props Prop(FunctionConfiguration configuration)
+        public static Props Prop(FunctionConfiguration configuration, IActorRef pulsarManager)
         {
-            return Props.Create(() => new FunctionManager(configuration));
+            return Props.Create(() => new FunctionManager(configuration, pulsarManager));
         }
     }
 }

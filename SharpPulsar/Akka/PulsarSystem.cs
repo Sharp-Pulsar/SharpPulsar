@@ -6,7 +6,9 @@ using System.Linq;
 using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
+using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
@@ -15,6 +17,7 @@ using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka
 {
@@ -67,7 +70,9 @@ namespace SharpPulsar.Akka
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new BlockingCollection<ConsumedMessage>(),
                 EventQueue = new BlockingQueue<IEventMessage>(),
-                MaxQueue = new BlockingQueue<NumberOfEntries>()
+                MaxQueue = new BlockingQueue<TopicEntries>(),
+                AdminQueue = new BlockingQueue<AdminResponse>(),
+                FunctionQueue = new BlockingQueue<FunctionResponse>()
             };
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState, this), "PulsarManager");
@@ -84,7 +89,7 @@ namespace SharpPulsar.Akka
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new BlockingCollection<ConsumedMessage>(),
                 EventQueue = new BlockingQueue<IEventMessage>(),
-                MaxQueue = new BlockingQueue<NumberOfEntries>()
+                MaxQueue = new BlockingQueue<TopicEntries>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -248,6 +253,27 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(data);
         }
         /// <summary>
+        /// To return a data
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public T PulsarAdmin<T>(InternalCommands.Admin data)
+        {
+            if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null  || data.Log == null)
+                throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
+            _pulsarManager.Tell(data);
+            if (!_managerState.AdminQueue.TryTake(out var response, _conf.OperationTimeoutMs, CancellationToken.None))
+                return default(T);
+            //check for exception and null
+            if (!(response.Response is Exception) || response.Response != null)
+                return (T) response.Response;
+            if (response.Response is Exception ex)
+                throw ex;
+            throw new NullReferenceException();
+
+        }
+        /// <summary>
         /// Consume messages from queue. ConsumptionType has to be set to Queue.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -355,6 +381,20 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
+        public T PulsarFunction<T>(InternalCommands.Function data)
+        {
+            if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
+                throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
+            _pulsarManager.Tell(data);
+            if (!_managerState.FunctionQueue.TryTake(out var response, _conf.OperationTimeoutMs, CancellationToken.None))
+                return default(T);
+            //check for exception and null
+            if (!(response.Response is Exception) || response.Response != null)
+                return (T)response.Response;
+            if (response.Response is Exception ex)
+                throw ex;
+            throw new NullReferenceException();
+        }
         public void PulsarTransaction()
         {
             
@@ -406,7 +446,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
         }
-        public NumberOfEntries EventSource(GetNumberOfEntries entries)
+        public TopicEntries EventSource(GetNumberOfEntries entries)
         {
             if(entries == null)
                 throw new ArgumentException($"GetNumberOfEntries is null");

@@ -9,9 +9,11 @@ namespace SharpPulsar.Akka.Function
     public class FunctionWorker : ReceiveActor
     {
         private readonly PulsarFunctionsRESTAPIClient _client;
+        private readonly IActorRef _pulsarManager;
 
-        public FunctionWorker(string server)
+        public FunctionWorker(string server, IActorRef pulsarManager)
         {
+            _pulsarManager = pulsarManager;
             _client = new PulsarFunctionsRESTAPIClient(server, new HttpClient());
             Receive<InternalCommands.Function>(Handle);
         }
@@ -25,6 +27,7 @@ namespace SharpPulsar.Akka.Function
         {
             try
             {
+                object response = null;
                 switch (function.Command)
                 {
                     case FunctionCommand.DeregisterFunction:
@@ -38,52 +41,45 @@ namespace SharpPulsar.Akka.Function
                         var tenant1 = function.Arguments[0].ToString();
                         var nspace1 = function.Arguments[1].ToString();
                         var name1 =  function.Arguments[2].ToString();
-                        var r = _client.GetFunctionInfoAsync(tenant1, nspace1, name1).GetAwaiter().GetResult();
-                        function.Handler(r);
+                        response = _client.GetFunctionInfoAsync(tenant1, nspace1, name1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionInstanceStats:
                         var tenant2 = function.Arguments[0].ToString();
                         var nspace2 = function.Arguments[1].ToString();
                         var name2 =  function.Arguments[2].ToString();
                         var id = function.Arguments[3].ToString();
-                        var r2 = _client.GetFunctionInstanceStatsAsync(tenant2, nspace2, name2, id).GetAwaiter().GetResult();
-                        function.Handler(r2);
+                        response = _client.GetFunctionInstanceStatsAsync(tenant2, nspace2, name2, id).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionInstanceStatus:
                         var tenant3 = function.Arguments[0].ToString();
                         var nspace3 = function.Arguments[1].ToString();
                         var name3 =  function.Arguments[2].ToString();
                         var id1 = function.Arguments[3].ToString();
-                        var r3 = _client.GetFunctionInstanceStatusAsync(tenant3, nspace3, name3, id1).GetAwaiter().GetResult();
-                        function.Handler(r3);
+                        response = _client.GetFunctionInstanceStatusAsync(tenant3, nspace3, name3, id1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionState:
                         var tenant4 = function.Arguments[0].ToString();
                         var nspace4 = function.Arguments[1].ToString();
                         var name4 =  function.Arguments[2].ToString();
                         var key = function.Arguments[3].ToString();
-                        var r4 = _client.GetFunctionStateAsync(tenant4, nspace4, name4, key).GetAwaiter().GetResult();
-                        function.Handler(r4);
+                        response = _client.GetFunctionStateAsync(tenant4, nspace4, name4, key).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionStats:
                         var tenant5 = function.Arguments[0].ToString();
                         var nspace5 = function.Arguments[1].ToString();
                         var name5 =  function.Arguments[2].ToString();
-                        var r5 = _client.GetFunctionStatsAsync(tenant5, nspace5, name5).GetAwaiter().GetResult();
-                        function.Handler(r5);
+                        response = _client.GetFunctionStatsAsync(tenant5, nspace5, name5).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionStatus:
                         var tenant6 = function.Arguments[0].ToString();
                         var nspace6 = function.Arguments[1].ToString();
                         var name6 =  function.Arguments[2].ToString();
-                        var r6 = _client.GetFunctionStatusAsync(tenant6, nspace6, name6).GetAwaiter().GetResult();
-                        function.Handler(r6);
+                        response = _client.GetFunctionStatusAsync(tenant6, nspace6, name6).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.ListFunctions:
                         var tenant7 = function.Arguments[0].ToString();
                         var nspace7 = function.Arguments[1].ToString();
-                        var r7 = _client.ListFunctionsAsync(tenant7, nspace7).GetAwaiter().GetResult();
-                        function.Handler(r7);
+                        response = _client.ListFunctionsAsync(tenant7, nspace7).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.PutFunctionState:
                         var tenant8 = function.Arguments[0].ToString();
@@ -152,8 +148,7 @@ namespace SharpPulsar.Akka.Function
                         var topic = function.Arguments[3].ToString();
                         var value = function.Arguments[4].ToString();
                         var file1 = function.Arguments[5].ToString();
-                        var m =_client.TriggerFunctionAsync(tenant16, nspace16, name15, topic, value, file1).GetAwaiter().GetResult();
-                        function.Handler(m);
+                        response =_client.TriggerFunctionAsync(tenant16, nspace16, name15, topic, value, file1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.UpdateFunction:
                         var config1 = (FunctionConfig)function.Arguments[0];
@@ -164,15 +159,17 @@ namespace SharpPulsar.Akka.Function
                         function.Handler("UpdateFunction");
                         break;
                 }
+                _pulsarManager.Tell(new FunctionResponse(response));
             }
             catch (Exception e)
             {
                 function.Exception(e);
+                _pulsarManager.Tell(new FunctionResponse(e));
             }
         }
-        public static Props Prop(string server)
+        public static Props Prop(string server, IActorRef pulsarManager)
         {
-            return Props.Create(() => new FunctionWorker(server));
+            return Props.Create(() => new FunctionWorker(server, pulsarManager));
         }
     }
 }

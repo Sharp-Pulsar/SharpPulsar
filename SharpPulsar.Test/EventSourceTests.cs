@@ -38,7 +38,7 @@ namespace SharpPulsar.Test
                 .ServiceUrl("pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
                 .UseProxy(false)
-                .OperationTimeout(10000)
+                .OperationTimeout(30000)
                 .Authentication(new AuthenticationDisabled())
                 //.Authentication(AuthenticationFactory.Token("eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJzaGFycHB1bHNhci1jbGllbnQtNWU3NzY5OWM2M2Y5MCJ9.lbwoSdOdBoUn3yPz16j3V7zvkUx-Xbiq0_vlSvklj45Bo7zgpLOXgLDYvY34h4MX8yHB4ynBAZEKG1ySIv76DPjn6MIH2FTP_bpI4lSvJxF5KsuPlFHsj8HWTmk57TeUgZ1IOgQn0muGLK1LhrRzKOkdOU6VBV_Hu0Sas0z9jTZL7Xnj1pTmGAn1hueC-6NgkxaZ-7dKqF4BQrr7zNt63_rPZi0ev47vcTV3ga68NUYLH5PfS8XIqJ_OV7ylouw1qDrE9SVN8a5KRrz8V3AokjThcsJvsMQ8C1MhbEm88QICdNKF5nu7kPYR6SsOfJJ1HYY-QBX3wf6YO3VAF_fPpQ"))
                 .ClientConfigurationData;
@@ -51,7 +51,7 @@ namespace SharpPulsar.Test
         private void Get_Number_Of_Entries()
         {
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            _output.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions { WriteIndented = true })}");
+            _output.WriteLine($"TopicEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions { WriteIndented = true })}");
             Assert.True(numb.Max > 80);
             
             var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
@@ -156,7 +156,7 @@ namespace SharpPulsar.Test
             _amount = 100;
             var replayed = 0;
             _topic = $"persistent://public/default/{Guid.NewGuid()}*";
-            ProduceMessages();
+            //ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
@@ -227,9 +227,9 @@ namespace SharpPulsar.Test
         {
             _amount = 100;
             var replayed = 0;
-            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            _topic = $"persistent://public/default/journal-";
             var topic= $"{_topic}*";
-            ProduceMessages();
+            //ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
@@ -255,12 +255,12 @@ namespace SharpPulsar.Test
         {
             _amount = 100;
             var replayed = 0;
-            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            _topic = $"persistent://public/default/journal-event";
             var topic= $"{_topic}*";
-            ProduceMessages();
+            //ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
-            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(JournalEntry));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("event-reader")
                 .Schema(jsonSchem)
@@ -270,13 +270,14 @@ namespace SharpPulsar.Test
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 35, 50, new Tag("Tag", "utc"), true);
+            foreach (var msg in _pulsarSystem.EventSource<JournalEntry>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            Assert.True(replayed > 95);
+            _output.WriteLine($"replayed: {replayed}");
+            Assert.True(replayed >= 6);
         }
 
         private void ProduceMessages()

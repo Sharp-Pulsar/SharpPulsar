@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using PulsarAdmin.Models;
 
 namespace SharpPulsar.Akka.EventSource
@@ -42,15 +43,26 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     entries += _stats.CurrentLedgerEntries;
                     var diff = entries - _from;
+                    if (diff < 0)
+                    {
+                        //if we are replaying multiple topics, some topics will have less entry
+                        return default;
+                    }
                     var entry = (_stats.CurrentLedgerEntries - diff) - 1;//entry starts from zero
                     ledgerId = long.Parse(_stats.LastConfirmedEntry.Split(":")[0]);
                     entryId = entry;
+
                 }
                 else
                 {
                     var lac = _stats.LastConfirmedEntry.Split(":");
                     entries += long.Parse(lac[1]);
                     var diff = entries - _from;
+                    if (diff < 0)
+                    {
+                        //if we are replaying multiple topics, some topics will have less entry
+                        return default;
+                    }
                     var entry = (_stats.CurrentLedgerEntries - diff) - 1;
                     ledgerId = long.Parse(lac[0]);
                     entryId = entry;

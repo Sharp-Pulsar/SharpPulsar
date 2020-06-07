@@ -14,6 +14,7 @@ using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka
 {
@@ -35,6 +36,14 @@ namespace SharpPulsar.Akka
 
         private void Ready()
         {
+            Receive<AdminResponse>(r =>
+            {
+                _pulsarManagerState.AdminQueue.Enqueue(r);
+            });
+            Receive<FunctionResponse>(r =>
+            {
+                _pulsarManagerState.FunctionQueue.Enqueue(r);
+            });
             Receive<LastMessageIdReceived>(r =>
             {
                 _pulsarManagerState.MessageIdQueue.Enqueue(r);
@@ -43,7 +52,7 @@ namespace SharpPulsar.Akka
             {
                 _pulsarManagerState.EventQueue.Enqueue(e);
             });
-            Receive<NumberOfEntries>(e =>
+            Receive<TopicEntries>(e =>
             {
                 _pulsarManagerState.MaxQueue.Enqueue(e);
             });
@@ -147,8 +156,8 @@ namespace SharpPulsar.Akka
                 Context.ActorOf(ReplayCoordinator.Prop( _network, Self, _pulsarSystem), "ReplayManager");
                 Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
-                Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}), "AdminManager");
-                Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}), "FunctionManager");
+                Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}, Self), "AdminManager");
+                Context.ActorOf(FunctionManager.Prop(new FunctionConfiguration { BrokerWebServiceUrl = serverLists}, Self), "FunctionManager");
                 Become(Ready);
                 Stash.UnstashAll();
             });

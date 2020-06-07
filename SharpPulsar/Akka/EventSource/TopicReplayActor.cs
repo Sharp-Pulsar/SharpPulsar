@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
+using PulsarAdmin;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -34,57 +37,56 @@ namespace SharpPulsar.Akka.EventSource
             _replayTopic = replayTopic;
             _pulsarManager = pulsarManager;
             _network = network;
-            Become(Setup);
+            Setup();
 
         }
         private void Setup()
         {
-            Receive<ReplayState>(r =>
-            {
-                Become(Active);
-                var partition = _topicName.PartitionIndex;
-                var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
-                config.StartMessageId = new BatchMessageId(r.LedgerId.Value, r.EntryId.Value, partition, -1);
-                config.ReceiverQueueSize = (int)(r.Max) ;
-                _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
-                    _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
-                    partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
-            });
-            Receive<NullStats>(r =>
-            {
-                Become(Active);
-                Stash.UnstashAll();
-            });
-            ReceiveAny(_ => Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false }, e =>
-            {
-                if (e != null)
-                {
-                    var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
-                    var result = compute.GetFrom();
-                    var replayState = new ReplayState
-                    {
-                        LedgerId = result.Ledger,
-                        EntryId = result.Entry,
-                        To = result.To,
-                        Max = result.Max
-                    };
-                    _self.Tell(replayState);
-                }
-                else
-                    _self.Tell(NullStats.Instance);
-            }, e =>
-            {
-                var context = Context;
-                context.System.Log.Error(e.ToString());
-            }, _replayTopic.AdminUrl, l =>
-            {
-                var context = Context;
-                context.System.Log.Info(l);
-            }));
+            var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
+            var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false);
+            var compute = new ComputeMessageId(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
+            var (ledger, entry, max, _) = compute.GetFrom();
+           
+            var partition = _topicName.PartitionIndex;
+            var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
+            config.StartMessageId = (ledger == null || entry == null)? (BatchMessageId)MessageIdFields.Latest: new BatchMessageId(ledger.Value, entry.Value, partition, -1);
+            config.ReceiverQueueSize = (int)(max);
+            _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
+                _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
+                partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
+            Active();
         }
 
+        private void Active()
+        {
+            Receive<ConsumedMessage>(c =>
+            {
+                var messageId = (MessageId)c.Message.MessageId;
+                if (!_replayTopic.Tagged)
+                {
+                    var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
+                    _pulsarManager.Tell(eventMessage);
+                }
+                else
+                {
+                    var props = c.Message.Properties;
+                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
+                                                && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
+                    if (tagged)
+                    {
+                        var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
+                        Context.Parent.Tell(eventMessage);
+                        Context.System.Log.Info($"Tag '{_tag.Key}':'{_tag.Value}' matched");
+                    }
+                    else
+                    {
+                        Context.Parent.Tell(new NotTagged(_sequenceId, c.Message.TopicName));
+                    }
+                }
+                _sequenceId++;
+            });
+            Receive<NextPlay>(NextPlayStats);
+        }
         private ConsumerConfigurationData PrepareConsumerConfiguration(ReaderConfigurationData readerConfiguration)
         {
             var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -120,82 +122,15 @@ namespace SharpPulsar.Akka.EventSource
             return consumerConfiguration;
         }
         
-        private void Active()
-        {
-            Receive<ConsumedMessage>(c =>
-            {
-                var messageId = (MessageId)c.Message.MessageId;
-                if (!_replayTopic.Tagged)
-                {
-                    var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
-                    _pulsarManager.Tell(eventMessage);
-                }
-                else
-                {
-                    var props = c.Message.Properties;
-                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
-                                                && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
-                    if (tagged)
-                    {
-                        var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
-                        Context.Parent.Tell(eventMessage);
-                        Context.System.Log.Info($"Tag '{_tag.Key}':'{_tag.Value}' matched");
-                    }
-                    else
-                    {
-                        Context.Parent.Tell(new NotTagged(_sequenceId, c.Message.TopicName));
-                    }
-                }
-                _sequenceId++;
-            });
-            Receive<NextPlay>(n =>
-            {
-                Become(() => NextPlayStats(n));
-            });
-
-        }
-
         private void NextPlayStats(NextPlay play)
         {
-            
-            Receive<ReplayState>(r =>
-            {
-                Become(Active);
-                _consumer.Tell(new SendFlow(r.Max));
-            });
-            Receive<NullStats>(r =>
-            {
-                Become(Active);
-                Stash.UnstashAll();
-            });
-            ReceiveAny(_ => Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { _topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false }, e =>
-            {
-                if (e != null)
-                {
-                    var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, play.From, play.To, play.Max);
-                    var result = compute.GetFrom();
-                    var replayState = new ReplayState
-                    {
-                        LedgerId = result.Ledger,
-                        EntryId = result.Entry,
-                        To = result.To,
-                        Max = result.Max
-                    };
-                    _self.Tell(replayState);
-                }
-                else
-                    _self.Tell(NullStats.Instance);
-            }, e =>
-            {
-                var context = Context;
-                context.System.Log.Error(e.ToString());
-            }, _replayTopic.AdminUrl, l =>
-            {
-                var context = Context;
-                context.System.Log.Info(l);
-            }));
+            var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
+            var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false);
+            if (data == null) return;
+            var compute = new ComputeMessageId(data, play.From, play.To, play.Max);
+            var (_, _, max, _) = compute.GetFrom();
+            if(max != null)
+                _consumer.Tell(new SendFlow(max));
         }
 
         public static Props Prop(PulsarSystem pulsarSystem, StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
@@ -205,16 +140,4 @@ namespace SharpPulsar.Akka.EventSource
         public IStash Stash { get; set; }
     }
     
-    public sealed class ReplayState
-    {
-        public long? LedgerId { get; set; }
-        public long? EntryId { get; set; }
-        public long? Max { get; set; }
-        public long? To { get; set; }
-    }
-
-    public sealed class NullStats
-    {
-        public static NullStats Instance = new NullStats();
-    }
 }

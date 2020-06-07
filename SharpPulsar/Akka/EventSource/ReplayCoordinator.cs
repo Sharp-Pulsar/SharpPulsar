@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
+using PulsarAdmin;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
+using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -42,8 +45,15 @@ namespace SharpPulsar.Akka.EventSource
             {
                 if (g.Topic.EndsWith("*"))
                     Context.Child("Tagged").Tell(g);
-                else 
-                    Become(()=>GetStats(g));
+                else
+                {
+                    var topicName = TopicName.Get(g.Topic);
+                    var adminRestapi = new PulsarAdminRESTAPI(g.Server, new HttpClient(), true);
+                    var data = adminRestapi.GetInternalStats1(topicName.NamespaceObject.Tenant,
+                        topicName.NamespaceObject.LocalName, topicName.LocalName, false);
+                    var entry = data != null ? data.NumberOfEntries : 0L;
+                    _pulsarManager.Tell(new TopicEntries(g.Topic, entry, entry, 1));
+                }
             });
             Receive<NextPlay>(n =>
             {
@@ -119,41 +129,7 @@ namespace SharpPulsar.Akka.EventSource
             var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
             _network.Tell(pay);
         }
-        private void GetStats(GetNumberOfEntries numberOfEntries)
-        {
-            var topicName = TopicName.Get(numberOfEntries.Topic);
-            Receive<TopicEntries>(r =>
-            {
-                _pulsarManager.Tell(new NumberOfEntries(topicName.ToString(), r.Entries - 1));
-                Become(Listening);
-                Stash.UnstashAll();
-            });
-            Receive<NullStats>(r =>
-            {
-                Become(Listening);
-                Stash.UnstashAll();
-            });
-            ReceiveAny(_ => Stash.Stash());
-            _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { topicName.NamespaceObject.Tenant, topicName.NamespaceObject.LocalName, topicName.LocalName, false }, e =>
-            {
-                if (e != null)
-                {
-                    var data = (PersistentTopicInternalStats)e;
-                    _self.Tell(new TopicEntries(data.NumberOfEntries));
-                }
-                else
-                    _self.Tell(NullStats.Instance);
-            }, e =>
-            {
-                var context = Context;
-                context.System.Log.Error(e.ToString());
-            }, numberOfEntries.Server, l =>
-            {
-                var context = Context;
-                context.System.Log.Info(l);
-            }));
-        }
-
+        
         public static Props Prop(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
         {
             return Props.Create(()=> new ReplayCoordinator(network, pulsarManager, pulsarSystem));

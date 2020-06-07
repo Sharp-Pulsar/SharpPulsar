@@ -56,15 +56,19 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public string Server { get; }
 
     }
-    public sealed class NumberOfEntries 
+    public sealed class TopicEntries 
     {
-        public NumberOfEntries(string topic, long? max)
+        public TopicEntries(string topic, long? max, long? totalEntries, int totalNumberOfTopics)
         {
             Topic = topic;
             Max = max;
+            TotalEntries = totalEntries;
+            TotalNumberOfTopics = totalNumberOfTopics;
         }
         public string Topic { get; }
         public long? Max { get; }
+        public long? TotalEntries { get; }
+        public int TotalNumberOfTopics { get; }
     }
     public sealed class NextPlay 
     {

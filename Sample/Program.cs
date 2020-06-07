@@ -816,7 +816,7 @@ namespace Samples
                 PersistenceId = "sampleActor",
                 IsDeleted = false,
                 Ordering =  0,
-                Payload = JsonSerializer.Serialize(student),
+                Payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(student)),
                 SequenceNr = 0,
                 Tags = "root"
             };
@@ -1679,7 +1679,7 @@ namespace Samples
         private static void GetNumberOfEntries(PulsarSystem system, string server, string topic)
         {
             var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            Console.WriteLine($"NumberOfEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
+            Console.WriteLine($"TopicEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
         }
         private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max, bool istagged )
         {
@@ -2323,7 +2323,7 @@ namespace Samples
 
         public bool IsDeleted { get; set; }
 
-        public string Payload { get; set; }
+        public byte[] Payload { get; set; }
         public long Ordering { get; set; }
         public string Tags { get; set; }
     }

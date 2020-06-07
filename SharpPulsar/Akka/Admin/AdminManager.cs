@@ -6,12 +6,12 @@ namespace SharpPulsar.Akka.Admin
 {
     public class AdminManager:ReceiveActor
     {
-        public AdminManager(AdminConfiguration configuration)
+        public AdminManager(AdminConfiguration configuration, IActorRef pulsarManager)
         {
             foreach (var s in configuration.BrokerWebServiceUrl)
             {
                 var an = Regex.Replace(s, @"[^\w\d]", "");
-                Context.ActorOf(AdminCoordinator.Prop(s), an);
+                Context.ActorOf(AdminCoordinator.Prop(s, pulsarManager), an);
             }
 
             Receive((InternalCommands.Admin q) =>
@@ -24,9 +24,9 @@ namespace SharpPulsar.Akka.Admin
                     actor.Tell(q);
             });
         }
-        public static Props Prop(AdminConfiguration configuration)
+        public static Props Prop(AdminConfiguration configuration, IActorRef pulsarManager)
         {
-            return Props.Create(() => new AdminManager(configuration));
+            return Props.Create(() => new AdminManager(configuration, pulsarManager));
         }
     }
 }

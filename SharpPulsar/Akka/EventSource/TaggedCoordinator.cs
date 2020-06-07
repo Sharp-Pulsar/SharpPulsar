@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
-using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin;
+using PulsarAdmin;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -13,6 +13,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -24,13 +25,8 @@ namespace SharpPulsar.Akka.EventSource
         private readonly List<string> _routees;
         private int _expectedRoutees;
         private int _currentRoutees;
-        private readonly IActorRef _self;
-        private int _expectedStatsCount;
-        private int _currentStatsCounts;
-        private long? _maxPatternEntries = 0;
         public TaggedCoordinator(IActorRef network, IActorRef pulsarManager, PulsarSystem pulsarSystem)
         {
-            _self = Self;
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
@@ -43,58 +39,23 @@ namespace SharpPulsar.Akka.EventSource
             Receive<NamespaceTopics>(t =>
             {
                 var topics = TopicsPatternFilter(t.Topics, new Regex(numberOfEntries.Topic));
-                _expectedStatsCount = topics.Count;
+                var max = 0L;
+                var total = 0L;
+                var adminRestapi = new PulsarAdminRESTAPI(numberOfEntries.Server, new HttpClient(), true);
                 foreach (var topic in topics)
                 {
                     var topicName = TopicName.Get(topic);
-                    _pulsarSystem.PulsarAdmin(new InternalCommands.Admin(AdminCommands.GetInternalStatsPersistent, new object[] { topicName.NamespaceObject.Tenant, topicName.NamespaceObject.LocalName, topicName.LocalName, false }, e =>
-                    {
-                        if (e != null)
-                        {
-                            var data = (PersistentTopicInternalStats)e;
-                            _self.Tell(new TopicEntries(data.NumberOfEntries));
-                        }
-                        else
-                            _self.Tell(NullStats.Instance);
-                    }, e =>
-                    {
-                        var context = Context;
-                        context.System.Log.Error(e.ToString());
-                    }, numberOfEntries.Server, l =>
-                    {
-                        var context = Context;
-                        context.System.Log.Info(l);
-                    }));
-                }
+                    var data = adminRestapi.GetInternalStats1(topicName.NamespaceObject.Tenant,
+                        topicName.NamespaceObject.LocalName, topicName.LocalName, false);
+                    if (data?.NumberOfEntries > max)
+                        max = data.NumberOfEntries.Value;
 
-            });
-            Receive<TopicEntries>(r =>
-            {
-                _currentStatsCounts++;
-                if (r.Entries > _maxPatternEntries)
-                    _maxPatternEntries = r.Entries;
-                if (_currentStatsCounts == _expectedStatsCount)
-                {
-                    _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.Topic, _maxPatternEntries.Value - 1));
-                    _currentStatsCounts = 0;
-                    _expectedStatsCount = 0;
-                    _maxPatternEntries = 0;
-                    Become(Listening);
-                    Stash.UnstashAll();
+                    if (data?.NumberOfEntries != null)
+                        total += data.NumberOfEntries.Value;
                 }
-            });
-            Receive<NullStats>(r =>
-            {
-                _currentStatsCounts++;
-                if (_currentStatsCounts == _expectedStatsCount)
-                {
-                    _pulsarManager.Tell(new NumberOfEntries(numberOfEntries.Topic, _maxPatternEntries.Value));
-                    _currentStatsCounts = 0;
-                    _expectedStatsCount = 0;
-                    _maxPatternEntries = 0;
-                    Become(Listening);
-                    Stash.UnstashAll();
-                }
+                _pulsarManager.Tell(new TopicEntries(numberOfEntries.Topic, max, total, topics.Count));
+                Become(Listening);
+                Stash.UnstashAll();
             });
             ReceiveAny(_ => Stash.Stash());
             NewGetTopicsOfNamespaceRequest(new Regex(numberOfEntries.Topic));
