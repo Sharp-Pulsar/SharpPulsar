@@ -89,7 +89,9 @@ namespace SharpPulsar.Akka
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new BlockingCollection<ConsumedMessage>(),
                 EventQueue = new BlockingQueue<IEventMessage>(),
-                MaxQueue = new BlockingQueue<TopicEntries>()
+                MaxQueue = new BlockingQueue<TopicEntries>(),
+                AdminQueue = new BlockingQueue<AdminResponse>(),
+                FunctionQueue = new BlockingQueue<FunctionResponse>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"

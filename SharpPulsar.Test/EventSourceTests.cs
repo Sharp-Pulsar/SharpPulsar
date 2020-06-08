@@ -156,7 +156,7 @@ namespace SharpPulsar.Test
             _amount = 100;
             var replayed = 0;
             _topic = $"persistent://public/default/{Guid.NewGuid()}*";
-            //ProduceMessages();
+            ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
@@ -227,12 +227,11 @@ namespace SharpPulsar.Test
         {
             _amount = 100;
             var replayed = 0;
-            _topic = $"persistent://public/default/journal-";
-            var topic= $"{_topic}*";
+            var topic = $"persistent://public/default/journal-event*";
             //ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
-            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(JournalEntry));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("event-reader")
                 .Schema(jsonSchem)
@@ -242,21 +241,21 @@ namespace SharpPulsar.Test
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 101, numb.Max.Value, new Tag("Week-Day", "Saturday"), true);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 50, 35, new Tag("Tag", "utc"), true);
+            foreach (var msg in _pulsarSystem.EventSource<JournalEntry>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            Assert.True(replayed > 95 && replayed < 101);
+            _output.WriteLine($"replayed:{replayed}");
+            Assert.True(replayed > 6);
         }
         [Fact]
         private void Replay_Tagged_Topic()
         {
             _amount = 100;
             var replayed = 0;
-            _topic = $"persistent://public/default/journal-event";
-            var topic= $"{_topic}*";
+            var topic = $"persistent://public/default/journal-event*";
             //ProduceMessages();
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
