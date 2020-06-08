@@ -30,17 +30,24 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     }
     /// <summary>
     /// We use this to move the cursor/count forward at the client
+    /// This could be used to filter out messages without certain properties
     /// </summary>
     public sealed class NotTagged:IEventMessage
     {
-        public NotTagged(long sequenceId, string topic)
+        public NotTagged(Message message, long sequenceId, string topic, long ledgerId, long entryId)
         {
+            Message = message;
             SequenceId = sequenceId;
             Topic = topic;
+            LedgerId = ledgerId;
+            EntryId = entryId;
         }
 
         public long SequenceId { get; }
         public string Topic { get; }
+        public Message Message { get;}
+        public long LedgerId { get; }
+        public long EntryId { get; }
     }
     public interface IEventMessage
     {

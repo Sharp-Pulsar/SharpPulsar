@@ -464,7 +464,15 @@ namespace SharpPulsar.Akka
 
             throw new TimeoutException("Timeout waiting for Entries");
         }
-        public IEnumerable<T> EventSource<T>(NextPlay replay, Func<EventMessage, T> customHandler = null)
+        /// <summary>
+        /// if you are supplying custom handler, IEventMessage is either EventMessage - when a message has a given property or NotTagged - when a message does not have a given property.
+        /// You are responsible for determining the message type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="replay"></param>
+        /// <param name="customHandler"></param>
+        /// <returns>T</returns>
+        public IEnumerable<T> EventSource<T>(NextPlay replay, Func<IEventMessage, T> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -480,7 +488,6 @@ namespace SharpPulsar.Akka
             var count = 1;
             if (customHandler == null)
             {
-
                 while (takeCount >= count)
                 {
                     count++;
@@ -491,25 +498,38 @@ namespace SharpPulsar.Akka
                             yield return evt.Message.ToTypeOf<T>();
                         }
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
             else
             {
-
                 while (takeCount >= count)
                 {
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        if (msg is EventMessage evt)
-                        {
-                            yield return customHandler(evt);
-                        }
+                        //Client should be responsible for checking if message is EventMessage or NotTagged
+                        yield return customHandler(msg);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
         }
-        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Func<EventMessage, T> customHandler = null)
+        /// <summary>
+        /// if you are supplying custom handler, IEventMessage is either EventMessage - when a message has a given property or NotTagged - when a message does not have a given property.
+        /// You are responsible for determining the message type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="replay"></param>
+        /// <param name="customHandler"></param>
+        /// <returns>T</returns>
+        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Func<IEventMessage, T> customHandler = null)
         {
             if(replay == null)
                 throw new ArgumentException($"ReplayTopic is null");
@@ -557,6 +577,10 @@ namespace SharpPulsar.Akka
                             yield return evt.Message.ToTypeOf<T>();
                         }
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
             else
@@ -566,10 +590,11 @@ namespace SharpPulsar.Akka
                     count++;
                     if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
                     {
-                        if (msg is EventMessage evt)
-                        {
-                            yield return customHandler(evt);
-                        }
+                        yield return customHandler(msg);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }

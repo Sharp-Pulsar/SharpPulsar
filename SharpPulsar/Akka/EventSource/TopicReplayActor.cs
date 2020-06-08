@@ -19,15 +19,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly StartReplayTopic _replayTopic;
         private readonly IActorRef _pulsarManager;
         private readonly IActorRef _network;
-        private TopicName _topicName;
+        private readonly TopicName _topicName;
         private IActorRef _consumer;
         private readonly Tag _tag;
-        private long _sequenceId;
-        private readonly IActorRef _self;
+        private long _lastConsumedSequenceId;
         public TopicReplayActor(StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
-            _self = Self;
-            _sequenceId = replayTopic.From;
             _tag = replayTopic.Tag;
             _topicName = TopicName.Get(replayTopic.ReaderConfigurationData.TopicName);
             _replayTopic = replayTopic;
@@ -39,21 +36,21 @@ namespace SharpPulsar.Akka.EventSource
         private void Setup()
         {
             var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
-            var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false);
+            var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName);
             var compute = new ComputeMessageId(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
             var (ledger, entry, max, _) = compute.GetFrom();
            
             var partition = _topicName.PartitionIndex;
             var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
             config.StartMessageId = (ledger == null || entry == null)? (BatchMessageId)MessageIdFields.Latest: new BatchMessageId(ledger.Value, entry.Value, partition, -1);
-            config.ReceiverQueueSize = (int)(max);
+            config.ReceiverQueueSize = max.HasValue? (int)(max.Value): 100;
             _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
                 _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
                 partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
-            Active();
+            Consume();
         }
 
-        private void Active()
+        private void Consume()
         {
             Receive<ConsumedMessage>(c =>
             {
@@ -70,19 +67,41 @@ namespace SharpPulsar.Akka.EventSource
                                                 && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (tagged)
                     {
-                        var eventMessage = new EventMessage(c.Message, _sequenceId, messageId.LedgerId, messageId.EntryId);
+                        var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
                         Context.Parent.Tell(eventMessage);
-                        Context.System.Log.Info($"Tag '{_tag.Key}':'{_tag.Value}' matched");
                     }
                     else
                     {
-                        Context.Parent.Tell(new NotTagged(_sequenceId, c.Message.TopicName));
+                        Context.Parent.Tell(new NotTagged(c.Message, c.Message.SequenceId, c.Message.TopicName, messageId.LedgerId, messageId.EntryId));
                     }
                 }
-                _sequenceId++;
+
+                _lastConsumedSequenceId = c.Message.SequenceId;
             });
-            Receive<NextPlay>(NextPlayStats);
+            Receive<ReceiveTimeout>(t =>
+            {
+                Context.SetReceiveTimeout(null);
+                Become(NextPlay);
+            });
+            Receive<NextPlay>(_=> Stash.Stash());
+            //to track last sequence id for lagging player
+            Context.SetReceiveTimeout(TimeSpan.FromSeconds(5));
         }
+
+        //Since we have saved the last consumed sequence id before the timeout,
+        //we can discard any Messages, they will be replayed after all from the last saved sequence id
+        private void NextPlay()
+        {
+            Receive<NextPlay>(NextPlayStats);
+            Stash.UnstashAll();
+        }
+
+        protected override void Unhandled(object message)
+        {
+            //Since we have saved the last consumed sequence id before the timeout,
+            //we can discard any Messages, they will be replayed after all, from the last saved sequence id
+        }
+
         private ConsumerConfigurationData PrepareConsumerConfiguration(ReaderConfigurationData readerConfiguration)
         {
             var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -120,13 +139,16 @@ namespace SharpPulsar.Akka.EventSource
         
         private void NextPlayStats(NextPlay play)
         {
+            //for lagging player
+            var @from = play.From > _lastConsumedSequenceId ? (_lastConsumedSequenceId + 1) : play.From;
             var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
             var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false);
             if (data == null) return;
-            var compute = new ComputeMessageId(data, play.From, play.To, play.Max);
+            var compute = new ComputeMessageId(data, @from, play.To, play.Max);
             var (_, _, max, _) = compute.GetFrom();
             if(max != null)
                 _consumer.Tell(new SendFlow(max));
+            Become(Consume);
         }
 
         public static Props Prop(StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
@@ -135,5 +157,11 @@ namespace SharpPulsar.Akka.EventSource
         }
         public IStash Stash { get; set; }
     }
-    
+
+    public sealed class ReplayLag
+    {
+        public long LastSequence { get; set; }
+        public long CurrentSequence { get; set; }
+
+    }
 }

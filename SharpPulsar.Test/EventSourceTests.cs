@@ -80,9 +80,16 @@ namespace SharpPulsar.Test
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 99, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource(replay, message =>
             {
-                var m = message.Message.ToTypeOf<Students>();
-                _output.WriteLine($"Sequence Id: {message.SequenceId}");
-                return m;
+                if (message is EventMessage evt)
+                {
+                    var m = evt.Message.ToTypeOf<Students>();
+                    _output.WriteLine($"Sequence Id: {evt.SequenceId}");
+                    return m;
+                }
+
+                var t =  message as NotTagged;
+                _output.WriteLine($"Sequence Id: {t?.SequenceId}");
+                return t?.Message.ToTypeOf<Students>();
             }))
             {
                 replayed++;
@@ -112,9 +119,17 @@ namespace SharpPulsar.Test
             var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 1, 6, numb.Max.Value, null, false);
             foreach (var msg in _pulsarSystem.EventSource(replay, e =>
             {
-                var m = e.Message.ToTypeOf<Students>();
-                _output.WriteLine(e.Message.SequenceId.ToString());
-                return m;
+
+                if (e is EventMessage evt)
+                {
+                    var m = evt.Message.ToTypeOf<Students>();
+                    _output.WriteLine($"Sequence Id: {evt.SequenceId}");
+                    return m;
+                }
+
+                var t = e as NotTagged;
+                _output.WriteLine($"Sequence Id: {t?.SequenceId}");
+                return t?.Message.ToTypeOf<Students>();
 
             }))
             {
@@ -154,37 +169,36 @@ namespace SharpPulsar.Test
         private  void Next_Tagged_Topic()
         {
             _amount = 100;
-            var replayed = 0;
-            _topic = $"persistent://public/default/{Guid.NewGuid()}*";
-            ProduceMessages();
+            var replayed = 0; 
+            var topic = $"persistent://public/default/journal-event*";
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
-            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var jsonSchem = AvroSchema.Of(typeof(JournalEntry));
             var readerConfig = new ReaderConfigBuilder()
                 .ReaderName("event-reader")
                 .Schema(jsonSchem)
                 .EventListener(consumerListener)
                 .ReaderListener(readerListener)
-                .Topic(_topic)
+                .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 49, numb.Max.Value, new Tag("week-day", "saturday"), true);
-            foreach (var msg in _pulsarSystem.EventSource<Students>(replay))
+            var numb = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080"));
+            var replay = new ReplayTopic(readerConfig, "http://localhost:8080", 0, 15, 50, new Tag("Tag", "utc"), true);
+            foreach (var msg in _pulsarSystem.EventSource<JournalEntry>(replay))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
             //SharpPulsar deducts 2 from the max.
-            Assert.True(replayed > 45);
+            Assert.True(replayed > 1);
             replayed = 0;
-            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(_topic, "http://localhost:8080"));
-            foreach (var msg in _pulsarSystem.EventSource<Students>(new NextPlay(_topic, num.Max.Value, 50, 99, true)))
+            var num = _pulsarSystem.EventSource(new GetNumberOfEntries(topic, "http://localhost:8080"));
+            foreach (var msg in _pulsarSystem.EventSource<JournalEntry>(new NextPlay(topic, 50, 16, num.TotalEntries.Value, true)))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
-            Assert.True(replayed > 45);
+            Assert.True(replayed > 1);
         }
         [Fact]
         private  void Next_Topic()
