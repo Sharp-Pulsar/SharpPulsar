@@ -26,6 +26,7 @@ namespace SharpPulsar.Akka.Producer
     public class Producer : ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _broker;
+        private readonly Queue<OpSendMsg> _pendingMessages;
         private readonly IActorRef _network;
         private readonly ProducerConfigurationData _configuration;
         private readonly IProducerEventListener _listener;
@@ -38,39 +39,36 @@ namespace SharpPulsar.Akka.Producer
         private readonly string _topic;
         private long _sequenceId = 0;
         private readonly int _partitionIndex = -1;
-        private IActorRef _pulsarManager;
+        private readonly IActorRef _pulsarManager;
 
         private readonly IDictionary<string, string> _metadata;
-        private readonly Dictionary<string, ISchema> _schemas;
         private readonly ClientConfigurationData _clientConfiguration;
         private readonly List<IProducerInterceptor> _producerInterceptor;
         private readonly Dictionary<SchemaHash, byte[]> _schemaCache = new Dictionary<SchemaHash, byte[]>();
-        private readonly Dictionary<long, Message> _pendingSchemaMessages = new Dictionary<long, Message>();
         private readonly bool _isPartitioned;
         private readonly bool _isGroup;
         private ICancelable _producerRecreator;
-        private bool _external;
-        private TopicSchema _topicSchema;
+        private readonly TopicSchema _topicSchema;
+        private bool _multiSchemaEnabled;
 
-        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerid, IActorRef network, IActorRef pulsarManager, bool isPartitioned, bool isgroup)
+        public Producer(ClientConfigurationData clientConfiguration, string topic, ProducerConfigurationData configuration, long producerId, IActorRef network, IActorRef pulsarManager, bool isPartitioned, bool isgroup)
         {
+            _pendingMessages = new Queue<OpSendMsg>();
             _topicSchema = new TopicSchema
             {
-                Schema = configuration.Schema,
+                Schema = configuration?.Schema,
                 Ready = false,
-                Version = new byte[0]
+                Version = Array.Empty<byte>()
             };
             _pulsarManager = pulsarManager;
             _topic = topic;
-            _listener = configuration.ProducerEventListener;
-            _schemas = new Dictionary<string, ISchema>();
+            _listener = configuration?.ProducerEventListener;
             _isPartitioned = isPartitioned;
             _isGroup = isgroup;
             _clientConfiguration = clientConfiguration;
-            _producerInterceptor = configuration.Interceptors;
-            _schemas.Add("default", configuration.Schema);
+            _producerInterceptor = configuration?.Interceptors;
             _configuration = configuration;
-            _producerId = producerid;
+            _producerId = producerId;
             _network = network;
             if (isPartitioned)
             {
@@ -108,6 +106,7 @@ namespace SharpPulsar.Akka.Producer
                 ProducerName = _topic;
             }
 
+            _multiSchemaEnabled = configuration.MultiSchema;
             SendBrokerLookUpCommand();
             Become(LookUp);
         }
@@ -176,8 +175,6 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _pulsarManager.Tell(new CreatedProducer(Self, _topic, ProducerName));
                 }
-                var receiptActor = Context.ActorOf(ReceiptActor.Prop(_listener, _partitionIndex));
-                _broker.Tell(receiptActor);
                 BecomeReceive();
             });
             PulsarError();
@@ -228,7 +225,6 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<RegisterSchema>(s =>
             {
-                _external = true;
                 var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
                 SchemaInfo schemaInfo;
                 if (s.Schema != null && s.Schema.SchemaInfo.Type.Value > 0)
@@ -239,7 +235,8 @@ namespace SharpPulsar.Akka.Producer
                 {
                     schemaInfo = (SchemaInfo)SchemaFields.Bytes.SchemaInfo;
                 }
-                SendGetOrCreateSchemaCommand(schemaInfo, requestid, s.Topic);
+                var response = SendGetOrCreateSchemaCommand(schemaInfo, requestid, s.Topic);
+                _pulsarManager.Tell(response);
             });
             Receive<AddPublicKeyCipher>(a =>
             {
@@ -254,28 +251,6 @@ namespace SharpPulsar.Akka.Producer
                 Become(RecreatingProducer);
             });
             Receive<Send>(ProcessSend);
-            Receive<GetOrCreateSchemaServerResponse>(r =>
-            {
-                if (_external)
-                {
-                    _pulsarManager.Tell(r);
-                    _external = false;
-                }
-                else
-                {
-                    var msg = _pendingSchemaMessages[r.RequestId];
-                    _pendingSchemaMessages.Remove(r.RequestId);
-                    var schemaHash = SchemaHash.Of(msg.Schema);
-                    if (!_schemaCache.ContainsKey(schemaHash))
-                    {
-                        _schemaCache[schemaHash] = r.SchemaVersion;
-                    }
-                    msg.Metadata.SchemaVersion = r.SchemaVersion;
-                    msg.SetSchemaState(Message.SchemaState.Ready);
-                    _schemas[msg.TopicName] = msg.Schema;
-                    PrepareMessage(msg);
-                }
-            });
             Receive<BulkSend>(s =>
             {
                 foreach (var m in s.Messages)
@@ -339,8 +314,6 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _listener.Log(interceptorMessage.Properties);
                 }
-                if(_schemas.ContainsKey(s.Topic))
-                    interceptorMessage.SetSchemaState(Message.SchemaState.Ready);
                 PrepareMessage(interceptorMessage);
             }
             catch (Exception e)
@@ -400,7 +373,10 @@ namespace SharpPulsar.Akka.Producer
                 }
             }
         }
-
+        private bool IsMultiSchemaEnabled()
+        {
+            return _multiSchemaEnabled;
+        }
         private void TryRegisterSchema(Message msg)
         {
             SchemaInfo schemaInfo;
@@ -414,14 +390,17 @@ namespace SharpPulsar.Akka.Producer
             }
 
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
-            _pendingSchemaMessages.Add(requestId, msg);
-            SendGetOrCreateSchemaCommand(schemaInfo, requestId, _topic);
+            var schemaResponse =  SendGetOrCreateSchemaCommand(schemaInfo, requestId, _topic);
+            var schemaHash = SchemaHash.Of(msg.Schema);
+            _schemaCache[schemaHash] = schemaResponse.SchemaVersion;
+            msg.Metadata.SchemaVersion = schemaResponse.SchemaVersion;
+            msg.SetSchemaState(Message.SchemaState.Ready);
         }
-        private void SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId, string topic)
+        private GetOrCreateSchemaServerResponse SendGetOrCreateSchemaCommand(SchemaInfo schemaInfo, long requestId, string topic)
         {
             var request = Commands.NewGetOrCreateSchema(requestId, topic, schemaInfo);
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
-            _broker.Tell(payload);
+            return  _broker.Ask<GetOrCreateSchemaServerResponse>(payload, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).Result;
         }
         
         private void PrepareMessage(Message msg)
@@ -532,55 +511,118 @@ namespace SharpPulsar.Akka.Producer
             }
             try
             {
-                /*if (op.Msg.GetSchemaState() == 0)
+                _pendingMessages.Enqueue(op);
+                if (op.Msg.GetSchemaState() == 0)
                 {
                     TryRegisterSchema(op.Msg);
                 }
-                else
-                {
-                    // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
-                    // connection is established
-                   SendCommand(op);
-                }*/
-                SendCommand(op);
-
+                // If we do have a connection, the message is sent immediately, otherwise we'll try again once a new
+                // connection is established
+                var receipt = SendCommand(op);
+                OnSendAcknowledgement(op.Msg, op.Msg.MessageId, null);
+                HandleSendReceipt(receipt);
+                _listener.MessageSent(receipt);
             }
 
-            catch (Exception ex)
+            catch (AskTimeoutException ex)
             {
-                Context.System.Log.Error($"[{_topic}] [{ ProducerName}] error while closing out batch -- {ex}");
                 _listener.Log(ex.ToString());
+                ProcessOpSendMsg(op);
             }
         }
+        private void HandleSendReceipt(SentReceipt sendReceipt)
+        {
+            var producerId = sendReceipt.ProducerId;
+            var sequenceId = sendReceipt.SequenceId;
+            var highestSequenceId = sendReceipt.HighestSequenceId;
+            var ledgerId = sendReceipt.LedgerId;
+            var entryId = sendReceipt.EntryId;
+            if (ledgerId == -1 && entryId == -1)
+            {
+                Context.System.Log.Warning($"Message has been dropped for non-persistent topic producer-id {producerId}-{sequenceId}");
+            }
 
-        private void SendCommand(OpSendMsg op)
+            if (Context.System.Log.IsDebugEnabled)
+            {
+                Context.System.Log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
+            }
+
+            AckReceived(sequenceId, highestSequenceId, ledgerId, entryId);
+        }
+        private void AckReceived(long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+        {
+            var log = Context.System.Log;
+            var op = _pendingMessages.Peek();
+            if (op == null)
+            {
+                if (log.IsDebugEnabled)
+                {
+                    log.Debug($"[{_topic}] [{ProducerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}");
+                }
+                return;
+            }
+
+            if (sequenceId > op.SequenceId)
+            {
+                log.Warning($"[{_topic}] [{ProducerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {sequenceId} - queue-size: {_pendingMessages.Count}");
+                // Force connection closing so that messages can be re-transmitted in a new connection
+                Self.Tell(new ProducerClosed(_producerId));
+            }
+            else if (sequenceId < op.SequenceId)
+            {
+                // Ignoring the ack since it's referring to a message that has already timed out.
+                if (log.IsDebugEnabled)
+                {
+                    log.Debug($"[{_topic}] [{ProducerName}] Got ack for timed out msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId}");
+                }
+            }
+            else
+            {
+                // Add check `sequenceId >= highestSequenceId` for backward compatibility.
+                if (sequenceId >= highestSequenceId || highestSequenceId == op.HighestSequenceId)
+                {
+                    // Message was persisted correctly
+                    if (log.IsDebugEnabled)
+                    {
+                        log.Debug($"[{_topic}] [{ProducerName}] Received ack for msg {sequenceId}");
+                    }
+                    _pendingMessages.Dequeue();
+                }
+                else
+                {
+                    log.Warning($"[{_topic}] [{ProducerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}");
+                    // Force connection closing so that messages can be re-transmitted in a new connection
+                    Self.Tell(new ProducerClosed(_producerId));
+                }
+            }
+        }
+        private SentReceipt SendCommand(OpSendMsg op)
         {
             var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            _broker.Tell(pay);
+            return _broker.Ask<SentReceipt>(pay, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).Result;
         }
         private bool PopulateMessageSchema(Message msg)
         {
-            var metadata = msg.Metadata;
-            var schemaHash = SchemaHash.Of(msg.Schema);
-            _schemaCache.TryGetValue(schemaHash, out var schemaVersion);
-            if (_schemas.TryGetValue(msg.TopicName, out var s))
+            if (msg.Schema == _topicSchema.Schema)
             {
-                if (s != null)
-                {
-                    if (msg.Schema == s)
-                    {
-                        if (schemaVersion != null)
-                            metadata.SchemaVersion = schemaVersion;
-                        msg.SetSchemaState(Message.SchemaState.Ready);
-                        return true;
-                    }
-                }
+                msg.Metadata.SchemaVersion = _topicSchema.Version;
+                msg.SetSchemaState(Message.SchemaState.Ready);
+                return true;
             }
-            
-            if (schemaVersion == null) return true;
-            metadata.SchemaVersion = schemaVersion;
-            msg.SetSchemaState(Message.SchemaState.Ready);
+            if (!IsMultiSchemaEnabled())
+            {
+                var e = new PulsarClientException.InvalidMessageException($"The producer '{ProducerName}' of the topic '{_topic}' is disabled the `MultiSchema`");
+                Context.System.Log.Error(e.ToString());
+                return false;
+            }
+            var schemaHash = SchemaHash.Of(msg.Schema);
+            var schemaVersion = _schemaCache[schemaHash];
+            if (schemaVersion != null)
+            {
+                msg.Metadata.SchemaVersion = schemaVersion;
+                msg.SetSchemaState(Message.SchemaState.Ready);
+            }
             return true;
         }
         private bool RePopulateMessageSchema(Message msg)
@@ -643,10 +685,6 @@ namespace SharpPulsar.Akka.Producer
         public IStash Stash { get; set; }
     }
     public class AddPublicKeyCipher
-    {
-
-    }
-    public class ResendMessages
     {
 
     }

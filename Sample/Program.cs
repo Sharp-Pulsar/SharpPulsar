@@ -639,18 +639,36 @@ namespace Samples
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             
             Console.WriteLine($"Acquired producer for topic: {t.Topic}");
+            SendMessages(system, topic, t.Producer);
+            var nextRun = "";
+            while (!nextRun.ToLower().Trim().Equals("n"))
+            {
+                Console.WriteLine("resend? (y/n)");
+                nextRun = Console.ReadLine();
+                if (nextRun.ToLower().Trim().Equals("y"))
+                {
+                    SendMessages(system, topic, t.Producer);
+                }
+            }
+
+            Task.Delay(5000).Wait();
+            File.AppendAllLines("receipts-bulk.txt", Receipts);
+        }
+
+        private static void SendMessages(PulsarSystem system, string topic, IActorRef producer)
+        {
             var sends = new List<Send>();
             for (var i = 1L; i <= 5; i++)
             {
                 var student = new Students()
                 {
-                    Name = $"#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Name = $"[{DateTime.Now.ToLongDateString()}]#LockDown Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
                     Age = 2019 + (int)i,
                     School = "Akka-Pulsar university"
                 };
                 var metadata = new Dictionary<string, object>
                 {
-                    ["SequenceId"] = i,
+                    //["SequenceId"] = i,
                     ["Key"] = "Bulk",
                     ["Properties"] = new Dictionary<string, string>
                     {
@@ -662,9 +680,7 @@ namespace Samples
                 sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, t.Producer);
-            Task.Delay(5000).Wait();
-            File.AppendAllLines("receipts-bulk.txt", Receipts);
+            system.BulkSend(bulk, producer);
         }
         private static void RegisterSchema(PulsarSystem system, string topic)
         {

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
 using PulsarAdmin;
-using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
@@ -22,12 +19,12 @@ namespace SharpPulsar.Akka.EventSource
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
         private readonly List<string> _routees;
-        private readonly IActorRef _self;
-        
+        private readonly HttpClient _httpClient;
+
 
         public ReplayCoordinator(IActorRef network, IActorRef pulsarManager)
         {
-            _self = Self;
+            _httpClient = new HttpClient();
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
@@ -46,7 +43,7 @@ namespace SharpPulsar.Akka.EventSource
                 else
                 {
                     var topicName = TopicName.Get(g.Topic);
-                    var adminRestapi = new PulsarAdminRESTAPI(g.Server, new HttpClient(), true);
+                    var adminRestapi = new PulsarAdminRESTAPI(g.Server, _httpClient, true);
                     var data = adminRestapi.GetInternalStats1(topicName.NamespaceObject.Tenant,
                         topicName.NamespaceObject.LocalName, topicName.LocalName, false);
                     var entry = data != null ? data.NumberOfEntries : 0L;

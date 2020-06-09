@@ -24,8 +24,10 @@ namespace SharpPulsar.Akka.EventSource
         private readonly List<string> _routees;
         private int _expectedRoutees;
         private int _currentRoutees;
+        private readonly HttpClient _httpClient;
         public TaggedCoordinator(IActorRef network, IActorRef pulsarManager)
         {
+            _httpClient = new HttpClient();
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
@@ -39,7 +41,7 @@ namespace SharpPulsar.Akka.EventSource
                 var topics = TopicsPatternFilter(t.Topics, new Regex(numberOfEntries.Topic));
                 var max = 0L;
                 var total = 0L;
-                var adminRestapi = new PulsarAdminRESTAPI(numberOfEntries.Server, new HttpClient(), true);
+                var adminRestapi = new PulsarAdminRESTAPI(numberOfEntries.Server, _httpClient, true);
                 foreach (var topic in topics)
                 {
                     var topicName = TopicName.Get(topic);

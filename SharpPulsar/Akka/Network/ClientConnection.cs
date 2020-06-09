@@ -40,10 +40,8 @@ namespace SharpPulsar.Akka.Network
         private readonly ILoggingAdapter _log;
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _manager;
-        private readonly Dictionary<long, (long time, byte[] cmd)> _pendingReceipt = new Dictionary<long, (long time, byte[] cmd)>();
         // Added for mutual authentication.
         private IAuthenticationDataProvider _authenticationDataProvider;
-        private IActorRef _receiptActor;
 
         public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
@@ -65,27 +63,11 @@ namespace SharpPulsar.Akka.Network
            Receive<Payload>(p =>
            {
                _ = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
-               if(p.CommandType.Equals("CommandMessage"))
-                   _pendingReceipt.Add(p.RequestId, (DateTimeOffset.Now.ToUnixTimeMilliseconds(), p.Bytes));
                Send(new ReadOnlySequence<byte>(p.Bytes));
-           });
-           Receive<IActorRef>(a => _receiptActor = a);
-           Receive<ResendMessages>(a =>
-           {
-               var d = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-               var ms = _pendingReceipt.Where(x => (d - x.Value.time) > 30000).Select(x => new { x.Key, x.Value.cmd }).ToList();
-               foreach (var m in ms)
-               {
-                   var requestId = m.Key;
-                   var pay = new Payload(m.cmd, requestId, "CommandMessage");
-                   _log.Info($"resending message with seq. '{pay.RequestId}'. Receipt ack. not received in 30 secs");
-                   _self.Tell(pay);
-               }
            });
             Receive<ConnectionCommand>(p =>
            {
                Send(new ReadOnlySequence<byte>(p.Command));
-               //_ = ProcessIncommingFrames();
            });
             _ = ProcessIncommingFrames();
         }
@@ -258,20 +240,18 @@ namespace SharpPulsar.Akka.Network
                                 try
                                 {
                                     var send = cmd.SendReceipt;
-                                    _receiptActor.Tell(new SentReceipt((long)send.ProducerId,
-                                        (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                    _requests[(long)send.SequenceId].Key.Tell(new SentReceipt((long)send.ProducerId,
+                                        (long)send.SequenceId, (long)send.HighestSequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
                                         send.MessageId.BatchIndex, send.MessageId.Partition));
                                     _requests.TryRemove((long)send.SequenceId, out var ou);
-                                    _pendingReceipt.Remove((long)send.SequenceId);
                                 }
                                 catch (Exception exception)
                                 {
                                     var send = cmd.SendReceipt;
-                                    _receiptActor.Tell(new SentReceipt((long)send.ProducerId,
-                                        (long)send.SequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                    _parent.Tell(new SentReceipt((long)send.ProducerId,
+                                        (long)send.SequenceId, (long)send.HighestSequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
                                         send.MessageId.BatchIndex, send.MessageId.Partition));
                                     _log.Error(exception.ToString());
-                                    _pendingReceipt.Remove((long)send.SequenceId);
                                 }
                                 break;
                             case BaseCommand.Type.GetOrCreateSchemaResponse:
@@ -282,7 +262,6 @@ namespace SharpPulsar.Akka.Network
                                 _requests.TryRemove((long)res.RequestId, out var g);
                                 break;
                             case BaseCommand.Type.ProducerSuccess:
-                                _system.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000), _self, new ResendMessages(), ActorRefs.NoSender);
                                 var p = cmd.ProducerSuccess;
                                 _requests[(long)p.RequestId].Key.Tell(new ProducerCreated(p.ProducerName,
                                     (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
