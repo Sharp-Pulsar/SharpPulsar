@@ -604,7 +604,7 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<ConnectedServerInfo>(s =>
             {
-                _consumerEventListener.Log($"Connected to Pulsar Server[{s.Version}]. Subscribing");
+                _consumerEventListener.Log($"Connected to Pulsar Server. Subscribing Consumer '{_consumerid}' to topic '{_topicName}'");
                 _serverInfo = s;
                 if (_schema != null && _schema.SupportSchemaVersioning())
                 {
