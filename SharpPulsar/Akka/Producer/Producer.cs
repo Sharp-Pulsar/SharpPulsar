@@ -255,7 +255,7 @@ namespace SharpPulsar.Akka.Producer
             {
                 foreach (var m in s.Messages)
                 {
-                    Self.Tell(m);
+                    ProcessSend(m);
                 }
             });
             Receive<Terminated>(_ =>
