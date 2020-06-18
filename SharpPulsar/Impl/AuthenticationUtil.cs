@@ -31,14 +31,9 @@ namespace SharpPulsar.Impl
 	{
 		public static IDictionary<string, string> ConfigureFromJsonString(string authParamsString)
 		{
-			var jsonMapper = new ObjectMapper();
-			return (IDictionary<string, string>)jsonMapper.ReadValue(authParamsString, typeof(TypeReferenceAnonymousInnerClass));
+			return JsonSerializer.Deserialize<IDictionary<string, string>>(authParamsString);
 		}
-
-		public class TypeReferenceAnonymousInnerClass : Dictionary<string, string>
-		{
-		}
-
+		
 		public static IDictionary<string, string> ConfigureFromPulsar1AuthParamString(string authParamsString)
 		{
 			IDictionary<string, string> authParams = new Dictionary<string, string>();

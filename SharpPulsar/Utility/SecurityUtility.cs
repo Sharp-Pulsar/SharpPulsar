@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Security.Certificates;
 using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
 
 /// <summary>
@@ -31,23 +35,11 @@ using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
 /// </summary>
 namespace SharpPulsar.Utility
 {
-	//using ClientAuth =  io.netty.handler.ssl.ClientAuth;
-	//using SslContext = TlsHandler io.netty.handler.ssl.SslContext;
-	//using SslContextBuilder = io.netty.handler.ssl.SslContextBuilder;
-	//using InsecureTrustManagerFactory = io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-	//using SslContextFactory = org.eclipse.jetty.util.ssl.SslContextFactory;
-
-	/// <summary>
+    /// <summary>
 	/// Helper class for the security domain.
 	/// </summary>
 	public class SecurityUtility
 	{
-		
-		static SecurityUtility()
-		{
-			// Fixes loading PKCS8Key file: https://stackoverflow.com/a/18912362
-			//java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-		}
 
 		public static X509Certificate2[] LoadCertificatesFromPemFile(string certFilePath)
 		{
@@ -119,8 +111,73 @@ namespace SharpPulsar.Utility
 
             return pubkey;
         }
-		
-		public static AsymmetricAlgorithm LoadPrivateKeyFromPemFile(string keyFilePath)
+        public static AsymmetricAlgorithm LoadPrivateKeyFromPemStream(Stream inStream)
+        {
+            PrivateKey privateKey = null;
+
+            if (inStream == null)
+            {
+                return privateKey;
+            }
+
+            try
+            {
+                using (StreamReader reader = new StreamReader(inStream))
+                {
+                    if (inStream.markSupported())
+                    {
+                        inStream.reset();
+                    }
+                    StringBuilder sb = new StringBuilder();
+                    string currentLine = null;
+
+                    // Jump to the first line after -----BEGIN [RSA] PRIVATE KEY-----
+                    while (!reader.ReadLine().StartsWith("-----BEGIN"))
+                    {
+                        reader.ReadLine();
+                    }
+
+                    // Stop (and skip) at the last line that has, say, -----END [RSA] PRIVATE KEY-----
+                    while (!string.ReferenceEquals((currentLine = reader.ReadLine()), null) && !currentLine.StartsWith("-----END", StringComparison.Ordinal))
+                    {
+                        sb.Append(currentLine);
+                    }
+
+                    KeyFactory kf = KeyFactory.getInstance("RSA");
+                    KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.Decoder.decode(sb.ToString()));
+                    privateKey = kf.generatePrivate(keySpec);
+                }
+            }
+            catch (Exception e) when (e is GeneralSecurityException || e is IOException)
+            {
+                throw new KeyManagementException("Private key loading error", e);
+            }
+
+            return privateKey;
+        }
+        public static X509Certificate2[] LoadCertificatesFromPemStream(Stream inStream)
+        {
+            if (inStream == null)
+            {
+                return null;
+            }
+            CertificateFactory cf;
+            try
+            {
+                if (inStream.markSupported())
+                {
+                    inStream.reset();
+                }
+                cf = CertificateFactory.getInstance("X.509");
+                ICollection<X509Certificate> collection = (ICollection<X509Certificate>)cf.generateCertificates(inStream);
+                return collection.ToArray();
+            }
+            catch (Exception e) when (e is CertificateException || e is IOException)
+            {
+                throw new CertificateException("Certificate loading error", e);
+            }
+        }
+        public static AsymmetricAlgorithm LoadPrivateKeyFromPemFile(string keyFilePath)
 		{
 			if (string.ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
 			{

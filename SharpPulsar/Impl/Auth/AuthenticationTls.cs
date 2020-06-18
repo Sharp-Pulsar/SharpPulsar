@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
@@ -39,12 +40,19 @@ namespace SharpPulsar.Impl.Auth
 
 		private string _certFilePath;
 		private string _keyFilePath;
-		
-		public AuthenticationTls(string certFilePath, string keyFilePath)
+        private readonly Func<MemoryStream> _certStreamProvider;
+        private readonly Func<MemoryStream> _keyStreamProvider;
+
+        public AuthenticationTls(string certFilePath, string keyFilePath)
 		{
-			this._certFilePath = certFilePath;
-			this._keyFilePath = keyFilePath;
+			_certFilePath = certFilePath;
+			_keyFilePath = keyFilePath;
 		}
+        public AuthenticationTls(Func<MemoryStream> certStreamProvider, Func<MemoryStream> keyStreamProvider)
+        {
+            _certStreamProvider = certStreamProvider;
+            _keyStreamProvider = keyStreamProvider;
+        }
 		public void Close()
 		{
 			// noop
@@ -55,30 +63,41 @@ namespace SharpPulsar.Impl.Auth
 
         public IAuthenticationDataProvider AuthData
 		{
-			get
-			{
-				try
-				{
-					return new AuthenticationDataTls(_certFilePath, _keyFilePath);
-				}
-				catch (System.Exception e)
-				{
-					throw new PulsarClientException(e.Message);
-				}
-			}
-		}
-
-		public void Configure(string encodedAuthParamString)
-		{
-			//format = tlsCertFile,tlsKeyFile
-			if (!string.IsNullOrWhiteSpace(encodedAuthParamString))
+            get
             {
-                var @params = encodedAuthParamString.Split(',');
-                _certFilePath = @params[0];
-                _keyFilePath = @params[1];
+                try
+                {
+                    if (!string.ReferenceEquals(CertFilePath, null) && !string.ReferenceEquals(KeyFilePath, null))
+                    {
+                        return new AuthenticationDataTls(CertFilePath, KeyFilePath);
+                    }
+                    else if (_certStreamProvider != null && _keyStreamProvider != null)
+                    {
+                        return new AuthenticationDataTls(_certStreamProvider, _keyStreamProvider);
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new PulsarClientException(e.ToString());
+                }
+                throw new ArgumentException("cert/key file path or cert/key stream must be present");
             }
 		}
-
+        public virtual void Configure(string encodedAuthParamString)
+        {
+            IDictionary<string, string> authParamsMap = null;
+            try
+            {
+                authParamsMap = AuthenticationUtil.ConfigureFromJsonString(encodedAuthParamString);
+            }
+            catch (Exception)
+            {
+                // auth-param is not in json format
+            }
+            authParamsMap = (authParamsMap == null || authParamsMap.Count == 0) ? AuthenticationUtil.ConfigureFromPulsar1AuthParamString(encodedAuthParamString) : authParamsMap;
+            AuthParams = authParamsMap;
+        }
+		
 		public void Start()
 		{
 			// noop
@@ -98,8 +117,16 @@ namespace SharpPulsar.Impl.Auth
 		{
 			throw new NotImplementedException();
 		}
+        private IDictionary<string, string> AuthParams
+        {
+            set
+            {
+                _certFilePath = value["tlsCertFile"];
+                _keyFilePath = value["tlsKeyFile"];
+            }
+        }
 
-		public virtual string CertFilePath => _certFilePath;
+        public virtual string CertFilePath => _certFilePath; 
 
         public virtual string KeyFilePath => _keyFilePath;
     }
