@@ -225,10 +225,7 @@ namespace SharpPulsar.Akka.Network
                                 break;
                             case BaseCommand.Type.Message:
                                 var msg = cmd.Message;
-                                _manager.Tell(new MessageReceived((long)msg.ConsumerId,
-                                    new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId,
-                                        msg.MessageId.BatchIndex, msg.MessageId.Partition), frame.Slice(commandSize + 4),
-                                    (int)msg.RedeliveryCount));
+                                _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount, msg.AckSets));
                                 break;
                             case BaseCommand.Type.Success:
                                 var s = cmd.Success;
@@ -286,7 +283,7 @@ namespace SharpPulsar.Akka.Network
                             case BaseCommand.Type.LookupResponse:
                                 var m = cmd.lookupTopicResponse;
                                 _requests[(long)m.RequestId].Key.Tell(new BrokerLookUp(m.Message, m.Authoritative,
-                                    m.Response, m.brokerServiceUrl, m.brokerServiceUrlTls, (long)m.RequestId));
+                                    m.Response, m.brokerServiceUrl, m.brokerServiceUrlTls, (long)m.RequestId, m.ProxyThroughServiceUrl));
                                 _requests.TryRemove((long)m.RequestId, out var lk);
                                 break;
                             case BaseCommand.Type.PartitionedMetadataResponse:

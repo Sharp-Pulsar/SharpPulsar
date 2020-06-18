@@ -54,6 +54,7 @@ namespace SharpPulsar.Impl.Conf
 
         public ServiceUrlProvider ServiceUrlProvider { get; set; }
 		public string AuthPluginClassName { get; set; }
+		public string ListenerName { get; set; }
 
 		public string AuthParams { get; set; }
         private bool _useTls;

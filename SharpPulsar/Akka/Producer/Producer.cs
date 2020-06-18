@@ -121,10 +121,10 @@ namespace SharpPulsar.Akka.Producer
             Receive<BrokerLookUp>(p =>
             {
                 var l = p;
-                var failed = l.Response == CommandLookupTopicResponse.LookupType.Failed;
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
-                if(_clientConfiguration.UseProxy)
+                //if(_clientConfiguration.UseProxy)
+                if(l.UseProxy)
                     _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
                 else
                     _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
@@ -334,7 +334,7 @@ namespace SharpPulsar.Akka.Producer
         private void SendBrokerLookUpCommand()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewLookup(_topic, false, requestid);
+            var request = Commands.NewLookup(_topic, _clientConfiguration.ListenerName, false, requestid);
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
         }

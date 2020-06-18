@@ -10,7 +10,9 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
+using SharpPulsar.Api;
 using SharpPulsar.Protocol.Extension;
+using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
 
 /// <summary>
@@ -295,7 +297,7 @@ namespace SharpPulsar.Protocol
 		{
 			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
 		}
-
+		
 		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
             return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
@@ -320,33 +322,24 @@ namespace SharpPulsar.Protocol
             };
 
             if (keySharedPolicy != null)
-			{
-				switch (keySharedPolicy.KeySharedMode)
-				{
-					case Api.KeySharedMode.AutoSplit:
-						subscribe.keySharedMeta = new KeySharedMeta{
-                            keySharedMode = KeySharedMode.AutoSplit
-
-                        };
-						break;
-					case Api.KeySharedMode.Sticky:
-                        var meta = new KeySharedMeta
-                        {
-                            keySharedMode = KeySharedMode.Sticky
-                        };
-						var ranges = ((Api.KeySharedPolicy.KeySharedPolicySticky) keySharedPolicy).GetRanges().Ranges;
-						foreach (var range in ranges)
-						{
-							meta.hashRanges.Add(new IntRange{
-                                Start = range.Start, 
-                                End = range.End
-                            });
-						}
-						subscribe.keySharedMeta = meta;
-						break;
+            {
+                var keySharedMeta = new KeySharedMeta
+                {
+                    allowOutOfOrderDelivery = keySharedPolicy.AllowOutOfOrderDelivery,
+                    keySharedMode = ConvertKeySharedMode(keySharedPolicy.KeySharedMode)
+                };
+                
+                if (keySharedPolicy is KeySharedPolicy.KeySharedPolicySticky sticky)
+                {
+                    var ranges = sticky.GetRanges().Ranges;
+                    foreach (var range in ranges)
+                    {
+                        keySharedMeta.hashRanges.Add(new IntRange { Start = range.Start, End = range.End });
+                    }
 				}
-			}
 
+                subscribe.keySharedMeta = keySharedMeta;
+            }
 			if (startMessageId != null)
 			{
 				subscribe.StartMessageId = startMessageId;
@@ -367,7 +360,18 @@ namespace SharpPulsar.Protocol
 
             return res.ToArray();
 		}
-
+        private static KeySharedMode ConvertKeySharedMode(Api.KeySharedMode? mode)
+        {
+            switch (mode)
+            {
+                case Api.KeySharedMode.AutoSplit:
+                    return KeySharedMode.AutoSplit;
+                case Api.KeySharedMode.Sticky:
+                    return KeySharedMode.Sticky;
+                default:
+                    throw new ArgumentException("Unexpected key shared mode: " + mode);
+            }
+        }
 		public static byte[] NewUnsubscribe(long consumerId, long requestId)
 		{
             var unsubscribe = new CommandUnsubscribe
@@ -536,13 +540,19 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewLookup(string topic, bool authoritative, long requestId)
+		public static byte[] NewLookup(string topic, string listenerName, bool authoritative, long requestId)
 		{
             var lookupTopic = new CommandLookupTopic
             {
-                Topic = topic, RequestId = (ulong) requestId, Authoritative = authoritative
+                Topic = topic, 
+                RequestId = (ulong) requestId, 
+                Authoritative = authoritative
             };
-            var res = Serializer.Serialize(lookupTopic.ToBaseCommand());
+            if (!string.IsNullOrWhiteSpace(listenerName))
+            {
+                lookupTopic.AdvertisedListenerName = listenerName;
+            }
+			var res = Serializer.Serialize(lookupTopic.ToBaseCommand());
 			
 			return res.ToArray();
 		}
@@ -566,20 +576,21 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
 		{
-			return NewAck(consumerId, ledgerId, entryId, ackType, validationError, properties, 0, 0);
+			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, 0, 0);
 		}
 
-		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
 		{
-			var ack = new CommandAck();
-			ack.ConsumerId = (ulong)consumerId;
-			ack.ack_type = ackType;
-			var messageIdData = new MessageIdData();
-			messageIdData.ledgerId = (ulong)ledgerId;
-			messageIdData.entryId = (ulong)entryId;
-			ack.MessageIds.Add(messageIdData);
+            var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
+			
+            var messageIdData = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
+            if (ackSets != null)
+            {
+                messageIdData.AckSets = ackSets;
+            }
+            ack.MessageIds.Add(messageIdData);
 			if (validationError != null)
 			{
 				ack.validation_error = (CommandAck.ValidationError) validationError;

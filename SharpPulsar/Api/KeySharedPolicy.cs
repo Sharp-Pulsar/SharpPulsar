@@ -27,6 +27,7 @@ namespace SharpPulsar.Api
 	public abstract class KeySharedPolicy
 	{
 		private KeySharedMode _keySharedMode;
+        private bool _allowOutOfOrderDelivery = false;
 
 		public static readonly int DefaultHashRangeSize = 2 << 15;
 
@@ -41,7 +42,24 @@ namespace SharpPulsar.Api
 		}
 
 		public abstract void Validate();
+        public virtual bool AllowOutOfOrderDelivery => _allowOutOfOrderDelivery;
 
+        /// <summary>
+        /// If enabled, it will relax the ordering requirement, allowing the broker to send out-of-order messages in case of
+        /// failures. This will make it faster for new consumers to join without being stalled by an existing slow consumer.
+        /// 
+        /// <para>In this case, a single consumer will still receive all the keys, but they may be coming in different orders.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="allowOutOfOrderDelivery">
+        ///            whether to allow for out of order delivery </param>
+        /// <returns> KeySharedPolicy instance </returns>
+        public virtual KeySharedPolicy SetAllowOutOfOrderDelivery(bool allowOutOfOrderDelivery)
+        {
+            _allowOutOfOrderDelivery = allowOutOfOrderDelivery;
+            return this;
+        }
 		public virtual KeySharedMode? KeySharedMode => _keySharedMode;
 
         public virtual int HashRangeTotal => DefaultHashRangeSize;
