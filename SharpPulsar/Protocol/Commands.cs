@@ -63,7 +63,10 @@ namespace SharpPulsar.Protocol
 		{
             var connect = new CommandConnect
             {
-                ClientVersion = libVersion ?? "Pulsar Client", AuthMethodName = authMethodName
+                ClientVersion = libVersion ?? "Pulsar Client", 
+                AuthMethodName = authMethodName,
+				FeatureFlags = new FeatureFlags { SupportsAuthRefresh = true}
+
             };
 
             if ("ycav1".Equals(authMethodName))
@@ -107,7 +110,12 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
 		{
-            var connect = new CommandConnect {ClientVersion = libVersion, AuthMethodName = authMethodName};
+            var connect = new CommandConnect
+            {
+                ClientVersion = libVersion, 
+                AuthMethodName = authMethodName,
+				FeatureFlags = new FeatureFlags { SupportsAuthRefresh = true}
+            };
 
             if (!string.IsNullOrWhiteSpace(targetBroker))
 			{
@@ -136,7 +144,6 @@ namespace SharpPulsar.Protocol
 			}
 			connect.ProtocolVersion = protocolVersion;
             var ba = connect.ToBaseCommand();
-           //Console.WriteLine(JsonSerializer.Serialize(ba, new JsonSerializerOptions(){WriteIndented = true}));
             var res = Serializer.Serialize(ba);
             return res.ToArray();
         }
@@ -159,7 +166,7 @@ namespace SharpPulsar.Protocol
 
 			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
 			// client supports, to avoid confusing the client.
-            var versionToAdvertise = Math.Min(15, clientProtocolVersion);
+            var versionToAdvertise = Math.Min(Enum.GetValues(typeof(ProtocolVersion)).Cast<int>().Max(), clientProtocolVersion);
 
 			challenge.ProtocolVersion = versionToAdvertise;
 
@@ -230,14 +237,6 @@ namespace SharpPulsar.Protocol
 			}
 		}
 
-		public static void SkipMessageMetadata(byte[] buffer)
-		{
-			// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
-			// metadata
-			//SkipChecksumIfPresent(buffer);
-			//var metadataSize = (int) buffer.ReadUnsignedInt();
-			//buffer.SkipBytes(metadataSize);
-		}
 
 		public static byte[] NewSend(long producerId, long sequenceId, int numMessaegs, MessageMetadata messageMetadata, byte[] payload)
 		{
@@ -251,7 +250,11 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, byte[] payload)
 		{
-            var send = new CommandSend {ProducerId = (ulong) producerId, SequenceId = (ulong) sequenceId};
+            var send = new CommandSend
+            {
+                ProducerId = (ulong) producerId, 
+                SequenceId = (ulong) sequenceId
+            };
             if (numMessages > 1)
 			{
 				send.NumMessages = numMessages;

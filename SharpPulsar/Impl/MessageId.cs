@@ -31,22 +31,26 @@ namespace SharpPulsar.Impl
 		private  readonly long _ledgerId;
 		private readonly long _entryId;
 		private readonly int _partitionIndex;
+        private readonly long[] _ackSets;
 
 		// Private constructor used only for json deserialization
-		private MessageId() : this(-1, -1, -1)
+		private MessageId() : this(-1, -1, -1, null)
 		{
 		}
 
-		public MessageId(long ledgerId, long entryId, int partitionIndex)
+		public MessageId(long ledgerId, long entryId, int partitionIndex, long[] ackSets)
 		{
 			_ledgerId = ledgerId;
 			_entryId = entryId;
 			_partitionIndex = partitionIndex;
-		}
+            _ackSets = ackSets;
+        }
 
 		public virtual long LedgerId => _ledgerId;
 
         public virtual long EntryId => _entryId;
+
+        public virtual long[] AckSets => _ackSets;
 
         public virtual int PartitionIndex => _partitionIndex;
 
@@ -96,11 +100,11 @@ namespace SharpPulsar.Impl
 			MessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.AckSets);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.AckSets);
 			}
 
 			return messageId;
@@ -131,11 +135,11 @@ namespace SharpPulsar.Impl
 			IMessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.AckSets);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.AckSets);
 			}
 			if (idData.Partition > -1 && topicName != null)
 			{

@@ -27,17 +27,17 @@ namespace SharpPulsar.Impl
 
 		public BatchMessageAcker Acker {get;}
 
-		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, BatchMessageAckerDisabled.Instance)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, long[] ackSets) : this(ledgerId, entryId, partitionIndex, batchIndex, BatchMessageAckerDisabled.Instance, ackSets)
 		{
 		}
 
-		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, BatchMessageAcker acker, long[] ackSets) : base(ledgerId, entryId, partitionIndex, ackSets)
 		{
 			BatchIndex = batchIndex;
 			Acker = acker;
 		}
 
-		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
+		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex, other.AckSets)
 		{
 			if (other is BatchMessageId otherId)
 			{
@@ -97,7 +97,7 @@ namespace SharpPulsar.Impl
 
         public virtual MessageId PrevBatchMessageId()
 		{
-			return new MessageId(LedgerId, EntryId - 1, PartitionIndex);
+			return new MessageId(LedgerId, EntryId - 1, PartitionIndex, AckSets);
 		}
 
 

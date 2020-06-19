@@ -83,7 +83,7 @@ namespace SharpPulsar.Akka.Configuration
 		}
         public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
-            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex, null);
             return this;
         }
 		public ConsumerConfigBuilder StartMessageId(IMessageId startMessageId)

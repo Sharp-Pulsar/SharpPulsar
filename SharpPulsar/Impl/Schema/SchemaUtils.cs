@@ -167,9 +167,8 @@ namespace SharpPulsar.Impl.Schema
 		/// <returns> the convert schema info data string </returns>
         public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
 		{
-			var objectMapper = new ObjectMapper();
-			var keyValue = new KeyValue<object, object>(SchemaType.IsPrimitiveType(kvSchemaInfo.Key.Type) ? "" : objectMapper.WriteValueAsString(kvSchemaInfo.Key.Schema), SchemaType.IsPrimitiveType(kvSchemaInfo.Value.Type) ? "" : objectMapper.WriteValueAsString(kvSchemaInfo.Value.Schema));
-			return objectMapper.WriteValueAsString(keyValue);
+			var keyValue = new KeyValue<object, object>(SchemaType.IsPrimitiveType(kvSchemaInfo.Key.Type) ? "" : JsonSerializer.Serialize(kvSchemaInfo.Key.Schema), SchemaType.IsPrimitiveType(kvSchemaInfo.Value.Type) ? "" : JsonSerializer.Serialize(kvSchemaInfo.Value.Schema));
+			return JsonSerializer.Serialize(keyValue);
 		}
 
 		private static sbyte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)

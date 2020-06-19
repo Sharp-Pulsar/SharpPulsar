@@ -133,9 +133,9 @@ namespace SharpPulsar.Impl
             get
             {
 				if(MessageId is BatchMessageId id)
-				    return new MessageIdReceived(id.LedgerId, id.EntryId, id.BatchIndex, id.PartitionIndex);
+				    return new MessageIdReceived(id.LedgerId, id.EntryId, id.BatchIndex, id.PartitionIndex, id.AckSets);
                 var m = (MessageId) MessageId;
-                return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex);
+                return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex, m.AckSets);
             }
         } 
 		public sbyte[] Data => (sbyte[])(object)Payload;

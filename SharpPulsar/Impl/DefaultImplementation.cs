@@ -41,30 +41,11 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch)
+		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch, long[] ackSets)
 		{
-			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch);
+			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch, ackSets);
 		}
-        /*public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
-        {
-            var k = KeyValueSchema<TK, TV>.Of(keySchema, valueSchema);
-            return k;
-        }
-        public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
-        {
-            return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
-        }
-
         
-        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
-        {
-            return KeyValueSchema<TK, TV>.Of(keySchema, valueSchema, keyValueEncodingType);
-        }
-
-        public static ISchema<KeyValue<TK, TV>> NewKeyValueSchema<TK, TV>(TK key, TV value, SchemaType type)
-        {
-            return KeyValueSchema<TK, TV>.Of(key, value, type);
-        }*/
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
 			return MessageId.FromByteArray(data);
@@ -140,50 +121,6 @@ namespace SharpPulsar.Impl
 		}
 
 
-		/// <summary>
-		/// Decode the kv encoding type from the schema info.
-		/// </summary>
-		/// <param name="schemaInfo"> the schema info </param>
-		/// <returns> the kv encoding type </returns>
-		/*public static KeyValueEncodingType DecodeKeyValueEncodingType(SchemaInfo schemaInfo)
-		{
-			return KeyValueSchemaInfo.DecodeKeyValueEncodingType(schemaInfo);
-		}*/
-
-		/// <summary>
-		/// Encode key & value into schema into a KeyValue schema.
-		/// </summary>
-		/// <param name="keySchema"> the key schema </param>
-		/// <param name="valueSchema"> the value schema </param>
-		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
-		/// <returns> the final schema info </returns>
-		/*public static SchemaInfo EncodeKeyValueSchemaInfo<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
-		{
-			return EncodeKeyValueSchemaInfo("KeyValue", keySchema, valueSchema, keyValueEncodingType);
-		}
-		*/
-		/// <summary>
-		/// Encode key & value into schema into a KeyValue schema.
-		/// </summary>
-		/// <param name="schemaName"> the final schema name </param>
-		/// <param name="keySchema"> the key schema </param>
-		/// <param name="valueSchema"> the value schema </param>
-		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
-		/// <returns> the final schema info </returns>
-		/*public static SchemaInfo EncodeKeyValueSchemaInfo<TK, TV>(string schemaName, ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
-		{
-			return KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(schemaName, keySchema, valueSchema, keyValueEncodingType);
-		}
-
-		/// <summary>
-		/// Decode the key/value schema info to get key schema info and value schema info.
-		/// </summary>
-		/// <param name="schemaInfo"> key/value schema info. </param>
-		/// <returns> the pair of key schema info and value schema info </returns>
-		public static KeyValue<SchemaInfo, SchemaInfo> DecodeKeyValueSchemaInfo(SchemaInfo schemaInfo)
-		{
-			return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
-		}*/
 
 		/// <summary>
 		/// Jsonify the schema info.

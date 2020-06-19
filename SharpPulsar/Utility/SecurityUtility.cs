@@ -111,49 +111,43 @@ namespace SharpPulsar.Utility
 
             return pubkey;
         }
-        public static AsymmetricAlgorithm LoadPrivateKeyFromPemStream(Stream inStream)
+        public static RSACryptoServiceProvider LoadPrivateKeyFromPemStream(Stream inStream)
         {
-            PrivateKey privateKey = null;
-
             if (inStream == null)
             {
-                return privateKey;
+                return null;
             }
 
             try
             {
-                using (StreamReader reader = new StreamReader(inStream))
+                using var reader = new StreamReader(inStream);
+                var sb = new StringBuilder();
+                string currentLine = null;
+
+                // Jump to the first line after -----BEGIN [RSA] PRIVATE KEY-----
+                while (!reader.ReadLine().StartsWith("-----BEGIN"))
                 {
-                    if (inStream.markSupported())
-                    {
-                        inStream.reset();
-                    }
-                    StringBuilder sb = new StringBuilder();
-                    string currentLine = null;
-
-                    // Jump to the first line after -----BEGIN [RSA] PRIVATE KEY-----
-                    while (!reader.ReadLine().StartsWith("-----BEGIN"))
-                    {
-                        reader.ReadLine();
-                    }
-
-                    // Stop (and skip) at the last line that has, say, -----END [RSA] PRIVATE KEY-----
-                    while (!string.ReferenceEquals((currentLine = reader.ReadLine()), null) && !currentLine.StartsWith("-----END", StringComparison.Ordinal))
-                    {
-                        sb.Append(currentLine);
-                    }
-
-                    KeyFactory kf = KeyFactory.getInstance("RSA");
-                    KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.Decoder.decode(sb.ToString()));
-                    privateKey = kf.generatePrivate(keySpec);
+                    reader.ReadLine();
                 }
-            }
-            catch (Exception e) when (e is GeneralSecurityException || e is IOException)
-            {
-                throw new KeyManagementException("Private key loading error", e);
-            }
 
-            return privateKey;
+                // Stop (and skip) at the last line that has, say, -----END [RSA] PRIVATE KEY-----
+                while (!string.ReferenceEquals((currentLine = reader.ReadLine()), null) && !currentLine.StartsWith("-----END", StringComparison.Ordinal))
+                {
+                    sb.Append(currentLine);
+                }
+
+                using TextReader privateKeyTextReader = new StringReader(sb.ToString());
+                var readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
+
+                var rsaParams = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)readKeyPair.Private);
+                var csp = new RSACryptoServiceProvider();
+                csp.ImportParameters(rsaParams);
+                return csp;
+            }
+            catch (Exception e) when (e is GeneralSecurityException || e is IOException || e is OutOfMemoryException)
+            {
+                throw new Exception("Private key loading error", e);
+            }
         }
         public static X509Certificate2[] LoadCertificatesFromPemStream(Stream inStream)
         {
@@ -161,16 +155,14 @@ namespace SharpPulsar.Utility
             {
                 return null;
             }
-            CertificateFactory cf;
             try
             {
-                if (inStream.markSupported())
-                {
-                    inStream.reset();
-                }
-                cf = CertificateFactory.getInstance("X.509");
-                ICollection<X509Certificate> collection = (ICollection<X509Certificate>)cf.generateCertificates(inStream);
-                return collection.ToArray();
+                using var stream = new StreamReader(inStream);
+                var c = new X509Certificate2();
+                var pemReader = new PemReader(stream);
+                var obj = pemReader.ReadPemObject();
+                c.Import(obj.Content);
+                return new[] { c };
             }
             catch (Exception e) when (e is CertificateException || e is IOException)
             {
@@ -243,10 +235,8 @@ namespace SharpPulsar.Utility
                     tr.Close();
                     return key.Private;
                 }
-                else
-                {
-                    return null;
-                }
+
+                return null;
             }
             catch (InvalidCastException e)
             {

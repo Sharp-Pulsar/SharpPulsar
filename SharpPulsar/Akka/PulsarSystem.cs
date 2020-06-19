@@ -297,11 +297,11 @@ namespace SharpPulsar.Akka
                         {
                             if (m.Message.MessageId is MessageId mi)
                             {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                             }
                             else if (m.Message.MessageId is BatchMessageId b)
                             {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                             }
                         }
                         yield return received;
@@ -319,11 +319,11 @@ namespace SharpPulsar.Akka
                             {
                                 if (m.Message.MessageId is MessageId mi)
                                 {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                                 }
                                 else if (m.Message.MessageId is BatchMessageId b)
                                 {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                                 }
                             }
                             yield return received;
@@ -342,11 +342,11 @@ namespace SharpPulsar.Akka
                         {
                             if (m.Message.MessageId is MessageId mi)
                             {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                             }
                             else if (m.Message.MessageId is BatchMessageId b)
                             {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                             }
                         }
                         yield return customHander(m.Message);
@@ -363,11 +363,11 @@ namespace SharpPulsar.Akka
                             {
                                 if (m.Message.MessageId is MessageId mi)
                                 {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                                 }
                                 else if (m.Message.MessageId is BatchMessageId b)
                                 {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                                 }
                             }
                             yield return customHander(m.Message);

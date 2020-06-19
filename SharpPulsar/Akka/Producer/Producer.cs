@@ -400,7 +400,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var request = Commands.NewGetOrCreateSchema(requestId, topic, schemaInfo);
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
-            return  _broker.Ask<GetOrCreateSchemaServerResponse>(payload, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).Result;
+            return  _broker.Ask<GetOrCreateSchemaServerResponse>(payload, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).GetAwaiter().GetResult();
         }
         
         private void PrepareMessage(Message msg)
@@ -600,7 +600,7 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            return _broker.Ask<SentReceipt>(pay, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).Result;
+            return _broker.Ask<SentReceipt>(pay, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).GetAwaiter().GetResult();
         }
         private bool PopulateMessageSchema(Message msg)
         {

@@ -37,10 +37,6 @@ namespace SharpPulsar.Impl.Conf
 			};
 			return jsonObject;
 		}
-		public string WriteValueAsString(object @object)
-		{
-			return JsonSerializer.Serialize(@object, Options());
-		}
 
         public byte[] WriteValueAsBytes(object @object)
         {

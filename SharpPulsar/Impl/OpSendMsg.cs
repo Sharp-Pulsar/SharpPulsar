@@ -52,13 +52,13 @@ namespace SharpPulsar.Impl
         {
             if (Msg != null)
             {
-                Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex));
+                Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex, null));
             }
             else
             {
                 for (var batchIndex = 0; batchIndex < Msgs.Count; batchIndex++)
                 {
-                    Msgs[batchIndex].SetMessageId(new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex));
+                    Msgs[batchIndex].SetMessageId(new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex, null));
                 }
             }
         }

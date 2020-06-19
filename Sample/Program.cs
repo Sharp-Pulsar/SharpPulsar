@@ -1161,12 +1161,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1225,12 +1225,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1265,12 +1265,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1305,12 +1305,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1344,12 +1344,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1383,12 +1383,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1421,12 +1421,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1460,12 +1460,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1500,12 +1500,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1539,12 +1539,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1580,12 +1580,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1620,12 +1620,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1659,12 +1659,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else

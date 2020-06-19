@@ -65,7 +65,7 @@ namespace SharpPulsar.Akka.Configuration
 
 		public ReaderConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
 		{
-            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex, null);
             return this;
 		}
         public ReaderConfigBuilder StartMessageId(IMessageId id)

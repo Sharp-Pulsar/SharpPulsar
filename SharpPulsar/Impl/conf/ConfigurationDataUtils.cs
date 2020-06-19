@@ -57,12 +57,12 @@ namespace SharpPulsar.Impl.Conf
 			var mapper = ThreadLocal;
 			try
 			{
-                var existingConfigJson = mapper.WriteValueAsString(existingData);
+                var existingConfigJson = JsonSerializer.Serialize(existingData);
 				var existingConfig = (Dictionary<string, object>)mapper.ReadValue(existingConfigJson, typeof(Dictionary<string, object>));
 				IDictionary<string, object> newConfig = new Dictionary<string, object>();
 				existingConfig.ToList().ForEach(x=> newConfig[x.Key] = x.Value);
 				config.ToList().ForEach(x => newConfig[x.Key] = x.Value);
-				var configJson = mapper.WriteValueAsString(newConfig);
+				var configJson = JsonSerializer.Serialize(newConfig);
                 var fullName = existingData.GetType().Name;
                 if (fullName != null)
                 {
@@ -72,7 +72,7 @@ namespace SharpPulsar.Impl.Conf
                     }
 					else if (fullName.Contains("ClientConfigurationData"))
                     {
-                        return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(mapper.WriteValueAsString(newConfig["Authentication"]), mapper));
+                        return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(JsonSerializer.Serialize(newConfig["Authentication"]), mapper));
 					}
                     else
                     {

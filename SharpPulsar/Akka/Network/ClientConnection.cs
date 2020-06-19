@@ -8,12 +8,10 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.Dispatch;
 using Akka.Event;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Akka.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
@@ -225,7 +223,7 @@ namespace SharpPulsar.Akka.Network
                                 break;
                             case BaseCommand.Type.Message:
                                 var msg = cmd.Message;
-                                _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount, msg.AckSets));
+                                _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition, msg.MessageId.AckSets), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount));
                                 break;
                             case BaseCommand.Type.Success:
                                 var s = cmd.Success;
