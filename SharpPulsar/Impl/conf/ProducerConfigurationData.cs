@@ -29,7 +29,6 @@ namespace SharpPulsar.Impl.Conf
     public class ProducerConfigurationData 
 	{
         public IProducerEventListener ProducerEventListener { get; set; }
-		public const int DefaultBatchingMaxMessages  = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
         public string TopicName { get; set; }
@@ -38,17 +37,14 @@ namespace SharpPulsar.Impl.Conf
         public List<IProducerInterceptor> Interceptors;
         public bool UseTls { get; set; } = false;
 		public long SendTimeoutMs { get; set; } = 30000;
-		public bool BlockIfQueueFull { get; set; } = false;
         public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
 		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
 
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
-		public long BatchingMaxPublishDelayMicros { get; set; } = BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS.ToMicros(1);
-		private int _batchingMaxBytes = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-		public bool BatchingEnabled { get; set; } = false; // enabled by default
+        public bool ChunkingEnabled { get; set; } = false;
 
-        [JsonIgnore]
+		[JsonIgnore]
 		public IBatcherBuilder BatcherBuilder { get; set; } = DefaultImplementation.NewDefaultBatcherBuilder();
 
         [JsonIgnore]
@@ -98,34 +94,12 @@ namespace SharpPulsar.Impl.Conf
 			}
 		}
 
-		public  int BatchingMaxMessages { get; set; }
-
-		public int BatchingMaxBytes
-		{
-			get => _batchingMaxBytes;
-            set => _batchingMaxBytes = value;
-        }
 
 		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
 			if (sendTimeoutMs < 1)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = sendTimeoutMs;
-		}
-
-		public void SetBatchingMaxPublishDelayMicros(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
-		{
-			var delayInMs = timeUnit.ToMillis(batchDelay);
-			if (delayInMs < 1)
-				throw new ArgumentException("configured value for batch delay must be at least 1ms");
-			BatchingMaxPublishDelayMicros = delayInMs;
-		}
-
-		public int BatchingPartitionSwitchFrequencyByPublishDelay { get; set; }
-
-        public virtual long BatchingPartitionSwitchFrequencyIntervalMicros()
-		{
-			return BatchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
 		}
 
 	}

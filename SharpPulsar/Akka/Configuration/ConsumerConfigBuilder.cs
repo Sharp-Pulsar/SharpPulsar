@@ -57,6 +57,24 @@ namespace SharpPulsar.Akka.Configuration
 			_conf = (ConsumerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
+
+        public ConsumerConfigBuilder MaxPendingChuckedMessage(int max)
+        {
+            _conf.MaxPendingChuckedMessage = max;
+            return this;
+        }
+
+        public ConsumerConfigBuilder ExpireTimeOfIncompleteChunkedMessageMillis(long expireTime)
+        {
+            _conf.ExpireTimeOfIncompleteChunkedMessageMillis = expireTime;
+            return this;
+        }
+
+        public ConsumerConfigBuilder AutoAckOldestChunkedMessageOnQueueFull(bool autoAck)
+        {
+            _conf.AutoAckOldestChunkedMessageOnQueueFull = autoAck;
+            return this;
+        }
 		public ConsumerConfigBuilder SetConsumptionType(ConsumptionType type)
         {
             _conf.ConsumptionType = type;

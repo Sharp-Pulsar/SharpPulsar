@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 
 namespace SharpPulsar.Impl
 {
@@ -8,10 +7,12 @@ namespace SharpPulsar.Impl
         internal Message Msg;
         internal IList<Message> Msgs;
         internal byte[] Cmd;
-        internal ThreadStart RePopulate;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
+
+        internal int TotalChunks = 0;
+        internal int ChunkId = -1;
 
         internal static OpSendMsg Create(Message msg, byte[] cmd, long sequenceId)
         {

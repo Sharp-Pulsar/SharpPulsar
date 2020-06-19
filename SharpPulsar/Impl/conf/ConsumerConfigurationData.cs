@@ -51,6 +51,10 @@ namespace SharpPulsar.Impl.Conf
 
 		public int PriorityLevel { get; set; } = 0;
 
+        public int MaxPendingChuckedMessage { get; set; }
+        public long ExpireTimeOfIncompleteChunkedMessageMillis { get; set; }
+        public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
+
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;

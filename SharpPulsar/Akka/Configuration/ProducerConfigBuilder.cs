@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -89,9 +87,9 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder BlockIfQueueFull(bool blockIfQueueFull)
+		public ProducerConfigBuilder EnableChunking(bool chunk)
 		{
-			_conf.BlockIfQueueFull = blockIfQueueFull;
+			_conf.ChunkingEnabled = chunk;
             return this;
 		}
 
@@ -112,19 +110,7 @@ namespace SharpPulsar.Akka.Configuration
 			_conf.HashingScheme = hashingScheme;
             return this;
 		}
-
-		public ProducerConfigBuilder MessageRouter(IMessageRouter messageRouter)
-		{
-			_conf.CustomMessageRouter = messageRouter;
-            return this;
-		}
-
-		/*public ProducerConfigBuilder EnableBatching(bool batchMessagesEnabled)
-		{
-			_conf.BatchingEnabled = batchMessagesEnabled;
-            return this;
-		}*/
-
+		
 		public ProducerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
@@ -142,36 +128,6 @@ namespace SharpPulsar.Akka.Configuration
 		public ProducerConfigBuilder CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
-            return this;
-		}
-
-		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
-		{
-			_conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
-            return this;
-		}
-
-		public ProducerConfigBuilder RoundRobinRouterBatchingPartitionSwitchFrequency(int frequency)
-		{
-			_conf.BatchingPartitionSwitchFrequencyByPublishDelay = frequency;
-            return this;
-		}
-
-		public ProducerConfigBuilder BatchingMaxMessages(int batchMessagesMaxMessagesPerBatch)
-		{
-			_conf.BatchingMaxMessages = batchMessagesMaxMessagesPerBatch;
-            return this;
-		}
-
-		public ProducerConfigBuilder BatchingMaxBytes(int batchingMaxBytes)
-		{
-			_conf.BatchingMaxBytes = batchingMaxBytes;
-            return this;
-		}
-
-		public ProducerConfigBuilder BatcherBuilder(IBatcherBuilder batcherBuilder)
-		{
-			_conf.BatcherBuilder = batcherBuilder;
             return this;
 		}
 

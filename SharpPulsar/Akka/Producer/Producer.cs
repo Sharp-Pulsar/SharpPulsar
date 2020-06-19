@@ -18,7 +18,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Impl.Crypto;
 using IMessage = SharpPulsar.Api.IMessage;
 
 namespace SharpPulsar.Akka.Producer
@@ -250,12 +253,12 @@ namespace SharpPulsar.Akka.Producer
                 }
                 Become(RecreatingProducer);
             });
-            Receive<Send>(ProcessSend);
+            Receive<Send>(PrepareAndSend);
             Receive<BulkSend>(s =>
             {
                 foreach (var m in s.Messages)
                 {
-                    ProcessSend(m);
+                    PrepareAndSend(m);
                 }
             });
             Receive<Terminated>(_ =>
@@ -279,7 +282,7 @@ namespace SharpPulsar.Akka.Producer
             });
             ReceiveAny(any => Stash.Stash());
         }
-        private void ProcessSend(Send s)
+        private void PrepareAndSend(Send s)
         {
             try
             {
@@ -413,11 +416,13 @@ namespace SharpPulsar.Akka.Producer
                 var uncompressedSize = payload.Length;
                 // Batch will be compressed when closed
                 // If a message has a delayed delivery time, we'll always send it individually if (!BatchMessagingEnabled || metadata.HasDeliverAtTime())
+                var compressedSize = 0;
+                var compressedPayload = payload;
                 if (_configuration.CompressionType != ICompressionType.None && metadata.UncompressedSize == 0)
                 {
-                    var compressedPayload = _compressor.Encode(payload);
+                    compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
-                    var compressedSize = compressedPayload.Length;
+                    compressedSize = compressedPayload.Length;
                     if (compressedSize > _serverInfo.MaxMessageSize)
                     {
                         var compressedStr = _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
@@ -425,54 +430,69 @@ namespace SharpPulsar.Akka.Producer
                         return;
                     }
 
-                    msg.Payload = compressedPayload;
+                    //msg.Payload = compressedPayload;
                     metadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(_configuration.CompressionType);
                 }
                 if (!PopulateMessageSchema(msg))
                 {
                     return;
-                }
-
-                if (!HasSequenceId(metadata.SequenceId))
+                }// send in chunks
+                var totalChunks = Math.Max(1,  compressedSize) / _serverInfo.MaxMessageSize + (Math.Max(1, compressedSize) % _serverInfo.MaxMessageSize == 0 ? 0 : 1);
+                var readStartIndex = 0;
+                var uuid = Guid.NewGuid().ToString();
+                for (var chunkId = 0; chunkId < totalChunks; chunkId++)
                 {
-                     _sequenceId += 1;
-                    metadata.SequenceId = (ulong)_sequenceId;
+                    SerializeAndSendMessage(msg, metadata, uuid, chunkId, totalChunks, readStartIndex, _serverInfo.MaxMessageSize, compressedPayload, compressedSize, uncompressedSize);
+                    readStartIndex = ((chunkId + 1) * _serverInfo.MaxMessageSize);
                 }
-                if (!HasPublishTime(metadata.PublishTime))
-                {
-                    metadata.PublishTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                }
-
-                if (string.IsNullOrWhiteSpace(metadata.ProducerName))
-                    metadata.ProducerName = ProducerName;
-
-                if(metadata.UncompressedSize == 0)
-                    metadata.UncompressedSize = (uint)uncompressedSize;
-
-                if(!HasEventTime(metadata.EventTime))
-                    metadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                SendMessage(msg);
             }
             catch (Exception e)
             {
                 Context.System.Log.Error(e.ToString());
             }
         }
-        private void SendMessage(Message msg)
+
+        private void SerializeAndSendMessage(Message msg, MessageMetadata metadata, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
         {
-            SendImmediate(msg);
+            var chunkPayload = compressedPayload.Slice(readStartIndex, Math.Min(chunkMaxSizeInBytes, compressedPayload.Length - readStartIndex)); 
+            var chunkMsgMetadata = metadata;
+            if (totalChunks > 1 && TopicName.Get(_topic).Persistent)
+            {
+                chunkMsgMetadata.Uuid =  uuid;
+                chunkMsgMetadata.ChunkId = chunkId;
+                chunkMsgMetadata.NumChunksFromMsg = totalChunks;
+                chunkMsgMetadata.TotalChunkMsgSize = compressedPayloadSize;
+            }
+            if (!HasSequenceId(chunkMsgMetadata.SequenceId))
+            {
+                _sequenceId += 1;
+                chunkMsgMetadata.SequenceId = (ulong)_sequenceId;
+            }
+            if (!HasPublishTime(chunkMsgMetadata.PublishTime))
+            {
+                chunkMsgMetadata.PublishTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            }
+
+            if (string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
+                chunkMsgMetadata.ProducerName = ProducerName;
+
+            if (chunkMsgMetadata.UncompressedSize == 0)
+                chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
+
+            if (!HasEventTime(chunkMsgMetadata.EventTime))
+                chunkMsgMetadata.EventTime = (ulong)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            SendMessage(msg, chunkMsgMetadata, chunkPayload, totalChunks, chunkId);
         }
-       
-        private void SendImmediate(Message msg)
+        private void SendMessage(Message msg, MessageMetadata chunkMsgMetadata, byte[] chunkPayload, int totalChunks, int chunkId)
         {
-            MessageMetadata metadata = msg.Metadata;
-            var encryptedPayload = EncryptMessage(metadata, msg.Payload);
+            var metadata = chunkMsgMetadata;
+            var encryptedPayload = EncryptMessage(metadata, chunkPayload);
             // When publishing during replication, we need to set the correct number of message in batch
             // This is only used in tracking the publish rate stats
             var numMessages = metadata.NumMessagesInBatch > 0 ? metadata.NumMessagesInBatch : 1;
-            OpSendMsg op = null;
-            var sequenceid = (long) metadata.SequenceId;
+            OpSendMsg op;
+            var sequenceid = (long)metadata.SequenceId;
             var schemaState = msg.GetSchemaState();
             if (schemaState == Message.SchemaState.Ready)
             {
@@ -482,14 +502,20 @@ namespace SharpPulsar.Akka.Producer
             }
             else
             {
-                op = OpSendMsg.Create(msg, null, sequenceid); 
+                op = OpSendMsg.Create(msg, null, sequenceid);
                 var msgMetadata = metadata;
                 op.Cmd = SendMessage(_producerId, sequenceid, numMessages, msgMetadata, encryptedPayload);
             }
             op.NumMessagesInBatch = numMessages;
             op.BatchSizeByte = encryptedPayload.Length;
+            if (totalChunks > 1)
+            {
+                op.TotalChunks = totalChunks;
+                op.ChunkId = chunkId;
+            }
             ProcessOpSendMsg(op);
         }
+       
         private long GetHighestSequenceId(OpSendMsg op)
         {
             return Math.Max(op.HighestSequenceId, op.SequenceId);

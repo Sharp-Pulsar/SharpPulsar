@@ -1,16 +1,9 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using Akka.Actor;
+﻿using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Api.Schema;
+using SharpPulsar.Api.Transaction;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
@@ -23,6 +16,15 @@ using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using Akka.Dispatch;
+using SharpPulsar.Impl.Crypto;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -36,10 +38,11 @@ namespace SharpPulsar.Akka.Consumer
         private readonly string _consumerName;
         private string _subscriptionName;
         private ISchema _schema;
-        private List<IConsumerInterceptor> _interceptors;
+        private readonly List<IConsumerInterceptor> _interceptors;
         private readonly IMessageListener _listener;
         private readonly IConsumerEventListener _consumerEventListener;
         private readonly TopicName _topicName;
+        private readonly List<string> _pendingChunckedMessageUuidQueue;
         private readonly IActorRef _network;
         private int _requestedFlowPermits;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
@@ -55,8 +58,17 @@ namespace SharpPulsar.Akka.Consumer
         private readonly bool _hasParentConsumer;
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
-        private bool _eventSourced;
-        private readonly Dictionary<BytesSchemaVersion, ISchemaInfo> _schemaCache = new Dictionary<BytesSchemaVersion, ISchemaInfo>();
+        private readonly Dictionary<MessageId, MessageId[]> _unAckedChunkedMessageIdSequenceMap;
+
+        private readonly bool _eventSourced;
+        protected internal Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
+        private int _pendingChunckedMessageCount = 0;
+        protected internal long _expireTimeOfIncompleteChunkedMessageMillis = 0;
+        private bool _expireChunkMessageTaskScheduled = false;
+        private readonly int _maxPendingChuckedMessage;
+        // if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
+        // the topic) then it guards against broken chuncked message which was not fully published
+        private readonly bool _autoAckOldestChunkedMessageOnQueueFull;
         private readonly IActorRef _pulsarManager;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
@@ -82,6 +94,13 @@ namespace SharpPulsar.Akka.Consumer
             _schema = configuration.Schema;
             _seek = seek;
             _consumerName = configuration.ConsumerName;
+            _unAckedChunkedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
+
+            _maxPendingChuckedMessage = configuration.MaxPendingChuckedMessage;
+            _pendingChunckedMessageUuidQueue = new List<string>();
+            _expireTimeOfIncompleteChunkedMessageMillis = configuration.ExpireTimeOfIncompleteChunkedMessageMillis;
+            _autoAckOldestChunkedMessageOnQueueFull = configuration.AutoAckOldestChunkedMessageOnQueueFull;
+
             // Create msgCrypto if not created already
             _msgCrypto = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
             
@@ -174,6 +193,7 @@ namespace SharpPulsar.Akka.Consumer
                 return;
             }
             var numMessages = msgMetadata.NumMessagesInBatch;
+            var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && _conf.SubscriptionType != CommandSubscribe.SubType.Shared;
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, messageId.AckSets);
             
             var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, payload);
@@ -199,8 +219,16 @@ namespace SharpPulsar.Akka.Consumer
             // and return undecrypted payload
             if (isMessageUndecryptable || (numMessages == 1 && msgMetadata.NumMessagesInBatch > 0))
             {
+                if (isChunkedMessage)
+                {
+                    uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId);
+                    if (uncompressedPayload == null)
+                    {
+                        return;
+                    }
+                }
 
-                if (IsResetIncludedAndSameEntryLedger(messageId) && IsPriorEntryIndex((long)messageId.entryId))
+                if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
                 {
                     // We need to discard entries that were prior to startMessageId
                     if (Context.System.Log.IsDebugEnabled)
@@ -230,6 +258,234 @@ namespace SharpPulsar.Akka.Consumer
             }
 
         }
+        private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId)
+        {
+
+            // Lazy task scheduling to expire incomplete chunk message
+            if (!_expireChunkMessageTaskScheduled && _expireTimeOfIncompleteChunkedMessageMillis > 0)
+            {
+                Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
+                _expireChunkMessageTaskScheduled = true;
+            }
+
+            if (msgMetadata.ChunkId == 0)
+            {
+                var chunkedMsgBuffer = compressedPayload;
+                var totalChunks = msgMetadata.NumChunksFromMsg;
+                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, chunkedMsgBuffer));
+                _pendingChunckedMessageCount++;
+                if (_maxPendingChuckedMessage > 0 && _pendingChunckedMessageCount > _maxPendingChuckedMessage)
+                {
+                    RemoveOldestPendingChunkedMessage();
+                }
+                _pendingChunckedMessageUuidQueue.Add(msgMetadata.Uuid);
+            }
+
+            var chunkedMsgCtx = _chunkedMessagesMap[msgMetadata.Uuid];
+            // discard message if chunk is out-of-order
+            if (chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
+            {
+                // means we lost the first chunk: should never happen
+                Context.System.Log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id {chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
+                _chunkedMessagesMap.Remove(msgMetadata.Uuid);
+                if (_expireTimeOfIncompleteChunkedMessageMillis > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + _expireTimeOfIncompleteChunkedMessageMillis))
+                {
+                    DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
+                }
+                else
+                {
+                    TrackMessage(msgId);
+                }
+                return null;
+            }
+
+            chunkedMsgCtx.ChunkedMessageIds[msgMetadata.ChunkId] = msgId;
+            // append the chunked payload and update lastChunkedMessage-id
+            chunkedMsgCtx.ChunkedMsgBuffer = compressedPayload;
+            chunkedMsgCtx.LastChunkedMessageId = msgMetadata.ChunkId;
+
+            // if final chunk is not received yet then release payload and return
+            if (msgMetadata.ChunkId != (msgMetadata.NumChunksFromMsg - 1))
+            {
+                return null;
+            }
+
+            // last chunk received: so, stitch chunked-messages and clear up chunkedMsgBuffer
+            if (Context.System.Log.IsDebugEnabled)
+            {
+                Context.System.Log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
+            }
+            // remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
+            _chunkedMessagesMap.Remove(msgMetadata.Uuid);
+            _unAckedChunkedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
+            _pendingChunckedMessageCount--;
+            compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer;
+            var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload);
+            return uncompressedPayload;
+        }
+        private void RemoveExpireIncompleteChunkedMessages()
+        {
+            if (_expireTimeOfIncompleteChunkedMessageMillis <= 0)
+            {
+                return;
+            }
+            ChunkedMessageCtx chunkedMsgCtx = null;
+            string messageUUID;
+            while (!string.ReferenceEquals((messageUUID = _pendingChunckedMessageUuidQueue.FirstOrDefault()), null))
+            {
+                chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
+                if (chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + _expireTimeOfIncompleteChunkedMessageMillis))
+                {
+                    _pendingChunckedMessageUuidQueue.Remove(messageUUID);
+                    RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+        private void RemoveOldestPendingChunkedMessage()
+        {
+            ChunkedMessageCtx chunkedMsgCtx = null;
+            string firstPendingMsgUuid = null;
+            while (chunkedMsgCtx == null && _pendingChunckedMessageUuidQueue.Count > 0)
+            {
+                // remove oldest pending chunked-message group and free memory
+                firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.FirstOrDefault();
+                chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? _chunkedMessagesMap[firstPendingMsgUuid] : null;
+            }
+            RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, _autoAckOldestChunkedMessageOnQueueFull);
+        }
+        private void RemoveChunkMessage(string msgUuid, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
+        {
+            if (chunkedMsgCtx == null)
+            {
+                return;
+            }
+            // clean up pending chuncked-Message
+            _chunkedMessagesMap.Remove(msgUuid);
+            if (chunkedMsgCtx.ChunkedMessageIds != null)
+            {
+                foreach (var msgId in chunkedMsgCtx.ChunkedMessageIds)
+                {
+                    if (msgId == null)
+                    {
+                        continue;
+                    }
+                    if (autoAck)
+                    {
+                        Context.System.Log.Info($"Removing chunk message-id {msgId}");
+                        DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
+                    }
+                    else
+                    {
+                        TrackMessage(msgId);
+                    }
+                }
+            }
+            _pendingChunckedMessageCount--;
+        }
+
+        private void DoAcknowledge(MessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, ITransaction txnImpl)
+        {
+            if (CommandAck.AckType.Individual.Equals(ackType))
+            {
+                OnAcknowledge(messageId, null);
+            }
+            else if (CommandAck.AckType.Cumulative.Equals(ackType))
+            {
+                OnAcknowledgeCumulative(messageId, null);
+            }
+            SendAcknowledge(messageId, ackType, properties, txnImpl);
+        }
+        private void SendAcknowledge(MessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, ITransaction txnImpl)
+        {
+            var msgId = (MessageId)messageId;
+
+            if (ackType == CommandAck.AckType.Individual)
+            {
+                OnAcknowledge(messageId, null);
+            }
+            else if (ackType == CommandAck.AckType.Cumulative)
+            {
+                OnAcknowledgeCumulative(messageId, null);
+            }
+
+            //acknowledgmentsGroupingTracker.addAcknowledgment(msgId, ackType, properties);
+
+        }
+
+        private void OnAcknowledge(MessageId messageId, Exception exception)
+        {
+            foreach (var interceptor in _interceptors)
+            {
+                interceptor.OnAcknowledge(Self, messageId, exception);
+            }
+        }
+
+        private void OnAcknowledgeCumulative(MessageId messageId, Exception exception)
+        {
+            foreach (var interceptor in _interceptors)
+            {
+                interceptor.OnAcknowledgeCumulative(Self, messageId, exception);
+            }
+        }
+
+        private void OnNegativeAcksSend(ISet<IMessageId> messageIds)
+        {
+            foreach (var interceptor in _interceptors)
+            {
+                interceptor.OnNegativeAcksSend(Self, messageIds);
+            }
+        }
+
+        private void OnAckTimeoutSend(ISet<IMessageId> messageIds)
+        {
+            foreach (var interceptor in _interceptors)
+            {
+                interceptor.OnAckTimeoutSend(Self, messageIds);
+            }
+        }
+
+        public bool CanEnqueueMessage(Message message)
+        {
+            // Default behavior, can be overridden in subclasses
+            return true;
+        }
+
+        public virtual void TrackMessage(Message msg)
+        {
+            if (msg != null)
+            {
+                TrackMessage(msg.MessageId);
+            }
+        }
+        public virtual void TrackMessage(IMessageId messageId)
+        {
+            if (_conf.AckTimeoutMillis > 0 && messageId is MessageId id1)
+            {
+                var id = id1;
+                if (id is BatchMessageId)
+                {
+                    // do not add each item in batch message into tracker
+                    id = new MessageId(id.LedgerId, id.EntryId, _partitionIndex, null);
+                }
+                if (_hasParentConsumer)
+                {
+                    //TODO: check parent consumer here
+                    // we should no longer track this message, TopicsConsumer will take care from now onwards
+                    //UnAckedMessageTracker.remove(id);
+                }
+                else
+                {
+                    //UnAckedMessageTracker.add(id);
+                }
+            }
+        }
+
+
         private EncryptionContext CreateEncryptionContext(MessageMetadata msgMetadata)
         {
 
@@ -274,9 +530,9 @@ namespace SharpPulsar.Akka.Consumer
         {
             return _conf.ResetIncludeHead ? idx < _startMessageId.EntryId : idx <= _startMessageId.EntryId;
         }
-        private bool IsResetIncludedAndSameEntryLedger(MessageIdData messageId)
+        private bool IsSameEntry(MessageIdData messageId)
         {
-            return !_conf.ResetIncludeHead && _startMessageId != null && (long)messageId.ledgerId == _startMessageId.LedgerId && (long)messageId.entryId == _startMessageId.EntryId;
+            return _startMessageId != null && (long)messageId.ledgerId == _startMessageId.LedgerId && (long)messageId.entryId == _startMessageId.EntryId;
         }
         private bool IsMessageUndecryptable(MessageMetadata msgMetadata)
         {
@@ -674,5 +930,26 @@ namespace SharpPulsar.Akka.Consumer
 
         }
         public IStash Stash { get; set; }
+    }
+    public class ChunkedMessageCtx
+    {
+
+        internal int TotalChunks = -1;
+        internal byte[] ChunkedMsgBuffer;
+        internal int LastChunkedMessageId = -1;
+        internal MessageId[] ChunkedMessageIds;
+        internal long ReceivedTime = 0;
+
+        internal static ChunkedMessageCtx Get(int numChunksFromMsg, byte[] chunkedMsg)
+        {
+            var ctx = new ChunkedMessageCtx
+            {
+                TotalChunks = numChunksFromMsg,
+                ChunkedMsgBuffer = chunkedMsg,
+                ChunkedMessageIds = new MessageId[numChunksFromMsg],
+                ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
+            };
+            return ctx;
+        }
     }
 }

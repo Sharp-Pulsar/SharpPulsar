@@ -31,7 +31,7 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Utility;
 
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Impl.Crypto
 {
 	//https://pulsar.apache.org/docs/en/security-encryption/
 	//https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
@@ -46,7 +46,7 @@ namespace SharpPulsar.Impl
 		private string _logCtx;
 		// Data key which is used to encrypt message
 		private byte[] _dataKey;
-		private ConcurrentDictionary<string, byte[]> _dataKeyCache;
+		private Cache<string, byte[]> _dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
 		private readonly ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl
 			_secureRandom = new SecureRandom();
 			_logCtx = logCtx;
 			_encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
-			_dataKeyCache = new ConcurrentDictionary<string, byte[]>(); //CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.HOURS).build(new CacheLoaderAnonymousInnerClass(this));
+			_dataKeyCache =  new Cache<string, byte[]>(4); //four hours
 
 			try
 			{
@@ -254,7 +254,7 @@ namespace SharpPulsar.Impl
 				return false;
 			}
 			_dataKey = dataKeyValue;
-			_dataKeyCache.TryAdd(keyDigest, _dataKey);
+			_dataKeyCache.Put(keyDigest, _dataKey);
 			return true;
 		}
 
@@ -290,8 +290,8 @@ namespace SharpPulsar.Impl
 			{
 				var msgDataKey = t.Value;
 				var keyDigest = Convert.ToBase64String(_hash.ComputeHash(msgDataKey));
-				
-				if (_dataKeyCache.TryGetValue(keyDigest, out var storedSecretKey))
+                var storedSecretKey = _dataKeyCache.Get(keyDigest);
+				if (storedSecretKey != null)
 				{
 
 					// Taking a small performance hit here if the hash collides. When it

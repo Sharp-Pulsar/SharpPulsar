@@ -119,18 +119,9 @@ namespace SharpPulsar.Impl
 		{
             if (data == null)
                 throw new ArgumentException();
-            var inputStream = new CodedInputStream((byte[])(object)data);
             var builder = new MessageIdData();
 
             MessageIdData idData = builder;
-			try
-			{
-				//idData.MergeFrom(inputStream);
-			}
-            catch (System.Exception e)
-            {
-                throw e;
-            }
 
 			IMessageId messageId;
 			if (idData.BatchIndex >= 0)
