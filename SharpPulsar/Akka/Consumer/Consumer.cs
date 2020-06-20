@@ -23,7 +23,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Akka.Dispatch;
 using SharpPulsar.Impl.Crypto;
 
 namespace SharpPulsar.Akka.Consumer
@@ -31,7 +30,6 @@ namespace SharpPulsar.Akka.Consumer
     public class Consumer:ReceiveActor, IWithUnboundedStash
     {
         private readonly int _partitionIndex;
-        private const int MaxRedeliverUnacknowledged = 1000;
         private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
         private readonly ConsumerConfigurationData _conf;
@@ -61,9 +59,9 @@ namespace SharpPulsar.Akka.Consumer
         private readonly Dictionary<MessageId, MessageId[]> _unAckedChunkedMessageIdSequenceMap;
 
         private readonly bool _eventSourced;
-        protected internal Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
+        private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
         private int _pendingChunckedMessageCount = 0;
-        protected internal long _expireTimeOfIncompleteChunkedMessageMillis = 0;
+        private long _expireTimeOfIncompleteChunkedMessageMillis = 0;
         private bool _expireChunkMessageTaskScheduled = false;
         private readonly int _maxPendingChuckedMessage;
         // if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
@@ -128,11 +126,11 @@ namespace SharpPulsar.Akka.Consumer
             }
             else
             {
-                var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
+                var batches = messageIds.PartitionMessageId();
                 var builder = new MessageIdData();
                 batches.ForEach(ids =>
                 {
-                    var messageIdDatas = ids.Where(messageId => !ProcessPossibleToDlq(messageId.LedgerId, messageId.EntryId, messageId.PartitionIndex, -1)).Select(messageId =>
+                    var messageIdDatas = ids.Select(messageId =>
                     {
                         builder.Partition = (messageId.PartitionIndex);
                         builder.ledgerId = (ulong)(messageId.LedgerId);
@@ -283,7 +281,7 @@ namespace SharpPulsar.Akka.Consumer
 
             var chunkedMsgCtx = _chunkedMessagesMap[msgMetadata.Uuid];
             // discard message if chunk is out-of-order
-            if (chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
+            if (chunkedMsgCtx?.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
             {
                 // means we lost the first chunk: should never happen
                 Context.System.Log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id {chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
@@ -855,8 +853,7 @@ namespace SharpPulsar.Akka.Consumer
             Receive<BrokerLookUp>(l =>
             {
                 var uri = _conf.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
-                //if (_clientConfiguration.UseProxy)
-                if (l.UseProxy)
+                if (_clientConfiguration.UseProxy)
                     _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
                 else
                     _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));

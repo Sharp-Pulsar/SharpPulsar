@@ -25,11 +25,11 @@ namespace SharpPulsar.Extension
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
         }
-        public static List<List<Unacked>> PartitionMessageId(this ImmutableHashSet<Unacked> source, int chunkSize)
+        public static List<List<Unacked>> PartitionMessageId(this ImmutableHashSet<Unacked> source)
         {
             return source
                 .Select((x, i) => new { Index = i, Value = x })
-                .GroupBy(x => x.Index / chunkSize)
+                .GroupBy(x => x.Value.PartitionIndex)
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
         }

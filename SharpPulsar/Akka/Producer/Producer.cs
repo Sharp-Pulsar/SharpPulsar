@@ -126,8 +126,7 @@ namespace SharpPulsar.Akka.Producer
                 var l = p;
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
-                //if(_clientConfiguration.UseProxy)
-                if(l.UseProxy)
+                if(_clientConfiguration.UseProxy)
                     _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
                 else
                     _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
@@ -423,7 +422,7 @@ namespace SharpPulsar.Akka.Producer
                     compressedPayload = _compressor.Encode(payload);
                     // validate msg-size (For batching this will be check at the batch completion size)
                     compressedSize = compressedPayload.Length;
-                    if (compressedSize > _serverInfo.MaxMessageSize)
+                    if (compressedSize > _serverInfo.MaxMessageSize && !_configuration.ChunkingEnabled)
                     {
                         var compressedStr = _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
                         Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_topic}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");

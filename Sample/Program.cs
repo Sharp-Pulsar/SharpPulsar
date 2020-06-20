@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Newtonsoft.Json;
@@ -633,6 +632,7 @@ namespace Samples
                 .ProducerName($"Test-{topic}")
                 .Topic(topic)
                 .Schema(jsonSchem)
+                .EnableChunking(true)
                 .EventListener(producerListener)
                 .ProducerConfigurationData;
 

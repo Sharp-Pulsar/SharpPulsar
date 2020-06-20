@@ -171,7 +171,7 @@ namespace SharpPulsar.Impl.Crypto
 			// Update message metadata with encrypted data key
 			foreach (var keyName in encKeys)
 			{
-				if (_encryptedDataKeyMap[keyName] == null)
+				if (!_encryptedDataKeyMap.TryGetValue(keyName, out var e))
 				{
 					// Attempt to load the key. This will allow us to load keys as soon as
 					// a new key is added to producer config
