@@ -31,6 +31,7 @@ namespace SharpPulsar.Impl.Conf
         public IProducerEventListener ProducerEventListener { get; set; }
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
+        public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
         public ISchema Schema;

@@ -55,6 +55,18 @@ namespace SharpPulsar.Akka.Configuration
             _conf.ProducerEventListener = listener;
             return this;
         }
+		/// <summary>
+		/// max in bytes
+		/// </summary>
+		/// <param name="max"></param>
+		/// <returns></returns>
+        public ProducerConfigBuilder MaxMessageSize(int max)
+        {
+            if (max < 1)
+                throw new ArgumentException("max should be > 0");
+            _conf.MaxMessageSize = max;
+            return this;
+        }
 		public ProducerConfigBuilder Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))

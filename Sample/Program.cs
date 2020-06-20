@@ -114,6 +114,11 @@ namespace Samples
                         var t1 = Console.ReadLine();
                         PlainAvroProducer(pulsarSystem, t1);
                         break;
+                    case "77":
+                        Console.WriteLine("[LargeAvroProducer] Enter topic: ");
+                        var t77 = Console.ReadLine();
+                        LargeAvroProducer(pulsarSystem, t77);
+                        break;
                     case "51":
                         Console.WriteLine("[PlainAvroCovidProducer] Enter topic: ");
                         var t51 = Console.ReadLine();
@@ -843,6 +848,47 @@ namespace Samples
             };
             var send = new Send(journal, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
+            system.Send(send, t.Producer);
+            Task.Delay(1000).Wait();
+            File.AppendAllLines("receipts.txt", Receipts);
+            Receipts.Clear();
+        }
+        private static void LargeAvroProducer(PulsarSystem system, string topic)
+        {
+            var jsonSchem = AvroSchema.Of(typeof(MediaStream));
+            var producerListener = new DefaultProducerListener((o) =>
+            {
+                Console.WriteLine(o.ToString());
+            },  s =>
+            {
+                Receipts.Add(s);
+            });
+            var producerConfig = new ProducerConfigBuilder()
+                .ProducerName($"Large - {topic}")
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(10000)
+                .EnableChunking(true)
+                .EventListener(producerListener)
+                .ProducerConfigurationData;
+
+            var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
+            
+            Console.WriteLine($"Acquired producer for topic: {t.Topic}");
+            var media = new MediaStream
+            {
+                Id = Guid.NewGuid().ToString(),
+                Type = MediaType.Video,
+                Container = MediaContainer.Flv,
+                Title = "Avatar Trailer",
+                Media = File.ReadAllBytes(Path.GetFullPath("Avatar.flv"))
+            };
+            var metadata = new Dictionary<string, object>
+            {
+                ["Key"] = "Chunk",
+                ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
+            };
+            var send = new Send(media, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
@@ -2320,5 +2366,29 @@ namespace Samples
         public byte[] Payload { get; set; }
         public long Ordering { get; set; }
         public string Tags { get; set; }
+    }
+    public class MediaStream
+    {
+        public string Id { get; set; }
+
+        public string Title { get; set; }
+        public MediaType Type { get; set; }
+        public MediaContainer Container { get; set; }
+        public byte[] Media { get; set; }
+
+    }
+
+    public enum MediaType
+    {
+        Video,
+        Audio
+    }
+
+    public enum MediaContainer
+    {
+        Flv,
+        Mp3,
+        Avi,
+        Mp4
     }
 }

@@ -140,7 +140,8 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<ConnectedServerInfo>(s =>
             {
-                _serverInfo = s;
+                var max = Math.Min(_configuration.MaxMessageSize, s.MaxMessageSize - 200);
+                _serverInfo = new ConnectedServerInfo(max, s.Protocol, s.Version, s.Name);
                 SendNewProducerCommand();
                 Become(WaitingForProducer);
             });
@@ -425,13 +426,17 @@ namespace SharpPulsar.Akka.Producer
                     if (compressedSize > _serverInfo.MaxMessageSize && !_configuration.ChunkingEnabled)
                     {
                         var compressedStr = _configuration.CompressionType != ICompressionType.None ? "Compressed" : "";
-                        Context.System.Log.Warning($"The producer '{ProducerName}' of the topic '{_topic}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
+                        Context.System.Log.Warning(
+                            $"The producer '{ProducerName}' of the topic '{_topic}' sends a '{compressedStr}' message with '{compressedSize}' bytes that exceeds '{_serverInfo.MaxMessageSize}' bytes");
                         return;
                     }
 
                     //msg.Payload = compressedPayload;
-                    metadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(_configuration.CompressionType);
+                    metadata.Compression =
+                        CompressionCodecProvider.ConvertToWireProtocol(_configuration.CompressionType);
                 }
+                else
+                    compressedSize = uncompressedSize;
                 if (!PopulateMessageSchema(msg))
                 {
                     return;
@@ -441,7 +446,8 @@ namespace SharpPulsar.Akka.Producer
                 var uuid = Guid.NewGuid().ToString();
                 for (var chunkId = 0; chunkId < totalChunks; chunkId++)
                 {
-                    SerializeAndSendMessage(msg, metadata, uuid, chunkId, totalChunks, readStartIndex, _serverInfo.MaxMessageSize, compressedPayload, compressedSize, uncompressedSize);
+                    var mt = metadata;
+                    SerializeAndSendMessage(msg, mt, uuid, chunkId, totalChunks, readStartIndex, _serverInfo.MaxMessageSize, compressedPayload, compressedSize, uncompressedSize);
                     readStartIndex = ((chunkId + 1) * _serverInfo.MaxMessageSize);
                 }
             }
@@ -453,16 +459,17 @@ namespace SharpPulsar.Akka.Producer
 
         private void SerializeAndSendMessage(Message msg, MessageMetadata metadata, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
         {
-            var chunkPayload = compressedPayload.Slice(readStartIndex, Math.Min(chunkMaxSizeInBytes, compressedPayload.Length - readStartIndex)); 
+            var chunkPayload = compressedPayload;
             var chunkMsgMetadata = metadata;
             if (totalChunks > 1 && TopicName.Get(_topic).Persistent)
             {
+                chunkPayload = compressedPayload.Slice(readStartIndex, Math.Min(chunkMaxSizeInBytes, compressedPayload.Length - readStartIndex));
                 chunkMsgMetadata.Uuid =  uuid;
                 chunkMsgMetadata.ChunkId = chunkId;
                 chunkMsgMetadata.NumChunksFromMsg = totalChunks;
                 chunkMsgMetadata.TotalChunkMsgSize = compressedPayloadSize;
             }
-            if (!HasSequenceId(chunkMsgMetadata.SequenceId))
+            if (!HasSequenceId(chunkMsgMetadata.SequenceId) || (long)chunkMsgMetadata.SequenceId == _sequenceId)
             {
                 _sequenceId += 1;
                 chunkMsgMetadata.SequenceId = (ulong)_sequenceId;
