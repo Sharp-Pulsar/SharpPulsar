@@ -318,6 +318,7 @@ namespace SharpPulsar.Akka.Consumer
             _unAckedChunkedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
             _pendingChunckedMessageCount--;
             compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer;
+            chunkedMsgCtx.Recycle();
             var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload);
             return uncompressedPayload;
         }
@@ -947,6 +948,13 @@ namespace SharpPulsar.Akka.Consumer
                 ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return ctx;
+        }
+
+        internal void Recycle()
+        {
+            TotalChunks = -1;
+            ChunkedMsgBuffer = null;
+            LastChunkedMessageId = -1;
         }
     }
 }
