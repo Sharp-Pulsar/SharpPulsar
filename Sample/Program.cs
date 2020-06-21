@@ -2108,7 +2108,7 @@ namespace Samples
         }
         private static void GetTopics(PulsarSystem system, string server)
         {
-            var e = system.PulsarAdmin<IList<string>>(new Admin(AdminCommands.GetTopics, new object[] { "events", "akka", "ALL"}, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+            var e = system.PulsarAdmin<IList<string>>(new Admin(AdminCommands.GetTopics, new object[] { "public", "default", "ALL"}, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
             var data = JsonConvert.SerializeObject(e, Formatting.Indented);
             Console.WriteLine(data);
         }

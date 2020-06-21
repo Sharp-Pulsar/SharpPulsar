@@ -205,7 +205,7 @@ namespace SharpPulsar.Akka.Consumer
             }
 
             // uncompress decryptedPayload and release decryptedPayload-ByteBuf
-            var uncompressedPayload = isMessageUndecryptable ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload);
+            var uncompressedPayload = isMessageUndecryptable ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, true);
             
             if (uncompressedPayload == null)
             {
@@ -299,7 +299,7 @@ namespace SharpPulsar.Akka.Consumer
 
             chunkedMsgCtx.ChunkedMessageIds[msgMetadata.ChunkId] = msgId;
             // append the chunked payload and update lastChunkedMessage-id
-            chunkedMsgCtx.ChunkedMsgBuffer = compressedPayload;
+            chunkedMsgCtx.ChunkedMsgBuffer.AddRange(compressedPayload);
             chunkedMsgCtx.LastChunkedMessageId = msgMetadata.ChunkId;
 
             // if final chunk is not received yet then release payload and return
@@ -317,9 +317,10 @@ namespace SharpPulsar.Akka.Consumer
             _chunkedMessagesMap.Remove(msgMetadata.Uuid);
             _unAckedChunkedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
             _pendingChunckedMessageCount--;
-            compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer;
+            compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();
+            AckMultiMessage(chunkedMsgCtx.ChunkedMessageIds);
             chunkedMsgCtx.Recycle();
-            var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload);
+            var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload, false);
             return uncompressedPayload;
         }
         private void RemoveExpireIncompleteChunkedMessages()
@@ -328,15 +329,15 @@ namespace SharpPulsar.Akka.Consumer
             {
                 return;
             }
-            ChunkedMessageCtx chunkedMsgCtx = null;
-            string messageUUID;
-            while (!string.ReferenceEquals((messageUUID = _pendingChunckedMessageUuidQueue.FirstOrDefault()), null))
+
+            string messageUuid;
+            while (!string.ReferenceEquals((messageUuid = _pendingChunckedMessageUuidQueue.FirstOrDefault()), null))
             {
-                chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
+                var chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUuid) ? _chunkedMessagesMap[messageUuid] : null;
                 if (chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + _expireTimeOfIncompleteChunkedMessageMillis))
                 {
-                    _pendingChunckedMessageUuidQueue.Remove(messageUUID);
-                    RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
+                    _pendingChunckedMessageUuidQueue.Remove(messageUuid);
+                    RemoveChunkMessage(messageUuid, chunkedMsgCtx, true);
                 }
                 else
                 {
@@ -599,14 +600,26 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMultiMessage(AckMultiMessage multiMessage)
         {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.MessageIds.Count);
             foreach (var m in multiMessage.MessageIds)
             {
                 entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
             }
-
-            var cmd = Commands.NewMultiMessageAck(_consumerid, entriesToAck);
+            SendAckMultiMessages(entriesToAck);
+        }
+        private void AckMultiMessage(MessageId[] multiMessage)
+        {
+            IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.Length);
+            foreach (var m in multiMessage)
+            {
+                entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
+            }
+            SendAckMultiMessages(entriesToAck);
+        }
+        private void SendAckMultiMessages(IList<KeyValuePair<long, long>> entries)
+        {
+            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+            var cmd = Commands.NewMultiMessageAck(_consumerid, entries);
             var payload = new Payload(cmd, requestid, "AckMultiMessages");
             _broker.Tell(payload);
         }
@@ -617,13 +630,13 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(cmd, requestid, "AckMessages");
             _broker.Tell(payload);
         }
-        private byte[] UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload)
+        private byte[] UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, bool checkMaxMessageSize)
         {
             var compressionType = msgMetadata.Compression;
             var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
             var uncompressedSize = (int)msgMetadata.UncompressedSize;
             var payloadSize = payload.Length;
-            if (payloadSize > _serverInfo.MaxMessageSize)
+            if (checkMaxMessageSize && payloadSize > _serverInfo.MaxMessageSize)
             {
                 // payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
                 Context.System.Log.Error($"[{_topicName}][{_subscriptionName}] Got corrupted payload message size {payloadSize} at {messageId}");
@@ -765,8 +778,8 @@ namespace SharpPulsar.Akka.Consumer
                     AckSets = m.MessageId.AckSet
                 };
                 HandleMessage(msgId, m.RedeliveryCount, m.Data);
-                if (_requestedFlowPermits == 50 && !_eventSourced)
-                    SendFlow(_requestedFlowPermits);
+                if (!_eventSourced)
+                    SendFlow(1);
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
@@ -933,7 +946,7 @@ namespace SharpPulsar.Akka.Consumer
     {
 
         internal int TotalChunks = -1;
-        internal byte[] ChunkedMsgBuffer;
+        internal List<byte> ChunkedMsgBuffer;
         internal int LastChunkedMessageId = -1;
         internal MessageId[] ChunkedMessageIds;
         internal long ReceivedTime = 0;
@@ -943,7 +956,7 @@ namespace SharpPulsar.Akka.Consumer
             var ctx = new ChunkedMessageCtx
             {
                 TotalChunks = numChunksFromMsg,
-                ChunkedMsgBuffer = chunkedMsg,
+                ChunkedMsgBuffer = new List<byte>(chunkedMsg),
                 ChunkedMessageIds = new MessageId[numChunksFromMsg],
                 ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
             };
@@ -953,6 +966,7 @@ namespace SharpPulsar.Akka.Consumer
         internal void Recycle()
         {
             TotalChunks = -1;
+            ChunkedMessageIds = null;
             ChunkedMsgBuffer = null;
             LastChunkedMessageId = -1;
         }
