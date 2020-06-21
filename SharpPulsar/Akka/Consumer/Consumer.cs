@@ -313,7 +313,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 Context.System.Log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
             }
-            // remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
+            // remove buffer from the map, add chunked messageId to unack-message tracker, and reduce pending-chunked-message count
             _chunkedMessagesMap.Remove(msgMetadata.Uuid);
             _unAckedChunkedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
             _pendingChunckedMessageCount--;

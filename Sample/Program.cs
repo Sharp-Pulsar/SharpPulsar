@@ -163,6 +163,11 @@ namespace Samples
                         var t8 = Console.ReadLine();
                         PlainAvroConsumer(pulsarSystem, t8);
                         break;
+                    case "78":
+                        Console.WriteLine("[LargeAvroConsumer] Enter topic: ");
+                        var t78 = Console.ReadLine();
+                        LargeAvroConsumer(pulsarSystem, t78);
+                        break;
                     case "68":
                         Console.WriteLine("[GetLastMessageId] Enter topic: ");
                         var tid = Console.ReadLine();
@@ -1219,6 +1224,45 @@ namespace Samples
                     Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
             }, null);
             var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
+            var topicLast = topic.Split("/").Last();
+            var consumerConfig = new ConsumerConfigBuilder()
+                .ConsumerName(topicLast)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"{topicLast}-Subscription")
+                .Topic(topic)
+
+                .ConsumerEventListener(consumerListener)
+                .SubscriptionType(CommandSubscribe.SubType.Exclusive)
+                .Schema(jsonSchem)
+                .MessageListener(messageListener)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .ConsumerConfigurationData;
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+
+        }
+        
+        private static void LargeAvroConsumer(PulsarSystem system,  string topic)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var messageListener = new DefaultMessageListener((a, m) =>
+            {
+                var media = m.ToTypeOf<MediaStream>();
+                var s = JsonSerializer.Serialize(media);
+                Messages.Add(s);
+                Console.WriteLine(s);
+                if (m.MessageId is MessageId mi)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                }
+                else if (m.MessageId is BatchMessageId b)
+                {
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    
+                }
+                else
+                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
+            }, null);
+            var jsonSchem = new AutoConsumeSchema();
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
