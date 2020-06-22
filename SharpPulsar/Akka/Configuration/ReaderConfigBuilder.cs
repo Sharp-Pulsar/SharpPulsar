@@ -4,6 +4,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
+using Range = SharpPulsar.Api.Range;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -54,6 +55,28 @@ namespace SharpPulsar.Akka.Configuration
 			var startMessageId = _conf.StartMessageId;
 			_conf = (ReaderConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
 			_conf.StartMessageId = startMessageId;
+            return this;
+        }
+        public ReaderConfigBuilder KeyHashRange(Range[] ranges)
+        {
+            Precondition.Condition.CheckArgument(ranges != null && ranges.Length > 0, "Cannot specify a null ofr an empty key hash ranges for a reader");
+            for (var i = 0; i < ranges.Length; i++)
+            {
+                var range1 = ranges[i];
+                if (range1.Start < 0 || range1.End > KeySharedPolicy.DefaultHashRangeSize)
+                {
+                    throw new ArgumentException("Ranges must be [0, 65535] but provided range is " + range1);
+                }
+                for (var j = 0; j < ranges.Length; j++)
+                {
+                    var range2 = ranges[j];
+                    if (i != j && range1.Intersect(range2) != null)
+                    {
+                        throw new ArgumentException("Key hash ranges with overlap between " + range1 + " and " + range2);
+                    }
+                }
+            }
+            _conf.KeyHashRanges = new List<Range>(ranges);
             return this;
         }
 

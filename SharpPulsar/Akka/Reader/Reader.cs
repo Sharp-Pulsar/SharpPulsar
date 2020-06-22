@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -49,6 +51,10 @@ namespace SharpPulsar.Akka.Reader
                 consumerConfiguration.CryptoKeyReader = readerConfiguration.CryptoKeyReader;
             }
 
+            if (readerConfiguration.KeyHashRanges != null)
+            {
+                consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
+            }
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek, pulsarManager));
             Receive<ConsumedMessage>(m =>

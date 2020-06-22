@@ -74,7 +74,7 @@ namespace SharpPulsar.Api
 		/// </summary>
 		public class KeySharedPolicySticky : KeySharedPolicy
 		{
-			private IList<Range> _ranges;
+			private readonly IList<Range> _ranges;
 
 			public KeySharedPolicySticky()
 			{

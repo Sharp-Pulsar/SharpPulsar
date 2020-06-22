@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Api;
+﻿using System.Collections.Generic;
+using SharpPulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,6 +23,7 @@ namespace SharpPulsar.Impl.Conf
 {
     public sealed class ReaderConfigurationData
 	{
+        public IList<Range> KeyHashRanges { get; set; }
 		public IMessageId StartMessageId { get; set; }
 		public IConsumerEventListener EventListener { get; set; }
 		public long StartMessageFromRollbackDurationInSec { get; set; }
