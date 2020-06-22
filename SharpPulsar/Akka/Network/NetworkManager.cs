@@ -11,11 +11,11 @@ namespace SharpPulsar.Akka.Network
 {
     public class NetworkManager: ReceiveActor, IWithUnboundedStash
     {
-        private IActorRef _manager;
-        private ClientConfigurationData _configuration; 
-        private PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
-        private Dictionary<string, IActorRef> _hosts = new Dictionary<string, IActorRef>();
-        private Random _randomHost = new Random();
+        private readonly IActorRef _manager;
+        private readonly ClientConfigurationData _configuration; 
+        private readonly PulsarServiceNameResolver _serviceNameResolver = new PulsarServiceNameResolver();
+        private readonly Dictionary<string, IActorRef> _hosts = new Dictionary<string, IActorRef>();
+        private readonly Random _randomHost = new Random();
 		public NetworkManager(IActorRef manager, ClientConfigurationData configuration)
         {
             _serviceNameResolver.UpdateServiceUrl(configuration.ServiceUrl);

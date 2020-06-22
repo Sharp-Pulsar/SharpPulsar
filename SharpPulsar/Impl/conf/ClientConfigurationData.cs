@@ -30,6 +30,8 @@ namespace SharpPulsar.Impl.Conf
 	/// </summary>
 	public sealed class ClientConfigurationData
 	{
+        public string ProxyServiceUrl { get; set; }
+        public ProxyProtocol? ProxyProtocol { get; set; }
 		public int OperationTimeoutMs { get; set; } = 30000;
         public int WebServicePort { get; set; } = 8080;
         public string WebServiceScheme { get; set; } = "http";

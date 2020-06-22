@@ -17,6 +17,7 @@
 //https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-cli
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -29,9 +30,12 @@ namespace SharpPulsar.Akka.Network
     {
         private readonly X509Certificate2Collection _clientCertificates;
         private readonly X509Certificate2? _trustedCertificateAuthority;
+        private readonly ClientConfigurationData _clientConfiguration;
         private readonly bool _verifyCertificateAuthority;
         private readonly bool _verifyCertificateName;
-        private bool _encrypt;
+        private readonly bool _encrypt;
+        private readonly string _serviceUrl;
+        private string _serviceSniName;
 
         public Connector(ClientConfigurationData conf)
         {
@@ -42,11 +46,14 @@ namespace SharpPulsar.Akka.Network
             _verifyCertificateAuthority = conf.VerifyCertificateAuthority;
             _verifyCertificateName = conf.VerifyCertificateName;
             _encrypt = conf.UseTls;
+            _serviceUrl = conf.ServiceUrl;
+            _clientConfiguration = conf;
         }
 
-        public Stream Connect(Uri endPoint)
+        public Stream Connect(Uri endPoint, string hostName)
         {
             var host = endPoint.Host;
+            _serviceSniName = hostName;
             var stream = GetStream(endPoint);
 
             if (_encrypt)
@@ -61,7 +68,13 @@ namespace SharpPulsar.Akka.Network
 
             try
             {
-                tcpClient.Connect(endPoint.Host, endPoint.Port);
+                if (!SniProxy)
+                    tcpClient.Connect(endPoint.Host, endPoint.Port);
+                else
+                {
+                    var proxy = new Uri(_clientConfiguration.ProxyServiceUrl);
+                    tcpClient.Connect(proxy.Host, proxy.Port);
+                }
                 return tcpClient.GetStream();
             }
             catch(Exception ex)
@@ -77,8 +90,8 @@ namespace SharpPulsar.Akka.Network
 
             try
             {
-                sslStream = new SslStream(stream, false, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
-                sslStream.AuthenticateAsClient(host, _clientCertificates, SslProtocols.None, true);
+                sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
+                sslStream.AuthenticateAsClient(host, _clientCertificates, SslProtocols.Tls12, false);
                 return sslStream;
             }
             catch
@@ -91,35 +104,45 @@ namespace SharpPulsar.Akka.Network
                 throw;
             }
         }
+        private bool SniProxy => _encrypt && _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
 
         private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            if (sslPolicyErrors == SslPolicyErrors.None)
-                return true;
-
-            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
-                return false;
-
-            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch) && _verifyCertificateName)
-                return false;
-
-            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors) && _verifyCertificateAuthority)
+            bool result;
+            switch (sslPolicyErrors)
             {
-                if (_trustedCertificateAuthority is null)
+                case SslPolicyErrors.None:
+                    result = true;
+                    break;
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+
+                    if (_trustedCertificateAuthority is null)
+                        return false;
+
+                    chain.ChainPolicy.ExtraStore.Add(_trustedCertificateAuthority);
+                    _ = chain.Build((X509Certificate2)certificate);
+                    for (var i = 0; i < chain.ChainElements.Count; i++)
+                    {
+                        if (chain.ChainElements[i].Certificate.Thumbprint == _trustedCertificateAuthority.Thumbprint)
+                            return true;
+                    }
                     return false;
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    var cert = new X509Certificate2(certificate);
+                    var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
+                    var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
+                    string[] addresses = { _serviceUrl, _serviceSniName };
 
-                chain.ChainPolicy.ExtraStore.Add(_trustedCertificateAuthority);
-                _ = chain.Build((X509Certificate2)certificate);
-                for (var i = 0; i < chain.ChainElements.Count; i++)
-                {
-                    if (chain.ChainElements[i].Certificate.Thumbprint == _trustedCertificateAuthority.Thumbprint)
-                        return true;
-                }
+                    // if the ending of the sni and servername do match the common name of the cert, fail
+                    result = addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
+                    break;
 
-                return false;
+                default:
+                    result = false;
+                    break;
             }
 
-            return true;
+            return result;
         }
     }
 }

@@ -76,7 +76,7 @@ namespace SharpPulsar.Impl
 			{
 				uri = ServiceUri.Create(serviceUrl);
 			}
-			catch (System.Exception iae)
+			catch (Exception iae)
 			{
 				Log.LogWarning("Invalid service-url {} provided {}", serviceUrl, iae.Message, iae);
 				throw;
