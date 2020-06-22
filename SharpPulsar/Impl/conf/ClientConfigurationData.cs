@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Impl.Auth;
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 
 /// <summary>
@@ -29,8 +30,17 @@ namespace SharpPulsar.Impl.Conf
 	/// This is a simple holder of the client configuration values.
 	/// </summary>
 	public sealed class ClientConfigurationData
-	{
-        public string ProxyServiceUrl { get; set; }
+    {
+
+        public string TlsTrustStoreType { get; set; } = "JKS";
+        public string TlsTrustStorePath { get; set; } = null;
+        private string TlsTrustStorePassword { get; set; } = null;
+        private ISet<string> TlsCiphers { get; set; } = new HashSet<string>();
+        private ISet<string>TlsProtocols { get; set; } = new HashSet<string>();
+		public string SslProvider { get; set; } = null;
+		public bool UseKeyStoreTls { get; set; } = false;
+		public bool TlsAllowInsecureConnection { get; set; } = false;
+		public string ProxyServiceUrl { get; set; }
         public ProxyProtocol? ProxyProtocol { get; set; }
 		public int OperationTimeoutMs { get; set; } = 30000;
         public int WebServicePort { get; set; } = 8080;

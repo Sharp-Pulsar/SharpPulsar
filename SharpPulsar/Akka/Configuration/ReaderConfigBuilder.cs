@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Configuration
 			_conf.StartMessageId = startMessageId;
             return this;
         }
-        public ReaderConfigBuilder KeyHashRange(Range[] ranges)
+        public ReaderConfigBuilder KeyHashRange(params Range[] ranges)
         {
             Precondition.Condition.CheckArgument(ranges != null && ranges.Length > 0, "Cannot specify a null ofr an empty key hash ranges for a reader");
             for (var i = 0; i < ranges.Length; i++)

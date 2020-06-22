@@ -83,4 +83,52 @@ namespace PulsarAdmin.Models
         public IList<PoolArenaStats> HeapArenas { get; set; }
 
     }
+
+    public partial class ConnectionStats
+    {
+        /// <summary>
+        /// Initializes a new instance of the AllocatorStats class.
+        /// </summary>
+        public ConnectionStats()
+        {
+            CustomInit();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the AllocatorStats class.
+        /// </summary>
+        public ConnectionStats(double requestRate = default(double), double byteRate = default(double), string clientAddress = default(string), string brokerAddress = default(string))
+        {
+            RequestRate = requestRate;
+            ByteRate = byteRate;
+            ClientAddress = clientAddress;
+            BrokerAddress = brokerAddress;
+            CustomInit();
+        }
+
+        /// <summary>
+        /// An initialization method that performs custom operations like setting defaults
+        /// </summary>
+        partial void CustomInit();
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "requestRate")]
+        public double RequestRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "byteRate")]
+        public double ByteRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "clientAddress")]
+        public string ClientAddress { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "brokerAddress")]
+        public string BrokerAddress { get; set; }
+    }
 }

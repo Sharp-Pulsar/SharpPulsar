@@ -108,6 +108,39 @@ namespace PulsarAdmin
         Task<HttpOperationResponse<AllocatorStats>> GetAllocatorStatsWithHttpMessagesAsync(string allocator, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Proxy stats api to get info for live connections
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        Task<HttpOperationResponse<IList<ConnectionStats>>> GetProxyConnectionStatsWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Get message by its messageId
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        Task<HttpOperationResponse<object>> GetMessageByIdWithHttpMessagesAsync(string tenant, string @namespace, string topic, long ledger, long entry, bool isPersistentTopic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        
+        /// <summary>
+        /// Get the stats for proxy live topics
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// The headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        Task<HttpOperationResponse<IDictionary<string, TopicStats>>> GetProxyTopicsStatsWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
         /// Get pending bookie client op stats by namesapce
         /// </summary>
         /// <param name='customHeaders'>

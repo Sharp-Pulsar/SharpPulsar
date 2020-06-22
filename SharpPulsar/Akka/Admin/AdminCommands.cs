@@ -36,6 +36,24 @@ namespace SharpPulsar.Akka.Admin
         /// <summary>
         /// Arguments[]
         /// </summary>
+        /// <returns>List<ConnectionStats></returns>
+        GetProxyConnectionStats,
+
+        /// <summary>
+        /// Arguments[string tenant, string namespace, string topic, long ledgerId, long entry, bool isPersistentTopic]
+        /// </summary>
+        /// <returns>object</returns>
+        GetMessageById,
+
+        /// <summary>
+        /// Arguments[]
+        /// </summary>
+        /// <returns>IDictionary<string, TopicStats></returns>
+        GetProxyTopicStats,
+
+        /// <summary>
+        /// Arguments[]
+        /// </summary>
         /// <returns>IDictionary<string, PendingBookieOpsStats></returns>
         GetPendingBookieOpsStats,
 

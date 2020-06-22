@@ -1302,6 +1302,21 @@ namespace SharpPulsar.Akka.Admin
                         var ns110 = admin.Arguments[1].ToString();
                         response =_adminRestapi.GetOffloadPolicies(tenant110, ns110);
                         break;
+                    case AdminCommands.GetProxyConnectionStats:
+                        response =_adminRestapi.GetProxyConnectionsStats();
+                        break;
+                    case AdminCommands.GetProxyTopicStats:
+                        response =_adminRestapi.GetProxyTopicsStats();
+                        break;
+                    case AdminCommands.GetMessageById:
+                        var gmsgT = admin.Arguments[0].ToString();
+                        var gmsgN = admin.Arguments[1].ToString();
+                        var gmsgTo = admin.Arguments[2].ToString();
+                        var gmsgL = (long)admin.Arguments[3];
+                        var gmsgE = (long)admin.Arguments[4];
+                        var gmsgI = (bool)admin.Arguments[5];
+                        response =_adminRestapi.GetMessageById(gmsgT, gmsgN, gmsgTo, gmsgL, gmsgE, gmsgI);
+                        break;
                 }
                 _pulsarManager.Tell(new AdminResponse(response));
             }

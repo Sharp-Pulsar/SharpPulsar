@@ -9382,5 +9382,143 @@ namespace PulsarAdmin
                 return _result.Body;
             }
         }
+        
+        /// <summary>
+        ///  Proxy stats api to get info for live topics
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <exception cref="HttpOperationException">
+        /// Thrown when the operation returned an invalid status code
+        /// </exception>
+        /// <exception cref="SerializationException">
+        /// Thrown when unable to deserialize the response
+        /// </exception>
+        /// <exception cref="ValidationException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public static IDictionary<string, TopicStats> GetProxyTopicsStats(this IPulsarAdminRESTAPI operations)
+        {
+            return operations.GetProxyTopicsStatsAsync().GetAwaiter().GetResult();
+        }
+
+
+        /// <summary>
+        ///  Proxy stats api to get info for live topics
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <exception cref="HttpOperationException">
+        /// Thrown when the operation returned an invalid status code
+        /// </exception>
+        /// <exception cref="SerializationException">
+        /// Thrown when unable to deserialize the response
+        /// </exception>
+        /// <exception cref="ValidationException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public static async Task<IDictionary<string, TopicStats>> GetProxyTopicsStatsAsync(this IPulsarAdminRESTAPI operations, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            using (var _result = await operations.GetProxyTopicsStatsWithHttpMessagesAsync(null, cancellationToken).ConfigureAwait(false))
+            {
+                return _result.Body;
+            }
+        }
+        /// <summary>
+        ///  Proxy stats api to get info for live connections
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <exception cref="HttpOperationException">
+        /// Thrown when the operation returned an invalid status code
+        /// </exception>
+        /// <exception cref="SerializationException">
+        /// Thrown when unable to deserialize the response
+        /// </exception>
+        /// <exception cref="ValidationException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public static IList<ConnectionStats> GetProxyConnectionsStats(this IPulsarAdminRESTAPI operations)
+        {
+            return operations.GetProxyConnectionStatsAsync().GetAwaiter().GetResult();
+        }
+
+
+        /// <summary>
+        ///  Proxy stats api to get info for live connections
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <exception cref="HttpOperationException">
+        /// Thrown when the operation returned an invalid status code
+        /// </exception>
+        /// <exception cref="SerializationException">
+        /// Thrown when unable to deserialize the response
+        /// </exception>
+        /// <exception cref="ValidationException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when a required parameter is null
+        /// </exception>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public static async Task<IList<ConnectionStats>> GetProxyConnectionStatsAsync(this IPulsarAdminRESTAPI operations, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            using (var _result = await operations.GetProxyConnectionStatsWithHttpMessagesAsync(null, cancellationToken).ConfigureAwait(false))
+            {
+                return _result.Body;
+            }
+        }
+
+
+        public static object GetMessageById(this IPulsarAdminRESTAPI operations, string tenant, string @namespace, string topic, long ledger, long entry, bool isPersistentTopic)
+        {
+            return operations.GetMessageByIdAsync(tenant, @namespace, topic, ledger, entry, isPersistentTopic).GetAwaiter().GetResult();
+        }
+
+
+        public static async Task<object> GetMessageByIdAsync(this IPulsarAdminRESTAPI operations, string tenant, string @namespace, string topic, long ledger, long entry, bool isPersistentTopic, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            using (var _result = await operations.GetMessageByIdWithHttpMessagesAsync(tenant, @namespace, topic, ledger, entry, isPersistentTopic, null, cancellationToken).ConfigureAwait(false))
+            {
+                return _result.Body;
+            }
+        }
     }
 }
