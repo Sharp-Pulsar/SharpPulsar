@@ -8,6 +8,7 @@ using SharpPulsar.Akka.Admin.Api.Models;
 
 namespace SharpPulsar.Akka.Admin
 {
+    //todo: getPartitionedStatsInternal, getPartitionedStats, getManagedLedgerInfo investigate return types
     public class AdminWorker:ReceiveActor
     {
         private readonly PulsarAdminRESTAPI _adminRestapi;

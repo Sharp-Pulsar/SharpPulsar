@@ -707,8 +707,7 @@ namespace SharpPulsar.Akka.Consumer
                 si = null;
             }
 
-            var intial = Enum.GetValues(typeof(CommandSubscribe.InitialPosition))
-                .Cast<CommandSubscribe.InitialPosition>().ToList()[_conf.SubscriptionInitialPosition.Value];
+            var intial = Enum.GetValues(typeof(CommandSubscribe.InitialPosition)).Cast<CommandSubscribe.InitialPosition>().ToList()[_conf.SubscriptionInitialPosition.Value];
             // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
             var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
             if (_conf.SubscriptionType == CommandSubscribe.SubType.Exclusive && _hasParentConsumer)

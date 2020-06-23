@@ -34,7 +34,7 @@ namespace PulsarAdmin.Models
         /// 'UNDEFINED', 'ALWAYS_INCOMPATIBLE', 'ALWAYS_COMPATIBLE',
         /// 'BACKWARD', 'FORWARD', 'FULL', 'BACKWARD_TRANSITIVE',
         /// 'FORWARD_TRANSITIVE', 'FULL_TRANSITIVE'</param>
-        public Policies(AuthPolicies authPolicies = default(AuthPolicies), IList<string> replicationClusters = default(IList<string>), BundlesData bundles = default(BundlesData), IDictionary<string, BacklogQuota> backlogQuotaMap = default(IDictionary<string, BacklogQuota>), IDictionary<string, DispatchRate> clusterDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> topicDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> subscriptionDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> replicatorDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, SubscribeRate> clusterSubscribeRate = default(IDictionary<string, SubscribeRate>), PersistencePolicies persistence = default(PersistencePolicies), bool? deduplicationEnabled = default(bool?), IDictionary<string, PublishRate> publishMaxMessageRate = default(IDictionary<string, PublishRate>), IDictionary<string, int?> latencyStatsSampleRate = default(IDictionary<string, int?>), int? messageTtlInSeconds = default(int?), RetentionPolicies retentionPolicies = default(RetentionPolicies), bool? deleted = default(bool?), string antiAffinityGroup = default(string), bool? encryptionRequired = default(bool?), DelayedDeliveryPolicies delayedDeliveryPolicies = default(DelayedDeliveryPolicies), string subscriptionAuthMode = default(string), int? maxProducersPerTopic = default(int?), int? maxConsumersPerTopic = default(int?), int? maxConsumersPerSubscription = default(int?), long? compactionThreshold = default(long?), long? offloadThreshold = default(long?), long? offloadDeletionLagMs = default(long?), string schemaAutoUpdateCompatibilityStrategy = default(string), string schemaCompatibilityStrategy = default(string), bool? isAllowAutoUpdateSchema = default(bool?), bool? schemaValidationEnforced = default(bool?), OffloadPolicies offloadPolicies = default(OffloadPolicies))
+        public Policies(AuthPolicies authPolicies = default(AuthPolicies), IList<string> replicationClusters = default(IList<string>), BundlesData bundles = default(BundlesData), IDictionary<string, BacklogQuota> backlogQuotaMap = default(IDictionary<string, BacklogQuota>), IDictionary<string, DispatchRate> clusterDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> topicDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> subscriptionDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, DispatchRate> replicatorDispatchRate = default(IDictionary<string, DispatchRate>), IDictionary<string, SubscribeRate> clusterSubscribeRate = default(IDictionary<string, SubscribeRate>), PersistencePolicies persistence = default(PersistencePolicies), bool? deduplicationEnabled = default(bool?), IDictionary<string, PublishRate> publishMaxMessageRate = default(IDictionary<string, PublishRate>), IDictionary<string, int?> latencyStatsSampleRate = default(IDictionary<string, int?>), int? messageTtlInSeconds = default(int?), RetentionPolicies retentionPolicies = default(RetentionPolicies), bool? deleted = default(bool?), string antiAffinityGroup = default(string), bool? encryptionRequired = default(bool?), DelayedDeliveryPolicies delayedDeliveryPolicies = default(DelayedDeliveryPolicies), string subscriptionAuthMode = default(string), int? maxProducersPerTopic = default(int?), int? maxConsumersPerTopic = default(int?), int? maxConsumersPerSubscription = default(int?), long? compactionThreshold = default(long?), long? offloadThreshold = default(long?), long? offloadDeletionLagMs = default(long?), string schemaAutoUpdateCompatibilityStrategy = default(string), string schemaCompatibilityStrategy = default(string), bool? isAllowAutoUpdateSchema = default(bool?), bool? schemaValidationEnforced = default(bool?), OffloadPolicies offloadPolicies = default(OffloadPolicies), int maxUnackedMessagesPerSubscription = default(int), int maxUnackMessagesPerConsumer = default(int))
         {
             AuthPolicies = authPolicies;
             ReplicationClusters = replicationClusters;
@@ -67,6 +67,8 @@ namespace PulsarAdmin.Models
             IsAllowAutoUpdateSchema = isAllowAutoUpdateSchema;
             SchemaValidationEnforced = schemaValidationEnforced;
             OffloadPolicies = offloadPolicies;
+            MaxUnackedMessagesPerSubscription = maxUnackedMessagesPerSubscription;
+            MaxUnackMessagesPerConsumer = maxUnackMessagesPerConsumer;
             CustomInit();
         }
 
@@ -237,6 +239,15 @@ namespace PulsarAdmin.Models
         /// </summary>
         [JsonProperty(PropertyName = "offload_policies")]
         public OffloadPolicies OffloadPolicies { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "max_unacked_messages_per_subscription")]
+        public int MaxUnackedMessagesPerSubscription { get; set; } = -1;
+        /// <summary>
+        /// </summary>
+        [JsonProperty(PropertyName = "max_unacked_messages_per_consumer")]
+        public int MaxUnackMessagesPerConsumer { get; set; } = -1;
 
     }
 }
