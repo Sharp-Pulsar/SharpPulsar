@@ -18,10 +18,11 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Batch.Api;
+
 namespace SharpPulsar.Impl
 {
-	using IBatchMessageContainer = Api.IBatchMessageContainer;
-	using IBatcherBuilder = Api.IBatcherBuilder;
 	public class DefaultBatcherBuilder : IBatcherBuilder
 	{
 		public IBatchMessageContainer Build()

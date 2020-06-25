@@ -1,10 +1,10 @@
-﻿using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
-using SharpPulsar.Common.Schema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>
@@ -25,7 +25,7 @@ using SharpPulsar.Protocol.Proto;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Api
 {
 
 	/// <summary>

@@ -18,6 +18,7 @@
 /// </summary>
 
 using System.Text;
+using SharpPulsar.Api;
 
 namespace SharpPulsar.Impl
 {

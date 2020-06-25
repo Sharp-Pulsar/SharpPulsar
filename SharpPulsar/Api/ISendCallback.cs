@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,13 +19,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Api
 {
-
-	using IMessageId = Api.IMessageId;
-
-	/// 
-	public interface SendCallback
+    /// 
+	public interface ISendCallback
 	{
 
 		/// <summary>
@@ -40,17 +38,19 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message sent </param>
 		/// <param name="scb"> callback associated with the message </param>
 		/// 
-		void AddCallback(Message Msg, SendCallback Scb);
+		void AddCallback(Message Msg, ISendCallback Scb);
 
 		/// 
 		/// <returns> next callback in chain </returns>
-		SendCallback NextSendCallback {get;}
+		ISendCallback NextSendCallback {get;}
 
 		/// <summary>
 		/// Return next message in chain
 		/// </summary>
 		/// <returns> next message in chain </returns>
 		Message NextMessage {get;}
+
+        void LastSequencePushed(long sequence);
 
 		/// 
 		/// <returns> future associated with callback </returns>

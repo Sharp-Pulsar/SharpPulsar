@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Api;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>

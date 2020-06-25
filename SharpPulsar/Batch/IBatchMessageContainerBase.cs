@@ -1,5 +1,9 @@
-﻿using SharpPulsar.Api;
+﻿using System.Collections.Generic;
+using System.IO;
+using Akka.Actor;
+using SharpPulsar.Api;
 using SharpPulsar.Batch.Api;
+using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,9 +23,10 @@ using SharpPulsar.Batch.Api;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Batch
 {
-	public interface BatchMessageContainerBase : IBatchMessageContainer
+
+    public interface IBatchMessageContainerBase : IBatchMessageContainer
 	{
 
 		/// <summary>
@@ -30,7 +35,7 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-        (long LastSequenceIdPushed, bool BatchFul) Add(Message msg);
+		bool Add(Message msg, ISendCallback callback);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -46,17 +51,27 @@ namespace SharpPulsar.Impl
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container has same schema with the specific message,
 		///         otherwise return false. </returns>
-		///         
 		bool HasSameSchema(Message msg);
 
 		/// <summary>
 		/// Set producer of the message batch container.
 		/// </summary>
 		/// <param name="producer"> producer </param>
-		/// 
-		string Producer {set;}
+		IActorRef Producer {set;}
 
-		
+		/// <summary>
+		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
+		/// </summary>
+		/// <returns> list of OpSendMsg </returns>
+		/// <exception cref="IOException"> </exception>
+		IList<OpSendMsg> CreateOpSendMsgs();
+
+		/// <summary>
+		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
+		/// </summary>
+		/// <returns> OpSendMsg </returns>
+		/// <exception cref="IOException"> </exception>
+		OpSendMsg CreateOpSendMsg();
 	}
 
 }

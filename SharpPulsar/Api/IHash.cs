@@ -17,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Api
 {
 	public interface IHash : Common.Util.IHash
 	{

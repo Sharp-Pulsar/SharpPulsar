@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Batch
 {
 	
 	public class BatchMessageAcker
@@ -33,15 +33,15 @@ namespace SharpPulsar.Impl
 
 		// bitset shared across messages in the same batch.
 		private int _batchSize;
-		private readonly BitArray bitSet;
+		private readonly BitArray _bitSet;
 
         public BatchMessageAcker(BitArray bitSet, int batchSize)
 		{
-			this.bitSet = bitSet;
+			_bitSet = bitSet;
 			_batchSize = batchSize;
 		}
 
-		public virtual BitArray BitSet => bitSet;
+		public virtual BitArray BitSet => _bitSet;
 
         public virtual int BatchSize
 		{
@@ -58,8 +58,8 @@ namespace SharpPulsar.Impl
 		{
 			lock (this)
 			{
-				bitSet.Set(batchIndex, false);
-				return bitSet.Get(batchIndex);
+				_bitSet.Set(batchIndex, false);
+				return _bitSet.Get(batchIndex);
 			}
 		}
 
@@ -71,8 +71,8 @@ namespace SharpPulsar.Impl
 				//ORIGINAL FROM JAVA
 				//bitSet.Clear(0, BatchIndex + 1);
 				//return bitSet.Empty;
-                bitSet.Set(batchIndex + 1, false);
-                return bitSet.Get(batchIndex);
+                _bitSet.Set(batchIndex + 1, false);
+                return _bitSet.Get(batchIndex);
 			}
 		}
 
@@ -83,7 +83,7 @@ namespace SharpPulsar.Impl
 			{
 				lock (this)
 				{
-					return bitSet.Count;
+					return _bitSet.Count;
 				}
 			}
 		}

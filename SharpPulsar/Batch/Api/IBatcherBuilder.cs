@@ -16,7 +16,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+
+using SharpPulsar.Impl;
+
+namespace SharpPulsar.Batch.Api
 {
     /// <summary>
 	/// Batcher builder.
@@ -53,6 +56,12 @@ namespace SharpPulsar.Api
 		/// <returns> new batch message container </returns>
 		IBatchMessageContainer Build();
 
+	}
+
+	public static class BatcherBuilderFields
+	{
+		public static readonly IBatcherBuilder Default = DefaultImplementation.NewDefaultBatcherBuilder();
+		public static readonly IBatcherBuilder KeyBased = DefaultImplementation.NewKeyBasedBatcherBuilder();
 	}
 
 }

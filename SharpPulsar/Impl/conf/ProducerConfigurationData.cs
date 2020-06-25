@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Api.Interceptor;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Utility;
 
 /// <summary>
@@ -26,9 +27,13 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Impl.Conf
 {
-    public class ProducerConfigurationData 
-	{
-        public IProducerEventListener ProducerEventListener { get; set; }
+    public class ProducerConfigurationData
+    {
+        public int BatchingMaxMessages { get; set; } = DefaultBatchingMaxMessages;
+		public int BatchingMaxBytes { get; set; } = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
+
+		public IProducerEventListener ProducerEventListener { get; set; }
+        public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
         public int MaxMessageSize { get; set; } = 2 * 1024; //2kb

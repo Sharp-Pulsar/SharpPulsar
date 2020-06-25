@@ -6,6 +6,7 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Batch.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

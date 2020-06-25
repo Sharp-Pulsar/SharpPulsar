@@ -1,4 +1,4 @@
-﻿
+﻿using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Batch.Api
 {
 	/// <summary>
 	/// Batch message container for individual messages being published until they are batched and sent to broker.
@@ -53,7 +53,7 @@ namespace SharpPulsar.Api
 		/// Release the payload and clear the container.
 		/// </summary>
 		/// <param name="ex"> cause </param>
-		void Discard(System.Exception ex);
+		void Discard(Exception ex);
 
 		/// <summary>
 		/// Return the batch container batch message in multiple batches.
