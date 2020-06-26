@@ -6,6 +6,7 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 
 /// <summary>
@@ -42,9 +43,9 @@ namespace SharpPulsar.Impl
 		}
 
 
-		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch, long[] ackSets)
+		public static IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex, int batch)
 		{
-			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch, ackSets);
+			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch);
 		}
         
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
@@ -169,9 +170,9 @@ namespace SharpPulsar.Impl
 		}
 
 		public static IBatcherBuilder NewKeyBasedBatcherBuilder()
-		{
-			return new KeyBasedBatcherBuilder();
-		}
+        {
+            return null; //new KeyBasedBatcherBuilder();
+        }
 	}
 
 }

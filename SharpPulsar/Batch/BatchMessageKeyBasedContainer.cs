@@ -1,5 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Akka.Actor;
+using Akka.Event;
+using DotNetty.Common.Utilities;
+using Google.Protobuf.Collections;
+using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Utilities;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Compression;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl;
+using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,13 +34,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Batch
 {
-    using ByteBuf = io.netty.buffer.ByteBuf;
-    using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-    using PulsarApi = org.apache.pulsar.common.api.proto.PulsarApi;
-	using CompressionCodec = org.apache.pulsar.common.compression.CompressionCodec;
-	using ByteBufPair = org.apache.pulsar.common.protocol.ByteBufPair;
-    using Logger = org.slf4j.Logger;
-
 
     /// <summary>
 	/// Key based batch message container
@@ -41,115 +47,115 @@ namespace SharpPulsar.Batch
 	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
 	{
 
-		private IDictionary<string, KeyedBatch> batches = new Dictionary<string, KeyedBatch>();
+		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
+        private static ILoggingAdapter _log;
 
-		public override bool add<T1>(MessageImpl<T1> msg, SendCallback callback)
+        public BatchMessageKeyBasedContainer(ActorSystem system)
+        {
+            _log = system.Log;
+        }
+		public override bool Add(Message msg, ISendCallback callback)
 		{
-			if (log.DebugEnabled)
+			if (_log.IsDebugEnabled)
 			{
-				log.debug("[{}] [{}] add message to batch, num messages in batch so far is {}", topicName, producerName, numMessagesInBatch);
+				_log.Debug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
-			numMessagesInBatch++;
-			currentBatchSizeBytes += msg.DataBuffer.readableBytes();
-			string key = getKey(msg);
-			KeyedBatch part = batches[key];
+			NumMessagesInBatch++;
+			CurrentBatchSize += msg.Payload.Length;
+			var key = GetKey(msg);
+			var part = _batches[key];
 			if (part == null)
 			{
 				part = new KeyedBatch();
-				part.addMsg(msg, callback);
-				part.compressionType = compressionType;
-				part.compressor = compressor;
-				part.maxBatchSize = maxBatchSize;
-				part.topicName = topicName;
-				part.producerName = producerName;
-				if (!batches.ContainsKey(key)) batches.Add(key, part);
+				part.AddMsg(msg, callback);
+				part.CompressionType = CompressionType;
+				part.Compressor = Compressor;
+				part.MaxBatchSize = MaxBatchSize;
+				part.TopicName = TopicName;
+				part.ProducerName = ProducerName;
+				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
 			}
 			else
 			{
-				part.addMsg(msg, callback);
+				part.AddMsg(msg, callback);
 			}
 			return BatchFull;
 		}
 
-		public override void clear()
+		public override void Clear()
 		{
-			numMessagesInBatch = 0;
-			currentBatchSizeBytes = 0;
-			batches = new Dictionary<string, KeyedBatch>();
+			NumMessagesInBatch = 0;
+			CurrentBatchSize = 0;
+			_batches = new Dictionary<string, KeyedBatch>();
 		}
 
-		public override bool Empty
-		{
-			get
-			{
-				return batches.Count == 0;
-			}
-		}
+		public override bool Empty => _batches.Count == 0;
 
-		public override void discard(Exception ex)
+        public override void Discard(Exception ex)
 		{
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				batches.forEach((k, v) => v.firstCallback.sendComplete(ex));
+				_batches.ToList().ForEach(x => x.Value.FirstCallback.SendComplete(ex));
 			}
 			catch (Exception t)
 			{
-				log.warn("[{}] [{}] Got exception while completing the callback", topicName, producerName, t);
+				_log.Warning($"[{TopicName}] [{ProducerName}] Got exception while completing the callback. Error: {t}");
 			}
-			batches.forEach((k, v) => ReferenceCountUtil.safeRelease(v.batchedMessageMetadataAndPayload));
-			clear();
+			_batches.ToList().ForEach(x => ReferenceCountUtil.SafeRelease(x.Value.BatchedMessageMetadataAndPayload));
+			Clear();
 		}
 
-		public override bool MultiBatches
-		{
-			get
-			{
-				return true;
-			}
-		}
+		public override bool MultiBatches => true;
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch) throws java.io.IOException
-		private ProducerImpl.OpSendMsg createOpSendMsg(KeyedBatch keyedBatch)
+        private OpSendMsg CreateOpSendMsg(KeyedBatch keyedBatch)
 		{
-			ByteBuf encryptedPayload = producer.encryptMessage(keyedBatch.messageMetadata, keyedBatch.CompressedBatchMetadataAndPayload);
-			if (encryptedPayload.readableBytes() > ClientCnx.MaxMessageSize)
-			{
-				keyedBatch.discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ClientCnx.MaxMessageSize + " bytes"));
-				return null;
-			}
+            var encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
+            if (ProducerContainer.Configuration.EncryptionEnabled && ProducerContainer.Crypto != null)
+            {
+                try
+                {
+                    encryptedPayload = ProducerContainer.Crypto.Encrypt(ProducerContainer.Configuration.EncryptionKeys, ProducerContainer.Configuration.CryptoKeyReader, keyedBatch.MessageMetadata, encryptedPayload);
+                }
+                catch (PulsarClientException e)
+                {
+                    // Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
+                    if (ProducerContainer.Configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send)
+                        throw;
+                    _log.Warning($"[{TopicName}] [{ProducerName}] Failed to encrypt message '{e.Message}'. Proceeding with publishing unencrypted message");
+                    encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
+                }
+            }
+            if (encryptedPayload.Length > ProducerContainer.MaxMessageSize)
+            {
+                Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ProducerContainer.MaxMessageSize + " bytes"));
+                return null;
+            }
 
-//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-//ORIGINAL LINE: final int numMessagesInBatch = keyedBatch.messages.size();
-			int numMessagesInBatch = keyedBatch.messages.Count;
+			var numMessagesInBatch = keyedBatch.Messages.Count;
 			long currentBatchSizeBytes = 0;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: for (MessageImpl<?> message : keyedBatch.messages)
-			foreach (MessageImpl<object> message in keyedBatch.messages)
+			foreach (var message in keyedBatch.Messages)
 			{
-				currentBatchSizeBytes += message.DataBuffer.readableBytes();
+				currentBatchSizeBytes += message.Payload.Length;
 			}
-			keyedBatch.messageMetadata.NumMessagesInBatch = numMessagesInBatch;
-			ByteBufPair cmd = producer.sendMessage(producer.producerId, keyedBatch.sequenceId, numMessagesInBatch, keyedBatch.messageMetadata.build(), encryptedPayload);
+			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
+			var cmd = Commands.NewSend(ProducerContainer.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
-			ProducerImpl.OpSendMsg op = ProducerImpl.OpSendMsg.create(keyedBatch.messages, cmd, keyedBatch.sequenceId, keyedBatch.firstCallback);
+			var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId, keyedBatch.FirstCallback);
 
 			op.NumMessagesInBatch = numMessagesInBatch;
 			op.BatchSizeByte = currentBatchSizeBytes;
 			return op;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public java.util.List<ProducerImpl.OpSendMsg> createOpSendMsgs() throws java.io.IOException
-		public override IList<ProducerImpl.OpSendMsg> createOpSendMsgs()
+		public override IList<OpSendMsg> CreateOpSendMsgs()
 		{
-			IList<ProducerImpl.OpSendMsg> result = new List<ProducerImpl.OpSendMsg>();
-			IList<KeyedBatch> list = new List<KeyedBatch>(batches.Values);
-			list.sort(((o1, o2) => ComparisonChain.start().compare(o1.sequenceId, o2.sequenceId).result()));
-			foreach (KeyedBatch keyedBatch in list)
+			IList<OpSendMsg> result = new List<OpSendMsg>();
+			var list = new List<KeyedBatch>(_batches.Values);
+			list.Sort(((o1, o2) => o1.SequenceId.CompareTo(o2.SequenceId)));
+			foreach (var keyedBatch in list)
 			{
-				ProducerImpl.OpSendMsg op = createOpSendMsg(keyedBatch);
+				var op = CreateOpSendMsg(keyedBatch);
 				if (op != null)
 				{
 					result.Add(op);
@@ -158,134 +164,123 @@ namespace SharpPulsar.Batch
 			return result;
 		}
 
-		public override bool hasSameSchema<T1>(MessageImpl<T1> msg)
+		public override bool HasSameSchema(Message msg)
 		{
-			string key = getKey(msg);
-			KeyedBatch part = batches[key];
-			if (part == null || part.messages.Count == 0)
+			var key = GetKey(msg);
+			var part = _batches[key];
+			if (part == null || part.Messages.Count == 0)
 			{
 				return true;
 			}
-			if (!part.messageMetadata.hasSchemaVersion())
+			if (part.MessageMetadata.SchemaVersion.Length !> 0)
 			{
 				return msg.SchemaVersion == null;
 			}
-			return Arrays.equals(msg.SchemaVersion, part.messageMetadata.SchemaVersion.toByteArray());
+			return Equals(msg.SchemaVersion, part.MessageMetadata.SchemaVersion);
 		}
 
-		private string getKey<T1>(MessageImpl<T1> msg)
+		private string GetKey(Message msg)
 		{
-			if (msg.hasOrderingKey())
+			if (msg.HasOrderingKey())
 			{
-				return Base64.Encoder.encodeToString(msg.OrderingKey);
+				return Convert.ToBase64String((byte[])(object)msg.OrderingKey);
 			}
 			return msg.Key;
 		}
 
 		public class KeyedBatch
 		{
-			internal PulsarApi.MessageMetadata.Builder messageMetadata = PulsarApi.MessageMetadata.newBuilder();
+			internal MessageMetadata MessageMetadata = new MessageMetadata();
 			// sequence id for this batch which will be persisted as a single entry by broker
-			internal long sequenceId = -1;
-			internal ByteBuf batchedMessageMetadataAndPayload;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private java.util.List<MessageImpl<?>> messages = com.google.common.collect.Lists.newArrayList();
-			internal IList<MessageImpl<object>> messages = Lists.newArrayList();
-			internal SendCallback previousCallback = null;
-			internal PulsarApi.CompressionType compressionType;
-			internal CompressionCodec compressor;
-			internal int maxBatchSize;
-			internal string topicName;
-			internal string producerName;
+			internal long SequenceId = -1;
+			internal byte[] BatchedMessageMetadataAndPayload;
+			internal IList<Message> Messages = new List<Message>();
+			internal ISendCallback PreviousCallback = null;
+			internal CompressionType CompressionType;
+			internal CompressionCodec Compressor;
+			internal int MaxBatchSize;
+			internal string TopicName;
+			internal string ProducerName;
 
 			// keep track of callbacks for individual messages being published in a batch
-			internal SendCallback firstCallback;
+			internal ISendCallback FirstCallback;
 
-			public virtual ByteBuf CompressedBatchMetadataAndPayload
+			public virtual byte[] CompressedBatchMetadataAndPayload
 			{
 				get
 				{
-	//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-	//ORIGINAL LINE: for (MessageImpl<?> msg : messages)
-					foreach (MessageImpl<object> msg in messages)
+					foreach (var msg in Messages)
 					{
-						PulsarApi.MessageMetadata.Builder msgBuilder = msg.MessageBuilder;
-						batchedMessageMetadataAndPayload = Commands.serializeSingleMessageInBatchWithPayload(msgBuilder, msg.DataBuffer, batchedMessageMetadataAndPayload);
-						msgBuilder.recycle();
+						var msgMetadata = msg.Metadata;
+						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, BatchedMessageMetadataAndPayload);
+						
 					}
-					int uncompressedSize = batchedMessageMetadataAndPayload.readableBytes();
-					ByteBuf compressedPayload = compressor.encode(batchedMessageMetadataAndPayload);
-					batchedMessageMetadataAndPayload.release();
-					if (compressionType != PulsarApi.CompressionType.NONE)
+					var uncompressedSize = BatchedMessageMetadataAndPayload.Length;
+					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload);
+					BatchedMessageMetadataAndPayload = null;
+					if (CompressionType != CompressionType.None)
 					{
-						messageMetadata.Compression = compressionType;
-						messageMetadata.UncompressedSize = uncompressedSize;
+						MessageMetadata.Compression = CompressionType;
+						MessageMetadata.UncompressedSize = (uint)uncompressedSize;
 					}
     
 					// Update the current max batch size using the uncompressed size, which is what we need in any case to
 					// accumulate the batch content
-					maxBatchSize = Math.Max(maxBatchSize, uncompressedSize);
+					MaxBatchSize = Math.Max(MaxBatchSize, uncompressedSize);
 					return compressedPayload;
 				}
 			}
 
-			public virtual void addMsg<T1>(MessageImpl<T1> msg, SendCallback callback)
+			public virtual void AddMsg(Message msg, ISendCallback callback)
 			{
-				if (messages.Count == 0)
+				if (Messages.Count == 0)
 				{
-					sequenceId = Commands.initBatchMessageMetadata(messageMetadata, msg.MessageBuilder);
-					if (msg.hasKey())
+					SequenceId = Commands.InitBatchMessageMetadata(MessageMetadata);
+					if (msg.HasKey())
 					{
-						messageMetadata.setPartitionKey(msg.Key);
-						if (msg.hasBase64EncodedKey())
+						MessageMetadata.PartitionKey = msg.Key;
+						if (msg.HasBase64EncodedKey())
 						{
-							messageMetadata.PartitionKeyB64Encoded = true;
+							MessageMetadata.PartitionKeyB64Encoded = true;
 						}
 					}
-					if (msg.hasOrderingKey())
+					if (msg.HasOrderingKey())
 					{
-						messageMetadata.OrderingKey = ByteString.copyFrom(msg.OrderingKey);
+						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					batchedMessageMetadataAndPayload = PulsarByteBufAllocator.DEFAULT.buffer(Math.Min(maxBatchSize, ClientCnx.MaxMessageSize));
-					firstCallback = callback;
+					BatchedMessageMetadataAndPayload = msg.Payload;
+					FirstCallback = callback;
 				}
-				if (previousCallback != null)
-				{
-					previousCallback.addCallback(msg, callback);
-				}
-				previousCallback = callback;
-				messages.Add(msg);
+
+                PreviousCallback?.AddCallback(msg, callback);
+                PreviousCallback = callback;
+				Messages.Add(msg);
 			}
 
-			public virtual void discard(Exception ex)
+			public virtual void Discard(Exception ex)
 			{
 				try
-				{
-					// Need to protect ourselves from any exception being thrown in the future handler from the application
-					if (firstCallback != null)
-					{
-						firstCallback.sendComplete(ex);
-					}
-				}
+                {
+                    // Need to protect ourselves from any exception being thrown in the future handler from the application
+                    FirstCallback?.SendComplete(ex);
+                }
 				catch (Exception t)
 				{
-					log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", topicName, producerName, sequenceId, t);
+					_log.Warning($"[{TopicName}] [{ProducerName}] Got exception while completing the callback for msg {SequenceId}:{t}");
 				}
-				clear();
+				Clear();
 			}
 
-			public virtual void clear()
+			public virtual void Clear()
 			{
-				messages = Lists.newArrayList();
-				firstCallback = null;
-				previousCallback = null;
-				messageMetadata.clear();
-				sequenceId = -1;
-				batchedMessageMetadataAndPayload = null;
+				Messages =  new List<Message>();
+				FirstCallback = null;
+				PreviousCallback = null;
+				MessageMetadata = new MessageMetadata();
+				SequenceId = -1;
+				BatchedMessageMetadataAndPayload = null;
 			}
 		}
-
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(BatchMessageKeyBasedContainer));
 
 	}
 

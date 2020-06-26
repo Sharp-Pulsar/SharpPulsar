@@ -19,6 +19,7 @@
 /// under the License.
 /// </summary>
 
+using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 
 namespace SharpPulsar.Impl
@@ -26,8 +27,8 @@ namespace SharpPulsar.Impl
 	public class DefaultBatcherBuilder : IBatcherBuilder
 	{
 		public IBatchMessageContainer Build()
-		{
-			return new BatchMessageContainer();
+        {
+            return null; //new BatchMessageContainer();
 		}
 
 	}
