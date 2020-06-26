@@ -18,13 +18,13 @@
 /// </summary>
 
 using DotNetty.Common.Utilities;
-using SharpPulsar.Api;
+using SharpPulsar.Impl;
 
 namespace SharpPulsar.Stats.Consumer.Api
 {
     public interface IConsumerStatsRecorder : IConsumerStats
     {
-        void UpdateNumMsgsReceived(IMessage message);
+        void UpdateNumMsgsReceived(Message message);
 
         void IncrementNumAcksSent(long numAcks);
 
