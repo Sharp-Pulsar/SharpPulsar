@@ -26,7 +26,7 @@ namespace SharpPulsar.Tracker
     /// <summary>
     /// A no-op acknowledgment grouping tracker.
     /// </summary>
-    public class NonPersistentAcknowledgmentGroupingTracker : AcknowledgmentsGroupingTracker
+    public class NonPersistentAcknowledgmentGroupingTracker : IAcknowledgmentsGroupingTracker
     {
 
         public static NonPersistentAcknowledgmentGroupingTracker Of()

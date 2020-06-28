@@ -6,7 +6,7 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Tracker.Api
 {
-    public interface AcknowledgmentsGroupingTracker
+    public interface IAcknowledgmentsGroupingTracker
     {
         bool IsDuplicate(MessageId messageId);
 
