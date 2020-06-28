@@ -139,8 +139,8 @@ namespace SharpPulsar.Tracker
             {
                 if (messageIds.Count > 0)
                 {
-                    consumerBase.onAckTimeoutSend(messageIds);
-                    consumerBase.redeliverUnacknowledgedMessages(messageIds);
+                    _consumer.Tell(new OnAckTimeoutSend(messageIds));
+                    _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
                 }
 
                 _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_tickDurationInMs), Job);
@@ -256,6 +256,25 @@ namespace SharpPulsar.Tracker
         }
 
         public MessageId[] MessageIds { get; }
+    }
+
+    public sealed class OnAckTimeoutSend
+    {
+        public OnAckTimeoutSend(ISet<MessageId> messageIds)
+        {
+            MessageIds = messageIds;
+        }
+
+        public ISet<MessageId> MessageIds { get; }
+    }
+    public sealed class RedeliverUnacknowledgedMessages
+    {
+        public RedeliverUnacknowledgedMessages(ISet<MessageId> messageIds)
+        {
+            MessageIds = messageIds;
+        }
+
+        public ISet<MessageId> MessageIds { get; }
     }
     public enum UnAckedCommand
     {
