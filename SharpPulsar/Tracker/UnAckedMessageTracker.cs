@@ -43,8 +43,8 @@ namespace SharpPulsar.Tracker
         public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled =
             new UnAckedMessageTrackerDisabled();
 
-        private readonly long ackTimeoutMillis;
-        private readonly long tickDurationInMs;
+        private readonly long _ackTimeoutMillis;
+        private readonly long _tickDurationInMs;
 
         public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
         {
@@ -83,8 +83,8 @@ namespace SharpPulsar.Tracker
             _system = null;
             _timePartitions = null;
             _messageIdPartitionMap = null;
-            ackTimeoutMillis = 0;
-            tickDurationInMs = 0;
+            _ackTimeoutMillis = 0;
+            _tickDurationInMs = 0;
         }
 
         public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis, ActorSystem system) : this(consumer,
@@ -99,13 +99,13 @@ namespace SharpPulsar.Tracker
         {
             _consumer = consumer;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
-            this.ackTimeoutMillis = ackTimeoutMillis;
-            this.tickDurationInMs = tickDurationInMs;
+            _ackTimeoutMillis = ackTimeoutMillis;
+            _tickDurationInMs = tickDurationInMs;
             _system = system;
             _messageIdPartitionMap = new ConcurrentDictionary<MessageId, HashSet<MessageId>>();
             _timePartitions = new List<HashSet<MessageId>>();
 
-            var blankPartitions = (int) Math.Ceiling((double) this.ackTimeoutMillis / this.tickDurationInMs);
+            var blankPartitions = (int) Math.Ceiling((double) _ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
                 _timePartitions.Add(new HashSet<MessageId>(16));
@@ -143,7 +143,7 @@ namespace SharpPulsar.Tracker
                     consumerBase.redeliverUnacknowledgedMessages(messageIds);
                 }
 
-                _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
+                _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_tickDurationInMs), Job);
             }
         }
 
