@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Api;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Impl;
 using SharpPulsar.Protocol.Proto;
@@ -36,10 +37,8 @@ namespace SharpPulsar.Batch
 		public abstract bool Empty {get;}
 		public abstract void Clear();
 		public abstract bool HasSameSchema(Message msg);
-		public abstract bool Add(Message msg, ISendCallback callback);
+		public abstract bool Add(Message msg, Action<object, Exception> callback);
 
-		private CompressionType _compressionType;
-		private CompressionCodec _compressor;
 		private string _topicName;
 		private string _producerName;
 
@@ -68,8 +67,8 @@ namespace SharpPulsar.Batch
             set => _numMessagesInBatch = value;
         }
 
-        public CompressionCodec Compressor => _compressor;
-        public CompressionType CompressionType => _compressionType;
+        public CompressionCodec Compressor { get; private set; }
+        public CompressionType CompressionType { get; private set; }
         public virtual long CurrentBatchSize
         {
             get => _currentBatchSizeBytes;
@@ -90,7 +89,7 @@ namespace SharpPulsar.Batch
 		}
 
         private ProducerContainer _producerContainer;
-		public virtual ProducerContainer ProducerContainer
+		public virtual ProducerContainer Container
         {
             get => _producerContainer;
 			set
@@ -99,8 +98,8 @@ namespace SharpPulsar.Batch
                 Producer = value.Producer;
 				_topicName = value.Configuration.TopicName;
 				_producerName = value.Configuration.ProducerName;
-				_compressionType = CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
-				_compressor = CompressionCodecProvider.GetCompressionCodec((int)_compressionType);
+				CompressionType = CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
+				Compressor = CompressionCodecProvider.GetCompressionCodec((int)CompressionType);
 				_maxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
 				_maxBytesInBatch = value.Configuration.BatchingMaxBytes;
             }

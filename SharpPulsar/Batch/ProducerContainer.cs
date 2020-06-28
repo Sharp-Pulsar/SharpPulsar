@@ -1,19 +1,22 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Impl.Crypto;
 
 namespace SharpPulsar.Batch
 {
     public class ProducerContainer
     {
-        public ProducerContainer(IActorRef producer, ProducerConfigurationData configuration, int maxMessageSize)
+        public ProducerContainer(IActorRef producer, ProducerConfigurationData configuration, int maxMessageSize, ActorSystem system)
         {
             Producer = producer;
             Configuration = configuration;
             MaxMessageSize = maxMessageSize;
+            System = system;
         }
+
+        public ActorSystem System { get;}
         public long ProducerId { get; set; }
-        public MessageCrypto Crypto { get; set; }
+        public IMessageCrypto Crypto { get; set; }
         public IActorRef Producer { get; }
         public ProducerConfigurationData Configuration { get; }
         public int MaxMessageSize { get; set; }

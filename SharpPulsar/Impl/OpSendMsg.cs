@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using SharpPulsar.Api;
+using System.Threading;
 using SharpPulsar.Batch;
 
 namespace SharpPulsar.Impl
@@ -8,7 +8,7 @@ namespace SharpPulsar.Impl
     {
         internal Message Msg;
         internal IList<Message> Msgs;
-        internal ISendCallback Callback;
+        internal ThreadStart RePopulate;
         internal byte[] Cmd;
         internal long SequenceId;
         internal long CreatedAt;
@@ -17,33 +17,31 @@ namespace SharpPulsar.Impl
         internal int TotalChunks = 0;
         internal int ChunkId = -1;
 
-        internal static OpSendMsg Create(Message msg, byte[] cmd, long sequenceId, ISendCallback callback)
+        internal static OpSendMsg Create(Message msg, byte[] cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
                 Msg = msg, 
                 Cmd = cmd, 
                 SequenceId = sequenceId, 
-                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis(),
-                Callback = callback
+                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long sequenceId, ISendCallback callback)
+        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long sequenceId)
         {
             var op = new OpSendMsg
             {
                 Msgs = msgs, 
                 Cmd = cmd, 
                 SequenceId = sequenceId, 
-                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis(),
-                Callback = callback
+                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId, ISendCallback callback)
+        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId)
         {
             var op = new OpSendMsg
             {
@@ -51,8 +49,7 @@ namespace SharpPulsar.Impl
                 Cmd = cmd,
                 SequenceId = lowestSequenceId,
                 HighestSequenceId = highestSequenceId,
-                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis(),
-                Callback = callback
+                CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return op;
         }
@@ -82,7 +79,6 @@ namespace SharpPulsar.Impl
             Msg = null;
             Msgs = null;
             Cmd = null;
-            Callback = null;
             SequenceId = -1L;
             CreatedAt = -1L;
             HighestSequenceId = -1L;

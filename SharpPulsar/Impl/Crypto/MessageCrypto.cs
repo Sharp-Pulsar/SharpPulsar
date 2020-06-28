@@ -35,7 +35,7 @@ namespace SharpPulsar.Impl.Crypto
 {
 	//https://pulsar.apache.org/docs/en/security-encryption/
 	//https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
-	public class MessageCrypto
+	public class MessageCrypto:IMessageCrypto
 	{
 
 		private readonly AesManaged _keyGenerator;

@@ -49,7 +49,7 @@ namespace SharpPulsar.Batch
 			{
 				lock (this)
 				{
-					return BatchSize;
+					return _batchSize;
 				}
 			}
 		}

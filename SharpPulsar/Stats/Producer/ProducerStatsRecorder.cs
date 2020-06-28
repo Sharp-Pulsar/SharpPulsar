@@ -2,6 +2,9 @@
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using Akka.Actor;
+using Akka.Event;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
@@ -29,36 +32,45 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Stats.Producer
 {
-    [Serializable]
+    
     public sealed class ProducerStatsRecorder : IProducerStatsRecorder
     {
 
         private const long SerialVersionUid = 1L;
-        internal ITimeout StatTimeout { get; set; }
-        [NonSerialized] private IProducer _producer;
-        [NonSerialized] private PulsarClientImpl _pulsarClient;
+        internal ICancelable StatTimeout { get; set; }
         private long _oldTime;
-        private long _statsIntervalSeconds;
-        [NonSerialized] private readonly StripedLongAdder _numMsgsSent;
-        [NonSerialized] private readonly StripedLongAdder _numBytesSent;
-        [NonSerialized] private readonly StripedLongAdder _numSendFailed;
-        [NonSerialized] private readonly StripedLongAdder _numAcksReceived;
-        [NonSerialized] private readonly StripedLongAdder _totalMsgsSent;
-        [NonSerialized] private readonly StripedLongAdder _totalBytesSent;
-        [NonSerialized] private readonly StripedLongAdder _totalSendFailed;
-        [NonSerialized] private readonly StripedLongAdder _totalAcksReceived;
+        private string _producerName;
+        private string _topic;
+        private long _pendingQueueSize;
+        private readonly ActorSystem _system;
+        private readonly long _statsIntervalSeconds;
+        private readonly StripedLongAdder _numMsgsSent;
+        private readonly StripedLongAdder _numBytesSent;
+        private readonly StripedLongAdder _numSendFailed;
+        private readonly StripedLongAdder _numAcksReceived;
+        private readonly StripedLongAdder _totalMsgsSent;
+        private readonly StripedLongAdder _totalBytesSent;
+        private readonly StripedLongAdder _totalSendFailed;
+        private readonly StripedLongAdder _totalAcksReceived;
         private static readonly NumberFormatInfo Dec = new NumberFormatInfo();
         private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
         internal static double[] Latency = new double[256];
 
         public double SendMsgsRate { get; set; }
         public double SendBytesRate { get; set; }
-        private volatile double[] _latencyPctValues;
+        private double[] _latencyPctValues;
 
-        private static readonly double[] Percentiles = new double[] { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
+        private readonly ILoggingAdapter _log;
 
-        public ProducerStatsRecorder()
+        private static readonly double[] Percentiles = { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
+
+        public ProducerStatsRecorder(ActorSystem system, string producerName, string topic, long pendingQueueSize)
         {
+            _system = system;
+            _producerName = producerName;
+            _topic = topic;
+            _pendingQueueSize = pendingQueueSize;
+            _log = system.Log;
             Dec.NumberDecimalSeparator = "0.000";
             ThroughputFormat.NumberDecimalSeparator = "0.00";
             _numMsgsSent = new StripedLongAdder();
@@ -71,14 +83,16 @@ namespace SharpPulsar.Stats.Producer
             _totalAcksReceived = new StripedLongAdder();
         }
 
-        public ProducerStatsRecorder(PulsarClientImpl pulsarClient, ProducerConfigurationData conf,
-            IProducer producer)
+        public ProducerStatsRecorder(long statsIntervalSeconds, ProducerConfigurationData conf, ActorSystem system, string producerName, string topic, long pendingQueueSize)
         {
+            _system = system;
+            _producerName = producerName;
+            _topic = topic;
+            _pendingQueueSize = pendingQueueSize;
+            _log = system.Log;
             Dec.NumberDecimalSeparator = "0.000";
             ThroughputFormat.NumberDecimalSeparator = "0.00";
-            _pulsarClient = pulsarClient;
-            _statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
-            _producer = producer;
+            _statsIntervalSeconds = statsIntervalSeconds;
             _numMsgsSent = new StripedLongAdder();
             _numBytesSent = new StripedLongAdder();
             _numSendFailed = new StripedLongAdder();
@@ -92,20 +106,18 @@ namespace SharpPulsar.Stats.Producer
 
         private void Init(ProducerConfigurationData conf)
         {
-            var m = new ObjectMapper();
-
             try
             {
-                Log.LogInformation("Starting Pulsar producer perf with config: {}", m.WriteValueAsString(conf));
+                _log.Info($"Starting Pulsar producer perf with config: {JsonSerializer.Serialize(conf, new JsonSerializerOptions{WriteIndented = true})}");
                 //log.info("Pulsar client config: {}", W.withoutAttribute("authentication").writeValueAsString(pulsarClient.Configuration));
             }
             catch (IOException e)
             {
-                Log.LogError("Failed to dump config info", e);
+                _log.Error("Failed to dump config info", e);
             }
 
             _oldTime = DateTime.Now.Millisecond;
-            StatTimeout = _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
+            StatTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
         }
 
 
@@ -204,91 +216,62 @@ namespace SharpPulsar.Stats.Producer
             }
         }
 
-        public class StatsTimerTask : ITimerTask
+        private void StatsAction()
         {
-            private readonly ProducerStatsRecorder _outerInstance;
-
-            public StatsTimerTask(ProducerStatsRecorder outerInstance)
+            try
             {
-                _outerInstance = outerInstance;
-            }
+                long now = DateTime.Now.Millisecond;
+                var elapsed = (now - OldTime) / 1e9;
+                _oldTime = now;
 
-            public void Run(ITimeout timeout)
-            {
+                var currentNumMsgsSent = _numMsgsSent.GetAndReset();
+                var currentNumBytesSent = _numBytesSent.GetAndReset();
+                var currentNumSendFailedMsgs = _numSendFailed.GetAndReset();
+                var currentNumAcksReceived = _numAcksReceived.GetAndReset();
 
-                if (timeout.Canceled)
+                _totalMsgsSent.Add(currentNumMsgsSent);
+                _totalBytesSent.Add(currentNumBytesSent);
+                _totalSendFailed.Add(currentNumSendFailedMsgs);
+                _totalAcksReceived.Add(currentNumAcksReceived);
+
+                lock (Latency)
                 {
-                    return;
+                    _latencyPctValues = GetQuantiles(Percentiles);
+                    Latency = new double[256];
                 }
 
-                try
+                SendMsgsRate = currentNumMsgsSent / elapsed;
+                SendBytesRate = currentNumBytesSent / elapsed;
+
+                if ((currentNumMsgsSent | currentNumSendFailedMsgs | currentNumAcksReceived | currentNumMsgsSent) !=
+                    0)
                 {
-                    long now = DateTime.Now.Millisecond;
-                    var elapsed = (now - _outerInstance.OldTime) / 1e9;
-                    _outerInstance._oldTime = now;
 
-                    var currentNumMsgsSent = _outerInstance._numMsgsSent.GetAndReset();
-                    var currentNumBytesSent = _outerInstance._numBytesSent.GetAndReset();
-                    var currentNumSendFailedMsgs = _outerInstance._numSendFailed.GetAndReset();
-                    var currentNumAcksReceived = _outerInstance._numAcksReceived.GetAndReset();
-
-                    _outerInstance._totalMsgsSent.Add(currentNumMsgsSent);
-                    _outerInstance._totalBytesSent.Add(currentNumBytesSent);
-                    _outerInstance._totalSendFailed.Add(currentNumSendFailedMsgs);
-                    _outerInstance._totalAcksReceived.Add(currentNumAcksReceived);
-
-                    lock (Latency)
+                    for (var i = 0; i < _latencyPctValues.Length; i++)
                     {
-                        _outerInstance._latencyPctValues = _outerInstance.GetQuantiles(Percentiles);
-                        Latency = new double[256];
-                    }
-
-                    _outerInstance.SendMsgsRate = currentNumMsgsSent / elapsed;
-                    _outerInstance.SendBytesRate = currentNumBytesSent / elapsed;
-
-                    if ((currentNumMsgsSent | currentNumSendFailedMsgs | currentNumAcksReceived | currentNumMsgsSent) !=
-                        0)
-                    {
-
-                        for (var i = 0; i < _outerInstance._latencyPctValues.Length; i++)
+                        if (double.IsNaN(_latencyPctValues[i]))
                         {
-                            if (double.IsNaN(_outerInstance._latencyPctValues[i]))
-                            {
-                                _outerInstance._latencyPctValues[i] = 0;
-                            }
+                            _latencyPctValues[i] = 0;
                         }
-
-                        Log.LogInformation(
-                            "[{}] [{}] Pending messages: {} --- Publish throughput: {} msg/s --- {} Mbit/s --- " +
-                            "Latency: med: {} ms - 95pct: {} ms - 99pct: {} ms - 99.9pct: {} ms - max: {} ms --- " +
-                            "Ack received rate: {} ack/s --- Failed messages: {}", _outerInstance._producer.Topic,
-                            //_outerInstance._producer.ProducerName, _outerInstance._producer.PendingQueueSize,
-                            _outerInstance.SendMsgsRate.ToString(ThroughputFormat),
-                            (_outerInstance.SendBytesRate / 1024 / 1024 * 8).ToString(ThroughputFormat),
-                            (_outerInstance._latencyPctValues[0] / 1000.0).ToString(Dec),
-                            (_outerInstance._latencyPctValues[2] / 1000.0).ToString(Dec),
-                            (_outerInstance._latencyPctValues[3] / 1000.0).ToString(Dec),
-                            (_outerInstance._latencyPctValues[4] / 1000.0).ToString(Dec),
-                            (_outerInstance._latencyPctValues[5] / 1000.0).ToString(Dec),
-                            (currentNumAcksReceived / elapsed).ToString(ThroughputFormat), currentNumSendFailedMsgs);
                     }
 
+                    _log.Info(
+                        $"[{_topic}] [{_producerName}] Pending messages: {_pendingQueueSize} --- Publish throughput: {SendMsgsRate.ToString(ThroughputFormat)} msg/s --- {(SendBytesRate / 1024 / 1024 * 8).ToString(ThroughputFormat)} Mbit/s --- " +
+                        $"Latency: med: {(_latencyPctValues[0] / 1000.0).ToString(Dec)} ms - 95pct: {(_latencyPctValues[2] / 1000.0).ToString(Dec)} ms - 99pct: {(_latencyPctValues[3] / 1000.0).ToString(Dec)} ms - 99.9pct: {(_latencyPctValues[4] / 1000.0).ToString(Dec)} ms - max: {(_latencyPctValues[5] / 1000.0).ToString(Dec)} ms --- " +
+                        $"Ack received rate: {(currentNumAcksReceived / elapsed).ToString(ThroughputFormat)} ack/s --- Failed messages: {currentNumSendFailedMsgs}");
                 }
-                catch (System.Exception e)
-                {
-                    Log.LogError("[{}] [{}]: {}", _outerInstance._producer.Topic, _outerInstance._producer.ProducerName,
-                        e.Message);
-                }
-                finally
-                {
-                    // schedule the next stat info
-                    _outerInstance.StatTimeout = _outerInstance._pulsarClient.Timer.NewTimeout(this,
-                        TimeSpan.FromSeconds(_outerInstance._statsIntervalSeconds));
-                }
+
+            }
+            catch (Exception e)
+            {
+                _log.Error("[{}] [{}]: {}", _topic, _producerName, e.Message);
+            }
+            finally
+            {
+                // schedule the next stat info
+                StatTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
             }
         }
-
-        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ProducerStatsRecorder));
 
         //https://stackoverflow.com/questions/8137391/percentile-calculation
         public double[] GetQuantiles(double[] ranks)

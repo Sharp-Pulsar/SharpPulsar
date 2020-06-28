@@ -25,17 +25,32 @@ namespace SharpPulsar.Exceptions
 	/// <summary>
 	/// Base type of exception thrown by Pulsar client.
 	/// </summary>
-	public class PulsarClientException : System.Exception
+	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+	//ORIGINAL LINE: @SuppressWarnings("serial") public class PulsarClientException extends java.io.IOException
+	public class PulsarClientException : IOException
 	{
+		private long _sequenceId = -1;
+		/// <summary>
+		/// Constructs an {@code PulsarClientException} with the specified detail message.
+		/// </summary>
+		/// <param name="msg">
+		///        The detail message (which is saved for later retrieval
+		///        by the <seealso cref="getMessage()"/> method) </param>
+		public PulsarClientException(string msg) : base(msg)
+		{
+		}
 
 		/// <summary>
 		/// Constructs an {@code PulsarClientException} with the specified detail message.
 		/// </summary>
 		/// <param name="msg">
 		///        The detail message (which is saved for later retrieval
-		///        by the <seealso cref="GetMessage()"/> method) </param>
-		public PulsarClientException(string msg) : base(msg)
+		///        by the <seealso cref="getMessage()"/> method) </param>
+		/// <param name="sequenceId">
+		///        The sequenceId of the message </param>
+		public PulsarClientException(string msg, long sequenceId) : base(msg)
 		{
+			_sequenceId = sequenceId;
 		}
 
 		/// <summary>
@@ -43,16 +58,42 @@ namespace SharpPulsar.Exceptions
 		/// </summary>
 		/// <param name="t">
 		///        The cause (which is saved for later retrieval by the
-		///        <seealso cref="GetCause()"/> method).  (A null value is permitted,
+		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public PulsarClientException(IOException t) : base(t.Message)
+		public PulsarClientException(Exception t) : base(t.Message, t)
 		{
+		}
+
+		/// <summary>
+		/// Constructs an {@code PulsarClientException} with the specified cause.
+		/// </summary>
+		/// <param name="msg">
+		///            The detail message (which is saved for later retrieval by the <seealso cref="getMessage()"/> method)
+		/// </param>
+		/// <param name="t">
+		///            The cause (which is saved for later retrieval by the <seealso cref="getCause()"/> method). (A null value is
+		///            permitted, and indicates that the cause is nonexistent or unknown.) </param>
+		public PulsarClientException(string msg, Exception t) : base(msg, t)
+		{
+		}
+
+		/// <summary>
+		/// Constructs an {@code PulsarClientException} with the specified cause.
+		/// </summary>
+		/// <param name="t">
+		///            The cause (which is saved for later retrieval by the <seealso cref="getCause()"/> method). (A null value is
+		///            permitted, and indicates that the cause is nonexistent or unknown.) </param>
+		/// <param name="sequenceId">
+		///            The sequenceId of the message </param>
+		public PulsarClientException(Exception t, long sequenceId) : base(t.Message, t)
+		{
+			_sequenceId = sequenceId;
 		}
 
 		/// <summary>
 		/// Invalid Service URL exception thrown by Pulsar client.
 		/// </summary>
-		public class InvalidServiceURL : PulsarClientException
+		public class InvalidServiceUrl : PulsarClientException
 		{
 			/// <summary>
 			/// Constructs an {@code InvalidServiceURL} with the specified cause.
@@ -61,7 +102,21 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public InvalidServiceURL(IOException t) : base(t)
+			public InvalidServiceUrl(Exception t) : base(t)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code InvalidServiceURL} with the specified cause.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="t">
+			///        The cause (which is saved for later retrieval by the
+			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+			///        and indicates that the cause is nonexistent or unknown.) </param>
+			public InvalidServiceUrl(string msg, Exception t) : base(msg, t)
 			{
 			}
 		}
@@ -76,7 +131,7 @@ namespace SharpPulsar.Exceptions
 			/// </summary>
 			/// <param name="msg">
 			///        The detail message (which is saved for later retrieval
-			///        by the <seealso cref="GetMessage()"/> method) </param>
+			///        by the <seealso cref="getMessage()"/> method) </param>
 			public InvalidConfigurationException(string msg) : base(msg)
 			{
 			}
@@ -86,9 +141,23 @@ namespace SharpPulsar.Exceptions
 			/// </summary>
 			/// <param name="t">
 			///        The cause (which is saved for later retrieval by the
-			///        <seealso cref="GetCause()"/> method).  (A null value is permitted,
+			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public InvalidConfigurationException(IOException t) : base(t)
+			public InvalidConfigurationException(Exception t) : base(t)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code InvalidConfigurationException} with the specified cause.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="t">
+			///        The cause (which is saved for later retrieval by the
+			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+			///        and indicates that the cause is nonexistent or unknown.) </param>
+			public InvalidConfigurationException(string msg, Exception t) : base(msg, t)
 			{
 			}
 		}
@@ -115,7 +184,7 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public NotFoundException(IOException t) : base(t)
+			public NotFoundException(Exception t) : base(t)
 			{
 			}
 		}
@@ -132,7 +201,20 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public TimeoutException(IOException t) : base(t)
+			public TimeoutException(Exception t) : base(t)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code TimeoutException} with the specified cause.
+			/// </summary>
+			/// <param name="t">
+			///        The cause (which is saved for later retrieval by the
+			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+			///        and indicates that the cause is nonexistent or unknown.) </param>
+			/// <param name="sequenceId">
+			///        The sequenceId of the message </param>
+			public TimeoutException(Exception t, long sequenceId) : base(t, sequenceId)
 			{
 			}
 
@@ -145,6 +227,17 @@ namespace SharpPulsar.Exceptions
 			public TimeoutException(string msg) : base(msg)
 			{
 			}
+
+			/// <summary>
+			/// Constructs an {@code TimeoutException} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			public TimeoutException(string msg, long sequenceId) : base(msg, sequenceId)
+			{
+			}
+
 		}
 
 		/// <summary>
@@ -159,7 +252,7 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public IncompatibleSchemaException(IOException t) : base(t)
+			public IncompatibleSchemaException(Exception t) : base(t)
 			{
 			}
 
@@ -234,7 +327,7 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public ConnectException(IOException t) : base(t)
+			public ConnectException(Exception t) : base(t)
 			{
 			}
 
@@ -263,6 +356,18 @@ namespace SharpPulsar.Exceptions
 			public AlreadyClosedException(string msg) : base(msg)
 			{
 			}
+
+			/// <summary>
+			/// Constructs an {@code AlreadyClosedException} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="sequenceId">
+			///        The sequenceId of the message </param>
+			public AlreadyClosedException(string msg, long sequenceId) : base(msg, sequenceId)
+			{
+			}
 		}
 
 		/// <summary>
@@ -277,6 +382,18 @@ namespace SharpPulsar.Exceptions
 			///        The detail message (which is saved for later retrieval
 			///        by the <seealso cref="getMessage()"/> method) </param>
 			public TopicTerminatedException(string msg) : base(msg)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code TopicTerminatedException} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="sequenceId">
+			///        The sequenceId of the message </param>
+			public TopicTerminatedException(string msg, long sequenceId) : base(msg, sequenceId)
 			{
 			}
 		}
@@ -325,7 +442,7 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public GettingAuthenticationDataException(IOException t) : base(t)
+			public GettingAuthenticationDataException(Exception t) : base(t)
 			{
 			}
 
@@ -352,7 +469,7 @@ namespace SharpPulsar.Exceptions
 			///        The cause (which is saved for later retrieval by the
 			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
 			///        and indicates that the cause is nonexistent or unknown.) </param>
-			public UnsupportedAuthenticationException(IOException t) : base(t)
+			public UnsupportedAuthenticationException(Exception t) : base(t)
 			{
 			}
 
@@ -430,42 +547,7 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-		public sealed class ServiceNotReadyException : PulsarClientException
-		{
-			public ServiceNotReadyException(string message) : base(message) { }
-		}
-		public sealed class StreamNotReadyException : PulsarClientException
-		{
-			public StreamNotReadyException() : base("The service is not ready yet") { }
-		}
-		public sealed class PersistenceException : PulsarClientException
-		{
-			public PersistenceException(string message) : base(message) { }
-		}
-		public sealed class MetadataException : PulsarClientException
-		{
-			public MetadataException(string message) : base(message) { }
-		}
-		public sealed class SubscriptionNotFoundException : PulsarClientException
-		{
-			public SubscriptionNotFoundException(string message) : base(message) { }
-		}
-		public sealed class TopicNotFoundException : PulsarClientException
-		{
-			public TopicNotFoundException(string message) : base(message) { }
-		}
-		public sealed class UnknownException : PulsarClientException
-		{
-			public UnknownException(string message) : base(message) { }
-		}
-		public sealed class UnsupportedVersionException : PulsarClientException
-		{
-			public UnsupportedVersionException(string message) : base(message) { }
-		}
-		public sealed class ConsumerAssignException : PulsarClientException
-		{
-			public ConsumerAssignException(string message) : base(message) { }
-		}
+
 		/// <summary>
 		/// Not connected exception thrown by Pulsar client.
 		/// </summary>
@@ -473,6 +555,10 @@ namespace SharpPulsar.Exceptions
 		{
 
 			public NotConnectedException() : base("Not connected to broker")
+			{
+			}
+
+			public NotConnectedException(long sequenceId) : base("Not connected to broker", sequenceId)
 			{
 			}
 		}
@@ -489,6 +575,18 @@ namespace SharpPulsar.Exceptions
 			///        The detail message (which is saved for later retrieval
 			///        by the <seealso cref="getMessage()"/> method) </param>
 			public InvalidMessageException(string msg) : base(msg)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code InvalidMessageException} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="sequenceId">
+			///        The sequenceId of the message </param>
+			public InvalidMessageException(string msg, long sequenceId) : base(msg, sequenceId)
 			{
 			}
 		}
@@ -508,17 +606,7 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-		public sealed class UnexpectedResponseException : PulsarClientException
-		{
-			public UnexpectedResponseException(string message) : base(message) { }
-		}
-		/// <summary>
-		/// Consumer Not Found Exception thrown by Pulsar client.
-		/// </summary>
-		public sealed class ConsumerNotFoundException : PulsarClientException
-		{
-			public ConsumerNotFoundException(string message) : base(message) { }
-		}
+
 		/// <summary>
 		/// Not supported exception thrown by Pulsar client.
 		/// </summary>
@@ -547,6 +635,18 @@ namespace SharpPulsar.Exceptions
 			///        The detail message (which is saved for later retrieval
 			///        by the <seealso cref="getMessage()"/> method) </param>
 			public ProducerQueueIsFullError(string msg) : base(msg)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code ProducerQueueIsFullError} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			/// <param name="sequenceId">
+			///        The sequenceId of the message </param>
+			public ProducerQueueIsFullError(string msg, long sequenceId) : base(msg, sequenceId)
 			{
 			}
 		}
@@ -616,248 +716,261 @@ namespace SharpPulsar.Exceptions
 		}
 
 		// wrap an exception to enriching more info messages.
-		public static System.Exception Wrap(System.Exception t, string msg)
+		public static Exception wrap(Exception t, string msg)
 		{
 			msg += "\n" + t.Message;
-			if(t is NullReferenceException)
-			{
-				throw t;
-			}
 			// wrap an exception with new message info
 			if (t is TimeoutException)
 			{
 				return new TimeoutException(msg);
 			}
-			else if (t is InvalidConfigurationException)
-			{
-				return new InvalidConfigurationException(msg);
-			}
-			else if (t is AuthenticationException)
-			{
-				return new AuthenticationException(msg);
-			}
-			else if (t is IncompatibleSchemaException)
-			{
-				return new IncompatibleSchemaException(msg);
-			}
-			else if (t is TooManyRequestsException)
-			{
-				return new TooManyRequestsException(msg);
-			}
-			else if (t is LookupException)
-			{
-				return new LookupException(msg);
-			}
-			else if (t is ConnectException)
-			{
-				return new ConnectException(msg);
-			}
-			else if (t is AlreadyClosedException)
-			{
-				return new AlreadyClosedException(msg);
-			}
-			else if (t is TopicTerminatedException)
-			{
-				return new TopicTerminatedException(msg);
-			}
-			else if (t is AuthorizationException)
-			{
-				return new AuthorizationException(msg);
-			}
-			else if (t is GettingAuthenticationDataException)
-			{
-				return new GettingAuthenticationDataException(msg);
-			}
-			else if (t is UnsupportedAuthenticationException)
-			{
-				return new UnsupportedAuthenticationException(msg);
-			}
-			else if (t is BrokerPersistenceException)
-			{
-				return new BrokerPersistenceException(msg);
-			}
-			else if (t is BrokerMetadataException)
-			{
-				return new BrokerMetadataException(msg);
-			}
-			else if (t is ProducerBusyException)
-			{
-				return new ProducerBusyException(msg);
-			}
-			else if (t is ConsumerBusyException)
-			{
-				return new ConsumerBusyException(msg);
-			}
-			else if (t is NotConnectedException)
-			{
-				return new NotConnectedException();
-			}
-			else if (t is InvalidMessageException)
-			{
-				return new InvalidMessageException(msg);
-			}
-			else if (t is InvalidTopicNameException)
-			{
-				return new InvalidTopicNameException(msg);
-			}
-			else if (t is NotSupportedException)
-			{
-				return new NotSupportedException(msg);
-			}
-			else if (t is ProducerQueueIsFullError)
-			{
-				return new ProducerQueueIsFullError(msg);
-			}
-			else if (t is ProducerBlockedQuotaExceededError)
-			{
-				return new ProducerBlockedQuotaExceededError(msg);
-			}
-			else if (t is ProducerBlockedQuotaExceededException)
-			{
-				return new ProducerBlockedQuotaExceededException(msg);
-			}
-			else if (t is ChecksumException)
-			{
-				return new ChecksumException(msg);
-			}
-			else if (t is CryptoException)
-			{
-				return new CryptoException(msg);
-			}
-			else if (t is PulsarClientException)
-			{
-				return new PulsarClientException(msg);
-			}
-			else if (t is IOException)
-			{
-				return new IOException(msg, t.InnerException);
-			}
 
-			return t;
+            if (t is InvalidConfigurationException)
+            {
+                return new InvalidConfigurationException(msg);
+            }
+            if (t is AuthenticationException)
+            {
+                return new AuthenticationException(msg);
+            }
+            if (t is IncompatibleSchemaException)
+            {
+                return new IncompatibleSchemaException(msg);
+            }
+            if (t is TooManyRequestsException)
+            {
+                return new TooManyRequestsException(msg);
+            }
+            if (t is LookupException)
+            {
+                return new LookupException(msg);
+            }
+            if (t is ConnectException)
+            {
+                return new ConnectException(msg);
+            }
+            if (t is AlreadyClosedException)
+            {
+                return new AlreadyClosedException(msg);
+            }
+            if (t is TopicTerminatedException)
+            {
+                return new TopicTerminatedException(msg);
+            }
+            if (t is AuthorizationException)
+            {
+                return new AuthorizationException(msg);
+            }
+            if (t is GettingAuthenticationDataException)
+            {
+                return new GettingAuthenticationDataException(msg);
+            }
+            if (t is UnsupportedAuthenticationException)
+            {
+                return new UnsupportedAuthenticationException(msg);
+            }
+            if (t is BrokerPersistenceException)
+            {
+                return new BrokerPersistenceException(msg);
+            }
+            if (t is BrokerMetadataException)
+            {
+                return new BrokerMetadataException(msg);
+            }
+            if (t is ProducerBusyException)
+            {
+                return new ProducerBusyException(msg);
+            }
+            if (t is ConsumerBusyException)
+            {
+                return new ConsumerBusyException(msg);
+            }
+            if (t is NotConnectedException)
+            {
+                return new NotConnectedException();
+            }
+            if (t is InvalidMessageException)
+            {
+                return new InvalidMessageException(msg);
+            }
+            if (t is InvalidTopicNameException)
+            {
+                return new InvalidTopicNameException(msg);
+            }
+            if (t is NotSupportedException)
+            {
+                return new NotSupportedException(msg);
+            }
+            if (t is ProducerQueueIsFullError)
+            {
+                return new ProducerQueueIsFullError(msg);
+            }
+            if (t is ProducerBlockedQuotaExceededError)
+            {
+                return new ProducerBlockedQuotaExceededError(msg);
+            }
+            if (t is ProducerBlockedQuotaExceededException)
+            {
+                return new ProducerBlockedQuotaExceededException(msg);
+            }
+            if (t is ChecksumException)
+            {
+                return new ChecksumException(msg);
+            }
+            if (t is CryptoException)
+            {
+                return new CryptoException(msg);
+            }
+            if (t is PulsarClientException)
+            {
+                return new PulsarClientException(msg);
+            }
+            if (t is Exception)
+            {
+                return new Exception(msg, t.InnerException);
+            }
+
+            return t;
 		}
 
-		public static PulsarClientException Unwrap(System.Exception t)
+		public static PulsarClientException Unwrap(Exception t)
 		{
-			if (t is PulsarClientException)
+			if (t is PulsarClientException exception)
 			{
-				return (PulsarClientException) t;
+				return exception;
 			}
-			else if (t is System.Exception)
-			{
-				throw t;
-			}
-			// Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
+
+            if (t is Exception)
+            {
+                throw (Exception)t;
+            }
+
+            // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
 			// site
-			System.Exception cause = t.InnerException;
-			string msg = cause.Message;
+			var cause = t.InnerException;
+			var msg = cause.Message;
 			if (cause is TimeoutException)
 			{
 				return new TimeoutException(msg);
 			}
-			else if (cause is InvalidConfigurationException)
+
+            if (cause is InvalidConfigurationException)
+            {
+                return new InvalidConfigurationException(msg);
+            }
+            if (cause is AuthenticationException)
+            {
+                return new AuthenticationException(msg);
+            }
+            if (cause is IncompatibleSchemaException)
+            {
+                return new IncompatibleSchemaException(msg);
+            }
+            if (cause is TooManyRequestsException)
+            {
+                return new TooManyRequestsException(msg);
+            }
+            if (cause is LookupException)
+            {
+                return new LookupException(msg);
+            }
+            if (cause is ConnectException)
+            {
+                return new ConnectException(msg);
+            }
+            if (cause is AlreadyClosedException)
+            {
+                return new AlreadyClosedException(msg);
+            }
+            if (cause is TopicTerminatedException)
+            {
+                return new TopicTerminatedException(msg);
+            }
+            if (cause is AuthorizationException)
+            {
+                return new AuthorizationException(msg);
+            }
+            if (cause is GettingAuthenticationDataException)
+            {
+                return new GettingAuthenticationDataException(msg);
+            }
+            if (cause is UnsupportedAuthenticationException)
+            {
+                return new UnsupportedAuthenticationException(msg);
+            }
+            if (cause is BrokerPersistenceException)
+            {
+                return new BrokerPersistenceException(msg);
+            }
+            if (cause is BrokerMetadataException)
+            {
+                return new BrokerMetadataException(msg);
+            }
+            if (cause is ProducerBusyException)
+            {
+                return new ProducerBusyException(msg);
+            }
+            if (cause is ConsumerBusyException)
+            {
+                return new ConsumerBusyException(msg);
+            }
+            if (cause is NotConnectedException)
+            {
+                return new NotConnectedException();
+            }
+            if (cause is InvalidMessageException)
+            {
+                return new InvalidMessageException(msg);
+            }
+            if (cause is InvalidTopicNameException)
+            {
+                return new InvalidTopicNameException(msg);
+            }
+            if (cause is NotSupportedException)
+            {
+                return new NotSupportedException(msg);
+            }
+            if (cause is ProducerQueueIsFullError)
+            {
+                return new ProducerQueueIsFullError(msg);
+            }
+            if (cause is ProducerBlockedQuotaExceededError)
+            {
+                return new ProducerBlockedQuotaExceededError(msg);
+            }
+            if (cause is ProducerBlockedQuotaExceededException)
+            {
+                return new ProducerBlockedQuotaExceededException(msg);
+            }
+            if (cause is ChecksumException)
+            {
+                return new ChecksumException(msg);
+            }
+            if (cause is CryptoException)
+            {
+                return new CryptoException(msg);
+            }
+            if (cause is TopicDoesNotExistException)
+            {
+                return new TopicDoesNotExistException(msg);
+            }
+            return new PulsarClientException(t);
+        }
+
+		public virtual long SequenceId
+		{
+			get => _sequenceId;
+            set => _sequenceId = value;
+        }
+
+
+		public static bool IsRetriableError(Exception t)
+		{
+			if (t is AuthorizationException || t is InvalidServiceUrl || t is InvalidConfigurationException || t is NotFoundException || t is IncompatibleSchemaException || t is TopicDoesNotExistException || t is UnsupportedAuthenticationException || t is InvalidMessageException || t is InvalidTopicNameException || t is NotSupportedException || t is ChecksumException || t is CryptoException || t is ProducerBusyException || t is ConsumerBusyException)
 			{
-				return new InvalidConfigurationException(msg);
+				return false;
 			}
-			else if (cause is AuthenticationException)
-			{
-				return new AuthenticationException(msg);
-			}
-			else if (cause is IncompatibleSchemaException)
-			{
-				return new IncompatibleSchemaException(msg);
-			}
-			else if (cause is TooManyRequestsException)
-			{
-				return new TooManyRequestsException(msg);
-			}
-			else if (cause is LookupException)
-			{
-				return new LookupException(msg);
-			}
-			else if (cause is ConnectException)
-			{
-				return new ConnectException(msg);
-			}
-			else if (cause is AlreadyClosedException)
-			{
-				return new AlreadyClosedException(msg);
-			}
-			else if (cause is TopicTerminatedException)
-			{
-				return new TopicTerminatedException(msg);
-			}
-			else if (cause is AuthorizationException)
-			{
-				return new AuthorizationException(msg);
-			}
-			else if (cause is GettingAuthenticationDataException)
-			{
-				return new GettingAuthenticationDataException(msg);
-			}
-			else if (cause is UnsupportedAuthenticationException)
-			{
-				return new UnsupportedAuthenticationException(msg);
-			}
-			else if (cause is BrokerPersistenceException)
-			{
-				return new BrokerPersistenceException(msg);
-			}
-			else if (cause is BrokerMetadataException)
-			{
-				return new BrokerMetadataException(msg);
-			}
-			else if (cause is ProducerBusyException)
-			{
-				return new ProducerBusyException(msg);
-			}
-			else if (cause is ConsumerBusyException)
-			{
-				return new ConsumerBusyException(msg);
-			}
-			else if (cause is NotConnectedException)
-			{
-				return new NotConnectedException();
-			}
-			else if (cause is InvalidMessageException)
-			{
-				return new InvalidMessageException(msg);
-			}
-			else if (cause is InvalidTopicNameException)
-			{
-				return new InvalidTopicNameException(msg);
-			}
-			else if (cause is NotSupportedException)
-			{
-				return new NotSupportedException(msg);
-			}
-			else if (cause is ProducerQueueIsFullError)
-			{
-				return new ProducerQueueIsFullError(msg);
-			}
-			else if (cause is ProducerBlockedQuotaExceededError)
-			{
-				return new ProducerBlockedQuotaExceededError(msg);
-			}
-			else if (cause is ProducerBlockedQuotaExceededException)
-			{
-				return new ProducerBlockedQuotaExceededException(msg);
-			}
-			else if (cause is ChecksumException)
-			{
-				return new ChecksumException(msg);
-			}
-			else if (cause is CryptoException)
-			{
-				return new CryptoException(msg);
-			}
-			else if (cause is TopicDoesNotExistException)
-			{
-				return new TopicDoesNotExistException(msg);
-			}
-			else
-			{
-				return new PulsarClientException(t.Message);
-			}
+			return true;
 		}
 	}
 }

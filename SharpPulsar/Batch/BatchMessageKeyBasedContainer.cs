@@ -4,9 +4,6 @@ using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
-using Google.Protobuf.Collections;
-using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Utilities;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
@@ -111,24 +108,24 @@ namespace SharpPulsar.Batch
         private OpSendMsg CreateOpSendMsg(KeyedBatch keyedBatch)
 		{
             var encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
-            if (ProducerContainer.Configuration.EncryptionEnabled && ProducerContainer.Crypto != null)
+            if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
             {
                 try
                 {
-                    encryptedPayload = ProducerContainer.Crypto.Encrypt(ProducerContainer.Configuration.EncryptionKeys, ProducerContainer.Configuration.CryptoKeyReader, keyedBatch.MessageMetadata, encryptedPayload);
+                    encryptedPayload = Container.Crypto.Encrypt(Container.Configuration.EncryptionKeys, Container.Configuration.CryptoKeyReader, keyedBatch.MessageMetadata, encryptedPayload);
                 }
                 catch (PulsarClientException e)
                 {
                     // Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
-                    if (ProducerContainer.Configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send)
+                    if (Container.Configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send)
                         throw;
                     _log.Warning($"[{TopicName}] [{ProducerName}] Failed to encrypt message '{e.Message}'. Proceeding with publishing unencrypted message");
                     encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
                 }
             }
-            if (encryptedPayload.Length > ProducerContainer.MaxMessageSize)
+            if (encryptedPayload.Length > Container.MaxMessageSize)
             {
-                Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ProducerContainer.MaxMessageSize + " bytes"));
+                Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Container.MaxMessageSize + " bytes"));
                 return null;
             }
 
@@ -139,7 +136,7 @@ namespace SharpPulsar.Batch
 				currentBatchSizeBytes += message.Payload.Length;
 			}
 			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
-			var cmd = Commands.NewSend(ProducerContainer.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
+			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
 			var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId, keyedBatch.FirstCallback);
 

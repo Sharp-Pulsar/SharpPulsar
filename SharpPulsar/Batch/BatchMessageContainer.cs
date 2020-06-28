@@ -49,16 +49,16 @@ namespace SharpPulsar.Batch
 		private long _highestSequenceId = -1L;
 		private byte[] _batchedMessageMetadataAndPayload;
 		private IList<Message> _messages = new List<Message>();
-		private ISendCallback _previousCallback = null;
+		private Action<object, Exception> _previousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
-		private ISendCallback _firstCallback;
+		private Action<object, Exception> _firstCallback;
         private ILoggingAdapter _log;
 
         public BatchMessageContainer(ActorSystem system)
         {
             _log = system.Log;
         }
-		public override bool Add(Message msg, ISendCallback callback)
+		public override bool Add(Message msg, Action<object, Exception> callback)
 		{
 
 			if (_log.IsDebugEnabled)
@@ -73,10 +73,9 @@ namespace SharpPulsar.Batch
 				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
-				_batchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, ProducerContainer.MaxMessageSize)]; ;
+				_batchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, Container.MaxMessageSize)]; ;
 			}
 
-            _previousCallback?.AddCallback(msg, callback);
             _previousCallback = callback;
 			CurrentBatchSize += msg.Payload.Length;
 			_messages.Add(msg);
@@ -87,7 +86,7 @@ namespace SharpPulsar.Batch
 				_messageMetadata.SequenceId = (ulong)_lowestSequenceId;
 			}
 			_highestSequenceId = msg.SequenceId;
-            callback.LastSequencePushed(msg.SequenceId);
+            callback(msg.SequenceId, null);
 
 			return BatchFull;
 		}
@@ -99,7 +98,7 @@ namespace SharpPulsar.Batch
     
 				for (int i = 0, n = _messages.Count; i < n; i++)
 				{
-					Message msg = _messages[i];
+					var msg = _messages[i];
 					var msgMetadata = new MessageMetadata();
 					try
 					{
@@ -157,7 +156,7 @@ namespace SharpPulsar.Batch
 			try
             {
                 // Need to protect ourselves from any exception being thrown in the future handler from the application
-                _firstCallback?.SendComplete(ex);
+                _firstCallback(null, ex);
             }
 			catch (Exception t)
 			{
@@ -171,29 +170,29 @@ namespace SharpPulsar.Batch
 		public override OpSendMsg CreateOpSendMsg()
 		{
 			var encryptedPayload = CompressedBatchMetadataAndPayload;
-            if (ProducerContainer.Configuration.EncryptionEnabled && ProducerContainer.Crypto != null)
+            if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
             {
                 try
                 {
-                    encryptedPayload = ProducerContainer.Crypto.Encrypt(ProducerContainer.Configuration.EncryptionKeys, ProducerContainer.Configuration.CryptoKeyReader, _messageMetadata, encryptedPayload);
+                    encryptedPayload = Container.Crypto.Encrypt(Container.Configuration.EncryptionKeys, Container.Configuration.CryptoKeyReader, _messageMetadata, encryptedPayload);
                 }
                 catch (PulsarClientException e)
                 {
                     // Unless config is set to explicitly publish un-encrypted message upon failure, fail the request
-                    if (ProducerContainer.Configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send) 
+                    if (Container.Configuration.CryptoFailureAction != ProducerCryptoFailureAction.Send) 
                         throw;
                     _log.Warning($"[{TopicName}] [{ProducerName}] Failed to encrypt message '{e.Message}'. Proceeding with publishing unencrypted message");
                     encryptedPayload = CompressedBatchMetadataAndPayload;
                 }
             }
-			if (encryptedPayload.Length > ProducerContainer.MaxMessageSize)
+			if (encryptedPayload.Length > Container.MaxMessageSize)
 			{
-				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + ProducerContainer.MaxMessageSize + " bytes"));
+				Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Container.MaxMessageSize + " bytes"));
 				return null;
 			}
 			_messageMetadata.NumMessagesInBatch = NumMessagesInBatch;
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
-			var cmd = Commands.NewSend(ProducerContainer.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
+			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
 			var op = OpSendMsg.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, _firstCallback);
 

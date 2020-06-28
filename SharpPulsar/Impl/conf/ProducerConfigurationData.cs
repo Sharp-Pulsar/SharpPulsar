@@ -29,9 +29,12 @@ namespace SharpPulsar.Impl.Conf
 {
     public class ProducerConfigurationData
     {
+        public long BatchingMaxPublishDelayMicros { get; set; } = 1000;
+        public int BatchingPartitionSwitchFrequencyByPublishDelay { get; set; } = 10;
         public int BatchingMaxMessages { get; set; } = DefaultBatchingMaxMessages;
 		public int BatchingMaxBytes { get; set; } = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
-
+        public bool BatchingEnabled { get; set; } = false;
+		public IMessageCrypto MessageCrypto { get; set; }
 		public IProducerEventListener ProducerEventListener { get; set; }
         public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;

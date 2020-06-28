@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Akka.Actor;
-using SharpPulsar.Api;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Impl;
 
 /// <summary>
@@ -23,7 +22,7 @@ using SharpPulsar.Impl;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Batch
+namespace SharpPulsar.Batch.Api
 {
 
     public interface IBatchMessageContainerBase : IBatchMessageContainer
@@ -35,7 +34,7 @@ namespace SharpPulsar.Batch
 		/// <param name="msg"> message will add to the batch message container </param>
 		/// <param name="callback"> message send callback </param>
 		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(Message msg, ISendCallback callback);
+		bool Add(Message msg, Action<object, Exception> callback);
 
 		/// <summary>
 		/// Check the batch message container have enough space for the message want to add.
@@ -58,6 +57,8 @@ namespace SharpPulsar.Batch
 		/// </summary>
 		/// <param name="producer"> producer </param>
 		IActorRef Producer {set;}
+
+		ProducerContainer Container { set; }
 
 		/// <summary>
 		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
