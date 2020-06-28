@@ -23,8 +23,13 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Akka.Util;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl.Crypto;
+using SharpPulsar.Stats.Consumer;
+using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Tracker;
+using SharpPulsar.Tracker.Api;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -33,6 +38,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly int _partitionIndex;
         private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
+        private readonly IDictionary<string, string> _metadata;
         private readonly ConsumerConfigurationData _conf;
         private readonly string _consumerName;
         private string _subscriptionName;
@@ -53,7 +59,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly BatchMessageId _initialStartMessageId = (BatchMessageId)MessageIdFields.Earliest;
         private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
-        private readonly MessageCrypto _msgCrypto;
+        private readonly IMessageCrypto _msgCrypto;
         private readonly bool _hasParentConsumer;
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
@@ -61,10 +67,24 @@ namespace SharpPulsar.Akka.Consumer
 
         private readonly bool _eventSourced;
         private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
-        private int _pendingChunckedMessageCount = 0;
-        private long _expireTimeOfIncompleteChunkedMessageMillis = 0;
-        private bool _expireChunkMessageTaskScheduled = false;
+        private int _pendingChunckedMessageCount;
+        private long _expireTimeOfIncompleteChunkedMessageMillis;
+        private bool _expireChunkMessageTaskScheduled;
         private readonly int _maxPendingChuckedMessage;
+
+
+
+        private readonly UnAckedMessageTracker _unAckedMessageTracker;
+        private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
+        private readonly NegativeAcksTracker _negativeAcksTracker;
+
+        private readonly IConsumerStatsRecorder _stats;
+
+
+
+        private BatchMessageId _seekMessageId;
+        private readonly bool _duringSeek;
+
         // if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
         // the topic) then it guards against broken chuncked message which was not fully published
         private readonly bool _autoAckOldestChunkedMessageOnQueueFull;
@@ -95,14 +115,84 @@ namespace SharpPulsar.Akka.Consumer
             _consumerName = configuration.ConsumerName;
             _unAckedChunkedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
 
+            _negativeAcksTracker = new NegativeAcksTracker(Context.System, Self, configuration);
+
             _maxPendingChuckedMessage = configuration.MaxPendingChuckedMessage;
             _pendingChunckedMessageUuidQueue = new List<string>();
             _expireTimeOfIncompleteChunkedMessageMillis = configuration.ExpireTimeOfIncompleteChunkedMessageMillis;
             _autoAckOldestChunkedMessageOnQueueFull = configuration.AutoAckOldestChunkedMessageOnQueueFull;
 
+            if (clientConfiguration.StatsIntervalSeconds > 0)
+            {
+                _stats = new ConsumerStatsRecorder(configuration, _topicName.ToString(), _consumerName, clientConfiguration.StatsIntervalSeconds);
+            }
+            else
+            {
+                _stats = ConsumerStatsDisabled.Instance;
+            }
+
+            _duringSeek = false;
+
+            if (configuration.AckTimeoutMillis != 0)
+            {
+                if (configuration.TickDurationMillis > 0)
+                {
+                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis), Context.System);
+                }
+                else
+                {
+                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Context.System);
+                }
+            }
+            else
+            {
+                _unAckedMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
+            }
+
             // Create msgCrypto if not created already
-            _msgCrypto = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
-            
+            if (configuration.CryptoKeyReader != null)
+            {
+                if (configuration.MessageCrypto != null)
+                {
+                    _msgCrypto = configuration.MessageCrypto;
+                }
+                else
+                {
+                    // default to use MessageCryptoBc;
+                    MessageCrypto msgCryptoBc;
+                    try
+                    {
+                        msgCryptoBc = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
+                        
+                    }
+                    catch (Exception e)
+                    {
+                        Context.System.Log.Error("MessageCryptoBc may not included in the jar. e:", e);
+                        msgCryptoBc = null;
+                    }
+                    _msgCrypto = msgCryptoBc;
+                }
+            }
+            else
+            {
+                _msgCrypto = null;
+            }
+            if (configuration.Properties.Count == 0)
+            {
+                _metadata = new Dictionary<string, string>();
+            }
+            else
+            {
+                _metadata = new Dictionary<string, string>(configuration.Properties);
+            }
+            if (_topicName.Persistent)
+            {
+                _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(this, Self, _consumerid);
+            }
+            else
+            {
+                _acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
+            }
             ReceiveAny(x => Stash.Stash());
             BecomeLookUp();
         }
@@ -949,7 +1039,7 @@ namespace SharpPulsar.Akka.Consumer
         internal List<byte> ChunkedMsgBuffer;
         internal int LastChunkedMessageId = -1;
         internal MessageId[] ChunkedMessageIds;
-        internal long ReceivedTime = 0;
+        internal long ReceivedTime;
 
         internal static ChunkedMessageCtx Get(int numChunksFromMsg, byte[] chunkedMsg)
         {

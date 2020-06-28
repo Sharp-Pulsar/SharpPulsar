@@ -37,9 +37,9 @@ namespace SharpPulsar.Stats.Consumer
 		private const long SerialVersionUid = 1L;
 		private ITimerTask _stat;
 		private ITimeout _statTimeout;
-		private ConsumerImpl _consumer;
-		private PulsarClientImpl _pulsarClient;
 		private long _oldTime;
+        private readonly string _topic;
+        private readonly string _name;
 		private long _statsIntervalSeconds;
 		private readonly StripedLongAdder _numMsgsReceived;
 		private readonly StripedLongAdder _numBytesReceived;
@@ -77,12 +77,12 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(PulsarClientImpl pulsarClient, ConsumerConfigurationData conf, ConsumerImpl consumer)
-		{
+		public ConsumerStatsRecorder(ConsumerConfigurationData conf, string topic, string name, long statsIntervalSeconds)
+        {
+            _topic = topic;
+            _name = name;
 			ThroughputFormat.NumberDecimalSeparator = "0.00";
-			this._pulsarClient = pulsarClient;
-			this._consumer = consumer;
-			this._statsIntervalSeconds = pulsarClient.Configuration.StatsIntervalSeconds;
+			this._statsIntervalSeconds = statsIntervalSeconds;
 			_numMsgsReceived = new StripedLongAdder();
 			_numBytesReceived = new StripedLongAdder();
 			_numReceiveFailed = new StripedLongAdder();
