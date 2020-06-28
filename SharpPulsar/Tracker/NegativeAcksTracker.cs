@@ -35,6 +35,7 @@ namespace SharpPulsar.Tracker
 	{
 
 		private Dictionary<MessageId, long> nackedMessages = null;
+        private ActorSystem _system;
 
 		private readonly IActorRef consumer;
 		private readonly Timer timer;
@@ -44,10 +45,11 @@ namespace SharpPulsar.Tracker
 		private Timer timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
-		private static readonly long MinNackDelayNanos = TimeUnit.MILLISECONDS.toNanos(100);
+		private static readonly long MinNackDelayNanos = 100;
 
-		public NegativeAcksTracker(IActorRef consumer, ConsumerConfigurationData conf)
-		{
+		public NegativeAcksTracker(ActorSystem system, IActorRef consumer, ConsumerConfigurationData conf)
+        {
+            _system = system;
 			this.consumer = consumer;
 			this.timer = consumer.Client.timer();
 			this.nackDelayNanos = Math.Max(TimeUnit.MICROSECONDS.toNanos(conf.NegativeAckRedeliveryDelayMicros), MinNackDelayNanos);

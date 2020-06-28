@@ -20,11 +20,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+using System.Linq;
 using Akka.Actor;
-using DotNetty.Common;
-using PulsarAdmin.Models;
+using Akka.Event;
+using Akka.Util.Internal;
+using SharpPulsar.Api;
 using SharpPulsar.Impl;
 using SharpPulsar.Utility;
 
@@ -33,288 +33,233 @@ namespace SharpPulsar.Tracker
     public class UnAckedMessageTracker
     {
 
-		protected internal readonly ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>> messageIdPartitionMap;
-		protected internal readonly LinkedList<ConcurrentOpenHashSet<MessageId>> timePartitions;
+        private readonly ConcurrentDictionary<MessageId, HashSet<MessageId>> _messageIdPartitionMap;
+        private readonly List<HashSet<MessageId>> _timePartitions;
+        private readonly ILoggingAdapter _log;
+        private readonly ActorSystem _system;
+        private ICancelable _timeout;
+        private static IActorRef _consumer;
 
+        public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled =
+            new UnAckedMessageTrackerDisabled();
 
-		public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled = new UnAckedMessageTrackerDisabled();
-		private readonly long ackTimeoutMillis;
-		private readonly long tickDurationInMs;
+        private readonly long ackTimeoutMillis;
+        private readonly long tickDurationInMs;
 
-		public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
-		{
-			public override void Clear()
-			{
-			}
+        public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
+        {
 
-			public override long Size()
-			{
-				return 0;
-			}
-
-			public override bool Add(MessageId m)
-			{
-				return true;
-			}
-
-			public override bool Remove(MessageId m)
-			{
-				return true;
-			}
-
-			public override int RemoveMessagesTill(MessageId msgId)
-			{
-				return 0;
-			}
-
-			public virtual void Dispose()
-			{
-			}
-		}
-
-		private Timeout timeout;
-
-		public UnAckedMessageTracker()
-		{
-			timePartitions = null;
-			messageIdPartitionMap = null;
-			this.ackTimeoutMillis = 0;
-			this.tickDurationInMs = 0;
-		}
-
-		public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis) : this(ackTimeoutMillis, ackTimeoutMillis)
-		{
-		}
-
-	private static readonly FastThreadLocal<HashSet<MessageId>> TlMessageIdsSet = new FastThreadLocalAnonymousInnerClass();
-
-	public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<HashSet<MessageId>>
-	{
-		public override HashSet<MessageId> InitialValue()
-		{
-			return new HashSet<MessageId>();
-		}
-	}
-
-	public UnAckedMessageTracker(IActorRef consumerBase, long ackTimeoutMillis, long tickDurationInMs)
-		{
-			Preconditions.checkArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
-			this.ackTimeoutMillis = ackTimeoutMillis;
-			this.tickDurationInMs = tickDurationInMs;
-			ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-			this.readLock = readWriteLock.readLock();
-			this.writeLock = readWriteLock.writeLock();
-			this.messageIdPartitionMap = new ConcurrentDictionary<MessageId, ConcurrentOpenHashSet<MessageId>>();
-			this.timePartitions = new LinkedList<ConcurrentOpenHashSet<MessageId>>();
-
-			int blankPartitions = (int)Math.Ceiling((double)this.ackTimeoutMillis / this.tickDurationInMs);
-            for (int i = 0; i < blankPartitions + 1; i++)
+            public override void Clear()
             {
-                timePartitions.AddLast(new ConcurrentOpenHashSet<>(16, 1));
             }
 
-            timeout = client.timer().newTimeout(new TimerTaskAnonymousInnerClass(this, client, consumerBase, tickDurationInMs)
-		   , this.tickDurationInMs, TimeUnit.MILLISECONDS);
-	}
+            public override long Size()
+            {
+                return 0;
+            }
 
-	public class TimerTaskAnonymousInnerClass : TimerTask
-	{
-		private readonly UnAckedMessageTracker outerInstance;
+            public override bool Add(MessageId m)
+            {
+                return true;
+            }
 
-		private PulsarClientImpl client;
-		private ConsumerBase<T1> consumerBase;
-		private long tickDurationInMs;
+            public override bool Remove(MessageId m)
+            {
+                return true;
+            }
 
-		public TimerTaskAnonymousInnerClass(UnAckedMessageTracker outerInstance, PulsarClientImpl client, ConsumerBase<T1> consumerBase, long tickDurationInMs)
-		{
-			this.outerInstance = outerInstance;
-			this.client = client;
-			this.consumerBase = consumerBase;
-			this.tickDurationInMs = tickDurationInMs;
-		}
+            public override int RemoveMessagesTill(MessageId msgId)
+            {
+                return 0;
+            }
 
-		public override void Run(Timeout t)
-		{
-			ISet<MessageId> messageIds = TlMessageIdsSet.get();
-			messageIds.Clear();
+            public virtual void Dispose()
+            {
+            }
+        }
 
-			outerInstance.writeLock.@lock();
-			try
-			{
-				ConcurrentOpenHashSet<MessageId> headPartition = outerInstance.timePartitions.RemoveFirst();
-				if (!headPartition.Empty)
-				{
-					log.warn("[{}] {} messages have timed-out", consumerBase, headPartition.size());
-					headPartition.forEach(messageId =>
-					{
-						AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds, consumerBase);
-						messageIds.Add(messageId);
-						outerInstance.messageIdPartitionMap.Remove(messageId);
-					});
-				}
+        public UnAckedMessageTracker()
+        {
+            _system = null;
+            _timePartitions = null;
+            _messageIdPartitionMap = null;
+            ackTimeoutMillis = 0;
+            tickDurationInMs = 0;
+        }
 
-				headPartition.clear();
-				outerInstance.timePartitions.AddLast(headPartition);
-			}
-			finally
-			{
-				if (messageIds.Count > 0)
-				{
-					consumerBase.onAckTimeoutSend(messageIds);
-					consumerBase.redeliverUnacknowledgedMessages(messageIds);
-				}
-				outerInstance.timeout = client.timer().newTimeout(this, tickDurationInMs, TimeUnit.ToMillis(BAMCIS.Util.Concurrent.TimeUnit.MILLISECONDS, ));
-				outerInstance.writeLock.unlock();
-			}
-		}
-	}
+        public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis, ActorSystem system) : this(consumer,
+            ackTimeoutMillis, ackTimeoutMillis, system)
+        {
+        }
 
-	public static void AddChunkedMessageIdsAndRemoveFromSequnceMap(MessageId messageId, ISet<MessageId> messageIds, IActorRef consumerBase)
-	{
-		if (messageId is MessageIdImpl)
-		{
-			MessageIdImpl[] chunkedMsgIds = consumerBase.unAckedChunckedMessageIdSequenceMap.get((MessageIdImpl)messageId);
-			if (chunkedMsgIds != null && chunkedMsgIds.Length > 0)
-			{
-				foreach (MessageIdImpl msgId in chunkedMsgIds)
-				{
-					messageIds.Add(msgId);
-				}
-			}
-			consumerBase.unAckedChunckedMessageIdSequenceMap.remove((MessageIdImpl)messageId);
-		}
-	}
 
-	public virtual void clear()
-	{
-		writeLock.@lock();
-		try
-		{
-			messageIdPartitionMap.Clear();
-			timePartitions.forEach(tp => tp.clear());
-		}
-		finally
-		{
-			writeLock.unlock();
-		}
-	}
 
-	public virtual bool Add(MessageId messageId)
-	{
-		writeLock.@lock();
-		try
-		{
-			ConcurrentOpenHashSet<MessageId> partition = timePartitions.peekLast();
-			ConcurrentOpenHashSet<MessageId> previousPartition = messageIdPartitionMap.GetOrAdd(messageId, partition);
-			if (previousPartition == null)
-			{
-				return partition.add(messageId);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		finally
-		{
-			writeLock.unlock();
-		}
-	}
+        public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis, long tickDurationInMs,
+            ActorSystem system)
+        {
+            _consumer = consumer;
+            Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
+            this.ackTimeoutMillis = ackTimeoutMillis;
+            this.tickDurationInMs = tickDurationInMs;
+            _system = system;
+            _messageIdPartitionMap = new ConcurrentDictionary<MessageId, HashSet<MessageId>>();
+            _timePartitions = new List<HashSet<MessageId>>();
 
-	public virtual bool Empty
-	{
-		get
-		{
-			readLock.@lock();
-			try
-			{
-				return messageIdPartitionMap.IsEmpty;
-			}
-			finally
-			{
-				readLock.unlock();
-			}
-		}
-	}
+            var blankPartitions = (int) Math.Ceiling((double) this.ackTimeoutMillis / this.tickDurationInMs);
+            for (var i = 0; i < blankPartitions + 1; i++)
+            {
+                _timePartitions.Add(new HashSet<MessageId>(16));
+            }
 
-	public virtual bool Remove(MessageId messageId)
-	{
-		writeLock.@lock();
-		try
-		{
-			bool removed = false;
-			ConcurrentOpenHashSet<MessageId> exist = messageIdPartitionMap.Remove(messageId);
-			if (exist != null)
-			{
-				removed = exist.remove(messageId);
-			}
-			return removed;
-		}
-		finally
-		{
-			writeLock.unlock();
-		}
-	}
+            _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
 
-	public virtual long Size()
-	{
-		readLock.@lock();
-		try
-		{
-			return messageIdPartitionMap.Count;
-		}
-		finally
-		{
-			readLock.unlock();
-		}
-	}
+        }
 
-	public virtual int RemoveMessagesTill(MessageId msgId)
-	{
-		writeLock.@lock();
-		try
-		{
-			int removed = 0;
-			IEnumerator<MessageId> iterator = messageIdPartitionMap.Keys.GetEnumerator();
-			while (iterator.MoveNext())
-			{
-				MessageId messageId = iterator.Current;
-				if (messageId.CompareTo(msgId) <= 0)
-				{
-					ConcurrentOpenHashSet<MessageId> exist = messageIdPartitionMap[messageId];
-					if (exist != null)
-					{
-						exist.remove(messageId);
-					}
-					//JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
-					iterator.remove();
-					removed++;
-				}
-			}
-			return removed;
-		}
-		finally
-		{
-			writeLock.unlock();
-		}
-	}
+        private void Job()
+        {
+            ISet<MessageId> messageIds = new HashSet<MessageId>();
+            try
+            {
+                var headPartition = _timePartitions.FirstOrDefault();
+                if (headPartition != null && headPartition.Count > 0)
+                {
+                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
+                    headPartition.ForEach(messageId =>
+                    {
+                        AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds, _consumer);
+                        messageIds.Add(messageId);
+                        _messageIdPartitionMap.Remove(messageId, out var m);
+                    });
+                }
 
-	private void Stop()
-	{
-		writeLock.@lock();
-		try
-		{
-			if (timeout != null && !timeout.Cancelled)
-			{
-				timeout.cancel();
-			}
-			this.clear();
-		}
-		finally
-		{
-			writeLock.unlock();
-		}
-	}
+                headPartition?.Clear();
+                _timePartitions.Add(headPartition);
+            }
+            finally
+            {
+                if (messageIds.Count > 0)
+                {
+                    consumerBase.onAckTimeoutSend(messageIds);
+                    consumerBase.redeliverUnacknowledgedMessages(messageIds);
+                }
 
-}
+                _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
+            }
+        }
+
+        public static void AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, ISet<MessageId> messageIds, IActorRef consumer)
+        {
+            if (messageId is MessageId id)
+            {
+                //use ask here
+                var chunkedMsgIds = consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).GetAwaiter().GetResult();
+                if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length> 0)
+                {
+                    foreach (var msgId in chunkedMsgIds.MessageIds)
+                    {
+                        messageIds.Add(msgId);
+                    }
+                }
+
+                consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, id));
+            }
+        }
+
+        public virtual void Clear()
+        {
+            _messageIdPartitionMap.Clear();
+            foreach (var t in _timePartitions)
+            {
+                t.Clear();
+            }
+        }
+
+        public virtual bool Add(MessageId messageId)
+        {
+            var partition = _timePartitions.LastOrDefault();
+            var previousPartition = _messageIdPartitionMap.GetOrAdd(messageId, p => partition);
+            if (previousPartition == null)
+            {
+                return partition.Add(messageId);
+            }
+
+            return false;
+        }
+
+        public virtual bool Empty => _messageIdPartitionMap.IsEmpty;
+
+        public virtual bool Remove(MessageId messageId)
+        {
+            var removed = false;
+            _messageIdPartitionMap.Remove(messageId, out var exist);
+            if (exist != null)
+            {
+                removed = exist.Remove(messageId);
+            }
+
+            return removed;
+        }
+
+        public virtual long Size()
+        {
+            return _messageIdPartitionMap.Count;
+        }
+
+        public virtual int RemoveMessagesTill(MessageId msgId)
+        {
+            var removed = 0;
+            var iterator = _messageIdPartitionMap.Keys;
+            foreach (var i in iterator)
+            {
+                var messageId = i;
+                if (messageId.CompareTo(msgId) <= 0)
+                {
+                    var exist = _messageIdPartitionMap[messageId];
+                    exist?.Remove(messageId);
+                    _messageIdPartitionMap.Remove(i, out var remove);
+                    removed++;
+                }
+            }
+
+            return removed;
+        }
+
+        private void Stop()
+        {
+            if (_timeout != null && !_timeout.IsCancellationRequested)
+            {
+                _timeout.Cancel();
+            }
+
+            Clear();
+        }
+
+    }
+
+    public sealed class UnAckedChunckedMessageIdSequenceMapCmd
+    {
+        public UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand command, MessageId messageId)
+        {
+            Command = command;
+            MessageId = messageId;
+        }
+
+        public UnAckedCommand Command { get; }
+        public MessageId MessageId { get; }
+    }
+
+    public sealed class UnAckedChunckedMessageIdSequenceMapCmdResponse
+    {
+        public UnAckedChunckedMessageIdSequenceMapCmdResponse(MessageId[] messageIds)
+        {
+            MessageIds = messageIds;
+        }
+
+        public MessageId[] MessageIds { get; }
+    }
+    public enum UnAckedCommand
+    {
+        Get,
+        Remove
+    }
 }

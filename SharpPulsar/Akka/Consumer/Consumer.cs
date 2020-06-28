@@ -23,6 +23,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using SharpPulsar.Batch;
 using SharpPulsar.Impl.Crypto;
 
 namespace SharpPulsar.Akka.Consumer
