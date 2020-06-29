@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
+using Akka.Actor;
+using Akka.Event;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Api;
+using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Stats.Consumer.Api;
-using IConsumerStats = SharpPulsar.Api.IConsumerStats;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,18 +31,16 @@ using IConsumerStats = SharpPulsar.Api.IConsumerStats;
 /// </summary>
 namespace SharpPulsar.Stats.Consumer
 {
-
-	[Serializable]
 	public class ConsumerStatsRecorder : IConsumerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;
-		private ITimerTask _stat;
-		private ITimeout _statTimeout;
+        private ICancelable _statTimeout;
 		private long _oldTime;
         private readonly string _topic;
         private readonly string _name;
-		private long _statsIntervalSeconds;
+        private readonly string _subscription;
+		private readonly long _statsIntervalSeconds;
 		private readonly StripedLongAdder _numMsgsReceived;
 		private readonly StripedLongAdder _numBytesReceived;
 		private readonly StripedLongAdder _numReceiveFailed;
@@ -53,6 +53,9 @@ namespace SharpPulsar.Stats.Consumer
 		private readonly StripedLongAdder _totalBatchReceiveFailed;
 		private readonly StripedLongAdder _totalAcksSent;
 		private readonly StripedLongAdder _totalAcksFailed;
+
+        private readonly ActorSystem _system;
+        private readonly ILoggingAdapter _log;
 
 		public virtual double RateMsgsReceived { get; set; }
 		public virtual double RateBytesReceived { get; set; }
@@ -77,12 +80,15 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(ConsumerConfigurationData conf, string topic, string name, long statsIntervalSeconds)
+		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
         {
+            _system = system;
+            _log = system.Log;
             _topic = topic;
-            _name = name;
+            _name = consumerName;
+            _subscription = subscription;
 			ThroughputFormat.NumberDecimalSeparator = "0.00";
-			this._statsIntervalSeconds = statsIntervalSeconds;
+			_statsIntervalSeconds = statsIntervalSeconds;
 			_numMsgsReceived = new StripedLongAdder();
 			_numBytesReceived = new StripedLongAdder();
 			_numReceiveFailed = new StripedLongAdder();
@@ -100,77 +106,60 @@ namespace SharpPulsar.Stats.Consumer
 
 		private void Init(ConsumerConfigurationData conf)
 		{
-			/*var m = new ObjectMapper();
-			m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-			ObjectWriter w = m.writerWithDefaultPrettyPrinter();*/
-
-			try
+            try
 			{
-				//Log.LogInformation("Starting Pulsar consumer status recorder with config: {}", w.writeValueAsString(conf));
-				//Log.LogInformation("Pulsar client config: {}", w.withoutAttribute("authentication").writeValueAsString(_pulsarClient.Configuration));
+				_log.Info($"Starting Pulsar consumer status recorder with config: {JsonSerializer.Serialize(conf, new JsonSerializerOptions{WriteIndented = true})}");
 			}
 			catch (IOException e)
 			{
-				Log.LogError("Failed to dump config info: {}", e);
+				_log.Error($"Failed to dump config info: {e}");
 			}
 
 			_oldTime = DateTime.Now.Millisecond;
-			_statTimeout = _pulsarClient.Timer.NewTimeout(new StatsTimerTask(this), TimeSpan.FromSeconds(_statsIntervalSeconds));
+			_statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
 		}
 
-		public class StatsTimerTask : ITimerTask
-		{
-			private readonly ConsumerStatsRecorder _outerInstance;
+        private void StatsAction()
+        {
 
-			public StatsTimerTask(ConsumerStatsRecorder outerInstance)
+			try
 			{
-				_outerInstance = outerInstance;
+				long now = DateTime.Now.Millisecond;
+				var elapsed = (now - OldTime) / 1e9;
+				_oldTime = now;
+				var currentNumMsgsReceived = _numMsgsReceived.GetAndReset();
+				var currentNumBytesReceived = _numBytesReceived.GetAndReset();
+				var currentNumReceiveFailed = _numReceiveFailed.GetAndReset();
+				var currentNumBatchReceiveFailed = _numBatchReceiveFailed.GetAndReset();
+				var currentNumAcksSent = _numAcksSent.GetAndReset();
+				var currentNumAcksFailed = _numAcksFailed.GetAndReset();
+
+				_totalMsgsReceived.Add(currentNumMsgsReceived);
+				_totalBytesReceived.Add(currentNumBytesReceived);
+				_totalReceiveFailed.Add(currentNumReceiveFailed);
+				_totalBatchReceiveFailed.Add(currentNumBatchReceiveFailed);
+				_totalAcksSent.Add(currentNumAcksSent);
+				_totalAcksFailed.Add(currentNumAcksFailed);
+
+				RateMsgsReceived = currentNumMsgsReceived / elapsed;
+				RateBytesReceived = currentNumBytesReceived / elapsed;
+
+				if ((currentNumMsgsReceived | currentNumBytesReceived | currentNumReceiveFailed | currentNumAcksSent | currentNumAcksFailed) != 0)
+				{
+					_log.Info($"[{_topic}] [{_subscription}] [{_name}] Consume throughput received: {(RateMsgsReceived).ToString(ThroughputFormat)} msgs/s --- {(RateBytesReceived * 8 / 1024 / 1024).ToString(ThroughputFormat)} Mbit/s --- Ack sent rate: {(currentNumAcksSent / elapsed).ToString(ThroughputFormat)} ack/s --- Failed messages: {currentNumReceiveFailed} --- batch messages: {currentNumBatchReceiveFailed} ---Failed acks: {currentNumAcksFailed}");
+				}
 			}
-			public void Run(ITimeout timeout)
+			catch (Exception e)
 			{
-				if (timeout.Canceled)
-				{
-					return;
-				}
-				try
-				{
-					long now = DateTime.Now.Millisecond;
-					var elapsed = (now - _outerInstance.OldTime) / 1e9;
-					_outerInstance._oldTime = now;
-					var currentNumMsgsReceived = _outerInstance._numMsgsReceived.GetAndReset();
-					var currentNumBytesReceived = _outerInstance._numBytesReceived.GetAndReset();
-					var currentNumReceiveFailed = _outerInstance._numReceiveFailed.GetAndReset();
-					var currentNumBatchReceiveFailed = _outerInstance._numBatchReceiveFailed.GetAndReset();
-					var currentNumAcksSent = _outerInstance._numAcksSent.GetAndReset();
-					var currentNumAcksFailed = _outerInstance._numAcksFailed.GetAndReset();
-
-					_outerInstance._totalMsgsReceived.Add(currentNumMsgsReceived);
-					_outerInstance._totalBytesReceived.Add(currentNumBytesReceived);
-					_outerInstance._totalReceiveFailed.Add(currentNumReceiveFailed);
-					_outerInstance._totalBatchReceiveFailed.Add(currentNumBatchReceiveFailed);
-					_outerInstance._totalAcksSent.Add(currentNumAcksSent);
-					_outerInstance._totalAcksFailed.Add(currentNumAcksFailed);
-
-					_outerInstance.RateMsgsReceived = currentNumMsgsReceived / elapsed;
-					_outerInstance.RateBytesReceived = currentNumBytesReceived / elapsed;
-
-					if ((currentNumMsgsReceived | currentNumBytesReceived | currentNumReceiveFailed | currentNumAcksSent | currentNumAcksFailed) != 0)
-					{
-						Log.LogInformation("[{}] [{}] [{}] Prefetched messages: {} --- " + "Consume throughput received: {} msgs/s --- {} Mbit/s --- " + "Ack sent rate: {} ack/s --- " + "Failed messages: {} --- batch messages: {} ---" + "Failed acks: {}", _outerInstance._consumer.Topic, _outerInstance._consumer.Subscription, _outerInstance._consumer.ConsumerName, _outerInstance._consumer.IncomingMessages.size(), (_outerInstance.RateMsgsReceived).ToString(ThroughputFormat), (_outerInstance.RateBytesReceived * 8 / 1024 / 1024).ToString(ThroughputFormat), (currentNumAcksSent / elapsed).ToString(ThroughputFormat), currentNumReceiveFailed, currentNumBatchReceiveFailed, currentNumAcksFailed);
-					}
-				}
-				catch (System.Exception e)
-				{
-					Log.LogError("[{}] [{}] [{}]: {}", _outerInstance._consumer.Topic, _outerInstance._consumer.Subscription, _outerInstance._consumer.ConsumerName, e.Message);
-				}
-				finally
-				{
-					// schedule the next stat info
-					_outerInstance._statTimeout = _outerInstance._pulsarClient.Timer.NewTimeout(this, TimeSpan.FromSeconds(_outerInstance._statsIntervalSeconds));
-				}
+				_log.Error($"[{_topic}] [{_name}] [{_subscription}]: {e.Message}");
+			}
+			finally
+			{
+				// schedule the next stat info
+                _statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
 			}
 		}
-		public void UpdateNumMsgsReceived(IMessage message)
+		public void UpdateNumMsgsReceived(Message message)
 		{
 			if (message != null)
 			{
@@ -199,7 +188,7 @@ namespace SharpPulsar.Stats.Consumer
 			_numBatchReceiveFailed.Increment();
 		}
 
-		public virtual ITimeout StatTimeout => _statTimeout;
+		public virtual ICancelable StatTimeout => _statTimeout;
 
 		public void Reset()
 		{

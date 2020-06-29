@@ -6,8 +6,6 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
-using DotNetty.Common.Utilities;
-using Microsoft.Extensions.Logging;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
@@ -39,9 +37,9 @@ namespace SharpPulsar.Stats.Producer
         private const long SerialVersionUid = 1L;
         internal ICancelable StatTimeout { get; set; }
         private long _oldTime;
-        private string _producerName;
-        private string _topic;
-        private long _pendingQueueSize;
+        private readonly string _producerName;
+        private readonly string _topic;
+        private readonly long _pendingQueueSize;
         private readonly ActorSystem _system;
         private readonly long _statsIntervalSeconds;
         private readonly StripedLongAdder _numMsgsSent;

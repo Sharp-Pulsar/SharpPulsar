@@ -39,11 +39,6 @@ namespace SharpPulsar.Api
 	public interface IConsumerInterceptor
 	{
 		/// <summary>
-		/// This is called just before the message is returned by
-		/// <seealso cref="IConsumer.receive()"/>, {@link MessageListener#received(Consumer,
-		/// Message)} or the <seealso cref="ValueTask"/> returned by
-		/// <seealso cref="IConsumer.receiveAsync()"/> completes.
-		/// 
 		/// <para>This method is allowed to modify message, in which case the new message
 		/// will be returned.
 		/// 

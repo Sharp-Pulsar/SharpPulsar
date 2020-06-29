@@ -36,17 +36,11 @@ namespace SharpPulsar.Impl
 
 		public ConsumerInterceptors(IList<IConsumerInterceptor> interceptors)
 		{
-			this._interceptors = interceptors;
+			_interceptors = interceptors;
 		}
 
 		/// <summary>
-		/// This is called just before the message is returned by <seealso cref="IConsumer.receive()"/>,
-		/// <seealso cref="IMessageListener.received(IConsumer, IMessage)"/> or the <seealso cref="java.util.concurrent.CompletableFuture"/>
-		/// returned by <seealso cref="IConsumer.receiveAsync()"/> completes.
-		/// <para>
-		/// This method calls <seealso cref="IConsumerInterceptor.beforeConsume(IConsumer, IMessage)"/> for each interceptor. Messages returned
-		/// from each interceptor get passed to beforeConsume() of the next interceptor in the chain of interceptors.
-		/// </para>
+		
 		/// <para>
 		/// This method does not throw exceptions. If any of the interceptors in the chain throws an exception, it gets
 		/// caught and logged, and next interceptor in int the chain is called with 'messages' returned by the previous
@@ -77,9 +71,6 @@ namespace SharpPulsar.Impl
 		/// <summary>
 		/// This is called when acknowledge request return from the broker.
 		/// <para>
-		/// This method calls <seealso cref="IConsumerInterceptor.onAcknowledge(IConsumer, IMessageId, System.Exception)"/> method for each interceptor.
-		/// </para>
-		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
 		/// 
 		/// </para>
@@ -104,9 +95,7 @@ namespace SharpPulsar.Impl
 
 		/// <summary>
 		/// This is called when acknowledge cumulative request return from the broker.
-		/// <para>
-		/// This method calls <seealso cref="IConsumerInterceptor.onAcknowledgeCumulative(IConsumer, IMessageId, System.Exception)"/> (Message, Throwable)} method for each interceptor.
-		/// </para>
+		
 		/// <para>
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptors in the chain are logged, but not propagated.
 		/// 

@@ -17,6 +17,7 @@
 /// under the License.
 /// </summary>
 
+using Akka.Actor;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Impl;
 
@@ -34,7 +35,7 @@ namespace SharpPulsar.Stats.Consumer.Api
 
         void IncrementNumBatchReceiveFailed();
 
-        ITimeout StatTimeout { get; }
+        ICancelable StatTimeout { get; }
 
         void Reset();
 

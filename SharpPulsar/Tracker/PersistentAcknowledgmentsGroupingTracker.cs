@@ -15,6 +15,7 @@ using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Utils;
 using IAcknowledgmentsGroupingTracker = SharpPulsar.Tracker.Api.IAcknowledgmentsGroupingTracker;
 
 /// <summary>
@@ -81,7 +82,7 @@ namespace SharpPulsar.Tracker
 
 			if (_acknowledgementGroupTimeMicros > 0)
             {
-                var interval = _acknowledgementGroupTimeMicros * 0.001;//https://www.dotnetperls.com/convert-nanoseconds
+                var interval = ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_acknowledgementGroupTimeMicros);
 				_scheduledTask = system.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(interval), TimeSpan.FromMilliseconds(interval), Flush);
             }
 			else

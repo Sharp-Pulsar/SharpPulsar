@@ -185,7 +185,7 @@ namespace SharpPulsar.Api
 		/// Sets the Size of the consumer receive queue.
 		/// 
 		/// <para>The consumer receive queue controls how many messages can be accumulated by the <seealso cref="Consumer"/> before the
-		/// application calls <seealso cref="IConsumer.receive()"/>. Using a higher value could potentially increase the consumer
+		/// application calls. Using a higher value could potentially increase the consumer
 		/// throughput at the expense of bigger memory utilization.
 		/// 
 		/// </para>
