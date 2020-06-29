@@ -65,7 +65,7 @@ namespace SharpPulsar.Akka.Reader
                     pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
                 // Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
                 // it will specify the subscription position anyway
-                m.Consumer.Tell(new AckMessages(m.Message.ReceivedId));
+                m.Consumer.Tell(new AckMessages(m.Message.GetMessageId()));
             });
             Receive<CloseConsumer>(c => { Context.Parent.Tell(c);});
         }

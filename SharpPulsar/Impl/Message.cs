@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Utility;
 
@@ -93,7 +94,63 @@ namespace SharpPulsar.Impl
 			}
 			_schema = schema;
 		}
-		
+
+		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, schema, 0)
+		{
+		}
+
+		public Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema, int redeliveryCount)
+        {
+            Metadata = msgMetadata;
+			MessageId = batchMessageId;
+			TopicName = topic;
+			RedeliveryCount = redeliveryCount;
+
+			Payload = payload;
+			EncryptionCtx = encryptionCtx;
+
+			if (singleMessageMetadata.Properties.Count > 0)
+			{
+				var properties = new Dictionary<string, string>();
+				foreach (var entry in singleMessageMetadata.Properties)
+				{
+					properties[entry.Key] = entry.Value;
+				}
+				Properties = properties;
+			}
+			else
+			{
+				Properties = new Dictionary<string, string>();
+			}
+
+			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
+			{
+				Metadata.PartitionKeyB64Encoded = singleMessageMetadata.PartitionKeyB64Encoded;
+				Metadata.PartitionKey = singleMessageMetadata.PartitionKey;
+			}
+
+			if (singleMessageMetadata.EventTime > 0)
+			{
+				Metadata.EventTime = singleMessageMetadata.EventTime;
+			}
+
+			if (singleMessageMetadata.SequenceId > 0)
+			{
+				Metadata.SequenceId = singleMessageMetadata.SequenceId;
+			}
+
+			if (singleMessageMetadata.NullValue)
+			{
+				Metadata.NullValue = singleMessageMetadata.NullValue;
+			}
+
+			if (singleMessageMetadata.NullPartitionKey)
+			{
+				Metadata.NullPartitionKey = singleMessageMetadata.NullPartitionKey;
+			}
+
+			_schema = schema;
+		}
 		public static Message Deserialize(byte[] headersAndPayload)
 		{
             var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
@@ -128,16 +185,6 @@ namespace SharpPulsar.Impl
 			return messageTtlInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToMillis(messageTtlInSeconds));
 		}
 
-        public MessageIdReceived ReceivedId
-        {
-            get
-            {
-				if(MessageId is BatchMessageId id)
-				    return new MessageIdReceived(id.LedgerId, id.EntryId, id.BatchIndex, id.PartitionIndex, id.AckSets);
-                var m = (MessageId) MessageId;
-                return new MessageIdReceived(m.LedgerId, m.EntryId, -1, m.PartitionIndex, m.AckSets);
-            }
-        } 
 		public sbyte[] Data => (sbyte[])(object)Payload;
 
         public ISchema Schema => _schema;

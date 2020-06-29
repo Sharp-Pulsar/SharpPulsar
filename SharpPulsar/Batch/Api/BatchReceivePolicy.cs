@@ -60,14 +60,13 @@ namespace SharpPulsar.Batch.Api
 		/// Timeout: 100ms<p/>
 		/// </para>
 		/// </summary>
-		public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, TimeUnit.MILLISECONDS);
+		public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100);
 
-		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeout, TimeUnit timeoutUnit)
+		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeoutMs)
 		{
 			MaxNumMessages = maxNumMessages;
 			MaxNumBytes = maxNumBytes;
-			this.timeout = timeout;
-			this.timeoutUnit = timeoutUnit;
+			_timeout = timeoutMs;
 		}
 
 		/// <summary>
@@ -83,22 +82,21 @@ namespace SharpPulsar.Batch.Api
 		/// <summary>
 		/// timeout for waiting for enough messages(enough number or enough bytes).
 		/// </summary>
-		private readonly int timeout;
-		private readonly TimeUnit timeoutUnit;
+		private readonly int _timeout;
 
 		public virtual void Verify()
 		{
-			if (MaxNumMessages <= 0 && MaxNumBytes <= 0 && timeout <= 0)
+			if (MaxNumMessages <= 0 && MaxNumBytes <= 0 && _timeout <= 0)
 			{
 				throw new ArgumentException("At least " + "one of maxNumMessages, maxNumBytes, timeout must be specified.");
 			}
-			if (timeout > 0 && timeoutUnit == null)
+			if (_timeout > 0)
 			{
 				throw new ArgumentException("Must set timeout unit for timeout.");
 			}
 		}
 
-		public virtual long TimeoutMs => (timeout > 0 && timeoutUnit != null) ? timeoutUnit.ToMilliseconds(timeout) : 0L;
+		public virtual long TimeoutMs => _timeout;
 
 
         /// <summary>
@@ -109,7 +107,6 @@ namespace SharpPulsar.Batch.Api
 			private int _maxNumMessages;
 			private int _maxNumBytes;
 			private int _timeout;
-			internal TimeUnit _timeoutUnit;
 
 			public virtual Builder MaxNumMessages(int maxNumMessages)
 			{
@@ -123,16 +120,15 @@ namespace SharpPulsar.Batch.Api
 				return this;
 			}
 
-			public virtual Builder Timeout(int timeout, TimeUnit timeoutUnit)
+			public virtual Builder Timeout(int timeout)
 			{
 				_timeout = timeout;
-				_timeoutUnit = timeoutUnit;
 				return this;
 			}
 
 			public virtual BatchReceivePolicy Build()
 			{
-				return new BatchReceivePolicy(_maxNumMessages, _maxNumBytes, _timeout, _timeoutUnit);
+				return new BatchReceivePolicy(_maxNumMessages, _maxNumBytes, _timeout);
 			}
 		}
 
@@ -143,7 +139,7 @@ namespace SharpPulsar.Batch.Api
 
 		public override string ToString()
 		{
-			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + MaxNumBytes + ", timeout=" + timeout + ", timeoutUnit=" + timeoutUnit + '}';
+			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + MaxNumBytes + ", timeout=" + _timeout+'}';
 		}
 	}
 

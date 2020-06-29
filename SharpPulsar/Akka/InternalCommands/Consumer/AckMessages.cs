@@ -1,14 +1,15 @@
 ﻿using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Api;
 
 namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public class AckMessages
     {
-        public AckMessages(MessageIdReceived messageId)
+        public AckMessages(IMessageId messageId)
         {
             MessageId = messageId;
         }
 
-        public MessageIdReceived MessageId { get; }
+        public IMessageId MessageId { get; }
     }
 }

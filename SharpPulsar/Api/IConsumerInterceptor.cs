@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -72,7 +73,7 @@ namespace SharpPulsar.Api
 		/// <param name="message"> the message to be consumed by the client. </param>
 		/// <returns> message that is either modified by the interceptor or same message
 		///         passed into the method. </returns>
-		IMessage BeforeConsume(IActorRef consumer, IMessage message);
+		Message BeforeConsume(IActorRef consumer, Message message);
 
 		/// <summary>
 		/// This is called consumer sends the acknowledgment to the broker.

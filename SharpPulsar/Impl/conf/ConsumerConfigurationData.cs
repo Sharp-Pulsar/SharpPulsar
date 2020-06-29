@@ -31,9 +31,9 @@ namespace SharpPulsar.Impl.Conf
 	{
 		public IMessageCrypto MessageCrypto { get; set; }
 		public BatchMessageId StartMessageId { get; set; }
-        public ConsumptionType ConsumptionType { get; set; } = Conf.ConsumptionType.Listener;
+        public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
-		public List<IConsumerInterceptor> Interceptors { get; set; }
+		public IConsumerInterceptor Interceptors { get; set; }
 		public CommandSubscribe.SubType SubscriptionType { get; set; } = CommandSubscribe.SubType.Exclusive;
 		public IMessageListener MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
