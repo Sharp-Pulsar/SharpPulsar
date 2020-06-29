@@ -81,7 +81,7 @@ namespace SharpPulsar.Api
 		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
 		/// 
 		/// </para>
-		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
+		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue Size and
 		/// <seealso cref="IProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
 		/// 
 		/// </para>
@@ -157,7 +157,7 @@ namespace SharpPulsar.Api
 		/// <li>Sequence id for a message needs to be greater than sequence id for earlier messages:
 		/// <code>sequenceId(N+1) > sequenceId(N)</code>
 		/// <li>It's not necessary for sequence ids to be consecutive. There can be holes between messages. Eg. the
-		/// <code>sequenceId</code> could represent an offset or a cumulative size.
+		/// <code>sequenceId</code> could represent an offset or a cumulative Size.
 		/// </ol>
 		/// 
 		/// </para>

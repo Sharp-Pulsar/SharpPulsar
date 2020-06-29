@@ -46,7 +46,7 @@ namespace SharpPulsar.Common.Compression
 		/// <param name="encoded">
 		///            the compressed content </param>
 		/// <param name="uncompressedSize">
-		///            the size of the original content </param>
+		///            the Size of the original content </param>
 		/// <returns> a ByteBuf with the compressed content. The buffer needs to be released by the receiver </returns>
 		/// <exception cref="IOException">
 		///             if the decompression fails </exception>

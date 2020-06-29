@@ -182,7 +182,7 @@ namespace SharpPulsar.Api
 		IReaderBuilder CryptoFailureAction(ConsumerCryptoFailureAction action);
 
 		/// <summary>
-		/// Sets the size of the consumer receive queue.
+		/// Sets the Size of the consumer receive queue.
 		/// 
 		/// <para>The consumer receive queue controls how many messages can be accumulated by the <seealso cref="Consumer"/> before the
 		/// application calls <seealso cref="IConsumer.receive()"/>. Using a higher value could potentially increase the consumer
@@ -194,7 +194,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="receiverQueueSize">
-		///            the new receiver queue size value </param>
+		///            the new receiver queue Size value </param>
 		/// <returns> the reader builder instance </returns>
 		IReaderBuilder ReceiverQueueSize(int receiverQueueSize);
 

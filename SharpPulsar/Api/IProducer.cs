@@ -64,7 +64,7 @@ namespace SharpPulsar.Api
 		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
 		/// 
 		/// </para>
-		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
+		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue Size and
 		/// <seealso cref="IProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
 		/// 
 		/// </para>

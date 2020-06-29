@@ -51,7 +51,7 @@ namespace SharpPulsar.Common.Entity
         /// <summary>
 		/// Sticky attach topic with fixed hash range.
 		/// 
-		/// <para>Total hash range size is 65536, using the sticky hash range policy should ensure that the provided ranges by
+		/// <para>Total hash range Size is 65536, using the sticky hash range policy should ensure that the provided ranges by
 		/// all consumers can cover the total hash range [0, 65535]. If not, while broker dispatcher can't find the consumer
 		/// for message, the cursor will rewind.
 		/// </para>

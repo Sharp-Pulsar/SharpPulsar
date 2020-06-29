@@ -118,7 +118,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// </summary>
 		/// <param name="b"> array to write out </param>
 		/// <param name="off"> offset to start at </param>
-		/// <param name="len"> length to write </param>
+		/// <param name="len"> Length to write </param>
 		/// <returns> string output </returns>
 		private static string toString(in sbyte[] b, int off, int len)
 		{
@@ -129,7 +129,7 @@ namespace SharpPulsar.Protocol.Schema
 				return result.ToString();
 			}
 
-			// just in case we are passed a 'len' that is > buffer length...
+			// just in case we are passed a 'len' that is > buffer Length...
 			if (off >= b.Length)
 			{
 				return result.ToString();
@@ -190,7 +190,7 @@ namespace SharpPulsar.Protocol.Schema
 					return 0;
 				}
 
-				// similar to Arrays.compare() but considers offset and length
+				// similar to Arrays.compare() but considers offset and Length
 				int end1 = offset1 + length1;
 				int end2 = offset2 + length2;
 				for (int i = offset1, j = offset2; i < end1 && j < end2; i++, j++)

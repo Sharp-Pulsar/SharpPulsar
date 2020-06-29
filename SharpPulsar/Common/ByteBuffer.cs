@@ -16,7 +16,7 @@
 //-------------------------------------------------------------------------------------------
 public class ByteBuffer
 {
-	//'Mode' is only used to determine whether to return data length or capacity from the 'limit' method:
+	//'Mode' is only used to determine whether to return data Length or capacity from the 'limit' method:
 	private enum Mode
 	{
 		Read,

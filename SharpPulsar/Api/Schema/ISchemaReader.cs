@@ -43,7 +43,7 @@ namespace SharpPulsar.Api.Schema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <param name="offset"> the byte[] initial position </param>
-		/// <param name="length"> the byte[] read length </param>
+		/// <param name="length"> the byte[] read Length </param>
 		/// <returns> the serialized object </returns>
 		object Read(sbyte[] bytes, int offset, int length);
 

@@ -7502,7 +7502,7 @@ namespace PulsarAdmin
         /// triggered.
         /// </summary>
         /// <remarks>
-        /// The backlog size is compared to the threshold periodically. A threshold of
+        /// The backlog Size is compared to the threshold periodically. A threshold of
         /// 0 disabled automatic compaction
         /// </remarks>
         /// <param name='tenant'>
@@ -7649,7 +7649,7 @@ namespace PulsarAdmin
         /// triggered.
         /// </summary>
         /// <remarks>
-        /// The backlog size is compared to the threshold periodically. A threshold of
+        /// The backlog Size is compared to the threshold periodically. A threshold of
         /// 0 disabled automatic compaction
         /// </remarks>
         /// <param name='tenant'>

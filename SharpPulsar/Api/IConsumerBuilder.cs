@@ -278,19 +278,19 @@ namespace SharpPulsar.Api
 		IConsumerBuilder CryptoFailureAction(ConsumerCryptoFailureAction? action);
 
 		/// <summary>
-		/// Sets the size of the consumer receive queue.
+		/// Sets the Size of the consumer receive queue.
 		/// 
 		/// <para>The consumer receive queue controls how many messages can be accumulated by the <seealso cref="Consumer"/> before the
 		/// application calls <seealso cref="IConsumer.receive()"/>. Using a higher value could potentially increase the consumer
 		/// throughput at the expense of bigger memory utilization.
 		/// 
 		/// </para>
-		/// <para><b>Setting the consumer queue size as zero</b>
+		/// <para><b>Setting the consumer queue Size as zero</b>
 		/// <ul>
 		/// <li>Decreases the throughput of the consumer, by disabling pre-fetching of messages. This approach improves the
 		/// message distribution on shared subscription, by pushing messages only to the consumers that are ready to process
 		/// them. Neither <seealso cref="IConsumer.receive(int, TimeUnit)"/> nor Partitioned Topics can be used if the consumer queue
-		/// size is zero. <seealso cref="IConsumer.receive()"/> function call should not be interrupted when the consumer queue size is
+		/// Size is zero. <seealso cref="IConsumer.receive()"/> function call should not be interrupted when the consumer queue Size is
 		/// zero.</li>
 		/// <li>Doesn't support Batch-Message: if consumer receives any batch-message then it closes consumer connection with
 		/// broker and <seealso cref="IConsumer.receive()"/> call will remain blocked while <seealso cref="IConsumer.receiveAsync()"/> receives
@@ -302,7 +302,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="receiverQueueSize">
-		///            the new receiver queue size value </param>
+		///            the new receiver queue Size value </param>
 		/// <returns> the consumer builder instance </returns>
 		IConsumerBuilder ReceiverQueueSize(int receiverQueueSize);
 
@@ -329,9 +329,9 @@ namespace SharpPulsar.Api
 		IConsumerBuilder ReplicateSubscriptionState(bool replicateSubscriptionState);
 
 		/// <summary>
-		/// Set the max total receiver queue size across partitons.
+		/// Set the max total receiver queue Size across partitons.
 		/// 
-		/// <para>This setting will be used to reduce the receiver queue size for individual partitions
+		/// <para>This setting will be used to reduce the receiver queue Size for individual partitions
 		/// <seealso cref="receiverQueueSize(int)"/> if the total exceeds this value (default: 50000).
 		/// The purpose of this setting is to have an upper-limit on the number
 		/// of messages that a consumer can be pushed at once from a broker, across all

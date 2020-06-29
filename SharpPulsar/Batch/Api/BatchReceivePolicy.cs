@@ -29,7 +29,7 @@ namespace SharpPulsar.Batch.Api
 	/// 
 	/// </para>
 	/// <para>This batch receive will be completed as long as any one of the
-	/// conditions(has enough number of messages, has enough of size of messages, wait timeout) is met.
+	/// conditions(has enough number of messages, has enough of Size of messages, wait timeout) is met.
 	/// 
 	/// </para>
 	/// <para>Examples:

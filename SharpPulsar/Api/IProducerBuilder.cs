@@ -142,14 +142,14 @@ namespace SharpPulsar.Api
 		IProducerBuilder SendTimeout(int sendTimeout, TimeUnit unit);
 
 		/// <summary>
-		/// Set the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
+		/// Set the max Size of the queue holding the messages pending to receive an acknowledgment from the broker.
 		/// 
 		/// <para>When the queue is full, by default, all calls to <seealso cref="IProducer.send"/> and <seealso cref="IProducer.sendAsync"/>
 		/// will fail unless {@code blockIfQueueFull=true}. Use <seealso cref="blockIfQueueFull(bool)"/>
 		/// to change the blocking behavior.
 		/// 
 		/// </para>
-		/// <para>The producer queue size also determines the max amount of memory that will be required by
+		/// <para>The producer queue Size also determines the max amount of memory that will be required by
 		/// the client application. Until, the producer gets a successful acknowledgment back from the broker,
 		/// it will keep in memory (direct memory pool) all the messages in the pending queue.
 		/// 
@@ -159,7 +159,7 @@ namespace SharpPulsar.Api
 		/// </para>
 		/// </summary>
 		/// <param name="maxPendingMessages">
-		///            the max size of the pending messages queue for the producer </param>
+		///            the max Size of the pending messages queue for the producer </param>
 		/// <returns> the producer builder instance </returns>
 		IProducerBuilder MaxPendingMessages(int maxPendingMessages);
 
@@ -298,7 +298,7 @@ namespace SharpPulsar.Api
 		/// compression ratio for similar headers or contents.
 		/// 
 		/// </para>
-		/// <para>When enabled default batch delay is set to 1 ms and default batch size is 1000 messages
+		/// <para>When enabled default batch delay is set to 1 ms and default batch Size is 1000 messages
 		/// 
 		/// </para>
 		/// <para>Batching is enabled by default since 2.0.0.
@@ -352,7 +352,7 @@ namespace SharpPulsar.Api
 		/// <ul>
 		/// <li>this time interval expires</li>
 		/// <li>the max number of messages in a batch is reached (<seealso cref="batchingMaxMessages(int)"/>)
-		/// <li>the max size of batch is reached
+		/// <li>the max Size of batch is reached
 		/// </ul>
 		/// 
 		/// <para>All messages will be published as a single batch message. The consumer will be delivered individual

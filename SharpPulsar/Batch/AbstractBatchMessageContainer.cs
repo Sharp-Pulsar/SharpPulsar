@@ -49,7 +49,7 @@ namespace SharpPulsar.Batch
 
 		private const int InitialBatchBufferSize = 1024;
 
-		// This will be the largest size for a batch sent from this particular producer. This is used as a baseline to
+		// This will be the largest Size for a batch sent from this particular producer. This is used as a baseline to
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		private int _maxBatchSize = InitialBatchBufferSize;
 

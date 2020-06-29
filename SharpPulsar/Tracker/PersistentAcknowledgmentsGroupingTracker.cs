@@ -44,7 +44,7 @@ namespace SharpPulsar.Tracker
 	{
 
 		/// <summary>
-		/// When reaching the max group size, an ack command is sent out immediately
+		/// When reaching the max group Size, an ack command is sent out immediately
 		/// </summary>
 		private const int MaxAckGroupSize = 1000;
 		private readonly IActorRef _consumer;
@@ -60,8 +60,8 @@ namespace SharpPulsar.Tracker
 		private  long[] _lastCumulativeAckSet = null;
 		private bool _cumulativeAckFlushRequired;
 
-		private static readonly List<MessageId> _astCumulativeAckUpdater = new List<MessageId>();
-		private static readonly List<long[]> _lastCumulativeAckSetUpdater = new List<long[]>();
+		private static readonly List<MessageId> _lastCumulativeAckUpdater = new List<MessageId>();
+		private static readonly List<BitSet> _lastCumulativeAckSetUpdater = new List<BitSet>();
 
 
 		/// <summary>
@@ -69,17 +69,17 @@ namespace SharpPulsar.Tracker
 		/// broker.
 		/// </summary>
 		private readonly ConcurrentSet<MessageId> _pendingIndividualAcks;
-		private readonly ConcurrentDictionary<MessageId, long[]> _pendingIndividualBatchIndexAcks;
+		private readonly ConcurrentDictionary<MessageId, BitSet> _pendingIndividualBatchIndexAcks;
 
 		private readonly ScheduledFuture<object> _scheduledTask;
 
-		public PersistentAcknowledgmentsGroupingTracker(IActorRef broker, IActorRef consumer, long consumerid, ConsumerConfigurationData conf, EventLoopGroup eventLoopGroup)
+		public PersistentAcknowledgmentsGroupingTracker(IActorRef broker, IActorRef consumer, long consumerid, ConsumerConfigurationData conf)
         {
             _broker = broker;
 			_consumer = consumer;
             _consumerId = consumerid;
 			_pendingIndividualAcks = new ConcurrentSet<MessageId>();
-			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<MessageId, long[]>();
+			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<MessageId, BitSet>();
 			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
 
 			if (_acknowledgementGroupTimeMicros > 0)
@@ -146,18 +146,18 @@ namespace SharpPulsar.Tracker
 	        }
 	        else if (ackType == CommandAck.AckType.Cumulative)
 	        {
-		        BitSetRecyclable bitSet = BitSetRecyclable.create();
-		        bitSet.set(0, batchSize);
-		        bitSet.clear(0, batchIndex + 1);
-		        DoCumulativeAck(msgId, bitSet);
+		        var bitSet = BitSet.Create();
+		        bitSet.Set(0, batchSize);
+		        bitSet.Clear(0, batchIndex + 1);
+		        DoCumulativeAck(msgId, bitSet.ToLongArray());
 	        }
 	        else if (ackType == CommandAck.AckType.Individual)
 	        {
-		        ConcurrentBitSetRecyclable bitSet = _pendingIndividualBatchIndexAcks.computeIfAbsent(new MessageIdImpl(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex), (v) =>
+		        var bitSet = _pendingIndividualBatchIndexAcks.computeIfAbsent(new MessageId(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex), (v) =>
 		        {
-			        ConcurrentBitSetRecyclable value = ConcurrentBitSetRecyclable.create();
-			        value.set(0, batchSize + 1);
-			        value.clear(batchIndex);
+			        var value = BitSet.Create();
+			        value.Set(0, batchSize + 1);
+			        value.Clear(batchIndex);
 			        return value;
 		        });
 		        bitSet.Set(batchIndex, false);
@@ -173,11 +173,11 @@ namespace SharpPulsar.Tracker
 	        // Handle concurrent updates from different threads
 	        while (true)
 	        {
-		        MessageId lastCumlativeAck = _lastCumulativeAck;
+		        var lastCumlativeAck = _lastCumulativeAck;
 		        var lastBitSet = _lastCumulativeAckSet;
 		        if (msgId.CompareTo(lastCumlativeAck) > 0)
 		        {
-			        if (LastCumulativeAckUpdater.compareAndSet(this, lastCumlativeAck, msgId) && LastCumulativeAckSetUpdater.compareAndSet(this, lastBitSet, bitSet))
+			        if (_lastCumulativeAckUpdater.compareAndSet(this, lastCumlativeAck, msgId) && _lastCumulativeAckSetUpdater.compareAndSet(this, lastBitSet, bitSet))
 			        {
 				        if (lastBitSet != null)
 				        {
@@ -211,18 +211,18 @@ namespace SharpPulsar.Tracker
 
         private bool DoImmediateBatchIndexAck(BatchMessageId msgId, int batchIndex, int batchSize, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
-	        BitSetRecyclable bitSet = BitSetRecyclable.create();
-	        bitSet.set(0, batchSize);
+	        var bitSet = BitSet.Create();
+	        bitSet.Set(0, batchSize);
 	        if (ackType == CommandAck.AckType.Cumulative)
 	        {
-		        bitSet.clear(0, batchIndex + 1);
+		        bitSet.Clear(0, batchIndex + 1);
 	        }
 	        else
 	        {
-		        bitSet.clear(batchIndex);
+		        bitSet.Clear(batchIndex);
 	        }
 
-            var cmd = Commands.NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet, ackType, null, properties);
+            var cmd = Commands.NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties);
 			var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var payload = new Payload(cmd, requestid, "NewAck");
             _broker.Tell(payload, _consumer);
@@ -285,7 +285,7 @@ namespace SharpPulsar.Tracker
 		        while (iterator.MoveNext())
 		        {
 			        var entry = iterator.Current;
-			        entriesToAck.Add((entry.Key.LedgerId, entry.Key.EntryId, entry.Value));
+			        entriesToAck.Add((entry.Key.LedgerId, entry.Key.EntryId, entry.Value.ToLongArray()));
                     _pendingIndividualBatchIndexAcks.Remove(entry.Key, out var pendingAck);
 		        }
 	        }
@@ -332,7 +332,7 @@ namespace SharpPulsar.Tracker
 			        {
 				        if (cMsgId != null && chunkMsgIds.Length > 1)
 				        {
-					        entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, cMsgId.AckSets));
+					        entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
 				        }
 			        }
 			        var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);

@@ -2,6 +2,7 @@
 using System.IO;
 using Google.Protobuf;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
@@ -31,26 +32,23 @@ namespace SharpPulsar.Impl
 		private  readonly long _ledgerId;
 		private readonly long _entryId;
 		private readonly int _partitionIndex;
-        private readonly long[] _ackSets;
 
 		// Private constructor used only for json deserialization
-		private MessageId() : this(-1, -1, -1, null)
+		private MessageId() : this(-1, -1, -1)
 		{
 		}
 
-		public MessageId(long ledgerId, long entryId, int partitionIndex, long[] ackSets)
+		public MessageId(long ledgerId, long entryId, int partitionIndex)
 		{
 			_ledgerId = ledgerId;
 			_entryId = entryId;
 			_partitionIndex = partitionIndex;
-            _ackSets = ackSets;
         }
 
 		public virtual long LedgerId => _ledgerId;
 
         public virtual long EntryId => _entryId;
 
-        public virtual long[] AckSets => _ackSets;
 
         public virtual int PartitionIndex => _partitionIndex;
 
@@ -100,11 +98,11 @@ namespace SharpPulsar.Impl
 			MessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.AckSets);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.AckSets);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
 			}
 
 			return messageId;
@@ -126,11 +124,11 @@ namespace SharpPulsar.Impl
 			IMessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.AckSets);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
 			}
 			else
 			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.AckSets);
+				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
 			}
 			if (idData.Partition > -1 && topicName != null)
 			{

@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl.Schema
 		public abstract void Validate(sbyte[] message, Type returnType);
 
 		/// <summary>
-		/// Check if the message read able length length is a valid object for this schema.
+		/// Check if the message read able Length Length is a valid object for this schema.
 		/// 
 		/// <para>The implementation can choose what its most efficient approach to validate the schema.
 		/// If the implementation doesn't provide it, it will attempt to use <seealso cref="decode(ByteBuf)"/>

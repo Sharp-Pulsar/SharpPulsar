@@ -75,17 +75,19 @@ namespace SharpPulsar.Akka.Consumer
 
 
         private readonly UnAckedMessageTracker _unAckedMessageTracker;
-        private readonly IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
+        private IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
         private readonly NegativeAcksTracker _negativeAcksTracker;
 
         private readonly IConsumerStatsRecorder _stats;
+
+        private readonly string _topicNameWithoutPartition;
 
 
 
         private BatchMessageId _seekMessageId;
         private readonly bool _duringSeek;
 
-        // if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
+        // if queue Size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
         // the topic) then it guards against broken chuncked message which was not fully published
         private readonly bool _autoAckOldestChunkedMessageOnQueueFull;
         private readonly IActorRef _pulsarManager;
@@ -185,14 +187,8 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _metadata = new Dictionary<string, string>(configuration.Properties);
             }
-            if (_topicName.Persistent)
-            {
-                _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(this, Self, _consumerid);
-            }
-            else
-            {
-                _acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
-            }
+
+            _topicNameWithoutPartition = _topicName.PartitionedTopicName;
             ReceiveAny(x => Stash.Stash());
             BecomeLookUp();
         }
@@ -729,8 +725,8 @@ namespace SharpPulsar.Akka.Consumer
             var payloadSize = payload.Length;
             if (checkMaxMessageSize && payloadSize > _serverInfo.MaxMessageSize)
             {
-                // payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
-                Context.System.Log.Error($"[{_topicName}][{_subscriptionName}] Got corrupted payload message size {payloadSize} at {messageId}");
+                // payload Size is itself corrupted since it cannot be bigger than the MaxMessageSize
+                Context.System.Log.Error($"[{_topicName}][{_subscriptionName}] Got corrupted payload message Size {payloadSize} at {messageId}");
                 DiscardCorruptedMessage(messageId, CommandAck.ValidationError.UncompressedSizeCorruption);
                 return null;
             }
@@ -1014,6 +1010,15 @@ namespace SharpPulsar.Akka.Consumer
                 }
                 SendFlow(_requestedFlowPermits);
                 _pulsarManager.Tell(new CreatedConsumer(Self, _topicName.ToString()));
+
+                if (_topicName.Persistent)
+                {
+                    _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(_broker, Self, _consumerid, _conf);
+                }
+                else
+                {
+                    _acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
+                }
                 BecomeActive();
                 Stash.UnstashAll();
             });

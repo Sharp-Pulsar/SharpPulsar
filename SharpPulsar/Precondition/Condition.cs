@@ -90,12 +90,12 @@ namespace SharpPulsar.Precondition
             }
             else if (size < 0)
             {
-                throw new ArgumentOutOfRangeException("size", $"Negative size: {size}.");
+                throw new ArgumentOutOfRangeException("size", $"Negative Size: {size}.");
             }
             else
             {
-                // index > size
-                return $"{desc} ({index}) must not be greater than size ({size}).";
+                // index > Size
+                return $"{desc} ({index}) must not be greater than Size ({size}).";
             }
         }
 

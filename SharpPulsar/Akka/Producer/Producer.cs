@@ -442,7 +442,7 @@ namespace SharpPulsar.Akka.Producer
             if (!BatchMessagingEnabled || msgMetadata.DeliverAtTime > 0)
             {
                 compressedPayload = _compressor.Encode(payload);
-                // validate msg-size (For batching this will be check at the batch completion size)
+                // validate msg-Size (For batching this will be check at the batch completion Size)
                 var compressedSize = compressedPayload.Length;
                 if (compressedSize > _serverInfo.MaxMessageSize && !_configuration.ChunkingEnabled)
                 {
@@ -570,7 +570,7 @@ namespace SharpPulsar.Akka.Producer
                         else
                         {
                             // handle boundary cases where message being added would exceed
-                            // batch size and/or max message size
+                            // batch Size and/or max message Size
                             var isBatchFull = _batchMessageContainer.Add(msg, (a, e) =>
                             {
                                 if(a != null)
@@ -745,7 +745,7 @@ namespace SharpPulsar.Akka.Producer
         {
             if (Context.System.Log.IsDebugEnabled)
             {
-                Context.System.Log.Debug($"[{_topic}] [{ProducerName}] Closing out batch to accommodate large message with size {msg.Payload.Length}");
+                Context.System.Log.Debug($"[{_topic}] [{ProducerName}] Closing out batch to accommodate large message with Size {msg.Payload.Length}");
             }
             try
             {
@@ -971,7 +971,7 @@ namespace SharpPulsar.Akka.Producer
 
             if (sequenceId > op.SequenceId)
             {
-                log.Warning($"[{_topic}] [{ProducerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {sequenceId} - queue-size: {_pendingMessages.Count}");
+                log.Warning($"[{_topic}] [{ProducerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {sequenceId} - queue-Size: {_pendingMessages.Count}");
                 // Force connection closing so that messages can be re-transmitted in a new connection
                 Self.Tell(new ProducerClosed(_producerId));
             }
@@ -997,7 +997,7 @@ namespace SharpPulsar.Akka.Producer
                 }
                 else
                 {
-                    log.Warning($"[{_topic}] [{ProducerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}");
+                    log.Warning($"[{_topic}] [{ProducerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-Size: {_pendingMessages.Count}");
                     // Force connection closing so that messages can be re-transmitted in a new connection
                     Self.Tell(new ProducerClosed(_producerId));
                 }

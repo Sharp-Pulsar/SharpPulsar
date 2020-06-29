@@ -1,7 +1,7 @@
 ﻿
 //
 //	This class includes methods to convert Java rectangular arrays (jagged arrays
-//	with inner arrays of the same length).
+//	with inner arrays of the same Length).
 //----------------------------------------------------------------------------------------
 internal static class RectangularArrays
 {

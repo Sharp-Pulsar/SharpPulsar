@@ -56,7 +56,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			get
 			{
-				return "metadata has a max size of 1 Kb";
+				return "metadata has a max Size of 1 Kb";
 			}
 		}
 	}

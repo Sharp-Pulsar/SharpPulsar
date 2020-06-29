@@ -38,7 +38,7 @@ namespace SharpPulsar.Protocol
 	public class Commands
 	{
 
-		// default message size for transfer
+		// default message Size for transfer
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
@@ -834,7 +834,7 @@ namespace SharpPulsar.Protocol
             var payLoadSize = payload.Length;
             singleMessageMetadataBuilder.PayloadSize = payLoadSize;
 			var singleMessageMetadata = singleMessageMetadataBuilder;
-            // serialize meta-data size, meta-data and payload for single message in batch
+            // serialize meta-data Size, meta-data and payload for single message in batch
             var metaBytes = Serializer.GetBytes(singleMessageMetadata);
             try
             {

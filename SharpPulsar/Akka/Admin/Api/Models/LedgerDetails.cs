@@ -48,7 +48,7 @@ namespace PulsarAdmin.Models
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "size")]
+        [JsonProperty(PropertyName = "Size")]
         public long? Size { get; set; }
 
         /// <summary>

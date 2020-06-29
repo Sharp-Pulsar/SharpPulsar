@@ -49,7 +49,7 @@ namespace SharpPulsar.Impl
 			return _map.GetHashCode();
 		}
 
-		// If all messageId in map are same size, and all bigger/smaller than the other, return valid value.
+		// If all messageId in map are same Size, and all bigger/smaller than the other, return valid value.
 		public int CompareTo(IMessageId o)
 		{
 			if (!(o is MultiMessageId))
@@ -67,7 +67,7 @@ namespace SharpPulsar.Impl
 
 			if (otherMap == null || _map == null || otherMap.Count != _map.Count)
 			{
-				throw new ArgumentException("Current size and other size not equals");
+				throw new ArgumentException("Current Size and other Size not equals");
 			}
 
 			var result = 0;

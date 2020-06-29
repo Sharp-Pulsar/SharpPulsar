@@ -125,7 +125,7 @@ namespace SharpPulsar.Batch
             }
             if (encryptedPayload.Length > Container.MaxMessageSize)
             {
-                Discard(new PulsarClientException.InvalidMessageException("Message size is bigger than " + Container.MaxMessageSize + " bytes"));
+                Discard(new PulsarClientException.InvalidMessageException("Message Size is bigger than " + Container.MaxMessageSize + " bytes"));
                 return null;
             }
 
@@ -221,7 +221,7 @@ namespace SharpPulsar.Batch
 						MessageMetadata.UncompressedSize = (uint)uncompressedSize;
 					}
     
-					// Update the current max batch size using the uncompressed size, which is what we need in any case to
+					// Update the current max batch Size using the uncompressed Size, which is what we need in any case to
 					// accumulate the batch content
 					MaxBatchSize = Math.Max(MaxBatchSize, uncompressedSize);
 					return compressedPayload;

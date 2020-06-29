@@ -183,7 +183,7 @@ namespace SharpPulsar.Akka.Network
                 }
                 if (_targetServerName.Length == certServerName.Length)
                 {
-                    // Both strings have the same length, so targetServerName must be a FQDN
+                    // Both strings have the same Length, so targetServerName must be a FQDN
                     if (!_targetServerName.Equals(certServerName, StringComparison.OrdinalIgnoreCase))
                     {
                         return false;
@@ -196,7 +196,7 @@ namespace SharpPulsar.Akka.Network
                         return false;
                     }
 
-                    // Server name matches cert name for its whole length, so ensure that the
+                    // Server name matches cert name for its whole Length, so ensure that the
                     // character following the server name is a '.'. This will avoid
                     // having server name "ab" match "abc.corp.company.com"
                     // (Names have different lengths, so the target server can't be a FQDN.)

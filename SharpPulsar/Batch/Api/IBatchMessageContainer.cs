@@ -44,9 +44,9 @@ namespace SharpPulsar.Batch.Api
 		int NumMessagesInBatch {get;}
 
 		/// <summary>
-		/// Get current message batch size of the message batch container in bytes.
+		/// Get current message batch Size of the message batch container in bytes.
 		/// </summary>
-		/// <returns> message batch size in bytes </returns>
+		/// <returns> message batch Size in bytes </returns>
 		long CurrentBatchSize {get;}
 
 		/// <summary>
