@@ -1059,23 +1059,18 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void SendAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, ITransaction txnImpl)
         {
-            var msgId = (MessageId)messageId;
-
             if (ackType == CommandAck.AckType.Individual)
             {
                 if (messageId is BatchMessageId batchMessageId)
                 {
                     _stats.IncrementNumAcksSent(batchMessageId.BatchSize);
                     _unAckedMessageTracker.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
-                    /*if (possibleSendToDeadLetterTopicMessages != null)
-                    {
-                        possibleSendToDeadLetterTopicMessages.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
-                    }*/
+                    
                 }
                 else
                 {
                     // increment counter by 1 for non-batch msg
-                    _unAckedMessageTracker.Remove(msgId);
+                    _unAckedMessageTracker.Remove(messageId);
                     /*if (possibleSendToDeadLetterTopicMessages != null)
                     {
                         possibleSendToDeadLetterTopicMessages.Remove(msgId);
@@ -1087,10 +1082,10 @@ namespace SharpPulsar.Akka.Consumer
             else if (ackType == CommandAck.AckType.Cumulative)
             {
                 OnAcknowledgeCumulative(messageId, null);
-                _stats.IncrementNumAcksSent(_unAckedMessageTracker.RemoveMessagesTill(msgId));
+                _stats.IncrementNumAcksSent(_unAckedMessageTracker.RemoveMessagesTill(messageId));
             }
 
-            _acknowledgmentsGroupingTracker.AddAcknowledgment(msgId, ackType, properties);
+            _acknowledgmentsGroupingTracker.AddAcknowledgment(messageId, ackType, properties);
 
             // Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
             // the messages will be re-delivered

@@ -80,7 +80,7 @@ namespace SharpPulsar.Tracker
 			_pendingIndividualAcks = new ConcurrentSet<IMessageId>();
 			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
 			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
-
+			_lastCumulativeAckSet = BitSet.Create();
 			if (_acknowledgementGroupTimeMicros > 0)
             {
                 var interval = ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_acknowledgementGroupTimeMicros);
@@ -96,7 +96,7 @@ namespace SharpPulsar.Tracker
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
 		/// resent after a disconnection and for which the user has already sent an acknowledgement.
 		/// </summary>
-		public virtual bool IsDuplicate(MessageId messageId)
+		public virtual bool IsDuplicate(IMessageId messageId)
         {
             if (messageId.CompareTo(_lastCumulativeAck) <= 0)
 	        {
@@ -107,7 +107,7 @@ namespace SharpPulsar.Tracker
             return _pendingIndividualAcks.Contains(messageId);
         }
 
-        public virtual void AddAcknowledgment(MessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
+        public void AddAcknowledgment(IMessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
 	        if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0)
 	        {
@@ -122,9 +122,9 @@ namespace SharpPulsar.Tracker
 	        else
 	        {
 		        // Individual ack
-		        if (msgId is BatchMessageId)
+		        if (msgId is BatchMessageId batch)
 		        {
-			        _pendingIndividualAcks.TryAdd(new MessageId(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex));
+			        _pendingIndividualAcks.TryAdd(new MessageId(batch.LedgerId, batch.EntryId, batch.PartitionIndex));
 		        }
 		        else
 		        {
@@ -166,7 +166,7 @@ namespace SharpPulsar.Tracker
 	        }
         }
 
-        private void DoCumulativeAck(MessageId msgId, BitSet bitSet)
+        private void DoCumulativeAck(IMessageId msgId, BitSet bitSet)
         {
 	        // Handle concurrent updates from different threads
 	        while (true)
@@ -195,7 +195,7 @@ namespace SharpPulsar.Tracker
 	        }
         }
 
-        private bool DoImmediateAck(MessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
+        private bool DoImmediateAck(IMessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
 	        NewAckCommand(_consumerId, msgId, null, ackType, null, properties, true);
 	        return true;

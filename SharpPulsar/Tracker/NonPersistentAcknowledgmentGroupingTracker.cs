@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
 using SharpPulsar.Protocol.Proto;
@@ -40,12 +41,12 @@ namespace SharpPulsar.Tracker
         {
         }
 
-        public virtual bool IsDuplicate(MessageId messageId)
+        public virtual bool IsDuplicate(IMessageId messageId)
         {
             return false;
         }
 
-        public virtual void AddAcknowledgment(MessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
+        public virtual void AddAcknowledgment(IMessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
             // no-op
         }

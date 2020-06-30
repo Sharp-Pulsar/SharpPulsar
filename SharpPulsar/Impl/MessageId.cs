@@ -166,15 +166,17 @@ namespace SharpPulsar.Impl
 			//Needs more 
 			if (o is MessageId other)
             {
-                if ((_entryId > other.EntryId) && (_ledgerId > other.LedgerId) && (_partitionIndex > other.PartitionIndex))
-                {
-                    return -1;
-                }
+                var ledgerCompare = _ledgerId.CompareTo(other.LedgerId);
+                if (ledgerCompare != 0)
+                    return ledgerCompare;
 
-                if ((_entryId < other.EntryId) && (_ledgerId < other.LedgerId) && (_partitionIndex < other.PartitionIndex))
-                {
-                    return 1;
-                }
+                var entryCompare = _entryId.CompareTo(other.EntryId);
+                if (entryCompare != 0)
+                    return entryCompare;
+
+                var partitionedCompare = _partitionIndex.CompareTo(other.PartitionIndex);
+                if (partitionedCompare != 0)
+                    return partitionedCompare;
 
                 return 0;
             }
