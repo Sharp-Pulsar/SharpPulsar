@@ -52,7 +52,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly string _consumerName;
         private string _subscriptionName;
         private ISchema _schema;
-        private readonly IConsumerInterceptor _interceptors;
+        private readonly ConsumerInterceptors _interceptors;
         private readonly IMessageListener _listener;
         private readonly IConsumerEventListener _consumerEventListener;
         private readonly TopicName _topicName;
@@ -132,7 +132,7 @@ namespace SharpPulsar.Akka.Consumer
             _hasParentConsumer = hasParentConsumer;
             _requestedFlowPermits = configuration.ReceiverQueueSize;
             _conf = configuration;
-            _interceptors = configuration.Interceptors;
+            _interceptors = new ConsumerInterceptors(Context.System, configuration.Interceptors);
             _clientConfiguration = clientConfiguration;
             _startMessageRollbackDurationInSec = 0;
             _consumerid = consumerid;
@@ -453,7 +453,7 @@ namespace SharpPulsar.Akka.Consumer
                 _log.Error($"[{_topicName}][{_subscriptionName}] Failed getLastMessageId command: {e}");
             }
         }
-        private Message BeforeConsume(Message message)
+        private IMessage BeforeConsume(IMessage message)
         {
             if (_interceptors != null)
             {
@@ -572,13 +572,13 @@ namespace SharpPulsar.Akka.Consumer
 
                 var received = InternalReceive();
                 if (_hasParentConsumer)
-                    Context.Parent.Tell(new ConsumedMessage(Self, received));
+                    Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet));
                 else
                 {
                     if (_conf.ConsumptionType == ConsumptionType.Listener)
                         _listener.Received(Self, received);
                     else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                        _pulsarManager.Tell(new ConsumedMessage(Self, received));
+                        _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
                 }
             }
             else
@@ -661,13 +661,13 @@ namespace SharpPulsar.Akka.Consumer
                     index += (uint)singleMessageMetadata.PayloadSize;
                     var received = InternalReceive();
                     if (_hasParentConsumer)
-                        Context.Parent.Tell(new ConsumedMessage(Self, received));
+                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet));
                     else
                     {
                         if (_conf.ConsumptionType == ConsumptionType.Listener)
                             _listener.Received(Self, received);
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                            _pulsarManager.Tell(new ConsumedMessage(Self, received));
+                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
                     }
                 }
             }
@@ -741,7 +741,7 @@ namespace SharpPulsar.Akka.Consumer
             if (!_eventSourced)
                 SendFlow(permits);
         }
-        private Message InternalReceive()
+        private IMessage InternalReceive()
         {
             Message message;
             try
@@ -1278,10 +1278,10 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMultiMessage(AckMultiMessage multiMessage)
         {
-            IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.MessageIds.Count);
+            var entriesToAck = new List<(long  ledgerId, long entryId, long[] ackSets)>(multiMessage.MessageIds.Count);
             foreach (var m in multiMessage.MessageIds)
             {
-                entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
+                entriesToAck.Add((m.LedgerId, m.EntryId, m.AckSet));
             }
             SendAckMultiMessages(entriesToAck);
         }
@@ -1303,14 +1303,14 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMultiMessage(IMessageId[] multiMessage)
         {
-            IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.Length);
+            var entriesToAck = new List<(long ledgerId, long entryId, long[] ackSets)>(multiMessage.Length);
             foreach (var m in multiMessage)
             {
-                entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
+                //entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
             }
             SendAckMultiMessages(entriesToAck);
         }
-        private void SendAckMultiMessages(IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
+        private void SendAckMultiMessages(IList<(long ledgerId, long entryId, long[] ackSets)> entries)
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var cmd = Commands.NewMultiMessageAck(_consumerid, entries);
@@ -1320,7 +1320,7 @@ namespace SharpPulsar.Akka.Consumer
         private void AckMessages(AckMessages message)
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var cmd = Commands.NewAck(_consumerid, message, message.MessageId.EntryId, message.MessageId.AckSet, CommandAck.AckType.Cumulative, null, new Dictionary<string, long>());
+            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, message.AckSets.ToArray(), CommandAck.AckType.Cumulative, null, new Dictionary<string, long>());
             var payload = new Payload(cmd, requestid, "AckMessages");
             _broker.Tell(payload);
         }
@@ -1445,7 +1445,10 @@ namespace SharpPulsar.Akka.Consumer
             {
                 SendFlow(Convert.ToInt32(f.Size));
             });
-
+            Receive<OnNegativeAcksSend>(x =>
+            {
+                OnNegativeAcksSend(x.MessageIds);
+            });
             Receive<LastMessageId>(x =>
             {
                 InternalGetLastMessageId();
@@ -1491,6 +1494,21 @@ namespace SharpPulsar.Akka.Consumer
                 //SendFlow(_requestedFlowPermits);
             });
             Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
+            Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
+            {
+                MessageId msgid;
+                if (r.MessageId is BatchMessageId id)
+                    msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+                else msgid = (MessageId) r.MessageId;
+                if (r.Command == UnAckedCommand.Remove)
+                    _unAckedChunkedMessageIdSequenceMap.Remove(msgid);
+                else
+                    Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(_unAckedChunkedMessageIdSequenceMap[msgid]));
+            });
+            Receive<RedeliverUnacknowledgedMessages>(x =>
+            {
+                RedeliverUnacknowledgedMessages(x.MessageIds);
+            });
             Receive<Seek>(s =>
             {
                 switch (s.Type)

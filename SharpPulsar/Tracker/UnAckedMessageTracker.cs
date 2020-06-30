@@ -236,14 +236,14 @@ namespace SharpPulsar.Tracker
 
     public sealed class UnAckedChunckedMessageIdSequenceMapCmd
     {
-        public UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand command, MessageId messageId)
+        public UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand command, IMessageId messageId)
         {
             Command = command;
             MessageId = messageId;
         }
 
         public UnAckedCommand Command { get; }
-        public MessageId MessageId { get; }
+        public IMessageId MessageId { get; }
     }
 
     public sealed class UnAckedChunckedMessageIdSequenceMapCmdResponse

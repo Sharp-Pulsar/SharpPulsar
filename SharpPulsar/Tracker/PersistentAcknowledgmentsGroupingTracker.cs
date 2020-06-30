@@ -57,7 +57,7 @@ namespace SharpPulsar.Tracker
 		/// <summary>
 		/// Latest cumulative ack sent to broker
 		/// </summary>
-		private MessageId _lastCumulativeAck = (MessageId)MessageIdFields.Earliest;
+		private IMessageId _lastCumulativeAck = MessageIdFields.Earliest;
 		private  BitSet _lastCumulativeAckSet;
 		private bool _cumulativeAckFlushRequired;
 
@@ -66,8 +66,8 @@ namespace SharpPulsar.Tracker
 		/// This is a set of all the individual acks that the application has issued and that were not already sent to
 		/// broker.
 		/// </summary>
-		private readonly ConcurrentSet<MessageId> _pendingIndividualAcks;
-		private readonly ConcurrentDictionary<MessageId, BitSet> _pendingIndividualBatchIndexAcks;
+		private readonly ConcurrentSet<IMessageId> _pendingIndividualAcks;
+		private readonly ConcurrentDictionary<IMessageId, BitSet> _pendingIndividualBatchIndexAcks;
 
 		private readonly ICancelable _scheduledTask;
 
@@ -76,8 +76,8 @@ namespace SharpPulsar.Tracker
             _broker = broker;
 			_consumer = consumer;
             _consumerId = consumerid;
-			_pendingIndividualAcks = new ConcurrentSet<MessageId>();
-			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<MessageId, BitSet>();
+			_pendingIndividualAcks = new ConcurrentSet<IMessageId>();
+			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
 			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
 
 			if (_acknowledgementGroupTimeMicros > 0)
@@ -234,20 +234,25 @@ namespace SharpPulsar.Tracker
 	        }
 
 	        // Flush all individual acks
-	        var entriesToAck = new List<(long ledgerId, long entryId, long[] sets)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
+	        var entriesToAck = new List<(long ledgerId, long entryId, BitSet sets)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
 	        if (!_pendingIndividualAcks.IsEmpty)
 	        {
 				while (true)
                 {
-                    var msgId = _pendingIndividualAcks.FirstOrDefault();
-                    if (msgId == null)
+                    var msgid = _pendingIndividualAcks.FirstOrDefault();
+                    if (msgid == null)
                     {
                         break;
                     }
-
-                    // if messageId is checked then all the chunked related to that msg also processed so, ack all of
-                    // them
-                    var chunkMsgIdsResponse = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).GetAwaiter().GetResult();
+                    MessageId msgId;
+                    if (msgid is BatchMessageId id)
+                    {
+                        msgId = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+                    }
+                    else msgId = (MessageId)msgid;
+					// if messageId is checked then all the chunked related to that msg also processed so, ack all of
+					// them
+					var chunkMsgIdsResponse = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).GetAwaiter().GetResult();
                     var chunkMsgIds = chunkMsgIdsResponse.MessageIds;
 
 					if (chunkMsgIds != null && chunkMsgIds.Length > 1)
@@ -276,7 +281,13 @@ namespace SharpPulsar.Tracker
                 foreach (var kv in _pendingIndividualBatchIndexAcks)
                 {
 					var entry = kv;
-                    entriesToAck.Add((entry.Key.LedgerId, entry.Key.EntryId, entry.Value.ToLongArray()));
+                    MessageId msgId;
+                    if (entry.Key is BatchMessageId id)
+                    {
+                        msgId = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+                    }
+                    else msgId = (MessageId)entry.Key;
+					entriesToAck.Add((msgId.LedgerId, msgId.EntryId, entry.Value));
                     _pendingIndividualBatchIndexAcks.Remove(entry.Key, out var pendingAck);
 				}
 	        }
@@ -308,22 +319,28 @@ namespace SharpPulsar.Tracker
 	        }
         }
 
-        private void NewAckCommand(long consumerId, MessageId msgId, BitSet lastCumulativeAckSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> map, bool flush)
+        private void NewAckCommand(long consumerId, IMessageId msgid, BitSet lastCumulativeAckSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> map, bool flush)
         {
-            var chunkMsgIdsResponse = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).GetAwaiter().GetResult();
+            var chunkMsgIdsResponse = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgid)).GetAwaiter().GetResult();
             var chunkMsgIds = chunkMsgIdsResponse.MessageIds;
+            MessageId msgId;
+            if (msgid is BatchMessageId id)
+            {
+                msgId = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+            }
+            else msgId = (MessageId) msgid;
 
 			if (chunkMsgIds != null)
 	        {
 				//SharpPulsar PeerSupportsMultiMessageAcknowledgment
 				if (ackType != CommandAck.AckType.Cumulative)
 		        {
-			        IList<(long ledgerId, long entryId, long[] sets)> entriesToAck = new List<(long ledgerId, long entryId, long[] sets)>(chunkMsgIds.Length);
+			        IList<(long ledgerId, long entryId, BitSet sets)> entriesToAck = new List<(long ledgerId, long entryId, BitSet sets)>(chunkMsgIds.Length);
 			        foreach (var cMsgId in chunkMsgIds)
 			        {
 				        if (cMsgId != null && chunkMsgIds.Length > 1)
 				        {
-					        entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
+					        entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, BitSet.Create()));
 				        }
 			        }
 			        var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);

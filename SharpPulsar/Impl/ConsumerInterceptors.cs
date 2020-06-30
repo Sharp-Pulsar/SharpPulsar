@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Akka.Actor;
-using Microsoft.Extensions.Logging;
+using Akka.Event;
 using SharpPulsar.Api;
 
 /// <summary>
@@ -29,15 +29,15 @@ namespace SharpPulsar.Impl
 	/// </summary>
 	public class ConsumerInterceptors
     {
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerInterceptors));
+        private readonly ILoggingAdapter _log;
 
 		private readonly IList<IConsumerInterceptor> _interceptors;
 
-		public ConsumerInterceptors(IList<IConsumerInterceptor> interceptors)
+		public ConsumerInterceptors(ActorSystem system, IList<IConsumerInterceptor> interceptors)
 		{
 			_interceptors = interceptors;
-		}
+            _log = system.Log;
+        }
 
 		/// <summary>
 		
@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-                    Log.LogWarning("Error executing interceptor beforeConsume callback", e);
+                    _log.Warning($"Error executing interceptor beforeConsume callback: {e}");
 				}
 			}
 			return interceptorMessage;
@@ -88,7 +88,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					Log.LogWarning("Error executing interceptor onAcknowledge callback ", e);
+					_log.Warning($"Error executing interceptor onAcknowledge callback {e}");
 				}
 			}
 		}
@@ -114,7 +114,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					Log.LogWarning("Error executing interceptor onAcknowledgeCumulative callback ", e);
+					_log.Warning($"Error executing interceptor onAcknowledgeCumulative callback {e}");
 				}
 			}
 		}
@@ -142,7 +142,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					Log.LogWarning("Error executing interceptor onNegativeAcksSend callback", e);
+					_log.Warning($"Error executing interceptor onNegativeAcksSend callback {e}");
 				}
 			}
 		}
@@ -170,7 +170,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (System.Exception e)
 				{
-					Log.LogWarning("Error executing interceptor onAckTimeoutSend callback", e);
+					_log.Warning($"Error executing interceptor onAckTimeoutSend callback: {e}");
 				}
 			}
 		}

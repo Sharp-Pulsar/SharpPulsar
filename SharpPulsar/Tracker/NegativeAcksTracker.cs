@@ -80,7 +80,7 @@ namespace SharpPulsar.Tracker
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
         }
 
-        public virtual void Add(IMessageId messageId)
+        public void Add(IMessageId messageId)
         {
             lock (this)
             {

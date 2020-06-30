@@ -4,6 +4,7 @@ using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -59,13 +60,17 @@ namespace SharpPulsar.Akka.Reader
             Context.ActorOf(Consumer.Consumer.Prop(clientConfiguration, readerConfiguration.TopicName, consumerConfiguration, Interlocked.Increment(ref IdGenerators.ReaderId), network, true, partitionIdx, SubscriptionMode.NonDurable, seek, pulsarManager));
             Receive<ConsumedMessage>(m =>
             {
-                if(consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
+                MessageId msgid = null;
+                if (m.Message.MessageId is BatchMessageId id)
+                    msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+                else msgid = (MessageId) m.Message.MessageId;
+                if (consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
                     readerListener.Received(m.Message);
                 else 
-                    pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
+                    pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message, m.AckSets));
                 // Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
                 // it will specify the subscription position anyway
-                m.Consumer.Tell(new AckMessages(m.Message.GetMessageId()));
+                m.Consumer.Tell(new AckMessages(msgid, m.AckSets));
             });
             Receive<CloseConsumer>(c => { Context.Parent.Tell(c);});
         }

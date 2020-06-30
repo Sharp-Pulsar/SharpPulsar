@@ -73,7 +73,7 @@ namespace SharpPulsar.Api
 		/// <param name="message"> the message to be consumed by the client. </param>
 		/// <returns> message that is either modified by the interceptor or same message
 		///         passed into the method. </returns>
-		Message BeforeConsume(IActorRef consumer, Message message);
+		IMessage BeforeConsume(IActorRef consumer, IMessage message);
 
 		/// <summary>
 		/// This is called consumer sends the acknowledgment to the broker.
