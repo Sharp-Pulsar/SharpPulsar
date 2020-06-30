@@ -166,6 +166,10 @@ namespace SharpPulsar.Akka
             return Props.Create(()=> new PulsarManager(conf, state));
         }
 
+        public static ActorSystem GetActorSystem()
+        {
+            return Context.System;
+        }
         public IStash Stash { get; set; }
     }
 }

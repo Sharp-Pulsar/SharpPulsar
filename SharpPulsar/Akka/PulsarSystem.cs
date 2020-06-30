@@ -26,41 +26,45 @@ namespace SharpPulsar.Akka
     public sealed class PulsarSystem
     {
         private static PulsarSystem _instance;
-        private static readonly object _lock = new object();
+        private static readonly object Lock = new object();
+        private readonly SystemMode _systemMode;
+        private readonly TestObject _testObject;
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _pulsarManager;
         private readonly ClientConfigurationData _conf;
         private readonly PulsarManagerState _managerState;
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode = SystemMode.Normal)
         {
             if (_instance == null)
             {
-                lock (_lock)
+                lock (Lock)
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(actorSystem, conf);
+                        _instance = new PulsarSystem(actorSystem, conf, mode);
                     }
                 }
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ClientConfigurationData conf, SystemMode mode = SystemMode.Normal)
         {
             if (_instance == null)
             {
-                lock (_lock)
+                lock (Lock)
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf);
+                        _instance = new PulsarSystem(conf, mode);
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
+        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode)
         {
+            _testObject = new TestObject {ActorSystem = actorSystem};
+            _systemMode = mode;
             _actorSystem = actorSystem;
             _managerState = new PulsarManagerState
             {
@@ -79,8 +83,10 @@ namespace SharpPulsar.Akka
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
-        private PulsarSystem(ClientConfigurationData conf)
+        private PulsarSystem(ClientConfigurationData conf, SystemMode mode)
         {
+            _testObject = new TestObject();
+            _systemMode = mode;
             _managerState = new PulsarManagerState
             {
                 ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
@@ -121,6 +127,7 @@ namespace SharpPulsar.Akka
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
+            _testObject.ActorSystem = PulsarManager.GetActorSystem();
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
@@ -138,6 +145,8 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(p);
             if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
+                if (_systemMode == SystemMode.Test)
+                    _testObject.Producer = createdProducer.Producer;
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
             throw new TimeoutException($"Timeout waiting for producer creation!");
@@ -204,6 +213,8 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(p);
             if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
+                if (_systemMode == SystemMode.Test)
+                    _testObject.Consumer = createdConsumer.Consumer;
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
             throw new TimeoutException($"Timeout waiting for reader creation!");
@@ -438,6 +449,8 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(c);
             if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
+                if (_systemMode == SystemMode.Test)
+                    _testObject.Consumer = createdConsumer.Consumer;
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
             throw new TimeoutException($"Timeout waiting for consumer creation!");
@@ -671,5 +684,30 @@ namespace SharpPulsar.Akka
             throw new ArgumentException($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
 
         }
+
+        public TestObject GeTestObject()
+        {
+            if (_testObject.Producer == null || _testObject.Consumer == null)
+                throw new Exception("System not ready yet");
+            _testObject.ProducerBroker =
+                _testObject.Producer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
+            _testObject.ConsumerBroker =
+                _testObject.Consumer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
+            return _testObject;
+        }
+    }
+    //I need this for AcknowledgementsGroupingTrackerTest etc
+    public sealed class TestObject
+    {
+        public ActorSystem ActorSystem { get; set; }
+        public IActorRef Consumer { get; set; }
+        public IActorRef Producer { get; set; }
+        public IActorRef ConsumerBroker { get; set; }// Ask for it with INeedBroker
+        public IActorRef ProducerBroker { get; set; }// Ask for it with INeedBroker
+    }
+    public enum SystemMode
+    {
+        Normal,
+        Test // for unit testing
     }
 }
