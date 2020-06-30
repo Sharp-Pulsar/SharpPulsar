@@ -4,6 +4,8 @@ using SharpPulsar.Api.Interceptor;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SharpPulsar.Akka.Producer;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 

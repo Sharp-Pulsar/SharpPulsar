@@ -194,7 +194,7 @@ namespace SharpPulsar.Batch
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
 			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
-			var op = OpSendMsg.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, _firstCallback);
+			var op = OpSendMsg.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;

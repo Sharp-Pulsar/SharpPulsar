@@ -46,8 +46,8 @@ namespace SharpPulsar.Akka.Consumer
             Receive<ConsumedMessage>(m =>
             {
                 if (_configuration.ConsumptionType is ConsumptionType.Listener)
-                    messageListener.Received(m.Consumer, m.Message);
-                else if (_configuration.ConsumptionType is ConsumptionType.Queue) pulsarManager1.Tell(new ConsumedMessage(m.Consumer, m.Message));
+                    messageListener.Received(m.Consumer, m.Message, m.AckSets);
+                else if (_configuration.ConsumptionType is ConsumptionType.Queue) pulsarManager1.Tell(new ConsumedMessage(m.Consumer, m.Message, m.AckSets));
             });
             Receive<RefreshPatternTopics>(m =>
             {

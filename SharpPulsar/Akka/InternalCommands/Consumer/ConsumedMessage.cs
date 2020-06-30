@@ -22,7 +22,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     }
     public class EventMessage:IEventMessage
     {
-        public EventMessage(Message message, long sequenceId, long ledgerId, long entry)
+        public EventMessage(IMessage message, long sequenceId, long ledgerId, long entry)
         {
             Message = message;
             SequenceId = sequenceId;
@@ -32,7 +32,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public long SequenceId { get; }
         public long LedgerId { get; }
         public long Entry { get; }
-        public Message Message { get; }
+        public IMessage Message { get; }
     }
     /// <summary>
     /// We use this to move the cursor/count forward at the client
@@ -40,7 +40,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     /// </summary>
     public sealed class NotTagged:IEventMessage
     {
-        public NotTagged(Message message, long sequenceId, string topic, long ledgerId, long entryId)
+        public NotTagged(IMessage message, long sequenceId, string topic, long ledgerId, long entryId)
         {
             Message = message;
             SequenceId = sequenceId;
@@ -51,7 +51,7 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
 
         public long SequenceId { get; }
         public string Topic { get; }
-        public Message Message { get;}
+        public IMessage Message { get;}
         public long LedgerId { get; }
         public long EntryId { get; }
     }

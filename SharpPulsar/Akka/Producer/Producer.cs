@@ -183,7 +183,7 @@ namespace SharpPulsar.Akka.Producer
                 {
                     containerBuilder = BatcherBuilderFields.Default;
                 }
-                _batchMessageContainer = (IBatchMessageContainerBase)containerBuilder.Build();
+                _batchMessageContainer = (IBatchMessageContainerBase)containerBuilder.Build(Context.System);
                 _batchMessageContainer.Producer = Self;
                 _batchMessageContainer.Container = new ProducerContainer(Self, configuration, configuration.MaxMessageSize, Context.System);
             }

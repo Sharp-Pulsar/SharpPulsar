@@ -1,4 +1,7 @@
-﻿using SharpPulsar.Protocol;
+﻿using Akka.Actor;
+using SharpPulsar.Batch;
+using SharpPulsar.Batch.Api;
+using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,17 +23,15 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using IBatchMessageContainer = Api.IBatchMessageContainer;
-	using IBatcherBuilder = Api.IBatcherBuilder;
 
 	public class KeyBasedBatcherBuilder : IBatcherBuilder
 	{
 
 		private const long SerialVersionUID = 1L;
 
-		public IBatchMessageContainer Build()
+		public IBatchMessageContainer Build(ActorSystem system)
 		{
-			return new BatchMessageKeyBasedContainer(Commands.DefaultMaxMessageSize);
+			return new BatchMessageKeyBasedContainer(system);
 		}
 	}
 

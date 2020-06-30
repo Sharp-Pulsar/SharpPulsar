@@ -86,9 +86,9 @@ namespace SharpPulsar.Akka.Consumer
                 else
                 {
                     if (_consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
-                        _listener.Received(m.Consumer, m.Message);
+                        _listener.Received(m.Consumer, m.Message, m.AckSets);
                     else if (_consumerConfiguration.ConsumptionType == ConsumptionType.Queue)
-                        _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message));
+                        _pulsarManager.Tell(new ConsumedMessage(m.Consumer, m.Message, m.AckSets));
                 }
             });
             ReceiveAny(a =>

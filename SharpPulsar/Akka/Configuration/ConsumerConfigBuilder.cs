@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -101,7 +103,7 @@ namespace SharpPulsar.Akka.Configuration
 		}
         public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
-            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex, null);
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
         }
 		public ConsumerConfigBuilder StartMessageId(IMessageId startMessageId)

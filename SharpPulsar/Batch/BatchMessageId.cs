@@ -38,14 +38,14 @@ namespace SharpPulsar.Batch
 		{
 		}
 
-		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, int batchSize, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex, null)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, int batchSize, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
 		{
 			BatchIndex = batchIndex;
 			_batchSize = batchSize;
 			Acker = acker;
 		}
 
-		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex, null)
+		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
 			if (other is BatchMessageId otherId)
 			{
@@ -135,7 +135,7 @@ namespace SharpPulsar.Batch
 
         public virtual MessageId PrevBatchMessageId()
 		{
-			return new MessageId(LedgerId, EntryId - 1, PartitionIndex, null);
+			return new MessageId(LedgerId, EntryId - 1, PartitionIndex);
 		}
 
         private int Compare(BatchMessageId m)

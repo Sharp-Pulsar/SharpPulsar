@@ -25,6 +25,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
@@ -1204,7 +1205,7 @@ namespace Samples
         private static void PlainAvroConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1212,12 +1213,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1244,7 +1245,7 @@ namespace Samples
         private static void LargeAvroConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var media = m.ToTypeOf<MediaStream>();
                 var s = JsonSerializer.Serialize(media);
@@ -1252,11 +1253,11 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     
                 }
                 else
@@ -1307,7 +1308,7 @@ namespace Samples
         private static void GetLastMessageId(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1315,12 +1316,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1347,7 +1348,7 @@ namespace Samples
         private static void PlainAvroStudentsConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1355,12 +1356,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1387,7 +1388,7 @@ namespace Samples
         private static void PlainAvroCovidConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m,st) =>
             {
                 var students = m.ToTypeOf<Covid19Mobile>();
                 var s = JsonSerializer.Serialize(students);
@@ -1395,12 +1396,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1426,7 +1427,7 @@ namespace Samples
         private static void DecryptAvroConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1434,12 +1435,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1465,7 +1466,7 @@ namespace Samples
         private static void PlainAvroConsumerSeek(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1473,12 +1474,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1503,7 +1504,7 @@ namespace Samples
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1511,12 +1512,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1542,7 +1543,7 @@ namespace Samples
         private static void DecryptAvroPatternConsumer(PulsarSystem system, string regex)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1550,12 +1551,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1582,7 +1583,7 @@ namespace Samples
         private static void AvroPatternConsumer(PulsarSystem system, string regex)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1590,12 +1591,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1621,7 +1622,7 @@ namespace Samples
         private static void DecryptAvroMultiConsumer(PulsarSystem system, string[] topics)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1629,12 +1630,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1662,7 +1663,7 @@ namespace Samples
         private static void AvroMultiConsumer(PulsarSystem system, string[] topics)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var students = m.ToTypeOf<Students>();
                 var s = JsonSerializer.Serialize(students);
@@ -1670,12 +1671,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1702,7 +1703,7 @@ namespace Samples
         private static void PlainBytesConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
                 var students = JsonSerializer.Deserialize<Students>(s);
@@ -1710,12 +1711,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else
@@ -1741,7 +1742,7 @@ namespace Samples
         private static void DecryptBytesConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m) =>
+            var messageListener = new DefaultMessageListener((a, m, st) =>
             {
                 var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
                 var students = JsonSerializer.Deserialize<Students>(s);
@@ -1749,12 +1750,12 @@ namespace Samples
                 Console.WriteLine(s);
                 if (m.MessageId is MessageId mi)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, mi.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
                 }
                 else if (m.MessageId is BatchMessageId b)
                 {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, b.AckSets)));
+                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
                     Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
                 }
                 else

@@ -19,6 +19,7 @@
 /// under the License.
 /// </summary>
 
+using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 
@@ -26,9 +27,9 @@ namespace SharpPulsar.Impl
 {
 	public class DefaultBatcherBuilder : IBatcherBuilder
 	{
-		public IBatchMessageContainer Build()
+		public IBatchMessageContainer Build(ActorSystem system)
         {
-            return null; //new BatchMessageContainer();
+            return new BatchMessageContainer(system);
 		}
 
 	}

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using SharpPulsar.Api;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Utils;
 
 /// <summary>

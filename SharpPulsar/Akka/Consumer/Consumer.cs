@@ -576,7 +576,7 @@ namespace SharpPulsar.Akka.Consumer
                 else
                 {
                     if (_conf.ConsumptionType == ConsumptionType.Listener)
-                        _listener.Received(Self, received);
+                        _listener.Received(Self, received, ackSet);
                     else if (_conf.ConsumptionType == ConsumptionType.Queue)
                         _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
                 }
@@ -665,7 +665,7 @@ namespace SharpPulsar.Akka.Consumer
                     else
                     {
                         if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, received);
+                            _listener.Received(Self, received, ackSet);
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
                             _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
                     }

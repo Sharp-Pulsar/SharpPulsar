@@ -62,7 +62,7 @@ namespace SharpPulsar.Impl
         {
             if (Msg != null)
             {
-                Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex, null));
+                Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex));
             }
             else
             {

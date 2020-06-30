@@ -82,25 +82,22 @@ namespace SharpPulsar.Tracker
 
         public void Add(IMessageId messageId)
         {
-            lock (this)
+            if (messageId is BatchMessageId batchMessageId)
             {
-                if (messageId is BatchMessageId batchMessageId)
-                {
-                    messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
-                }
+                messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
+            }
 
-                if (_nackedMessages == null)
-                {
-                    _nackedMessages = new Dictionary<IMessageId, long>();
-                }
-                _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + _nackDelayNanos;
+            if (_nackedMessages == null)
+            {
+                _nackedMessages = new Dictionary<IMessageId, long>();
+            }
+            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + _nackDelayNanos;
 
-                if (_timeout == null)
-                {
-                    // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
-                    // nack immediately following the current one will be batched into the same redeliver request.
-                    _timeout = _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
-                }
+            if (_timeout == null)
+            {
+                // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
+                // nack immediately following the current one will be batched into the same redeliver request.
+                _timeout = _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
             }
         }
 	}

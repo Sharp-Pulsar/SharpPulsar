@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Api;
+using SharpPulsar.Batch;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utility;
@@ -88,7 +89,7 @@ namespace SharpPulsar.Akka.Configuration
 
 		public ReaderConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
 		{
-            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex, null);
+            _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
 		}
         public ReaderConfigBuilder StartMessageId(IMessageId id)

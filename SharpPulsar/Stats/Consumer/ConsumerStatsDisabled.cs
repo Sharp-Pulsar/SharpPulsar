@@ -1,4 +1,5 @@
 ﻿using System;
+using Akka.Actor;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Impl;
 using SharpPulsar.Stats.Consumer.Api;
@@ -84,7 +85,7 @@ namespace SharpPulsar.Stats.Consumer
 
 		public virtual double RateBytesReceived => 0;
 
-		public virtual ITimeout StatTimeout => null;
+		public virtual ICancelable StatTimeout => null;
 
 		public void Reset()
 		{
