@@ -27,6 +27,7 @@ using System.Linq;
 using System.Threading;
 using Akka.Event;
 using Akka.Util;
+using PulsarAdmin.Models;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Exceptions;
@@ -77,6 +78,8 @@ namespace SharpPulsar.Akka.Consumer
         private IMessageId _lastDequeuedMessageId = MessageIdFields.Earliest;
         private IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
         private readonly Queue<Message> _pendingReceives;
+
+        private bool _hasReachedEndOfTopic;
 
         private long _incomingMessagesSize;
 
@@ -429,16 +432,26 @@ namespace SharpPulsar.Akka.Consumer
             return Props.Create(()=> new Consumer(clientConfiguration, topic, configuration, consumerid, network, hasParentConsumer, partitionIndex, mode, seek, pulsarManager, eventSourced));
         }
         
-        private bool HasReachedEndOfTopic()
+        private void InternalGetLastMessageId()
         {
-            return false;
-        }
-        private void LastMessageId()
-        {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewGetLastMessageId(_consumerid, requestid);
-            var payload = new Payload(request, requestid, "NewGetLastMessageId");
-            _broker.Tell(payload);
+            try
+            {
+                var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                var request = Commands.NewGetLastMessageId(_consumerid, requestid);
+                var payload = new Payload(request, requestid, "NewGetLastMessageId");
+
+                _log.Info($"[{_topicName}][{_subscriptionName}] Get topic last message Id");
+
+                var result = _broker.Ask<LastMessageIdResponse>(payload).GetAwaiter().GetResult();
+
+                _log.Info($"[{_topicName}][{_subscriptionName}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
+                
+                _pulsarManager.Tell(new LastMessageIdReceived(_consumerid, _topicName.ToString(), result));
+            }
+            catch (Exception e)
+            {
+                _log.Error($"[{_topicName}][{_subscriptionName}] Failed getLastMessageId command: {e}");
+            }
         }
         private Message BeforeConsume(Message message)
         {
@@ -1082,8 +1095,11 @@ namespace SharpPulsar.Akka.Consumer
             // Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
             // the messages will be re-delivered
         }
-
-        private void NegativeAcknowledge(MessageId messageId)
+        private void NegativeAcknowledge(Messages messages)
+        {
+            messages.ToList().ForEach(x=> NegativeAcknowledge(x.MessageId));
+        }
+        private void NegativeAcknowledge(IMessageId messageId)
         {
             _negativeAcksTracker.Add(messageId);
 
@@ -1176,7 +1192,7 @@ namespace SharpPulsar.Akka.Consumer
                     }
                 }
                 encryptionCtx = new EncryptionContext();
-                var encParam = new sbyte[MessageCrypto.IvLen];
+                var encParam = new sbyte[MessageCryptoFields.IvLen];
                 msgMetadata.EncryptionParam.CopyTo((byte[])(object)encParam, 0);
                 int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
                 encryptionCtx.Keys = keys;
@@ -1269,7 +1285,23 @@ namespace SharpPulsar.Akka.Consumer
             }
             SendAckMultiMessages(entriesToAck);
         }
-        private void AckMultiMessage(MessageId[] multiMessage)
+        private void ActiveConsumerChanged(bool isActive)
+        {
+            if (_consumerEventListener == null)
+            {
+                return;
+            }
+
+            if (isActive)
+            {
+                _consumerEventListener.BecameActive(_consumerName, _partitionIndex);
+            }
+            else
+            {
+                _consumerEventListener.BecameInactive(_consumerName, _partitionIndex);
+            }
+        }
+        private void AckMultiMessage(IMessageId[] multiMessage)
         {
             IList<KeyValuePair<long, long>> entriesToAck = new List<KeyValuePair<long, long>>(multiMessage.Length);
             foreach (var m in multiMessage)
@@ -1409,7 +1441,6 @@ namespace SharpPulsar.Akka.Consumer
 
                 Become(RecreatingConsumer);
             });
-
             Receive<SendFlow>(f =>
             {
                 SendFlow(Convert.ToInt32(f.Size));
@@ -1417,15 +1448,11 @@ namespace SharpPulsar.Akka.Consumer
 
             Receive<LastMessageId>(x =>
             {
-                LastMessageId();
+                InternalGetLastMessageId();
             });
             Receive<ConsumerClosed>(_ =>
             {
                 Become(RecreatingConsumer);
-            });
-            Receive<LastMessageIdResponse>(x =>
-            {
-                _pulsarManager.Tell(new LastMessageIdReceived(_consumerid, _topicName.ToString(), x));
             });
             Receive<MessageReceived>(m =>
             {
@@ -1469,17 +1496,11 @@ namespace SharpPulsar.Akka.Consumer
                 switch (s.Type)
                 {
                     case SeekType.Timestamp:
-                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(s.Input.ToString()));
-                        var pay = new Payload(req, reqtid, "NewSeek");
-                        _broker.Tell(pay);
+                        Seek(long.Parse(s.Input.ToString()));
                         break;
                     default:
-                        var v = s.Input.ToString().Trim().Split(",");//format l,e
-                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
-                        var payload = new Payload(request, requestid, "NewSeek");
-                        _broker.Tell(payload);
+                        var v = s.Input.ToString().Trim().Split(",");//format ledger,entry
+                        Seek(new MessageId(long.Parse(v[0].Trim()), long.Parse(v[1].Trim()), _partitionIndex));
                         break;
                 }
             });
@@ -1488,17 +1509,11 @@ namespace SharpPulsar.Akka.Consumer
                 switch (_seek.Type)
                 {
                     case SeekType.Timestamp:
-                        var reqtid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var req = Commands.NewSeek(_consumerid, reqtid, long.Parse(_seek.Input.ToString()));
-                        var pay = new Payload(req, reqtid, "NewSeek");
-                        _broker.Tell(pay);
+                        Seek(long.Parse(_seek.Input.ToString()));
                         break;
                     default:
-                        var v = _seek.Input.ToString().Trim().Split(",");//format l,e
-                        var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-                        var request = Commands.NewSeek(_consumerid, requestid, long.Parse(v[0].Trim()), long.Parse(v[1].Trim()));
-                        var payload = new Payload(request, requestid, "NewSeek");
-                        _broker.Tell(payload);
+                        var v = _seek.Input.ToString().Trim().Split(",");//format ledger,entry
+                        Seek(new MessageId(long.Parse(v[0].Trim()), long.Parse(v[1].Trim()), _partitionIndex));
                         break;
                 }
             }
@@ -1657,6 +1672,69 @@ namespace SharpPulsar.Akka.Consumer
         {
             return _pendingBatchReceives != null && _pendingBatchReceives.Count > 0;
         }
+
+        private void SetTerminated()
+        {
+            _log.Info($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Consumer has reached the end of topic");
+            _hasReachedEndOfTopic = true;
+            // Propagate notification to listener
+            _listener?.ReachedEndOfTopic(Self);
+        }
+
+        private bool HasReachedEndOfTopic()
+        {
+            return _hasReachedEndOfTopic;
+        }
+        
+        private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
+        {
+            if (inclusive && lastMessageIdInBroker.CompareTo(messageId) >= 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
+            {
+                return true;
+            }
+
+            if (!inclusive && lastMessageIdInBroker.CompareTo(messageId) > 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
+            {
+                return true;
+            }
+
+            return false;
+        }
+        private void Seek(long timestamp)
+        {
+
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+            var cmd = Commands.NewSeek(_consumerid, requestId, timestamp);
+
+            _log.Info($"[{_topicName}][{_subscriptionName}] Seek subscription to publish time {timestamp}");
+
+            var payload = new Payload(cmd, requestId, "NewSeek");
+            _broker.Tell(payload);
+
+            _log.Info($"[{_topicName}][{_subscriptionName}] Successfully reset subscription to publish time {timestamp}");
+
+        }
+
+        private void Seek(IMessageId messageId)
+        {
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+            var msgId = (MessageId)messageId;
+
+            var cmd = Commands.NewSeek(_consumerid, requestId, msgId.LedgerId, msgId.EntryId);
+
+            _log.Info($"[{_topicName}][{_subscriptionName}] Seek subscription to message id {messageId}");
+            var payload = new Payload(cmd, requestId, "NewSeek");
+            _broker.Tell(payload);
+            _log.Info($"[{_topicName}][{_subscriptionName}] Successfully reset subscription to message id {messageId}");
+            _acknowledgmentsGroupingTracker.FlushAndClean();
+            _seekMessageId = new BatchMessageId((MessageId)messageId);
+            _duringSeek = true;
+            _lastDequeuedMessageId = MessageIdFields.Earliest;
+            _incomingMessages.Clear();
+            _incomingMessagesSize = 0;
+
+        }
+
     }
     public class ChunkedMessageCtx
     {

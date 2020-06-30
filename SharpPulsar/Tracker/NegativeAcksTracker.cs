@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Util.Internal;
+using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -32,7 +33,7 @@ namespace SharpPulsar.Tracker
 	public class NegativeAcksTracker
 	{
 
-		private Dictionary<MessageId, long> _nackedMessages;
+		private Dictionary<IMessageId, long> _nackedMessages;
         private ActorSystem _system;
 
 		private readonly IActorRef _consumer;
@@ -61,7 +62,7 @@ namespace SharpPulsar.Tracker
             }
 
             // Group all the nacked messages into one single re-delivery request
-            ISet<MessageId> messagesToRedeliver = new HashSet<MessageId>();
+            var messagesToRedeliver = new HashSet<IMessageId>();
             var now = DateTimeHelper.CurrentUnixTimeMillis();
             _nackedMessages.ForEach(a =>
             {
@@ -79,18 +80,18 @@ namespace SharpPulsar.Tracker
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
         }
 
-        public virtual void Add(MessageId messageId)
+        public virtual void Add(IMessageId messageId)
         {
             lock (this)
             {
                 if (messageId is BatchMessageId batchMessageId)
                 {
-                    messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex, null);
+                    messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
                 }
 
                 if (_nackedMessages == null)
                 {
-                    _nackedMessages = new Dictionary<MessageId, long>();
+                    _nackedMessages = new Dictionary<IMessageId, long>();
                 }
                 _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + _nackDelayNanos;
 
@@ -105,11 +106,11 @@ namespace SharpPulsar.Tracker
 	}
     public sealed class OnNegativeAcksSend
     {
-        public OnNegativeAcksSend(ISet<MessageId> messageIds)
+        public OnNegativeAcksSend(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }
 
-        public ISet<MessageId> MessageIds { get; }
+        public ISet<IMessageId> MessageIds { get; }
     }
 }

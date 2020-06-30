@@ -32,9 +32,8 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedMessageTracker
     {
-
-        private readonly ConcurrentDictionary<MessageId, HashSet<MessageId>> _messageIdPartitionMap;
-        private readonly List<HashSet<MessageId>> _timePartitions;
+        internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> _messageIdPartitionMap;
+        private readonly List<HashSet<IMessageId>> _timePartitions;
         private readonly ILoggingAdapter _log;
         private readonly ActorSystem _system;
         private ICancelable _timeout;
@@ -58,17 +57,17 @@ namespace SharpPulsar.Tracker
                 return 0;
             }
 
-            public override bool Add(MessageId m)
+            public override bool Add(IMessageId m)
             {
                 return true;
             }
 
-            public override bool Remove(MessageId m)
+            public override bool Remove(IMessageId m)
             {
                 return true;
             }
 
-            public override int RemoveMessagesTill(MessageId msgId)
+            public override int RemoveMessagesTill(IMessageId msgId)
             {
                 return 0;
             }
@@ -94,21 +93,20 @@ namespace SharpPulsar.Tracker
 
 
 
-        public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis, long tickDurationInMs,
-            ActorSystem system)
+        public UnAckedMessageTracker(IActorRef consumer, long ackTimeoutMillis, long tickDurationInMs, ActorSystem system)
         {
             _consumer = consumer;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
             _ackTimeoutMillis = ackTimeoutMillis;
             _tickDurationInMs = tickDurationInMs;
             _system = system;
-            _messageIdPartitionMap = new ConcurrentDictionary<MessageId, HashSet<MessageId>>();
-            _timePartitions = new List<HashSet<MessageId>>();
+            _messageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
+            _timePartitions = new List<HashSet<IMessageId>>();
 
             var blankPartitions = (int) Math.Ceiling((double) _ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
-                _timePartitions.Add(new HashSet<MessageId>(16));
+                _timePartitions.Add(new HashSet<IMessageId>(16));
             }
 
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
@@ -117,7 +115,7 @@ namespace SharpPulsar.Tracker
 
         private void Job()
         {
-            ISet<MessageId> messageIds = new HashSet<MessageId>();
+            var messageIds = new HashSet<IMessageId>();
             try
             {
                 var headPartition = _timePartitions.FirstOrDefault();
@@ -147,7 +145,7 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        public static void AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, ISet<MessageId> messageIds, IActorRef consumer)
+        public static void AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, ISet<IMessageId> messageIds, IActorRef consumer)
         {
             if (messageId is MessageId id)
             {
@@ -174,7 +172,7 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        public virtual bool Add(MessageId messageId)
+        public virtual bool Add(IMessageId messageId)
         {
             var partition = _timePartitions.LastOrDefault();
             var previousPartition = _messageIdPartitionMap.GetOrAdd(messageId, p => partition);
@@ -188,7 +186,7 @@ namespace SharpPulsar.Tracker
 
         public virtual bool Empty => _messageIdPartitionMap.IsEmpty;
 
-        public virtual bool Remove(MessageId messageId)
+        public virtual bool Remove(IMessageId messageId)
         {
             var removed = false;
             _messageIdPartitionMap.Remove(messageId, out var exist);
@@ -205,7 +203,7 @@ namespace SharpPulsar.Tracker
             return _messageIdPartitionMap.Count;
         }
 
-        public virtual int RemoveMessagesTill(MessageId msgId)
+        public virtual int RemoveMessagesTill(IMessageId msgId)
         {
             var removed = 0;
             var iterator = _messageIdPartitionMap.Keys;
@@ -260,21 +258,21 @@ namespace SharpPulsar.Tracker
 
     public sealed class OnAckTimeoutSend
     {
-        public OnAckTimeoutSend(ISet<MessageId> messageIds)
+        public OnAckTimeoutSend(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }
 
-        public ISet<MessageId> MessageIds { get; }
+        public ISet<IMessageId> MessageIds { get; }
     }
     public sealed class RedeliverUnacknowledgedMessages
     {
-        public RedeliverUnacknowledgedMessages(ISet<MessageId> messageIds)
+        public RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }
 
-        public ISet<MessageId> MessageIds { get; }
+        public ISet<IMessageId> MessageIds { get; }
     }
     public enum UnAckedCommand
     {
