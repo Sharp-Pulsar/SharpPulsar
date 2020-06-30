@@ -79,13 +79,13 @@ namespace SharpPulsar.Batch
 
                 return res;
             }
-            else if (o is TopicMessageIdImpl)
+            else if (o is TopicMessageId)
             {
-                return CompareTo(((TopicMessageIdImpl) o).InnerMessageId);
+                return CompareTo(((TopicMessageId) o).InnerMessageId);
             }
             else
             {
-                throw new ArgumentException("expected BatchMessageIdImpl object. Got instance of " + o.GetType().FullName);
+                throw new ArgumentException("expected BatchMessageId object. Got instance of " + o.GetType().FullName);
             }
         }
 

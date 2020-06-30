@@ -388,7 +388,7 @@ namespace SharpPulsar.Akka.Consumer
             var messageId = msg.MessageId;
             if (messageId is BatchMessageId batch)
             {
-                // messageIds contain MessageIdImpl, not BatchMessageIdImpl
+                // messageIds contain MessageId, not BatchMessageId
                 messageId = new MessageId(batch.LedgerId, batch.EntryId, _partitionIndex);
             }
             return (MessageId)messageId;
@@ -554,7 +554,7 @@ namespace SharpPulsar.Akka.Consumer
                 // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
                 /*if (deadLetterPolicy != null && possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= deadLetterPolicy.MaxRedeliverCount)
                     {
-                        possibleSendToDeadLetterTopicMessages[(MessageIdImpl)message.getMessageId()] = Collections.singletonList(message);
+                        possibleSendToDeadLetterTopicMessages[(MessageId)message.getMessageId()] = Collections.singletonList(message);
                     }*/
                 //Not needed since we are not dealing ansyc receive
                 /*if (_pendingReceives.Count !> 0)
@@ -1069,7 +1069,7 @@ namespace SharpPulsar.Akka.Consumer
                     _unAckedMessageTracker.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
                     /*if (possibleSendToDeadLetterTopicMessages != null)
                     {
-                        possibleSendToDeadLetterTopicMessages.Remove(new MessageIdImpl(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
+                        possibleSendToDeadLetterTopicMessages.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
                     }*/
                 }
                 else

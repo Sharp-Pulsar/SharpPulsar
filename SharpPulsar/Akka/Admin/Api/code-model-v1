@@ -8905,12 +8905,12 @@
           }
         }
       ],
-      "serializedName": "MessageIdImpl",
+      "serializedName": "MessageId",
       "containsConstantProperties": false,
       "name": {
         "$id": "1354",
         "fixed": false,
-        "raw": "MessageIdImpl"
+        "raw": "MessageId"
       },
       "extensions": {
         "x-ms-metadata": {
@@ -8920,9 +8920,9 @@
           "filename": [
             "mem:///103?oai3.shaken.json"
           ],
-          "name": "MessageIdImpl",
+          "name": "MessageId",
           "originalLocations": [
-            "file:///E:/swagger.json#/components/schemas/MessageIdImpl"
+            "file:///E:/swagger.json#/components/schemas/MessageId"
           ]
         }
       },

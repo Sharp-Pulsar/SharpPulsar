@@ -39,6 +39,7 @@
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.8" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
+    <PackageReference Include="Apache.Avro" Version="1.10.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="avroschemagenerator" Version="1.6.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
@@ -66,13 +67,6 @@
     <PackageReference Include="timeunit" Version="1.0.2" />
     <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
     <PackageReference Include="ZstdNet" Version="1.3.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Avro\Avro.csproj">
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-      <IncludeAssets>Avro.dll</IncludeAssets>
-    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

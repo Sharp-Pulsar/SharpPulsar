@@ -21,7 +21,7 @@
 namespace SharpPulsar.Impl
 {
 	using IMessageId = Api.IMessageId;
-	public class TopicMessageIdImpl : IMessageId
+	public class TopicMessageId : IMessageId
 	{
 
 		/// <summary>
@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl
 		private string _topicName;
 		public readonly IMessageId InnerMessageId;
 
-		public TopicMessageIdImpl(string topicPartitionName, string topicName, IMessageId messageId)
+		public TopicMessageId(string topicPartitionName, string topicName, IMessageId messageId)
 		{
 			this.InnerMessageId = messageId;
 			_topicPartitionName = topicPartitionName;
@@ -61,11 +61,11 @@ namespace SharpPulsar.Impl
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is TopicMessageIdImpl))
+			if (!(obj is TopicMessageId))
 			{
 				return false;
 			}
-			var other = (TopicMessageIdImpl) obj;
+			var other = (TopicMessageId) obj;
 			return object.Equals(TopicPartitionName, other.TopicPartitionName) && object.Equals(InnerMessageId, other.InnerMessageId);
 		}
 

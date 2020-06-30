@@ -5982,14 +5982,14 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         public static void ResetCursorOnPosition(this IPulsarAdminRESTAPI operations, string tenant,
             string namespaceParameter, string topic, string subName, bool? authoritative = false,
-            MessageIdImpl messageId = default(MessageIdImpl))
+            AdminMessageId adminMessageId = default(AdminMessageId))
         {
-            operations.ResetCursorOnPositionAsync(tenant, namespaceParameter, topic, subName, authoritative, messageId)
+            operations.ResetCursorOnPositionAsync(tenant, namespaceParameter, topic, subName, authoritative, adminMessageId)
                 .GetAwaiter().GetResult();
         }
 
@@ -6018,7 +6018,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='cancellationToken'>
@@ -6026,11 +6026,11 @@ namespace PulsarAdmin
         /// </param>
         public static async Task ResetCursorOnPositionAsync(this IPulsarAdminRESTAPI operations, string tenant,
             string namespaceParameter, string topic, string subName, bool? authoritative = false,
-            MessageIdImpl messageId = default(MessageIdImpl),
+            AdminMessageId adminMessageId = default(AdminMessageId),
             CancellationToken cancellationToken = default(CancellationToken))
         {
             (await operations.ResetCursorOnPositionWithHttpMessagesAsync(tenant, namespaceParameter, topic, subName,
-                authoritative, messageId, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                authoritative, adminMessageId, null, cancellationToken).ConfigureAwait(false)).Dispose();
         }
 
         /// <summary>
@@ -7998,14 +7998,14 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         public static void ResetCursorOnPosition1(this IPulsarAdminRESTAPI operations, string tenant,
             string namespaceParameter, string topic, string subName, bool? authoritative = false,
-            MessageIdImpl messageId = default(MessageIdImpl))
+            AdminMessageId adminMessageId = default(AdminMessageId))
         {
-            operations.ResetCursorOnPosition1Async(tenant, namespaceParameter, topic, subName, authoritative, messageId)
+            operations.ResetCursorOnPosition1Async(tenant, namespaceParameter, topic, subName, authoritative, adminMessageId)
                 .GetAwaiter().GetResult();
         }
 
@@ -8034,7 +8034,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='cancellationToken'>
@@ -8042,11 +8042,11 @@ namespace PulsarAdmin
         /// </param>
         public static async Task ResetCursorOnPosition1Async(this IPulsarAdminRESTAPI operations, string tenant,
             string namespaceParameter, string topic, string subName, bool? authoritative = false,
-            MessageIdImpl messageId = default(MessageIdImpl),
+            AdminMessageId adminMessageId = default(AdminMessageId),
             CancellationToken cancellationToken = default(CancellationToken))
         {
             (await operations.ResetCursorOnPosition1WithHttpMessagesAsync(tenant, namespaceParameter, topic, subName,
-                authoritative, messageId, null, cancellationToken).ConfigureAwait(false)).Dispose();
+                authoritative, adminMessageId, null, cancellationToken).ConfigureAwait(false)).Dispose();
         }
 
         /// <summary>

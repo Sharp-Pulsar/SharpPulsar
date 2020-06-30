@@ -16,11 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Impl\AcknowledgementsGroupingTrackerTest.cs" />
     <Compile Remove="Impl\BackoffTest.cs" />
     <Compile Remove="Impl\BatchMessageAckerDisabledTest.cs" />
     <Compile Remove="Impl\BatchMessageAckerTest.cs" />
-    <Compile Remove="Impl\BatchMessageIdImplTest.cs" />
+    <Compile Remove="Impl\BatchMessageIdTest.cs" />
     <Compile Remove="Impl\BuildersTest.cs" />
     <Compile Remove="Impl\conf\ConfigurationDataUtilsTest.cs" />
     <Compile Remove="Impl\ConnectionTimeoutTest.cs" />
@@ -41,6 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.8" />
     <PackageReference Include="Castle.Core" Version="4.4.1" />
     <PackageReference Include="FakeItEasy" Version="6.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
@@ -61,7 +61,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Avro\Avro.csproj" />
     <ProjectReference Include="..\Sample\Samples.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>

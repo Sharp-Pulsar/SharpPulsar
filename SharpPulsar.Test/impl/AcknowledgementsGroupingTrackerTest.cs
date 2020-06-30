@@ -16,206 +16,162 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using System.Collections.Generic;
+using Akka.Actor;
+using PulsarAdmin.Models;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Tracker;
+using SharpPulsar.Utils;
+using Akka.TestKit.Xunit2;
+using SharpPulsar.Impl;
+using Xunit;
+using MessageId = SharpPulsar.Impl.MessageId;
+
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
-	using ChannelHandlerContext = io.netty.channel.ChannelHandlerContext;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using NioEventLoopGroup = io.netty.channel.nio.NioEventLoopGroup;
-
-    public class AcknowledgementsGroupingTrackerTest
+    public class AcknowledgementsGroupingTrackerTest : TestKit
 	{
-
-		private ClientCnx cnx;
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: private ConsumerImpl<?> consumer;
-		private ConsumerImpl<object> consumer;
-		private EventLoopGroup eventLoopGroup;
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeClass public void setup()
-		public virtual void Setup()
+		[Fact]
+		public void TestAckTracker()
 		{
-			eventLoopGroup = new NioEventLoopGroup(1);
-			consumer = mock(typeof(ConsumerImpl));
-			cnx = mock(typeof(ClientCnx));
-			ChannelHandlerContext Ctx = mock(typeof(ChannelHandlerContext));
-			when(cnx.Ctx()).thenReturn(Ctx);
-		}
+            var conf = new ConsumerConfigurationData
+            {
+                AcknowledgementsGroupTimeMicros = (long) ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
+            };
+            var tracker = new PersistentAcknowledgmentsGroupingTracker(Sys, TestActor, TestActor, 1, conf);
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @AfterClass public void teardown()
-		public virtual void Teardown()
-		{
-			eventLoopGroup.shutdownGracefully();
-		}
+			var msg1 = new MessageId(5, 1, 0);
+			var msg2 = new MessageId(5, 2, 0);
+			var msg3 = new MessageId(5, 3, 0);
+			var msg4 = new MessageId(5, 4, 0);
+			var msg5 = new MessageId(5, 5, 0);
+			var msg6 = new MessageId(5, 6, 0);
+			Assert.False(tracker.IsDuplicate(msg1));
+			tracker.AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg1));
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAckTracker() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAckTracker()
-		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<?> conf = new org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<>();
-			ConsumerConfigurationData<object> Conf = new ConsumerConfigurationData<object>();
-			Conf.AcknowledgementsGroupTimeMicros = TimeUnit.SECONDS.toMicros(10);
-			PersistentAcknowledgmentsGroupingTracker Tracker = new PersistentAcknowledgmentsGroupingTracker(consumer, Conf, eventLoopGroup);
+			Assert.False(tracker.IsDuplicate(msg2));
 
-			MessageIdImpl Msg1 = new MessageIdImpl(5, 1, 0);
-			MessageIdImpl Msg2 = new MessageIdImpl(5, 2, 0);
-			MessageIdImpl Msg3 = new MessageIdImpl(5, 3, 0);
-			MessageIdImpl Msg4 = new MessageIdImpl(5, 4, 0);
-			MessageIdImpl Msg5 = new MessageIdImpl(5, 5, 0);
-			MessageIdImpl Msg6 = new MessageIdImpl(5, 6, 0);
+			tracker.AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			assertFalse(Tracker.isDuplicate(Msg1));
-
-			Tracker.addAcknowledgment(Msg1, AckType.Individual, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg1));
-
-			assertFalse(Tracker.isDuplicate(Msg2));
-
-			Tracker.addAcknowledgment(Msg5, AckType.Cumulative, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
-
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
 			// Flush while disconnected. the internal tracking will not change
-			Tracker.flush();
+			tracker.Flush();
 
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
-			Tracker.addAcknowledgment(Msg6, AckType.Individual, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg6));
+			tracker.AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg6));
+			
+			tracker.Flush();
 
-			when(consumer.ClientCnx).thenReturn(cnx);
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			Tracker.flush();
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
-
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
-
-			Tracker.close();
+			tracker.Close();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testImmediateAckingTracker() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestImmediateAckingTracker()
+		[Fact]
+		public  void TestImmediateAckingTracker()
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<?> conf = new org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<>();
-			ConsumerConfigurationData<object> Conf = new ConsumerConfigurationData<object>();
-			Conf.AcknowledgementsGroupTimeMicros = 0;
-			PersistentAcknowledgmentsGroupingTracker Tracker = new PersistentAcknowledgmentsGroupingTracker(consumer, Conf, eventLoopGroup);
+            var conf = new ConsumerConfigurationData {AcknowledgementsGroupTimeMicros = 0};
+            var tracker = new PersistentAcknowledgmentsGroupingTracker(Sys, TestActor, TestActor, 1, conf);
 
-			MessageIdImpl Msg1 = new MessageIdImpl(5, 1, 0);
-			MessageIdImpl Msg2 = new MessageIdImpl(5, 2, 0);
+			var msg1 = new MessageId(5, 1, 0);
+			var msg2 = new MessageId(5, 2, 0);
 
-			assertFalse(Tracker.isDuplicate(Msg1));
+			Assert.False(tracker.IsDuplicate(msg1));
 
-			when(consumer.ClientCnx).thenReturn(null);
 
-			Tracker.addAcknowledgment(Msg1, AckType.Individual, Collections.emptyMap());
-			assertFalse(Tracker.isDuplicate(Msg1));
+			tracker.AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>());
+			Assert.False(tracker.IsDuplicate(msg1));
+			
+			tracker.Flush();
+			Assert.False(tracker.IsDuplicate(msg1));
 
-			when(consumer.ClientCnx).thenReturn(cnx);
-
-			Tracker.flush();
-			assertFalse(Tracker.isDuplicate(Msg1));
-
-			Tracker.addAcknowledgment(Msg2, AckType.Individual, Collections.emptyMap());
+			tracker.AddAcknowledgment(msg2, CommandAck.AckType.Individual, new Dictionary<string, long>());
 			// Since we were connected, the ack went out immediately
-			assertFalse(Tracker.isDuplicate(Msg2));
-			Tracker.close();
+			Assert.False(tracker.IsDuplicate(msg2));
+			tracker.Close();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAckTrackerMultiAck() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-		public virtual void TestAckTrackerMultiAck()
+		[Fact]
+		public void TestAckTrackerMultiAck()
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in .NET:
-//ORIGINAL LINE: org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<?> conf = new org.apache.pulsar.client.impl.conf.ConsumerConfigurationData<>();
-			ConsumerConfigurationData<object> Conf = new ConsumerConfigurationData<object>();
-			Conf.AcknowledgementsGroupTimeMicros = TimeUnit.SECONDS.toMicros(10);
-			PersistentAcknowledgmentsGroupingTracker Tracker = new PersistentAcknowledgmentsGroupingTracker(consumer, Conf, eventLoopGroup);
+            var conf = new ConsumerConfigurationData
+            {
+                AcknowledgementsGroupTimeMicros = (long) ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
+            };
+            var tracker = new PersistentAcknowledgmentsGroupingTracker(Sys, TestActor, TestActor, 1, conf);
+			
+			var msg1 = new MessageId(5, 1, 0);
+			var msg2 = new MessageId(5, 2, 0);
+			var msg3 = new MessageId(5, 3, 0);
+			var msg4 = new MessageId(5, 4, 0);
+			var msg5 = new MessageId(5, 5, 0);
+			var msg6 = new MessageId(5, 6, 0);
 
-			when(cnx.RemoteEndpointProtocolVersion).thenReturn(ProtocolVersion.v12_VALUE);
+			Assert.False(tracker.IsDuplicate(msg1));
 
-			MessageIdImpl Msg1 = new MessageIdImpl(5, 1, 0);
-			MessageIdImpl Msg2 = new MessageIdImpl(5, 2, 0);
-			MessageIdImpl Msg3 = new MessageIdImpl(5, 3, 0);
-			MessageIdImpl Msg4 = new MessageIdImpl(5, 4, 0);
-			MessageIdImpl Msg5 = new MessageIdImpl(5, 5, 0);
-			MessageIdImpl Msg6 = new MessageIdImpl(5, 6, 0);
+			tracker.AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg1));
 
-			assertFalse(Tracker.isDuplicate(Msg1));
+			Assert.False(tracker.IsDuplicate(msg2));
 
-			Tracker.addAcknowledgment(Msg1, AckType.Individual, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg1));
+			tracker.AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			assertFalse(Tracker.isDuplicate(Msg2));
-
-			Tracker.addAcknowledgment(Msg5, AckType.Cumulative, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
-
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
 			// Flush while disconnected. the internal tracking will not change
-			Tracker.flush();
+			tracker.Flush();
 
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
-			Tracker.addAcknowledgment(Msg6, AckType.Individual, Collections.emptyMap());
-			assertTrue(Tracker.isDuplicate(Msg6));
+			tracker.AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>());
+			Assert.True(tracker.IsDuplicate(msg6));
 
-			when(consumer.ClientCnx).thenReturn(cnx);
 
-			Tracker.flush();
+			tracker.Flush();
 
-			assertTrue(Tracker.isDuplicate(Msg1));
-			assertTrue(Tracker.isDuplicate(Msg2));
-			assertTrue(Tracker.isDuplicate(Msg3));
+			Assert.True(tracker.IsDuplicate(msg1));
+			Assert.True(tracker.IsDuplicate(msg2));
+			Assert.True(tracker.IsDuplicate(msg3));
 
-			assertTrue(Tracker.isDuplicate(Msg4));
-			assertTrue(Tracker.isDuplicate(Msg5));
-			assertFalse(Tracker.isDuplicate(Msg6));
+			Assert.True(tracker.IsDuplicate(msg4));
+			Assert.True(tracker.IsDuplicate(msg5));
+			Assert.False(tracker.IsDuplicate(msg6));
 
-			Tracker.close();
+			tracker.Close();
 		}
 	}
 

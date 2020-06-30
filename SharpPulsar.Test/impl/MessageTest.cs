@@ -59,7 +59,7 @@ namespace SharpPulsar.Test.Impl
             var builder = new MessageMetadata {ReplicatedFrom = @from};
             var payload = new byte[0];
 			var msg = Message.Create(builder, payload, SchemaFields.Bytes, topicName);
-			msg.SetMessageId(new MessageId(-1, -1, -1, null));
+			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessageImpl(topicName, topicName, msg);
 
 			Assert.True(topicMessage.Replicated);
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test.Impl
 			var builder = new MessageMetadata();
             var payload = new byte[0];
 			var msg = Message.Create(builder, payload, SchemaFields.Bytes, topicName);
-			msg.SetMessageId(new MessageId(-1, -1, -1, null));
+			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessageImpl(topicName, topicName, msg);
 
 			Assert.False(topicMessage.Replicated);

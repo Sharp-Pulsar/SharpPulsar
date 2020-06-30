@@ -18776,7 +18776,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='customHeaders'>
@@ -18797,7 +18797,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> ResetCursorOnPositionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, MessageIdImpl messageId = default(MessageIdImpl), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> ResetCursorOnPositionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, AdminMessageId adminMessageId = default(AdminMessageId), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -18827,7 +18827,7 @@ namespace PulsarAdmin
                 tracingParameters.Add("topic", topic);
                 tracingParameters.Add("subName", subName);
                 tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("messageId", messageId);
+                tracingParameters.Add("messageId", adminMessageId);
                 tracingParameters.Add("cancellationToken", cancellationToken);
                 ServiceClientTracing.Enter(_invocationId, this, "ResetCursorOnPosition", tracingParameters);
             }
@@ -18869,9 +18869,9 @@ namespace PulsarAdmin
 
             // Serialize Request
             string _requestContent = null;
-            if(messageId != null)
+            if(adminMessageId != null)
             {
-                _requestContent = SafeJsonConvert.SerializeObject(messageId, SerializationSettings);
+                _requestContent = SafeJsonConvert.SerializeObject(adminMessageId, SerializationSettings);
                 _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType =System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
@@ -23921,7 +23921,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='customHeaders'>
@@ -23942,7 +23942,7 @@ namespace PulsarAdmin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<HttpOperationResponse> ResetCursorOnPosition1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, MessageIdImpl messageId = default(MessageIdImpl), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<HttpOperationResponse> ResetCursorOnPosition1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, AdminMessageId adminMessageId = default(AdminMessageId), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (tenant == null)
             {
@@ -23972,7 +23972,7 @@ namespace PulsarAdmin
                 tracingParameters.Add("topic", topic);
                 tracingParameters.Add("subName", subName);
                 tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("messageId", messageId);
+                tracingParameters.Add("messageId", adminMessageId);
                 tracingParameters.Add("cancellationToken", cancellationToken);
                 ServiceClientTracing.Enter(_invocationId, this, "ResetCursorOnPosition1", tracingParameters);
             }
@@ -24014,9 +24014,9 @@ namespace PulsarAdmin
 
             // Serialize Request
             string _requestContent = null;
-            if(messageId != null)
+            if(adminMessageId != null)
             {
-                _requestContent = SafeJsonConvert.SerializeObject(messageId, SerializationSettings);
+                _requestContent = SafeJsonConvert.SerializeObject(adminMessageId, SerializationSettings);
                 _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType =System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }

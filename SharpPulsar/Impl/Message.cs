@@ -95,7 +95,7 @@ namespace SharpPulsar.Impl
 			_schema = schema;
 		}
 
-		public Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, schema, 0)
+		public Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, EncryptionContext encryptionCtx, ISchema schema) : this(topic, batchMessageId, msgMetadata, singleMessageMetadata, payload, encryptionCtx, schema, 0)
 		{
 		}
 

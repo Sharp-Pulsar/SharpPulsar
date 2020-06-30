@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl
 		{
 			if (!(o is MultiMessageId))
 			{
-				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + o.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageId object. Got instance of " + o.GetType().FullName);
 			}
 
 			var other = (MultiMessageId) o;
@@ -105,7 +105,7 @@ namespace SharpPulsar.Impl
 		{
 			if (!(obj is MultiMessageId))
 			{
-				throw new ArgumentException("expected MultiMessageIdImpl object. Got instance of " + obj.GetType().FullName);
+				throw new ArgumentException("expected MultiMessageId object. Got instance of " + obj.GetType().FullName);
 			}
 
 			var other = (MultiMessageId) obj;

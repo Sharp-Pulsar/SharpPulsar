@@ -24,11 +24,11 @@ namespace PulsarAdmin.Models
         /// </summary>
         /// <param name="status">Possible values include: 'NOT_RUN', 'RUNNING',
         /// 'SUCCESS', 'ERROR'</param>
-        public OffloadProcessStatus(string status = default(string), string lastError = default(string), MessageIdImpl firstUnoffloadedMessage = default(MessageIdImpl))
+        public OffloadProcessStatus(string status = default(string), string lastError = default(string), AdminMessageId firstUnoffloadedAdminMessage = default(AdminMessageId))
         {
             Status = status;
             LastError = lastError;
-            FirstUnoffloadedMessage = firstUnoffloadedMessage;
+            FirstUnoffloadedAdminMessage = firstUnoffloadedAdminMessage;
             CustomInit();
         }
 
@@ -52,7 +52,7 @@ namespace PulsarAdmin.Models
         /// <summary>
         /// </summary>
         [JsonProperty(PropertyName = "firstUnoffloadedMessage")]
-        public MessageIdImpl FirstUnoffloadedMessage { get; set; }
+        public AdminMessageId FirstUnoffloadedAdminMessage { get; set; }
 
     }
 }

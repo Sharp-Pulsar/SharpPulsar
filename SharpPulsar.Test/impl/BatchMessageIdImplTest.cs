@@ -16,63 +16,56 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+
+using SharpPulsar.Batch;
+using SharpPulsar.Impl;
+using Xunit;
+
 namespace SharpPulsar.Test.Impl
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-public class BatchMessageIdImplTest
+public class BatchMessageIdTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void compareToTest()
-		public virtual void CompareToTest()
+		[Fact]
+		public void CompareToTest()
 		{
-			BatchMessageIdImpl BatchMsgId1 = new BatchMessageIdImpl(0, 0, 0, 0);
-			BatchMessageIdImpl BatchMsgId2 = new BatchMessageIdImpl(1, 1, 1, 1);
+			var batchMsgId1 = new BatchMessageId(0, 0, 0, 0);
+			var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
 
-			assertEquals(BatchMsgId1.CompareTo(BatchMsgId2), -1);
-			assertEquals(BatchMsgId2.CompareTo(BatchMsgId1), 1);
-			assertEquals(BatchMsgId2.CompareTo(BatchMsgId2), 0);
+			Assert.Equal(-1, batchMsgId1.CompareTo(batchMsgId2));
+			Assert.Equal(1, batchMsgId2.CompareTo(batchMsgId1));
+			Assert.Equal(0, batchMsgId2.CompareTo(batchMsgId2));
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void hashCodeTest()
+		[Fact]
 		public virtual void HashCodeTest()
 		{
-			BatchMessageIdImpl BatchMsgId1 = new BatchMessageIdImpl(0, 0, 0, 0);
-			BatchMessageIdImpl BatchMsgId2 = new BatchMessageIdImpl(1, 1, 1, 1);
+			var batchMsgId1 = new BatchMessageId(0, 0, 0, 0);
+			var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
 
-			assertEquals(BatchMsgId1.GetHashCode(), BatchMsgId1.GetHashCode());
-			assertTrue(BatchMsgId1.GetHashCode() != BatchMsgId2.GetHashCode());
+			Assert.Equal(batchMsgId1.GetHashCode(), batchMsgId1.GetHashCode());
+			Assert.True(batchMsgId1.GetHashCode() != batchMsgId2.GetHashCode());
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void equalsTest()
+		[Fact]
 		public virtual void EqualsTest()
 		{
-			BatchMessageIdImpl BatchMsgId1 = new BatchMessageIdImpl(0, 0, 0, 0);
-			BatchMessageIdImpl BatchMsgId2 = new BatchMessageIdImpl(1, 1, 1, 1);
-			BatchMessageIdImpl BatchMsgId3 = new BatchMessageIdImpl(0, 0, 0, 1);
-			BatchMessageIdImpl BatchMsgId4 = new BatchMessageIdImpl(0, 0, 0, -1);
-			MessageIdImpl MsgId = new MessageIdImpl(0, 0, 0);
+			var batchMsgId1 = new BatchMessageId(0, 0, 0, 0);
+			var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
+			var batchMsgId3 = new BatchMessageId(0, 0, 0, 1);
+			var batchMsgId4 = new BatchMessageId(0, 0, 0, -1);
+			var msgId = new MessageId(0, 0, 0);
 
-			assertEquals(BatchMsgId1, BatchMsgId1);
-			assertNotEquals(BatchMsgId2, BatchMsgId1);
-			assertNotEquals(BatchMsgId3, BatchMsgId1);
-			assertNotEquals(BatchMsgId4, BatchMsgId1);
-			assertNotEquals(MsgId, BatchMsgId1);
+			Assert.Equal(batchMsgId1, batchMsgId1);
+			Assert.NotEqual(batchMsgId1, batchMsgId2);
+			Assert.NotEqual(batchMsgId1, batchMsgId3);
+			Assert.NotEqual(batchMsgId1, batchMsgId4);
+			Assert.NotEqual(batchMsgId1, msgId);
 
-			assertEquals(MsgId, MsgId);
-			assertNotEquals(BatchMsgId1, MsgId);
-			assertNotEquals(BatchMsgId2, MsgId);
-			assertNotEquals(BatchMsgId3, MsgId);
-			assertEquals(BatchMsgId4, MsgId);
+			Assert.Equal(msgId, msgId);
+			Assert.NotEqual(msgId, batchMsgId1);
+			Assert.NotEqual(msgId, batchMsgId2);
+			Assert.NotEqual(msgId, batchMsgId3);
+			Assert.Equal(msgId, batchMsgId4);
 
-			assertEquals(MsgId, BatchMsgId4);
+			Assert.Equal(msgId, batchMsgId4);
 		}
 
 	}

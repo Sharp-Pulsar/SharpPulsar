@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 using Avro;
-using Avro.Schemas;
 using SharpPulsar.Api.Schema;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Shared;
@@ -57,22 +56,6 @@ namespace SharpPulsar.Test.Impl.schema
 				{
 					Assert.assertNotNull(field.schema().Type);
 				}*/
-			}
-		}
-
-		[Fact]
-		public void TestAllowNullSchema()
-		{
-            var jsonSchema = AvroSchema.Of(ISchemaDefinition.Builder().WithPojo(typeof(Foo)).Build());
-			Assert.Equal(SchemaType.Json, jsonSchema.SchemaInfo.Type);
-			var schemaJson = new string(Encoding.UTF8.GetString((byte[])(object)jsonSchema.SchemaInfo.Schema));
-			Assert.Contains("SharpPulsar.Test.Impl.schema", schemaJson);
-			var schema = Schema.Parse(schemaJson);
-
-			foreach (var fieldName in SchemaTestUtils.FooFields)
-			{
-                var field = schema.GetProperty(fieldName);
-                Assert.Null(field);
 			}
 		}
 

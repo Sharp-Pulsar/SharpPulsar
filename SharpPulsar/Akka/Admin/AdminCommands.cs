@@ -969,13 +969,13 @@ namespace SharpPulsar.Akka.Admin
         PeekNthPersistentMessage,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageIdImpl messageId]
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageId messageId]
         /// </summary>
         /// <returns></returns>
         ResetCursorOnPosition,
 
         /// <summary>
-        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageIdImpl messageId]
+        /// Arguments[string tenant, string namespace, string topic, string subName, bool authoritative, MessageId messageId]
         /// </summary>
         /// <returns></returns>
         ResetCursorOnPersistentPosition,

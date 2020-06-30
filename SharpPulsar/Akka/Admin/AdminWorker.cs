@@ -1037,7 +1037,7 @@ namespace SharpPulsar.Akka.Admin
                         var topic23 = admin.Arguments[2].ToString();
                         var subName3 = admin.Arguments[3].ToString();
                         var auth28 = (bool)admin.Arguments[4];
-                        var id = (MessageIdImpl)admin.Arguments[5];
+                        var id = (AdminMessageId)admin.Arguments[5];
                         _adminRestapi.ResetCursorOnPosition(tenant85, nspace85, topic23, subName3, auth28, id);
                         admin.Handler("ResetCursorOnPosition");
                         break;
@@ -1047,7 +1047,7 @@ namespace SharpPulsar.Akka.Admin
                         var topic23p = admin.Arguments[2].ToString();
                         var subName3p = admin.Arguments[3].ToString();
                         var auth28p = (bool)admin.Arguments[4];
-                        var idp = (MessageIdImpl)admin.Arguments[5];
+                        var idp = (AdminMessageId)admin.Arguments[5];
                         _adminRestapi.ResetCursorOnPosition1(tenant85p, nspace85p, topic23p, subName3p, auth28p, idp);
                         admin.Handler("ResetCursorOnPersistentPosition");
                         break;

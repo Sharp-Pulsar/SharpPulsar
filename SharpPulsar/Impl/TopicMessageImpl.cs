@@ -32,14 +32,14 @@ namespace SharpPulsar.Impl
 		public string TopicPartitionName;
 
 		private readonly IMessage _msg;
-		private  TopicMessageIdImpl _messageId;
+		private  TopicMessageId _messageId;
 
 		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage msg)
 		{
 			TopicPartitionName = topicPartitionName;
 
 			_msg = msg;
-			_messageId = new TopicMessageIdImpl(topicPartitionName, topicName, msg.MessageId);
+			_messageId = new TopicMessageId(topicPartitionName, topicName, msg.MessageId);
 		}
 
 		/// <summary>

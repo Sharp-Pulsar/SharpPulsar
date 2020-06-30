@@ -17,6 +17,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utils;
 using IAcknowledgmentsGroupingTracker = SharpPulsar.Tracker.Api.IAcknowledgmentsGroupingTracker;
+using MessageId = SharpPulsar.Impl.MessageId;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

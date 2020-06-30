@@ -133,7 +133,7 @@ namespace SharpPulsar.Impl
 			if (idData.Partition > -1 && topicName != null)
 			{
 				var t = new TopicName();
-				messageId = new TopicMessageIdImpl(t.GetPartition(idData.Partition).ToString(), topicName.ToString(), messageId);
+				messageId = new TopicMessageId(t.GetPartition(idData.Partition).ToString(), topicName.ToString(), messageId);
 			}
 
 			return messageId;
@@ -179,11 +179,11 @@ namespace SharpPulsar.Impl
                 return 0;
             }
 
-            if (o is TopicMessageIdImpl impl)
+            if (o is TopicMessageId impl)
             {
                 return CompareTo(impl.InnerMessageId);
             }
-            throw new ArgumentException("expected MessageIdImpl object. Got instance of " + o.GetType().FullName);
+            throw new ArgumentException("expected MessageId object. Got instance of " + o.GetType().FullName);
         }
 	}
 

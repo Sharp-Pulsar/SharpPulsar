@@ -2504,7 +2504,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='customHeaders'>
@@ -2513,7 +2513,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> ResetCursorOnPositionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, MessageIdImpl messageId = default(MessageIdImpl), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> ResetCursorOnPositionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, AdminMessageId adminMessageId = default(AdminMessageId), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reset subscription to message position closest to absolute
@@ -3360,7 +3360,7 @@ namespace PulsarAdmin
         /// <param name='authoritative'>
         /// Is authentication required to perform this operation
         /// </param>
-        /// <param name='messageId'>
+        /// <param name='adminMessageId'>
         /// messageId to reset back to (ledgerId:entryId)
         /// </param>
         /// <param name='customHeaders'>
@@ -3369,7 +3369,7 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        Task<HttpOperationResponse> ResetCursorOnPosition1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, MessageIdImpl messageId = default(MessageIdImpl), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<HttpOperationResponse> ResetCursorOnPosition1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, bool? authoritative = false, AdminMessageId adminMessageId = default(AdminMessageId), Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reset subscription to message position closest to absolute
