@@ -152,7 +152,7 @@ namespace SharpPulsar.Impl
 			{
 				builder.BatchIndex = (batchIndex);
 			}
-			return (sbyte[])(object)builder.ToByteArray();
+			return (sbyte[])(object)builder.ToByteArrays();
 		}
 
 		public sbyte[] ToByteArray()

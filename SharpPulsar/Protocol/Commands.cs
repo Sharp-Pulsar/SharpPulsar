@@ -563,11 +563,11 @@ namespace SharpPulsar.Protocol
         {
             var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
 
-            int entriesCount = entries.Count;
-            for (int i = 0; i < entriesCount; i++)
+            var entriesCount = entries.Count;
+            for (var i = 0; i < entriesCount; i++)
             {
-                long ledgerId = entries[i].LedgerId;
-                long entryId = entries[i].EntryId;
+                var ledgerId = entries[i].LedgerId;
+                var entryId = entries[i].EntryId;
                 var bitSet = entries[i].Sets;
                 var messageIdData = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
                 if (bitSet != null)
@@ -577,17 +577,17 @@ namespace SharpPulsar.Protocol
                 ackCmd.MessageIds.Add(messageIdData);
             }
             var res = Serializer.Serialize(ackCmd.ToBaseCommand());
-            return res.ToByteArray();
+            return res.ToArray();
         }
         public static byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, long[] Sets)> entries)
         {
             var ackCmd = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = CommandAck.AckType.Individual };
 
-            int entriesCount = entries.Count;
-            for (int i = 0; i < entriesCount; i++)
+            var entriesCount = entries.Count;
+            for (var i = 0; i < entriesCount; i++)
             {
-                long ledgerId = entries[i].LedgerId;
-                long entryId = entries[i].EntryId;
+                var ledgerId = entries[i].LedgerId;
+                var entryId = entries[i].EntryId;
                 var bitSet = entries[i].Sets;
                 var messageIdData = new MessageIdData { ledgerId = (ulong)ledgerId, entryId = (ulong)entryId };
                 if (bitSet != null)
@@ -597,7 +597,7 @@ namespace SharpPulsar.Protocol
                 ackCmd.MessageIds.Add(messageIdData);
             }
             var res = Serializer.Serialize(ackCmd.ToBaseCommand());
-            return res.ToByteArray();
+            return res.ToArray();
         }
 
 		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
@@ -627,7 +627,7 @@ namespace SharpPulsar.Protocol
 			{
 				ack.TxnidLeastBits = (ulong)txnIdLeastBits;
 			}
-			foreach (KeyValuePair<string, long> e in properties.ToList())
+			foreach (var e in properties.ToList())
 			{
 				ack.Properties.Add(new KeyLongValue(){Key = e.Key, Value = (ulong)e.Value});
 			}

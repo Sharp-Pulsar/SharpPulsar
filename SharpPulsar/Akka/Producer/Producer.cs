@@ -28,6 +28,7 @@ using SharpPulsar.Impl.Crypto;
 using IMessage = SharpPulsar.Api.IMessage;
 using SharpPulsar.Batch;
 using SharpPulsar.Stats.Producer;
+using SharpPulsar.Utils;
 using ProducerStatsDisabled = SharpPulsar.Impl.ProducerStatsDisabled;
 
 namespace SharpPulsar.Akka.Producer
@@ -275,9 +276,8 @@ namespace SharpPulsar.Akka.Producer
                 }
                 BecomeReceive();
                 ResendMessages();
-                _batchMessageAndSendCancelable =
-                    Context.System.Scheduler.Advanced.ScheduleOnceCancelable(
-                        TimeSpan.FromMilliseconds(_configuration.BatchingMaxPublishDelayMicros), BatchMessageAndSendJob);
+                if(BatchMessagingEnabled)
+                    _batchMessageAndSendCancelable = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_configuration.BatchingMaxPublishDelayMicros)), BatchMessageAndSendJob);
             });
             PulsarError();
             ReceiveAny(x => Stash.Stash());
@@ -293,8 +293,7 @@ namespace SharpPulsar.Akka.Producer
             BatchMessageAndSend();
             // schedule the next batch message task
             _batchMessageAndSendCancelable =
-                Context.System.Scheduler.Advanced.ScheduleOnceCancelable(
-                    TimeSpan.FromMilliseconds(_configuration.BatchingMaxPublishDelayMicros), BatchMessageAndSendJob);
+                Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_configuration.BatchingMaxPublishDelayMicros)), BatchMessageAndSendJob);
         }
         private void PulsarError()
         {

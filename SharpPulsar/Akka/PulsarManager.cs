@@ -116,6 +116,11 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("FunctionManager").Tell(cmd);
             });
+            Receive<string>(s =>
+            {
+                if(s.Equals("ActorSystem", StringComparison.OrdinalIgnoreCase))
+                    Sender.Tell(Context.System);
+            });
             Receive<NewProducer>(cmd =>
             {
                 var t = Regex.Replace(cmd.ProducerConfiguration.TopicName, @"[^\w\d]", "");
@@ -166,10 +171,6 @@ namespace SharpPulsar.Akka
             return Props.Create(()=> new PulsarManager(conf, state));
         }
 
-        public static ActorSystem GetActorSystem()
-        {
-            return Context.System;
-        }
         public IStash Stash { get; set; }
     }
 }

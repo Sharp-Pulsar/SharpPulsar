@@ -9,7 +9,7 @@ namespace SharpPulsar.Protocol.Extension
 {
     public static class ProtoLizer
     {
-        public static byte[] ToByteArray<T>(this T obj)
+        public static byte[] ToByteArrays<T>(this T obj)
         {
             using var memStream = new MemoryStream();
             Serializer.Serialize(memStream, obj); 

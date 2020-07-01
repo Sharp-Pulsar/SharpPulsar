@@ -127,7 +127,7 @@ namespace SharpPulsar.Akka
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
-            _testObject.ActorSystem = PulsarManager.GetActorSystem();
+            _testObject.ActorSystem = _pulsarManager.Ask<ActorSystem>("ActorSystem").GetAwaiter().GetResult();
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)

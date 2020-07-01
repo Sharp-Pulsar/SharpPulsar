@@ -205,7 +205,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _msgCrypto = null;
             }
-            if (configuration.Properties.Count == 0)
+            if (configuration.Properties == null || configuration.Properties.Count == 0)
             {
                 _metadata = new Dictionary<string, string>();
             }
@@ -1498,8 +1498,10 @@ namespace SharpPulsar.Akka.Consumer
                 else msgid = (MessageId) r.MessageId;
                 if (r.Command == UnAckedCommand.Remove)
                     _unAckedChunkedMessageIdSequenceMap.Remove(msgid);
-                else
+                else if(_unAckedChunkedMessageIdSequenceMap.ContainsKey(msgid))
                     Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(_unAckedChunkedMessageIdSequenceMap[msgid]));
+                else
+                    Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(Array.Empty<MessageId>()));
             });
             Receive<RedeliverUnacknowledgedMessages>(x =>
             {

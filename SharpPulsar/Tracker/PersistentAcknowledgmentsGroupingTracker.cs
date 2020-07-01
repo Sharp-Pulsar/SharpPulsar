@@ -67,7 +67,7 @@ namespace SharpPulsar.Tracker
 		/// This is a set of all the individual acks that the application has issued and that were not already sent to
 		/// broker.
 		/// </summary>
-		private readonly ConcurrentSet<IMessageId> _pendingIndividualAcks;
+		private readonly Queue<IMessageId> _pendingIndividualAcks;
 		private readonly ConcurrentDictionary<IMessageId, BitSet> _pendingIndividualBatchIndexAcks;
 
 		private readonly ICancelable _scheduledTask;
@@ -77,7 +77,7 @@ namespace SharpPulsar.Tracker
             _broker = broker;
 			_consumer = consumer;
             _consumerId = consumerid;
-			_pendingIndividualAcks = new ConcurrentSet<IMessageId>();
+			_pendingIndividualAcks = new Queue<IMessageId>();
 			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
 			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
 			if (_acknowledgementGroupTimeMicros > 0)
@@ -123,11 +123,11 @@ namespace SharpPulsar.Tracker
 		        // Individual ack
 		        if (msgId is BatchMessageId batch)
 		        {
-			        _pendingIndividualAcks.TryAdd(new MessageId(batch.LedgerId, batch.EntryId, batch.PartitionIndex));
+			        _pendingIndividualAcks.Enqueue(new MessageId(batch.LedgerId, batch.EntryId, batch.PartitionIndex));
 		        }
 		        else
 		        {
-			        _pendingIndividualAcks.TryAdd(msgId);
+			        _pendingIndividualAcks.Enqueue(msgId);
 		        }
 		        _pendingIndividualBatchIndexAcks.Remove(msgId, out var bitset);
 		        if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
@@ -235,15 +235,12 @@ namespace SharpPulsar.Tracker
 
 	        // Flush all individual acks
 	        var entriesToAck = new List<(long ledgerId, long entryId, BitSet sets)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
-	        if (!_pendingIndividualAcks.IsEmpty)
+	        if (_pendingIndividualAcks.Count > 0)
 	        {
 				while (true)
                 {
-                    var msgid = _pendingIndividualAcks.FirstOrDefault();
-                    if (msgid == null)
-                    {
+                    if (!_pendingIndividualAcks.TryDequeue(out var msgid))
                         break;
-                    }
                     MessageId msgId;
                     if (msgid is BatchMessageId id)
                     {
