@@ -330,6 +330,7 @@ namespace SharpPulsar.Akka.Producer
         }
         public void Receive()
         {
+            Receive<INeedBroker>(x => { Sender.Tell(_broker); });
             Receive<RegisterSchema>(s =>
             {
                 var requestid = Interlocked.Increment(ref IdGenerators.RequestId);

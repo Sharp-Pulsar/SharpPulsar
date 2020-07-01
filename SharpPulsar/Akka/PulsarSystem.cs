@@ -688,7 +688,7 @@ namespace SharpPulsar.Akka
         public TestObject GeTestObject()
         {
             if (_testObject.Producer == null || _testObject.Consumer == null)
-                throw new Exception("System not ready yet");
+                throw new Exception("System not ready yet or not in Test mode");
             _testObject.ProducerBroker =
                 _testObject.Producer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
             _testObject.ConsumerBroker =

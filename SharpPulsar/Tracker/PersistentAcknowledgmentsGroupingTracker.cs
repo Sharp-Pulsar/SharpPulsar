@@ -80,7 +80,6 @@ namespace SharpPulsar.Tracker
 			_pendingIndividualAcks = new ConcurrentSet<IMessageId>();
 			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
 			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
-			_lastCumulativeAckSet = BitSet.Create();
 			if (_acknowledgementGroupTimeMicros > 0)
             {
                 var interval = ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_acknowledgementGroupTimeMicros);
@@ -178,7 +177,7 @@ namespace SharpPulsar.Tracker
                     if (lastCumlativeAck.CompareTo(msgId) != 0)
                     {
 						_lastCumulativeAck = msgId;
-                        if (!lastBitSet.Equals(bitSet))
+                        if (lastBitSet == null || !lastBitSet.Equals(bitSet))
                         {
                             _lastCumulativeAckSet = bitSet;
                             // Successfully updated the last cumulative ack. Next flush iteration will send this to broker.

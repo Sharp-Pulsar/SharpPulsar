@@ -1427,6 +1427,7 @@ namespace SharpPulsar.Akka.Consumer
 
         private void Active()
         {
+            Receive<INeedBroker>(x => { Sender.Tell(_broker); });
             Receive<Terminated>(_ =>
             {
                 foreach (var c in Context.GetChildren())
