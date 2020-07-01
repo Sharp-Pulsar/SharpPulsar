@@ -35,8 +35,6 @@ namespace SharpPulsar.Akka.Network
         private readonly X509Certificate2Collection _clientCertificates;
         private readonly X509Certificate2? _trustedCertificateAuthority;
         private readonly ClientConfigurationData _clientConfiguration;
-        private readonly bool _verifyCertificateAuthority;
-        private readonly bool _verifyCertificateName;
         private readonly bool _encrypt;
         private readonly string _serviceUrl;
         private string _targetServerName;
@@ -47,8 +45,6 @@ namespace SharpPulsar.Akka.Network
                 _clientCertificates = conf.TlsTrustCerts;
             if(conf.TrustedCertificateAuthority != null)
                 _trustedCertificateAuthority = conf.TrustedCertificateAuthority;
-            _verifyCertificateAuthority = conf.VerifyCertificateAuthority;
-            _verifyCertificateName = conf.VerifyCertificateName;
             _encrypt = conf.UseTls;
             _serviceUrl = conf.ServiceUrl;
             _clientConfiguration = conf;
@@ -164,9 +160,6 @@ namespace SharpPulsar.Akka.Network
 
         private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            if (!_verifyCertificateName)
-                return true;
-
             if (sslPolicyErrors == SslPolicyErrors.None)
             {
                 return true;

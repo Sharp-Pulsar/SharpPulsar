@@ -47,16 +47,6 @@ namespace SharpPulsar.Akka.Network
             _conf.TrustedCertificateAuthority = cert;
             return this;
         }
-        public PulsarClientConfigBuilder VerifyCertAuth(bool verify)
-        {
-            _conf.VerifyCertificateAuthority = verify;
-            return this;
-        }
-        public PulsarClientConfigBuilder VerifyCertName(bool verify)
-        {
-            _conf.VerifyCertificateName = verify;
-            return this;
-        }
 		public PulsarClientConfigBuilder ServiceUrl(string serviceUrl)
 		{
 			if (string.IsNullOrWhiteSpace(serviceUrl))

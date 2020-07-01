@@ -6,10 +6,10 @@ using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utility;
+using SharpPulsar.Utils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -101,7 +101,8 @@ namespace SharpPulsar.Akka.Configuration
 
 			return this;
 		}
-        public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
+        
+		public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
             _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
@@ -150,27 +151,24 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder AckTimeout(long ackTimeout, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ConsumerConfigBuilder AckTimeout(long ackTimeoutMs)
 		{
-			if(ackTimeout != 0 || timeUnit.ToMillis(ackTimeout) < _minAckTimeoutMillis)
-                throw new ArgumentException( "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = timeUnit.ToMillis(ackTimeout);
+			Condition.CheckArgument(ackTimeoutMs == 0 ||  ackTimeoutMs >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
+			_conf.AckTimeoutMillis = ackTimeoutMs;
             return this;
 		}
 
-		public ConsumerConfigBuilder AckTimeoutTickTime(long tickTime, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ConsumerConfigBuilder AckTimeoutTickTime(long tickTimeMs)
 		{
-			if(timeUnit.ToMillis(tickTime) < _minTickTimeMillis)
-                throw new ArgumentException("Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = timeUnit.ToMillis(tickTime);
+            Condition.CheckArgument(tickTimeMs < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
+			_conf.TickDurationMillis = tickTimeMs;
             return this;
 		}
 
-		public ConsumerConfigBuilder NegativeAckRedeliveryDelay(long redeliveryDelay, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
-		{
-			if(redeliveryDelay < 0)
-                throw new ArgumentException("redeliveryDelay needs to be >= 0");
-			_conf.NegativeAckRedeliveryDelayMicros = timeUnit.ToMicros(redeliveryDelay);
+		public ConsumerConfigBuilder NegativeAckRedeliveryDelay(long redeliveryDelayMs)
+        {
+            Condition.CheckArgument(redeliveryDelayMs >= 0, "redeliveryDelay needs to be >= 0");
+            _conf.NegativeAckRedeliveryDelayMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(redeliveryDelayMs);
             return this;
 		}
 
@@ -212,11 +210,10 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder AcknowledgmentGroupTime(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
-		{
-			if(delay < 0)
-                throw new ArgumentException("acknowledgmentGroupTime needs to be >= 0");
-			_conf.AcknowledgementsGroupTimeMicros = unit.ToMicros(delay);
+		public ConsumerConfigBuilder AcknowledgmentGroupTime(long delayMs)
+        {
+            Condition.CheckArgument(delayMs >= 0, "acknowledgmentGroupTime needs to be >= 0");
+            _conf.AcknowledgementsGroupTimeMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(delayMs);
             return this;
 		}
 

@@ -49,9 +49,7 @@ namespace SharpPulsar.Impl.Conf
 		public long StatsIntervalSeconds { get; set; } = 60;
 		public int ConnectionsPerBroker { get; set; } = 1;
 		public X509Certificate2 TrustedCertificateAuthority { get; set; }
-        public bool VerifyCertificateAuthority { get; set; } = false;
-        public bool VerifyCertificateName { get; set; } = false;
-
+		
 		public bool TlsHostnameVerificationEnable { get; set; } = false;
 		public int ConcurrentLookupRequest { get; set; } = 5000;
 		public int MaxLookupRequest { get; set; } = 50000;
