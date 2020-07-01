@@ -23,72 +23,48 @@ namespace SharpPulsar.Batch
 	
 	public class BatchMessageAcker
 	{
-
-		internal static BatchMessageAcker NewAcker(int batchSize)
+        private BatchMessageAcker()
+        {
+            _bitSet = new BatchBitSet();
+            BatchSize = 0;
+        }
+		public static BatchMessageAcker NewAcker(int batchSize)
 		{
-			var bitSet = new BitArray(batchSize);
-			bitSet.Set(batchSize, true);
+			var bitSet = new BatchBitSet(batchSize);
+			bitSet.Set(0, batchSize);
 			return new BatchMessageAcker(bitSet, batchSize);
 		}
 
 		// bitset shared across messages in the same batch.
-		private int _batchSize;
-		private readonly BitArray _bitSet;
+        private readonly BatchBitSet _bitSet;
 
-        public BatchMessageAcker(BitArray bitSet, int batchSize)
+        public BatchMessageAcker(BatchBitSet bitSet, int batchSize)
 		{
 			_bitSet = bitSet;
-			_batchSize = batchSize;
+			BatchSize = batchSize;
 		}
 
-		public virtual BitArray BitSet => _bitSet;
+		public virtual BatchBitSet BitSet => _bitSet;
 
-        public virtual int BatchSize
-		{
-			get
-			{
-				lock (this)
-				{
-					return _batchSize;
-				}
-			}
-		}
+        public virtual int BatchSize { get; }
 
-		public virtual bool AckIndividual(int batchIndex)
+        public virtual bool AckIndividual(int batchIndex)
 		{
-			lock (this)
-			{
-				_bitSet.Set(batchIndex, false);
-				return _bitSet.Get(batchIndex);
-			}
+            _bitSet.Clear(batchIndex);
+            return _bitSet.IsEmpty();
 		}
 
 		public virtual bool AckCumulative(int batchIndex)
 		{
-			lock (this)
-			{
-				// +1 since to argument is exclusive
-				//ORIGINAL FROM JAVA
-				//bitSet.Clear(0, BatchIndex + 1);
-				//return bitSet.Empty;
-                _bitSet.Set(batchIndex + 1, false);
-                return _bitSet.Get(batchIndex);
-			}
+            // +1 since to argument is exclusive
+			_bitSet.Clear(0, batchIndex + 1);
+            return _bitSet.IsEmpty();
 		}
 
 		// debug purpose
-		public virtual int OutstandingAcks
-		{
-			get
-			{
-				lock (this)
-				{
-					return _bitSet.Count;
-				}
-			}
-		}
+		public virtual int OutstandingAcks => _bitSet.Cardinality();
 
-		public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
+        public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
     }
 
 }

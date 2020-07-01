@@ -17,14 +17,17 @@
 /// under the License.
 /// </summary>
 
+using System;
+using System.Text.Json;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
 using Xunit;
 
-namespace SharpPulsar.Test.Impl
+namespace SharpPulsar.Test.Batch
 {
-public class BatchMessageIdTest
+    public class BatchMessageIdTest
 	{
+
 		[Fact]
 		public void CompareToTest()
 		{
@@ -35,8 +38,9 @@ public class BatchMessageIdTest
 			Assert.Equal(1, batchMsgId2.CompareTo(batchMsgId1));
 			Assert.Equal(0, batchMsgId2.CompareTo(batchMsgId2));
 		}
+
 		[Fact]
-		public virtual void HashCodeTest()
+		public void HashCodeTest()
 		{
 			var batchMsgId1 = new BatchMessageId(0, 0, 0, 0);
 			var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
@@ -44,8 +48,9 @@ public class BatchMessageIdTest
 			Assert.Equal(batchMsgId1.GetHashCode(), batchMsgId1.GetHashCode());
 			Assert.True(batchMsgId1.GetHashCode() != batchMsgId2.GetHashCode());
 		}
+
 		[Fact]
-		public virtual void EqualsTest()
+		public void EqualsTest()
 		{
 			var batchMsgId1 = new BatchMessageId(0, 0, 0, 0);
 			var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
@@ -54,18 +59,49 @@ public class BatchMessageIdTest
 			var msgId = new MessageId(0, 0, 0);
 
 			Assert.Equal(batchMsgId1, batchMsgId1);
-			Assert.NotEqual(batchMsgId1, batchMsgId2);
-			Assert.NotEqual(batchMsgId1, batchMsgId3);
-			Assert.NotEqual(batchMsgId1, batchMsgId4);
-			Assert.NotEqual(batchMsgId1, msgId);
+			Assert.False(batchMsgId1.Equals(batchMsgId2));
+			Assert.False(batchMsgId1.Equals(batchMsgId3));
+			Assert.False(batchMsgId1.Equals(batchMsgId4));
+			Assert.False(batchMsgId1.Equals(msgId));
 
 			Assert.Equal(msgId, msgId);
-			Assert.NotEqual(msgId, batchMsgId1);
-			Assert.NotEqual(msgId, batchMsgId2);
-			Assert.NotEqual(msgId, batchMsgId3);
+			Assert.False(msgId.Equals(batchMsgId1));
+			Assert.False(msgId.Equals(batchMsgId2));
+			Assert.False(msgId.Equals(batchMsgId3));
 			Assert.Equal(msgId, batchMsgId4);
 
-			Assert.Equal(msgId, batchMsgId4);
+			Assert.Equal(batchMsgId4, msgId);
+		}
+		[Fact]
+		public void DeserializationTest()
+		{
+			// initialize BitSet with null
+			var ackerDisabled = new BatchMessageAcker(null, 0);
+			var batchMsgId = new BatchMessageId(0, 0, 0, 0, 0, ackerDisabled);
+
+			try
+			{
+				var d = JsonSerializer.Serialize(batchMsgId, new JsonSerializerOptions{IgnoreNullValues = false});
+				//Assert.fail("Shouldn't be deserialized");
+			}
+			catch (Exception e)
+			{
+				// expected
+                Assert.False(false);
+            }
+
+			// use the default BatchMessageAckerDisabled
+			var batchMsgIdToDeserialize = new BatchMessageId(0, 0, 0, 0);
+
+			try
+			{
+                var d = JsonSerializer.Serialize(batchMsgIdToDeserialize, new JsonSerializerOptions { IgnoreNullValues = false });
+
+			}
+			catch (Exception ex)
+			{
+                Assert.False(false);
+			}
 		}
 
 	}

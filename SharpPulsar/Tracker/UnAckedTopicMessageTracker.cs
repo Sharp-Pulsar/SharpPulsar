@@ -36,12 +36,12 @@ namespace SharpPulsar.Tracker
 		public virtual int RemoveTopicMessages(string topicName)
 		{
             var removed = 0;
-            var keys = _messageIdPartitionMap.Keys;
+            var keys = MessageIdPartitionMap.Keys;
             foreach (var key in keys)
             {
                 if (key is TopicMessageId impl && impl.TopicPartitionName.Contains(topicName))
                 {
-                    var exist = _messageIdPartitionMap[impl];
+                    var exist = MessageIdPartitionMap[impl];
                     exist?.Remove(impl);
                     keys.Remove(key);
                     removed++;

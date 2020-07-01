@@ -16,24 +16,35 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Impl
+
+using SharpPulsar.Batch;
+using Xunit;
+
+namespace SharpPulsar.Test.Batch
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-/// <summary>
-	/// Unit test of <seealso cref="TopicMetadataImpl"/>.
-	/// </summary>
-	public class TopicMetadataImplTest
-	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNumPartitions()
-		public virtual void TestNumPartitions()
-		{
-			TopicMetadataImpl Metadata = new TopicMetadataImpl(1234);
-			assertEquals(1234, Metadata.numPartitions());
-		}
-
-	}
+    public class BatchMessageAckerDisabledTest
+    {
+        [Fact]
+        public void TestAckIndividual()
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                Assert.True(BatchMessageAckerDisabled.Instance.AckIndividual(i));
+            }
+        }
+        [Fact]
+        public void TestAckCumulative()
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                Assert.True(BatchMessageAckerDisabled.Instance.AckCumulative(i));
+            }
+        }
+        [Fact]
+        public void TestGetOutstandingAcks()
+        {
+            Assert.Equal(0, BatchMessageAckerDisabled.Instance.OutstandingAcks);
+        }
+    }
 
 }

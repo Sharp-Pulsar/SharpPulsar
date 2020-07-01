@@ -26,14 +26,12 @@ using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
-using SharpPulsar.Utility;
-
 namespace SharpPulsar.Tracker
 {
     public class UnAckedMessageTracker
     {
-        internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> _messageIdPartitionMap;
-        private readonly List<HashSet<IMessageId>> _timePartitions;
+        internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
+        private readonly Queue<HashSet<IMessageId>> _timePartitions;
         private readonly ILoggingAdapter _log;
         private readonly ActorSystem _system;
         private ICancelable _timeout;
@@ -81,7 +79,7 @@ namespace SharpPulsar.Tracker
         {
             _system = null;
             _timePartitions = null;
-            _messageIdPartitionMap = null;
+            MessageIdPartitionMap = null;
             _ackTimeoutMillis = 0;
             _tickDurationInMs = 0;
         }
@@ -100,13 +98,13 @@ namespace SharpPulsar.Tracker
             _ackTimeoutMillis = ackTimeoutMillis;
             _tickDurationInMs = tickDurationInMs;
             _system = system;
-            _messageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
-            _timePartitions = new List<HashSet<IMessageId>>();
+            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
+            _timePartitions = new Queue<HashSet<IMessageId>>();
 
             var blankPartitions = (int) Math.Ceiling((double) _ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
-                _timePartitions.Add(new HashSet<IMessageId>(16));
+                _timePartitions.Enqueue(new HashSet<IMessageId>(16));
             }
 
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
@@ -126,12 +124,12 @@ namespace SharpPulsar.Tracker
                     {
                         AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds, _consumer);
                         messageIds.Add(messageId);
-                        _messageIdPartitionMap.Remove(messageId, out var m);
+                        MessageIdPartitionMap.Remove(messageId, out var m);
                     });
                 }
 
                 headPartition?.Clear();
-                _timePartitions.Add(headPartition);
+                _timePartitions.Enqueue(headPartition);
             }
             finally
             {
@@ -165,18 +163,18 @@ namespace SharpPulsar.Tracker
 
         public virtual void Clear()
         {
-            _messageIdPartitionMap.Clear();
+            MessageIdPartitionMap.Clear();
             foreach (var t in _timePartitions)
             {
                 t.Clear();
             }
         }
 
-        public virtual bool Add(IMessageId messageId)
+        public virtual  bool Add(IMessageId messageId)
         {
             var partition = _timePartitions.LastOrDefault();
-            var previousPartition = _messageIdPartitionMap.GetOrAdd(messageId, p => partition);
-            if (previousPartition == null)
+            var previousPartition = MessageIdPartitionMap.GetOrAdd(messageId, p => partition);
+            if (previousPartition?.Count == 0)
             {
                 return partition.Add(messageId);
             }
@@ -184,12 +182,12 @@ namespace SharpPulsar.Tracker
             return false;
         }
 
-        public virtual bool Empty => _messageIdPartitionMap.IsEmpty;
+        public virtual bool Empty => MessageIdPartitionMap.IsEmpty;
 
         public virtual bool Remove(IMessageId messageId)
         {
             var removed = false;
-            _messageIdPartitionMap.Remove(messageId, out var exist);
+            MessageIdPartitionMap.Remove(messageId, out var exist);
             if (exist != null)
             {
                 removed = exist.Remove(messageId);
@@ -200,21 +198,21 @@ namespace SharpPulsar.Tracker
 
         public virtual long Size()
         {
-            return _messageIdPartitionMap.Count;
+            return MessageIdPartitionMap.Count;
         }
 
         public virtual int RemoveMessagesTill(IMessageId msgId)
         {
             var removed = 0;
-            var iterator = _messageIdPartitionMap.Keys;
+            var iterator = MessageIdPartitionMap.Keys;
             foreach (var i in iterator)
             {
                 var messageId = i;
                 if (messageId.CompareTo(msgId) <= 0)
                 {
-                    var exist = _messageIdPartitionMap[messageId];
+                    var exist = MessageIdPartitionMap[messageId];
                     exist?.Remove(messageId);
-                    _messageIdPartitionMap.Remove(i, out var remove);
+                    MessageIdPartitionMap.Remove(i, out var remove);
                     removed++;
                 }
             }
@@ -222,7 +220,8 @@ namespace SharpPulsar.Tracker
             return removed;
         }
 
-        private void Stop()
+        public Queue<HashSet<IMessageId>> TimePartitions => _timePartitions;
+        public void Stop()
         {
             if (_timeout != null && !_timeout.IsCancellationRequested)
             {

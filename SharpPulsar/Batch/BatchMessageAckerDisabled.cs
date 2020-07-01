@@ -24,24 +24,15 @@ namespace SharpPulsar.Batch
 	public class BatchMessageAckerDisabled : BatchMessageAcker
 	{
 
-		internal static readonly BatchMessageAckerDisabled Instance = new BatchMessageAckerDisabled();
+		public static readonly BatchMessageAckerDisabled Instance = new BatchMessageAckerDisabled();
 
-		private BatchMessageAckerDisabled() : base(new BitArray(0), 0)
+		private BatchMessageAckerDisabled() : base(new BatchBitSet(0), 0)
 		{
 		}
 
-		public override int BatchSize
-		{
-			get
-			{
-				lock (this)
-				{
-					return 0;
-				}
-			}
-		}
+		public override int BatchSize => 0;
 
-		public override bool AckIndividual(int batchIndex)
+        public override bool AckIndividual(int batchIndex)
 		{
 			return true;
 		}
