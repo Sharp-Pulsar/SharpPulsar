@@ -59,6 +59,9 @@ namespace SharpPulsar.Impl.Conf
         public long ExpireTimeOfIncompleteChunkedMessageMillis { get; set; }
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
+        public bool BatchConsume { get; set; } = false;
+		public long BatchConsumeTimeout { get; set; } = 30_000; //30 seconds
+
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;

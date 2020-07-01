@@ -890,6 +890,7 @@ namespace SharpPulsar.Akka.Consumer
             }
             _pendingChunckedMessageCount--;
         }
+        //This might not be feasible since we are dealing with push and not pull
         private Messages InternalBatchReceive()
         {
             var result = new Messages(_batchReceivePolicy.MaxNumMessages, _batchReceivePolicy.MaxNumBytes);

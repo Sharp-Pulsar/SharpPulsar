@@ -77,6 +77,16 @@ namespace SharpPulsar.Akka.Configuration
             _conf.AutoAckOldestChunkedMessageOnQueueFull = autoAck;
             return this;
         }
+        private ConsumerConfigBuilder BatchConsume(bool batchConsume)
+        {
+            _conf.BatchConsume = batchConsume;
+            return this;
+        }
+        private ConsumerConfigBuilder BatchConsumeTimeout(long batchConsumeTimeoutMs)
+        {
+            _conf.BatchConsumeTimeout = batchConsumeTimeoutMs;
+            return this;
+        }
 		public ConsumerConfigBuilder SetConsumptionType(ConsumptionType type)
         {
             _conf.ConsumptionType = type;
