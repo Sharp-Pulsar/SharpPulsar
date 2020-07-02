@@ -25,7 +25,8 @@ using Xunit;
 
 namespace SharpPulsar.Test.Batch
 {
-    public class BatchMessageIdTest
+    [Collection("BatchMessageIdTest")]
+	public class BatchMessageIdTest
 	{
 
 		[Fact]

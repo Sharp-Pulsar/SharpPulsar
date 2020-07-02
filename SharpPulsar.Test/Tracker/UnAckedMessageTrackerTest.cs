@@ -41,6 +41,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Tracker
 {
+    [Collection("UnAckedMessageTrackerTest")]
     public class UnAckedMessageTrackerTest
 	{
         private readonly PulsarSystem _pulsarSystem;
