@@ -39,9 +39,6 @@ namespace SharpPulsar.Test.Api
 {
     public class AuthenticatedProducerConsumerTest : ProducerConsumerBase
 	{
-		private readonly string _tlsTrustCertFilePath = "./resources/authentication/tls/cacert.pem";
-		private readonly string _tlsServerCertFilePath = ".resources/authentication/tls/broker-cert.pem";
-		private readonly string _tlsServerKeyFilePath = "./resources/authentication/tls/broker-key.pem";
 		private readonly string _tlsClientCertFilePath = "./resources/authentication/tls/client-cert.pem";
 		private readonly string _tlsClientKeyFilePath = "./resources/authentication/tls/client-key.pem";
 
