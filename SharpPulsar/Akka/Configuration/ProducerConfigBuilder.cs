@@ -6,6 +6,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Utils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -78,6 +79,22 @@ namespace SharpPulsar.Akka.Configuration
 		public ProducerConfigBuilder ProducerName(string producerName)
 		{
 			_conf.ProducerName = producerName;
+            return this;
+		}
+		public ProducerConfigBuilder EnableBatching(bool enableBatching)
+		{
+			_conf.BatchingEnabled = enableBatching;
+            return this;
+		}
+		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchingMaxPublishDelayMs)
+        {
+            _conf.BatchingMaxPublishDelayMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(batchingMaxPublishDelayMs);
+            return this;
+		}
+		
+		public ProducerConfigBuilder BatchingMaxMessages(int batchingMaxMessages)
+        {
+            _conf.BatchingMaxMessages = batchingMaxMessages;
             return this;
 		}
 

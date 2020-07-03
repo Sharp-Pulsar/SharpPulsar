@@ -27,6 +27,51 @@ namespace PulsarAdmin.Models
         /// Initializes a new instance of the ClusterData class.
         /// </summary>
         /// <param name="serviceUrl">The HTTP rest service URL (for admin
+        /// operations)
+        /// </param>
+        public ClusterData(string serviceUrl)
+        {
+            ServiceUrl = serviceUrl;
+            CustomInit();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the ClusterData class.
+        /// </summary>
+        /// <param name="serviceUrl">The HTTP rest service URL (for admin
+        /// operations)</param>
+        /// <param name="serviceUrlTls">The HTTPS rest service URL (for admin
+        /// operations)</param>
+        public ClusterData(string serviceUrl, string serviceUrlTls)
+        {
+            ServiceUrl = serviceUrl;
+            ServiceUrlTls = serviceUrlTls;
+            CustomInit();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the ClusterData class.
+        /// </summary>
+        /// <param name="serviceUrl">The HTTP rest service URL (for admin
+        /// operations)</param>
+        /// <param name="serviceUrlTls">The HTTPS rest service URL (for admin
+        /// operations)</param>
+        /// <param name="brokerServiceUrl">The broker service url (for produce
+        /// and consume operations)</param>
+        /// <param name="brokerServiceUrlTls">The secured broker service url
+        /// (for produce and consume operations)</param>
+        public ClusterData(string serviceUrl, string serviceUrlTls, string brokerServiceUrl, string brokerServiceUrlTls)
+        {
+            ServiceUrl = serviceUrl;
+            ServiceUrlTls = serviceUrlTls;
+            BrokerServiceUrl = brokerServiceUrl;
+            BrokerServiceUrlTls = brokerServiceUrlTls;
+            CustomInit();
+        }
+        /// <summary>
+        /// Initializes a new instance of the ClusterData class.
+        /// </summary>
+        /// <param name="serviceUrl">The HTTP rest service URL (for admin
         /// operations)</param>
         /// <param name="serviceUrlTls">The HTTPS rest service URL (for admin
         /// operations)</param>

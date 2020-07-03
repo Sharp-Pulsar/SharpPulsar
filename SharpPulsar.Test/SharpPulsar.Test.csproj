@@ -21,18 +21,12 @@
     <Compile Remove="Impl\BatchMessageAckerTest.cs" />
     <Compile Remove="Impl\BatchMessageIdTest.cs" />
     <Compile Remove="Impl\BuildersTest.cs" />
-    <Compile Remove="Impl\conf\ConfigurationDataUtilsTest.cs" />
     <Compile Remove="Impl\ConnectionTimeoutTest.cs" />
     <Compile Remove="Impl\HashTest.cs" />
     <Compile Remove="Impl\MessageIdCompareToTest.cs" />
     <Compile Remove="Impl\ProducerStatsRecorderImplTest.cs" />
     <Compile Remove="Impl\PulsarServiceNameResolverTest.cs" />
     <Compile Remove="Impl\RoundRobinPartitionMessageRouterImplTest.cs" />
-    <Compile Remove="Impl\schema\SchemaBuilderTest.cs" />
-    <Compile Remove="Impl\schema\SchemaInfoTest.cs" />
-    <Compile Remove="Impl\schema\StringSchemaTest.cs" />
-    <Compile Remove="Impl\schema\SupportVersioningAvroSchemaTest.cs" />
-    <Compile Remove="Impl\schema\SupportVersioningKeyValueSchemaTest.cs" />
     <Compile Remove="Impl\SinglePartitionMessageRouterImplTest.cs" />
     <Compile Remove="Impl\TopicMetadataImplTest.cs" />
     <Compile Remove="Impl\TypedMessageBuilderImplTest.cs" />
@@ -54,10 +48,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Impl\conf\" />
   </ItemGroup>
 
   <ItemGroup>

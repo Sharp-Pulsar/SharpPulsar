@@ -286,7 +286,7 @@ namespace SharpPulsar.Akka.Consumer
             var cmd = Commands.NewCloseConsumer(_consumerid, requestid);
             var payload = new Payload(cmd, requestid, "CloseConsumer");
             _broker.Tell(payload);
-            _batchReceiveTimeout.Cancel();
+            _batchReceiveTimeout?.Cancel();
         }
 
         private void RedeliverUnacknowledgedMessages()
@@ -1367,7 +1367,13 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(request, requestId, "GetSchema");
             _broker.Tell(payload);
         }
-        
+        private void SendGetSchemaCommand(string topic, sbyte[] version)
+        {
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewGetSchema(requestId, topic, BytesSchemaVersion.Of(version));
+            var payload = new Payload(request, requestId, "GetSchema");
+            var schema = _broker.Ask<SchemaResponse>(payload).GetAwaiter().GetResult();
+        }
         public void NewSubscribe()
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);

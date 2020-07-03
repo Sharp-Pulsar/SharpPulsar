@@ -43,6 +43,10 @@ namespace SharpPulsar.Impl.Auth
         private readonly Func<MemoryStream> _certStreamProvider;
         private readonly Func<MemoryStream> _keyStreamProvider;
 
+        public AuthenticationTls()
+        {
+                
+        }
         public AuthenticationTls(string certFilePath, string keyFilePath)
 		{
 			_certFilePath = certFilePath;

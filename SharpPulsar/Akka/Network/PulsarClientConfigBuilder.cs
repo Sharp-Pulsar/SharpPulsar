@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,7 +41,14 @@ namespace SharpPulsar.Akka.Network
             _conf.TlsTrustCerts = certs;
             return this;
         }
-        public PulsarClientConfigBuilder AddTrustedAuthCert(X509Certificate2 cert)
+
+        public PulsarClientConfigBuilder AllowTlsInsecureConnection(bool allowTlsInsecureConnection)
+        {
+            _conf.TlsAllowInsecureConnection = allowTlsInsecureConnection;
+            return this;
+        }
+
+		public PulsarClientConfigBuilder AddTrustedAuthCert(X509Certificate2 cert)
         {
             _conf.TrustedCertificateAuthority = cert;
             return this;
@@ -127,9 +133,9 @@ namespace SharpPulsar.Akka.Network
             return this;
 		}
 
-		public PulsarClientConfigBuilder StatsInterval(long statsInterval, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public PulsarClientConfigBuilder StatsInterval(long statsIntervalSeconds)
 		{
-			_conf.StatsIntervalSeconds = unit.ToSeconds(statsInterval);
+			_conf.StatsIntervalSeconds = statsIntervalSeconds;
             return this;
 		}
 

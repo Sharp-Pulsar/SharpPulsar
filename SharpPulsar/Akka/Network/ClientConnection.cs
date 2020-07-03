@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
@@ -11,13 +10,10 @@ using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using BeetleX;
-using BeetleX.Buffers;
 using BeetleX.Clients;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -124,15 +120,14 @@ namespace SharpPulsar.Akka.Network
             {
                 _log.Error(ex.Message);
                 Thread.Sleep(5000);
-                Connect();
+                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
             }
         }
 
         private void Disconnected(IClient client)
         {
             _log.Info($"Disconnected from the server. Reconnecting in 10 seconds");
-            Thread.Sleep(10000);
-            Connect();
+            Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), Connect);
         }
         private void Connected(IClient client)
         {

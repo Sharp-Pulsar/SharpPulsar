@@ -297,7 +297,7 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Func<IMessage, T> customHander = null)
+        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Func<ConsumedMessage, T> customHander = null)
         {
             if (customHander == null)
             {
@@ -362,7 +362,7 @@ namespace SharpPulsar.Akka
                                 m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
                             }
                         }
-                        yield return customHander(m.Message);
+                        yield return customHander(m);
                     }
                 }
                 else if(takeCount > 0)
@@ -383,7 +383,7 @@ namespace SharpPulsar.Akka
                                     m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
                                 }
                             }
-                            yield return customHander(m.Message);
+                            yield return customHander(m);
                             takes++;
                         }
                     }
@@ -652,6 +652,10 @@ namespace SharpPulsar.Akka
         public void Send(Send send, IActorRef producer)
         {
            producer.Tell(send);
+        }
+        public void PulsarConsumer(AckMessages ackMessages, IActorRef consumer)
+        {
+           consumer.Tell(ackMessages);
         }
         public void BulkSend(BulkSend send, IActorRef producer)
         {
