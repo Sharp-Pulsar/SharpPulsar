@@ -1,7 +1,9 @@
 ﻿using System;
+using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl.Conf;
@@ -13,10 +15,30 @@ namespace SharpPulsar.Test.TestCommon
     public class Common
     {
         private readonly ITestOutputHelper _output;
+
         public Common(ITestOutputHelper output)
         {
             _output = output;
         }
+
+        public void GetPulsarSystem(IAuthentication auth, int operationTime = 0, bool useProxy = false)
+        {
+            var builder = new PulsarClientConfigBuilder()
+                .ServiceUrl("pulsar://localhost:6650")
+                .ConnectionsPerBroker(1)
+                .UseProxy(useProxy)
+                .StatsInterval(0)
+                .Authentication(auth)
+                .AllowTlsInsecureConnection(true)
+                .EnableTls(true);
+            if (operationTime > 0)
+                builder.OperationTimeout(operationTime);
+
+            var clientConfig = builder.ClientConfigurationData;
+
+            PulsarSystem = PulsarSystem.GetInstance(clientConfig);
+        }
+
         public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5)
         {
             var producerListener = new DefaultProducerListener((o) =>
@@ -63,5 +85,8 @@ namespace SharpPulsar.Test.TestCommon
                 .ConsumerConfigurationData;
             return new CreateConsumer(schema, consumerConfig, ConsumerType.Single);
         }
+
+        public PulsarSystem PulsarSystem { get; set; }
+
     }
 }

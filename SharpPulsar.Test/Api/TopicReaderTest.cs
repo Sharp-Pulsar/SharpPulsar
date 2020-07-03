@@ -33,7 +33,7 @@ public class TopicReaderTest : ProducerConsumerBase
 		public override void setup()
 		{
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 

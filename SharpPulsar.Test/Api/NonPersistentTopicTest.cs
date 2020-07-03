@@ -55,7 +55,7 @@ public class NonPersistentTopicTest : ProducerConsumerBase
 		public override void setup()
 		{
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 

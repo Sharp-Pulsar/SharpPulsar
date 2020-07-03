@@ -32,7 +32,7 @@ namespace SharpPulsar.Test.Impl
 		{
 			conf.AcknowledgmentAtBatchIndexLevelEnabled = true;
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 

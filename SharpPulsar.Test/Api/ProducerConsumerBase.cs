@@ -1,5 +1,10 @@
 ﻿using System.Collections.Generic;
+using PulsarAdmin.Models;
+using SharpPulsar.Akka;
+using SharpPulsar.Akka.Admin;
+using SharpPulsar.Akka.InternalCommands;
 using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,17 +28,22 @@ namespace SharpPulsar.Test.Api
 {
     public abstract class ProducerConsumerBase 
 	{
-		public virtual void producerBaseSetup()
+		public void ProducerBaseSetup(PulsarSystem system, ITestOutputHelper output)
 		{
-			admin.clusters().createCluster("test", new ClusterData(org.apache.pulsar.WebServiceAddress));
-			admin.tenants().createTenant("my-property", new TenantInfo(Sets.newHashSet("appid1", "appid2"), Sets.newHashSet("test")));
-			admin.namespaces().createNamespace("my-property/my-ns");
-			admin.namespaces().setNamespaceReplicationClusters("my-property/my-ns", Sets.newHashSet("test"));
 
-			// so that clients can test short names
-			admin.tenants().createTenant("public", new TenantInfo(Sets.newHashSet("appid1", "appid2"), Sets.newHashSet("test")));
-			admin.namespaces().createNamespace("public/default");
-			admin.namespaces().setNamespaceReplicationClusters("public/default", Sets.newHashSet("test"));
+            system.PulsarAdmin(new Admin(AdminCommands.CreateCluster, new object[] { "test", new ClusterData("http://localhost:8080") },
+                (f) => { }, (e) => output.WriteLine(e.ToString()), "http://localhost:8080", l => { output.WriteLine(l); }));
+
+
+            system.PulsarAdmin(new Admin(AdminCommands.CreateTenant, new object[] { "my-property", new TenantInfo(new List<string> { "appid1", "appid2" }, new List<string> { "test" }) },
+                (f) => { }, (e) => output.WriteLine(e.ToString()), "http://localhost:8080", l => { output.WriteLine(l); }));
+
+            system.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] { "my-property", "my-ns", new Policies(replicationClusters: new List<string> { "test" }), },
+                (f) => { }, (e) => output.WriteLine(e.ToString()), "http://localhost:8080", l => { output.WriteLine(l); }));
+			
+            system.PulsarAdmin(new Admin(AdminCommands.SetNamespaceReplicationClusters, new object[] { "my-property", "my-ns", new List<string> { "test" } },
+                (f) => { }, (e) => output.WriteLine(e.ToString()), "http://localhost:8080", l => { output.WriteLine(l); }));
+
 		}
 
 		public void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)

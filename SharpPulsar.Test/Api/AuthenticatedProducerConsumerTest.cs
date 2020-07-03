@@ -4,13 +4,10 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using PulsarAdmin.Models;
-using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
@@ -42,8 +39,7 @@ namespace SharpPulsar.Test.Api
 		private readonly string _tlsClientCertFilePath = "./resources/authentication/tls/client-cert.pem";
 		private readonly string _tlsClientKeyFilePath = "./resources/authentication/tls/client-key.pem";
 
-        private PulsarSystem _pulsarSystem;
-        private TestCommon.Common _common;
+        private readonly TestCommon.Common _common;
         private readonly ITestOutputHelper _output;
 
         public AuthenticatedProducerConsumerTest(ITestOutputHelper output)
@@ -52,43 +48,25 @@ namespace SharpPulsar.Test.Api
 			_common = new TestCommon.Common(output);
         }
 
-        private void GetPulsarSystem(IAuthentication auth, int operationTime = 0, bool useProxy = false)
-		{
-            var builder = new PulsarClientConfigBuilder()
-                .ServiceUrl("pulsar://localhost:6650")
-                .ConnectionsPerBroker(1)
-                .UseProxy(useProxy)
-                .StatsInterval(0)
-                .Authentication(auth)
-                .AllowTlsInsecureConnection(true)
-                .EnableTls(true);
-            if (operationTime > 0)
-                builder.OperationTimeout(operationTime);
-			
-            var clientConfig = builder.ClientConfigurationData;
-
-            _pulsarSystem =  PulsarSystem.GetInstance(clientConfig);
-		}
-
 
 		private void TestSyncProducerAndConsumer(IAuthentication auth, int batchMessageDelayMs, int operatioTimeout = 0)
         { 
-			if(_pulsarSystem == null)
-                GetPulsarSystem(auth, operatioTimeout);
+			if(_common.PulsarSystem == null)
+                _common.GetPulsarSystem(auth, operatioTimeout);
 
-            var consumer = _pulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "", "my-subscriber-name", forceTopic:true));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "", "my-subscriber-name", forceTopic:true));
 
-            var producer = _pulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), consumer.Topic, "TestSyncProducerAndConsumer", batchMessageDelayMs));
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), consumer.Topic, "TestSyncProducerAndConsumer", batchMessageDelayMs));
 
 			for (int i = 0; i < 10; i++)
 			{
 				var message = "my-message-" + i;
-				_pulsarSystem.Send(new Send(Encoding.UTF8.GetBytes(message), producer.Topic, ImmutableDictionary<string, object>.Empty), producer.Producer);
+				_common.PulsarSystem.Send(new Send(Encoding.UTF8.GetBytes(message), producer.Topic, ImmutableDictionary<string, object>.Empty), producer.Producer);
             }
 
 			ConsumedMessage msg = null;
 			ISet<string> messageSet = new HashSet<string>();
-            var messages =  _pulsarSystem.Messages(false, customHander: (m) =>
+            var messages =  _common.PulsarSystem.Messages(false, customHander: (m) =>
             {
                 msg = m;
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
@@ -105,9 +83,9 @@ namespace SharpPulsar.Test.Api
 
             var msgId = (MessageId) msg.Message.MessageId;
 			// Acknowledge the consumption of all messages at once
-            _pulsarSystem.PulsarConsumer(new AckMessages(msgId, msg.AckSets), consumer.Consumer);
-			_pulsarSystem.Stop();
-            _pulsarSystem = null;
+            _common.PulsarSystem.PulsarConsumer(new AckMessages(msgId, msg.AckSets), consumer.Consumer);
+			_common.PulsarSystem.Stop();
+            _common.PulsarSystem = null;
         }
 		[Fact]
 		public void TestTlsSyncProducerAndConsumer()
@@ -120,15 +98,15 @@ namespace SharpPulsar.Test.Api
 			IAuthentication authTls = new AuthenticationTls();
 			authTls.Configure(JsonSerializer.Serialize(authParams));
 
-            GetPulsarSystem(authTls);
+            _common.GetPulsarSystem(authTls);
 
-			_pulsarSystem.PulsarAdmin(new Admin( AdminCommands.CreateCluster, new object[]{"test", new ClusterData("http://localhost:8080")},
+			_common.PulsarSystem.PulsarAdmin(new Admin( AdminCommands.CreateCluster, new object[]{"test", new ClusterData("http://localhost:8080")},
                 (f) => { }, (e)=> _output.WriteLine(e.ToString()), "http://localhost:8080", l=>{_output.WriteLine(l);}));
 
-			_pulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateTenant, new object[] { "my-property",new TenantInfo(new List<string>{ "appid1", "appid2" }, new List<string>{ "test" })},
+			_common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateTenant, new object[] { "my-property",new TenantInfo(new List<string>{ "appid1", "appid2" }, new List<string>{ "test" })},
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
 
-            _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] { "my-property", "my-ns", new Policies(replicationClusters: new List<string>{"test"}),  },
+            _common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] { "my-property", "my-ns", new Policies(replicationClusters: new List<string>{"test"}),  },
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
 			
 			TestSyncProducerAndConsumer(authTls, 5000);
@@ -136,7 +114,8 @@ namespace SharpPulsar.Test.Api
 			_output.WriteLine("-- Exiting 'TestTlsSyncProducerAndConsumer' test --");
 		}
 		
-		public void TestAnonymousSyncProducerAndConsumer(int batchMessageDelayMs)
+        [Fact]
+		public void TestAnonymousSyncProducerAndConsumer()
 		{
 
             _output.WriteLine("-- Starting 'TestAnonymousSyncProducerAndConsumer' test --");
@@ -147,18 +126,18 @@ namespace SharpPulsar.Test.Api
 			IAuthentication authTls = new AuthenticationTls();
 			authTls.Configure(JsonSerializer.Serialize(authParams));
 
-            GetPulsarSystem(authTls, 1000);
+            _common.GetPulsarSystem(authTls, 1000);
 
-			_pulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateCluster, new object[] { "test", new ClusterData("http://localhost:8080", "https://localhost:8080", "http://localhost:6650", "https://localhost:6650") },
+			_common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateCluster, new object[] { "test", new ClusterData("http://localhost:8080", "https://localhost:8080", "http://localhost:6650", "https://localhost:6650") },
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
             
-            _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateTenant, new object[] { "my-property", new TenantInfo(new List<string> { "anonymousUser"}, new List<string> { "test" }) },
+            _common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateTenant, new object[] { "my-property", new TenantInfo(new List<string> { "anonymousUser"}, new List<string> { "test" }) },
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
 
-            _pulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] { "my-property", "my-ns", new Policies(replicationClusters: new List<string> { "test" }), },
+            _common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] { "my-property", "my-ns", new Policies(replicationClusters: new List<string> { "test" }), },
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
 
-			_pulsarSystem.PulsarAdmin(new Admin(AdminCommands.GrantPermissionsOnPersistentTopic, new object[] { "my-property", "my-ns", "my-topic", "anonymousUser", new List<string> { "produce", "functions", "consume" } },
+			_common.PulsarSystem.PulsarAdmin(new Admin(AdminCommands.GrantPermissionsOnPersistentTopic, new object[] { "my-property", "my-ns", "my-topic", "anonymousUser", new List<string> { "produce", "functions", "consume" } },
                 (f) => { }, (e) => _output.WriteLine(e.ToString()), "http://localhost:8080", l => { _output.WriteLine(l); }));
             
 
@@ -166,7 +145,7 @@ namespace SharpPulsar.Test.Api
 			Exception pulsarClientException = null;
 			try
             {
-                _pulsarSystem.PulsarConsumer(_common.CreateConsumer(new AutoConsumeSchema(),
+                _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(new AutoConsumeSchema(),
                     "persistent://my-property/my-ns/other-topic", "fail", "fail-subscriber"));
 			}
 			catch (Exception e)

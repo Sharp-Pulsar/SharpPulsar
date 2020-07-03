@@ -36,7 +36,7 @@ public class PatternTopicsConsumerImplTest : ProducerConsumerBase
 			// set isTcpLookup = true, to use BinaryProtoLookupService to get topics for a pattern.
 			isTcpLookup = true;
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 

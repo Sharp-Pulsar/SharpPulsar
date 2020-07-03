@@ -30,7 +30,7 @@ namespace SharpPulsar.Test.Api
         public override void setup()
         {
             base.internalSetup();
-            base.producerBaseSetup();
+            base.ProducerBaseSetup();
         }
 
         public override void cleanup()

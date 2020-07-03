@@ -26,7 +26,7 @@ namespace SharpPulsar.Test.Api
 		{
 			conf.ManagedLedgerCacheEvictionFrequency = 0.1;
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 		public override void cleanup()

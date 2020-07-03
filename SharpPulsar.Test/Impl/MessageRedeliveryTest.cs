@@ -31,7 +31,7 @@ namespace SharpPulsar.Test.Impl
 		public override void setup()
 		{
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 		}
 
 

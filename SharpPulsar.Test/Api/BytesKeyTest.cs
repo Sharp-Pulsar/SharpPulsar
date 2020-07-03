@@ -1,4 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Text;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Schema;
+using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,43 +30,55 @@ namespace SharpPulsar.Test.Api
 {
     public class BytesKeyTest : ProducerConsumerBase
 	{
-		public override void setup()
-		{
-			base.internalSetup();
-			base.producerBaseSetup();
-		}
+        private readonly ITestOutputHelper _output;
+        private TestCommon.Common _common;
 
-		public override void cleanup()
-		{
-			base.internalCleanup();
-		}
+        public BytesKeyTest(ITestOutputHelper output)
+        {
+            _output = output;
+			_common = new TestCommon.Common(output);
+			_common.GetPulsarSystem(new AuthenticationDisabled());
+            ProducerBaseSetup(_common.PulsarSystem, output);
 
-		private void byteKeysTest(bool batching)
+        }
+
+		private void ByteKeysTest(bool batching)
 		{
 			Random r = new Random(0);
-			Consumer<string> consumer = pulsarClient.newConsumer(Schema_Fields.STRING).topic("persistent://my-property/my-ns/my-topic1").subscriptionName("my-subscriber-name").subscribe();
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "", "my-subscriber-name"));
 
-			Producer<string> producer = pulsarClient.newProducer(Schema_Fields.STRING).enableBatching(batching).batchingMaxPublishDelay(long.MaxValue, TimeUnit.SECONDS).batchingMaxMessages(int.MaxValue).topic("persistent://my-property/my-ns/my-topic1").create();
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic1", "TestSyncProducerAndConsumer", batchMessageDelayMs: batching? long.MaxValue: 0, batchingMaxMessages: batching? int.MaxValue : 0));
 
-			sbyte[] byteKey = new sbyte[1000];
+			byte[] byteKey = new byte[1000];
 			r.NextBytes(byteKey);
-			producer.newMessage().keyBytes(byteKey).value("TestMessage").sendAsync();
-			producer.flush();
+			var config = new Dictionary<string, object>{{ "KeyBytes", byteKey } };
+			var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), consumer.Topic, config.ToImmutableDictionary());
+			_common.PulsarSystem.Send(send, producer.Producer);
 
-			Message<string> m = consumer.receive();
-			Assert.assertEquals(m.Value, "TestMessage");
-			Assert.assertEquals(m.KeyBytes, byteKey);
-			Assert.assertTrue(m.hasBase64EncodedKey());
+            var messages = _common.PulsarSystem.Messages(false, customHander: (m) =>
+            {
+                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
+
+                Assert.Equal(byteKey, (byte[])(object)m.Message.KeyBytes);
+                Assert.True(m.Message.HasBase64EncodedKey());
+				return receivedMessage;
+            });
+            foreach (var message in messages)
+            {
+                _output.WriteLine($"Received message: [{message}]");
+                Assert.Equal("TestMessage", message);
+			}
 		}
 
-		public virtual void testBytesKeyBatch()
+		[Fact]
+		public void TestBytesKeyBatch()
 		{
-			byteKeysTest(true);
+			ByteKeysTest(true);
 		}
-
-		public virtual void testBytesKeyNoBatch()
+		[Fact]
+		public void TestBytesKeyNoBatch()
 		{
-			byteKeysTest(false);
+			ByteKeysTest(false);
 		}
 	}
 

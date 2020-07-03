@@ -48,7 +48,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 		public override void setup()
 		{
 			base.internalSetup();
-			base.producerBaseSetup();
+			base.ProducerBaseSetup();
 			this.conf.SubscriptionKeySharedUseConsistentHashing = true;
 		}
 
