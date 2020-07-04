@@ -657,6 +657,10 @@ namespace SharpPulsar.Akka
         {
            consumer.Tell(ackMessages);
         }
+        public void PulsarConsumer(AckMessage ackMessage, IActorRef consumer)
+        {
+           consumer.Tell(ackMessage);
+        }
         public void BulkSend(BulkSend send, IActorRef producer)
         {
             producer.Tell(send);

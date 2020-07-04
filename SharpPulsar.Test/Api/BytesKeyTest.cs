@@ -39,7 +39,6 @@ namespace SharpPulsar.Test.Api
 			_common = new TestCommon.Common(output);
 			_common.GetPulsarSystem(new AuthenticationDisabled());
             ProducerBaseSetup(_common.PulsarSystem, output);
-
         }
 
 		private void ByteKeysTest(bool batching)
@@ -67,7 +66,8 @@ namespace SharpPulsar.Test.Api
             {
                 _output.WriteLine($"Received message: [{message}]");
                 Assert.Equal("TestMessage", message);
-			}
+                break;
+            }
 		}
 
 		[Fact]

@@ -1,4 +1,17 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Schema;
+using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,140 +35,69 @@ namespace SharpPulsar.Test.Api
 {
 	public class ConsumerRedeliveryTest : ProducerConsumerBase
 	{
-		public override void setup()
-		{
-			conf.ManagedLedgerCacheEvictionFrequency = 0.1;
-			base.internalSetup();
-			base.ProducerBaseSetup();
+        private readonly ITestOutputHelper _output;
+        private readonly TestCommon.Common _common;
+
+        public ConsumerRedeliveryTest(ITestOutputHelper output)
+        {
+            _output = output;
+            _output = output;
+            _common = new TestCommon.Common(output);
+            _common.GetPulsarSystem(new AuthenticationDisabled());
+            ProducerBaseSetup(_common.PulsarSystem, output);
 		}
+		
 
-		public override void cleanup()
-		{
-			base.internalCleanup();
-		}
-
-		/// <summary>
-		/// It verifies that redelivered messages are sorted based on the ledger-ids.
-		/// <pre>
-		/// 1. client publishes 100 messages across 50 ledgers
-		/// 2. broker delivers 100 messages to consumer
-		/// 3. consumer ack every alternative message and doesn't ack 50 messages
-		/// 4. broker sorts replay messages based on ledger and redelivers messages ledger by ledger
-		/// </pre> </summary>
-		/// <exception cref="Exception"> </exception>
-		/// 
-		public virtual void testOrderedRedelivery()
-		{
-			string topic = "persistent://my-property/my-ns/redelivery-" + DateTimeHelper.CurrentUnixTimeMillis();
-
-			conf.ManagedLedgerMaxEntriesPerLedger = 2;
-			conf.ManagedLedgerMinLedgerRolloverTimeMinutes = 0;
-            
-            Producer<sbyte[]> producer = pulsarClient.newProducer().topic(topic).producerName("my-producer-name").create();
-			ConsumerBuilder<sbyte[]> consumerBuilder = pulsarClient.newConsumer().topic(topic).subscriptionName("s1").subscriptionType(SubscriptionType.Shared);
-			ConsumerImpl<sbyte[]> consumer1 = (ConsumerImpl<sbyte[]>) consumerBuilder.subscribe();
-
-			const int totalMsgs = 100;
-
-			for (int i = 0; i < totalMsgs; i++)
-			{
-				string message = "my-message-" + i;
-				producer.send(message.GetBytes());
-			}
-
-
-			int consumedCount = 0;
-			ISet<MessageId> messageIds = Sets.newHashSet();
-			for (int i = 0; i < totalMsgs; i++)
-			{
-				Message<sbyte[]> message = consumer1.receive(5, TimeUnit.SECONDS);
-				if (message != null && (consumedCount % 2) == 0)
-				{
-					consumer1.acknowledge(message);
-				}
-				else
-				{
-					messageIds.Add(message.MessageId);
-				}
-				consumedCount += 1;
-			}
-			assertEquals(totalMsgs, consumedCount);
-
-			// redeliver all unack messages
-			consumer1.redeliverUnacknowledgedMessages(messageIds);
-
-			MessageIdImpl lastMsgId = null;
-			for (int i = 0; i < totalMsgs / 2; i++)
-			{
-				Message<sbyte[]> message = consumer1.receive(5, TimeUnit.SECONDS);
-				MessageIdImpl msgId = (MessageIdImpl) message.MessageId;
-				if (lastMsgId != null)
-				{
-					assertTrue(lastMsgId.LedgerId <= msgId.LedgerId, "lastMsgId: " + lastMsgId + " -- msgId: " + msgId);
-				}
-				lastMsgId = msgId;
-			}
-
-			// close consumer so, this consumer's unack messages will be redelivered to new consumer
-			consumer1.close();
-
-			Consumer<sbyte[]> consumer2 = consumerBuilder.subscribe();
-			lastMsgId = null;
-			for (int i = 0; i < totalMsgs / 2; i++)
-			{
-				Message<sbyte[]> message = consumer2.receive(5, TimeUnit.SECONDS);
-				MessageIdImpl msgId = (MessageIdImpl) message.MessageId;
-				if (lastMsgId != null)
-				{
-					assertTrue(lastMsgId.LedgerId <= msgId.LedgerId);
-				}
-				lastMsgId = msgId;
-			}
-		}
-
-		public virtual void testUnAckMessageRedeliveryWithReceiveAsync()
+		public virtual void TestUnAckMessageRedeliveryWithReceive()
 		{
 			string topic = "persistent://my-property/my-ns/async-unack-redelivery";
-			Consumer<string> consumer = pulsarClient.newConsumer(Schema_Fields.STRING).topic(topic).subscriptionName("s1").ackTimeout(3, TimeUnit.SECONDS).subscribe();
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(new AutoConsumeSchema(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 3000));
+			//Consumer<string> consumer = pulsarClient.newConsumer(Schema_Fields.STRING).topic(topic).subscriptionName("s1").ackTimeout(3, TimeUnit.SECONDS).subscribe();
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
+			//Producer<string> producer = pulsarClient.newProducer(Schema_Fields.STRING).topic(topic).enableBatching(true).batchingMaxMessages(5).batchingMaxPublishDelay(1, TimeUnit.SECONDS).create();
 
-			Producer<string> producer = pulsarClient.newProducer(Schema_Fields.STRING).topic(topic).enableBatching(true).batchingMaxMessages(5).batchingMaxPublishDelay(1, TimeUnit.SECONDS).create();
+			const int messageCount = 10;
+			var futures = new List<IMessageId>(10);
 
-			const int messages = 10;
-			IList<CompletableFuture<Message<string>>> futures = new List<CompletableFuture<Message<string>>>(10);
-			for (int i = 0; i < messages; i++)
+			for (int i = 0; i < messageCount; i++)
 			{
-				futures.Add(consumer.receiveAsync());
-			}
-
-			for (int i = 0; i < messages; i++)
-			{
-				producer.sendAsync("my-message-" + i);
+				var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i), topic, ImmutableDictionary<string, object>.Empty);
+				_common.PulsarSystem.Send(send, producer.Producer);
 			}
 
 			int messageReceived = 0;
-			foreach (CompletableFuture<Message<string>> future in futures)
-			{
-				Message<string> message = future.get();
-				assertNotNull(message);
-				messageReceived++;
-				// Don't ack message, wait for ack timeout.
+            var messages = _common.PulsarSystem.Messages(false, messageCount, (m) =>
+            {
+                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
+                return receivedMessage;
+            });
+            foreach (var message in messages)
+            {
+                _output.WriteLine($"Received message: [{message}]");
+				Assert.NotNull(message);
+                messageReceived++;
+                // Don't ack message, wait for ack timeout.
 			}
-
-			assertEquals(10, messageReceived);
-
-			for (int i = 0; i < messages; i++)
-			{
-				Message<string> message = consumer.receive();
-				assertNotNull(message);
-				messageReceived++;
-				consumer.acknowledge(message);
+			
+			Assert.Equal(10,messageReceived);
+            Thread.Sleep(3000); 
+            messages = _common.PulsarSystem.Messages(false, messageCount, (m) =>
+            {
+                var id = (MessageId)m.Message.MessageId;
+                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
+                _common.PulsarSystem.PulsarConsumer(new AckMessage(new MessageIdReceived(id.LedgerId, id.EntryId,-1, id.PartitionIndex, m.AckSets.ToArray())), m.Consumer);
+                return receivedMessage;
+            });
+            foreach (var message in messages)
+            {
+                _output.WriteLine($"Received message: [{message}]");
+                Assert.NotNull(message);
+                messageReceived++;
 			}
-
-			assertEquals(20, messageReceived);
-
-			producer.close();
-			consumer.close();
-		}
+            Assert.Equal(20, messageReceived);
+			_common.PulsarSystem.Stop();
+            _common.PulsarSystem = null;
+        }
 
 	}
 
