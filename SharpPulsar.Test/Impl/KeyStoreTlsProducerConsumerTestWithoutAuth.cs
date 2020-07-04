@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using Org.BouncyCastle.Utilities;
+using PulsarAdmin.Models;
+using SharpPulsar.Impl.Auth;
+using Xunit;
 using ProducerConsumerBase = SharpPulsar.Test.Api.ProducerConsumerBase;
 
 /// <summary>

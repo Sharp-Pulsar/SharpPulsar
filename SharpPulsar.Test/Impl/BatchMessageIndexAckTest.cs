@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 using ProducerConsumerBase = SharpPulsar.Test.Api.ProducerConsumerBase;
 
 /// <summary>
