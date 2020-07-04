@@ -1,4 +1,16 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Akka;
+using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Akka.Network;
+using SharpPulsar.Api;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Handlers;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Conf;
+using SharpPulsar.Impl.Schema;
+using Xunit;
+using Xunit.Abstractions;
+using AuthenticationFactory = SharpPulsar.Impl.Auth.AuthenticationFactory;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,84 +34,119 @@ namespace SharpPulsar.Test.Api
 {
     public class ProxyProtocolTest //: TlsProducerConsumerBase
 	{
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(ProxyProtocolTest));
+        private readonly string _tlsClientCertFilePath = "./resources/authentication/tls/client-cert.pem";
+        private readonly string _tlsClientKeyFilePath = "./resources/authentication/tls/client-key.pem";
+        protected internal readonly string TlsTrustCertFilePath = "./resources/authentication/tls/cacert.pem";
 
+		private readonly TestCommon.Common _common;
+        private readonly ITestOutputHelper _output;
 
-		public virtual void testSniProxyProtocol()
+        public ProxyProtocolTest(ITestOutputHelper output)
+        {
+            _output = output;
+            _common = new TestCommon.Common(output);
+        }
+		[Fact]
+		public void TestSniProxyProtocol()
 		{
-
-			// Client should try to connect to proxy and pass broker-url as SNI header
-			string proxyUrl = org.apache.pulsar.BrokerServiceUrlTls;
+            // Client should try to connect to proxy and pass broker-url as SNI header
+			string proxyUrl = "";
 			string brokerServiceUrl = "pulsar+ssl://1.1.1.1:6651";
 			string topicName = "persistent://my-property/use/my-ns/my-topic1";
+			
+            IDictionary<string, string> authParams = new Dictionary<string, string>();
+			authParams["tlsCertFile"] = _tlsClientCertFilePath;
+			authParams["tlsKeyFile"] = _tlsClientKeyFilePath;
 
-			ClientBuilder clientBuilder = PulsarClient.builder().serviceUrl(brokerServiceUrl).tlsTrustCertsFilePath(TLS_TRUST_CERT_FILE_PATH).enableTls(true).allowTlsInsecureConnection(false).proxyServiceUrl(proxyUrl, ProxyProtocol.SNI).operationTimeout(1000, TimeUnit.MILLISECONDS);
-			IDictionary<string, string> authParams = new Dictionary<string, string>();
-			authParams["tlsCertFile"] = TLS_CLIENT_CERT_FILE_PATH;
-			authParams["tlsKeyFile"] = TLS_CLIENT_KEY_FILE_PATH;
+            var builder = new PulsarClientConfigBuilder()
+                .ServiceUrl(brokerServiceUrl)
+                .ProxyServiceUrl(proxyUrl, ProxyProtocol.SNI)
+                .ConnectionsPerBroker(1)
+                .UseProxy(true)
+                .AddTrustedAuthCert(null)
+                .Authentication(AuthenticationFactory.Create(typeof(AuthenticationDataTls).FullName, authParams))
+                .AllowTlsInsecureConnection(false)
+                .EnableTls(true);
+                builder.OperationTimeout(1000);
 
-			clientBuilder.authentication(typeof(AuthenticationTls).FullName, authParams);
+            var clientConfig = builder.ClientConfigurationData;
 
-
-			PulsarClient pulsarClient = clientBuilder.build();
-
-			// should be able to create producer successfully
-			pulsarClient.newProducer().topic(topicName).create();
+            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var conf = new ProducerConfigurationData {TopicName = topicName};
+            // should be able to create producer successfully
+            var p = system.PulsarProducer(new CreateProducer(BytesSchema.Of(), conf));
 		}
 
-
-		public virtual void testSniProxyProtocolWithInvalidProxyUrl()
+		[Fact]
+		public virtual void TestSniProxyProtocolWithInvalidProxyUrl()
 		{
-
-			// Client should try to connect to proxy and pass broker-url as SNI header
+            // Client should try to connect to proxy and pass broker-url as SNI header
 			string brokerServiceUrl = "pulsar+ssl://1.1.1.1:6651";
 			string proxyHost = "invalid-url";
 			string proxyUrl = "pulsar+ssl://" + proxyHost + ":5555";
 			string topicName = "persistent://my-property/use/my-ns/my-topic1";
 
-			ClientBuilder clientBuilder = PulsarClient.builder().serviceUrl(brokerServiceUrl).tlsTrustCertsFilePath(TLS_TRUST_CERT_FILE_PATH).enableTls(true).allowTlsInsecureConnection(false).proxyServiceUrl(proxyUrl, ProxyProtocol.SNI).operationTimeout(1000, TimeUnit.MILLISECONDS);
-			IDictionary<string, string> authParams = new Dictionary<string, string>();
-			authParams["tlsCertFile"] = TLS_CLIENT_CERT_FILE_PATH;
-			authParams["tlsKeyFile"] = TLS_CLIENT_KEY_FILE_PATH;
+            IDictionary<string, string> authParams = new Dictionary<string, string>();
+            authParams["tlsCertFile"] = _tlsClientCertFilePath;
+            authParams["tlsKeyFile"] = _tlsClientKeyFilePath;
 
-			clientBuilder.authentication(typeof(AuthenticationTls).FullName, authParams);
+            var builder = new PulsarClientConfigBuilder()
+                .ServiceUrl(brokerServiceUrl)
+                .ProxyServiceUrl(proxyUrl, ProxyProtocol.SNI)
+                .ConnectionsPerBroker(1)
+                .UseProxy(true)
+                .AddTrustedAuthCert(null)
+                .Authentication(AuthenticationFactory.Create(typeof(AuthenticationDataTls).FullName, authParams))
+                .AllowTlsInsecureConnection(false)
+                .EnableTls(true);
+            builder.OperationTimeout(1000);
 
+            var clientConfig = builder.ClientConfigurationData;
 
-			PulsarClient pulsarClient = clientBuilder.build();
+            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var conf = new ProducerConfigurationData
+            {
+                TopicName = topicName,
+				//ProducerEventListener = new DefaultProducerListener()
+            };
+			var p = system.PulsarProducer(new CreateProducer(BytesSchema.Of(), conf));
+            //assertTrue(e.Message.Contains(proxyHost));
+        }
 
-			try
-			{
-				pulsarClient.newProducer().topic(topicName).create();
-				fail("should have failed due to invalid url");
-			}
-			catch (PulsarClientException e)
-			{
-				assertTrue(e.Message.contains(proxyHost));
-			}
-		}
-
-
-		public virtual void testSniProxyProtocolWithoutTls()
+        [Fact]
+        public void TestSniProxyProtocolWithoutTls()
 		{
 			// Client should try to connect to proxy and pass broker-url as SNI header
-			string proxyUrl = org.apache.pulsar.BrokerServiceUrl;
+			string proxyUrl = "";
 			string brokerServiceUrl = "pulsar+ssl://1.1.1.1:6651";
 			string topicName = "persistent://my-property/use/my-ns/my-topic1";
 
-			ClientBuilder clientBuilder = PulsarClient.builder().serviceUrl(brokerServiceUrl).proxyServiceUrl(proxyUrl, ProxyProtocol.SNI).operationTimeout(1000, TimeUnit.MILLISECONDS);
 
+            IDictionary<string, string> authParams = new Dictionary<string, string>();
+            authParams["tlsCertFile"] = _tlsClientCertFilePath;
+            authParams["tlsKeyFile"] = _tlsClientKeyFilePath;
 
-			PulsarClient pulsarClient = clientBuilder.build();
+            var builder = new PulsarClientConfigBuilder()
+                .ServiceUrl(brokerServiceUrl)
+                .ProxyServiceUrl(proxyUrl, ProxyProtocol.SNI)
+                .ConnectionsPerBroker(1)
+                .UseProxy(true)
+                .AddTrustedAuthCert(null)
+                .Authentication(AuthenticationFactory.Create(typeof(AuthenticationDataTls).FullName, authParams))
+                .AllowTlsInsecureConnection(false)
+                .EnableTls(false);
+            builder.OperationTimeout(1000);
 
-			try
-			{
-				pulsarClient.newProducer().topic(topicName).create();
-				fail("should have failed due to non-tls url");
-			}
-			catch (PulsarClientException)
-			{
-				// Ok
-			}
+            var clientConfig = builder.ClientConfigurationData;
+
+            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var conf = new ProducerConfigurationData
+            {
+                TopicName = topicName,
+                //ProducerEventListener = new DefaultProducerListener()
+            };
+            var p = system.PulsarProducer(new CreateProducer(BytesSchema.Of(), conf));
+            //assertTrue(e.Message.Contains(proxyHost));
 		}
 	}
 

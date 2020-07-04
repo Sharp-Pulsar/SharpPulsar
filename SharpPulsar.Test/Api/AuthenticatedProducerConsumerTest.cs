@@ -47,8 +47,7 @@ namespace SharpPulsar.Test.Api
             _output = output;
 			_common = new TestCommon.Common(output);
         }
-
-
+		
 		private void TestSyncProducerAndConsumer(IAuthentication auth, int batchMessageDelayMs, int operatioTimeout = 0)
         { 
 			if(_common.PulsarSystem == null)

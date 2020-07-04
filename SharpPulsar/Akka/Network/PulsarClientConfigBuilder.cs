@@ -87,7 +87,15 @@ namespace SharpPulsar.Akka.Network
             _conf.UseProxy = useProxy;
             return this;
         }
-        public PulsarClientConfigBuilder ListenerName(string listenerName)
+
+        public PulsarClientConfigBuilder ProxyServiceUrl(string proxyAddress, ProxyProtocol protocol)
+        {
+            _conf.ProxyServiceUrl = proxyAddress;
+            _conf.ProxyProtocol = protocol;
+            return this;
+        }
+
+		public PulsarClientConfigBuilder ListenerName(string listenerName)
         {
             _conf.ListenerName = listenerName;
             return this;
