@@ -55,14 +55,14 @@ namespace SharpPulsar.Batch.Api
 		/// <summary>
 		/// Build a new batch message container. </summary>
 		/// <returns> new batch message container </returns>
-		IBatchMessageContainer Build(ActorSystem system);
+		IBatchMessageContainer Build();
 
 	}
 
 	public static class BatcherBuilderFields
 	{
-		public static readonly IBatcherBuilder Default = DefaultImplementation.NewDefaultBatcherBuilder();
-		public static readonly IBatcherBuilder KeyBased = DefaultImplementation.NewKeyBasedBatcherBuilder();
+		public static IBatcherBuilder Default = DefaultImplementation.NewDefaultBatcherBuilder();
+		public static IBatcherBuilder KeyBased(ActorSystem system) => DefaultImplementation.NewKeyBasedBatcherBuilder(system);
 	}
 
 }

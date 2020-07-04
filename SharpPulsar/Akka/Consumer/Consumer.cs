@@ -1620,7 +1620,9 @@ namespace SharpPulsar.Akka.Consumer
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
                 SendFlow(_requestedFlowPermits);
-                _pulsarManager.Tell(new CreatedConsumer(Self, _topicName.ToString(), _consumerName));
+                var created = new CreatedConsumer(Self, _topicName.ToString(), _consumerName);
+                _consumerEventListener.Created(created);
+                _pulsarManager.Tell(created);
 
                 if (_topicName.Persistent)
                 {

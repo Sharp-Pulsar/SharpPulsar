@@ -4,6 +4,7 @@ using System.Linq;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Interceptor;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utils;
@@ -84,6 +85,11 @@ namespace SharpPulsar.Akka.Configuration
 		public ProducerConfigBuilder EnableBatching(bool enableBatching)
 		{
 			_conf.BatchingEnabled = enableBatching;
+            return this;
+		}
+		public ProducerConfigBuilder BatchBuilder(IBatcherBuilder builder)
+		{
+			_conf.BatcherBuilder = builder;
             return this;
 		}
 		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchingMaxPublishDelayMs)

@@ -5,6 +5,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
@@ -36,10 +37,10 @@ namespace SharpPulsar.Test.TestCommon
 
             var clientConfig = builder.ClientConfigurationData;
 
-            PulsarSystem = PulsarSystem.GetInstance(clientConfig);
+            PulsarSystem = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
         }
 
-        public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5)
+        public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5, IBatcherBuilder batcherBuilder = null)
         {
             var producerListener = new DefaultProducerListener((o) =>
             {
@@ -59,7 +60,10 @@ namespace SharpPulsar.Test.TestCommon
             {
                 builder.EnableBatching(true);
                 builder.BatchingMaxPublishDelay(batchMessageDelayMs);
-                builder.BatchingMaxMessages(5);
+                builder.BatchingMaxMessages(batchingMaxMessages);
+                if (batcherBuilder != null)
+                    builder.BatchBuilder(batcherBuilder);
+
             }
             var producerConfig = builder.ProducerConfigurationData;
 
@@ -87,7 +91,7 @@ namespace SharpPulsar.Test.TestCommon
             if (keySharedPolicy != null)
                 consumerC.KeySharedPolicy(keySharedPolicy);
             var consumerConfig = consumerC.ConsumerConfigurationData;
-            return new CreateConsumer(schema, consumerConfig, ConsumerType.Single);
+            return new CreateConsumer(schema, consumerConfig);
         }
 
         public PulsarSystem PulsarSystem { get; set; }

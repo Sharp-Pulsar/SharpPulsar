@@ -1,7 +1,6 @@
-﻿using Akka.Actor;
-using SharpPulsar.Batch;
+﻿using System;
+using Akka.Actor;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,23 +20,17 @@ using SharpPulsar.Protocol;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Batch
 {
-
+    [Serializable]
 	public class KeyBasedBatcherBuilder : IBatcherBuilder
-    {
-        private readonly ActorSystem _system;
+	{
 
-        public KeyBasedBatcherBuilder(ActorSystem system)
-        {
-            _system = system;
-        }
+		private const long SerialVersionUid = 1L;
 
-        private const long SerialVersionUID = 1L;
-
-		public IBatchMessageContainer Build()
+		public virtual IBatchMessageContainer Build(ActorSystem system)
 		{
-			return new BatchMessageKeyBasedContainer(_system);
+			return new BatchMessageKeyBasedContainer(system);
 		}
 	}
 

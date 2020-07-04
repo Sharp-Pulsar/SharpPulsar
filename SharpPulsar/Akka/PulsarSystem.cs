@@ -406,6 +406,27 @@ namespace SharpPulsar.Akka
                 }
             }
         }
+        public ConsumedMessage Receive(string consumerName, int receiveTimeout = 3000)
+        {
+            if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+            {
+                return m;
+            }
+
+            return null;
+        }
+
+        public void Acknowledge(ConsumedMessage m)
+        {
+            if (m.Message.MessageId is MessageId mi)
+            {
+                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
+            }
+            else if (m.Message.MessageId is BatchMessageId b)
+            {
+                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
+            }
+        }
         public void PulsarFunction(InternalCommands.Function data)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)

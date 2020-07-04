@@ -28,6 +28,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
+	[Collection("BytesKeyTest")]
     public class BytesKeyTest : ProducerConsumerBase
 	{
         private readonly ITestOutputHelper _output;
@@ -44,7 +45,7 @@ namespace SharpPulsar.Test.Api
 		private void ByteKeysTest(bool batching)
 		{
 			Random r = new Random(0);
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "", "my-subscriber-name"));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "ByteKeysTest", "my-subscriber-name"));
 
             var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic1", "TestSyncProducerAndConsumer", batchMessageDelayMs: batching? long.MaxValue: 0, batchingMaxMessages: batching? int.MaxValue : 0));
 
@@ -54,7 +55,7 @@ namespace SharpPulsar.Test.Api
 			var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), consumer.Topic, config.ToImmutableDictionary());
 			_common.PulsarSystem.Send(send, producer.Producer);
 
-            var messages = _common.PulsarSystem.Messages(false, customHander: (m) =>
+            var messages = _common.PulsarSystem.Messages("ByteKeysTest", false, customHander: (m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
 
@@ -74,11 +75,15 @@ namespace SharpPulsar.Test.Api
 		public void TestBytesKeyBatch()
 		{
 			ByteKeysTest(true);
-		}
+			_common.PulsarSystem.Stop();
+            _common.PulsarSystem = null;
+        }
 		[Fact]
 		public void TestBytesKeyNoBatch()
 		{
 			ByteKeysTest(false);
+            _common.PulsarSystem.Stop();
+            _common.PulsarSystem = null;
 		}
 	}
 

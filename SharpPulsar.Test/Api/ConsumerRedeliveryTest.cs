@@ -33,6 +33,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
+    [Collection("ConsumerRedeliveryTest")]
 	public class ConsumerRedeliveryTest : ProducerConsumerBase
 	{
         private readonly ITestOutputHelper _output;
@@ -66,7 +67,7 @@ namespace SharpPulsar.Test.Api
 			}
 
 			int messageReceived = 0;
-            var messages = _common.PulsarSystem.Messages(false, messageCount, (m) =>
+            var messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, (m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
                 return receivedMessage;
@@ -81,7 +82,7 @@ namespace SharpPulsar.Test.Api
 			
 			Assert.Equal(10,messageReceived);
             Thread.Sleep(3000); 
-            messages = _common.PulsarSystem.Messages(false, messageCount, (m) =>
+            messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, (m) =>
             {
                 var id = (MessageId)m.Message.MessageId;
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);

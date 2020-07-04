@@ -80,7 +80,7 @@ namespace SharpPulsar.Test.Tracker
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            return new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single);
+            return new CreateConsumer(jsonSchem, consumerConfig);
         }
 
         private CreateProducer CreateProducer()

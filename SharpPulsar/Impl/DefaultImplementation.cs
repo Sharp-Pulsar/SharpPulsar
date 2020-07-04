@@ -6,6 +6,7 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
+using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 
@@ -169,9 +170,9 @@ namespace SharpPulsar.Impl
 			return new DefaultBatcherBuilder();
 		}
 
-		public static IBatcherBuilder NewKeyBasedBatcherBuilder()
+		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ActorSystem system)
         {
-            return null; //new KeyBasedBatcherBuilder();
+            return new KeyBasedBatcherBuilder(system);
         }
 	}
 
