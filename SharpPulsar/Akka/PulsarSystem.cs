@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
@@ -14,11 +15,11 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
-using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol.Proto;
 using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka
@@ -33,6 +34,7 @@ namespace SharpPulsar.Akka
         private readonly IActorRef _pulsarManager;
         private readonly ClientConfigurationData _conf;
         private readonly PulsarManagerState _managerState;
+        private readonly Dictionary<string, CommandSubscribe.SubType> _topicSubTypes;
         public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode = SystemMode.Normal)
         {
             if (_instance == null)
@@ -63,6 +65,7 @@ namespace SharpPulsar.Akka
         }
         private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode)
         {
+            _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
             _testObject = new TestObject {ActorSystem = actorSystem};
             _systemMode = mode;
             _actorSystem = actorSystem;
@@ -74,7 +77,7 @@ namespace SharpPulsar.Akka
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
-                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                MessageQueue = new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
                 EventQueue = new BlockingQueue<IEventMessage>(),
                 MaxQueue = new BlockingQueue<TopicEntries>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
@@ -87,6 +90,7 @@ namespace SharpPulsar.Akka
         {
             _testObject = new TestObject();
             _systemMode = mode;
+            _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
             _managerState = new PulsarManagerState
             {
                 ConsumerQueue = new BlockingQueue<CreatedConsumer>(),
@@ -95,7 +99,7 @@ namespace SharpPulsar.Akka
                 SchemaQueue = new BlockingQueue<GetOrCreateSchemaServerResponse>(),
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
-                MessageQueue =  new BlockingCollection<ConsumedMessage>(),
+                MessageQueue =  new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
                 EventQueue = new BlockingQueue<IEventMessage>(),
                 MaxQueue = new BlockingQueue<TopicEntries>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
@@ -195,6 +199,18 @@ namespace SharpPulsar.Akka
         }
         public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader)
         {
+            var originalName = reader.ReaderConfiguration.ReaderName;
+
+            var name = Regex.Replace(originalName, @"[^\w\d]", "");
+
+            if (_managerState.MessageQueue.Any(x => x.Key.StartsWith(name)))
+                throw new ArgumentException($"consumer with name '{originalName}'");
+
+            reader.ReaderConfiguration.ReaderName = name;
+
+            if (string.IsNullOrWhiteSpace(reader.ReaderConfiguration.ReaderName))
+                throw new ArgumentException("Reader name is required");
+
             if (reader.Seek != null)
             {
                 if (reader.Seek.Type == null || reader.Seek.Input == null)
@@ -297,13 +313,13 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(bool autoAck = true, int takeCount = -1, Func<ConsumedMessage, T> customHander = null)
+        public IEnumerable<T> Messages<T>(string consumerName, bool autoAck = true, int takeCount = -1, Func<ConsumedMessage, T> customHander = null)
         {
             if (customHander == null)
             {
                 if (takeCount == -1)
                 {
-                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                    foreach (var m in _managerState.MessageQueue[consumerName].GetConsumingEnumerable())
                     {
                         var received = m.Message.ToTypeOf<T>();
                         if (autoAck)
@@ -325,7 +341,7 @@ namespace SharpPulsar.Akka
                     var takes = 0;
                     while (takes < takeCount)
                     {
-                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        if (_managerState.MessageQueue[consumerName].TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
                         {
                             var received = m.Message.ToTypeOf<T>();
                             if (autoAck)
@@ -349,7 +365,7 @@ namespace SharpPulsar.Akka
             {
                 if (takeCount == -1)
                 {
-                    foreach (var m in _managerState.MessageQueue.GetConsumingEnumerable())
+                    foreach (var m in _managerState.MessageQueue[consumerName].GetConsumingEnumerable())
                     {
                         if (autoAck)
                         {
@@ -370,7 +386,7 @@ namespace SharpPulsar.Akka
                     var takes = 0;
                     while (takes < takeCount)
                     {
-                        if (_managerState.MessageQueue.TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
+                        if (_managerState.MessageQueue[consumerName].TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
                         {
                             if (autoAck)
                             {
@@ -418,21 +434,40 @@ namespace SharpPulsar.Akka
         {
             if (consumer == null)
                 throw new ArgumentNullException(nameof(consumer), "null");
-            if (consumer.ConsumerType == ConsumerType.Multi)
+
+            var topic = consumer.ConsumerConfiguration.SingleTopic;
+
+            if (!TopicName.IsValid(topic))
+                throw new ArgumentException($"Topic '{topic}' is invalid");
+
+            topic = TopicName.Get(topic).ToString();
+            /*if (_topicSubTypes.ContainsKey(topic))
             {
-                if (consumer.ConsumerConfiguration.TopicNames.Count < 1)
-                {
-                   throw new ArgumentException("To Create Multi Topic Consumers, Topics must be greater than 1");
-                }
+                var sub = _topicSubTypes[topic];
+                if(sub == CommandSubscribe.SubType.Exclusive)
+                    throw new ArgumentException($"{topic} has an exclusive subscriber");
 
-                if (!TopicNamesValid(consumer.ConsumerConfiguration.TopicNames))
-                {
-                    throw new ArgumentException("Topics should have same namespace.");
-                }
-            }
+            }*/
+            var subType = consumer.ConsumerConfiguration.SubscriptionType;
 
-            if (!consumer.ConsumerConfiguration.TopicNames.Any() && consumer.ConsumerConfiguration.TopicsPattern == null)
-                throw new ArgumentException("Please set topic(s) or topic pattern");
+            consumer.ConsumerConfiguration.SingleTopic = topic;
+
+            var originalName = consumer.ConsumerConfiguration.ConsumerName;
+
+
+            var name = Regex.Replace(originalName, @"[^\w\d]", "");
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Consumer Name is required!");
+
+            if (_managerState.MessageQueue.Any(x => x.Key.StartsWith(name)))
+                throw new ArgumentException($"consumer with name '{originalName}'");
+
+            consumer.ConsumerConfiguration.ConsumerName = name;
+
+            if (string.IsNullOrWhiteSpace(consumer.ConsumerConfiguration.SingleTopic))
+                throw new ArgumentException("Topic cannot be empty");
+
             if (consumer.Seek != null)
             {
                 if (consumer.Seek.Type == null || consumer.Seek.Input == null)
@@ -445,15 +480,80 @@ namespace SharpPulsar.Akka
                         throw new ArgumentException("SeekType.Timestamp requires a long input");
                 }
             }
-            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, consumer.ConsumerType, consumer.Seek);
+            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, ConsumerType.Single, consumer.Seek);
             _pulsarManager.Tell(c);
             if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 if (_systemMode == SystemMode.Test)
                     _testObject.Consumer = createdConsumer.Consumer;
+
+                _managerState.MessageQueue.TryAdd(createdConsumer.ConsumerName, new BlockingCollection<ConsumedMessage>());
+                _topicSubTypes.Add(createdConsumer.Topic, subType);
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
             throw new TimeoutException($"Timeout waiting for consumer creation!");
+        }
+
+        public IEnumerable<(IActorRef Consumer, string Topic)> PulsarConsumer(CreateMultiConsumer consumer)
+        {
+            if (consumer == null)
+                throw new ArgumentNullException(nameof(consumer), "null");
+
+            var type = ConsumerType.Multi;
+
+            var originalName = consumer.ConsumerConfiguration.ConsumerName;
+            
+            var name = Regex.Replace(originalName, @"[^\w\d]", "");
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Consumer Name is required!");
+
+            if (_managerState.MessageQueue.Any(x => x.Key.StartsWith(name)))
+                throw new ArgumentException($"consumer with name '{originalName}'");
+
+            consumer.ConsumerConfiguration.ConsumerName = name;
+
+            if (consumer.ConsumerConfiguration.TopicsPattern == null)
+            {
+                if (consumer.ConsumerConfiguration.TopicNames.Count < 1)
+                {
+                    throw new ArgumentException("To Create Multi Topic Consumers, Topics must be greater than 1");
+                }
+
+                if (!TopicNamesValid(consumer.ConsumerConfiguration.TopicNames))
+                {
+                    throw new ArgumentException("Topics should have same namespace.");
+                }
+            }
+            else type = ConsumerType.Pattern;
+
+            if (consumer.Seek != null)
+            {
+                if (consumer.Seek.Type == null || consumer.Seek.Input == null)
+                    throw new ArgumentException("Seek is in an invalid state: null Type or Input");
+                switch (consumer.Seek.Type)
+                {
+                    case SeekType.MessageId when !(consumer.Seek.Input is string):
+                        throw new ArgumentException("SeekType.MessageId requires a string input");
+                    case SeekType.Timestamp when !(consumer.Seek.Input is long):
+                        throw new ArgumentException("SeekType.Timestamp requires a long input");
+                }
+            }
+            var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, type, consumer.Seek);
+            _pulsarManager.Tell(c);
+            var gotten = false;
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
+            {
+                if (_systemMode == SystemMode.Test)
+                    _testObject.Consumer = createdConsumer.Consumer;
+
+                _managerState.MessageQueue.TryAdd(createdConsumer.ConsumerName, new BlockingCollection<ConsumedMessage>());
+
+                yield return (createdConsumer.Consumer, createdConsumer.Topic);
+                gotten = true;
+            }
+            if(!gotten)
+               throw new TimeoutException($"Timeout waiting for consumer creation!");
         }
         public void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
         {

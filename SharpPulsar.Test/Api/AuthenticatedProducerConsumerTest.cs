@@ -54,7 +54,7 @@ namespace SharpPulsar.Test.Api
 			if(_common.PulsarSystem == null)
                 _common.GetPulsarSystem(auth, operatioTimeout);
 
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "", "my-subscriber-name", forceTopic:true));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "TestSyncConsumer", "my-subscriber-name", forceTopic:true));
 
             var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), consumer.Topic, "TestSyncProducerAndConsumer", batchMessageDelayMs));
 
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Api
 
 			ConsumedMessage msg = null;
 			ISet<string> messageSet = new HashSet<string>();
-            var messages =  _common.PulsarSystem.Messages(false, customHander: (m) =>
+            var messages =  _common.PulsarSystem.Messages("TestSyncConsumer", false, customHander: (m) =>
             {
                 msg = m;
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);

@@ -24,6 +24,6 @@ namespace SharpPulsar.Akka
         public BlockingQueue<TopicEntries> MaxQueue { get; set; }
         public BlockingQueue<GetOrCreateSchemaServerResponse> SchemaQueue { get; set; }
         public BlockingQueue<LastMessageIdReceived> MessageIdQueue { get; set; }
-        public BlockingCollection<ConsumedMessage> MessageQueue { get; set; }
+        public ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>> MessageQueue { get; set; }
     }
 }

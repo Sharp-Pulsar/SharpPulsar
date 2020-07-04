@@ -1,6 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Akka.Actor;
+using App.Metrics.Concurrency;
+using Google.Protobuf.Collections;
+using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Utilities;
+using SharpPulsar.Akka.Consumer;
+using SharpPulsar.Api;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Protocol.Proto;
+using Xunit;
+using Xunit.Abstractions;
+using Range = System.Range;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,43 +37,23 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
-using PositionImpl = org.apache.bookkeeper.mledger.impl.PositionImpl;
-using Topic = org.apache.pulsar.broker.service.Topic;
-using PersistentSubscription = org.apache.pulsar.broker.service.persistent.PersistentSubscription;
-using Logger = org.slf4j.Logger;
-
-public class KeySharedSubscriptionTest : ProducerConsumerBase
+    public class KeySharedSubscriptionTest : ProducerConsumerBase
 	{
+        private readonly ITestOutputHelper _output;
+        private readonly TestCommon.Common _common;
 
-		private static readonly Logger log = LoggerFactory.getLogger(typeof(KeySharedSubscriptionTest));
-		private static readonly IList<string> keys = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-
-
-		public virtual object[][] batchProvider()
-		{
-			return new object[][]
-			{
-				new object[] {false},
-				new object[] {true}
-			};
-		}
-
-
-
-		public override void setup()
-		{
-			base.internalSetup();
-			base.ProducerBaseSetup();
-			this.conf.SubscriptionKeySharedUseConsistentHashing = true;
-		}
-
-		public override void cleanup()
-		{
-			base.internalCleanup();
-		}
-
-		private static readonly Random random = new Random(System.nanoTime());
-		private const int NUMBER_OF_KEYS = 300;
+        public KeySharedSubscriptionTest(ITestOutputHelper output)
+        {
+            _output = output;
+            _output = output;
+            _common = new TestCommon.Common(output);
+            _common.GetPulsarSystem(new AuthenticationDisabled());
+            ProducerBaseSetup(_common.PulsarSystem, output);
+        }
+		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+		
+		private static readonly Random Random = new Random(DateTimeOffset.Now.Millisecond);
+		private const int NumberOfKeys = 300;
 
 		public virtual void testSendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector(string topicType, bool enableBatch)
 		{
@@ -75,7 +70,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 1000; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			receiveAndCheckDistribution(Lists.newArrayList(consumer1, consumer2, consumer3));
@@ -102,7 +97,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 			for (int i = 0; i < 1000; i++)
 			{
 				// Send the same key twice so that we'll have a batch message
-				string key = random.Next(NUMBER_OF_KEYS).ToString();
+				string key = Random.Next(NumberOfKeys).ToString();
 				producer.newMessage().key(key).value(i).sendAsync();
 
 				producer.newMessage().key(key).value(i).sendAsync();
@@ -135,7 +130,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 10; i++)
 			{
-				foreach (string key in keys)
+				foreach (string key in Keys)
 				{
 					int slot = Murmur3_32Hash.Instance.makeHash(key.GetBytes()) % KeySharedPolicy.DEFAULT_HASH_RANGE_SIZE;
 					if (slot <= 20000)
@@ -179,7 +174,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 1000; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			receiveAndCheckDistribution(Lists.newArrayList(consumer1, consumer2, consumer3));
@@ -192,7 +187,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 10; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			receiveAndCheckDistribution(Lists.newArrayList(consumer3));
@@ -268,7 +263,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 1000; i++)
 			{
-				producer.newMessage().key("any key").orderingKey(random.Next(NUMBER_OF_KEYS).ToString().GetBytes()).value(i).send();
+				producer.newMessage().key("any key").orderingKey(Random.Next(NumberOfKeys).ToString().GetBytes()).value(i).send();
 			}
 
 			receiveAndCheckDistribution(Lists.newArrayList(consumer1, consumer2, consumer3));
@@ -292,7 +287,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 10; i++)
 			{
-				foreach (string key in keys)
+				foreach (string key in Keys)
 				{
 					int slot = Murmur3_32Hash.Instance.makeHash(key.GetBytes()) % KeySharedPolicy.DEFAULT_HASH_RANGE_SIZE;
 					if (slot <= 20000)
@@ -397,19 +392,19 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 			// First send the "slow key" so that 1 consumer will get stuck
 			producer.newMessage().key(slowKey).value(-1).send();
 
-			int N = 1000;
+			int n = 1000;
 
 			// Then send all the other keys
-			for (int i = 0; i < N; i++)
+			for (int i = 0; i < n; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			// Since only 1 out of 10 consumers is stuck, we should be able to receive ~90% messages,
 			// plus or minus for some skew in the key distribution.
 			Thread.Sleep(5000);
 
-			assertEquals((double) receivedMessages.get(), N * 0.9, N * 0.3);
+			assertEquals((double) receivedMessages.get(), n * 0.9, n * 0.3);
 
 			foreach (PulsarClient c in clients)
 			{
@@ -428,7 +423,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 0; i < 10; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			// All the already published messages will be pre-fetched by C1.
@@ -439,7 +434,7 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 
 			for (int i = 10; i < 20; i++)
 			{
-				producer.newMessage().key(random.Next(NUMBER_OF_KEYS).ToString()).value(i).send();
+				producer.newMessage().key(Random.Next(NumberOfKeys).ToString()).value(i).send();
 			}
 
 			// C2 will not be able to receive any messages until C1 is done processing whatever he got prefetched
@@ -470,20 +465,11 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 			return producer;
 		}
 
-        private Consumer<int> createConsumer(string topic)
-		{
-			return createConsumer(topic, null);
-		}
-
-        private Consumer<int> createConsumer(string topic, KeySharedPolicy keySharedPolicy)
-		{
-			ConsumerBuilder<int> builder = pulsarClient.newConsumer(Schema_Fields.INT32);
-			builder.topic(topic).subscriptionName("key_shared").subscriptionType(SubscriptionType.Key_Shared).ackTimeout(3, TimeUnit.SECONDS);
-			if (keySharedPolicy != null)
-			{
-				builder.keySharedPolicy(keySharedPolicy);
-			}
-			return builder.subscribe();
+        private (IActorRef consumer, string topic) CreateConsumer(string topic, KeySharedPolicy keySharedPolicy = null)
+        {
+            var con = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "KeyShared",
+                "KeyShared-Sub", subType: CommandSubscribe.SubType.KeyShared, ackTimeout: 3000, keySharedPolicy: keySharedPolicy));
+			return con;
 		}
 
         private void receive<T1>(IList<T1> consumers)
@@ -575,14 +561,14 @@ public class KeySharedSubscriptionTest : ProducerConsumerBase
 				}
 			}
 
-			const double PERCENT_ERROR = 0.40; // 40 %
+			const double percentError = 0.40; // 40 %
 
 			double expectedMessagesPerConsumer = totalMessages / consumers.Count;
 
 			Console.Error.WriteLine(messagesPerConsumer);
 			foreach (int count in messagesPerConsumer.Values)
 			{
-				Assert.assertEquals(count, expectedMessagesPerConsumer, expectedMessagesPerConsumer * PERCENT_ERROR);
+				Assert.assertEquals(count, expectedMessagesPerConsumer, expectedMessagesPerConsumer * percentError);
 			}
 		}
 

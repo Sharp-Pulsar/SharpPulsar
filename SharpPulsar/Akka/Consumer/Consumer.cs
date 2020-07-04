@@ -572,13 +572,13 @@ namespace SharpPulsar.Akka.Consumer
 
                 var received = InternalReceive();
                 if (_hasParentConsumer)
-                    Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet));
+                    Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                 else
                 {
                     if (_conf.ConsumptionType == ConsumptionType.Listener)
                         _listener.Received(Self, received, ackSet);
                     else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                        _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
+                        _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                 }
             }
             else
@@ -661,13 +661,13 @@ namespace SharpPulsar.Akka.Consumer
                     index += (uint)singleMessageMetadata.PayloadSize;
                     var received = InternalReceive();
                     if (_hasParentConsumer)
-                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet));
+                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                     else
                     {
                         if (_conf.ConsumptionType == ConsumptionType.Listener)
                             _listener.Received(Self, received, ackSet);
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet));
+                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                     }
                 }
             }
@@ -1620,7 +1620,7 @@ namespace SharpPulsar.Akka.Consumer
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
                 SendFlow(_requestedFlowPermits);
-                _pulsarManager.Tell(new CreatedConsumer(Self, _topicName.ToString()));
+                _pulsarManager.Tell(new CreatedConsumer(Self, _topicName.ToString(), _consumerName));
 
                 if (_topicName.Persistent)
                 {

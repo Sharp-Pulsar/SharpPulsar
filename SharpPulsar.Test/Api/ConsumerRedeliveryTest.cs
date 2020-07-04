@@ -47,8 +47,8 @@ namespace SharpPulsar.Test.Api
             ProducerBaseSetup(_common.PulsarSystem, output);
 		}
 		
-
-		public virtual void TestUnAckMessageRedeliveryWithReceive()
+        [Fact]
+		public void TestUnAckMessageRedeliveryWithReceive()
 		{
 			string topic = "persistent://my-property/my-ns/async-unack-redelivery";
             var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(new AutoConsumeSchema(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 3000));

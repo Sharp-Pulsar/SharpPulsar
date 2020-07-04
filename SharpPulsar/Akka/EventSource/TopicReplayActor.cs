@@ -45,9 +45,7 @@ namespace SharpPulsar.Akka.EventSource
             var config = PrepareConsumerConfiguration(_replayTopic.ReaderConfigurationData);
             config.StartMessageId = (ledger == null || entry == null)? (BatchMessageId)MessageIdFields.Latest: new BatchMessageId(ledger.Value, entry.Value, partition, -1);
             config.ReceiverQueueSize = max.HasValue? (int)(max.Value): 100;
-            _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData,
-                _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true,
-                partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
+            _consumer = Context.ActorOf(Consumer.Consumer.Prop(_replayTopic.ClientConfigurationData, _topicName.ToString(), config, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, true, partition, SubscriptionMode.NonDurable, null, _pulsarManager, true));
             Consume();
         }
 

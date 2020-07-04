@@ -1,20 +1,19 @@
 ﻿using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Api;
-using SharpPulsar.Impl;
-using SharpPulsar.Protocol;
 
 namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public class ConsumedMessage
     {
-        public ConsumedMessage(IActorRef consumer, IMessage message, IList<long> ackSets)
+        public ConsumedMessage(IActorRef consumer, IMessage message, IList<long> ackSets, string consumerName)
         {
             Consumer = consumer;
             Message = message;
             AckSets = ackSets;
+            ConsumerName = consumerName;
         }
-
+        public string ConsumerName { get; }
         public IActorRef Consumer { get; }
         public IMessage Message { get; }
         public IList<long> AckSets { get; }

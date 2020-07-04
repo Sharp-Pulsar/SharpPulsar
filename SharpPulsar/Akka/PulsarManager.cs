@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
@@ -66,7 +67,7 @@ namespace SharpPulsar.Akka
             });
             Receive<ConsumedMessage>(d =>
             {
-                _pulsarManagerState.MessageQueue.Add(d);
+                _pulsarManagerState.MessageQueue[d.ConsumerName].Add(d);
 
             });
             Receive<LiveSqlData>(d =>

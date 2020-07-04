@@ -97,15 +97,9 @@ namespace SharpPulsar.Impl.Conf
 		public string SubscriptionName { get; set; }
 		public string SingleTopic
 		{
-			get
-			{
-				if(TopicNames.Count == 1)
-				{
-					return TopicNames.First();
-				}
-				return string.Empty;
-			}
-		}
+			get => TopicNames.Count == 1 ? TopicNames.First() : string.Empty;
+            set => TopicNames = new HashSet<string> {value};
+        }
 
     }
 

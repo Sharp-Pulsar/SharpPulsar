@@ -1238,7 +1238,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
 
         }
         
@@ -1277,7 +1277,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
 
         }
         private static void QueueConsumer(PulsarSystem system, string topic, int take)
@@ -1298,8 +1298,8 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
-            foreach (var msg in system.Messages<Students>(true, take))
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
+            foreach (var msg in system.Messages<Students>(topicLast,true, take))
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented=true}));
             }
@@ -1341,7 +1341,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            var c = system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            var c = system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
             var messageId = system.PulsarConsumer(new LastMessageId(), c.Consumer);
             Console.WriteLine($"Topic: {messageId.Topic}, Ledger: {messageId.LedgerId}, Entry: {messageId.EntryId}, Partition: {messageId.Partition}, Batch: {messageId.BatchIndex}");
         }
@@ -1381,7 +1381,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
 
         }
         
@@ -1421,7 +1421,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
 
         }
         private static void DecryptAvroConsumer(PulsarSystem system, string topic)
@@ -1461,7 +1461,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
         }
         private static void PlainAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1499,7 +1499,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, /*new Seek(SeekType.MessageId, "5",1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, /*new Seek(SeekType.MessageId, "5",1")*/ new Seek(SeekType.Timestamp, DateTimeOffset.Now.AddDays(-15).ToUnixTimeMilliseconds())));
         }
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
@@ -1538,7 +1538,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
+            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, new Seek(SeekType.Timestamp, DateTime.Now.AddHours(-10))));
         }
         private static void DecryptAvroPatternConsumer(PulsarSystem system, string regex)
         {
@@ -1577,7 +1577,12 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Pattern));
+            var cs = system.PulsarConsumer(new CreateMultiConsumer(jsonSchem, consumerConfig));
+
+            foreach (var c in cs)
+            {
+                Console.WriteLine(c.Topic);
+            }
 
         }
         private static void AvroPatternConsumer(PulsarSystem system, string regex)
@@ -1616,8 +1621,11 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Pattern));
-
+            var cs = system.PulsarConsumer(new CreateMultiConsumer(jsonSchem, consumerConfig));
+            foreach (var c in cs)
+            {
+                Console.WriteLine(c.Topic);
+            }
         }
         private static void DecryptAvroMultiConsumer(PulsarSystem system, string[] topics)
         {
@@ -1656,8 +1664,11 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
-
+            var cs = system.PulsarConsumer(new CreateMultiConsumer(jsonSchem, consumerConfig));
+            foreach (var c in cs)
+            {
+                Console.WriteLine(c.Topic);
+            }
         }
         
         private static void AvroMultiConsumer(PulsarSystem system, string[] topics)
@@ -1697,7 +1708,11 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Multi));
+            var cs = system.PulsarConsumer(new CreateMultiConsumer(jsonSchem, consumerConfig));
+            foreach (var c in cs)
+            {
+                Console.WriteLine(c.Topic);
+            }
 
         }
         private static void PlainBytesConsumer(PulsarSystem system, string topic)
@@ -1736,7 +1751,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig));
 
         }
         private static void DecryptBytesConsumer(PulsarSystem system, string topic)
@@ -1776,7 +1791,7 @@ namespace Samples
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Latest)
                 .ConsumerConfigurationData;
-            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig, ConsumerType.Single));
+            system.PulsarConsumer(new CreateConsumer(byteSchem, consumerConfig));
 
         }
 

@@ -45,7 +45,7 @@ namespace SharpPulsar.Akka.Consumer
                     break;
                 case ConsumerType.Single:
                     var partitionIndex = TopicName.GetPartitionIndex(consumerConfig.SingleTopic);
-                    Context.ActorOf(Consumer.Prop(_config, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable, consumer.Seek, _pulsarManager), $"SingleTopic{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    Context.ActorOf(Consumer.Prop(_config, consumerConfig.SingleTopic, consumerConfig, Interlocked.Increment(ref IdGenerators.ConsumerId), _network, false, partitionIndex, SubscriptionMode.Durable, consumer.Seek, _pulsarManager), consumer.ConsumerConfiguration.ConsumerName);
                     break;
                 default:
                     consumerConfig.ConsumerEventListener.Log("Are you high? How am I suppose to know the consumer type you want to create? ;)!");
