@@ -389,7 +389,7 @@ namespace SharpPulsar.Akka.Producer
                 var builder = new TypedMessageBuilder(ProducerName, _topicSchema.Schema);
                 builder.Value(s.Message);
                 builder.LoadConf(s.Config);
-                builder.Topic(s.Topic);
+                builder.Topic(_topic);
                 foreach (var c in s.Config)
                 {
                     switch (c.Key.ToLower())

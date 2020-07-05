@@ -60,7 +60,7 @@ namespace SharpPulsar.Test.Api
 			for (int i = 0; i < 10; i++)
 			{
 				var message = "my-message-" + i;
-				_common.PulsarSystem.Send(new Send(Encoding.UTF8.GetBytes(message), producer.Topic, ImmutableDictionary<string, object>.Empty), producer.Producer);
+				_common.PulsarSystem.Send(new Send(Encoding.UTF8.GetBytes(message), ImmutableDictionary<string, object>.Empty), producer.Producer);
             }
 
 			ConsumedMessage msg = null;
@@ -80,9 +80,8 @@ namespace SharpPulsar.Test.Api
                 y++;
             }
 
-            var msgId = (MessageId) msg.Message.MessageId;
 			// Acknowledge the consumption of all messages at once
-            _common.PulsarSystem.PulsarConsumer(new AckMessages(msgId, msg.AckSets), consumer.Consumer);
+            _common.PulsarSystem.AcknowledgeCumulative(msg);
 			_common.PulsarSystem.Stop();
             _common.PulsarSystem = null;
         }

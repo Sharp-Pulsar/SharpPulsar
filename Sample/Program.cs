@@ -688,7 +688,7 @@ namespace Samples
                     }
                 };
                 //var s = JsonSerializer.Serialize(student);
-                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, producer);
@@ -753,7 +753,7 @@ namespace Samples
                     ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
                 };
                 //var s = JsonSerializer.Serialize(student);
-                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, t.Producer);
@@ -802,7 +802,7 @@ namespace Samples
                     ["Key"] = "Broadcast",
                     ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
                 };
-                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, result.Producer);
@@ -852,7 +852,7 @@ namespace Samples
                 ["Key"] = "Single",
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
-            var send = new Send(journal, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(journal, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
@@ -894,7 +894,7 @@ namespace Samples
                 ["Key"] = "Chunk",
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
-            var send = new Send(media, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(media, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
@@ -935,7 +935,7 @@ namespace Samples
                 ["Key"] = "Single",
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
-            var send = new Send(covid, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(covid, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
@@ -977,7 +977,7 @@ namespace Samples
                     ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
                 };
                 var s = JsonSerializer.Serialize(student);
-                sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(Encoding.UTF8.GetBytes(s), metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, t.Producer);
@@ -1017,7 +1017,7 @@ namespace Samples
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
             var s = JsonSerializer.Serialize(student);
-            var send = new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(Encoding.UTF8.GetBytes(s), metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);
@@ -1062,7 +1062,7 @@ namespace Samples
                     ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
                 };
                 //var s = JsonSerializer.Serialize(student);
-                sends.Add(new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, t.Producer);
@@ -1104,7 +1104,7 @@ namespace Samples
                 ["Key"] = "Single",
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
-            var send = new Send(student, topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             //var s = JsonSerializer.Serialize(student);
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
@@ -1150,7 +1150,7 @@ namespace Samples
                     ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
                 };
                 var s = JsonSerializer.Serialize(student);
-                sends.Add(new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(Encoding.UTF8.GetBytes(s), metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
             system.BulkSend(bulk, t.Producer);
@@ -1193,7 +1193,7 @@ namespace Samples
                 ["Properties"] = new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }
             };
             var s = JsonSerializer.Serialize(student);
-            var send = new Send(Encoding.UTF8.GetBytes(s), topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+            var send = new Send(Encoding.UTF8.GetBytes(s), metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
             system.Send(send, t.Producer);
             Task.Delay(1000).Wait();
             File.AppendAllLines("receipts.txt", Receipts);

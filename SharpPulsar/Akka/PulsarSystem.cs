@@ -427,6 +427,23 @@ namespace SharpPulsar.Akka
                 m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
             }
         }
+
+        /// <summary>
+        /// Cumulative ack only on exclusive subscription
+        /// </summary>
+        /// <param name="ackMessages"></param>
+        /// <param name="consumer"></param>
+        public void AcknowledgeCumulative(ConsumedMessage m)
+        {
+            if (m.Message.MessageId is MessageId mi)
+            {
+                m.Consumer.Tell(new AckMessages(mi, m.AckSets.ToArray()));
+            }
+            else if (m.Message.MessageId is BatchMessageId b)
+            {
+                m.Consumer.Tell(new AckMessages(new MessageId(b.LedgerId, b.EntryId, b.PartitionIndex), m.AckSets.ToArray()));
+            }
+        }
         public void PulsarFunction(InternalCommands.Function data)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
@@ -774,14 +791,7 @@ namespace SharpPulsar.Akka
         {
            producer.Tell(send);
         }
-        public void PulsarConsumer(AckMessages ackMessages, IActorRef consumer)
-        {
-           consumer.Tell(ackMessages);
-        }
-        public void PulsarConsumer(AckMessage ackMessage, IActorRef consumer)
-        {
-           consumer.Tell(ackMessage);
-        }
+       
         public void BulkSend(BulkSend send, IActorRef producer)
         {
             producer.Tell(send);

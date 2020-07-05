@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -22,16 +24,18 @@ namespace SharpPulsar.Test.TestCommon
             _output = output;
         }
 
-        public void GetPulsarSystem(IAuthentication auth, int operationTime = 0, bool useProxy = false)
+        public void GetPulsarSystem(IAuthentication auth, int operationTime = 0, bool useProxy = false, string authPath = "", bool enableTls = false, bool allowTlsInsecureConnection = false, string brokerService = "")
         {
             var builder = new PulsarClientConfigBuilder()
-                .ServiceUrl("pulsar://localhost:6650")
+                .ServiceUrl(!string.IsNullOrWhiteSpace(brokerService)?brokerService: "pulsar://localhost:6650")
                 .ConnectionsPerBroker(1)
                 .UseProxy(useProxy)
                 .StatsInterval(0)
                 .Authentication(auth)
-                .AllowTlsInsecureConnection(true)
-                .EnableTls(true);
+                .AllowTlsInsecureConnection(allowTlsInsecureConnection)
+                .EnableTls(enableTls);
+            if (!string.IsNullOrWhiteSpace(authPath))
+                builder.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authPath)));
             if (operationTime > 0)
                 builder.OperationTimeout(operationTime);
 

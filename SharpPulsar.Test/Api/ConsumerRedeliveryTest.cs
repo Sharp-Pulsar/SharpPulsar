@@ -62,7 +62,7 @@ namespace SharpPulsar.Test.Api
 
 			for (int i = 0; i < messageCount; i++)
 			{
-				var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i), topic, ImmutableDictionary<string, object>.Empty);
+				var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i), ImmutableDictionary<string, object>.Empty);
 				_common.PulsarSystem.Send(send, producer.Producer);
 			}
 
@@ -84,9 +84,8 @@ namespace SharpPulsar.Test.Api
             Thread.Sleep(3000); 
             messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, (m) =>
             {
-                var id = (MessageId)m.Message.MessageId;
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
-                _common.PulsarSystem.PulsarConsumer(new AckMessage(new MessageIdReceived(id.LedgerId, id.EntryId,-1, id.PartitionIndex, m.AckSets.ToArray())), m.Consumer);
+                _common.PulsarSystem.Acknowledge(m);
                 return receivedMessage;
             });
             foreach (var message in messages)

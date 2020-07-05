@@ -73,7 +73,7 @@ namespace SharpPulsar.Test.Api
 			for (int i = 0; i < 1000; i++)
 			{
                 var config = new Dictionary<string, object> {["key"] = Random.Next(NumberOfKeys).ToString()};
-                var send = new Send(i.ToString(), topic, config.ToImmutableDictionary());
+                var send = new Send(i.ToString(), config.ToImmutableDictionary());
 				_common.PulsarSystem.Send(send, producer);
 			}
 
@@ -110,7 +110,7 @@ namespace SharpPulsar.Test.Api
             for (int i = 0; i < 1000; i++)
             {
                 var config = new Dictionary<string, object> { ["key"] = Random.Next(NumberOfKeys).ToString() };
-                var send = new Send(i.ToString(), topic, config.ToImmutableDictionary());
+                var send = new Send(i.ToString(), config.ToImmutableDictionary());
 
                 // Send the same key twice so that we'll have a batch message
 				_common.PulsarSystem.Send(send, producer);
@@ -164,7 +164,7 @@ namespace SharpPulsar.Test.Api
 						consumer3ExpectMessages++;
 					}
                     var config = new Dictionary<string, object> { ["key"] = key };
-                    var send = new Send(i.ToString(), topic, config.ToImmutableDictionary());
+                    var send = new Send(i.ToString(), config.ToImmutableDictionary());
 
                     _common.PulsarSystem.Send(send, producer);
 				}
@@ -211,7 +211,7 @@ namespace SharpPulsar.Test.Api
 
             for (int i = 0; i < 1000; i++)
 			{ 
-                var send = new Send(i.ToString(), topic, ImmutableDictionary<string, object>.Empty);
+                var send = new Send(i.ToString(), ImmutableDictionary<string, object>.Empty);
 
                 _common.PulsarSystem.Send(send, producer);
             }
@@ -254,7 +254,7 @@ namespace SharpPulsar.Test.Api
                     ["key"] = "any key",
 					["orderingKey"] = Random.Next(NumberOfKeys).ToString().GetBytes()
 				};
-                var send = new Send(i.ToString(), topic, config.ToImmutableDictionary());
+                var send = new Send(i.ToString(), config.ToImmutableDictionary());
                 _common.PulsarSystem.Send(send, producer);
 
 			}

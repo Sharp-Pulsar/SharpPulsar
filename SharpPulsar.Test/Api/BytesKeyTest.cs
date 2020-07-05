@@ -52,7 +52,7 @@ namespace SharpPulsar.Test.Api
 			byte[] byteKey = new byte[1000];
 			r.NextBytes(byteKey);
 			var config = new Dictionary<string, object>{{ "KeyBytes", byteKey } };
-			var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), consumer.Topic, config.ToImmutableDictionary());
+			var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), config.ToImmutableDictionary());
 			_common.PulsarSystem.Send(send, producer.Producer);
 
             var messages = _common.PulsarSystem.Messages("ByteKeysTest", false, customHander: (m) =>

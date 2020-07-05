@@ -1274,6 +1274,11 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMultiMessage(AckMultiMessage multiMessage)
         {
+            if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
+            {
+                _log.Error(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"), "");
+                return;
+            }
             var entriesToAck = new List<(long  ledgerId, long entryId, long[] ackSets)>(multiMessage.MessageIds.Count);
             foreach (var m in multiMessage.MessageIds)
             {
@@ -1297,15 +1302,11 @@ namespace SharpPulsar.Akka.Consumer
                 _consumerEventListener.BecameInactive(_consumerName, _partitionIndex);
             }
         }
-        private void AckMultiMessage(IMessageId[] multiMessage)
+        private bool IsCumulativeAcknowledgementAllowed(CommandSubscribe.SubType type)
         {
-            var entriesToAck = new List<(long ledgerId, long entryId, long[] ackSets)>(multiMessage.Length);
-            foreach (var m in multiMessage)
-            {
-                //entriesToAck.Add(new KeyValuePair<long, long>(m.LedgerId, m.EntryId));
-            }
-            SendAckMultiMessages(entriesToAck);
+            return CommandSubscribe.SubType.Shared != type && CommandSubscribe.SubType.KeyShared != type;
         }
+        
         private void SendAckMultiMessages(IList<(long ledgerId, long entryId, long[] ackSets)> entries)
         {
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
@@ -1315,6 +1316,11 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMessages(AckMessages message)
         {
+            if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
+            {
+                _log.Error(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"), "");
+                return;
+            }
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, message.AckSets.ToArray(), CommandAck.AckType.Cumulative, null, new Dictionary<string, long>());
             var payload = new Payload(cmd, requestid, "AckMessages");
