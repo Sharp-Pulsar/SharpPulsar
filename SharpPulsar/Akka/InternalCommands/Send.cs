@@ -13,11 +13,11 @@ namespace SharpPulsar.Akka.InternalCommands
         /// When using PartitionedProducer, messages with same RoutingKey will be sent to the same partition
         /// </summary>
         public string RoutingKey { get; }
-        public Send(object message, ImmutableDictionary<string, object> config, string routingKey = "default")
+        public Send(object message, ImmutableDictionary<string, object> config = null, string routingKey = "default")
         {
             RoutingKey = routingKey;
             Message = message;
-            Config = config;
+            Config = config ?? ImmutableDictionary<string, object>.Empty;
         }
     }
     public sealed class BulkSend

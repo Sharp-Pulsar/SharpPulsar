@@ -44,7 +44,7 @@ namespace SharpPulsar.Test.TestCommon
             PulsarSystem = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
         }
 
-        public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5, IBatcherBuilder batcherBuilder = null)
+        public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5, IBatcherBuilder batcherBuilder = null, int maxMessageSize = 0, bool enableChunking = false)
         {
             var producerListener = new DefaultProducerListener((o) =>
             {
@@ -57,7 +57,8 @@ namespace SharpPulsar.Test.TestCommon
                 .ProducerName(producername)
                 .Topic(topic)
                 .Schema(schema)
-                .EventListener(producerListener);
+                .EventListener(producerListener)
+                .EnableChunking(enableChunking);
             if (compression > 0)
                 builder.CompressionType((ICompressionType)Enum.GetValues(typeof(ICompressionType)).GetValue(compression));
             if (batchMessageDelayMs != 0)
@@ -69,6 +70,9 @@ namespace SharpPulsar.Test.TestCommon
                     builder.BatchBuilder(batcherBuilder);
 
             }
+
+            if (maxMessageSize > 0)
+                builder.MaxMessageSize(maxMessageSize);
             var producerConfig = builder.ProducerConfigurationData;
 
 
