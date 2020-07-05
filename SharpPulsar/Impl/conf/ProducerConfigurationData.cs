@@ -54,7 +54,7 @@ namespace SharpPulsar.Impl.Conf
         public bool ChunkingEnabled { get; set; } = false;
 
 		[JsonIgnore]
-		public IBatcherBuilder BatcherBuilder { get; set; } = DefaultImplementation.NewDefaultBatcherBuilder();
+		public IBatcherBuilder BatcherBuilder { get; set; }
 
         [JsonIgnore]
 		public ICryptoKeyReader CryptoKeyReader { get; set; } = null;

@@ -27,10 +27,15 @@ namespace SharpPulsar.Batch
 	{
 
 		private const long SerialVersionUid = 1L;
+        private ActorSystem _system;
 
-		public virtual IBatchMessageContainer Build(ActorSystem system)
+		public KeyBasedBatcherBuilder(ActorSystem system)
+        {
+            _system = system;
+        }
+		public virtual IBatchMessageContainer Build()
 		{
-			return new BatchMessageKeyBasedContainer(system);
+			return new BatchMessageKeyBasedContainer(_system);
 		}
 	}
 

@@ -184,7 +184,7 @@ namespace SharpPulsar.Test
                         {"Week-Day", "Saturday" }
                     }
                 };
-                sends.Add(new Send(student, _topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, _topic);
             _pulsarSystem.BulkSend(bulk, t);

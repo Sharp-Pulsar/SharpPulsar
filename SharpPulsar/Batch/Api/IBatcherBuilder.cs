@@ -61,7 +61,7 @@ namespace SharpPulsar.Batch.Api
 
 	public static class BatcherBuilderFields
 	{
-		public static IBatcherBuilder Default = DefaultImplementation.NewDefaultBatcherBuilder();
+		public static IBatcherBuilder Default(ActorSystem system) => DefaultImplementation.NewDefaultBatcherBuilder(system);
 		public static IBatcherBuilder KeyBased(ActorSystem system) => DefaultImplementation.NewKeyBasedBatcherBuilder(system);
 	}
 

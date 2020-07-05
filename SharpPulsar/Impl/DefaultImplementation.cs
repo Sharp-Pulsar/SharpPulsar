@@ -165,9 +165,9 @@ namespace SharpPulsar.Impl
 			return SchemaUtils.ConvertKeyValueSchemaInfoDataToString(kvSchemaInfo);
 		}
 
-		public static IBatcherBuilder NewDefaultBatcherBuilder()
+		public static IBatcherBuilder NewDefaultBatcherBuilder(ActorSystem system)
 		{
-			return new DefaultBatcherBuilder();
+			return new DefaultBatcherBuilder(system);
 		}
 
 		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ActorSystem system)

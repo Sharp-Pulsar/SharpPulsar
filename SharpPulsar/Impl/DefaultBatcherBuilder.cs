@@ -26,10 +26,17 @@ using SharpPulsar.Batch.Api;
 namespace SharpPulsar.Impl
 {
 	public class DefaultBatcherBuilder : IBatcherBuilder
-	{
-		public IBatchMessageContainer Build(ActorSystem system)
+    {
+        private ActorSystem _system;
+
+        public DefaultBatcherBuilder(ActorSystem system)
         {
-            return new BatchMessageContainer(system);
+            _system = system;
+        }
+
+        public IBatchMessageContainer Build()
+        {
+            return new BatchMessageContainer(_system);
 		}
 
 	}

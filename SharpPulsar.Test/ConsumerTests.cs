@@ -68,8 +68,8 @@ namespace SharpPulsar.Test
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            _pulsarSystem.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
-            foreach (var msg in _pulsarSystem.Messages<Students>(true, 70))
+            _pulsarSystem.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
+            foreach (var msg in _pulsarSystem.Messages<Students>(topicLast,true, 70))
             {
                 replayed++;
                 _output.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
@@ -97,11 +97,11 @@ namespace SharpPulsar.Test
                 .MessageListener(messageListener)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
-            _pulsarSystem.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig, ConsumerType.Single));
-            foreach (var msg in _pulsarSystem.Messages(true, 70, message =>
+            _pulsarSystem.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
+            foreach (var msg in _pulsarSystem.Messages(topicLast,true, 70, message =>
             {
-                var m = message.ToTypeOf<Students>();
-                _output.WriteLine($"Sequence Id: {message.SequenceId}");
+                var m = message.Message.ToTypeOf<Students>();
+                _output.WriteLine($"Sequence Id: {message.Message.SequenceId}");
                 return m;
             } ))
             {
@@ -148,7 +148,7 @@ namespace SharpPulsar.Test
                         {"Week-Day", "Saturday" }
                     }
                 };
-                sends.Add(new Send(student, _topic, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
+                sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, _topic);
             _pulsarSystem.BulkSend(bulk, t);
