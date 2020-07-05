@@ -103,6 +103,7 @@ namespace SharpPulsar.Akka.Network
                     _client.SSL = true;
                     _client.SslProtocols = SslProtocols.Tls12;
                     _client.CertificateValidationCallback = ValidateServerCertificate;
+                    _client.SslServiceName = RemoteHostName;
                 }
 
                 _log.Info($"Opening Connection to: {RemoteAddress}");
