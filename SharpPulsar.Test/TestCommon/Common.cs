@@ -75,7 +75,7 @@ namespace SharpPulsar.Test.TestCommon
             return new CreateProducer(schema, producerConfig);
         }
 
-        public CreateConsumer CreateConsumer(ISchema schema, string topic, string consumername, string subscription,int compression = 0, bool forceTopic = false, int ackTimeout = 0, KeySharedPolicy keySharedPolicy = null, CommandSubscribe.SubType subType = CommandSubscribe.SubType.Exclusive)
+        public CreateConsumer CreateConsumer(ISchema schema, string topic, string consumername, string subscription,int compression = 0, bool forceTopic = false, int ackTimeout = 0, KeySharedPolicy keySharedPolicy = null, CommandSubscribe.SubType subType = CommandSubscribe.SubType.Exclusive, int acknowledgmentGroupTime = -1, long negativeAckRedeliveryDelay = 0)
         {
             var consumerListener = new DefaultConsumerEventListener(l => _output.WriteLine(l.ToString()));
             var messageListener = new DefaultMessageListener(null, null);
@@ -94,6 +94,11 @@ namespace SharpPulsar.Test.TestCommon
                 consumerC.AckTimeout(ackTimeout);
             if (keySharedPolicy != null)
                 consumerC.KeySharedPolicy(keySharedPolicy);
+            if (acknowledgmentGroupTime > -1)
+                consumerC.AcknowledgmentGroupTime(acknowledgmentGroupTime);
+            if (negativeAckRedeliveryDelay > 0)
+                consumerC.NegativeAckRedeliveryDelay(negativeAckRedeliveryDelay);
+
             var consumerConfig = consumerC.ConsumerConfigurationData;
             return new CreateConsumer(schema, consumerConfig);
         }

@@ -1,4 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Impl.Auth;
+using SharpPulsar.Impl.Schema;
+using SharpPulsar.Protocol.Proto;
+using Xunit;
+using Xunit.Abstractions;
 using ProducerConsumerBase = SharpPulsar.Test.Api.ProducerConsumerBase;
 
 /// <summary>
@@ -24,62 +32,68 @@ namespace SharpPulsar.Test.Impl
 
 	public class NegativeAcksTest : ProducerConsumerBase
 	{
+        private readonly ITestOutputHelper _output;
+        private TestCommon.Common _common;
 
-		public override void setup()
+        public NegativeAcksTest(ITestOutputHelper output)
+        {
+            _output = output;
+            _common = new TestCommon.Common(output);
+            _common.GetPulsarSystem(new AuthenticationDisabled());
+            ProducerBaseSetup(_common.PulsarSystem, output);
+        }
+		[Fact]
+        public void TestNegativeAcksBatch()
+        {
+			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 3000, 1000);
+        }
+		
+		[Fact]
+        public void TestNegativeAcksNoBatch()
+        {
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 3000, 1000);
+        }
+
+		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
 		{
-			base.internalSetup();
-			base.ProducerBaseSetup();
-		}
+			_output.WriteLine($"Test negative acks batching={batching} partitions={usePartition} subType={subscriptionType} negAckDelayMs={negAcksDelayMillis}");
+			string topic = "testNegativeAcks-" + DateTime.Now.Ticks;
 
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestNegativeAcks", "sub1", subType: subscriptionType, acknowledgmentGroupTime: 0, negativeAckRedeliveryDelay: negAcksDelayMillis, ackTimeout: ackTimeout));
 
-		public override void cleanup()
-		{
-			base.internalCleanup();
-		}
-
-
-        public virtual void testNegativeAcks(bool batching, bool usePartitions, SubscriptionType subscriptionType, int negAcksDelayMillis, int ackTimeout)
-		{
-			log.info("Test negative acks batching={} partitions={} subType={} negAckDelayMs={}", batching, usePartitions, subscriptionType, negAcksDelayMillis);
-			string topic = "testNegativeAcks-" + System.nanoTime();
-
-            Consumer<string> consumer = pulsarClient.newConsumer(Schema_Fields.STRING).topic(topic).subscriptionName("sub1").acknowledgmentGroupTime(0, TimeUnit.SECONDS).subscriptionType(subscriptionType).negativeAckRedeliveryDelay(negAcksDelayMillis, TimeUnit.MILLISECONDS).ackTimeout(ackTimeout, TimeUnit.MILLISECONDS).subscribe();
-
-            Producer<string> producer = pulsarClient.newProducer(Schema_Fields.STRING).topic(topic).enableBatching(batching).create();
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "", batchMessageDelayMs: negAcksDelayMillis));
 
 			ISet<string> sentMessages = new HashSet<string>();
 
-			const int N = 10;
-			for (int i = 0; i < N; i++)
+			const int n = 10;
+			for (int i = 0; i < n; i++)
 			{
 				string value = "test-" + i;
-				producer.sendAsync(value);
+				var send = new Send(value.GetBytes(), ImmutableDictionary<string, object>.Empty);
+				_common.PulsarSystem.Send(send, producer.Producer);
 				sentMessages.Add(value);
 			}
-			producer.flush();
 
-			for (int i = 0; i < N; i++)
+			for (int i = 0; i < n; i++)
 			{
-				Message<string> msg = consumer.receive();
-				consumer.negativeAcknowledge(msg);
+				var msg = _common.PulsarSystem.Receive("TestNegativeAcks");
+				_common.PulsarSystem.NegativeAcknowledge(msg);
 			}
 
 			ISet<string> receivedMessages = new HashSet<string>();
 
 			// All the messages should be received again
-			for (int i = 0; i < N; i++)
+			for (int i = 0; i < n; i++)
 			{
-				Message<string> msg = consumer.receive();
-				receivedMessages.Add(msg.Value);
-				consumer.acknowledge(msg);
+                var msg = _common.PulsarSystem.Receive("TestNegativeAcks");
+				receivedMessages.Add(((byte[])msg.Message.Value).GetString());
+                _common.PulsarSystem.Acknowledge(msg);
 			}
 
-			assertEquals(receivedMessages, sentMessages);
+			Assert.Equal(receivedMessages, sentMessages);
 
 			// There should be no more messages
-			assertNull(consumer.receive(100, TimeUnit.MILLISECONDS));
-			consumer.close();
-			producer.close();
+			Assert.Null(_common.PulsarSystem.Receive("TestNegativeAcks", 100));
 		}
 	}
 

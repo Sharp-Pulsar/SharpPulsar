@@ -444,6 +444,11 @@ namespace SharpPulsar.Akka
                 m.Consumer.Tell(new AckMessages(new MessageId(b.LedgerId, b.EntryId, b.PartitionIndex), m.AckSets.ToArray()));
             }
         }
+
+        public void NegativeAcknowledge(ConsumedMessage message)
+        {
+            message.Consumer.Tell(new NegativeAck(message.Message.MessageId));
+        }
         public void PulsarFunction(InternalCommands.Function data)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
