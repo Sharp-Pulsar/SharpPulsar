@@ -801,6 +801,10 @@ namespace SharpPulsar.Akka
         {
             producer.Tell(send);
         }
+        public void Unsubscribe(IActorRef consumer)
+        {
+            consumer.Tell(InternalCommands.Consumer.Unsubscribe.Instance);
+        }
         public void Stop()
         {
            _actorSystem.Terminate();

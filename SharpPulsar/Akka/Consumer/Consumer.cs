@@ -1440,6 +1440,7 @@ namespace SharpPulsar.Akka.Consumer
 
         private void Active()
         {
+            Receive<Unsubscribe>(u => Unsubscribe());
             Receive<NegativeAck>(n => { NegativeAcknowledge(n.MessageId); });
             Receive<INeedBroker>(x => { Sender.Tell(_broker); });
             Receive<Terminated>(_ =>
