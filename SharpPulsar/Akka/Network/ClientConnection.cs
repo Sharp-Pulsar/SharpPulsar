@@ -113,14 +113,12 @@ namespace SharpPulsar.Akka.Network
                     Connected(_client);
                 else
                 {
-                    Thread.Sleep(5000);
-                    Connect();
+                    Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
                 }
             }
             catch (Exception ex)
             {
                 _log.Error(ex.Message);
-                Thread.Sleep(5000);
                 Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
             }
         }

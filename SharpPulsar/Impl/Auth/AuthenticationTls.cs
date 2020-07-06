@@ -71,11 +71,12 @@ namespace SharpPulsar.Impl.Auth
             {
                 try
                 {
-                    if (!string.ReferenceEquals(CertFilePath, null) && !string.ReferenceEquals(KeyFilePath, null))
+                    if (!ReferenceEquals(CertFilePath, null) && !ReferenceEquals(KeyFilePath, null))
                     {
                         return new AuthenticationDataTls(CertFilePath, KeyFilePath);
                     }
-                    else if (_certStreamProvider != null && _keyStreamProvider != null)
+
+                    if (_certStreamProvider != null && _keyStreamProvider != null)
                     {
                         return new AuthenticationDataTls(_certStreamProvider, _keyStreamProvider);
                     }

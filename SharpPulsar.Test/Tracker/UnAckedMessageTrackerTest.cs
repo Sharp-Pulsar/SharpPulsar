@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Impl;
 using SharpPulsar.Tracker;
 using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,13 +24,16 @@ using Xunit;
 namespace SharpPulsar.Test.Tracker
 {
     [Collection("UnAckedMessageTrackerTest")]
-    public class UnAckedMessageTrackerTest : ICollectionFixture<TrackerTestFixture>
+    public class UnAckedMessageTrackerTest : IClassFixture<TrackerTestFixture>
     {
         private TrackerTestFixture _data;
-		public UnAckedMessageTrackerTest(TrackerTestFixture data)
+		public UnAckedMessageTrackerTest(ITestOutputHelper output, TrackerTestFixture data)
         {
             _data = data;
-        }
+            _data.PulsarSystem.PulsarProducer(data.CreateProducer(output));
+            _data.PulsarSystem.PulsarConsumer(data.CreateConsumer(output));
+            _data.TestObject = _data.PulsarSystem.GeTestObject();
+		}
         [Fact]
         public void TestAddAndRemove()
 		{

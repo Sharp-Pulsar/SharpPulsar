@@ -23,6 +23,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using Akka.Event;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Api;
@@ -52,8 +53,9 @@ namespace SharpPulsar.Impl.Crypto
 		private readonly ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
 
 		private readonly SecureRandom _secureRandom;
+        private ILoggingAdapter _log;
 
-		public MessageCrypto(string logCtx, bool keyGenNeeded)
+		public MessageCrypto(string logCtx, bool keyGenNeeded, ILoggingAdapter log)
 		{
 
 			_iv = new byte[16];
@@ -61,7 +63,8 @@ namespace SharpPulsar.Impl.Crypto
 			_keyGenerator = new AesManaged();
 			_secureRandom = new SecureRandom();
 			_logCtx = logCtx;
-			_encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
+            _log = log;
+            _encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
 			_dataKeyCache =  new Cache<string, byte[]>(4); //four hours
 
 			try
@@ -81,7 +84,7 @@ namespace SharpPulsar.Impl.Crypto
 			}
 			catch (Exception e)
 			{
-				Log.LogError("{} MessageCrypto initialization Failed {}", logCtx, e.Message);
+				_log.Error($"{_logCtx} MessageCrypto initialization Failed {e.Message}");
 
 			}
 
@@ -201,7 +204,7 @@ namespace SharpPulsar.Impl.Crypto
 				else
 				{
 					// We should never reach here.
-					Log.LogError("{} Failed to find encrypted Data key for key {}.", _logCtx, keyName);
+					_log.Error($"{_logCtx} Failed to find encrypted Data key for key {keyName}.");
 				}
 
 			}
@@ -222,7 +225,7 @@ namespace SharpPulsar.Impl.Crypto
 			catch (Exception e)
 			{
 
-				Log.LogError("{} Failed to encrypt message. {}", _logCtx, e);
+				_log.Error($"{_logCtx} Failed to encrypt message. {e}");
 				throw new PulsarClientException.CryptoException(e.Message);
 
 			}
@@ -250,7 +253,7 @@ namespace SharpPulsar.Impl.Crypto
 			}
 			catch (Exception e)
 			{
-				Log.LogError("{} Failed to decrypt data key {} to decrypt messages {}", _logCtx, keyName, e.Message);
+				_log.Error($"{_logCtx} Failed to decrypt data key {keyName} to decrypt messages {e.Message}");
 				return false;
 			}
 			_dataKey = dataKeyValue;
@@ -272,7 +275,7 @@ namespace SharpPulsar.Impl.Crypto
 			}
 			catch (Exception e)
 			{
-				Log.LogError("{} Failed to decrypt message {}", _logCtx, e.Message);
+				_log.Error($"{_logCtx} Failed to decrypt message {e.Message}");
 			}
 
 			return null;
@@ -307,7 +310,7 @@ namespace SharpPulsar.Impl.Crypto
 				else
 				{
 					// First time, entry won't be present in cache
-					Log.LogWarning("{} Failed to decrypt data or data key is not in cache. Will attempt to refresh", _logCtx);
+					_log.Warning($"{_logCtx} Failed to decrypt data or data key is not in cache. Will attempt to refresh");
 				}
 			}
 			return decryptedData;
@@ -358,9 +361,7 @@ namespace SharpPulsar.Impl.Crypto
 
 		}
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(MessageCrypto));
-
-	}
+    }
 
 
 }

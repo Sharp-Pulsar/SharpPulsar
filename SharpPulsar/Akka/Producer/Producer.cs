@@ -147,7 +147,7 @@ namespace SharpPulsar.Akka.Producer
                     MessageCrypto msgCryptoBc;
                     try
                     {
-                        msgCryptoBc = new MessageCrypto(logCtx, true);
+                        msgCryptoBc = new MessageCrypto(logCtx, true, _log);
                     }
                     catch (Exception e)
                     {

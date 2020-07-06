@@ -190,7 +190,7 @@ namespace SharpPulsar.Akka.Consumer
                     MessageCrypto msgCryptoBc;
                     try
                     {
-                        msgCryptoBc = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false);
+                        msgCryptoBc = new MessageCrypto($"[{configuration.SingleTopic}] [{configuration.SubscriptionName}]", false, _log);
                         
                     }
                     catch (Exception e)
