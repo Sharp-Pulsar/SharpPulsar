@@ -384,7 +384,7 @@ namespace SharpPulsar.Test.Api
 			_output.WriteLine(JsonSerializer.Serialize(messagesPerConsumer, new JsonSerializerOptions{WriteIndented = true}));
 			foreach (int count in messagesPerConsumer.Values)
 			{
-				//Assert.assertEquals(count, expectedMessagesPerConsumer, expectedMessagesPerConsumer * percentError);
+				Assert.Equal(expectedMessagesPerConsumer, expectedMessagesPerConsumer * percentError, count);
 			}
 		}
 

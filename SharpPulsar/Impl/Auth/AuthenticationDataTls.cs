@@ -51,7 +51,7 @@ namespace SharpPulsar.Impl.Auth
 			CertFile = new FileModifiedTimeUpdater(certFilePath);
 			KeyFile = new FileModifiedTimeUpdater(keyFilePath);
 			_tlsCertificates = SecurityUtility.LoadCertificatesFromPemFile(certFilePath);
-			_tlsPrivateKey = SecurityUtility.LoadPrivateKeyFromPemFile(keyFilePath);
+			_tlsPrivateKey = SecurityUtility.LoadPrivateKeyFromFile(keyFilePath);
 		}
         public AuthenticationDataTls(Func<MemoryStream> certStreamProvider, Func<MemoryStream> keyStreamProvider)
         {

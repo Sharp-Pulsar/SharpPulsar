@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -13,7 +11,9 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Security.Certificates;
+
 using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -50,13 +50,9 @@ namespace SharpPulsar.Utility
 
 			try
             {
-                using var input = new FileStream(certFilePath, FileMode.Open, FileAccess.Read);
-                using var stream = new StreamReader(input);
-                var c = new X509Certificate2();
-                var pemReader = new PemReader(stream);
-                var obj = pemReader.ReadPemObject();
-                c.Import(obj.Content);
-                return new []{c};
+                var pem = new Limilabs.Cryptography.PemReader();
+                var certificate = pem.ReadCertificateFromFile(certFilePath);
+                return new []{certificate};
             }
 			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
 			{
@@ -181,6 +177,24 @@ namespace SharpPulsar.Utility
 				var p = (AsymmetricAlgorithm)GetPrivateKeyFromPemFile(keyFilePath);
 				//return p.ExportParameters(true);
                 return p;
+            }
+			catch (Exception e) when (e is SecurityException || e is IOException)
+			{
+				throw new Exception("Private key loading error", e);
+			}
+		}
+        public static AsymmetricAlgorithm LoadPrivateKeyFromFile(string keyFilePath)
+		{
+			if (string.ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
+			{
+				throw new Exception("File path cannot be empty");
+			}
+
+			try
+			{
+                var pem = new Limilabs.Cryptography.PemReader();
+                var rsa = pem.ReadPrivateKeyFromFile(keyFilePath);
+                return rsa;
             }
 			catch (Exception e) when (e is SecurityException || e is IOException)
 			{

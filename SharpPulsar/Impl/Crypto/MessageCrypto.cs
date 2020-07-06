@@ -43,17 +43,17 @@ namespace SharpPulsar.Impl.Crypto
 		private const int TagLen = 32 * 8;
 		public const int IvLen = 256;
 		private byte[] _iv;
-		private SHA256 _hash;
-		private string _logCtx;
+		private readonly SHA256 _hash;
+		private readonly string _logCtx;
 		// Data key which is used to encrypt message
 		private byte[] _dataKey;
-		private Cache<string, byte[]> _dataKeyCache;
+		private readonly Cache<string, byte[]> _dataKeyCache;
 
 		// Map of key name and encrypted gcm key, metadata pair which is sent with encrypted message
 		private readonly ConcurrentDictionary<string, EncryptionKeyInfo> _encryptedDataKeyMap;
 
 		private readonly SecureRandom _secureRandom;
-        private ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
 		public MessageCrypto(string logCtx, bool keyGenNeeded, ILoggingAdapter log)
 		{
