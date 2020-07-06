@@ -804,6 +804,7 @@ namespace SharpPulsar.Akka
         public void Unsubscribe(IActorRef consumer)
         {
             consumer.Tell(InternalCommands.Consumer.Unsubscribe.Instance);
+            consumer.Tell(PoisonPill.Instance);
         }
         public void Stop()
         {
