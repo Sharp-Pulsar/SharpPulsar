@@ -315,98 +315,67 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(string consumerName, bool autoAck = true, int takeCount = -1, Func<ConsumedMessage, T> customHander = null)
+        public IEnumerable<T> Messages<T>(string consumerName, bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<ConsumedMessage, T> customHander = null)
         {
-            if (customHander == null)
+            //no end
+            if (takeCount == -1)
             {
-                if (takeCount == -1)
+                for (var i = 0; i > takeCount; i++)
                 {
-                    foreach (var m in _managerState.MessageQueue[consumerName].GetConsumingEnumerable())
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
                     {
-                        var received = m.Message.ToTypeOf<T>();
-                        if (autoAck)
-                        {
-                            if (m.Message.MessageId is MessageId mi)
-                            {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
-                            }
-                            else if (m.Message.MessageId is BatchMessageId b)
-                            {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
-                            }
-                        }
-                        yield return received;
+                        yield return ProcessMessage<T>(m, autoAck, customHander);
                     }
                 }
-                else if(takeCount > 0)
+            }
+            else if (takeCount > 0)//end at takeCount
+            {
+                for (var i = 0; i < takeCount; i++)
                 {
-                    var takes = 0;
-                    while (takes < takeCount)
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
                     {
-                        if (_managerState.MessageQueue[consumerName].TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
-                        {
-                            var received = m.Message.ToTypeOf<T>();
-                            if (autoAck)
-                            {
-                                if (m.Message.MessageId is MessageId mi)
-                                {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
-                                }
-                                else if (m.Message.MessageId is BatchMessageId b)
-                                {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
-                                }
-                            }
-                            yield return received;
-                            takes++;
-                        }
+                        yield return ProcessMessage<T>(m, autoAck, customHander);
+                    }
+                    else
+                    {
+                        //we need to go back since no message was received within the timeout
+                        i--;
                     }
                 }
             }
             else
             {
-                if (takeCount == -1)
+                //drain the current messages
+                while (true)
                 {
-                    foreach (var m in _managerState.MessageQueue[consumerName].GetConsumingEnumerable())
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
                     {
-                        if (autoAck)
-                        {
-                            if (m.Message.MessageId is MessageId mi)
-                            {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
-                            }
-                            else if (m.Message.MessageId is BatchMessageId b)
-                            {
-                                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
-                            }
-                        }
-                        yield return customHander(m);
+                        yield return ProcessMessage<T>(m, autoAck, customHander);
                     }
-                }
-                else if(takeCount > 0)
-                {
-                    var takes = 0;
-                    while (takes < takeCount)
+                    else
                     {
-                        if (_managerState.MessageQueue[consumerName].TryTake(out var m, _conf.OperationTimeoutMs, CancellationToken.None))
-                        {
-                            if (autoAck)
-                            {
-                                if (m.Message.MessageId is MessageId mi)
-                                {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
-                                }
-                                else if (m.Message.MessageId is BatchMessageId b)
-                                {
-                                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
-                                }
-                            }
-                            yield return customHander(m);
-                            takes++;
-                        }
+                        break;
                     }
                 }
             }
+        }
+
+        private T ProcessMessage<T>(ConsumedMessage m, bool autoAck, Func<ConsumedMessage, T> customHander = null)
+        {
+            var received = customHander == null? m.Message.ToTypeOf<T>(): customHander(m);
+            if (autoAck)
+            {
+                if (m.Message.MessageId is MessageId mi)
+                {
+                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets?.ToArray())));
+                }
+                else if (m.Message.MessageId is BatchMessageId b)
+                {
+                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets?.ToArray())));
+                }
+            }
+
+            return received;
         }
         public ConsumedMessage Receive(string consumerName, int receiveTimeout = 3000)
         {
@@ -422,11 +391,11 @@ namespace SharpPulsar.Akka
         {
             if (m.Message.MessageId is MessageId mi)
             {
-                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets.ToArray())));
+                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets?.ToArray())));
             }
             else if (m.Message.MessageId is BatchMessageId b)
             {
-                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets.ToArray())));
+                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets?.ToArray())));
             }
         }
 
@@ -439,11 +408,11 @@ namespace SharpPulsar.Akka
         {
             if (m.Message.MessageId is MessageId mi)
             {
-                m.Consumer.Tell(new AckMessages(mi, m.AckSets.ToArray()));
+                m.Consumer.Tell(new AckMessages(mi, m.AckSets?.ToArray()));
             }
             else if (m.Message.MessageId is BatchMessageId b)
             {
-                m.Consumer.Tell(new AckMessages(new MessageId(b.LedgerId, b.EntryId, b.PartitionIndex), m.AckSets.ToArray()));
+                m.Consumer.Tell(new AckMessages(new MessageId(b.LedgerId, b.EntryId, b.PartitionIndex), m.AckSets?.ToArray()));
             }
         }
 

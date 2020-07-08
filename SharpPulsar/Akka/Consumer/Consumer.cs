@@ -19,15 +19,12 @@ using SharpPulsar.Shared;
 using System;
 using System.Buffers;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using Akka.Event;
-using Akka.Util;
-using PulsarAdmin.Models;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Exceptions;
@@ -132,7 +129,7 @@ namespace SharpPulsar.Akka.Consumer
             _subscriptionMode = mode;
             _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
-            _requestedFlowPermits = configuration.ReceiverQueueSize;
+            _requestedFlowPermits = 1500;//configuration.ReceiverQueueSize;
             _conf = configuration;
             _interceptors = new ConsumerInterceptors(_system, configuration.Interceptors);
             _clientConfiguration = clientConfiguration;
@@ -554,16 +551,7 @@ namespace SharpPulsar.Akka.Consumer
                 // Enqueue the message so that it can be retrieved when application calls receive()
                 // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
                 // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-                /*if (deadLetterPolicy != null && possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= deadLetterPolicy.MaxRedeliverCount)
-                    {
-                        possibleSendToDeadLetterTopicMessages[(MessageId)message.getMessageId()] = Collections.singletonList(message);
-                    }*/
-                //Not needed since we are not dealing ansyc receive
-                /*if (_pendingReceives.Count !> 0)
-                    {
-                        NotifyPendingReceivedCallback(message, null);
-                    }
-                    else */
+                
                 if (EnqueueMessageAndCheckBatchReceive(message))
                 {
                     if (HasPendingBatchReceive())

@@ -98,6 +98,7 @@ namespace SharpPulsar.Tracker
             _ackTimeoutMillis = ackTimeoutMillis;
             _tickDurationInMs = tickDurationInMs;
             _system = system;
+            _log = system.Log;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
             _timePartitions = new Queue<HashSet<IMessageId>>();
 
@@ -172,7 +173,7 @@ namespace SharpPulsar.Tracker
 
         public virtual  bool Add(IMessageId messageId)
         {
-            var partition = _timePartitions.LastOrDefault();
+            var partition = _timePartitions.Last();
             var previousPartition = MessageIdPartitionMap.GetOrAdd(messageId, p => partition);
             if (previousPartition?.Count == 0)
             {

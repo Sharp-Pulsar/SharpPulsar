@@ -98,7 +98,7 @@ namespace SharpPulsar.Test
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
             _pulsarSystem.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
-            foreach (var msg in _pulsarSystem.Messages(topicLast,true, 70, message =>
+            foreach (var msg in _pulsarSystem.Messages(topicLast,true, 70, customHander: message =>
             {
                 var m = message.Message.ToTypeOf<Students>();
                 _output.WriteLine($"Sequence Id: {message.Message.SequenceId}");
