@@ -33,7 +33,7 @@ namespace SharpPulsar.Impl
 	{
         private string _topic;
 		private readonly string _producer;//topic
-		private MessageMetadata _metadata  = new MessageMetadata();
+		private readonly MessageMetadata _metadata  = new MessageMetadata();
 		private readonly ISchema _schema;
 		private byte[] _content;
 
@@ -225,10 +225,10 @@ namespace SharpPulsar.Impl
 				DeliverAt((long)d.Value);
 			}
             
-            else
+            /*else
 			{
 				throw new Exception("Invalid message config key '" + d.Key + "'");
-			}
+			}*/
 			});
 			return this;
 		}

@@ -81,7 +81,8 @@ namespace SharpPulsar.Akka
                 EventQueue = new BlockingQueue<IEventMessage>(),
                 MaxQueue = new BlockingQueue<TopicEntries>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
-                FunctionQueue = new BlockingQueue<FunctionResponse>()
+                FunctionQueue = new BlockingQueue<FunctionResponse>(),
+                SentReceiptQueue = new BlockingQueue<SentReceipt>()
             };
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
@@ -103,7 +104,8 @@ namespace SharpPulsar.Akka
                 EventQueue = new BlockingQueue<IEventMessage>(),
                 MaxQueue = new BlockingQueue<TopicEntries>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
-                FunctionQueue = new BlockingQueue<FunctionResponse>()
+                FunctionQueue = new BlockingQueue<FunctionResponse>(),
+                SentReceiptQueue = new BlockingQueue<SentReceipt>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -792,14 +794,32 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("Seek is null");
             reader.Tell(seek);
         }
-        public void Send(Send send, IActorRef producer)
+        public SentReceipt Send(Send send, IActorRef producer, int sendTimeout = 5000/*5 seconds*/)
         {
            producer.Tell(send);
+           if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, CancellationToken.None))
+           {
+               return  receipt;
+           }
+
+           return null;//maybe the message is being batched.
         }
        
-        public void BulkSend(BulkSend send, IActorRef producer)
+        public IEnumerable<SentReceipt> BulkSend(BulkSend send, IActorRef producer, int sendTimeout = 5000/*5 seconds*/)
         {
+            var count = send.Messages.Count;
             producer.Tell(send);
+            for (var i = 0; i < count; i++)
+            {
+                if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, CancellationToken.None))
+                {
+                    yield return receipt;
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
         public void Unsubscribe(IActorRef consumer)
         {

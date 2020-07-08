@@ -39,22 +39,23 @@ namespace SharpPulsar.Test.Api
             _output = output;
 			_common = new TestCommon.Common(output);
 			_common.GetPulsarSystem(new AuthenticationDisabled());
-            ProducerBaseSetup(_common.PulsarSystem, output);
+            //ProducerBaseSetup(_common.PulsarSystem, output);
         }
 
 		private void ByteKeysTest(bool batching)
 		{
 			Random r = new Random(0);
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic", "ByteKeysTest", "my-subscriber-name"));
 
-            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), "persistent://my-property/my-ns/my-topic1", "TestSyncProducerAndConsumer", batchMessageDelayMs: batching? long.MaxValue: 0, batchingMaxMessages: batching? int.MaxValue : 0));
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), "persistent://public/default/my-topic-keys", "ByteKeysTest", batchMessageDelayMs: batching ? 5000 : 0, batchingMaxMessages: batching ? 5 : 0));
 
-			byte[] byteKey = new byte[1000];
-			r.NextBytes(byteKey);
-			var config = new Dictionary<string, object>{{ "KeyBytes", byteKey } };
-			var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), config.ToImmutableDictionary());
-			_common.PulsarSystem.Send(send, producer.Producer);
+            byte[] byteKey = new byte[1000];
+            r.NextBytes(byteKey);
+            var config = new Dictionary<string, object> { { "KeyBytes", byteKey } };
+            var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), config.ToImmutableDictionary());
+            var receipt =  _common.PulsarSystem.Send(send, producer.Producer);
 
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://public/default/my-topic-keys", "ByteKeysTest", "ByteKeysTest-subscriber"));
+            
             var messages = _common.PulsarSystem.Messages("ByteKeysTest", false, customHander: (m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);

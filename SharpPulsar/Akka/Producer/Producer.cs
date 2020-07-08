@@ -277,7 +277,7 @@ namespace SharpPulsar.Akka.Producer
                 BecomeReceive();
                 ResendMessages();
                 if(BatchMessagingEnabled)
-                    _batchMessageAndSendCancelable = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_configuration.BatchingMaxPublishDelayMicros)), BatchMessageAndSendJob);
+                    _batchMessageAndSendCancelable = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_configuration.BatchingMaxPublishDelayMillis), BatchMessageAndSendJob);
             });
             PulsarError();
             ReceiveAny(x => Stash.Stash());
@@ -293,7 +293,7 @@ namespace SharpPulsar.Akka.Producer
             BatchMessageAndSend();
             // schedule the next batch message task
             _batchMessageAndSendCancelable =
-                Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_configuration.BatchingMaxPublishDelayMicros)), BatchMessageAndSendJob);
+                Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_configuration.BatchingMaxPublishDelayMillis)), BatchMessageAndSendJob);
         }
         private void PulsarError()
         {
@@ -529,7 +529,11 @@ namespace SharpPulsar.Akka.Producer
             {
                 chunkMsgMetadata.PublishTime = (ulong)_clientConfiguration.Clock.ToEpochTime();
 
-                Precondition.Condition.CheckArgument(!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName));
+                if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
+                {
+                    _log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
+                    chunkMsgMetadata.ProducerName = string.Empty;
+                }
 
                 chunkMsgMetadata.ProducerName = ProducerName;
 
@@ -657,11 +661,10 @@ namespace SharpPulsar.Akka.Producer
 
         private void RecoverProcessOpSendMsgFrom(Message from)
         {
-            using IEnumerator<OpSendMsg> msgIterator = _pendingMessages.GetEnumerator();
+            var pendingMessages = _pendingMessages.ToList();
             OpSendMsg pendingRegisteringOp = null;
-            while (msgIterator.MoveNext())
+            foreach (var op in pendingMessages)
             {
-                var op = msgIterator.Current;
                 if (from != null)
                 {
                     if (op?.Msg == from)
@@ -672,33 +675,33 @@ namespace SharpPulsar.Akka.Producer
                     {
                         continue;
                     }
-                }
-                if (op?.Msg != null)
-                {
-                    if (op.Msg.GetSchemaState() == Message.SchemaState.None)
+                    if (op?.Msg != null)
                     {
-                        if (!RePopulateMessageSchema(op.Msg))
+                        if (op.Msg.GetSchemaState() == Message.SchemaState.None)
                         {
-                            pendingRegisteringOp = op;
-                            break;
+                            if (!RePopulateMessageSchema(op.Msg))
+                            {
+                                pendingRegisteringOp = op;
+                                break;
+                            }
+                        }
+                        else if (op.Msg.GetSchemaState() == Message.SchemaState.Broken)
+                        {
+                            _pendingMessages.Remove(op);
+                            op.Recycle();
+                            continue;
                         }
                     }
-                    else if (op.Msg.GetSchemaState() == Message.SchemaState.Broken)
+                    if (op?.Cmd == null)
                     {
-                        _pendingMessages.Remove(op);
-                        op.Recycle();
-                        continue;
+                        op?.RePopulate.Invoke();
                     }
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{_topic}] [{ProducerName}] Re-Sending message in sequenceId {op.SequenceId}");
+                    }
+                    WriteMessageToWire(op);
                 }
-                if (op?.Cmd == null)
-                {
-                    op?.RePopulate.Invoke();
-                }
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"[{_topic}] [{ProducerName}] Re-Sending message in sequenceId {op.SequenceId}");
-                }
-                WriteMessageToWire(op);
             }
             if (pendingRegisteringOp != null)
             {
@@ -871,6 +874,7 @@ namespace SharpPulsar.Akka.Producer
                 HandleSendReceipt(receipt);
                 _listener.MessageSent(receipt);
                 _stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
+                _pulsarManager.Tell(receipt);
             }
             catch (AskTimeoutException ex)
             {
@@ -1037,7 +1041,7 @@ namespace SharpPulsar.Akka.Producer
                 return false;
             }
             var schemaHash = SchemaHash.Of(msg.Schema);
-            var schemaVersion = _schemaCache[schemaHash];
+            _schemaCache.TryGetValue(schemaHash, out var schemaVersion);
             if (schemaVersion != null)
             {
                 msgMetadata.SchemaVersion = schemaVersion;

@@ -35,6 +35,7 @@ namespace SharpPulsar.Akka
 
         private void Ready()
         {
+            Receive<SentReceipt>(r => { _pulsarManagerState.SentReceiptQueue.Enqueue(r); });
             Receive<AdminResponse>(r =>
             {
                 _pulsarManagerState.AdminQueue.Enqueue(r);

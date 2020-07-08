@@ -39,6 +39,8 @@ namespace Samples
 {
     public class Program
     {
+        //https://www.digitalocean.com/community/tutorials/how-to-install-python-3-and-set-up-a-programming-environment-on-an-ubuntu-20-04-server
+        //https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-on-ubuntu-20-04
         //https://www.splunk.com/en_us/blog/it/effectively-once-semantics-in-apache-pulsar.html
         //https://linuxize.com/post/how-to-save-file-in-vim-quit-editor/
         //https://stackoverflow.com/questions/9612941/how-to-set-java-environment-path-in-ubuntu

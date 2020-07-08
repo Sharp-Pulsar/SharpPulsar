@@ -94,7 +94,7 @@ namespace SharpPulsar.Akka.Configuration
 		}
 		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchingMaxPublishDelayMs)
         {
-            _conf.BatchingMaxPublishDelayMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(batchingMaxPublishDelayMs);
+            _conf.BatchingMaxPublishDelayMillis = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(batchingMaxPublishDelayMs);
             return this;
 		}
 		

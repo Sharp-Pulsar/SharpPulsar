@@ -54,16 +54,19 @@ namespace SharpPulsar.Impl
 		public virtual IMessage BeforeConsume(IActorRef consumer, IMessage message)
 		{
 			var interceptorMessage = message;
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+            if (_interceptors != null)
 			{
-				try
-				{
-					interceptorMessage = _interceptors[i].BeforeConsume(consumer, interceptorMessage);
-				}
-				catch (System.Exception e)
-				{
-                    _log.Warning($"Error executing interceptor beforeConsume callback: {e}");
-				}
+				for (int i = 0; i < _interceptors.Count; i++)
+                {
+                    try
+                    {
+                        interceptorMessage = _interceptors[i].BeforeConsume(consumer, interceptorMessage);
+                    }
+                    catch (System.Exception e)
+                    {
+                        _log.Warning($"Error executing interceptor beforeConsume callback: {e}");
+                    }
+                }
 			}
 			return interceptorMessage;
 		}

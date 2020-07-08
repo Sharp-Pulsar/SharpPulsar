@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
@@ -18,6 +17,7 @@ namespace SharpPulsar.Akka
         public BlockingQueue<IEventMessage> EventQueue { get; set; }
         public BlockingQueue<CreatedProducer> ProducerQueue { get; set; }
         public BlockingQueue<SqlData> DataQueue { get; set; }
+        public BlockingQueue<SentReceipt>SentReceiptQueue { get; set; }
         public BlockingQueue<AdminResponse> AdminQueue { get; set; }
         public BlockingQueue<FunctionResponse> FunctionQueue { get; set; }
         public BlockingCollection<LiveSqlData> LiveDataQueue { get; set; }

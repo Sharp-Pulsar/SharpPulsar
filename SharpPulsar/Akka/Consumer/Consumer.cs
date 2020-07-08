@@ -74,6 +74,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private ICancelable _consumerRecreator;
         private readonly Dictionary<MessageId, MessageId[]> _unAckedChunkedMessageIdSequenceMap;
+        private readonly ActorSystem _system;
 
         private IMessageId _lastDequeuedMessageId = MessageIdFields.Earliest;
         private IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
@@ -115,6 +116,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly IActorRef _pulsarManager;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
+            _system = Context.System;
             _pendingReceives = new Queue<Message>();
             _log = Context.GetLogger();
             _incomingMessages = new Queue<Message>();
@@ -132,7 +134,7 @@ namespace SharpPulsar.Akka.Consumer
             _hasParentConsumer = hasParentConsumer;
             _requestedFlowPermits = configuration.ReceiverQueueSize;
             _conf = configuration;
-            _interceptors = new ConsumerInterceptors(Context.System, configuration.Interceptors);
+            _interceptors = new ConsumerInterceptors(_system, configuration.Interceptors);
             _clientConfiguration = clientConfiguration;
             _startMessageRollbackDurationInSec = 0;
             _consumerid = consumerid;
@@ -143,7 +145,7 @@ namespace SharpPulsar.Akka.Consumer
             _consumerName = configuration.ConsumerName;
             _unAckedChunkedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
 
-            _negativeAcksTracker = new NegativeAcksTracker(Context.System, Self, configuration);
+            _negativeAcksTracker = new NegativeAcksTracker(_system, Self, configuration);
 
             _maxPendingChuckedMessage = configuration.MaxPendingChuckedMessage;
             _pendingChunckedMessageUuidQueue = new List<string>();
@@ -152,7 +154,7 @@ namespace SharpPulsar.Akka.Consumer
 
             if (clientConfiguration.StatsIntervalSeconds > 0)
             {
-                _stats = new ConsumerStatsRecorder(Context.System, configuration, _topicName.ToString(), _consumerName, _subscriptionName, clientConfiguration.StatsIntervalSeconds);
+                _stats = new ConsumerStatsRecorder(_system, configuration, _topicName.ToString(), _consumerName, _subscriptionName, clientConfiguration.StatsIntervalSeconds);
             }
             else
             {
@@ -165,11 +167,11 @@ namespace SharpPulsar.Akka.Consumer
             {
                 if (configuration.TickDurationMillis > 0)
                 {
-                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis), Context.System);
+                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis), _system);
                 }
                 else
                 {
-                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Context.System);
+                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, _system);
                 }
             }
             else
@@ -241,7 +243,7 @@ namespace SharpPulsar.Akka.Consumer
 
             if (_batchReceivePolicy.TimeoutMs > 0)
             {
-                _batchReceiveTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_batchReceivePolicy.TimeoutMs), PendingBatchReceiveTask);
+                _batchReceiveTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_batchReceivePolicy.TimeoutMs), PendingBatchReceiveTask);
             }
             ReceiveAny(x => Stash.Stash());
             BecomeLookUp();
@@ -762,7 +764,7 @@ namespace SharpPulsar.Akka.Consumer
             // Lazy task scheduling to expire incomplete chunk message
             if (!_expireChunkMessageTaskScheduled && _expireTimeOfIncompleteChunkedMessageMillis > 0)
             {
-                Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
+                _system.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(_expireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
                 _expireChunkMessageTaskScheduled = true;
             }
 
@@ -1560,7 +1562,7 @@ namespace SharpPulsar.Akka.Consumer
         private void RecreatingConsumer()
         {
             _seek = null;
-            _consumerRecreator = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), Self, new RecreateConsumer(), ActorRefs.NoSender);
+            _consumerRecreator = _system.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), Self, new RecreateConsumer(), ActorRefs.NoSender);
             Receive<RecreateConsumer>(_ =>
             {
                 BecomeLookUp();
@@ -1634,7 +1636,7 @@ namespace SharpPulsar.Akka.Consumer
 
                 if (_topicName.Persistent)
                 {
-                    _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(Context.System, _broker, Self, _consumerid, _conf);
+                    _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(_system, _broker, Self, _consumerid, _conf);
                 }
                 else
                 {
@@ -1672,7 +1674,8 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _pendingBatchReceives = new Queue<OpBatchReceive>();
             }
-            var firstOpBatchReceive = _pendingBatchReceives.Peek();
+
+            _pendingBatchReceives.TryPeek(out var firstOpBatchReceive);
             timeToWaitMs = _batchReceivePolicy.TimeoutMs;
 
             while (firstOpBatchReceive != null)
@@ -1695,7 +1698,7 @@ namespace SharpPulsar.Akka.Consumer
                     break;
                 }
             }
-            _batchReceiveTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), PendingBatchReceiveTask);
+            _batchReceiveTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), PendingBatchReceiveTask);
         }
         private void CompleteOpBatchReceive(OpBatchReceive op)
         {

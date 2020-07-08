@@ -9,10 +9,10 @@ using System.Net.Security;
 using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using Akka.Actor;
 using Akka.Event;
 using BeetleX;
+using BeetleX.Buffers;
 using BeetleX.Clients;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
@@ -31,6 +31,7 @@ namespace SharpPulsar.Akka.Network
         private readonly IActorRef _self;
         private readonly IActorRef _parent;
         private readonly ActorSystem _system;
+        private readonly IActorContext _context;
         private readonly ReadOnlySequence<byte> _pong = new ReadOnlySequence<byte>(Commands.NewPong());
         internal Uri RemoteAddress;
         internal int RemoteEndpointProtocolVersion = Enum.GetValues(typeof(ProtocolVersion)).Cast<int>().Max();
@@ -45,28 +46,35 @@ namespace SharpPulsar.Akka.Network
         // Added for mutual authentication.
         private IAuthenticationDataProvider _authenticationDataProvider;
         private AsyncTcpClient _client;
+        private bool _pingScheduleRunning = false;
+        private ICancelable _reconnectScheduler;
 
         public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
+            _context = Context;
             _proxyToTargetBrokerAddress = targetBroker;
-            _system = Context.System;
+            _system = _context.System;
             _self = Self;
             RemoteHostName = endPoint.Host;
             _conf = conf;
             _manager = manager;
             Connection = Self;
             RemoteAddress = endPoint;
-            _log = Context.System.Log;
+            _log = _context.System.Log;
             if (conf.MaxLookupRequest < conf.ConcurrentLookupRequest)
                 throw new Exception("ConcurrentLookupRequest must be less than MaxLookupRequest");
             _authentication = conf.Authentication;
 
-            _parent = Context.Parent;
+            _parent = _context.Parent;
            Connect();
            Receive<Payload>(p =>
            {
                _ = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                Send(new ReadOnlySequence<byte>(p.Bytes));
+           });
+           Receive<Reconnect>(r=>
+           {
+               ConnectToServer();
            });
         }
 
@@ -83,9 +91,6 @@ namespace SharpPulsar.Akka.Network
                 }
                 
                 _client = SocketFactory.CreateClient<AsyncTcpClient>(remoteAddress.Host, remoteAddress.Port);
-                
-                //_client.LittleEndian = false;
-                
                 _client.DataReceive = (o, e) =>
                 {
                     var size = (int)e.Stream.Length;
@@ -96,7 +101,7 @@ namespace SharpPulsar.Akka.Network
                     var totalSize = frameSize + 4;
                     if (block.Count < totalSize)
                         return;
-                    ProcessIncommingFrames(sequence.Slice(4));
+                    ProcessIncommingFrames(sequence.Slice(4, frameSize));
                 };
                 if (_conf.UseTls)
                 {
@@ -108,35 +113,46 @@ namespace SharpPulsar.Akka.Network
 
                 _log.Info($"Opening Connection to: {RemoteAddress}");
                 _client.Disconnected = Disconnected;
-                _client.Connect(out var connected);
-                if(connected)
-                    Connected(_client);
-                else
-                {
-                    Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
-                }
+                ConnectToServer();
             }
             catch (Exception ex)
             {
                 _log.Error(ex.Message);
-                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
+               _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
             }
         }
 
         private void Disconnected(IClient client)
         {
             _log.Info($"Disconnected from the server. Reconnecting in 10 seconds");
-            Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), Connect);
+            _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
         }
-        private void Connected(IClient client)
+
+        private void ConnectToServer()
+        {
+            if(_client.IsConnected)
+                return;
+            _client.Connect(out var connected);
+            if (connected)
+                Connected();
+            else
+            {
+                var error = _client.LastError;
+                _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
+            }
+        }
+        private void Connected()
         {
             Send(new ReadOnlySequence<byte>(NewConnectCommand()));
-            Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromSeconds(10), () =>
-                {
-                    BytesHandler bytes = Commands.NewPing();
-                    _client.Send(bytes);
-                });
+            /*if (!_pingScheduleRunning)
+            {
+                _context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(100),
+                    TimeSpan.FromSeconds(10), () =>
+                    {
+                        Send(new ReadOnlySequence<byte>(Commands.NewPing()));
+                    });
+                _pingScheduleRunning = true;
+            }*/
         }
         private void Send(ReadOnlySequence<byte> cmd)
         {
@@ -157,6 +173,7 @@ namespace SharpPulsar.Akka.Network
         
         protected override void PostStop()
         {
+            _reconnectScheduler?.Cancel();
             _client.DisConnect();
         }
 
@@ -251,7 +268,7 @@ namespace SharpPulsar.Akka.Network
                         break;
                     case BaseCommand.Type.Message:
                         var msg = cmd.Message;
-                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition, msg.MessageId.AckSets), frame.Slice(frame.Length + 4), (int)msg.RedeliveryCount));
+                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition, msg.MessageId.AckSets), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount));
                         break;
                     case BaseCommand.Type.Success:
                         var s = cmd.Success;
@@ -395,5 +412,10 @@ namespace SharpPulsar.Akka.Network
             return true;
         }
 
+    }
+
+    public sealed class Reconnect
+    {
+        public static Reconnect Instance = new Reconnect();
     }
 }
