@@ -74,7 +74,7 @@ namespace SharpPulsar.Akka.Network
            });
            Receive<Reconnect>(r=>
            {
-               ConnectToServer();
+               ConnectToServer(Context.System.Scheduler.Advanced);
            });
         }
 
@@ -112,47 +112,49 @@ namespace SharpPulsar.Akka.Network
                 }
 
                 _log.Info($"Opening Connection to: {RemoteAddress}");
-                _client.Disconnected = Disconnected;
-                ConnectToServer();
+                _client.Disconnected = client => Disconnected(client, _context.System.Scheduler.Advanced);
+                ConnectToServer(_context.System.Scheduler.Advanced);
             }
             catch (Exception ex)
             {
                 _log.Error(ex.Message);
-               _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
+               _reconnectScheduler = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(5),
+                   () => { ConnectToServer(_context.System.Scheduler.Advanced); });
             }
         }
 
-        private void Disconnected(IClient client)
+        private void Disconnected(IClient client, IAdvancedScheduler scheduler)
         {
             _log.Info($"Disconnected from the server. Reconnecting in 10 seconds");
-            _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
+            _reconnectScheduler = scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(5),
+                () => { ConnectToServer(scheduler);});
         }
 
-        private void ConnectToServer()
+        private void ConnectToServer(IAdvancedScheduler scheduler)
         {
             if(_client.IsConnected)
                 return;
             _client.Connect(out var connected);
             if (connected)
-                Connected();
+                Connected(scheduler);
             else
             {
                 var error = _client.LastError;
                 _reconnectScheduler = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(5), Self, Reconnect.Instance, ActorRefs.NoSender);
             }
         }
-        private void Connected()
+        private void Connected(IAdvancedScheduler scheduler)
         {
             Send(new ReadOnlySequence<byte>(NewConnectCommand()));
-            /*if (!_pingScheduleRunning)
+            if (!_pingScheduleRunning)
             {
-                _context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(100),
+                scheduler.ScheduleRepeatedly(TimeSpan.FromMilliseconds(100),
                     TimeSpan.FromSeconds(10), () =>
                     {
                         Send(new ReadOnlySequence<byte>(Commands.NewPing()));
                     });
                 _pingScheduleRunning = true;
-            }*/
+            }
         }
         private void Send(ReadOnlySequence<byte> cmd)
         {
@@ -236,9 +238,7 @@ namespace SharpPulsar.Akka.Network
             {
                 var commandSize = frame.ReadUInt32(0, true);
                 var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
-                var t = cmd.type;
-
-
+                
                 switch (cmd.type)
                 {
                     case BaseCommand.Type.AuthChallenge:
@@ -255,8 +255,7 @@ namespace SharpPulsar.Akka.Network
                         break;
                     case BaseCommand.Type.Connected:
                         var c = cmd.Connected;
-                        _parent.Tell(
-                            new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion,
+                        _parent.Tell(new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion,
                                 RemoteHostName), _self);
                         _log.Info($"Now connected: Host = {RemoteHostName}, ProtocolVersion = {c.ProtocolVersion}");
                         break;

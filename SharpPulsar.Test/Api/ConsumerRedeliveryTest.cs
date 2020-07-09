@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Api;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
 using Xunit;
@@ -49,7 +47,10 @@ namespace SharpPulsar.Test.Api
 		{
 			string topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
 			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
-			const int messageCount = 10;
+            
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 2000));
+
+            const int messageCount = 10;
             
 			for (int i = 0; i < messageCount; i++)
 			{
@@ -58,7 +59,6 @@ namespace SharpPulsar.Test.Api
                 _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions{WriteIndented = true}));
 			}
 
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 3000));
             int messageReceived = 0;
             
             var messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, customHander:(m) =>

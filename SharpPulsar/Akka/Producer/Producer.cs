@@ -462,7 +462,7 @@ namespace SharpPulsar.Akka.Producer
 
             if (!PopulateMessageSchema(message))
             {
-                compressedPayload = null;
+                //compressedPayload = null;
                 return;
             }
 
@@ -1010,8 +1010,8 @@ namespace SharpPulsar.Akka.Producer
 
         protected override void PostStop()
         {
-            _regenerateDataKeyCipherCancelable.Cancel();
-            _batchMessageAndSendCancelable.Cancel();
+            _regenerateDataKeyCipherCancelable?.Cancel();
+            _batchMessageAndSendCancelable?.Cancel();
             base.PostStop();
         }
 

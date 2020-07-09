@@ -56,7 +56,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly Queue<Message> _incomingMessages;
         private readonly List<string> _pendingChunckedMessageUuidQueue;
         private readonly IActorRef _network;
-        private int _requestedFlowPermits;
+        private int _requestedFlowPermits = 1000;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
         private readonly DeadLetterPolicy _deadLetterPolicy;
@@ -129,7 +129,7 @@ namespace SharpPulsar.Akka.Consumer
             _subscriptionMode = mode;
             _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
-            _requestedFlowPermits = 1500;//configuration.ReceiverQueueSize;
+            //_requestedFlowPermits = 1500;//configuration.ReceiverQueueSize;
             _conf = configuration;
             _interceptors = new ConsumerInterceptors(_system, configuration.Interceptors);
             _clientConfiguration = clientConfiguration;
@@ -464,118 +464,126 @@ namespace SharpPulsar.Akka.Consumer
         private void MessageReceived(MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data, IList<long> ackSet)
         {
             //MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data
-            if (_log.IsDebugEnabled)
-            {
-                _log.Debug($"[{_topicName}][{_subscriptionName}] Received message: {messageId.ledgerId}/{messageId.entryId}");
-                _consumerEventListener.Log($"[{_topicName}][{_subscriptionName}] Received message: {messageId.ledgerId}/{messageId.entryId}");
-            }
-            if (!data.IsValid())
-            {
-                // discard message with checksum error
-                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
-                return;
-            }
-
-            var metadataSize = data.GetMetadataSize();
-            var payload = data.ExtractData(metadataSize);
-            MessageMetadata msgMetadata;
             try
-            {
-                msgMetadata = data.ExtractMetadata(metadataSize);
-            }
-            catch (Exception)
-            {
-                DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
-                return;
-            }
-            var numMessages = msgMetadata.NumMessagesInBatch;
-            var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && _conf.SubscriptionType != CommandSubscribe.SubType.Shared;
-            
-            var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-            if (_acknowledgmentsGroupingTracker.IsDuplicate(msgId))
             {
                 if (_log.IsDebugEnabled)
                 {
-                    _log.Debug($"[{_topicName}] [{_subscriptionName}] Ignoring message as it was already being acked earlier by same consumer {_consumerName}/{msgId}");
+                    _log.Debug($"[{_topicName}][{_subscriptionName}] Received message: {messageId.ledgerId}/{messageId.entryId}");
+                    _consumerEventListener.Log($"[{_topicName}][{_subscriptionName}] Received message: {messageId.ledgerId}/{messageId.entryId}");
                 }
-
-                IncreaseAvailablePermits(numMessages);
-                return;
-            }
-
-            var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, payload);
-
-            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
-
-            if (decryptedPayload == null)
-            {
-                // Message was discarded or CryptoKeyReader isn't implemented
-                return;
-            }
-
-            // uncompress decryptedPayload and release decryptedPayload-ByteBuf
-            var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, true);
-            if (uncompressedPayload == null)
-            {
-                // Message was discarded on decompression error
-                return;
-            }
-
-            // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
-            // and return undecrypted payload
-            if (isMessageUndecryptable || (numMessages == 1 && msgMetadata.NumMessagesInBatch !> 0))
-            {
-
-                // right now, chunked messages are only supported by non-shared subscription
-                if (isChunkedMessage)
+                if (!data.IsValid())
                 {
-                    uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId);
-                    if (uncompressedPayload == null)
-                    {
-                        return;
-                    }
-                }
-
-                if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
-                {
-                    // We need to discard entries that were prior to startMessageId
-                    if (_log.IsDebugEnabled)
-                    {
-                        _log.Debug($"[{_subscriptionName}] [{_consumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-                    }
-
+                    // discard message with checksum error
+                    DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
                     return;
                 }
 
-                var message = new Message(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
-                // Enqueue the message so that it can be retrieved when application calls receive()
-                // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
-                // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-                
-                if (EnqueueMessageAndCheckBatchReceive(message))
+                var metadataSize = data.GetMetadataSize();
+                var payload = data.ExtractData(metadataSize);
+                MessageMetadata msgMetadata;
+                try
                 {
-                    if (HasPendingBatchReceive())
+                    msgMetadata = data.ExtractMetadata(metadataSize);
+                }
+                catch (Exception)
+                {
+                    DiscardCorruptedMessage(messageId, CommandAck.ValidationError.ChecksumMismatch);
+                    return;
+                }
+                var numMessages = msgMetadata.NumMessagesInBatch;
+                var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && _conf.SubscriptionType != CommandSubscribe.SubType.Shared;
+
+                var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
+                if (_acknowledgmentsGroupingTracker.IsDuplicate(msgId))
+                {
+                    if (_log.IsDebugEnabled)
                     {
-                        NotifyPendingBatchReceivedCallBack();
+                        _log.Debug($"[{_topicName}] [{_subscriptionName}] Ignoring message as it was already being acked earlier by same consumer {_consumerName}/{msgId}");
                     }
+
+                    IncreaseAvailablePermits(numMessages);
+                    return;
                 }
 
-                var received = InternalReceive();
-                if (_hasParentConsumer)
-                    Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
+                var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, payload);
+
+                var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
+
+                if (decryptedPayload == null)
+                {
+                    // Message was discarded or CryptoKeyReader isn't implemented
+                    return;
+                }
+
+                // uncompress decryptedPayload and release decryptedPayload-ByteBuf
+                var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, true);
+                if (uncompressedPayload == null)
+                {
+                    // Message was discarded on decompression error
+                    return;
+                }
+
+                // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
+                // and return undecrypted payload
+                if (isMessageUndecryptable || (numMessages == 1 && msgMetadata.NumMessagesInBatch! > 0))
+                {
+
+                    // right now, chunked messages are only supported by non-shared subscription
+                    if (isChunkedMessage)
+                    {
+                        uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId);
+                        if (uncompressedPayload == null)
+                        {
+                            return;
+                        }
+                    }
+
+                    if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
+                    {
+                        // We need to discard entries that were prior to startMessageId
+                        if (_log.IsDebugEnabled)
+                        {
+                            _log.Debug($"[{_subscriptionName}] [{_consumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
+                        }
+
+                        return;
+                    }
+
+                    var message = new Message(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _schema, redeliveryCount);
+                    // Enqueue the message so that it can be retrieved when application calls receive()
+                    // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
+                    // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
+
+                    if (EnqueueMessageAndCheckBatchReceive(message))
+                    {
+                        if (HasPendingBatchReceive())
+                        {
+                            NotifyPendingBatchReceivedCallBack();
+                        }
+                    }
+
+                    var received = InternalReceive();
+                    if (_hasParentConsumer)
+                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
+                    else
+                    {
+                        if (_conf.ConsumptionType == ConsumptionType.Listener)
+                            _listener.Received(Self, received, ackSet);
+                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
+                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
+                    }
+                    IncreaseAvailablePermits(numMessages);
+                }
                 else
                 {
-                    if (_conf.ConsumptionType == ConsumptionType.Listener)
-                        _listener.Received(Self, received, ackSet);
-                    else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                        _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
+                    // handle batch message enqueuing; uncompressed payload has all messages in batch
+                    ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, ackSet, new ReadOnlySequence<byte>(uncompressedPayload), messageId);
+
                 }
             }
-            else
+            catch (Exception ex)
             {
-                // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, ackSet, new ReadOnlySequence<byte>(uncompressedPayload), messageId);
-
+                _log.Error(ex.ToString());
             }
 
         }
@@ -587,11 +595,7 @@ namespace SharpPulsar.Akka.Consumer
             // create ack tracker for entry aka batch
             var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
             var acker = BatchMessageAcker.NewAcker(batchSize);
-            /*IList<Message> possibleToDeadLetter = null;
-            if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
-            {
-                possibleToDeadLetter = new List<Message>();
-            }*/
+            
             var skippedMessages = 0;
             try
             {
@@ -667,11 +671,6 @@ namespace SharpPulsar.Akka.Consumer
                 DiscardCorruptedMessage(messageId, CommandAck.ValidationError.BatchDeSerializeError);
             }
 
-            /*if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
-            {
-                PossibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
-            }
-            */
             if (_log.IsDebugEnabled)
             {
                 _log.Debug($"[{_subscriptionName}] [{_consumerName}] enqueued messages in batch. queue size - {_incomingMessages.Count}, available queue size - {_maxReceiverQueueSize - _incomingMessages.Count}");
@@ -714,7 +713,7 @@ namespace SharpPulsar.Akka.Consumer
         {
             _lastDequeuedMessageId = msg.MessageId;
 
-            //increaseAvailablePermits(currentCnx);
+            IncreaseAvailablePermits(500);
             _stats.UpdateNumMsgsReceived(msg);
 
             TrackMessage(msg);
@@ -1470,6 +1469,7 @@ namespace SharpPulsar.Akka.Consumer
                     AckSets = m.MessageId.AckSet
                 };
                 MessageReceived(msgId, m.RedeliveryCount, m.Data, m.MessageId.AckSet);
+                IncreaseAvailablePermits();
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
@@ -1492,7 +1492,11 @@ namespace SharpPulsar.Akka.Consumer
                     };
                     _schema = ISchema.GetSchema(schemaInfo);
                 }
-                //SendFlow(_requestedFlowPermits);
+                SendFlow(_requestedFlowPermits);
+            });
+            Receive<AckTimeoutSend>(ack =>
+            {
+                OnAckTimeoutSend(ack.MessageIds);
             });
             Receive<RedeliverMessages>(r => { RedeliverUnacknowledgedMessages(r.Messages); });
             Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>

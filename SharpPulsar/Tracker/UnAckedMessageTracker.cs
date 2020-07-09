@@ -117,7 +117,7 @@ namespace SharpPulsar.Tracker
             var messageIds = new HashSet<IMessageId>();
             try
             {
-                var headPartition = _timePartitions.FirstOrDefault();
+                _timePartitions.TryDequeue(out var headPartition);
                 if (headPartition != null && headPartition.Count > 0)
                 {
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
@@ -136,7 +136,7 @@ namespace SharpPulsar.Tracker
             {
                 if (messageIds.Count > 0)
                 {
-                    _consumer.Tell(new OnAckTimeoutSend(messageIds));
+                    _consumer.Tell(new AckTimeoutSend(messageIds));
                     _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
                 }
 
@@ -256,9 +256,9 @@ namespace SharpPulsar.Tracker
         public MessageId[] MessageIds { get; }
     }
 
-    public sealed class OnAckTimeoutSend
+    public sealed class AckTimeoutSend
     {
-        public OnAckTimeoutSend(ISet<IMessageId> messageIds)
+        public AckTimeoutSend(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }

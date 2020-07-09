@@ -1,17 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Akka.Actor;
-using Akka.Util;
-using PulsarAdmin.Models;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;

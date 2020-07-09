@@ -83,18 +83,21 @@ namespace SharpPulsar.Impl
 		/// <param name="exception"> exception returned by broker. </param>
 		public virtual void OnAcknowledge(IActorRef consumer, IMessageId messageId, System.Exception exception)
 		{
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
-			{
-				try
-				{
-					_interceptors[i].OnAcknowledge(consumer, messageId, exception);
-				}
-				catch (System.Exception e)
-				{
-					_log.Warning($"Error executing interceptor onAcknowledge callback {e}");
-				}
+            if (_interceptors != null)
+            {
+                for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+                {
+                    try
+                    {
+                        _interceptors[i].OnAcknowledge(consumer, messageId, exception);
+                    }
+                    catch (System.Exception e)
+                    {
+                        _log.Warning($"Error executing interceptor onAcknowledge callback {e}");
+                    }
+                }
 			}
-		}
+        }
 
 		/// <summary>
 		/// This is called when acknowledge cumulative request return from the broker.
@@ -109,16 +112,19 @@ namespace SharpPulsar.Impl
 		/// <param name="exception"> exception returned by broker. </param>
 		public virtual void OnAcknowledgeCumulative(IActorRef consumer, IMessageId messageId, System.Exception exception)
 		{
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+            if (_interceptors != null)
 			{
-				try
-				{
-					_interceptors[i].OnAcknowledgeCumulative(consumer, messageId, exception);
-				}
-				catch (System.Exception e)
-				{
-					_log.Warning($"Error executing interceptor onAcknowledgeCumulative callback {e}");
-				}
+				for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+                {
+                    try
+                    {
+                        _interceptors[i].OnAcknowledgeCumulative(consumer, messageId, exception);
+                    }
+                    catch (System.Exception e)
+                    {
+                        _log.Warning($"Error executing interceptor onAcknowledgeCumulative callback {e}");
+                    }
+                }
 			}
 		}
 
@@ -137,16 +143,19 @@ namespace SharpPulsar.Impl
 		/// <param name="messageIds"> set of message IDs being redelivery due a negative acknowledge. </param>
 		public virtual void OnNegativeAcksSend(IActorRef consumer, ISet<IMessageId> messageIds)
 		{
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+            if (_interceptors != null)
 			{
-				try
-				{
-					_interceptors[i].OnNegativeAcksSend(consumer, messageIds);
-				}
-				catch (System.Exception e)
-				{
-					_log.Warning($"Error executing interceptor onNegativeAcksSend callback {e}");
-				}
+				for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+                {
+                    try
+                    {
+                        _interceptors[i].OnNegativeAcksSend(consumer, messageIds);
+                    }
+                    catch (System.Exception e)
+                    {
+                        _log.Warning($"Error executing interceptor onNegativeAcksSend callback {e}");
+                    }
+                }
 			}
 		}
 
@@ -165,16 +174,19 @@ namespace SharpPulsar.Impl
 		/// <param name="messageIds"> set of message IDs being redelivery due an acknowledge timeout. </param>
 		public virtual void OnAckTimeoutSend(IActorRef consumer, ISet<IMessageId> messageIds)
 		{
-			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+            if (_interceptors != null)
 			{
-				try
-				{
-					_interceptors[i].OnAckTimeoutSend(consumer, messageIds);
-				}
-				catch (System.Exception e)
-				{
-					_log.Warning($"Error executing interceptor onAckTimeoutSend callback: {e}");
-				}
+				for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+                {
+                    try
+                    {
+                        _interceptors[i].OnAckTimeoutSend(consumer, messageIds);
+                    }
+                    catch (System.Exception e)
+                    {
+                        _log.Warning($"Error executing interceptor onAckTimeoutSend callback: {e}");
+                    }
+                }
 			}
 		}
 
