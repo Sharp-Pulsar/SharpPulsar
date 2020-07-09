@@ -1250,7 +1250,6 @@ namespace Samples
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
             system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
-
         }
         
         private static void LargeAvroConsumer(PulsarSystem system,  string topic)

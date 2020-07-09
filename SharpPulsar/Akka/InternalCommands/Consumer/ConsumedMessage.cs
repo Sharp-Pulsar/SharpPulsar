@@ -19,6 +19,16 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
         public IList<long> AckSets { get; }
 
     }
+
+    public sealed class ConsumedMessages
+    {
+        public List<ConsumedMessage> Messages { get; }
+
+        public ConsumedMessages()
+        {
+                Messages = new List<ConsumedMessage>();
+        }
+    }
     public class EventMessage:IEventMessage
     {
         public EventMessage(IMessage message, long sequenceId, long ledgerId, long entry)

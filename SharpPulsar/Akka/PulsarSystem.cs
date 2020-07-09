@@ -386,6 +386,32 @@ namespace SharpPulsar.Akka
 
             return null;
         }
+        /// <summary>
+        /// batch receive messages
+        /// </summary>
+        /// <code>
+        /// if(HasMessage("{consumerName}", out var count))
+        /// {
+        ///     var messages = BatchReceive("{consumerName}", count);
+        /// }
+        /// </code>
+        /// <param name="consumerName"></param>
+        /// <param name="batchSize"></param>
+        /// <param name="receiveTimeout"></param> 
+        /// <returns></returns>
+        public ConsumedMessages BatchReceive(string consumerName, int batchSize, int receiveTimeout = 3000)
+        {
+            var messages = new ConsumedMessages();
+            for (var i = 0; i < batchSize; i++)
+            {
+                if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+                {
+                    messages.Messages.Add(m);
+                }
+            }
+
+            return messages;
+        }
 
         public void Acknowledge(ConsumedMessage m)
         {
@@ -416,6 +442,11 @@ namespace SharpPulsar.Akka
             }
         }
 
+        public bool HasMessage(string consumerName, out int count)
+        {
+            count = _managerState.MessageQueue[consumerName].Count;
+            return count > 0;
+        }
         public void NegativeAcknowledge(ConsumedMessage message)
         {
             message.Consumer.Tell(new NegativeAck(message.Message.MessageId));
