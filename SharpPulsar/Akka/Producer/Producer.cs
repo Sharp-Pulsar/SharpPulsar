@@ -612,10 +612,7 @@ namespace SharpPulsar.Akka.Producer
                 else
                 {
                     op = OpSendMsg.Create(msg, null, sequenceId);
-                    op.RePopulate = () =>
-                    {
-                        op.Cmd = SendMessage(_producerId, sequenceId, numMessages, metadata, encryptedPayload);
-                    };
+                    op.Cmd = SendMessage(_producerId, sequenceId, numMessages, metadata, encryptedPayload);
                 }
                 op.NumMessagesInBatch = numMessages;
                 op.BatchSizeByte = encryptedPayload.Length;
@@ -692,10 +689,7 @@ namespace SharpPulsar.Akka.Producer
                             continue;
                         }
                     }
-                    if (op?.Cmd == null)
-                    {
-                        op?.RePopulate.Invoke();
-                    }
+                    
                     if (_log.IsDebugEnabled)
                     {
                         _log.Debug($"[{_topic}] [{ProducerName}] Re-Sending message in sequenceId {op.SequenceId}");
@@ -1006,6 +1000,7 @@ namespace SharpPulsar.Akka.Producer
                     Self.Tell(new ProducerClosed(_producerId));
                 }
             }
+            op.Recycle();
         }
 
         protected override void PostStop()

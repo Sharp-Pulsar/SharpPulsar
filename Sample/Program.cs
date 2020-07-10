@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Newtonsoft.Json;
@@ -682,7 +683,7 @@ namespace Samples
                 var metadata = new Dictionary<string, object>
                 {
                     //["SequenceId"] = i,
-                    ["Key"] = "Bulk",
+                    ["Key"] = 2019 + (int)i,
                     ["Properties"] = new Dictionary<string, string>
                     {
                         { "Tick", DateTime.Now.Ticks.ToString() },
@@ -819,7 +820,7 @@ namespace Samples
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
         {
-            var jsonSchem = AvroSchema.Of(typeof(JournalEntry));
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
             {
                 Console.WriteLine(o.ToString());
@@ -1224,7 +1225,7 @@ namespace Samples
                 .ForceTopicCreation(true)
                 .SubscriptionName($"{topicLast}-Subscription")
                 .Topic(topic)
-
+                .AckTimeout(1000)
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
                 .Schema(jsonSchem)
@@ -2160,6 +2161,7 @@ namespace Samples
             var s = JsonSerializer.Serialize(student);
             Messages.Add(s);
             Console.WriteLine(s);
+            a.Tell(new AckMessage(m.MessageId));
         }
         private static void StudentBytesHandler(IActorRef a, IMessage m)
         {

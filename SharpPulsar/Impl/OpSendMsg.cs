@@ -8,7 +8,6 @@ namespace SharpPulsar.Impl
     {
         internal Message Msg;
         internal IList<Message> Msgs;
-        internal ThreadStart RePopulate;
         internal byte[] Cmd;
         internal long SequenceId;
         internal long CreatedAt;

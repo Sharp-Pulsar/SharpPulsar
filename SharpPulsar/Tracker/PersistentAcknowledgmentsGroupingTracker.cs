@@ -172,7 +172,7 @@ namespace SharpPulsar.Tracker
                     var updatedMsgId = Interlocked.CompareExchange(ref _lastCumulativeAck, msgId, lastCumlativeAck);
                     var updatedBitSet = Interlocked.CompareExchange(ref _lastCumulativeAckSet, bitSet, lastBitSet);
 
-					if ((updatedMsgId != lastCumlativeAck) && (updatedBitSet != lastBitSet))
+					if ((updatedMsgId == lastCumlativeAck) && (updatedBitSet == lastBitSet))
                     {
                         if (lastBitSet != null)
                         {

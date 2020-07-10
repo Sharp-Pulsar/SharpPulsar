@@ -50,7 +50,6 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _common = new TestCommon.Common(output);
             _common.GetPulsarSystem(new AuthenticationDisabled());
-            ProducerBaseSetup(_common.PulsarSystem, output);
         }
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
