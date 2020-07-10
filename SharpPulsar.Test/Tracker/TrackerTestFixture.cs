@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Text.Json;
 using Akka.Actor;
 using Samples;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Batch;
 using SharpPulsar.Handlers;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
@@ -24,8 +21,10 @@ namespace SharpPulsar.Test.Tracker
     {
         internal readonly PulsarSystem PulsarSystem;
         internal  TestObject TestObject;
+        private ITestOutputHelper _output;
 
-        public TrackerTestFixture()
+
+		public TrackerTestFixture()
         {
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650")
@@ -42,26 +41,10 @@ namespace SharpPulsar.Test.Tracker
             PulsarSystem.Stop();
         }
 		public CreateConsumer CreateConsumer(ITestOutputHelper output)
-		{
+        {
+            _output = output;
 			var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-			var messageListener = new DefaultMessageListener((a, m, st) =>
-			{
-				var students = m.ToTypeOf<Students>();
-				var s = JsonSerializer.Serialize(students);
-				output.WriteLine(s);
-				if (m.MessageId is MessageId mi)
-				{
-					a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st.ToArray())));
-					output.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-				}
-				else if (m.MessageId is BatchMessageId b)
-				{
-					a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st.ToArray())));
-					output.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-				}
-				else
-					output.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-			}, null);
+			var messageListener = new DefaultMessageListener(Handler, null);
 			var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
 			var consumerConfig = new ConsumerConfigBuilder()
 				.ConsumerName($"student-test-consumer-{Guid.NewGuid()}")
@@ -98,6 +81,14 @@ namespace SharpPulsar.Test.Tracker
 				.ProducerConfigurationData;
 
 			return new CreateProducer(jsonSchem, producerConfig);
+		}
+
+        private void Handler(IActorRef a, IMessage m)
+        {
+            var students = m.ToTypeOf<Students>();
+            var s = JsonSerializer.Serialize(students);
+            _output.WriteLine(s); a.Tell(new AckMessage(m.MessageId));
+            _output.WriteLine($"Consumer >> {students.Name}");
 		}
 	}
 }

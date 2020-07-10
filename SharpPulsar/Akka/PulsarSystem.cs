@@ -8,16 +8,13 @@ using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
 using SharpPulsar.Akka.Admin;
-using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
-using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
 using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
@@ -155,6 +152,7 @@ namespace SharpPulsar.Akka
                     _testObject.Producer = createdProducer.Producer;
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
+            Stop();
             throw new TimeoutException($"Timeout waiting for producer creation!");
         }
         
@@ -197,6 +195,7 @@ namespace SharpPulsar.Akka
             {
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
+            Stop();
             throw new TimeoutException($"Timeout waiting for producer creation!");
         }
         public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader)
@@ -235,6 +234,7 @@ namespace SharpPulsar.Akka
                     _testObject.Consumer = createdConsumer.Consumer;
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
+            Stop();
             throw new TimeoutException($"Timeout waiting for reader creation!");
         }
 
@@ -365,14 +365,7 @@ namespace SharpPulsar.Akka
             var received = customHander == null? m.Message.ToTypeOf<T>(): customHander(m);
             if (autoAck)
             {
-                if (m.Message.MessageId is MessageId mi)
-                {
-                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets?.ToArray())));
-                }
-                else if (m.Message.MessageId is BatchMessageId b)
-                {
-                    m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets?.ToArray())));
-                }
+                m.Consumer.Tell(new AckMessage(m.Message.MessageId));
             }
 
             return received;
@@ -415,14 +408,7 @@ namespace SharpPulsar.Akka
 
         public void Acknowledge(ConsumedMessage m)
         {
-            if (m.Message.MessageId is MessageId mi)
-            {
-                m.Consumer.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, m.AckSets?.ToArray())));
-            }
-            else if (m.Message.MessageId is BatchMessageId b)
-            {
-                m.Consumer.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, m.AckSets?.ToArray())));
-            }
+            m.Consumer.Tell(new AckMessage(m.Message.MessageId));
         }
 
         /// <summary>
@@ -432,14 +418,7 @@ namespace SharpPulsar.Akka
         /// <param name="consumer"></param>
         public void AcknowledgeCumulative(ConsumedMessage m)
         {
-            if (m.Message.MessageId is MessageId mi)
-            {
-                m.Consumer.Tell(new AckMessages(mi, m.AckSets?.ToArray()));
-            }
-            else if (m.Message.MessageId is BatchMessageId b)
-            {
-                m.Consumer.Tell(new AckMessages(new MessageId(b.LedgerId, b.EntryId, b.PartitionIndex), m.AckSets?.ToArray()));
-            }
+            m.Consumer.Tell(new AckMessages(m.Message.MessageId));
         }
 
         public bool HasMessage(string consumerName, out int count)
@@ -536,6 +515,7 @@ namespace SharpPulsar.Akka
                 _topicSubTypes.Add(createdConsumer.Topic, subType);
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
+            Stop();
             throw new TimeoutException($"Timeout waiting for consumer creation!");
         }
 
@@ -597,10 +577,14 @@ namespace SharpPulsar.Akka
                 yield return (createdConsumer.Consumer, createdConsumer.Topic);
                 gotten = true;
             }
-            if(!gotten)
-               throw new TimeoutException($"Timeout waiting for consumer creation!");
+
+            if (!gotten)
+            {
+                Stop();
+                throw new TimeoutException($"Timeout waiting for consumer creation!");
+            }
         }
-        public void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
+        private void PulsarConsumer(RedeliverMessages messages, IActorRef consumer)
         {
             if (consumer == null)
                 throw new ArgumentNullException(nameof(consumer), "null");

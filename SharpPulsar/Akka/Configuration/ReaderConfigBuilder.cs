@@ -99,9 +99,9 @@ namespace SharpPulsar.Akka.Configuration
             return this;
         }
 
-		public ReaderConfigBuilder StartMessageFromRollbackDuration(long rollbackDuration, BAMCIS.Util.Concurrent.TimeUnit timeUnit)
+		public ReaderConfigBuilder StartMessageFromRollbackDuration(int rollbackDurationSecs)
 		{
-			_conf.StartMessageFromRollbackDurationInSec = timeUnit.ToSecs(rollbackDuration);
+			_conf.StartMessageFromRollbackDurationInSec = rollbackDurationSecs;
             return this;
 		}
 

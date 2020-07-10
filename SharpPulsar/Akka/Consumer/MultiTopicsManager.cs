@@ -80,7 +80,7 @@ namespace SharpPulsar.Akka.Consumer
                 else
                 {
                     if (_consumerConfiguration.ConsumptionType == ConsumptionType.Listener)
-                        _listener.Received(m.Consumer, m.Message, m.AckSets);
+                        _listener.Received(m.Consumer, m.Message);
                     else if (_consumerConfiguration.ConsumptionType == ConsumptionType.Queue)
                         _pulsarManager.Tell(m);
                 }

@@ -1216,26 +1216,8 @@ namespace Samples
         private static void PlainAvroConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
-            var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
                 .ConsumerName(topicLast)
@@ -1255,24 +1237,7 @@ namespace Samples
         private static void LargeAvroConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var media = m.ToTypeOf<MediaStream>();
-                var s = JsonSerializer.Serialize(media);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(MediaHandler, null);
             var jsonSchem = new AutoConsumeSchema();
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1318,25 +1283,7 @@ namespace Samples
         private static void GetLastMessageId(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = new AutoConsumeSchema();//AvroSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1358,25 +1305,7 @@ namespace Samples
         private static void PlainAvroStudentsConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));//new AutoConsumeSchema();//
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1398,25 +1327,7 @@ namespace Samples
         private static void PlainAvroCovidConsumer(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m,st) =>
-            {
-                var students = m.ToTypeOf<Covid19Mobile>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.DeviceId}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(CovidHandler, null);
             var jsonSchem = new AutoConsumeSchema(); //AvroSchema.Of(typeof(JournalEntry));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1437,25 +1348,7 @@ namespace Samples
         private static void DecryptAvroConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1476,25 +1369,7 @@ namespace Samples
         private static void PlainAvroConsumerSeek(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1514,25 +1389,7 @@ namespace Samples
         private static void DecryptAvroConsumerSeek(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            },null);
+            var messageListener = new DefaultMessageListener(StudentHandler,null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1553,25 +1410,7 @@ namespace Samples
         private static void DecryptAvroPatternConsumer(PulsarSystem system, string regex)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1598,25 +1437,7 @@ namespace Samples
         private static void AvroPatternConsumer(PulsarSystem system, string regex)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1640,25 +1461,7 @@ namespace Samples
         private static void DecryptAvroMultiConsumer(PulsarSystem system, string[] topics)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1684,25 +1487,7 @@ namespace Samples
         private static void AvroMultiConsumer(PulsarSystem system, string[] topics)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var students = m.ToTypeOf<Students>();
-                var s = JsonSerializer.Serialize(students);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentHandler, null);
             var jsonSchem = AvroSchema.Of(typeof(Students));
 
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1728,25 +1513,7 @@ namespace Samples
         private static void PlainBytesConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
-                var students = JsonSerializer.Deserialize<Students>(s);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentBytesHandler, null);
             var byteSchem = BytesSchema.Of();
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -1767,25 +1534,7 @@ namespace Samples
         private static void DecryptBytesConsumer(PulsarSystem system, string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var messageListener = new DefaultMessageListener((a, m, st) =>
-            {
-                var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
-                var students = JsonSerializer.Deserialize<Students>(s);
-                Messages.Add(s);
-                Console.WriteLine(s);
-                if (m.MessageId is MessageId mi)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(mi.LedgerId, mi.EntryId, -1, mi.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {mi.PartitionIndex}");
-                }
-                else if (m.MessageId is BatchMessageId b)
-                {
-                    a.Tell(new AckMessage(new MessageIdReceived(b.LedgerId, b.EntryId, b.BatchIndex, b.PartitionIndex, st?.ToArray())));
-                    Console.WriteLine($"Consumer >> {students.Name}- partition: {b.PartitionIndex}");
-                }
-                else
-                    Console.WriteLine($"Unknown messageid: {m.MessageId.GetType().Name}");
-            }, null);
+            var messageListener = new DefaultMessageListener(StudentBytesHandler, null);
             var byteSchem = BytesSchema.Of();
             var topicLast = topic.Split("/").Last();
             var consumerConfig = new ConsumerConfigBuilder()
@@ -2396,6 +2145,42 @@ namespace Samples
             {
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
             Console.WriteLine(e);
+        }
+
+        private static void MediaHandler(IActorRef a, IMessage m)
+        {
+            var media = m.ToTypeOf<MediaStream>();
+            var s = JsonSerializer.Serialize(media);
+            Messages.Add(s);
+            Console.WriteLine(s);
+        }
+        private static void StudentHandler(IActorRef a, IMessage m)
+        {
+            var student = m.ToTypeOf<Students>();
+            var s = JsonSerializer.Serialize(student);
+            Messages.Add(s);
+            Console.WriteLine(s);
+        }
+        private static void StudentBytesHandler(IActorRef a, IMessage m)
+        {
+            var s = Encoding.UTF8.GetString((byte[])(object)m.Data);
+            var student = JsonSerializer.Deserialize<Students>(s);
+            Messages.Add(s);
+            Console.WriteLine(s);
+        }
+        private static void CovidHandler(IActorRef a, IMessage m)
+        {
+            var student = m.ToTypeOf<Covid19Mobile>();
+            var s = JsonSerializer.Serialize(student);
+            Messages.Add(s);
+            Console.WriteLine(s);
+        }
+        private static void JournalHandler(IActorRef a, IMessage m)
+        {
+            var student = m.ToTypeOf<JournalEntry>();
+            var s = JsonSerializer.Serialize(student);
+            Messages.Add(s);
+            Console.WriteLine(s);
         }
     }
     public class Students

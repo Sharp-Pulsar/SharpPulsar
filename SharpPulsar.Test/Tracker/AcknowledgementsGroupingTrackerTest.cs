@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Tracker
             _output = output;
             _data = data;
 
-            _data.PulsarSystem.PulsarProducer(data.CreateProducer(output));
+            //_data.PulsarSystem.PulsarProducer(data.CreateProducer(output));
             _data.PulsarSystem.PulsarConsumer(data.CreateConsumer(output));
             _data.TestObject = _data.PulsarSystem.GeTestObject();
 		}
@@ -48,7 +48,7 @@ namespace SharpPulsar.Test.Tracker
 		{
 			var conf = new ConsumerConfigurationData
             {
-                AcknowledgementsGroupTimeMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
+                AcknowledgementsGroupTimeMs = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
             };
             var tracker = new PersistentAcknowledgmentsGroupingTracker(_data.TestObject.ActorSystem, _data.TestObject.ConsumerBroker, _data.TestObject.Consumer, 1, conf);
 
@@ -103,7 +103,7 @@ namespace SharpPulsar.Test.Tracker
 		[Fact]
 		public  void TestImmediateAckingTracker()
 		{
-			var conf = new ConsumerConfigurationData {AcknowledgementsGroupTimeMicros = 0};
+			var conf = new ConsumerConfigurationData {AcknowledgementsGroupTimeMs = 0};
             var tracker = new PersistentAcknowledgmentsGroupingTracker(_data.TestObject.ActorSystem, _data.TestObject.ConsumerBroker, _data.TestObject.Consumer, 1, conf);
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
@@ -128,7 +128,7 @@ namespace SharpPulsar.Test.Tracker
 		{
 			var conf = new ConsumerConfigurationData
             {
-                AcknowledgementsGroupTimeMicros = (long) ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
+                AcknowledgementsGroupTimeMs = (long) ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000)
             };
             var tracker = new PersistentAcknowledgmentsGroupingTracker(_data.TestObject.ActorSystem, _data.TestObject.ConsumerBroker, _data.TestObject.Consumer, 1, conf);
 			

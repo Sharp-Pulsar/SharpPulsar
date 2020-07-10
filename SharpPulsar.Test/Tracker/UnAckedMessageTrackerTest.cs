@@ -40,7 +40,7 @@ namespace SharpPulsar.Test.Tracker
 			var tracker = new UnAckedMessageTracker(_data.TestObject.Consumer, 1000000, 100000, _data.TestObject.ActorSystem);
 			tracker.Stop();
 
-			Assert.True(tracker.Empty);
+			Assert.True(tracker.Empty());
 			Assert.Equal(0, tracker.Size());
 
 			var mid = new MessageId(1L, 1L, -1);
@@ -56,7 +56,7 @@ namespace SharpPulsar.Test.Tracker
 			Assert.Equal(1, tracker.Size());
 
 			Assert.True(tracker.Remove(mid));
-			Assert.True(tracker.Empty);
+			Assert.True(tracker.Empty());
 			Assert.Equal(0, tracker.Size());
 		}
 

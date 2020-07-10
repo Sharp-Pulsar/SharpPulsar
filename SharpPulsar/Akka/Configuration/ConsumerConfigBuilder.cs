@@ -48,7 +48,7 @@ namespace SharpPulsar.Akka.Configuration
 				if(_conf.Schema == null)
 					throw new ArgumentException("Hey, we need the schema!");
                 if (_conf.StartMessageId == null)
-                    _conf.StartMessageId = (BatchMessageId)MessageIdFields.Latest;
+                    _conf.StartMessageId = MessageIdFields.Latest;
 				if (_conf.ConsumerEventListener == null || _conf.MessageListener == null)
 					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
@@ -119,7 +119,7 @@ namespace SharpPulsar.Akka.Configuration
         }
 		public ConsumerConfigBuilder StartMessageId(IMessageId startMessageId)
         {
-            _conf.StartMessageId = (BatchMessageId)startMessageId;
+            _conf.StartMessageId = startMessageId;
             return this;
         }
 		public ConsumerConfigBuilder Topics(IList<string> topicNames)
@@ -223,7 +223,7 @@ namespace SharpPulsar.Akka.Configuration
 		public ConsumerConfigBuilder AcknowledgmentGroupTime(long delayMs)
         {
             Condition.CheckArgument(delayMs >= 0, "acknowledgmentGroupTime needs to be >= 0");
-            _conf.AcknowledgementsGroupTimeMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(delayMs);
+            _conf.AcknowledgementsGroupTimeMs = delayMs;
             return this;
 		}
 

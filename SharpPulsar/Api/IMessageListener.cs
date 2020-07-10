@@ -48,7 +48,7 @@ namespace SharpPulsar.Api
 		///            the consumer that received the message </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(IActorRef consumer, IMessage msg, IList<long> ackSets);
+		void Received(IActorRef consumer, IMessage msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.

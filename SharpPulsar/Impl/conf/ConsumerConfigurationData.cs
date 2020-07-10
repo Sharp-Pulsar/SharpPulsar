@@ -31,7 +31,7 @@ namespace SharpPulsar.Impl.Conf
 	public sealed class ConsumerConfigurationData
 	{
 		public IMessageCrypto MessageCrypto { get; set; }
-		public BatchMessageId StartMessageId { get; set; }
+		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor> Interceptors { get; set; }
@@ -43,7 +43,7 @@ namespace SharpPulsar.Impl.Conf
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMicros { get; set; } = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(1000);
+		public long AcknowledgementsGroupTimeMs { get; set; } = 100;
 
 		public long NegativeAckRedeliveryDelayMicros { get; set; } = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(60000);
 

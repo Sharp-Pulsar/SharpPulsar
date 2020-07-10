@@ -21,6 +21,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
@@ -31,12 +32,11 @@ namespace SharpPulsar.Tracker
     public class UnAckedMessageTracker
     {
         internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
-        private readonly Queue<HashSet<IMessageId>> _timePartitions;
         private readonly ILoggingAdapter _log;
         private readonly ActorSystem _system;
         private ICancelable _timeout;
         private static IActorRef _consumer;
-
+        private ReaderWriterLockSlim _rwl = new ReaderWriterLockSlim();
         public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled =
             new UnAckedMessageTrackerDisabled();
 
@@ -78,7 +78,7 @@ namespace SharpPulsar.Tracker
         public UnAckedMessageTracker()
         {
             _system = null;
-            _timePartitions = null;
+            TimePartitions = null;
             MessageIdPartitionMap = null;
             _ackTimeoutMillis = 0;
             _tickDurationInMs = 0;
@@ -100,12 +100,12 @@ namespace SharpPulsar.Tracker
             _system = system;
             _log = system.Log;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
-            _timePartitions = new Queue<HashSet<IMessageId>>();
+            TimePartitions = new Queue<HashSet<IMessageId>>();
 
             var blankPartitions = (int) Math.Ceiling((double) _ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
-                _timePartitions.Enqueue(new HashSet<IMessageId>(16));
+                TimePartitions.Enqueue(new HashSet<IMessageId>(16));
             }
 
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
@@ -115,9 +115,10 @@ namespace SharpPulsar.Tracker
         private void Job()
         {
             var messageIds = new HashSet<IMessageId>();
+            _rwl.EnterWriteLock();
             try
             {
-                _timePartitions.TryDequeue(out var headPartition);
+                TimePartitions.TryDequeue(out var headPartition);
                 if (headPartition != null && headPartition.Count > 0)
                 {
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
@@ -130,7 +131,7 @@ namespace SharpPulsar.Tracker
                 }
 
                 headPartition?.Clear();
-                _timePartitions.Enqueue(headPartition);
+                TimePartitions.Enqueue(headPartition);
             }
             finally
             {
@@ -141,6 +142,7 @@ namespace SharpPulsar.Tracker
                 }
 
                 _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_tickDurationInMs), Job);
+                _rwl.ExitWriteLock();
             }
         }
 
@@ -164,72 +166,132 @@ namespace SharpPulsar.Tracker
 
         public virtual void Clear()
         {
-            MessageIdPartitionMap.Clear();
-            foreach (var t in _timePartitions)
+            _rwl.EnterWriteLock();
+            try
             {
-                t.Clear();
+                MessageIdPartitionMap.Clear();
+                foreach (var t in TimePartitions)
+                {
+                    t.Clear();
+                }
+            }
+            finally
+            {
+                _rwl.ExitWriteLock();
             }
         }
 
         public virtual  bool Add(IMessageId messageId)
         {
-            var partition = _timePartitions.Last();
-            var previousPartition = MessageIdPartitionMap.GetOrAdd(messageId, p => partition);
-            if (previousPartition?.Count == 0)
+            _rwl.EnterWriteLock();
+            try
             {
-                return partition.Add(messageId);
-            }
+                var partition = TimePartitions.Last();
+                if (!MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition))
+                {
+                    var added = partition.Add(messageId);
+                    MessageIdPartitionMap[messageId] = partition;
+                    return added;
+                }
 
-            return false;
+                return false;
+            }
+            finally
+            {
+                _rwl.ExitWriteLock();
+            }
         }
 
-        public virtual bool Empty => MessageIdPartitionMap.IsEmpty;
+        public virtual bool Empty()
+        {
+            _rwl.EnterReadLock();
+            try
+            {
+                return MessageIdPartitionMap.IsEmpty;
+            }
+            finally
+            {
+                _rwl.ExitReadLock();
+            }
+        }
 
         public virtual bool Remove(IMessageId messageId)
         {
-            var removed = false;
-            MessageIdPartitionMap.Remove(messageId, out var exist);
-            if (exist != null)
+            _rwl.EnterWriteLock();
+            try
             {
-                removed = exist.Remove(messageId);
-            }
+                var removed = false;
+                MessageIdPartitionMap.Remove(messageId, out var exist);
+                if (exist != null)
+                {
+                    removed = exist.Remove(messageId);
+                }
 
-            return removed;
+                return removed;
+            }
+            finally
+            {
+                _rwl.ExitWriteLock();
+            }
         }
 
         public virtual long Size()
-        {
-            return MessageIdPartitionMap.Count;
+        { 
+            _rwl.EnterReadLock();
+            try
+            {
+                return MessageIdPartitionMap.Count;
+            }
+            finally
+            {
+                _rwl.ExitReadLock();
+            }
         }
 
         public virtual int RemoveMessagesTill(IMessageId msgId)
-        {
-            var removed = 0;
-            var iterator = MessageIdPartitionMap.Keys;
-            foreach (var i in iterator)
+        { 
+            _rwl.EnterWriteLock();
+            try
             {
-                var messageId = i;
-                if (messageId.CompareTo(msgId) <= 0)
+                var removed = 0;
+                var iterator = MessageIdPartitionMap.Keys;
+                foreach (var i in iterator)
                 {
-                    var exist = MessageIdPartitionMap[messageId];
-                    exist?.Remove(messageId);
-                    MessageIdPartitionMap.Remove(i, out var remove);
-                    removed++;
+                    var messageId = i;
+                    if (messageId.CompareTo(msgId) <= 0)
+                    {
+                        var exist = MessageIdPartitionMap[messageId];
+                        exist?.Remove(messageId);
+                        MessageIdPartitionMap.Remove(i, out var remove);
+                        removed++;
+                    }
                 }
-            }
 
-            return removed;
+                return removed;
+            }
+            finally
+            {
+                _rwl.ExitWriteLock();
+            }
         }
 
-        public Queue<HashSet<IMessageId>> TimePartitions => _timePartitions;
+        public Queue<HashSet<IMessageId>> TimePartitions { get; }
         public void Stop()
         {
-            if (_timeout != null && !_timeout.IsCancellationRequested)
+            _rwl.EnterWriteLock();
+            try
             {
-                _timeout.Cancel();
-            }
+                if (_timeout != null && !_timeout.IsCancellationRequested)
+                {
+                    _timeout.Cancel();
+                }
 
-            Clear();
+                Clear();
+            }
+            finally
+            {
+                _rwl.ExitWriteLock();
+            }
         }
 
     }

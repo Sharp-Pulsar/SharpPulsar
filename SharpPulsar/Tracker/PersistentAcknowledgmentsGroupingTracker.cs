@@ -49,7 +49,7 @@ namespace SharpPulsar.Tracker
 		private readonly IActorRef _broker;
         private readonly long _consumerId;
 
-		private readonly long _acknowledgementGroupTimeMicros;
+		private readonly long _acknowledgementGroupTimeMs;
 
 		/// <summary>
 		/// Latest cumulative ack sent to broker
@@ -75,11 +75,10 @@ namespace SharpPulsar.Tracker
             _consumerId = consumerid;
 			_pendingIndividualAcks = new Queue<IMessageId>();
 			_pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
-			_acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
-			if (_acknowledgementGroupTimeMicros > 0)
+			_acknowledgementGroupTimeMs = conf.AcknowledgementsGroupTimeMs;
+			if (_acknowledgementGroupTimeMs > 0)
             {
-                var interval = ConvertTimeUnits.ConvertMicrosecondsToMilliseconds(_acknowledgementGroupTimeMicros);
-				_scheduledTask = system.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(interval), TimeSpan.FromMilliseconds(interval), Flush);
+				_scheduledTask = system.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMs), TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMs), Flush);
             }
 			else
 			{
@@ -104,7 +103,7 @@ namespace SharpPulsar.Tracker
 
         public void AddAcknowledgment(IMessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
-	        if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0)
+	        if (_acknowledgementGroupTimeMs == 0 || properties.Count > 0)
 	        {
 		        // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
 		        // uncommon condition since it's only used for the compaction subscription.
@@ -135,7 +134,7 @@ namespace SharpPulsar.Tracker
 
         public virtual void AddBatchIndexAcknowledgment(BatchMessageId msgId, int batchIndex, int batchSize, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
-	        if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0)
+	        if (_acknowledgementGroupTimeMs == 0 || properties.Count > 0)
 	        {
 		        DoImmediateBatchIndexAck(msgId, batchIndex, batchSize, ackType, properties);
 	        }
@@ -169,18 +168,27 @@ namespace SharpPulsar.Tracker
 		        var lastCumlativeAck = _lastCumulativeAck;
 		        var lastBitSet = _lastCumulativeAckSet;
 		        if (msgId.CompareTo(lastCumlativeAck) > 0)
-		        {
-                    if (lastCumlativeAck.CompareTo(msgId) != 0)
+                {
+                    var updatedMsgId = Interlocked.CompareExchange(ref _lastCumulativeAck, msgId, lastCumlativeAck);
+                    var updatedBitSet = Interlocked.CompareExchange(ref _lastCumulativeAckSet, bitSet, lastBitSet);
+
+					if ((updatedMsgId != lastCumlativeAck) && (updatedBitSet != lastBitSet))
                     {
-						_lastCumulativeAck = msgId;
-                        if (lastBitSet == null || !lastBitSet.Equals(bitSet))
+                        if (lastBitSet != null)
                         {
-                            _lastCumulativeAckSet = bitSet;
-                            // Successfully updated the last cumulative ack. Next flush iteration will send this to broker.
-                            _cumulativeAckFlushRequired = true;
-                            return;
-						}
-                    }
+                            try
+                            {
+                                lastBitSet = null;
+                            }
+                            catch (Exception)
+                            {
+                                // no-op
+                            }
+                        }
+                        // Successfully updated the last cumulative ack. Next flush iteration will send this to broker.
+                        _cumulativeAckFlushRequired = true;
+                        return;
+					}
 		        }
 		        else
 		        {
@@ -221,11 +229,9 @@ namespace SharpPulsar.Tracker
         /// </summary>
         public virtual void Flush()
         {
-	        var shouldFlush = false;
 	        if (_cumulativeAckFlushRequired)
 	        {
 		        NewAckCommand(_consumerId, _lastCumulativeAck, _lastCumulativeAckSet, CommandAck.AckType.Cumulative, null, new Dictionary<string, long>(), false);
-		        shouldFlush = true;
 		        _cumulativeAckFlushRequired = false;
 	        }
 
@@ -291,7 +297,6 @@ namespace SharpPulsar.Tracker
                 var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
                 var payload = new Payload(cmd, requestid, "NewMultiMessageAck");
                 _broker.Tell(payload, _consumer);
-		        shouldFlush = true;
 	        }
 
         }

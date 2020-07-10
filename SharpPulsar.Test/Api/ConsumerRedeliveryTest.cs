@@ -39,16 +39,16 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled());
+            _common.GetPulsarSystem(new AuthenticationDisabled(), operationTime:60000);
 		}
 		
         [Fact]
 		public void TestUnAckMessageRedeliveryWithReceive()
 		{
 			string topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
-			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
-            
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 2000));
+
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 5000, forceTopic: true));
 
             const int messageCount = 10;
             

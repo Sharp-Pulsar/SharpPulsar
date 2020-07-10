@@ -1,18 +1,14 @@
-﻿using System.Collections.Generic;
-using SharpPulsar.Api;
-using SharpPulsar.Impl;
+﻿using SharpPulsar.Api;
 
 namespace SharpPulsar.Akka.InternalCommands.Consumer
 {
     public class AckMessages
     {
-        public AckMessages(MessageId messageId, IList<long> ackSets)
+        public AckMessages(IMessageId messageId)
         {
             MessageId = messageId;
-            AckSets = ackSets;
         }
 
-        public MessageId MessageId { get; }
-        public IList<long> AckSets { get; }
+        public IMessageId MessageId { get; }
     }
 }

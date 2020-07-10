@@ -63,7 +63,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly bool _createTopicIfDoesNotExist;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
-        private readonly BatchMessageId _initialStartMessageId = (BatchMessageId)MessageIdFields.Earliest;
+        private readonly IMessageId _initialStartMessageId;
         private  ConnectedServerInfo _serverInfo;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly IMessageCrypto _msgCrypto;
@@ -91,7 +91,7 @@ namespace SharpPulsar.Akka.Consumer
         private ICancelable _batchReceiveTimeout;
 
         private readonly BatchReceivePolicy _batchReceivePolicy;
-        protected readonly int _maxReceiverQueueSize;
+        protected readonly int MaxReceiverQueueSize;
 
         private readonly UnAckedMessageTracker _unAckedMessageTracker;
         private IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
@@ -113,11 +113,12 @@ namespace SharpPulsar.Akka.Consumer
         private readonly IActorRef _pulsarManager;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
+            _initialStartMessageId = configuration.StartMessageId;
             _system = Context.System;
             _pendingReceives = new Queue<Message>();
             _log = Context.GetLogger();
             _incomingMessages = new Queue<Message>();
-            _maxReceiverQueueSize = configuration.ReceiverQueueSize;
+            MaxReceiverQueueSize = Math.Max(1_000_000, configuration.ReceiverQueueSize);
             _pulsarManager = pulsarManager;
             _eventSourced = eventSourced;
             _possibleSendToDeadLetterTopicMessages = new Dictionary<MessageId, IList<Message>>();
@@ -125,7 +126,7 @@ namespace SharpPulsar.Akka.Consumer
             _createTopicIfDoesNotExist = configuration.ForceTopicCreation;
             _subscriptionName = configuration.SubscriptionName;
             _consumerEventListener = configuration.ConsumerEventListener;
-            _startMessageId = configuration.StartMessageId;
+            _startMessageId = configuration.StartMessageId != null ? new BatchMessageId((MessageId)configuration.StartMessageId) : null; 
             _subscriptionMode = mode;
             _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
@@ -218,10 +219,10 @@ namespace SharpPulsar.Akka.Consumer
             if (configuration.BatchReceivePolicy != null)
             {
                 var userBatchReceivePolicy = configuration.BatchReceivePolicy;
-                if (userBatchReceivePolicy.MaxNumMessages > _maxReceiverQueueSize)
+                if (userBatchReceivePolicy.MaxNumMessages > MaxReceiverQueueSize)
                 {
-                    _batchReceivePolicy = BatchReceivePolicy.GetBuilder().MaxNumMessages(_maxReceiverQueueSize).MaxNumBytes(userBatchReceivePolicy.MaxNumBytes).Timeout((int)userBatchReceivePolicy.TimeoutMs).Build();
-                    _log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {_maxReceiverQueueSize}, reset to maxReceiverQueueSize. batchReceivePolicy: {_batchReceivePolicy}");
+                    _batchReceivePolicy = BatchReceivePolicy.GetBuilder().MaxNumMessages(MaxReceiverQueueSize).MaxNumBytes(userBatchReceivePolicy.MaxNumBytes).Timeout((int)userBatchReceivePolicy.TimeoutMs).Build();
+                    _log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {MaxReceiverQueueSize}, reset to maxReceiverQueueSize. batchReceivePolicy: {_batchReceivePolicy}");
                 }
                 else if (userBatchReceivePolicy.MaxNumMessages <= 0 && userBatchReceivePolicy.MaxNumBytes <= 0)
                 {
@@ -568,7 +569,7 @@ namespace SharpPulsar.Akka.Consumer
                     else
                     {
                         if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, received, ackSet);
+                            _listener.Received(Self, received);
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
                             _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                     }
@@ -659,7 +660,7 @@ namespace SharpPulsar.Akka.Consumer
                     else
                     {
                         if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, received, ackSet);
+                            _listener.Received(Self, received);
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
                             _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
                     }
@@ -673,7 +674,7 @@ namespace SharpPulsar.Akka.Consumer
 
             if (_log.IsDebugEnabled)
             {
-                _log.Debug($"[{_subscriptionName}] [{_consumerName}] enqueued messages in batch. queue size - {_incomingMessages.Count}, available queue size - {_maxReceiverQueueSize - _incomingMessages.Count}");
+                _log.Debug($"[{_subscriptionName}] [{_consumerName}] enqueued messages in batch. queue size - {_incomingMessages.Count}, available queue size - {MaxReceiverQueueSize - _incomingMessages.Count}");
             }
 
             if (skippedMessages > 0)
@@ -978,7 +979,7 @@ namespace SharpPulsar.Akka.Consumer
                 }
                 else
                 {
-                    var batchMessageId = (BatchMessageId)messageId;
+                    var batchMessageId = id;
                     _acknowledgmentsGroupingTracker.AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties);
                     // other messages in batch are still pending ack.
                     return;
@@ -1047,7 +1048,7 @@ namespace SharpPulsar.Akka.Consumer
                 return _startMessageId;
             }
         }
-        private void SendAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, ITransaction txnImpl)
+        private void SendAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, ITransaction txnImpl = null)
         {
             if (ackType == CommandAck.AckType.Individual)
             {
@@ -1061,10 +1062,6 @@ namespace SharpPulsar.Akka.Consumer
                 {
                     // increment counter by 1 for non-batch msg
                     _unAckedMessageTracker.Remove(messageId);
-                    /*if (possibleSendToDeadLetterTopicMessages != null)
-                    {
-                        possibleSendToDeadLetterTopicMessages.Remove(msgId);
-                    }*/
                     _stats.IncrementNumAcksSent(1);
                 }
                 OnAcknowledge(messageId, null);
@@ -1256,24 +1253,7 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMessage(AckMessage message)
         {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, message.MessageId.AckSet, CommandAck.AckType.Individual, null, new Dictionary<string, long>());
-            var payload = new Payload(cmd, requestid, "AckMessages");
-            _broker.Tell(payload);
-        }
-        private void AckMultiMessage(AckMultiMessage multiMessage)
-        {
-            if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
-            {
-                _log.Error(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"), "");
-                return;
-            }
-            var entriesToAck = new List<(long  ledgerId, long entryId, long[] ackSets)>(multiMessage.MessageIds.Count);
-            foreach (var m in multiMessage.MessageIds)
-            {
-                entriesToAck.Add((m.LedgerId, m.EntryId, m.AckSet));
-            }
-            SendAckMultiMessages(entriesToAck);
+            SendAcknowledge(message.MessageId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
         }
         private void ActiveConsumerChanged(bool isActive)
         {
@@ -1305,15 +1285,7 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void AckMessages(AckMessages message)
         {
-            if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
-            {
-                _log.Error(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"), "");
-                return;
-            }
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, message.AckSets.ToArray(), CommandAck.AckType.Cumulative, null, new Dictionary<string, long>());
-            var payload = new Payload(cmd, requestid, "AckMessages");
-            _broker.Tell(payload);
+            SendAcknowledge(message.MessageId, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null );
         }
         private byte[] UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, bool checkMaxMessageSize)
         {
@@ -1473,7 +1445,6 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
-            Receive<AckMultiMessage>(AckMultiMessage);
             Receive<SubscribeSuccess>(s =>
             {
                 if (_consumerRecreator != null)
