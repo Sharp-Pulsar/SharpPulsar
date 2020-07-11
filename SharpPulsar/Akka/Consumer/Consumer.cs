@@ -421,6 +421,7 @@ namespace SharpPulsar.Akka.Consumer
                     _broker.Tell(payload);
                 });
             }
+            IncreaseAvailablePermits(messageIds.Count);
         }
         private bool ProcessPossibleToDlq(long ledgerid, long entryid, int partitionindex, int batchindex)
         {
@@ -736,7 +737,7 @@ namespace SharpPulsar.Akka.Consumer
             Message message;
             try
             {
-                message = _incomingMessages.Peek();
+                message = _incomingMessages.Dequeue();
                 MessageProcessed(message);
                 return BeforeConsume(message);
             }
