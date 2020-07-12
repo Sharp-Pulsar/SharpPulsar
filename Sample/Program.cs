@@ -54,7 +54,7 @@ namespace Samples
         public static readonly ConcurrentDictionary<string, Dictionary<string, IActorRef>> Producers = new ConcurrentDictionary<string, Dictionary<string, IActorRef>>();
         public static readonly ConcurrentBag<string> Receipts = new ConcurrentBag<string>();
         public static readonly ConcurrentBag<string> Messages = new ConcurrentBag<string>();
-        
+        private static bool _ack = false;
         public static readonly Dictionary<string, IActorRef> Consumers = new Dictionary<string, IActorRef>();
         public static readonly Dictionary<string, LastMessageIdResponse> LastMessageId = new Dictionary<string, LastMessageIdResponse>();
         
@@ -1226,6 +1226,7 @@ namespace Samples
                 .SubscriptionName($"{topicLast}-Subscription")
                 .Topic(topic)
                 .AckTimeout(1000)
+                //.AcknowledgmentGroupTime(0)
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
                 .Schema(jsonSchem)

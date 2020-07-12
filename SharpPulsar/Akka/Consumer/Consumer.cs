@@ -59,7 +59,6 @@ namespace SharpPulsar.Akka.Consumer
         private int _requestedFlowPermits = 1000;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
-        private readonly DeadLetterPolicy _deadLetterPolicy;
         private readonly bool _createTopicIfDoesNotExist;
         private readonly SubscriptionMode _subscriptionMode;
         private volatile BatchMessageId _startMessageId;
@@ -69,13 +68,11 @@ namespace SharpPulsar.Akka.Consumer
         private readonly IMessageCrypto _msgCrypto;
         private readonly bool _hasParentConsumer;
         private readonly long _consumerid;
-        private ICancelable _consumerRecreator;
         private readonly Dictionary<MessageId, MessageId[]> _unAckedChunkedMessageIdSequenceMap;
         private readonly ActorSystem _system;
 
         private IMessageId _lastDequeuedMessageId = MessageIdFields.Earliest;
         private IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
-        private readonly Queue<Message> _pendingReceives;
 
         private bool _hasReachedEndOfTopic;
 
@@ -115,7 +112,7 @@ namespace SharpPulsar.Akka.Consumer
         {
             _initialStartMessageId = configuration.StartMessageId;
             _system = Context.System;
-            _pendingReceives = new Queue<Message>();
+            new Queue<Message>();
             _log = Context.GetLogger();
             _incomingMessages = new Queue<Message>();
             MaxReceiverQueueSize = Math.Max(1_000_000, configuration.ReceiverQueueSize);
@@ -303,10 +300,11 @@ namespace SharpPulsar.Akka.Consumer
             if (currentSize > 0)
             {
                 IncreaseAvailablePermits(currentSize);
-            }
-            if (_log.IsDebugEnabled)
-            {
-                _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug(
+                        $"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
+                }
             }
         }
 
@@ -1446,26 +1444,6 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);
-            Receive<SubscribeSuccess>(s =>
-            {
-                if (_consumerRecreator != null)
-                {
-                    _consumerRecreator.Cancel();
-                    _consumerRecreator = null;
-                }
-                if (s.HasSchema)
-                {
-                    var schemaInfo = new SchemaInfo
-                    {
-                        Name = s.Schema.Name,
-                        Properties = s.Schema.Properties.ToDictionary(x => x.Key, x => x.Value),
-                        Type = s.Schema.type == Schema.Type.Json ? SchemaType.Json : SchemaType.None,
-                        Schema = (sbyte[])(object)s.Schema.SchemaData
-                    };
-                    _schema = ISchema.GetSchema(schemaInfo);
-                }
-                SendFlow(_requestedFlowPermits);
-            });
             Receive<AckTimeoutSend>(ack =>
             {
                 OnAckTimeoutSend(ack.MessageIds);
@@ -1525,13 +1503,7 @@ namespace SharpPulsar.Akka.Consumer
 
         private void RecreatingConsumer()
         {
-            _seek = null;
-            _consumerRecreator = _system.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), Self, new RecreateConsumer(), ActorRefs.NoSender);
-            Receive<RecreateConsumer>(_ =>
-            {
-                BecomeLookUp();
-            });
-            ReceiveAny(any => Stash.Stash());
+            BecomeLookUp();
         }
         private void LookUp()
         {
