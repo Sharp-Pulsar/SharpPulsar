@@ -332,24 +332,21 @@ namespace SharpPulsar.Akka.Consumer
 
         private void RedeliverUnacknowledgedMessages()
         {
-            var currentSize = _incomingMessages.Count;
+            var currentSize = _requestedFlowPermits > 1 && _requestedFlowPermits < 1000? 1000 - _requestedFlowPermits : 1;
             _incomingMessages.Clear();
             _incomingMessagesSize = 0;
-            _unAckedMessageTracker.Clear();
+            //_unAckedMessageTracker.Clear();
 
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid);
             var payload = new Payload(cmd, requestid, "RedeliverUnacknowledgedMessages");
             _broker.Tell(payload);
-            if (currentSize > 0)
+
+            if (_log.IsDebugEnabled)
             {
-                IncreaseAvailablePermits(currentSize);
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug(
-                        $"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
-                }
+                _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
             }
+            IncreaseAvailablePermits(currentSize);
         }
 
         private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
@@ -365,7 +362,7 @@ namespace SharpPulsar.Akka.Consumer
                 RedeliverUnacknowledgedMessages();
                 return;
             }
-            int messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
+            var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
             var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
             var builder = new MessageIdData();
             batches.ForEach(ids =>
@@ -388,16 +385,16 @@ namespace SharpPulsar.Akka.Consumer
             
             if (messagesFromQueue > 0)
             {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and increase {messagesFromQueue} permits");
+                }
                 IncreaseAvailablePermits(messagesFromQueue);
-            }
-            if (_log.IsDebugEnabled)
-            {
-                _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and increase {messagesFromQueue} permits");
             }
         }
         private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
         {
-            int messagesFromQueue = 0;
+            var messagesFromQueue = 0;
             
             if (_incomingMessages.TryPeek(out var peek))
             {
@@ -902,13 +899,13 @@ namespace SharpPulsar.Akka.Consumer
             {
                 isAllMsgsAcked = batchMessageId.AckCumulative();
             }
-            int outstandingAcks = 0;
+            var outstandingAcks = 0;
             if (_log.IsDebugEnabled)
             {
                 outstandingAcks = batchMessageId.OutstandingAcksInSameBatch;
             }
 
-            int batchSize = batchMessageId.BatchSize;
+            var batchSize = batchMessageId.BatchSize;
             // all messages in this batch have been acked
             if (isAllMsgsAcked)
             {
@@ -1418,7 +1415,12 @@ namespace SharpPulsar.Akka.Consumer
                     AckSets = m.MessageId.AckSet
                 };
                 MessageReceived(msgId, m.RedeliveryCount, m.Data, m.MessageId.AckSet);
-                IncreaseAvailablePermits();
+                if (_requestedFlowPermits == 500)
+                {
+                    _requestedFlowPermits = 1000;
+                    IncreaseAvailablePermits(500);
+                }
+                else IncreaseAvailablePermits();
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);

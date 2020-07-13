@@ -42,6 +42,7 @@ namespace SharpPulsar.Tracker
         public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled = new UnAckedMessageTrackerDisabled();
 
         private readonly long _tickDurationInMs;
+        private readonly long _ackTimeoutMillis;
 
         public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
         {
@@ -95,6 +96,7 @@ namespace SharpPulsar.Tracker
             _consumer = consumer;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
             _tickDurationInMs = tickDurationInMs;
+            _ackTimeoutMillis = ackTimeoutMillis;
             _system = system;
             _log = system.Log;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>>();
@@ -106,14 +108,13 @@ namespace SharpPulsar.Tracker
                 TimePartitions.Enqueue(new ConcurrentSet<IMessageId>(1, 16));
             }
 
-            _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
+            _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(ackTimeoutMillis), Job);
 
         }
 
         private void Job()
         {
             var messageIds = new SortedSet<IMessageId>();
-            _rwl.EnterWriteLock();
             try
             {
                 TimePartitions.TryDequeue(out var headPartition);
@@ -134,13 +135,11 @@ namespace SharpPulsar.Tracker
             finally
             {
                 if (messageIds.Count > 0)
-                {
+                { 
                     _consumer.Tell(new AckTimeoutSend(messageIds));
                     _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
                 }
-
-                _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_tickDurationInMs), Job);
-                _rwl.ExitWriteLock();
+                _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Job);
             }
         }
 
@@ -164,7 +163,6 @@ namespace SharpPulsar.Tracker
 
         public virtual void Clear()
         {
-            _rwl.EnterWriteLock();
             try
             {
                 MessageIdPartitionMap.Clear();
@@ -173,18 +171,18 @@ namespace SharpPulsar.Tracker
                     t.Clear();
                 }
             }
-            finally
+
+            catch (Exception ex)
             {
-                _rwl.ExitWriteLock();
+                _log.Error(ex.ToString());
             }
         }
 
         public virtual  bool Add(IMessageId messageId)
         {
-            _rwl.EnterWriteLock();
             try
             {
-                var partition = TimePartitions.Last();
+                var partition = TimePartitions.First();
                 MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition);
                 if (previousPartition == null)
                 {
@@ -195,28 +193,29 @@ namespace SharpPulsar.Tracker
 
                 return false;
             }
-            finally
+            catch (Exception ex)
             {
-                _rwl.ExitWriteLock();
+                _log.Error(ex.ToString());
+                return false;
             }
         }
 
         public virtual bool Empty()
         {
-            _rwl.EnterReadLock();
             try
             {
                 return MessageIdPartitionMap.IsEmpty;
             }
-            finally
+
+            catch (Exception ex)
             {
-                _rwl.ExitReadLock();
+                _log.Error(ex.ToString());
+                return false;
             }
         }
 
         public virtual bool Remove(IMessageId messageId)
         {
-            _rwl.EnterWriteLock();
             try
             {
                 var removed = false;
@@ -228,9 +227,10 @@ namespace SharpPulsar.Tracker
 
                 return removed;
             }
-            finally
+            catch (Exception ex)
             {
-                _rwl.ExitWriteLock();
+                _log.Error(ex.ToString());
+                return false;
             }
         }
 
@@ -277,20 +277,12 @@ namespace SharpPulsar.Tracker
         public Queue<ConcurrentSet<IMessageId>> TimePartitions { get; }
         public void Stop()
         {
-            _rwl.EnterWriteLock();
-            try
+            if (_timeout != null && !_timeout.IsCancellationRequested)
             {
-                if (_timeout != null && !_timeout.IsCancellationRequested)
-                {
-                    _timeout.Cancel();
-                }
+                _timeout.Cancel();
+            }
 
-                Clear();
-            }
-            finally
-            {
-                _rwl.ExitWriteLock();
-            }
+            Clear();
         }
 
     }

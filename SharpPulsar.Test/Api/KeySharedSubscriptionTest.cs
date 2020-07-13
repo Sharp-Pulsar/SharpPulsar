@@ -210,7 +210,7 @@ namespace SharpPulsar.Test.Api
 
             for (int i = 0; i < 1000; i++)
 			{ 
-                var send = new Send(i.ToString(), ImmutableDictionary<string, object>.Empty);
+                var send = new Send(i.ToString().GetBytes(), ImmutableDictionary<string, object>.Empty);
 
                 _common.PulsarSystem.Send(send, producer);
             }
@@ -253,7 +253,7 @@ namespace SharpPulsar.Test.Api
                     ["key"] = "any key",
 					["orderingKey"] = Random.Next(NumberOfKeys).ToString().GetBytes()
 				};
-                var send = new Send(i.ToString(), config.ToImmutableDictionary());
+                var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
                 _common.PulsarSystem.Send(send, producer);
 
 			}
@@ -278,8 +278,7 @@ namespace SharpPulsar.Test.Api
         {
             if (enableBatch)
             {
-                var system = _common.PulsarSystem.GeTestObject().ActorSystem;
-				return _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, producerName, batchingMaxMessages: 5000, batcherBuilder: BatcherBuilderFields.KeyBased(system))).Producer;
+				return _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, producerName, batchingMaxMessages: 5000, batcherBuilder: BatcherBuilderFields.KeyBased(_common.PulsarSystem.GetActorSystem()))).Producer;
 			}
 
             return _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, producerName)).Producer;
@@ -287,7 +286,7 @@ namespace SharpPulsar.Test.Api
 
         private (IActorRef consumer, string topic) CreateConsumer(string topic, string consumerName, KeySharedPolicy keySharedPolicy = null)
         {
-            var con = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, consumerName, $"{consumerName}-Sub", subType: CommandSubscribe.SubType.KeyShared, ackTimeout: 3000, keySharedPolicy: keySharedPolicy));
+            var con = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, consumerName, $"{consumerName}-Sub", subType: CommandSubscribe.SubType.KeyShared, ackTimeout: 3000, keySharedPolicy: keySharedPolicy, forceTopic: true));
 			return con;
 		}
 
@@ -347,14 +346,14 @@ namespace SharpPulsar.Test.Api
 				int messagesForThisConsumer = 0;
                 var messages = _common.PulsarSystem.Messages(c.name, true, customHander: (m) =>
                 {
-                    var receivedMessage = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(object)m.Message.Data));
+                    var receivedMessage = Convert.ToInt32(((byte[])(object)m.Message.Data).GetString());
                     
                     if (m.Message.HasKey() || m.Message.HasOrderingKey())
                     {
                         var key = m.Message.HasOrderingKey() ? ((byte[])(object)m.Message.OrderingKey).GetString() : m.Message.Key;
 
 
-                        if (keyToConsumer.ContainsKey(key))
+                        if (!keyToConsumer.ContainsKey(key))
                         {
                             // This is a new key
                             keyToConsumer[key] = c.consr;

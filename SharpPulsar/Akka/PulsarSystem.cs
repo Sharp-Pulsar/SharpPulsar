@@ -130,7 +130,9 @@ namespace SharpPulsar.Akka
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
-            _testObject.ActorSystem = _pulsarManager.Ask<ActorSystem>("ActorSystem").GetAwaiter().GetResult();
+
+            if(mode == SystemMode.Test)
+                _testObject.ActorSystem = _pulsarManager.Ask<ActorSystem>("ActorSystem").GetAwaiter().GetResult();
         }
 
         public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
@@ -512,7 +514,7 @@ namespace SharpPulsar.Akka
                     _testObject.Consumer = createdConsumer.Consumer;
 
                 _managerState.MessageQueue.TryAdd(createdConsumer.ConsumerName, new BlockingCollection<ConsumedMessage>());
-                _topicSubTypes.Add(createdConsumer.Topic, subType);
+                //_topicSubTypes.Add(createdConsumer.Topic, subType);
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
             Stop();
@@ -847,6 +849,11 @@ namespace SharpPulsar.Akka
             _testObject.ConsumerBroker =
                 _testObject.Consumer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
             return _testObject;
+        }
+
+        public ActorSystem GetActorSystem()
+        {
+            return _actorSystem;
         }
     }
     //I need this for AcknowledgementsGroupingTrackerTest etc

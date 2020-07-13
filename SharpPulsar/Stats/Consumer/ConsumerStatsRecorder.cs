@@ -250,8 +250,6 @@ namespace SharpPulsar.Stats.Consumer
 
 		public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
 
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(ConsumerStatsRecorder));
 	}
 
 }

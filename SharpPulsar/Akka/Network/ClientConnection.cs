@@ -238,7 +238,7 @@ namespace SharpPulsar.Akka.Network
 			// Immediately reply success to ping requests
 			if (_log.IsEnabled(LogLevel.DebugLevel))
 			{
-				_log.Debug($"[{RemoteAddress}] Replying back to ping message");
+				_log.Debug($"[{_self.Path}] [{RemoteAddress}] Replying back to ping message");
 			}
             _client.SendMessage(_pong.ToArray());
         }
