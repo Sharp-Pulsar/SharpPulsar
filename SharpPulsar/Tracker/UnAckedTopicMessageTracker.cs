@@ -42,7 +42,7 @@ namespace SharpPulsar.Tracker
                 if (key is TopicMessageId impl && impl.TopicPartitionName.Contains(topicName))
                 {
                     var exist = MessageIdPartitionMap[impl];
-                    exist?.Remove(impl);
+                    exist?.TryRemove(impl);
                     keys.Remove(key);
                     removed++;
                 }

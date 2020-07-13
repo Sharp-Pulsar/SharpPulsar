@@ -1225,12 +1225,14 @@ namespace Samples
                 .ForceTopicCreation(true)
                 .SubscriptionName($"{topicLast}-Subscription")
                 .Topic(topic)
-                .AckTimeout(1000)
-                //.AcknowledgmentGroupTime(0)
+                //.AckTimeout(10000)
+                .AcknowledgmentGroupTime(0)
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
                 .Schema(jsonSchem)
+                
                 .MessageListener(messageListener)
+                .StartMessageId(MessageIdFields.Earliest)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                 .ConsumerConfigurationData;
             system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));

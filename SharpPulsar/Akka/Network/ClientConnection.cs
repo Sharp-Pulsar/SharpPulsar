@@ -71,10 +71,6 @@ namespace SharpPulsar.Akka.Network
                _ = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                Send(p.Bytes, p);
            });
-           Receive<Reconnect>(r=>
-           {
-               ConnectToServer();
-           });
         }
 
         private void Connect()
@@ -96,7 +92,9 @@ namespace SharpPulsar.Akka.Network
                 }
                 else
                     _client = SocketFactory.CreateClient<TcpClient>(remoteAddress.Host, remoteAddress.Port);
+
                 _log.Info($"Opening Connection to: {RemoteAddress}");
+
                 ConnectToServer();
             }
             catch (Exception ex)
@@ -114,13 +112,22 @@ namespace SharpPulsar.Akka.Network
 
         private void ConnectToServer()
         {
-            if(_client.IsConnected)
-                return;
-            _client.Connect(out var connected);
-            if (connected)
-                Connected();
-            else
+            try
+            {
+                if(_client.IsConnected)
+                    return;
+                _client.Connect(out var connected);
+                if (connected)
+                    Connected();
+                else
+                    _reconnectScheduler = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(5), ConnectToServer);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.ToString());
                 _reconnectScheduler = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(5), ConnectToServer);
+                throw;
+            }
         }
         private void Connected()
         {
@@ -436,8 +443,5 @@ namespace SharpPulsar.Akka.Network
         public static KeepAlive Instance = new KeepAlive();
         public readonly byte[] Cmd = Commands.NewPing();
     }
-    public sealed class Reconnect
-    {
-        public static Reconnect Instance = new Reconnect();
-    }
+    
 }

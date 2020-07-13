@@ -28,7 +28,7 @@ namespace SharpPulsar.Precondition
             }
         }
         
-        public static void CheckNoTNull(object value)
+        public static void CheckNotNull(object value)
         {
             if (value == null)
             {

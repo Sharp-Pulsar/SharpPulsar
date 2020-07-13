@@ -56,7 +56,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			try
 			{
-                Condition.CheckNoTNull(@namespace);
+                Condition.CheckNotNull(@namespace);
                 if (!Cache.ContainsKey(@namespace))
                 {
 					Cache[@namespace] = new NamespaceName(@namespace);
@@ -145,7 +145,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			try
 			{
-                Condition.CheckNoTNull(domain);
+                Condition.CheckNotNull(domain);
 				NamedEntity.CheckName(topic);
 				return $"{domain.ToString()}://{_namespace}/{topic}";
 			}
@@ -180,8 +180,8 @@ namespace SharpPulsar.Common.Naming
 		{
 			try
 			{
-                Condition.CheckNoTNull(tenant);
-                Condition.CheckNoTNull(@namespace);
+                Condition.CheckNotNull(tenant);
+                Condition.CheckNotNull(@namespace);
 				if (tenant.Length == 0 || @namespace.Length == 0)
 				{
 					throw new ArgumentException($"Invalid namespace format. namespace: {tenant}/{@namespace}");
@@ -199,9 +199,9 @@ namespace SharpPulsar.Common.Naming
 		{
 			try
 			{
-				Condition.CheckNoTNull(tenant);
-                Condition.CheckNoTNull(cluster);
-                Condition.CheckNoTNull(@namespace);
+				Condition.CheckNotNull(tenant);
+                Condition.CheckNotNull(cluster);
+                Condition.CheckNotNull(@namespace);
 				if (tenant.Length == 0 || cluster.Length == 0 || @namespace.Length == 0)
 				{
 					throw new ArgumentException($"Invalid namespace format. namespace: {tenant}/{cluster}/{@namespace}");

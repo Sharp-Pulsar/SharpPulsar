@@ -24,6 +24,7 @@ using System.Linq;
 using System.Threading;
 using Akka.Actor;
 using Akka.Event;
+using Akka.Util;
 using Akka.Util.Internal;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
@@ -31,16 +32,15 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedMessageTracker
     {
-        internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
+        internal readonly ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>> MessageIdPartitionMap;
         private readonly ILoggingAdapter _log;
         private readonly ActorSystem _system;
         private ICancelable _timeout;
         private static IActorRef _consumer;
+        
         private ReaderWriterLockSlim _rwl = new ReaderWriterLockSlim();
-        public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled =
-            new UnAckedMessageTrackerDisabled();
+        public static readonly UnAckedMessageTrackerDisabled UnackedMessageTrackerDisabled = new UnAckedMessageTrackerDisabled();
 
-        private readonly long _ackTimeoutMillis;
         private readonly long _tickDurationInMs;
 
         public class UnAckedMessageTrackerDisabled : UnAckedMessageTracker
@@ -80,7 +80,6 @@ namespace SharpPulsar.Tracker
             _system = null;
             TimePartitions = null;
             MessageIdPartitionMap = null;
-            _ackTimeoutMillis = 0;
             _tickDurationInMs = 0;
         }
 
@@ -95,17 +94,16 @@ namespace SharpPulsar.Tracker
         {
             _consumer = consumer;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
-            _ackTimeoutMillis = ackTimeoutMillis;
             _tickDurationInMs = tickDurationInMs;
             _system = system;
             _log = system.Log;
-            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
-            TimePartitions = new Queue<HashSet<IMessageId>>();
+            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>>();
+            TimePartitions = new Queue<ConcurrentSet<IMessageId>>();
 
-            var blankPartitions = (int) Math.Ceiling((double) _ackTimeoutMillis / _tickDurationInMs);
+            var blankPartitions = (int) Math.Ceiling((double) ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
-                TimePartitions.Enqueue(new HashSet<IMessageId>(16));
+                TimePartitions.Enqueue(new ConcurrentSet<IMessageId>(1, 16));
             }
 
             _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(tickDurationInMs), Job);
@@ -114,12 +112,12 @@ namespace SharpPulsar.Tracker
 
         private void Job()
         {
-            var messageIds = new HashSet<IMessageId>();
+            var messageIds = new SortedSet<IMessageId>();
             _rwl.EnterWriteLock();
             try
             {
                 TimePartitions.TryDequeue(out var headPartition);
-                if (headPartition != null && headPartition.Count > 0)
+                if (headPartition?.Count > 0)
                 {
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
                     headPartition.ForEach(messageId =>
@@ -187,9 +185,10 @@ namespace SharpPulsar.Tracker
             try
             {
                 var partition = TimePartitions.Last();
-                if (!MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition))
+                MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition);
+                if (previousPartition == null)
                 {
-                    var added = partition.Add(messageId);
+                    var added = partition.TryAdd(messageId);
                     MessageIdPartitionMap[messageId] = partition;
                     return added;
                 }
@@ -224,7 +223,7 @@ namespace SharpPulsar.Tracker
                 MessageIdPartitionMap.Remove(messageId, out var exist);
                 if (exist != null)
                 {
-                    removed = exist.Remove(messageId);
+                    removed = exist.TryRemove(messageId);
                 }
 
                 return removed;
@@ -261,7 +260,7 @@ namespace SharpPulsar.Tracker
                     if (messageId.CompareTo(msgId) <= 0)
                     {
                         var exist = MessageIdPartitionMap[messageId];
-                        exist?.Remove(messageId);
+                        exist?.TryRemove(messageId);
                         MessageIdPartitionMap.Remove(i, out var remove);
                         removed++;
                     }
@@ -275,7 +274,7 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        public Queue<HashSet<IMessageId>> TimePartitions { get; }
+        public Queue<ConcurrentSet<IMessageId>> TimePartitions { get; }
         public void Stop()
         {
             _rwl.EnterWriteLock();

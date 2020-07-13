@@ -34,6 +34,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Api;
 using SharpPulsar.Utils;
+using System.Collections.Concurrent;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -53,7 +54,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly IMessageListener _listener;
         private readonly IConsumerEventListener _consumerEventListener;
         private readonly TopicName _topicName;
-        private readonly Queue<Message> _incomingMessages;
+        private readonly ConcurrentQueue<ConsumedMessage> _incomingMessages;
         private readonly List<string> _pendingChunckedMessageUuidQueue;
         private readonly IActorRef _network;
         private int _requestedFlowPermits = 1000;
@@ -70,9 +71,12 @@ namespace SharpPulsar.Akka.Consumer
         private readonly long _consumerid;
         private readonly Dictionary<MessageId, MessageId[]> _unAckedChunkedMessageIdSequenceMap;
         private readonly ActorSystem _system;
+        private readonly IActorRef _parent;
+        private readonly IActorRef _self;
 
         private IMessageId _lastDequeuedMessageId = MessageIdFields.Earliest;
         private IMessageId _lastMessageIdInBroker = MessageIdFields.Earliest;
+        private ICancelable _messagePusher;
 
         private bool _hasReachedEndOfTopic;
 
@@ -95,7 +99,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly NegativeAcksTracker _negativeAcksTracker;
 
         private readonly IConsumerStatsRecorder _stats;
-        protected internal Queue<OpBatchReceive> _pendingBatchReceives;
+        private ConcurrentQueue<OpBatchReceive> _pendingBatchReceives;
 
         private readonly string _topicNameWithoutPartition;
 
@@ -110,11 +114,13 @@ namespace SharpPulsar.Akka.Consumer
         private readonly IActorRef _pulsarManager;
         public Consumer(ClientConfigurationData clientConfiguration, string topic, ConsumerConfigurationData configuration, long consumerid, IActorRef network, bool hasParentConsumer, int partitionIndex, SubscriptionMode mode, Seek seek, IActorRef pulsarManager, bool eventSourced = false)
         {
+            if(hasParentConsumer)
+                _parent = Context.Parent;
+            _self = Self;
             _initialStartMessageId = configuration.StartMessageId;
             _system = Context.System;
-            new Queue<Message>();
             _log = Context.GetLogger();
-            _incomingMessages = new Queue<Message>();
+            _incomingMessages = new ConcurrentQueue<ConsumedMessage>();
             MaxReceiverQueueSize = Math.Max(1_000_000, configuration.ReceiverQueueSize);
             _pulsarManager = pulsarManager;
             _eventSourced = eventSourced;
@@ -240,12 +246,49 @@ namespace SharpPulsar.Akka.Consumer
             {
                 _batchReceiveTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_batchReceivePolicy.TimeoutMs), PendingBatchReceiveTask);
             }
+            _messagePusher = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(100), PushMessages);
             ReceiveAny(x => Stash.Stash());
             BecomeLookUp();
         }
+        private void PushMessages()
+        {
+            try
+            {
+               
+                _incomingMessages.TryDequeue(out var message);
+                while (message != null)
+                {
+                    var msg = (Message) message.Message;
+                    MessageProcessed(msg);
+                    var msg1 = BeforeConsume(msg);
+                    if (_hasParentConsumer)
+                    {
+                        _parent.Tell(new ConsumedMessage(_self, msg1, message.AckSets, _consumerName));
+                    }
+                    else
+                    {
+                        if (_conf.ConsumptionType == ConsumptionType.Listener)
+                            _listener.Received(_self, msg1);
+                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
+                            _pulsarManager.Tell(new ConsumedMessage(_self, msg1, message.AckSets, _consumerName));
+                    }
+                    IncreaseAvailablePermits(1);
+                    _incomingMessages.TryDequeue(out message);
+                }
+            }
+            catch (Exception e)
+            {
+                _stats.IncrementNumReceiveFailed();
+                _log.Error(PulsarClientException.Unwrap(e).ToString());
+            }
+            finally
+            {
+                _messagePusher = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(100), PushMessages);
+            }
+        }
         public virtual void NotifyPendingBatchReceivedCallBack()
         {
-            var opBatchReceive = _pendingBatchReceives.Peek();
+            _pendingBatchReceives.TryPeek(out var opBatchReceive);
             if (opBatchReceive?.Messages == null)
             {
                 return;
@@ -256,13 +299,13 @@ namespace SharpPulsar.Akka.Consumer
         private void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
         {
             var messages = new Messages(_batchReceivePolicy.MaxNumMessages, _batchReceivePolicy.MaxNumBytes);
-            var msgPeeked = _incomingMessages.Peek();
-            while (msgPeeked != null && messages.CanAdd(msgPeeked))
+            _incomingMessages.TryPeek(out var msgPeeked);
+            while (msgPeeked != null && messages.CanAdd(msgPeeked.Message))
             {
-                Message msg = null;
+                ConsumedMessage msg = null;
                 try
                 {
-                    msg = _incomingMessages.Dequeue();
+                    _incomingMessages.TryDequeue(out msg);
                 }
                 catch 
                 {
@@ -270,10 +313,10 @@ namespace SharpPulsar.Akka.Consumer
                 }
                 if (msg != null)
                 {
-                    var interceptMsg = BeforeConsume(msg);
+                    var interceptMsg = BeforeConsume(msg.Message);
                     messages.Add(interceptMsg);
-                }
-                msgPeeked = _incomingMessages.Peek();
+                } 
+                _incomingMessages.TryPeek(out msgPeeked);
             }
             opBatchReceive.Messages = messages;
         }
@@ -284,6 +327,7 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(cmd, requestid, "CloseConsumer");
             _broker.Tell(payload);
             _batchReceiveTimeout?.Cancel();
+            _messagePusher?.Cancel();
         }
 
         private void RedeliverUnacknowledgedMessages()
@@ -354,10 +398,11 @@ namespace SharpPulsar.Akka.Consumer
         private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
         {
             int messagesFromQueue = 0;
-            var peek = _incomingMessages.Peek();
-            if (peek != null)
+            
+            if (_incomingMessages.TryPeek(out var peek))
             {
-                var messageId = GetMessageId(peek);
+                var msg = (Message) peek.Message;
+                var messageId = GetMessageId(msg);
                 if (!messageIds.Contains(messageId))
                 {
                     // first message is not expired, then no message is expired in queue.
@@ -365,18 +410,18 @@ namespace SharpPulsar.Akka.Consumer
                 }
 
                 // try not to remove elements that are added while we remove
-                var message = _incomingMessages.Dequeue();
+                _incomingMessages.TryDequeue(out var message);
                 while (message != null)
                 {
-                    _incomingMessagesSize -= message.Data.Length;
+                    _incomingMessagesSize -= msg.Data.Length;
                     messagesFromQueue++;
-                    var id = GetMessageId(message);
+                    var id = GetMessageId(msg);
                     if (!messageIds.Contains(id))
                     {
                         messageIds.Add(id);
                         break;
                     }
-                    message = _incomingMessages.Dequeue();
+                    _incomingMessages.TryDequeue(out message);
                 }
             }
             return messagesFromQueue;
@@ -456,7 +501,7 @@ namespace SharpPulsar.Akka.Consumer
         {
             if (_interceptors != null)
             {
-                return _interceptors.BeforeConsume(Self, message);
+                return _interceptors.BeforeConsume(_self, message);
             }
 
             return message;
@@ -554,7 +599,7 @@ namespace SharpPulsar.Akka.Consumer
                     // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
                     // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
 
-                    if (EnqueueMessageAndCheckBatchReceive(message))
+                    if (EnqueueMessageAndCheckBatchReceive(new ConsumedMessage(Self, message, ackSet, _consumerName)))
                     {
                         if (HasPendingBatchReceive())
                         {
@@ -562,17 +607,6 @@ namespace SharpPulsar.Akka.Consumer
                         }
                     }
 
-                    var received = InternalReceive();
-                    if (_hasParentConsumer)
-                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
-                    else
-                    {
-                        if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, received);
-                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
-                    }
-                    IncreaseAvailablePermits(numMessages);
                 }
                 else
                 {
@@ -645,7 +679,7 @@ namespace SharpPulsar.Akka.Consumer
                     {
                         possibleToDeadLetter.Add(message);
                     }*/
-                    if (EnqueueMessageAndCheckBatchReceive(message))
+                    if (EnqueueMessageAndCheckBatchReceive(new ConsumedMessage(Self, message, ackSet, _consumerName)))
                     {
                         if (HasPendingBatchReceive())
                         {
@@ -653,16 +687,6 @@ namespace SharpPulsar.Akka.Consumer
                         }
                     }
                     index += (uint)singleMessageMetadata.PayloadSize;
-                    var received = InternalReceive();
-                    if (_hasParentConsumer)
-                        Context.Parent.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
-                    else
-                    {
-                        if (_conf.ConsumptionType == ConsumptionType.Listener)
-                            _listener.Received(Self, received);
-                        else if (_conf.ConsumptionType == ConsumptionType.Queue)
-                            _pulsarManager.Tell(new ConsumedMessage(Self, received, ackSet, _consumerName));
-                    }
                 }
             }
             catch (IOException)
@@ -686,12 +710,13 @@ namespace SharpPulsar.Akka.Consumer
         {
             return _conf.ResetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
         }
-        private bool EnqueueMessageAndCheckBatchReceive(Message message)
+        private bool EnqueueMessageAndCheckBatchReceive(ConsumedMessage message)
         {
-            if (CanEnqueueMessage(message))
+            var msg = (Message) message.Message;
+            if (CanEnqueueMessage(msg))
             {
                 _incomingMessages.Enqueue(message);
-                _incomingMessagesSize += message.Data?.Length ?? 0;
+                _incomingMessagesSize += msg.Data?.Length ?? 0;
             }
             return HasEnoughMessagesForBatchReceive();
         }
@@ -730,21 +755,7 @@ namespace SharpPulsar.Akka.Consumer
             if (!_eventSourced)
                 SendFlow(permits);
         }
-        private IMessage InternalReceive()
-        {
-            Message message;
-            try
-            {
-                message = _incomingMessages.Dequeue();
-                MessageProcessed(message);
-                return BeforeConsume(message);
-            }
-            catch(Exception e)
-            {
-                _stats.IncrementNumReceiveFailed();
-                throw PulsarClientException.Unwrap(e);
-            }
-        }
+       
         private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId)
         {
 
@@ -879,45 +890,7 @@ namespace SharpPulsar.Akka.Consumer
             }
             _pendingChunckedMessageCount--;
         }
-        //This might not be feasible since we are dealing with push and not pull
-        private Messages InternalBatchReceive()
-        {
-            var result = new Messages(_batchReceivePolicy.MaxNumMessages, _batchReceivePolicy.MaxNumBytes);
-            try
-            {
-                if (_pendingBatchReceives == null)
-                {
-                    _pendingBatchReceives = new Queue<OpBatchReceive>();
-                }
-                if (HasEnoughMessagesForBatchReceive())
-                {
-                    Messages messages = new Messages(_batchReceivePolicy.MaxNumMessages, _batchReceivePolicy.MaxNumBytes);
-                    Message msgPeeked = _incomingMessages.Peek();
-                    while (msgPeeked != null && messages.CanAdd(msgPeeked))
-                    {
-                        var msg = _incomingMessages.Dequeue();
-                        if (msg != null)
-                        {
-                            MessageProcessed(msg);
-                            var interceptMsg = BeforeConsume(msg);
-                            messages.Add(interceptMsg);
-                        }
-                        msgPeeked = _incomingMessages.Peek();
-                    }
-                    result = messages;
-                }
-                else
-                {
-                    _pendingBatchReceives.Enqueue(OpBatchReceive.Of(result));
-                }
-            }
-            finally
-            {
-                
-            }
-            return result;
-        }
-
+        
         private bool MarkAckForBatchMessage(BatchMessageId batchMessageId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {
             bool isAllMsgsAcked;
@@ -998,9 +971,9 @@ namespace SharpPulsar.Akka.Consumer
             var n = 0;
             while (n < mcount)
             {
-                var m = _incomingMessages.Dequeue();
-                if (m != null)
-                    currentMessageQueue.Add(m);
+                
+                if (_incomingMessages.TryDequeue(out var m))
+                    currentMessageQueue.Add((Message)m.Message);
                 else
                     break;
                 ++n;
@@ -1124,22 +1097,26 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void TrackMessage(IMessageId messageId)
         {
-            if (_conf.AckTimeoutMillis > 0 && messageId is MessageId id1)
+            if (_conf.AckTimeoutMillis > 0)
             {
-                var id = id1;
-                if (id is BatchMessageId)
+                MessageId msgid;
+                if (messageId is BatchMessageId b)
                 {
                     // do not add each item in batch message into tracker
-                    id = new MessageId(id.LedgerId, id.EntryId, _partitionIndex);
+                    msgid = new MessageId(b.LedgerId, b.EntryId, _partitionIndex);
+                }
+                else
+                {
+                    msgid = (MessageId)messageId;
                 }
                 if (_hasParentConsumer)
                 {
                     // we should no longer track this message, TopicsConsumer will take care from now onwards
-                    _unAckedMessageTracker.Remove(id);
+                    _unAckedMessageTracker.Remove(msgid);
                 }
                 else
                 {
-                    _unAckedMessageTracker.Add(id);
+                    _unAckedMessageTracker.Add(msgid);
                 }
             }
         }
@@ -1349,6 +1326,7 @@ namespace SharpPulsar.Akka.Consumer
             {
                 // For regular durable subscriptions, the message id from where to restart will be determined by the broker.
                 startMessageIdData = null;
+
             }
             else
             {
@@ -1590,10 +1568,7 @@ namespace SharpPulsar.Akka.Consumer
             var load = new Payload(request, requestid, "BrokerLookUp");
             _network.Tell(load);
         }
-        public class RecreateConsumer
-        {
-
-        }
+        
         public IStash Stash { get; set; }
         private void Unsubscribe()
         {
@@ -1608,7 +1583,7 @@ namespace SharpPulsar.Akka.Consumer
 
             if (_pendingBatchReceives == null)
             {
-                _pendingBatchReceives = new Queue<OpBatchReceive>();
+                _pendingBatchReceives =  new ConcurrentQueue<OpBatchReceive>();
             }
 
             _pendingBatchReceives.TryPeek(out var firstOpBatchReceive);
@@ -1623,9 +1598,9 @@ namespace SharpPulsar.Akka.Consumer
                 {
                     // The diff is less than or equal to zero, meaning that the batch receive has been timed out.
                     // complete the OpBatchReceive and continue to check the next OpBatchReceive in pendingBatchReceives.
-                    var op = _pendingBatchReceives.Dequeue();//poll;
+                    _pendingBatchReceives.TryDequeue(out var op);
                     CompleteOpBatchReceive(op);
-                    firstOpBatchReceive = _pendingBatchReceives.Peek();
+                    _pendingBatchReceives.TryPeek(out firstOpBatchReceive);
                 }
                 else
                 {
@@ -1653,25 +1628,6 @@ namespace SharpPulsar.Akka.Consumer
             _listener?.ReachedEndOfTopic(Self);
         }
 
-        private bool HasReachedEndOfTopic()
-        {
-            return _hasReachedEndOfTopic;
-        }
-        
-        private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
-        {
-            if (inclusive && lastMessageIdInBroker.CompareTo(messageId) >= 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
-            {
-                return true;
-            }
-
-            if (!inclusive && lastMessageIdInBroker.CompareTo(messageId) > 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
-            {
-                return true;
-            }
-
-            return false;
-        }
         private void Seek(long timestamp)
         {
 

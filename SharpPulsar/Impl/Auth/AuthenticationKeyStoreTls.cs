@@ -41,7 +41,7 @@ namespace SharpPulsar.Impl.Auth
         public const string KeystoreType = "keyStoreType";
         public const string KeystorePath = "keyStorePath";
         public const string KeystorePw = "keyStorePassword";
-        private const string DefaultKeystoreType = "JKS";
+        private const string DefaultKeystoreType = "PKCS12";
         [NonSerialized]
         private KeyStoreParams _keyStoreParams;
 
@@ -70,7 +70,7 @@ namespace SharpPulsar.Impl.Auth
             {
                 try
                 {
-                    return new AuthenticationDataKeyStoreTls(this._keyStoreParams);
+                    return new AuthenticationDataKeyStoreTls(_keyStoreParams);
                 }
                 catch (Exception e)
                 {
@@ -82,8 +82,8 @@ namespace SharpPulsar.Impl.Auth
 
 
         // passed in KEYSTORE_TYPE/KEYSTORE_PATH/KEYSTORE_PW to construct parameters.
-        // e.g. {"keyStoreType":"JKS","keyStorePath":"/path/to/keystorefile","keyStorePassword":"keystorepw"}
-        //  or: "keyStoreType":"JKS","keyStorePath":"/path/to/keystorefile","keyStorePassword":"keystorepw"
+        // e.g. {"keyStoreType":"PKCS12","keyStorePath":"/path/to/keystorefile","keyStorePassword":"keystorepw"}
+        //  or: "keyStoreType":"PKCS12","keyStorePath":"/path/to/keystorefile","keyStorePassword":"keystorepw"
         public virtual void Configure(string paramsString)
         {
             IDictionary<string, string> @params = null;

@@ -31,8 +31,10 @@ namespace SharpPulsar.Impl.Conf
 	/// </summary>
 	public sealed class ClientConfigurationData
     {
-
-        public string TlsTrustStoreType { get; set; } = "JKS";
+		/// <summary>
+		/// TLS KeyStore type configuration: JKS, PKCS12
+		/// </summary>
+		public string TlsTrustStoreType { get; set; } = "PKCS12";
         public string TlsTrustStorePath { get; set; } = null;
         private string TlsTrustStorePassword { get; set; } = null;
         private ISet<string> TlsCiphers { get; set; } = new HashSet<string>();
