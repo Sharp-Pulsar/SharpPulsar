@@ -20,67 +20,87 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Akka.Actor;
 using Akka.Util.Internal;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
 
-	public class NegativeAcksTracker
+	public class NegativeAcksTracker:ReceiveActor
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;
-        private ActorSystem _system;
-
-		private readonly IActorRef _consumer;
 		private readonly long _nackDelayNanos;
 		private readonly long _timerIntervalNanos;
+        private IActorRef _unAckedMessageTracker;
 
-		private ICancelable _timeout;
+
+        private ICancelable _timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
 		private static readonly long MinNackDelayNanos = 100;
 
-		public NegativeAcksTracker(ActorSystem system, IActorRef consumer, ConsumerConfigurationData conf)
+		public NegativeAcksTracker(ConsumerConfigurationData conf, IActorRef unAckedMessageTracker)
         {
-            _system = system;
-			_consumer = consumer;
+            _unAckedMessageTracker = unAckedMessageTracker;
 			_nackDelayNanos = Math.Max(conf.NegativeAckRedeliveryDelayMicros, MinNackDelayNanos);
 			_timerIntervalNanos = _nackDelayNanos / 3;
-		}
-
-		private void TriggerRedelivery()
-        {
-            if (_nackedMessages.Count == 0)
-            {
-                _timeout = null;
-                return;
-            }
-
-            // Group all the nacked messages into one single re-delivery request
-            var messagesToRedeliver = new HashSet<IMessageId>();
-            var now = DateTimeHelper.CurrentUnixTimeMillis();
-            _nackedMessages.ForEach(a =>
-            {
-                if (a.Value < now)
-                {
-                    UnAckedMessageTracker.AddChunkedMessageIdsAndRemoveFromSequnceMap(a.Key, messagesToRedeliver, _consumer);
-                    messagesToRedeliver.Add(a.Key);
-                }
-            });
-
-            messagesToRedeliver.ForEach(a =>_nackedMessages.Remove(a));
-            _consumer.Tell(new OnNegativeAcksSend(messagesToRedeliver));
-            _consumer.Tell(new RedeliverUnacknowledgedMessages(messagesToRedeliver));
-
-            _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
+            Receive<Add>(a => Add(a.MessageId));
+            Receive<Trigger>(t => TriggerRedelivery());
         }
 
-        public void Add(IMessageId messageId)
+        public static Props Prop(ConsumerConfigurationData conf, IActorRef unAckedMessageTracker)
+        {
+            return Props.Create(()=> new NegativeAcksTracker(conf, unAckedMessageTracker));
+        }
+		private void TriggerRedelivery()
+        {
+            try
+            {
+                if (_nackedMessages.Count == 0)
+                {
+                    _timeout = null;
+                    return;
+                }
+
+                // Group all the nacked messages into one single re-delivery request
+                var messagesToRedeliver = new HashSet<IMessageId>();
+                var now = DateTimeHelper.CurrentUnixTimeMillis();
+                _nackedMessages.ForEach(a =>
+                {
+                    if (a.Value < now)
+                    {
+                        var ms = _unAckedMessageTracker
+                            .Ask<ImmutableHashSet<IMessageId>>(
+                                new AddChunkedMessageIdsAndRemoveFromSequnceMap(a.Key,
+                                    messagesToRedeliver.ToImmutableHashSet())).GetAwaiter().GetResult();
+                        ms.ToList().ForEach(x => messagesToRedeliver.Add(x));
+                        messagesToRedeliver.Add(a.Key);
+                    }
+                });
+
+                messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
+                Context.Parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
+                Context.Parent.Tell(new RedeliverUnacknowledgedMessages(messagesToRedeliver));
+            }
+            catch (Exception e)
+            {
+                Context.System.Log.Error(e.ToString());
+            }
+            finally
+            {
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), Self, Trigger.Instance, ActorRefs.NoSender);
+            }
+        }
+
+        private void Add(IMessageId messageId)
         {
             if (messageId is BatchMessageId batchMessageId)
             {
@@ -97,7 +117,7 @@ namespace SharpPulsar.Tracker
             {
                 // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
                 // nack immediately following the current one will be batched into the same redeliver request.
-                _timeout = _timeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), TriggerRedelivery);
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(_timerIntervalNanos), Self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
 	}
@@ -109,5 +129,10 @@ namespace SharpPulsar.Tracker
         }
 
         public ISet<IMessageId> MessageIds { get; }
+    }
+
+    public sealed class Trigger
+    {
+        public static Trigger Instance = new Trigger();
     }
 }

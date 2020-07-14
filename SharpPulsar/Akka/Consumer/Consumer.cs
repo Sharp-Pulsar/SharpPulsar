@@ -35,6 +35,7 @@ using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Api;
 using SharpPulsar.Utils;
 using System.Collections.Concurrent;
+using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -94,9 +95,9 @@ namespace SharpPulsar.Akka.Consumer
         private readonly BatchReceivePolicy _batchReceivePolicy;
         protected readonly int MaxReceiverQueueSize;
 
-        private readonly UnAckedMessageTracker _unAckedMessageTracker;
+        private readonly IActorRef _unAckedMessageTracker;
         private IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
-        private readonly NegativeAcksTracker _negativeAcksTracker;
+        private readonly IActorRef _negativeAcksTracker;
 
         private readonly IConsumerStatsRecorder _stats;
         private ConcurrentQueue<OpBatchReceive> _pendingBatchReceives;
@@ -146,8 +147,6 @@ namespace SharpPulsar.Akka.Consumer
             _consumerName = configuration.ConsumerName;
             _unAckedChunkedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
 
-            _negativeAcksTracker = new NegativeAcksTracker(_system, Self, configuration);
-
             _maxPendingChuckedMessage = configuration.MaxPendingChuckedMessage;
             _pendingChunckedMessageUuidQueue = new List<string>();
             _expireTimeOfIncompleteChunkedMessageMillis = configuration.ExpireTimeOfIncompleteChunkedMessageMillis;
@@ -168,18 +167,19 @@ namespace SharpPulsar.Akka.Consumer
             {
                 if (configuration.TickDurationMillis > 0)
                 {
-                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis), _system);
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis)), "UnAckedMessageTracker");
                 }
                 else
                 {
-                    _unAckedMessageTracker = new UnAckedMessageTracker(Self, configuration.AckTimeoutMillis, _system);
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, 0), "UnAckedMessageTracker");
                 }
             }
             else
             {
-                _unAckedMessageTracker = UnAckedMessageTracker.UnackedMessageTrackerDisabled;
+                _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
             }
 
+            _negativeAcksTracker = Context.ActorOf(NegativeAcksTracker.Prop(configuration, _unAckedMessageTracker), "NegativeAcksTracker");
             // Create msgCrypto if not created already
             if (configuration.CryptoKeyReader != null)
             {
@@ -1024,13 +1024,12 @@ namespace SharpPulsar.Akka.Consumer
                 if (messageId is BatchMessageId batchMessageId)
                 {
                     _stats.IncrementNumAcksSent(batchMessageId.BatchSize);
-                    _unAckedMessageTracker.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
-                    
+                    _unAckedMessageTracker.Tell(new Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex)));
                 }
                 else
                 {
                     // increment counter by 1 for non-batch msg
-                    _unAckedMessageTracker.Remove(messageId);
+                    _unAckedMessageTracker.Tell(new Remove(messageId));
                     _stats.IncrementNumAcksSent(1);
                 }
                 OnAcknowledge(messageId, null);
@@ -1038,7 +1037,9 @@ namespace SharpPulsar.Akka.Consumer
             else if (ackType == CommandAck.AckType.Cumulative)
             {
                 OnAcknowledgeCumulative(messageId, null);
-                _stats.IncrementNumAcksSent(_unAckedMessageTracker.RemoveMessagesTill(messageId));
+                var removed = _unAckedMessageTracker.Ask<int>(new RemoveMessagesTill(messageId)).GetAwaiter()
+                    .GetResult();
+                _stats.IncrementNumAcksSent(removed);
             }
 
             _acknowledgmentsGroupingTracker.AddAcknowledgment(messageId, ackType, properties);
@@ -1052,10 +1053,10 @@ namespace SharpPulsar.Akka.Consumer
         }
         private void NegativeAcknowledge(IMessageId messageId)
         {
-            _negativeAcksTracker.Add(messageId);
+            _negativeAcksTracker.Tell(new Add(messageId));
 
             // Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
-            _unAckedMessageTracker.Remove(messageId);
+            _unAckedMessageTracker.Tell(new Remove(messageId));
         }
 
 
@@ -1109,11 +1110,11 @@ namespace SharpPulsar.Akka.Consumer
                 if (_hasParentConsumer)
                 {
                     // we should no longer track this message, TopicsConsumer will take care from now onwards
-                    _unAckedMessageTracker.Remove(msgid);
+                    _unAckedMessageTracker.Tell(new Remove(msgid));
                 }
                 else
                 {
-                    _unAckedMessageTracker.Add(msgid);
+                    _unAckedMessageTracker.Tell(new Add(msgid));
                 }
             }
         }
@@ -1194,7 +1195,7 @@ namespace SharpPulsar.Akka.Consumer
                     case ConsumerCryptoFailureAction.Fail:
                         var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
                         _log.Error($"[{_topicName}][{_subscriptionName}][{_consumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
-                        _unAckedMessageTracker.Add(m);
+                        _unAckedMessageTracker.Tell(new Add(m));
                         return null;
                 }
             }
@@ -1219,7 +1220,7 @@ namespace SharpPulsar.Akka.Consumer
                 case ConsumerCryptoFailureAction.Fail:
                     var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
                     _log.Error($"[{_topicName}][{_subscriptionName}][{_consumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
-                    _unAckedMessageTracker.Add(m);
+                    _unAckedMessageTracker.Tell( new Add(m));
                     return null;
             }
             return null;
