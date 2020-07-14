@@ -90,7 +90,7 @@ namespace SharpPulsar.Tracker
                 var size = Size();
                 Sender.Tell(size);
             });
-            Receive<RunJob>(r=> Job());
+            Receive<RunJob>(r=> RedeliverMessages());
             Receive<AddChunkedMessageIdsAndRemoveFromSequnceMap>(c =>
             {
                 var ids = new HashSet<IMessageId>(c.MessageIds);
@@ -100,7 +100,7 @@ namespace SharpPulsar.Tracker
             _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
-        private void Job()
+        private void RedeliverMessages()
         {
             var messageIds = new SortedSet<IMessageId>();
             try
@@ -170,16 +170,16 @@ namespace SharpPulsar.Tracker
         {
             try
             {
-                var partition = TimePartitions.First();
-                MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition);
-                if (previousPartition == null)
-                {
-                    var added = partition.TryAdd(messageId);
-                    MessageIdPartitionMap[messageId] = partition;
-                    return added;
-                }
+                var partition = TimePartitions.Last();
+                 MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition);
+                 if (previousPartition == null)
+                 {
+                     var added = partition.TryAdd(messageId);
+                     MessageIdPartitionMap[messageId] = partition;
+                     return added;
+                 }
 
-                return false;
+                 return partition.TryAdd(messageId);
             }
             catch (Exception ex)
             {

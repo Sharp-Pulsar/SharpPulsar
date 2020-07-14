@@ -331,21 +331,23 @@ namespace SharpPulsar.Akka.Consumer
 
         private void RedeliverUnacknowledgedMessages()
         {
-            var currentSize = _requestedFlowPermits > 1 && _requestedFlowPermits < 1000? 1000 - _requestedFlowPermits : 1;
+            var currentSize = _incomingMessages.Count;
             _incomingMessages.Clear();
             _incomingMessagesSize = 0;
-            //_unAckedMessageTracker.Clear();
+            _unAckedMessageTracker.Tell(new Clear());
 
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid);
             var payload = new Payload(cmd, requestid, "RedeliverUnacknowledgedMessages");
             _broker.Tell(payload);
-
-            if (_log.IsDebugEnabled)
+            if(currentSize> 0)
             {
-                _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
+                }
+                IncreaseAvailablePermits(currentSize);
             }
-            IncreaseAvailablePermits(currentSize);
         }
 
         private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
@@ -1255,13 +1257,6 @@ namespace SharpPulsar.Akka.Consumer
             return CommandSubscribe.SubType.Shared != type && CommandSubscribe.SubType.KeyShared != type;
         }
         
-        private void SendAckMultiMessages(IList<(long ledgerId, long entryId, long[] ackSets)> entries)
-        {
-            var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-            var cmd = Commands.NewMultiMessageAck(_consumerid, entries);
-            var payload = new Payload(cmd, requestid, "AckMultiMessages");
-            _broker.Tell(payload);
-        }
         private void AckMessages(AckMessages message)
         {
             SendAcknowledge(message.MessageId, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null );
