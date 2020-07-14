@@ -32,7 +32,6 @@ using SharpPulsar.Impl.Crypto;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
-using SharpPulsar.Tracker.Api;
 using SharpPulsar.Utils;
 using System.Collections.Concurrent;
 using SharpPulsar.Tracker.Messages;
@@ -96,7 +95,7 @@ namespace SharpPulsar.Akka.Consumer
         protected readonly int MaxReceiverQueueSize;
 
         private readonly IActorRef _unAckedMessageTracker;
-        private IAcknowledgmentsGroupingTracker _acknowledgmentsGroupingTracker;
+        private IActorRef _acknowledgmentsGroupingTracker;
         private readonly IActorRef _negativeAcksTracker;
 
         private readonly IConsumerStatsRecorder _stats;
@@ -536,7 +535,8 @@ namespace SharpPulsar.Akka.Consumer
                 var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && _conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
                 var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-                if (_acknowledgmentsGroupingTracker.IsDuplicate(msgId))
+                var isDup = _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId)).GetAwaiter().GetResult();
+                if (isDup)
                 {
                     if (_log.IsDebugEnabled)
                     {
@@ -567,7 +567,7 @@ namespace SharpPulsar.Akka.Consumer
 
                 // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
                 // and return undecrypted payload
-                if (isMessageUndecryptable || (numMessages == 1 && msgMetadata.NumMessagesInBatch! > 0))
+                if (isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
                 {
 
                     // right now, chunked messages are only supported by non-shared subscription
@@ -619,6 +619,11 @@ namespace SharpPulsar.Akka.Consumer
 
         }
 
+        private bool HasNumMessagesInBatch(MessageMetadata m)
+        {
+            var should = m.ShouldSerializeNumMessagesInBatch();
+            return should;
+        }
         private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, ReadOnlySequence<byte> uncompressedPayload, MessageIdData messageId)
         {
             var batchSize = msgMetadata.NumMessagesInBatch;
@@ -949,7 +954,7 @@ namespace SharpPulsar.Akka.Consumer
                 else
                 {
                     var batchMessageId = id;
-                    _acknowledgmentsGroupingTracker.AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties);
+                    _acknowledgmentsGroupingTracker.Tell(new AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties));
                     // other messages in batch are still pending ack.
                     return;
                 }
@@ -1042,7 +1047,7 @@ namespace SharpPulsar.Akka.Consumer
                 _stats.IncrementNumAcksSent(removed);
             }
 
-            _acknowledgmentsGroupingTracker.AddAcknowledgment(messageId, ackType, properties);
+            _acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(messageId, ackType, properties));
 
             // Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
             // the messages will be re-delivered
@@ -1553,11 +1558,11 @@ namespace SharpPulsar.Akka.Consumer
 
                 if (_topicName.Persistent)
                 {
-                    _acknowledgmentsGroupingTracker = new PersistentAcknowledgmentsGroupingTracker(_system, _broker, Self, _consumerid, _conf);
+                    _acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker.Prop(_broker, _consumerid, _conf), "PersistentAcknowledgmentsGroupingTracker");
                 }
                 else
                 {
-                    _acknowledgmentsGroupingTracker = NonPersistentAcknowledgmentGroupingTracker.Of();
+                    _acknowledgmentsGroupingTracker = Context.ActorOf(NonPersistentAcknowledgmentGroupingTracker.Prop(), "NonPersistentAcknowledgmentGroupingTracker");
                 }
                 BecomeActive();
                 Stash.UnstashAll();
@@ -1657,7 +1662,7 @@ namespace SharpPulsar.Akka.Consumer
             var payload = new Payload(cmd, requestId, "NewSeek");
             _broker.Tell(payload);
             _log.Info($"[{_topicName}][{_subscriptionName}] Successfully reset subscription to message id {messageId}");
-            _acknowledgmentsGroupingTracker.FlushAndClean();
+            _acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
             _seekMessageId = new BatchMessageId((MessageId)messageId);
             _duringSeek = true;
             _lastDequeuedMessageId = MessageIdFields.Earliest;

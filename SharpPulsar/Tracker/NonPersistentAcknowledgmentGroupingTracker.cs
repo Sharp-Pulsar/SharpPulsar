@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using SharpPulsar.Api;
-using SharpPulsar.Batch;
-using SharpPulsar.Impl;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Tracker.Api;
+﻿using Akka.Actor;
+using SharpPulsar.Tracker.Messages;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -27,48 +24,20 @@ namespace SharpPulsar.Tracker
     /// <summary>
     /// A no-op acknowledgment grouping tracker.
     /// </summary>
-    public class NonPersistentAcknowledgmentGroupingTracker : IAcknowledgmentsGroupingTracker
+    public class NonPersistentAcknowledgmentGroupingTracker : ReceiveActor
     {
-
-        public static NonPersistentAcknowledgmentGroupingTracker Of()
-        {
-            return Instance;
-        }
-
-        private static readonly NonPersistentAcknowledgmentGroupingTracker Instance = new NonPersistentAcknowledgmentGroupingTracker();
-
         private NonPersistentAcknowledgmentGroupingTracker()
         {
+            Receive<IsDuplicate>(i => Sender.Tell(false));
+            ReceiveAny(_ =>
+            {
+                //no ops
+            });
         }
-
-        public virtual bool IsDuplicate(IMessageId messageId)
+        
+        public static Props Prop()
         {
-            return false;
-        }
-
-        public virtual void AddAcknowledgment(IMessageId msgId, CommandAck.AckType ackType, IDictionary<string, long> properties)
-        {
-            // no-op
-        }
-
-        public virtual void AddBatchIndexAcknowledgment(BatchMessageId msgId, int batchIndex, int BatchSize, CommandAck.AckType ackType, IDictionary<string, long> properties)
-        {
-            // no-op
-        }
-
-        public virtual void Flush()
-        {
-            // no-op
-        }
-
-        public virtual void Close()
-        {
-            // no-op
-        }
-
-        public virtual void FlushAndClean()
-        {
-            // no-op
+            return Props.Create(()=> new NonPersistentAcknowledgmentGroupingTracker());
         }
 	}
 }

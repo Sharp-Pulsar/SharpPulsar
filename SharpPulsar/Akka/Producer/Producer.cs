@@ -409,7 +409,12 @@ namespace SharpPulsar.Akka.Producer
                             break;
                     }
                 }
-                InternalSend(builder.Message);
+
+                var msg = (Message)builder.Message;
+                if (_topicSchema.Ready)
+                    msg.SetSchemaState(Message.SchemaState.Ready);
+
+                InternalSend(msg);
             }
             catch (Exception e)
             {

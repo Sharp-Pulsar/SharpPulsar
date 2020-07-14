@@ -356,8 +356,7 @@ namespace SharpPulsar.Akka.Network
                     case BaseCommand.Type.PartitionedMetadataResponse:
                         var part = cmd.partitionMetadataResponse;
                         var rPay = requests[(long)part.RequestId];
-                        rPay.Key.Tell(
-                            new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
+                        rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
                         _requests.TryRemove((long)part.RequestId, out var pa);
                         break;
                     case BaseCommand.Type.SendError:
