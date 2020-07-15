@@ -166,11 +166,11 @@ namespace SharpPulsar.Akka.Consumer
             {
                 if (configuration.TickDurationMillis > 0)
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis)), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, Math.Min(configuration.TickDurationMillis, configuration.AckTimeoutMillis), Self), "UnAckedMessageTracker");
                 }
                 else
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, 0), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(configuration.AckTimeoutMillis, 0, Self), "UnAckedMessageTracker");
                 }
             }
             else

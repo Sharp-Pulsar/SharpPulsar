@@ -22,7 +22,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
@@ -38,15 +37,15 @@ namespace SharpPulsar.Tracker
         internal readonly ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>> MessageIdPartitionMap;
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
-        private static IActorRef _parent;
+        private readonly IActorRef _parent;
         private readonly long _tickDurationInMs;
         private readonly long _ackTimeoutMillis;
         private readonly IScheduler _scheduler;
         
-        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs)
+        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef parent)
         {
             _scheduler = Context.System.Scheduler;
-            _parent = Context.Parent;
+            _parent = parent;
             _log = Context.System.Log;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
             _tickDurationInMs = tickDurationInMs;
@@ -261,9 +260,9 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs)
+        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef parent)
         {
-            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs));
+            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, parent));
         }
     }
 
