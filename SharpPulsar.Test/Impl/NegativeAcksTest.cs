@@ -40,7 +40,7 @@ namespace SharpPulsar.Test.Impl
             _output = output;
             _common = new TestCommon.Common(output);
             _common.GetPulsarSystem(new AuthenticationDisabled());
-            ProducerBaseSetup(_common.PulsarSystem, output);
+            ///ProducerBaseSetup(_common.PulsarSystem, output);
         }
 		[Fact]
         public void TestNegativeAcksBatch()

@@ -34,7 +34,7 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedMessageTracker:ReceiveActor
     {
-        internal readonly ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>> MessageIdPartitionMap;
+        internal readonly ConcurrentDictionary<IMessageId, SortedSet<IMessageId>> MessageIdPartitionMap;
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
         private readonly IActorRef _parent;
@@ -50,13 +50,13 @@ namespace SharpPulsar.Tracker
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
             _tickDurationInMs = tickDurationInMs;
             _ackTimeoutMillis = ackTimeoutMillis;
-            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, ConcurrentSet<IMessageId>>();
-            TimePartitions = new Queue<ConcurrentSet<IMessageId>>();
+            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, SortedSet<IMessageId>>();
+            TimePartitions = new Queue<SortedSet<IMessageId>>();
 
             var blankPartitions = (int) Math.Ceiling((double) ackTimeoutMillis / _tickDurationInMs);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
-                TimePartitions.Enqueue(new ConcurrentSet<IMessageId>(1, 16));
+                TimePartitions.Enqueue(new SortedSet<IMessageId>());
             }
             BecomeReady();
         }
@@ -169,16 +169,16 @@ namespace SharpPulsar.Tracker
         {
             try
             {
-                var partition = TimePartitions.Last();
+                var partition = TimePartitions.Peek();
                  MessageIdPartitionMap.TryGetValue(messageId, out var previousPartition);
                  if (previousPartition == null)
                  {
-                     var added = partition.TryAdd(messageId);
+                     var added = partition.Add(messageId);
                      MessageIdPartitionMap[messageId] = partition;
                      return added;
                  }
 
-                 return partition.TryAdd(messageId);
+                 return partition.Add(messageId);
             }
             catch (Exception ex)
             {
@@ -209,7 +209,7 @@ namespace SharpPulsar.Tracker
                 MessageIdPartitionMap.Remove(messageId, out var exist);
                 if (exist != null)
                 {
-                    removed = exist.TryRemove(messageId);
+                    removed = exist.Remove(messageId);
                 }
 
                 return removed;
@@ -238,7 +238,7 @@ namespace SharpPulsar.Tracker
                     if (messageId.CompareTo(msgId) <= 0)
                     {
                         var exist = MessageIdPartitionMap[messageId];
-                        exist?.TryRemove(messageId);
+                        exist?.Remove(messageId);
                         MessageIdPartitionMap.Remove(i, out var remove);
                         removed++;
                     }
@@ -253,7 +253,7 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        public Queue<ConcurrentSet<IMessageId>> TimePartitions { get; }
+        public Queue<SortedSet<IMessageId>> TimePartitions { get; }
         protected override void PostStop()
         {
             _timeout?.Cancel();

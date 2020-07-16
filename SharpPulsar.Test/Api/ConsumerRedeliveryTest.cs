@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.Api
 
             var messageReceived = 0;
             
-            var messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, customHander:(m) =>
+            var messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, 0, customHander:(m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
                 return receivedMessage;
@@ -75,14 +75,14 @@ namespace SharpPulsar.Test.Api
 			}
 			
 			Assert.Equal(10,messageReceived);
-            //Thread.Sleep(6000);
+            Thread.Sleep(4000);
             /*for (var i = 10; i < 20; i++)
             {
                 var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i));
                 var receipt = _common.PulsarSystem.Send(send, producer.Producer);
                 _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
             }*/
-            messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, messageCount, customHander: (m) =>
+            messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, 0, customHander: (m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
                 _common.PulsarSystem.Acknowledge(m);

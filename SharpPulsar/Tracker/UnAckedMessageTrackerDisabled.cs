@@ -15,6 +15,10 @@ namespace SharpPulsar.Tracker
             Receive<RemoveMessagesTill>(c => { Sender.Tell(0);});
             Receive<Add>(c => { Sender.Tell(true);});
             Receive<Size>(c => { Sender.Tell(0L);});
+            ReceiveAny(_ =>
+            {
+                //no ops
+            });
         }
         public static Props Prop()
         {
