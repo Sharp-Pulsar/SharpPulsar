@@ -47,7 +47,7 @@ namespace SharpPulsar.Batch
 		// sequence id for this batch which will be persisted as a single entry by broker
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
-		private byte[] _batchedMessageMetadataAndPayload;
+		private List<byte> _batchedMessageMetadataAndPayload;
 		private IList<Message> _messages = new List<Message>();
 		private Action<object, Exception> _previousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
@@ -73,7 +73,7 @@ namespace SharpPulsar.Batch
 				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
-				_batchedMessageMetadataAndPayload = new byte[Math.Min(MaxBatchSize, Container.MaxMessageSize)]; ;
+				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize)); 
 			}
 
             _previousCallback = callback;
@@ -102,7 +102,7 @@ namespace SharpPulsar.Batch
 					var msgMetadata = new MessageMetadata();
 					try
 					{
-						_batchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, _batchedMessageMetadataAndPayload);
+						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, _batchedMessageMetadataAndPayload.ToArray()));
 					}
 					catch (Exception)
 					{
@@ -120,9 +120,9 @@ namespace SharpPulsar.Batch
 				{
 					msg;
 				}*/
-				var uncompressedSize = _batchedMessageMetadataAndPayload.Length;
-				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload);
-				_batchedMessageMetadataAndPayload = new byte[0];
+				var uncompressedSize = _batchedMessageMetadataAndPayload.Count;
+				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload.ToArray());
+				_batchedMessageMetadataAndPayload = new List<byte>();
 				if (CompressionType != CompressionType.None)
 				{
 					_messageMetadata.Compression = CompressionType;
@@ -192,6 +192,8 @@ namespace SharpPulsar.Batch
 			}
 			_messageMetadata.NumMessagesInBatch = NumMessagesInBatch;
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
+            _messageMetadata.ProducerName = Container.ProducerName;
+			_messageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
 			var op = OpSendMsg.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
@@ -208,11 +210,11 @@ namespace SharpPulsar.Batch
 			{
 				return true;
 			}
-			if (_messageMetadata.SchemaVersion.Length !> 0)
+			if (_messageMetadata.SchemaVersion == null || !(_messageMetadata.SchemaVersion?.Length > 0))
 			{
 				return msg.SchemaVersion == null;
 			}
-			return Arrays.Equals(msg.SchemaVersion, _messageMetadata.SchemaVersion);
+			return Equals(msg.SchemaVersion, _messageMetadata.SchemaVersion);
 		}
 
 	}

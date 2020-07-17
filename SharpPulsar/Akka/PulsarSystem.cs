@@ -139,7 +139,12 @@ namespace SharpPulsar.Akka
         {
             if (producer == null)
                 throw new ArgumentNullException(nameof(producer), "null");
+
             var conf = producer.ProducerConfiguration;
+
+            if(string.IsNullOrWhiteSpace(conf.ProducerName))
+                throw new ArgumentException("Producer Name cannot be empty.");
+
 
             if (!TopicName.IsValid(conf.TopicName))
                 throw new ArgumentException("Topic is invalid");
@@ -383,7 +388,7 @@ namespace SharpPulsar.Akka
         }
         /// <summary>
         /// batch receive messages
-        /// </summary>
+        /// </summary>crea
         /// <code>
         /// if(HasMessage("{consumerName}", out var count))
         /// {

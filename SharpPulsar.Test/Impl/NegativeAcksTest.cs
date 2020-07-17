@@ -51,7 +51,7 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
         public void TestNegativeAcksNoBatch()
         {
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 3000, 1000);
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 0, 1000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
@@ -59,9 +59,9 @@ namespace SharpPulsar.Test.Impl
 			_output.WriteLine($"Test negative acks batching={batching} partitions={usePartition} subType={subscriptionType} negAckDelayMs={negAcksDelayMillis}");
 			string topic = "testNegativeAcks-" + DateTime.Now.Ticks;
 
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestNegativeAcks", "sub1", subType: subscriptionType, acknowledgmentGroupTime: 0, negativeAckRedeliveryDelay: negAcksDelayMillis, ackTimeout: ackTimeout));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestNegativeAcks", "sub1", subType: subscriptionType, acknowledgmentGroupTime: 0, negativeAckRedeliveryDelay: negAcksDelayMillis, ackTimeout: ackTimeout, forceTopic: true));
 
-            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "", batchMessageDelayMs: negAcksDelayMillis));
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, DateTimeHelper.CurrentUnixTimeMillis().ToString(), batchMessageDelayMs: negAcksDelayMillis));
 
 			ISet<string> sentMessages = new HashSet<string>();
 
@@ -70,14 +70,15 @@ namespace SharpPulsar.Test.Impl
 			{
 				string value = "test-" + i;
 				var send = new Send(value.GetBytes(), ImmutableDictionary<string, object>.Empty);
-				_common.PulsarSystem.Send(send, producer.Producer);
+				var receipt = _common.PulsarSystem.Send(send, producer.Producer);
 				sentMessages.Add(value);
 			}
 
 			for (int i = 0; i < n; i++)
 			{
 				var msg = _common.PulsarSystem.Receive("TestNegativeAcks");
-				_common.PulsarSystem.NegativeAcknowledge(msg);
+				if(msg != null)
+				    _common.PulsarSystem.NegativeAcknowledge(msg);
 			}
 
 			ISet<string> receivedMessages = new HashSet<string>();
@@ -86,8 +87,11 @@ namespace SharpPulsar.Test.Impl
 			for (int i = 0; i < n; i++)
 			{
                 var msg = _common.PulsarSystem.Receive("TestNegativeAcks");
-				receivedMessages.Add(((byte[])msg.Message.Value).GetString());
-                _common.PulsarSystem.Acknowledge(msg);
+                if (msg != null)
+				{
+					receivedMessages.Add(((byte[])msg.Message.Value).GetString());
+                    _common.PulsarSystem.Acknowledge(msg);
+				}
 			}
 
 			Assert.Equal(receivedMessages, sentMessages);

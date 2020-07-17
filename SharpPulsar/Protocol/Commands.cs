@@ -291,7 +291,10 @@ namespace SharpPulsar.Protocol
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
-
+            if (messageData.TotalChunkMsgSize > 1)
+            {
+                send.IsChunk = true;
+            }
 			var res = Serializer.Serialize(send.ToBaseCommand(), messageData, new ReadOnlySequence<byte>(payload));
 			return res.ToArray();
 		}

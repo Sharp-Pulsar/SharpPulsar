@@ -13,7 +13,7 @@ namespace SharpPulsar.Batch
             MaxMessageSize = maxMessageSize;
             System = system;
         }
-
+        public string ProducerName { get; set; }
         public ActorSystem System { get;}
         public long ProducerId { get; set; }
         public IMessageCrypto Crypto { get; set; }

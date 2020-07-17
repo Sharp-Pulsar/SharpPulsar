@@ -75,7 +75,12 @@ namespace SharpPulsar.Batch
             set => _currentBatchSizeBytes = value;
 
         }
-        public virtual string ProducerName => _producerName;
+        public virtual string ProducerName
+        {
+            set => _producerName = value;
+            get => _producerName;
+        }
+
         public virtual string TopicName => _topicName;
 
         public virtual IList<OpSendMsg> CreateOpSendMsgs()

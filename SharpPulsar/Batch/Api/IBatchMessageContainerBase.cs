@@ -58,7 +58,7 @@ namespace SharpPulsar.Batch.Api
 		/// <param name="producer"> producer </param>
 		IActorRef Producer {set;}
 
-		ProducerContainer Container { set; }
+		ProducerContainer Container { get; set; }
 
 		/// <summary>
 		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.

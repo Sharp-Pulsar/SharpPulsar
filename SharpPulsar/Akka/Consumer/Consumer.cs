@@ -631,7 +631,6 @@ namespace SharpPulsar.Akka.Consumer
             var batchSize = msgMetadata.NumMessagesInBatch;
 
             // create ack tracker for entry aka batch
-            var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
             var acker = BatchMessageAcker.NewAcker(batchSize);
             
             var skippedMessages = 0;

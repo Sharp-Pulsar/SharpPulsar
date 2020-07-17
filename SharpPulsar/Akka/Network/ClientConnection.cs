@@ -135,7 +135,7 @@ namespace SharpPulsar.Akka.Network
             Send(NewConnectCommand());
             if (_receiveThread == null)
             {
-                _receiveThread = context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(30), ReceiveIfAvailable);
+                _receiveThread = context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(500), ReceiveIfAvailable);
             } 
         }
 
@@ -157,13 +157,20 @@ namespace SharpPulsar.Akka.Network
             {
                 var client = _client;
                 var available = client.Socket.Available;
-                if (available <= 0) return;
-                var stream = _client.Receive();
-                OnReceive(stream, available);
+                while (available > 0)
+                {
+                    var stream = _client.Receive();
+                    OnReceive(stream, available);
+                    available = client.Socket.Available;
+                }
             }
             catch (Exception e)
             {
                 _log.Error(e.ToString());
+            }
+            finally
+            {
+                _receiveThread = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(500), ReceiveIfAvailable);
             }
         }
         private void Send(IEnumerable cmd, Payload payload = null)

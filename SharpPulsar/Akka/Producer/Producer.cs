@@ -274,6 +274,9 @@ namespace SharpPulsar.Akka.Producer
                 {
                     _pulsarManager.Tell(new CreatedProducer(Self, _topic, ProducerName));
                 }
+
+                _batchMessageContainer.Container.ProducerName = p.Name;
+                _batchMessageContainer.Container.ProducerId = _producerId;
                 BecomeReceive();
                 ResendMessages();
                 if(BatchMessagingEnabled)
@@ -549,7 +552,8 @@ namespace SharpPulsar.Akka.Producer
                 chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
             }
 
-            if (CanAddToBatch(msg) && totalChunks <= 1)
+            var canAddToBatch = CanAddToBatch(msg);
+            if (canAddToBatch && totalChunks <= 1)
             {
                 if (CanAddToCurrentBatch(msg))
                 {
@@ -736,11 +740,16 @@ namespace SharpPulsar.Akka.Producer
         }
         private bool CanAddToBatch(Message msg)
         {
-            return msg.GetSchemaState() == Message.SchemaState.Ready && BatchMessagingEnabled && msg.Metadata.DeliverAtTime !> 0;
+            var schemaReady = msg.GetSchemaState() == Message.SchemaState.Ready;
+            var hasDeliverAtTime = msg.Metadata.DeliverAtTime > 0;
+            return  schemaReady && BatchMessagingEnabled &&  !hasDeliverAtTime;
         }
         private bool CanAddToCurrentBatch(Message msg)
         {
-            return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg));
+            var hasEnoughSpace = _batchMessageContainer.HaveEnoughSpace(msg);
+            var isMultiSchemaEnabled = IsMultiSchemaEnabled(false);
+            var hasSameSchema = _batchMessageContainer.HasSameSchema(msg);
+            return hasEnoughSpace && (!isMultiSchemaEnabled || hasSameSchema);
         }
 
         private void DoBatchSendAndAdd(Message msg, byte[] payload)
@@ -878,7 +887,6 @@ namespace SharpPulsar.Akka.Producer
             catch (AskTimeoutException ex)
             {
                 _listener.Log(ex.ToString());
-                Thread.Sleep(5000);
                 WriteMessageToWire(op);
             }
         }

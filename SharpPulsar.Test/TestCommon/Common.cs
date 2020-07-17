@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.TestCommon
                 .EnableChunking(enableChunking);
             if (compression > 0)
                 builder.CompressionType((ICompressionType)Enum.GetValues(typeof(ICompressionType)).GetValue(compression));
-            if (batchMessageDelayMs != 0)
+            if (batchMessageDelayMs > 0)
             {
                 builder.EnableBatching(true);
                 builder.BatchingMaxPublishDelay(batchMessageDelayMs);
