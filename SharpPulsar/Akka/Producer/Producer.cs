@@ -45,18 +45,18 @@ namespace SharpPulsar.Akka.Producer
         private readonly IBatchMessageContainerBase _batchMessageContainer;
         private readonly bool _userProvidedProducerName;
         private readonly CompressionCodec _compressor;
-        private IMessageCrypto _msgCrypto;
+        private readonly IMessageCrypto _msgCrypto;
         private ConnectedServerInfo _serverInfo;
         private readonly string _topic;
         private long _sequenceId = 0;
         private readonly int _partitionIndex = -1;
         private readonly IActorRef _pulsarManager;
-        public IProducerStatsRecorder _stats { get; }
-        public long _lastSequenceId;
-        public long _lastSequenceIdPushed;
+        private readonly IProducerStatsRecorder _stats;
+        public long LastSequenceId;
+        public long LastSequenceIdPushed;
         private bool _isLastSequenceIdPotentialDuplicated;
 
-        private ICancelable _regenerateDataKeyCipherCancelable;
+        private readonly ICancelable _regenerateDataKeyCipherCancelable;
         private ICancelable _batchMessageAndSendCancelable;
 
         private readonly IDictionary<string, string> _metadata;
@@ -86,11 +86,11 @@ namespace SharpPulsar.Akka.Producer
             };
             _pulsarManager = pulsarManager;
             _topic = topic;
-            _listener = configuration?.ProducerEventListener;
+            _listener = configuration.ProducerEventListener;
             _isPartitioned = isPartitioned;
             _isGroup = isgroup;
             _clientConfiguration = clientConfiguration;
-            _producerInterceptor = configuration?.Interceptors;
+            _producerInterceptor = configuration.Interceptors;
             _configuration = configuration;
             _producerId = producerId;
             _network = network;
@@ -111,14 +111,14 @@ namespace SharpPulsar.Akka.Producer
             {
                 var initialSequenceId = (long)configuration.InitialSequenceId;
                 _sequenceId = initialSequenceId;
-                _lastSequenceId = initialSequenceId;
-                _lastSequenceIdPushed = initialSequenceId;
+                LastSequenceId = initialSequenceId;
+                LastSequenceIdPushed = initialSequenceId;
             }
             else
             {
                 _sequenceId = 0L;
-                _lastSequenceIdPushed = -1;
-                _lastSequenceId = -1;
+                LastSequenceIdPushed = -1;
+                LastSequenceId = -1;
             }
 
             if (configuration.Properties == null)
@@ -217,10 +217,7 @@ namespace SharpPulsar.Akka.Producer
                 var l = p;
                 var uri = _configuration.UseTls ? new Uri(l.BrokerServiceUrlTls) : new Uri(l.BrokerServiceUrl);
 
-                if(_clientConfiguration.UseProxy)
-                    _broker = Context.ActorOf(ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}"));
-                else
-                    _broker = Context.ActorOf(ClientConnection.Prop(uri, _clientConfiguration, Self));
+                _broker = Context.ActorOf(_clientConfiguration.UseProxy ? ClientConnection.Prop(new Uri(_clientConfiguration.ServiceUrl), _clientConfiguration, Self, $"{uri.Host}:{uri.Port}") : ClientConnection.Prop(uri, _clientConfiguration, Self));
                 Become(WaitingForConnection);
             });
 
@@ -251,7 +248,7 @@ namespace SharpPulsar.Akka.Producer
                     ProducerName = p.Name;
                 if (_sequenceId == 0 && _configuration.InitialSequenceId == null)
                 {
-                    _lastSequenceId = p.LastSequenceId;
+                    LastSequenceId = p.LastSequenceId;
                     _sequenceId = p.LastSequenceId + 1; //brokerDeduplicationEnabled must be enabled
                 }
                 
@@ -275,8 +272,11 @@ namespace SharpPulsar.Akka.Producer
                     _pulsarManager.Tell(new CreatedProducer(Self, _topic, ProducerName));
                 }
 
-                _batchMessageContainer.Container.ProducerName = p.Name;
-                _batchMessageContainer.Container.ProducerId = _producerId;
+                if (_batchMessageContainer != null)
+                {
+                    _batchMessageContainer.Container.ProducerName = p.Name;
+                    _batchMessageContainer.Container.ProducerId = _producerId;
+                }
                 BecomeReceive();
                 ResendMessages();
                 if(BatchMessagingEnabled)
@@ -559,10 +559,10 @@ namespace SharpPulsar.Akka.Producer
                 {
                     // should trigger complete the batch message, new message will add to a new batch and new batch
                     // sequence id use the new message, so that broker can handle the message duplication
-                    if (sequenceId <= _lastSequenceIdPushed)
+                    if (sequenceId <= LastSequenceIdPushed)
                     {
                         _isLastSequenceIdPotentialDuplicated = true;
-                        if (sequenceId <= _lastSequenceId)
+                        if (sequenceId <= LastSequenceId)
                         {
                             Context.System.Log.Warning($"Message with sequence id {sequenceId} is definitely a duplicate");
                         }
@@ -587,7 +587,7 @@ namespace SharpPulsar.Akka.Producer
                             var isBatchFull = _batchMessageContainer.Add(msg, (a, e) =>
                             {
                                 if(a != null)
-                                    _lastSequenceId = (long) a;
+                                    LastSequenceId = (long) a;
                                 if(e != null)
                                     SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
                             });
@@ -764,7 +764,7 @@ namespace SharpPulsar.Akka.Producer
                 _batchMessageContainer.Add(msg, (a, e) =>
                 {
                     if (a != null)
-                        _lastSequenceId = (long)a;
+                        LastSequenceId = (long)a;
                     if (e != null)
                         SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
                 });
@@ -855,7 +855,7 @@ namespace SharpPulsar.Akka.Producer
                 _pendingMessages.Add(op);
                 if (op.Msg != null)
                 {
-                    _lastSequenceIdPushed = Math.Max(_lastSequenceIdPushed, GetHighestSequenceId(op));
+                    LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
                 }
                 if (op.Msg != null && op.Msg.GetSchemaState() == Message.SchemaState.None)
                 {

@@ -45,13 +45,13 @@ namespace SharpPulsar.Test.Impl
 		[Fact]
         public void TestNegativeAcksBatch()
         {
-			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 3000, 1000);
+			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 3000, 30000);
         }
 		
 		[Fact]
         public void TestNegativeAcksNoBatch()
         {
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 0, 1000);
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 3000, 30000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.Impl
 
             var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestNegativeAcks", "sub1", subType: subscriptionType, acknowledgmentGroupTime: 0, negativeAckRedeliveryDelay: negAcksDelayMillis, ackTimeout: ackTimeout, forceTopic: true));
 
-            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, DateTimeHelper.CurrentUnixTimeMillis().ToString(), batchMessageDelayMs: negAcksDelayMillis));
+            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, DateTimeHelper.CurrentUnixTimeMillis().ToString(), batchMessageDelayMs: negAcksDelayMillis, batchingMaxMessages:10, enableBatching: batching));
 
 			ISet<string> sentMessages = new HashSet<string>();
 
@@ -88,13 +88,15 @@ namespace SharpPulsar.Test.Impl
 			{
                 var msg = _common.PulsarSystem.Receive("TestNegativeAcks");
                 if (msg != null)
-				{
-					receivedMessages.Add(((byte[])msg.Message.Value).GetString());
+                {
+                    receivedMessages.Add(((byte[]) msg.Message.Value).GetString());
                     _common.PulsarSystem.Acknowledge(msg);
-				}
-			}
+                }
+                else
+                    i--;
+            }
 
-			Assert.Equal(receivedMessages, sentMessages);
+			Assert.Equal(sentMessages, receivedMessages);
 
 			// There should be no more messages
 			Assert.Null(_common.PulsarSystem.Receive("TestNegativeAcks", 100));
