@@ -135,6 +135,9 @@ namespace SharpPulsar.Batch
 			{
 				currentBatchSizeBytes += message.Payload.Length;
 			}
+
+            keyedBatch.MessageMetadata.ProducerName = Container.ProducerName;
+            keyedBatch.MessageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
 			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
@@ -190,7 +193,7 @@ namespace SharpPulsar.Batch
 			internal MessageMetadata MessageMetadata = new MessageMetadata();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
-			internal byte[] BatchedMessageMetadataAndPayload;
+			internal List<byte> BatchedMessageMetadataAndPayload;
 			internal IList<Message> Messages = new List<Message>();
 			internal Action<object, Exception> PreviousCallback = null;
 			internal CompressionType CompressionType;
@@ -209,11 +212,11 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						BatchedMessageMetadataAndPayload = Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, BatchedMessageMetadataAndPayload);
+						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload));
 						
 					}
-					var uncompressedSize = BatchedMessageMetadataAndPayload.Length;
-					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload);
+					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
+					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload.ToArray());
 					BatchedMessageMetadataAndPayload = null;
 					if (CompressionType != CompressionType.None)
 					{
@@ -245,7 +248,7 @@ namespace SharpPulsar.Batch
 					{
 						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					BatchedMessageMetadataAndPayload = msg.Payload;
+					BatchedMessageMetadataAndPayload.AddRange(msg.Payload);
 					FirstCallback = callback;
 				}
 ;

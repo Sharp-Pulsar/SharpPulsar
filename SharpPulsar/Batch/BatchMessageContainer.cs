@@ -99,10 +99,10 @@ namespace SharpPulsar.Batch
 				for (int i = 0, n = _messages.Count; i < n; i++)
 				{
 					var msg = _messages[i];
-					var msgMetadata = new MessageMetadata();
+					var msgMetadata = msg.Metadata;
 					try
 					{
-						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload, _batchedMessageMetadataAndPayload.ToArray()));
+						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload));
 					}
 					catch (Exception)
 					{
@@ -120,7 +120,7 @@ namespace SharpPulsar.Batch
 				{
 					msg;
 				}*/
-				var uncompressedSize = _batchedMessageMetadataAndPayload.Count;
+				var uncompressedSize = _batchedMessageMetadataAndPayload.ToArray().Length;
 				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload.ToArray());
 				_batchedMessageMetadataAndPayload = new List<byte>();
 				if (CompressionType != CompressionType.None)
@@ -131,7 +131,7 @@ namespace SharpPulsar.Batch
     
 				// Update the current max batch Size using the uncompressed Size, which is what we need in any case to
 				// accumulate the batch content
-				MaxBatchSize = (int)Math.Max(CurrentBatchSize, uncompressedSize);
+				MaxBatchSize = (int)Math.Max(MaxBatchSize, uncompressedSize);
 				return compressedPayload;
 			}
 		}

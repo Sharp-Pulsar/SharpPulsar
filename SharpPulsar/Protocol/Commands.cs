@@ -10,6 +10,7 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
+using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Protocol.Extension;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
@@ -848,17 +849,14 @@ namespace SharpPulsar.Protocol
 			return (long)builder.SequenceId;
 		}
 
-		public static byte[] SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, byte[] payload, byte[] batchBuffer)
-        {
-            var payLoadSize = payload.Length;
-            singleMessageMetadataBuilder.PayloadSize = payLoadSize;
-			var singleMessageMetadata = singleMessageMetadataBuilder;
-            // serialize meta-data Size, meta-data and payload for single message in batch
-            var metaBytes = Serializer.GetBytes(singleMessageMetadata);
+		public static byte[] SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, byte[] payload)
+		{
+			singleMessageMetadataBuilder.PayloadSize = payload.Length;
+			var metadataBytes = Serializer.GetBytes(singleMessageMetadataBuilder);
+            var metadataSizeBytes = Serializer.ToBigEndianBytes((uint)metadataBytes.Length);
             try
             {
-                batchBuffer = metaBytes.Concat(payload).ToArray();
-                return batchBuffer;
+                return new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload).Build().ToArray();
             }
             catch (IOException e)
             {
@@ -866,7 +864,7 @@ namespace SharpPulsar.Protocol
             }
 		}
 
-		public static byte[] SerializeSingleMessageInBatchWithPayload(MessageMetadata msg, byte[] payload, byte[] batchBuffer)
+		public static byte[] SerializeSingleMessageInBatchWithPayload(MessageMetadata msg, byte[] payload)
 		{
 
 			// build single message meta-data
@@ -890,8 +888,9 @@ namespace SharpPulsar.Protocol
 
 			try
 			{
-				return SerializeSingleMessageInBatchWithPayload(singleMessageMetadata, payload, batchBuffer);
-			}
+				var ser =  SerializeSingleMessageInBatchWithPayload(singleMessageMetadata, payload);
+                return ser;
+            }
 			finally
 			{
 				//singleMessageMetadata.Recycle();

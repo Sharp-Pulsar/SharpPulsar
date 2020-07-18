@@ -667,13 +667,19 @@ namespace SharpPulsar.Akka.Consumer
                         ++skippedMessages;
                         continue;
                     }
-                    var result = new byte[ackSet.Count * sizeof(long)];
-                    Buffer.BlockCopy(ackSet.ToArray(), 0, result, 0, result.Length);
+
+                    var ackSetCount = ackSet?.Count ?? 0;
+                    var result = new byte[ackSetCount * sizeof(long)];
+                    var ack = ackSet?.ToArray() ?? new long[0];
+                    Buffer.BlockCopy(ack, 0, result, 0, result.Length);
                     var bitArray = new BitArray(result);
-                    if (bitArray.Get(i))
+                    if (bitArray.Length > 0)
                     {
-                        ++skippedMessages;
-                        continue;
+                        if (bitArray.Get(i))
+                        {
+                            ++skippedMessages;
+                            continue;
+                        }
                     }
 
                     var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex, i, batchSize, acker);
