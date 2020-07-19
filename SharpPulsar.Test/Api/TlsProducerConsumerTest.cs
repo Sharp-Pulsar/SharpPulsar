@@ -173,7 +173,8 @@ namespace SharpPulsar.Test.Api
 		/// </pre>
 		/// </summary>
 		/// <exception cref="Exception"> </exception>
-		/// 
+		///
+		[Fact]
 		public void TestTlsCertsFromDynamicStreamExpiredAndRenewCert()
 		{
             AtomicInteger certIndex = new AtomicInteger(1);

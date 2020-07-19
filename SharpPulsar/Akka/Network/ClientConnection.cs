@@ -93,6 +93,8 @@ namespace SharpPulsar.Akka.Network
                 else
                     _client = SocketFactory.CreateClient<TcpClient>(remoteAddress.Host, remoteAddress.Port);
 
+                _client.LittleEndian = BitConverter.IsLittleEndian;
+
                 _log.Info($"Opening Connection to: {RemoteAddress}");
 
                 ConnectToServer();
@@ -217,7 +219,7 @@ namespace SharpPulsar.Akka.Network
 
             return Commands.NewConnect(_authentication.AuthMethodName, auth, RemoteEndpointProtocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
-        private byte[] HandleAuthChallenge(CommandAuthChallenge authChallenge)
+        private IEnumerable<byte> HandleAuthChallenge(CommandAuthChallenge authChallenge)
         {
             try
             {
@@ -366,9 +368,9 @@ namespace SharpPulsar.Akka.Network
                         rPay.Key.Tell(new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
                         _requests.TryRemove((long)part.RequestId, out var pa);
                         break;
-                    case BaseCommand.Type.SendError:
-                        var e = cmd.SendError;
-                        break;
+                    //case BaseCommand.Type.SendError:
+                        //var e = cmd.SendError;
+                        //break;
                     case BaseCommand.Type.Ping:
                         HandlePing(cmd.Ping);
                         break;

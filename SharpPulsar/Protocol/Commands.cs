@@ -896,39 +896,7 @@ namespace SharpPulsar.Protocol
 				//singleMessageMetadata.Recycle();
 			}
 		}
-
-		public static byte[] DeSerializeSingleMessageInBatch(byte[] uncompressedPayload, SingleMessageMetadata singleMessageMetadata, int index, int batchSize)
-        {
-            /*using var stream = new MemoryStream(uncompressedPayload.Array);
-
-            using var binaryReader = new BinaryReader(stream);
-            var singleMessageMetadata =
-                ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream,
-                    PrefixStyle.Fixed32BigEndian);
-
-            var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
-			
-			var single = singleMessageMetadata.Build();
-			var singleMetaSize = (int) uncompressedPayload.ReadUnsignedInt();
-			var writerIndex = uncompressedPayload.WriterIndex;
-			var beginIndex = uncompressedPayload.ReaderIndex + singleMetaSize;
-			uncompressedPayload.WriterIndex(beginIndex);
-			//var stream = new CodedInputStream(uncompressedPayload.Array);
-            //single.MergeFrom(stream);
-            var singleMessagePayloadSize = 0L;//single.CalculateSize();
-
-			var readerIndex = uncompressedPayload.ReaderIndex;
-			uncompressedPayload.WriterIndex(writerIndex);
-
-			// reader now points to beginning of payload read; so move it past message payload just read
-			if (index < batchSize)
-			{
-				//uncompressedPayload.ReaderIndex(readerIndex + singleMessagePayloadSize);
-			}
-			*/
-            return null; //singleMessagePayload;
-        }
-
+		
 		public static int GetNumberOfMessagesInBatch(byte[] metadataAndPayload, string subscription, long consumerId)
 		{
 			var msgMetadata = PeekMessageMetadata(metadataAndPayload, subscription, consumerId);
