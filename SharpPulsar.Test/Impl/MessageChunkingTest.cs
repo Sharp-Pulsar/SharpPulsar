@@ -39,27 +39,26 @@ namespace SharpPulsar.Test.Impl
         {
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled());
-            ProducerBaseSetup(_common.PulsarSystem, output);
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.184.218.188:6650");
         }
 		[Fact]
 		public void TestLargeMessage()
 		{
 			//this.conf.MaxMessageSize = 5;
 			const int totalMessages = 5;
-			const string topicName = "persistent://my-property/my-ns/my-topic1";
+			const string topicName = "persistent://public/default/my-topic1";
 
-			var consumer =_common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topicName, "TestLargeMessage", "my-subscriber-name", acknowledgmentGroupTime: 0));
+			var consumer =_common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topicName, "TestLargeMessage", "my-subscriber-name", acknowledgmentGroupTime: 0, forceTopic: true));
 
 
-			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topicName, "", 1,  enableChunking: true));
+			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topicName, "TestLargeMessage", 1,  enableChunking: true, maxMessageSize: totalMessages));
 			
 			IList<string> publishedMessages = new List<string>();
 			for (int i = 0; i < totalMessages; i++)
 			{
 				string message = CreateMessagePayload(i * 10);
 				publishedMessages.Add(message);
-				_common.PulsarSystem.Send(new Send(message.GetBytes()), producer.Producer);
+				var re = _common.PulsarSystem.Send(new Send(message.GetBytes()), producer.Producer);
 			}
 
 			ConsumedMessage msg = null;

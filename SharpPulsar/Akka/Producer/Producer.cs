@@ -228,7 +228,7 @@ namespace SharpPulsar.Akka.Producer
         {
             Receive<ConnectedServerInfo>(s =>
             {
-                var max = Math.Min(_configuration.MaxMessageSize, s.MaxMessageSize - 200);
+                var max = Math.Min(_configuration.MaxMessageSize, s.MaxMessageSize);
                 _serverInfo = new ConnectedServerInfo(max, s.Protocol, s.Version, s.Name);
                 SendNewProducerCommand();
                 Become(WaitingForProducer);

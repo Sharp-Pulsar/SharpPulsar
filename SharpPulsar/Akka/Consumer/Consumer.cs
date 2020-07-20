@@ -1524,6 +1524,10 @@ namespace SharpPulsar.Akka.Consumer
                 BecomeActive();
                 Stash.UnstashAll();
             });
+            Receive<PulsarError>(e =>
+            {
+                _consumerEventListener.Error(new Exception($"{e.Error}: {e.Message}"));
+            });
             ReceiveAny(_=> Stash.Stash());
         }
         private void SendBrokerLookUpCommand()
